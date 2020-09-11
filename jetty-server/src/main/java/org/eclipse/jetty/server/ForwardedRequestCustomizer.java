@@ -83,17 +83,17 @@ import static java.lang.invoke.MethodType.methodType;
  *         </tr>
  *         <tr>
  *             <td>2</td>
- *             <td><code>X-Forwarded-Host</code> Header</td>
- *             <td>Required</td>
- *             <td>Optional</td>
- *             <td>left-most value</td>
- *         </tr>
- *         <tr>
- *             <td>3</td>
  *             <td><code>X-Forwarded-Port</code> Header</td>
  *             <td>n/a</td>
  *             <td>Required</td>
  *             <td>left-most value (only if {@link #getForwardedPortAsAuthority()} is true)</td>
+ *         </tr>
+ *         <tr>
+ *             <td>3</td>
+ *             <td><code>X-Forwarded-Host</code> Header</td>
+ *             <td>Required</td>
+ *             <td>Implied</td>
+ *             <td>left-most value</td>
  *         </tr>
  *         <tr>
  *             <td>4</td>
@@ -460,24 +460,78 @@ public class ForwardedRequestCustomizer implements Customizer
             }
         }
 
+        String proto = "http";
+
+        // Is secure status configured from headers?
+        if (forwarded.isSecure())
+        {
+            // set default to https
+            proto = config.getSecureScheme();
+        }
+
+        // Set Scheme from configured protocol
         if (forwarded._proto != null)
         {
-            request.setScheme(forwarded._proto);
-            if (forwarded._proto.equalsIgnoreCase(config.getSecureScheme()))
-                request.setSecure(true);
+            proto = forwarded._proto;
+            request.setScheme(proto);
         }
 
-        if (forwarded.hasAuthority())
+        // Set authority
+        String host = null;
+        int port = -1;
+
+        // Use authority from headers, if configured.
+        if (forwarded._authority != null)
         {
-            httpFields.put(new HostPortHttpField(forwarded._authority._host, forwarded._authority._port));
-            request.setAuthority(forwarded._authority._host, forwarded._authority._port);
+            host = forwarded._authority._host;
+            port = forwarded._authority._port;
         }
 
+        // Fall back to request metadata if needed.
+        HttpURI requestURI = request.getMetaData().getURI();
+        if (host == null)
+        {
+            host = requestURI.getHost();
+        }
+        if (port == MutableHostPort.UNSET) // is unset by headers
+        {
+            port = requestURI.getPort();
+        }
+        if (port == MutableHostPort.IMPLIED) // is implied
+        {
+            // get Implied port (from protocol / scheme) and HttpConfiguration
+            int defaultPort = 80;
+            port = proto.equalsIgnoreCase(config.getSecureScheme()) ? getSecurePort(config) : defaultPort;
+        }
+
+        // Update authority if different from metadata
+        if (!host.equalsIgnoreCase(requestURI.getHost()) ||
+            port != requestURI.getPort())
+        {
+            httpFields.put(new HostPortHttpField(host, port));
+            request.setAuthority(host, port);
+        }
+
+        // Set secure status
+        if (forwarded.isSecure() ||
+            proto.equalsIgnoreCase(config.getSecureScheme()) ||
+            port == getSecurePort(config))
+        {
+            request.setSecure(true);
+            request.setScheme(proto);
+        }
+
+        // Set Remote Address
         if (forwarded.hasFor())
         {
-            int port = forwarded._for._port > 0 ? forwarded._for._port : request.getRemotePort();
-            request.setRemoteAddr(InetSocketAddress.createUnresolved(forwarded._for._host, port));
+            int forPort = forwarded._for._port > 0 ? forwarded._for._port : request.getRemotePort();
+            request.setRemoteAddr(InetSocketAddress.createUnresolved(forwarded._for._host, forPort));
         }
+    }
+
+    protected static int getSecurePort(HttpConfiguration config)
+    {
+        return config.getSecurePort() > 0 ? config.getSecurePort() : 443;
     }
 
     protected void onError(HttpField field, Throwable t)
@@ -577,9 +631,12 @@ public class ForwardedRequestCustomizer implements Customizer
 
     private static class MutableHostPort
     {
+        public static final int UNSET = -1;
+        public static final int IMPLIED = 0;
+
         String _host;
         int _hostPriority = -1;
-        int _port = -1;
+        int _port = UNSET;
         int _portPriority = -1;
 
         public void setHost(String host, int priority)
@@ -593,7 +650,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
         public void setPort(int port, int priority)
         {
-            if (port > 0 && priority > _portPriority)
+            if (priority > _portPriority)
             {
                 _port = port;
                 _portPriority = priority;
@@ -602,22 +659,26 @@ public class ForwardedRequestCustomizer implements Customizer
 
         public void setHostPort(HostPort hostPort, int priority)
         {
-            if (_host == null || priority > _hostPriority)
+            if (priority > _hostPriority)
             {
                 _host = hostPort.getHost();
                 _hostPriority = priority;
+            }
 
-                // Is this an authoritative port?
-                if (priority == FORWARDED_PRIORITY)
-                {
-                    // Trust port (even if 0/unset)
-                    _port = hostPort.getPort();
-                    _portPriority = priority;
-                }
-                else
-                {
-                    setPort(hostPort.getPort(), priority);
-                }
+            int port = hostPort.getPort();
+            // Is port supplied?
+            if (port > 0 && priority > _portPriority)
+            {
+                _port = hostPort.getPort();
+                _portPriority = priority;
+            }
+            // Since we are Host:Port pair, the port could be unspecified
+            // Meaning it's implied.
+            // Make sure that we switch the tracked port from unset to implied
+            else if (_port == UNSET)
+            {
+                // set port to implied (with no priority)
+                _port = IMPLIED;
             }
         }
 
@@ -633,16 +694,14 @@ public class ForwardedRequestCustomizer implements Customizer
         }
     }
 
-    private static final int MAX_PRIORITY = 999;
+    private static final int FORCED_PRIORITY = 999;
     private static final int FORWARDED_PRIORITY = 8;
     private static final int XFORWARDED_HOST_PRIORITY = 7;
     private static final int XFORWARDED_FOR_PRIORITY = 6;
     private static final int XFORWARDED_PORT_PRIORITY = 5;
     private static final int XFORWARDED_SERVER_PRIORITY = 4;
-    // HostPort seen in Request metadata
-    private static final int REQUEST_PRIORITY = 3;
-    private static final int XFORWARDED_PROTO_PRIORITY = 2;
-    private static final int XPROXIED_HTTPS_PRIORITY = 1;
+    private static final int XFORWARDED_PROTO_PRIORITY = 3;
+    private static final int XPROXIED_HTTPS_PRIORITY = 2;
 
     private class Forwarded extends QuotedCSVParser
     {
@@ -653,6 +712,7 @@ public class ForwardedRequestCustomizer implements Customizer
         MutableHostPort _for;
         String _proto;
         int _protoPriority = -1;
+        Boolean _secure;
 
         public Forwarded(Request request, HttpConfiguration config)
         {
@@ -661,21 +721,14 @@ public class ForwardedRequestCustomizer implements Customizer
             _config = config;
             if (_forcedHost != null)
             {
-                getAuthority().setHostPort(_forcedHost.getHostPort(), MAX_PRIORITY);
-            }
-            else
-            {
-                HttpURI requestURI = request.getMetaData().getURI();
-                if (requestURI.getHost() != null)
-                {
-                    getAuthority().setHostPort(new HostPort(requestURI.getHost(), requestURI.getPort()), REQUEST_PRIORITY);
-                }
+                getAuthority().setHost(_forcedHost.getHostPort().getHost(), FORCED_PRIORITY);
+                getAuthority().setPort(_forcedHost.getHostPort().getPort(), FORCED_PRIORITY);
             }
         }
 
-        public boolean hasAuthority()
+        public boolean isSecure()
         {
-            return _authority != null && _authority._host != null;
+            return (_secure != null && _secure);
         }
 
         public boolean hasFor()
@@ -707,8 +760,7 @@ public class ForwardedRequestCustomizer implements Customizer
             _request.setAttribute("javax.servlet.request.cipher_suite", field.getValue());
             if (isSslIsSecure())
             {
-                _request.setSecure(true);
-                _request.setScheme(_config.getSecureScheme());
+                _secure = true;
             }
         }
 
@@ -718,8 +770,7 @@ public class ForwardedRequestCustomizer implements Customizer
             _request.setAttribute("javax.servlet.request.ssl_session_id", field.getValue());
             if (isSslIsSecure())
             {
-                _request.setSecure(true);
-                _request.setScheme(_config.getSecureScheme());
+                _secure = true;
             }
         }
 
@@ -732,7 +783,8 @@ public class ForwardedRequestCustomizer implements Customizer
         @SuppressWarnings("unused")
         public void handleForwardedFor(HttpField field)
         {
-            getFor().setHostPort(new HostPort(getLeftMost(field.getValue())), XFORWARDED_FOR_PRIORITY);
+            HostPort hostField = new HostPort(getLeftMost(field.getValue()));
+            getFor().setHostPort(hostField, XFORWARDED_FOR_PRIORITY);
         }
 
         @SuppressWarnings("unused")
@@ -762,8 +814,9 @@ public class ForwardedRequestCustomizer implements Customizer
         {
             if ("on".equalsIgnoreCase(field.getValue()) || "true".equalsIgnoreCase(field.getValue()))
             {
+                _secure = true;
                 updateProto(HttpScheme.HTTPS.asString(), XPROXIED_HTTPS_PRIORITY);
-                updatePort(443, XPROXIED_HTTPS_PRIORITY);
+                updatePort(getSecurePort(_config), XPROXIED_HTTPS_PRIORITY);
             }
         }
 
@@ -783,37 +836,39 @@ public class ForwardedRequestCustomizer implements Customizer
                 switch (name)
                 {
                     case "by":
+                    {
                         if (!getProxyAsAuthority())
                             break;
                         if (value.startsWith("_") || "unknown".equals(value))
                             break;
-                        getAuthority().setHostPort(new HostPort(value), FORWARDED_PRIORITY);
+                        HostPort hostField = new HostPort(value);
+                        getAuthority().setHost(hostField.getHost(), FORWARDED_PRIORITY);
+                        getAuthority().setPort(hostField.getPort(), FORWARDED_PRIORITY);
                         break;
+                    }
                     case "for":
+                    {
                         if (value.startsWith("_") || "unknown".equals(value))
                             break;
-                        getFor().setHostPort(new HostPort(value), FORWARDED_PRIORITY);
+                        HostPort hostField = new HostPort(value);
+                        getFor().setHost(hostField.getHost(), FORWARDED_PRIORITY);
+                        getFor().setPort(hostField.getPort(), FORWARDED_PRIORITY);
                         break;
+                    }
                     case "host":
+                    {
                         if (value.startsWith("_") || "unknown".equals(value))
                             break;
-                        getAuthority().setHostPort(new HostPort(value), FORWARDED_PRIORITY);
+                        HostPort hostField = new HostPort(value);
+                        getAuthority().setHost(hostField.getHost(), FORWARDED_PRIORITY);
+                        getAuthority().setPort(hostField.getPort(), FORWARDED_PRIORITY);
                         break;
+                    }
                     case "proto":
                         updateProto(value, FORWARDED_PRIORITY);
-                        getAuthority().setPort(getPortForProto(value), FORWARDED_PRIORITY);
                         break;
                 }
             }
-        }
-
-        private int getPortForProto(String proto)
-        {
-            if ("http".equalsIgnoreCase(proto))
-                return 80;
-            if ("https".equalsIgnoreCase(proto))
-                return 443;
-            return -1;
         }
 
         private void updateAuthority(String value, int priority)
@@ -840,6 +895,11 @@ public class ForwardedRequestCustomizer implements Customizer
             {
                 _proto = proto;
                 _protoPriority = priority;
+
+                if (_proto.equalsIgnoreCase(_config.getSecureScheme()))
+                {
+                    _secure = true;
+                }
             }
         }
     }
