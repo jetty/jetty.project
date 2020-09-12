@@ -17,4 +17,4 @@ PROP|optional.prop=value0
 EXISTS|maindir/
 EXISTS|start.ini
 
-OUTPUT|WARN  : --add-to-startd is deprecated! Instead use: --add-module=optional
+OUTPUT|WARN  : Option --add-to-startd is deprecated! Instead use: --add-module=optional

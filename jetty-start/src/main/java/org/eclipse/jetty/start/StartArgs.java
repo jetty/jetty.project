@@ -193,7 +193,7 @@ public class StartArgs
 
     // jetty.base - build out commands
     /**
-     * --add-to-start[d]=[module,[module]]
+     * --add-module=[module,[module]]
      */
     private List<String> startModules = new ArrayList<>();
 
@@ -1277,18 +1277,13 @@ public class StartArgs
             licenseCheckRequired = true;
             return;
         }
-        if (arg.startsWith("--add-to-startd="))
+        if (arg.startsWith("--add-module=") || arg.startsWith("--add-to-start=") || arg.startsWith("--add-to-startd="))
         {
-            String value = Props.getValue(arg);
-            StartLog.warn("--add-to-startd is deprecated! Instead use: --add-module=%s", value);
-            startModules.addAll(Props.getValues(arg));
-            run = false;
-            createFiles = true;
-            licenseCheckRequired = true;
-            return;
-        }
-        if (arg.startsWith("--add-module=") || arg.startsWith("--add-to-start=") || arg.startsWith("--add="))
-        {
+            if (arg.startsWith("--add-to-start=") || arg.startsWith("--add-to-startd="))
+            {
+                String value = Props.getValue(arg);
+                StartLog.warn("Option " + arg.split("=")[0] + " is deprecated! Instead use: --add-module=%s", value);
+            }
             startModules.addAll(Props.getValues(arg));
             run = false;
             createFiles = true;
