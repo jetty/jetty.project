@@ -128,7 +128,7 @@ public abstract class FileInitializer
     protected void download(URI uri, Path destination) throws IOException
     {
         if (FS.ensureDirectoryExists(destination.getParent()))
-            StartLog.log("MKDIR", _basehome.toShortForm(destination.getParent()));
+            StartLog.log("INFO", "mkdir " + _basehome.toShortForm(destination.getParent()));
 
         StartLog.log("DOWNLD", "%s to %s", uri, _basehome.toShortForm(destination));
 
@@ -206,7 +206,7 @@ public abstract class FileInitializer
                 {
                     if (FS.ensureDirectoryExists(to))
                     {
-                        StartLog.log("MKDIR", _basehome.toShortForm(to));
+                        StartLog.log("INFO", "mkdir " + _basehome.toShortForm(to));
                         modified = true;
                     }
 

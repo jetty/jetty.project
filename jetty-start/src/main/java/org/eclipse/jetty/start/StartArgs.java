@@ -229,7 +229,7 @@ public class StartArgs
     private boolean dryRun = false;
     private final Set<String> dryRunParts = new HashSet<>();
     private boolean jpms = false;
-    private boolean createStartd = false;
+    private boolean createStartIni = false;
     private boolean updateIni = false;
     private String mavenBaseUri;
 
@@ -1019,9 +1019,9 @@ public class StartArgs
         return version;
     }
 
-    public boolean isCreateStartd()
+    public boolean isCreateStartIni()
     {
-        return createStartd;
+        return createStartIni;
     }
 
     public boolean isUpdateIni()
@@ -1260,9 +1260,18 @@ public class StartArgs
         }
 
         // jetty.base build-out : add to ${jetty.base}/start.ini
+
+        if ("--create-start-ini".equals(arg))
+        {
+            createStartIni = true;
+            run = false;
+            createFiles = true;
+            licenseCheckRequired = true;
+            return;
+        }
         if ("--create-startd".equals(arg))
         {
-            createStartd = true;
+            StartLog.warn("--create-startd option is deprecated! By default start.d is used");
             run = false;
             createFiles = true;
             licenseCheckRequired = true;
@@ -1271,15 +1280,14 @@ public class StartArgs
         if (arg.startsWith("--add-to-startd="))
         {
             String value = Props.getValue(arg);
-            StartLog.warn("--add-to-startd is deprecated! Instead use: --create-startd --add-to-start=%s", value);
-            createStartd = true;
+            StartLog.warn("--add-to-startd is deprecated! Instead use: --add-module=%s", value);
             startModules.addAll(Props.getValues(arg));
             run = false;
             createFiles = true;
             licenseCheckRequired = true;
             return;
         }
-        if (arg.startsWith("--add-to-start="))
+        if (arg.startsWith("--add-module=") || arg.startsWith("--add-to-start=") || arg.startsWith("--add="))
         {
             startModules.addAll(Props.getValues(arg));
             run = false;
