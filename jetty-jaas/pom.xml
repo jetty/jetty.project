@@ -12,8 +12,8 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.jaas</bundle-symbolic-name>
-    <!-- 2.0.0.AM25 is breaking surefire -->
-    <apacheds.version>2.0.0.AM26</apacheds.version>
+    <!-- 2.0.0.AM25/AM26 are breaking as invalid jars -->
+    <apacheds.version>2.0.0-M24</apacheds.version>
   </properties>
 
   <build>
