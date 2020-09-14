@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Deploys the Jminix JMX Console within the server
+Deploys the Jminix JMX Console within the server.
 
 [tags]
 3rdparty

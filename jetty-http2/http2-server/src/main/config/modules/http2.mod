@@ -1,8 +1,8 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enables HTTP2 protocol support on the TLS(SSL) Connector,
-using the ALPN extension to select which protocol to use.
+Enables HTTP2 protocol support on the TLS(SSL) Connector with ALPN.
+Uses the ALPN extension to select which protocol to use.
 
 [tags]
 connector

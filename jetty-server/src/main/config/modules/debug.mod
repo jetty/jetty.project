@@ -1,8 +1,8 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enables the DebugListener to generate additional 
-logging regarding detailed request handling events.
+Enables the DebugListener.
+Generates additional logging regarding detailed request handling events.
 Renames threads to include request URI.
 
 [tags]

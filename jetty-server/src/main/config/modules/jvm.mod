@@ -1,8 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-A noop module that creates an ini template useful for
-setting JVM arguments (eg -Xmx )
+A module that creates an ini template for setting JVM arguments (eg -Xmx ).
 
 [ini-template]
 ## JVM Configuration

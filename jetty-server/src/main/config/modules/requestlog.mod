@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Log requests using CustomRequestLog and AsyncRequestLogWriter
+Log requests using CustomRequestLog and AsyncRequestLogWriter.
 
 [tags]
 requestlog

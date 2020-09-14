@@ -5,7 +5,7 @@
 # 
 
 [description]
-Configure the Jetty Demo base
+Configure the Jetty Demo base.
 
 [depends]
 rewrite

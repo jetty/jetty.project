@@ -1,5 +1,5 @@
 [description]
-Enables session data store in a remote Infinispan cache
+Enables session data store in a remote Infinispan cache.
 
 [tags]
 session

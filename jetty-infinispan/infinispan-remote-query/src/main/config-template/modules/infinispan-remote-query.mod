@@ -1,5 +1,5 @@
 [description]
-Enables querying with a remote Infinispan cache
+Enables querying with a remote Infinispan cache.
 
 [tags]
 session

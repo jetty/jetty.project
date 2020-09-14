@@ -1,6 +1,5 @@
 [description]
-Enables resource injection and other servlet 3.x 
-features not supported in the core jetty webapps module.
+Enables Servlet 3.1 resource injection. 
 
 [depend]
 server

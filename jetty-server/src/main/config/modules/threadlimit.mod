@@ -7,7 +7,7 @@
 server
 
 [description]
-Limit the threads per IP address for DOS protection
+Limit the threads per IP address for DOS protection.
 
 [depend]
 server

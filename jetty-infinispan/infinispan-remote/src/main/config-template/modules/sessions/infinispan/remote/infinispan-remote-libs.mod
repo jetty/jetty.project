@@ -1,9 +1,10 @@
 [description]
-The Infinispan remote libs
+The Infinispan remote libs.
 
 [tags]
 3rdparty
 infinispan
+internal
 
 [depends]
 sessions/infinispan/remote/infinispan-remote-serverclasses
