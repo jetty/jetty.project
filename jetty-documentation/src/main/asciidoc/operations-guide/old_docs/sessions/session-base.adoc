@@ -43,7 +43,7 @@ IMPORTANT: If you have more than one Jetty instance, it is *crucial* that you co
 
 jetty.sessionScavengeInterval.seconds::
 This is the period in _seconds_ between runs of the `HouseKeeper`, responsible for orchestrating the removal of expired sessions.
-By default it will run every 600 secs (ie 10 mins).
+By default it will run appproximately every 600 secs (ie 10 mins).
 As a rule of thumb, you should ensure that the xref:ops-session-base-scavenge[scavenge] interval is shorter than the `<session-timeout>` of your sessions to ensure that they are promptly scavenged.
 On the other hand, if you have a backend store configured for your sessions, xref:ops-session-base-scavenge[scavenging] too frequently can increase the load on it.
 
@@ -53,7 +53,13 @@ TIP: Don't forget that the `<session-timeout>` is specified in web.xml in _minut
 ==== Session Scavenging
 
 The `HouseKeeper` is responsible for the periodic initiation of session scavenge cycles.
-The `jetty.sessionScavengeInterval.seconds` property in `start.d/sessions.ini` controls the periodicity of the cycle.
+The `jetty.sessionScavengeInterval.seconds` property in `$jetty.base/start.d/sessions.ini` controls the periodicity of the cycle.
+
+[NOTE]
+====
+The HouseKeeper semi-randomly adds an additional 10% to the configured `sessionScavengeInterval`.
+This is to prevent multiple nodes in a cluster that are all started at once from syncing up scavenge cycles and placing extra load on the configured persistence mechanism.
+====
 
 A session whose expiry time has been exceeded is considered eligible for scavenging.
 The session might be present in a `SessionCache` and/or present in the session persistence/clustering mechanism.

@@ -31,8 +31,7 @@ SessionData:: encapsulates the attributes and metadata associated with a `Sessio
 SessionDataStore:: is responsible for creating, storing and reading `SessionData`
 CachingSessionDataStore:: is an L2 cache of `SessionData`
 
-
-Visually the session architecture can be represented like this:
+The session architecture can be represented like so:
 
 [plantuml]
 ----

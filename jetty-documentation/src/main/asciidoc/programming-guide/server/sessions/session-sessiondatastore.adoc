@@ -16,79 +16,8 @@
 // ========================================================================
 //
 
-[[pg-server-session-components]]
-==== Session Components
-
-===== SessionIdManager
-
-There is a maximum of one `SessionIdManager` per `Server` instance.
-Its purpose is to generate fresh, unique session ids and to coordinate the re-use of session ids amongst co-operating contexts.
-
-The `SessionIdManager` is agnostic with respect to the type of clustering technology chosen.
-
-Jetty provides a default implementation - the link:{JDURL}/org/eclipse/jetty/server/session/DefaultSessionIdManager.html[DefaultSessionIdManager]  - which should meet the needs of most users.
-If you do not explicitly configure a `SessionIdManager`, then when the `SessionHandler` starts, it will use an instance of the `DefaultSessionIdManager`.
-
-====== Using the DefaultSessionIdManager
-
-TODO
-- description of what the SessionHandler.doStart() does to create a DefaultSessionIdManager if none configured
-- code example of setting up the DefaultSessionIdManager
-
-====== Implementing a Custom SessionIdManager
-
-If the `DefaultSessionIdManager` does not meet your needs, you can extend it, or implement the `SessionIdManager` interface directly.
-
-When implementing a `SessionIdManager` pay particular attention to the following:
-
-* the `getWorkerName()` method must return a name that is unique to the `Server` instance.
-The `workerName` becomes important in clustering scenarios because sessions can migrate from node to node:  the `workerName` identifies which node was last managing a `Session`.
-* the contract of the `isIdInUse(String id)` method is very specific: a session id may _only_ be reused _iff_ it is already in use by another context.
-This restriction is important to support cross-context dispatch.
-* you should be _very_ careful to ensure that the `newSessionId(HttpServletRequest request, long created)` method does not return duplicate or predictable session ids.
-
-[[pg-server-session-housekeeper]]
-===== HouseKeeper
-
-There is a maximum of one link:{JDURL}/org/eclipse/jetty/server/session/HouseKeeper.html[HouseKeeper] per `SessionIdManager`.
-Its purpose is to periodically poll the link:{JDURL}/org/eclipse/jetty/server/session/SessionHandler.html[SessionHandlers] to clean out expired sessions.
-This operation is usually referred to as "scavenging" expired sessions.
-
-====== Using the HouseKeeper
-
-TODO 
-- description of the SessionHandler.doStart() creating a HouseKeeper
-- code example of setting up the HouseKeeper
-- configuring the scavenge interval
-
-===== SessionCache
-
-There is one `SessionCache` per `SessionHandler`, and thus one per context.
-Its purpose is to provide an L1 cache of `Session` objects.
-Having a working set of `Session` objects in memory allows multiple simultaneous requests for the same session to share the same `Session` object.
-A `SessionCache` uses a `SessionDataStore` to create, read, store and delete the `SessionData` associated with the `Session`.
-
-Jetty provides two `SessionCache` implementations: the link:{JDURL}/org/eclipse/jetty/server/session/DefaultSessionCache.html[DefaultSessionCache] and the link:{JDURL}/org/eclipse/jetty/server/session/NullSessionCache.html[NullSessionCache].
-
-====== Using the DefaultSessionCache
-The `DefaultSessionCache` retains `Session` objects in memory in a cache and has a number of configuration options to control cache behavior.
-It is suitable for non-clustered and clustered deployments with a sticky load balancer, as well as clustered deployments with a non-sticky load balancer, with some caveats.
-
-====== Using the NullSessionCache
-The `NullSessionCache` does not actually cache any objects: each request uses a fresh `Session` object.
-It is suitable for clustered deployments without a sticky load balancer and non-clustered deployments when purely minimal support for sessions is needed.
-
-``SessionCache``s always write out a Session to the link:{JDURL}/org/eclipse/jetty/server/session/SessionDataStore.html[SessionDataStore] whenever the last request for the `Session` exits.
-
-They can also be configured to do an immediate, eager write of a freshly created session.
-This can be useful if you are likely to experience multiple, near simultaneous requests referencing the same session, e.g. with HTTP/2 and you don't have a sticky load balancer.
-Alternatively, if the eager write is not done, application paths which create and then invalidate a session within a single request never incur the cost of writing to persistent storage.
-
-Additionally, if the `EVICT_ON_INACTIVITY` eviction policy is in use, you can xref:#pg-server-session-sessioncache[configure] the `DefaultSessionCache` to force a write of the `Session` to the `SessionDataStore` just before the `Session` is evicted.
-
-See xref:pg-server-session-sessioncache[the L1 Session Cache] for more information.
-
-===== SessionDataStore
+[[pg-server-session-sessiondatastore]]
+==== Session Components: The SessionDataStore
 
 There is one link:{JDURL}/org/eclipse/jetty/server/session/SessionDataStore.html[SessionDataStore] per `SessionCache`.
 Its purpose is to create, store, read and delete the `SessionData` related to a `Session`.
