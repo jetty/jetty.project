@@ -88,7 +88,7 @@ Hazelcast-specific jar files will be downloaded to a directory named `${jetty.ba
 
 ===== Configuration
 
-The `start.d/start.d/session-store-hazelcast-embedded.ini` contains a list of all the configurable options for the Hazelcast module:
+The `$jetty.base/start.d/start.d/session-store-hazelcast-embedded.ini` contains a list of all the configurable options for the Hazelcast module:
 
 jetty.session.hazelcast.mapName::
 The default is "jetty-distributed-session-map".

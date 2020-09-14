@@ -90,6 +90,8 @@ If you enable this module, but you don't enable a module that provides session p
 
 ===== Configuration
 
+The `$jetty.base/start.d/session-cache-null.ini` contains the following configurable properties:
+
 jetty.session.saveOnCreate::
 Boolean, default `false`.
 Controls whether a session that is newly created will be immediately saved to the `SessionDataStore` or lazily saved as the last request for the session exits.

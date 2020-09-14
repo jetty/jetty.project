@@ -41,7 +41,7 @@ NOTE: If you have updated versions of the jar files automatically downloaded by 
 
 ==== Configuration
 
-The `start.d/session-store-infinispan-remote.ini` contains the following configurable properties:
+The `$jetty.base/start.d/session-store-infinispan-remote.ini` contains the following configurable properties:
 
 jetty.session.infinispan.remoteCacheName::
 Default `"sessions"`.
@@ -93,7 +93,7 @@ NOTE: If you have updated versions of the jar files automatically downloaded by 
 
 ==== Configuration
 
-The `start.d/session-store-infinispan-embedded.ini` contains the following configurable properties:
+The `$jetty.base/start.d/session-store-infinispan-embedded.ini` contains the following configurable properties:
 
 jetty.session.infinispan.idleTimeout.seconds::
 Integer, in seconds, default `0`.

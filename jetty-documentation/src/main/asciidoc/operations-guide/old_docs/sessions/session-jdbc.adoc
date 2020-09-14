@@ -25,7 +25,7 @@ Enabling the `session-store-jdbc` module configures Jetty to persist session dat
 
 ==== Configuration
 
-After enabling the module, the `${jetty.base}/start.d/session-store-jdbc.ini` file contains the following customizable properties:
+After enabling the module, the `$jetty.base/start.d/session-store-jdbc.ini` file contains the following customizable properties:
 
 jetty.session.gracePeriod.seconds::
 Integer, default 3600.

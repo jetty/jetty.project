@@ -27,7 +27,7 @@ The `id-manager.xml` file instantiates a `DefaultSessionIdManager` and `HouseKee
 The former is used to generate and manage session ids whilst the latter is responsible for periodic xref:ops-session-base-scavenge[scavenging] of expired sessions.
 
 ==== Configuration
-The `start.d/sessions.ini` file contains these configuration properties:
+The `$jetty.base/start.d/sessions.ini` file contains these configuration properties:
 
 jetty.sessionIdManager.workerName::
 This uniquely identifies the jetty server instance and is applied to the `SessionIdManager`.
