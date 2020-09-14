@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enables the Server thread pool.
+Enables and configures the Server thread pool.
 
 [depends]
 logging

@@ -8,6 +8,7 @@ the associated support modules.
 [tags]
 connector
 ssl
+internal
 
 [depend]
 server

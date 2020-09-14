@@ -1,7 +1,8 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enable first level session cache. If this module is not enabled, sessions will
+Enable first level session cache. 
+If this module is not enabled, sessions will
 use the DefaultSessionCache by default, so enabling via this module is only needed
 if the configuration properties need to be changed from their defaults.
 

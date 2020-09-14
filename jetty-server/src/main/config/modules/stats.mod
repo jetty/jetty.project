@@ -1,11 +1,10 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enable detailed statistics collection for the server,
-available via JMX.
+Enable detailed statistics collection for the server.
 
 [tags]
-handler
+server
 
 [depend]
 server

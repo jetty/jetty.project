@@ -1,5 +1,5 @@
 [description]
-Enables session data store in a local Infinispan cache
+Enables session data store in a local Infinispan cache.
 
 [tags]
 session

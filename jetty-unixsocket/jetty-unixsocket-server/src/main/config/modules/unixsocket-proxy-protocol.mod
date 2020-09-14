@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enables the proxy protocol on the Unix Domain Socket Connector 
+Enables the proxy protocol on the Unix Domain Socket Connector.
 http://www.haproxy.org/download/1.5/doc/proxy-protocol.txt
 This allows information about the proxied connection to be 
 efficiently forwarded as the connection is accepted.

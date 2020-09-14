@@ -1,11 +1,11 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enable the InetAccessHandler to apply a include/exclude
-control of the remote IP of requests.
+Enable the InetAccessHandler.
+Applies a include/exclude control of the remote IP of requests.
 
 [tags]
-handler
+connector
 
 [depend]
 server

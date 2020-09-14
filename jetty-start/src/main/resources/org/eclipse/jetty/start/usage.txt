@@ -82,18 +82,12 @@ Debug and Start Logging:
                    issues where the jetty specific logger has not yet kicked
                    in due to startup configuration errors.
 
-Module Management:
-------------------
+Jetty Module Management:
+------------------------
 
-  --list-modules   List non verbose modules defined by the system.
-                   Looking for module files in ${jetty.base}/modules/*.mod and
+  --list-modules   List Jetty modules defined in ${jetty.base}/modules/*.mod and
                    then ${jetty.home}/modules/*.mod
-                   Will also list enabled state based on information
-                   present on ..
-                    o  The command line
-                    o  The ${jetty.base}/start.ini
-                    o  The ${jetty.base}/start.d/*.ini files
-  
+
   --list-modules=<tag>(,<tag>)*
                    List modules by tag. Use '*' for all tags. Prefix a tag 
                    with '-' to exclude the tag.  The special tag "internal"
@@ -101,6 +95,10 @@ Module Management:
                    
   --list-all-modules
                    List all modules.
+
+  --show-modules=<module>(,<module>)*
+                   Show the detail of the listed modules, including
+                   dependencies, tags, libraries and XMLs
 
   --module=<modulename>(,<modulename>)*
                    Temporarily enable a module from the command line.
@@ -189,7 +187,6 @@ Advanced Commands:
   maven.repo.uri=[url]
                   The url to use to download Maven dependencies.
                   Default is https://repo1.maven.org/maven2/.
-
 
 
 Properties:

@@ -3,6 +3,7 @@ Test keystore with test SSL Certificate.
 DO NOT USE IN PRODUCTION!!!
 
 [tags]
+demo
 ssl
 
 [depend]
