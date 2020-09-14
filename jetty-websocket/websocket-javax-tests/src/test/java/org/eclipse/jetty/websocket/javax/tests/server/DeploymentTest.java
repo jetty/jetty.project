@@ -93,8 +93,13 @@ public class DeploymentTest
         assertThat(error.getMessage(), Matchers.containsString("503 Service Unavailable"));
     }
 
+    /**
+     * This reproduces some classloading issue with MethodHandles in JDK14-15, this has been fixed in JDK16.
+     * @see <a href="https://bugs.openjdk.java.net/browse/JDK-8244090">JDK-8244090</a>
+     * @throws Exception if there is an error during the test.
+     */
     @Test
-    @DisabledOnJre({JRE.JAVA_14, JRE.JAVA_15}) // TODO: Waiting for bug https://bugs.openjdk.java.net/browse/JDK-8244090.
+    @DisabledOnJre({JRE.JAVA_14, JRE.JAVA_15})
     public void testDifferentWebAppsWithSameClassInSignature() throws Exception
     {
         WSServer.WebApp app1 = server.createWebApp("test1");

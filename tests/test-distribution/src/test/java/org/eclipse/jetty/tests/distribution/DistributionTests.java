@@ -412,12 +412,14 @@ public class DistributionTests extends AbstractDistributionTest
         }
     }
 
+    /**
+     * This reproduces some classloading issue with MethodHandles in JDK14-15, this has been fixed in JDK16.
+     * @see <a href="https://bugs.openjdk.java.net/browse/JDK-8244090">JDK-8244090</a>
+     * @throws Exception if there is an error during the test.
+     */
     @ParameterizedTest
-    @ValueSource(strings = {
-        "",
-        "--jpms",
-    })
-    @DisabledOnJre({JRE.JAVA_14, JRE.JAVA_15}) // TODO: Waiting for bug https://bugs.openjdk.java.net/browse/JDK-8244090.
+    @ValueSource(strings = {"", "--jpms"})
+    @DisabledOnJre({JRE.JAVA_14, JRE.JAVA_15})
     public void testSimpleWebAppWithWebsocket(String arg) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
@@ -436,12 +438,8 @@ public class DistributionTests extends AbstractDistributionTest
             assertEquals(0, run1.getExitValue());
 
             File webApp = distribution.resolveArtifact("org.eclipse.jetty.tests:test-websocket-webapp:war:" + jettyVersion);
-            File badWebApp = distribution.resolveArtifact("org.eclipse.jetty.tests:test-bad-websocket-webapp:war:" + jettyVersion);
-
             distribution.installWarFile(webApp, "test1");
-            distribution.installWarFile(badWebApp, "test2");
-            distribution.installWarFile(badWebApp, "test3");
-            distribution.installWarFile(webApp, "test4");
+            distribution.installWarFile(webApp, "test2");
 
             int port = distribution.freePort();
             String[] args2 = {
@@ -469,15 +467,9 @@ public class DistributionTests extends AbstractDistributionTest
                 assertTrue(webSocketListener.closeLatch.await(5, TimeUnit.SECONDS));
                 assertThat(webSocketListener.closeCode, is(StatusCode.NORMAL));
 
-                // Verify that /test2 and /test3 could not be started.
-                ContentResponse response = client.GET(serverUri.resolve("/test2/badonopen/a"));
-                assertEquals(HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus());
-                client.GET("http://localhost:" + port + "/test3/badonopen/a");
-                assertEquals(HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus());
-
-                // Verify /test4 is able to establish a WebSocket connection.
+                // Verify /test2 is able to establish a WebSocket connection.
                 webSocketListener = new WsListener();
-                session = wsClient.connect(webSocketListener, serverUri.resolve("/test4")).get(5, TimeUnit.SECONDS);
+                session = wsClient.connect(webSocketListener, serverUri.resolve("/test2")).get(5, TimeUnit.SECONDS);
                 session.getRemote().sendString("echo message");
                 assertThat(webSocketListener.textMessages.poll(5, TimeUnit.SECONDS), is("echo message"));
                 session.close();
@@ -489,9 +481,9 @@ public class DistributionTests extends AbstractDistributionTest
 
     public static class WsListener implements WebSocketListener
     {
-        BlockingArrayQueue<String> textMessages = new BlockingArrayQueue<>();
-        private CountDownLatch closeLatch = new CountDownLatch(1);
-        private int closeCode;
+        public BlockingArrayQueue<String> textMessages = new BlockingArrayQueue<>();
+        public final CountDownLatch closeLatch = new CountDownLatch(1);
+        public int closeCode;
 
         @Override
         public void onWebSocketClose(int statusCode, String reason)
