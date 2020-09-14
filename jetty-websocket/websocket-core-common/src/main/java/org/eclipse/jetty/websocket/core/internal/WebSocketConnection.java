@@ -250,7 +250,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             public void failed(Throwable cause)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("failed onFrame(" + frame + ")", cause);
+                    LOG.debug("failed onFrame({}) {}", frame, cause.toString());
 
                 frame.close();
                 if (referenced != null)
