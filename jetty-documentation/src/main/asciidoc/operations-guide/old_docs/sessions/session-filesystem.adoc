@@ -24,7 +24,7 @@ The `session-store-file` module supports persistent storage of session data in a
 
 IMPORTANT: Persisting sessions to the local file system should *never* be used in a clustered environment.
 
-Enabling this module creates the `${jetty.base}/sessions` directory.
+Enabling this module creates the `$jetty.base/sessions` directory.
 By default session data will be saved to this directory, one file representing each session.
 
 File names follow this pattern:

@@ -19,6 +19,16 @@
 [[ops-session-usecases]]
 === Session Scenarios
 
+==== Minimizing Support for Sessions
+
+The standard support for webapps in Jetty will use sessions cached in memory, but not persisted/clustered, with a scavenge for expired sessions that occurs every 10mins.
+If you wish to pare back support for sessions because you know your app doesn't use them (or use JSPs that use them), then you can do the following:
+
+* enable the xref:ops-session-base[base sessions module] and xref:ops-session-base[configure the scavenge interval] to 0 to prevent scavenging
+* enable the xref:ops-session-null[null session cache module] to prevent sessions being cached in memory
+
+If you wish to do any further minimization, you should consult the link:{PROGGUIDE}[Programming Guide].
+
 ==== Clustering with a Sticky Load Balancer
 
 Preferably, your cluster will utilize a sticky load balancer.

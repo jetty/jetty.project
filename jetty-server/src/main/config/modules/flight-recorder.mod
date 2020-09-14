@@ -1,4 +1,5 @@
-# Enables Java Mission Control's Flight Recorder for low overhead profiling.
+[description]
+Enables Java Mission Control's Flight Recorder for low overhead profiling.
 
 [depend]
 server

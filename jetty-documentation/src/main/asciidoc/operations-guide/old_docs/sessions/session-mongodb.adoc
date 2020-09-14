@@ -29,7 +29,7 @@ IMPORTANT: If you want to use updated versions of the jar files automatically do
 
 ==== Configuration
 
-The `start.d/session-store-mongo.ini` file contains these configurable properties:
+The `$jetty.base/start.d/session-store-mongo.ini` file contains these configurable properties:
 
 jetty.session.mongo.dbName::
 Default is "HttpSessions".

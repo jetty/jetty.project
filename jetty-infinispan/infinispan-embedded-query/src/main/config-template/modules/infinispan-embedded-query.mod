@@ -1,5 +1,5 @@
 [description]
-Enables querying with the Infinispan cache
+Enables querying with the Infinispan session cache.
 
 [tags]
 session

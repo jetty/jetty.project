@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enables remote RMI access to JMX
+Enables remote RMI access to JMX.
 
 [depend]
 jmx

@@ -1,0 +1,47 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[pg-server-session-sessioncache]]
+==== Session Components: The SessionCache
+
+There is one `SessionCache` per `SessionHandler`, and thus one per context.
+Its purpose is to provide an L1 cache of `Session` objects.
+Having a working set of `Session` objects in memory allows multiple simultaneous requests for the same session to share the same `Session` object.
+A `SessionCache` uses a `SessionDataStore` to create, read, store and delete the `SessionData` associated with the `Session`.
+
+Jetty provides two `SessionCache` implementations: the link:{JDURL}/org/eclipse/jetty/server/session/DefaultSessionCache.html[DefaultSessionCache] and the link:{JDURL}/org/eclipse/jetty/server/session/NullSessionCache.html[NullSessionCache].
+
+[[pg-server-session-hash]]
+===== The DefaultSessionCache
+The `DefaultSessionCache` retains `Session` objects in memory in a cache and has a number of configuration options to control cache behavior.
+It is suitable for non-clustered and clustered deployments with a sticky load balancer, as well as clustered deployments with a non-sticky load balancer, with some caveats.
+
+[[pg-server-session-null]]
+===== The NullSessionCache
+The `NullSessionCache` does not actually cache any objects: each request uses a fresh `Session` object.
+It is suitable for clustered deployments without a sticky load balancer and non-clustered deployments when purely minimal support for sessions is needed.
+
+``SessionCache``s always write out a Session to the link:{JDURL}/org/eclipse/jetty/server/session/SessionDataStore.html[SessionDataStore] whenever the last request for the `Session` exits.
+
+They can also be configured to do an immediate, eager write of a freshly created session.
+This can be useful if you are likely to experience multiple, near simultaneous requests referencing the same session, e.g. with HTTP/2 and you don't have a sticky load balancer.
+Alternatively, if the eager write is not done, application paths which create and then invalidate a session within a single request never incur the cost of writing to persistent storage.
+
+Additionally, if the `EVICT_ON_INACTIVITY` eviction policy is in use, you can xref:#pg-server-session-sessioncache[configure] the `DefaultSessionCache` to force a write of the `Session` to the `SessionDataStore` just before the `Session` is evicted.
+
+See xref:pg-server-session-sessioncache[the L1 Session Cache] for more information.

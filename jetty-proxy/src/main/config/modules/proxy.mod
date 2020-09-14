@@ -1,8 +1,8 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enable the Jetty Proxy, that allows the server to act
-as a non-transparent proxy for browsers.
+Enable the Jetty Proxy.
+Allows the server to act as a non-transparent proxy for browsers.
 
 [depend]
 servlet

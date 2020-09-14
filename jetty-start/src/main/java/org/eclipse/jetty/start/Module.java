@@ -529,7 +529,7 @@ public class Module implements Comparable<Module>
 
     public String getPrimaryTag()
     {
-        return _tags.isEmpty() ? "*" : _tags.get(0);
+        return _tags.isEmpty() ? "untagged" : _tags.get(0);
     }
 
     public boolean isEnabled()

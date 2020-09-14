@@ -1,10 +1,9 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Adds a forwarded request customizer to the HTTP configuration used
-by the Unix Domain Socket connector, for use when behind a proxy operating
-in HTTP mode that adds forwarded-for style HTTP headers. Typically this
-is an alternate to the Proxy Protocol used mostly for TCP mode.
+Adds a forwarded request customizer for the  Unix Domain Socket connector.
+For use when behind a proxy operating in HTTP mode that adds forwarded-for style HTTP headers. 
+Typically this is an alternate to the Proxy Protocol used mostly for TCP mode.
 
 [tags]
 connector

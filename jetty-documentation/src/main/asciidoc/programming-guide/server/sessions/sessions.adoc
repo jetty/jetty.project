@@ -22,6 +22,6 @@
 Sessions are a concept within the Servlet API which allow requests to store and retrieve information across the time a user spends in an application.
 
 include::session-architecture.adoc[]
-include::session-components.adoc[]
-
-
+include::session-sessionidmgr.adoc[]
+include::session-sessioncache.adoc[]
+include::session-sessiondatastore.adoc[]

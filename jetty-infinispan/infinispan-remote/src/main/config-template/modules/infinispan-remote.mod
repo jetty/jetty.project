@@ -1,5 +1,5 @@
 [description]
-Default setup for the remote infinispan cache without queries
+Default setup for the remote infinispan cache without queries.
 
 [tags]
 session

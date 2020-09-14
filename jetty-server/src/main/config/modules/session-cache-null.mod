@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-A trivial SessionCache that does not actually cache sessions.
+A SessionCache that does not actually cache sessions.
 
 [tags]
 session

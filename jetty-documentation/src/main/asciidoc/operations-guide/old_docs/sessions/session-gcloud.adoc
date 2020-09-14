@@ -78,7 +78,7 @@ IMPORTANT: If you want to use updated versions of the jar files automatically do
 
 ==== Configuration
 
-The `start.d/session-store-gcloud.ini` file contains all of the configurable properties for the `session-store-gcloud` module:
+The `$jetty.base/start.d/session-store-gcloud.ini` file contains all of the configurable properties for the `session-store-gcloud` module:
 
 jetty.session.gcloud.maxRetries::
 Integer.

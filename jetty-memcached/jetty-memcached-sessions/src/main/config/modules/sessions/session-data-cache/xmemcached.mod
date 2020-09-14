@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Memcache cache for SessionData
+Memcache cache for SessionData.
 
 [tags]
 session

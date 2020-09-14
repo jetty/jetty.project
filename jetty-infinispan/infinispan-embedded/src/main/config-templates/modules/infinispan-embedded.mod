@@ -1,5 +1,5 @@
 [description]
-Setup infinispan embedded without querying
+Setup infinispan embedded without querying.
 
 [tags]
 session

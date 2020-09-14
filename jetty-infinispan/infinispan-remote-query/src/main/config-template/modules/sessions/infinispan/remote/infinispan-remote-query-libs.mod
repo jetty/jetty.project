@@ -1,9 +1,10 @@
 [description]
-The Infinispan remote query libraries
+The Infinispan remote query libraries.
 
 [tags]
 3rdparty
 infinispan
+internal
 
 [license]
 Infinispan is an open source project hosted on Github and released under the Apache 2.0 license.

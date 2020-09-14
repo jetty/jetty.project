@@ -5,6 +5,7 @@ Hides Infinispan classes from webapp.
 session
 3rdparty
 infinispan
+internal
 
 
 [ini]
