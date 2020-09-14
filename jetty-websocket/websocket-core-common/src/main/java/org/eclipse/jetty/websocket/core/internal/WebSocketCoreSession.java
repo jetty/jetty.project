@@ -391,7 +391,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     public void processConnectionError(Throwable cause, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("processConnectionError {} {}", this, cause.toString());
+            LOG.debug("processConnectionError {}", this, cause);
 
         int code;
         if (cause instanceof CloseException)
@@ -425,7 +425,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     public void processHandlerError(Throwable cause, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("processHandlerError {} {}", this, cause.toString());
+            LOG.debug("processHandlerError {}", this, cause);
 
         int code;
         if (cause instanceof CloseException)
@@ -554,9 +554,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
         }
         catch (Throwable t)
         {
-            if (LOG.isDebugEnabled())
-                LOG.warn("Invalid outgoing frame: {}", frame, t);
-
+            LOG.warn("Invalid outgoing frame: {}", frame, t);
             callback.failed(t);
             return;
         }

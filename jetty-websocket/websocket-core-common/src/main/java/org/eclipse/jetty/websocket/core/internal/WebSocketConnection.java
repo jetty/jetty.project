@@ -470,7 +470,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         catch (Throwable t)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Error during fillAndParse()", t);
+                LOG.debug("Error during fillAndParse() {}", t.toString());
 
             if (networkBuffer != null)
             {
