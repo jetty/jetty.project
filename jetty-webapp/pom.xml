@@ -42,7 +42,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-modules org.eclipse.jetty.jmx
+            @{argLine} ${jetty.surefire.argLine}
           </argLine>
           <useManifestOnlyJar>false</useManifestOnlyJar>
           <additionalClasspathElements>
