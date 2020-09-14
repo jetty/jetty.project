@@ -202,7 +202,7 @@ public class BaseBuilder
                 List<String> startLines = new ArrayList<>();
                 for (Path path : paths)
                 {
-                    StartLog.info("cp " + baseHome.toShortForm(path) + " to " + baseHome.toShortForm(startini));
+                    StartLog.info("copy " + baseHome.toShortForm(path) + " to " + baseHome.toShortForm(startini));
                     startLines.add("");
                     startLines.add("# Config from " + baseHome.toShortForm(path));
                     startLines.addAll(Files.readAllLines(path));
