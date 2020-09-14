@@ -771,7 +771,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
-          <version>1.6.0</version>
+          <version>3.0.0</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
@@ -952,9 +952,9 @@
           </configuration>
         </plugin>
         <plugin>
-          <groupId>com.github.madgnome</groupId>
+          <groupId>org.mortbay.jetty</groupId>
           <artifactId>h2spec-maven-plugin</artifactId>
-          <version>0.6</version>
+          <version>1.0.0</version>
         </plugin>
       </plugins>
     </pluginManagement>

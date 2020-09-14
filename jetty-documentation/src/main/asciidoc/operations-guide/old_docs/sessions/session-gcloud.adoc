@@ -16,9 +16,9 @@
 // ========================================================================
 //
 
-[[op-session-gcloud]]
+[[ops-session-gcloud]]
 
-=== Persistent Sessions: Google Cloud DataStore
+=== Modules for Persistent Sessions: Google Cloud DataStore
 
 Jetty can store http session information into GCloud by enabling the `session-store-gcloud` module.
 
@@ -76,7 +76,7 @@ You can then choose one and enable it.
 
 IMPORTANT: If you want to use updated versions of the jar files automatically downloaded during the module enablement, you can place them in the associated `${jetty.base}/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
 
-==== Configuring GCloud Session Properties
+==== Configuration
 
 The `start.d/session-store-gcloud.ini` file contains all of the configurable properties for the `session-store-gcloud` module:
 
@@ -91,18 +91,19 @@ Number of milliseconds between successive attempts to connect to the GCloud Data
 jetty.session.gracePeriod.seconds::
 Integer, in seconds.
 Default 3600.
-Used during session scavenging.
-Multiples of this period are used to define how long ago a stored session must have expired before it should be scavenged.
+Used during session xref:session-base-scavenge[scavenging].
+Multiples of this period are used to define how long ago a stored session must have expired before it should be xref:session-base-scavenge[scavenged].
 jetty.session.savePeriod.seconds::
-By default whenever the last concurrent request leaves a session, that session is always persisted via the `SessionDataStore`, even if the only thing that changed on the session is its updated last access time.
-A non-zero value means that the `SessionDataStore` will skip persisting the session if only the access time changed, and it has been less than `savePeriod` seconds since the last time the session was written.
+Integer, in seconds, default is `0`.
+Whenever a session is accessed by a request, its `lastAccessTime` and `expiry` are updated.
+Even if your sessions are read-mostly, the `lastAccessTime` and  `expiry` will always change.
+For heavily-used, read-mostly sessions you can save some time by skipping some writes for sessions for which only these fields have changed (ie no session attributes changed).
+The value of this property is used to skip writes for these kinds of sessions: the session will only be written out if the time since the last write exceeds the value of this property.
 
-[NOTE]
+[WARNING]
 ====
-Configuring `savePeriod` is useful if your persistence technology is very slow/costly for writes.
-In a clustered environment, there is a risk of the last access time of the session being out-of-date in the shared store for up to `savePeriod` seconds.
-This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
-Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
+You should be careful in the use of this property in clustered environments: if you set too large a value for this property, the session may not be written out sufficiently often to update its `expiry` time thus making it appear to other nodes that it has expired.
+Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - it would be undesirable to set a `savePeriod` that is larger than the `maxIdleTime`.
 ====
 
 jetty.session.gcloud.namespace::
