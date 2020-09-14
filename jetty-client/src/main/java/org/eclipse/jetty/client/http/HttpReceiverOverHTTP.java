@@ -52,6 +52,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     private boolean shutdown;
     private boolean complete;
     private boolean unsolicited;
+    private int status;
 
     public HttpReceiverOverHTTP(HttpChannelOverHTTP channel)
     {
@@ -132,17 +133,18 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
     protected ByteBuffer onUpgradeFrom()
     {
+        ByteBuffer upgradeBuffer = null;
         if (networkBuffer.hasRemaining())
         {
             HttpClient client = getHttpDestination().getHttpClient();
-            ByteBuffer upgradeBuffer = BufferUtil.allocate(networkBuffer.remaining(), client.isUseInputDirectByteBuffers());
+            upgradeBuffer = BufferUtil.allocate(networkBuffer.remaining(), client.isUseInputDirectByteBuffers());
             BufferUtil.clearToFill(upgradeBuffer);
             BufferUtil.put(networkBuffer.getBuffer(), upgradeBuffer);
             BufferUtil.flipToFlush(upgradeBuffer, 0);
-            return upgradeBuffer;
         }
+
         releaseNetworkBuffer();
-        return null;
+        return upgradeBuffer;
     }
 
     private void process()
@@ -230,15 +232,19 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             if (LOG.isDebugEnabled())
                 LOG.debug("Parse complete={}, remaining {} {}", complete, networkBuffer.remaining(), parser);
 
+            if (complete)
+            {
+                int status = this.status;
+                this.status = 0;
+                if (status == HttpStatus.SWITCHING_PROTOCOLS_101)
+                    return true;
+            }
+
             if (networkBuffer.isEmpty())
                 return false;
 
             if (complete)
             {
-                HttpExchange httpExchange = getHttpExchange();
-                if (httpExchange != null && httpExchange.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
-                    return true;
-
                 if (LOG.isDebugEnabled())
                     LOG.debug("Discarding unexpected content after response: {}", networkBuffer);
                 networkBuffer.clear();
@@ -281,6 +287,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (exchange == null)
             return;
 
+        this.status = status;
         String method = exchange.getRequest().getMethod();
         parser.setHeadResponse(HttpMethod.HEAD.is(method) ||
             (HttpMethod.CONNECT.is(method) && status == HttpStatus.OK_200));

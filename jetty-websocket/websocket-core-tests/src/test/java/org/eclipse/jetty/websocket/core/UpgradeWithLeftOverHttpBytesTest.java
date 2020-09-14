@@ -116,7 +116,7 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
         serverSocket.getOutputStream().write(toByteArray(closeFrame));
 
         // First payload sent with upgrade request, delay to ensure HttpConnection is not still reading from network.
-        Thread.sleep(4000);
+        Thread.sleep(1000);
         onOpenWait.countDown();
         assertTrue(clientEndpoint.openLatch.await(5, TimeUnit.SECONDS));
         assertThat(clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS), is("first message payload"));
