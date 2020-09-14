@@ -1277,7 +1277,7 @@ public class StartArgs
             licenseCheckRequired = true;
             return;
         }
-        if (arg.startsWith("--add-module=") || arg.startsWith("--add-to-start=") || arg.startsWith("--add-to-startd="))
+        if (arg.startsWith("--add-module=") || arg.startsWith("--add-modules=") || arg.startsWith("--add-to-start=") || arg.startsWith("--add-to-startd="))
         {
             if (arg.startsWith("--add-to-start=") || arg.startsWith("--add-to-startd="))
             {

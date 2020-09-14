@@ -128,11 +128,11 @@ public class BaseBuilder
         {
             for (String name : startArgs.getStartModules())
             {
-                newlyAdded.addAll(modules.enable(name, "--add-to-start"));
+                newlyAdded.addAll(modules.enable(name, "--add-module"));
                 if (!newlyAdded.contains(name))
                 {
                     Set<String> sources = modules.get(name).getEnableSources();
-                    sources.remove("--add-to-start");
+                    sources.remove("--add-module");
                     StartLog.info("%s already enabled by %s", name, sources);
                 }
             }
@@ -176,7 +176,7 @@ public class BaseBuilder
         {
             if (!Files.exists(startini))
             {
-                StartLog.log("INFO", "create " + baseHome.toShortForm(startini));
+                StartLog.info("create " + baseHome.toShortForm(startini));
                 Files.createFile(startini);
                 modified.set(true);
             }
@@ -202,7 +202,7 @@ public class BaseBuilder
                 List<String> startLines = new ArrayList<>();
                 for (Path path : paths)
                 {
-                    StartLog.log("INFO", "cp " + baseHome.toShortForm(path) + " to " + baseHome.toShortForm(startini));
+                    StartLog.info("cp " + baseHome.toShortForm(path) + " to " + baseHome.toShortForm(startini));
                     startLines.add("");
                     startLines.add("# Config from " + baseHome.toShortForm(path));
                     startLines.addAll(Files.readAllLines(path));
@@ -226,7 +226,7 @@ public class BaseBuilder
         {
             if (!Files.exists(startini) && !Files.exists(startd) && FS.ensureDirectoryExists(startd))
             {
-                StartLog.log("INFO", "mkdir " + baseHome.toShortForm(startd));
+                StartLog.info("mkdir " + baseHome.toShortForm(startd));
                 modified.set(true);
             }
 
@@ -274,7 +274,7 @@ public class BaseBuilder
                 else if (module.isTransitive())
                 {
                     if (module.hasIniTemplate())
-                        StartLog.info("%-15s transitively enabled, ini template available with --add-to-start=%s",
+                        StartLog.info("%-15s transitively enabled, ini template available with --add-module=%s",
                             module.getName(),
                             module.getName());
                     else

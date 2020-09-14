@@ -85,7 +85,7 @@ public class Licensing
         String propBasedAckValue = System.getProperty(PROP_ACK_LICENSES);
         if (propBasedAckValue != null)
         {
-            StartLog.log("TESTING MODE", "Programmatic ACK - %s=%s", PROP_ACK_LICENSES, propBasedAckValue);
+            StartLog.info("Programmatic ACK - %s=%s", PROP_ACK_LICENSES, propBasedAckValue);
             licenseAck = Boolean.parseBoolean(propBasedAckValue);
         }
         else

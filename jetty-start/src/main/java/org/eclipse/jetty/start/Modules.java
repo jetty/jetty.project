@@ -193,7 +193,7 @@ public class Modules implements Iterable<Module>
                 name = "";
             }
             if (module.isTransitive() && module.hasIniTemplate())
-                System.out.printf("                       init template available with --add-to-start=%s%n", module.getName());
+                System.out.printf("                       init template available with --add-module=%s%n", module.getName());
         }
     }
 
