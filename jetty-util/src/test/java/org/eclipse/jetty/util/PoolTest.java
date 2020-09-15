@@ -33,9 +33,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.util.stream.Collectors.toList;
-import static org.eclipse.jetty.util.Pool.Strategy.FIRST;
-import static org.eclipse.jetty.util.Pool.Strategy.RANDOM;
-import static org.eclipse.jetty.util.Pool.Strategy.ROUND_ROBIN;
+import static org.eclipse.jetty.util.Pool.StrategyType.FIRST;
+import static org.eclipse.jetty.util.Pool.StrategyType.RANDOM;
+import static org.eclipse.jetty.util.Pool.StrategyType.ROUND_ROBIN;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;

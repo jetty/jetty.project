@@ -1198,7 +1198,7 @@ jetty-9.4.4.v20170414 - 14 April 2017
    encoding
  + 1436 NullPointerException when calling changeSessionId
  + 1439 Allow UNC paths to function as Resource bases
- + 1440 Improve lock contention for low resources scheduling strategy
+ + 1440 Improve lock contention for low resources scheduling strategyType
  + 1444 Deprecate Continuations
  + 1448 StackOverflowError when using URLStreamHandlerFactory in
    WebAppClassloader

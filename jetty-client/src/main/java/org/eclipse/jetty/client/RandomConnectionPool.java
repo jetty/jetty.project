@@ -18,9 +18,8 @@
 
 package org.eclipse.jetty.client;
 
-import java.util.concurrent.ThreadLocalRandom;
-
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /**
@@ -28,16 +27,11 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
  * randomly among the ones that are available.</p>
  */
 @ManagedObject
-public class RandomConnectionPool extends IndexedConnectionPool
+public class RandomConnectionPool extends MultiplexConnectionPool
 {
     public RandomConnectionPool(HttpDestination destination, int maxConnections, Callback requester, int maxMultiplex)
     {
-        super(destination, maxConnections, requester, maxMultiplex);
+        super(destination, new Pool<>(Pool.StrategyType.RANDOM, maxConnections, false), requester, maxMultiplex);
     }
 
-    @Override
-    protected int getIndex(int maxConnections)
-    {
-        return ThreadLocalRandom.current().nextInt(maxConnections);
-    }
 }

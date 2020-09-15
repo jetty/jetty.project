@@ -69,7 +69,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
     private final int maxEntries;
     private final AtomicInteger pending = new AtomicInteger();
-    private final Strategy strategy;
+    private final StrategyType strategyType;
 
     /*
      * The cache is used to avoid hammering on the first index of the entry list.
@@ -86,7 +86,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
     private volatile int maxMultiplex = 1;
     private volatile int maxUsageCount = -1;
 
-    public enum Strategy
+    public enum StrategyType
     {
         /**
          * A strategy that looks for an entry always starting from the first entry.
@@ -122,27 +122,27 @@ public class Pool<T> implements AutoCloseable, Dumpable
      * Construct a Pool with a specified lookup strategy and no
      * {@link ThreadLocal} cache.
      *
-     * @param strategy The strategy to used for looking up entries.
+     * @param strategyType The strategy to used for looking up entries.
      * @param maxEntries the maximum amount of entries that the pool will accept.
      */
-    public Pool(Strategy strategy, int maxEntries)
+    public Pool(StrategyType strategyType, int maxEntries)
     {
-        this(strategy, maxEntries, false);
+        this(strategyType, maxEntries, false);
     }
 
     /**
      * Construct a Pool with the specified thread-local cache size and
      * an optional {@link ThreadLocal} cache.
-     * @param strategy The strategy to used for looking up entries.
+     * @param strategyType The strategy to used for looking up entries.
      * @param maxEntries the maximum amount of entries that the pool will accept.
      * @param cache True if a {@link ThreadLocal} cache should be used to try the most recently released entry.
      */
-    public Pool(Strategy strategy, int maxEntries, boolean cache)
+    public Pool(StrategyType strategyType, int maxEntries, boolean cache)
     {
         this.maxEntries = maxEntries;
-        this.strategy = strategy;
-        this.cache = cache ? new ThreadLocal() : null;
-        nextIndex = strategy == Strategy.ROUND_ROBIN ? new AtomicInteger() : null;
+        this.strategyType = strategyType;
+        this.cache = cache ? new ThreadLocal<>() : null;
+        nextIndex = strategyType == StrategyType.ROUND_ROBIN ? new AtomicInteger() : null;
     }
 
     public int getReservedCount()
@@ -284,6 +284,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
             catch (IndexOutOfBoundsException e)
             {
                 LOGGER.ignore(e);
+                size = entries.size();
             }
             index = (index + 1) % size;
         }
@@ -292,7 +293,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
     private int startIndex(int size)
     {
-        switch (strategy)
+        switch (strategyType)
         {
             case FIRST:
                 return 0;
@@ -303,7 +304,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
             case THREAD_ID:
                 return (int)(Thread.currentThread().getId() % size);
             default:
-                throw new IllegalArgumentException("Unknown strategy: " + strategy);
+                throw new IllegalArgumentException("Unknown strategy type: " + strategyType);
         }
     }
 

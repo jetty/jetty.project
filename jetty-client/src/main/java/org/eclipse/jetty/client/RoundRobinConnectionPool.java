@@ -18,9 +18,8 @@
 
 package org.eclipse.jetty.client;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /**
@@ -48,10 +47,8 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
  * @see RandomConnectionPool
  */
 @ManagedObject
-public class RoundRobinConnectionPool extends IndexedConnectionPool
+public class RoundRobinConnectionPool extends MultiplexConnectionPool
 {
-    private final AtomicInteger offset = new AtomicInteger();
-
     public RoundRobinConnectionPool(HttpDestination destination, int maxConnections, Callback requester)
     {
         this(destination, maxConnections, requester, 1);
@@ -59,17 +56,11 @@ public class RoundRobinConnectionPool extends IndexedConnectionPool
 
     public RoundRobinConnectionPool(HttpDestination destination, int maxConnections, Callback requester, int maxMultiplex)
     {
-        super(destination, maxConnections, requester, maxMultiplex);
+        super(destination, new Pool<>(Pool.StrategyType.ROUND_ROBIN, maxConnections, false), requester, maxMultiplex);
         // If there are queued requests and connections get
         // closed due to idle timeout or overuse, we want to
         // aggressively try to open new connections to replace
         // those that were closed to process queued requests.
         setMaximizeConnections(true);
-    }
-
-    @Override
-    protected int getIndex(int maxConnections)
-    {
-        return offset.getAndUpdate(v -> ++v == maxConnections ? 0 : v);
     }
 }

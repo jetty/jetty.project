@@ -33,6 +33,7 @@ import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -41,7 +42,7 @@ import org.eclipse.jetty.util.thread.Sweeper;
 import static java.util.stream.Collectors.toCollection;
 
 @ManagedObject
-public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable, Sweeper.Sweepable
+public abstract class AbstractConnectionPool extends ContainerLifeCycle implements ConnectionPool, Dumpable, Sweeper.Sweepable
 {
     private static final Logger LOG = Log.getLogger(AbstractConnectionPool.class);
 
@@ -56,21 +57,26 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
     @Deprecated
     protected AbstractConnectionPool(Destination destination, int maxConnections, Callback requester)
     {
-        this((HttpDestination)destination, maxConnections, true, requester);
+        this((HttpDestination)destination, maxConnections, false, requester);
     }
 
     protected AbstractConnectionPool(HttpDestination destination, int maxConnections, boolean cache, Callback requester)
     {
+        this(destination, new Pool<>(Pool.StrategyType.FIRST, maxConnections, cache), requester);
+    }
+
+    protected AbstractConnectionPool(HttpDestination destination, Pool<Connection> pool, Callback requester)
+    {
         this.destination = destination;
         this.requester = requester;
-        @SuppressWarnings("unchecked")
-        Pool<Connection> pool = destination.getBean(Pool.class);
-        if (pool == null)
-        {
-            pool = new Pool<>(Pool.Strategy.FIRST, maxConnections, cache);
-            destination.addBean(pool);
-        }
         this.pool = pool;
+        addBean(pool);
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        pool.close();
     }
 
     @Override

@@ -70,16 +70,16 @@ public class PoolStrategyBenchmark
         switch (POOL_TYPE)
         {
             case "Pool.Linear" :
-                pool = new Pool<>(Pool.Strategy.FIRST, SIZE, CACHE);
+                pool = new Pool<>(Pool.StrategyType.FIRST, SIZE, CACHE);
                 break;
             case "Pool.Random" :
-                pool = new Pool<>(Pool.Strategy.RANDOM, SIZE, CACHE);
+                pool = new Pool<>(Pool.StrategyType.RANDOM, SIZE, CACHE);
                 break;
             case "Pool.ThreadId" :
-                pool = new Pool<>(Pool.Strategy.THREAD_ID, SIZE, CACHE);
+                pool = new Pool<>(Pool.StrategyType.THREAD_ID, SIZE, CACHE);
                 break;
             case "Pool.RoundRobin" :
-                pool = new Pool<>(Pool.Strategy.ROUND_ROBIN, SIZE, CACHE);
+                pool = new Pool<>(Pool.StrategyType.ROUND_ROBIN, SIZE, CACHE);
                 break;
 
             default:
