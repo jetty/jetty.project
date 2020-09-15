@@ -629,6 +629,9 @@ public class ServletHandler extends ScopedHandler
                 return chain;
         }
 
+        // Build the filter chain from the inside out.
+        // ie first wrap the servlet with the last filter to be applied.
+        // The mappings lists have been reversed to make this simple and fast.
         FilterChain chain = null;
 
         if (servletHolder != null && _filterNameMappings != null && !_filterNameMappings.isEmpty())
