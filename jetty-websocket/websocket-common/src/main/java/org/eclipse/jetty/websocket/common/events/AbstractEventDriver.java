@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.common.events;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
@@ -42,7 +43,7 @@ import org.eclipse.jetty.websocket.common.message.MessageAppender;
  */
 public abstract class AbstractEventDriver extends AbstractLifeCycle implements IncomingFrames, EventDriver
 {
-    private static final Logger LOG = Log.getLogger(AbstractEventDriver.class);
+    private final Logger logger;
     protected final Logger targetLog;
     protected WebSocketPolicy policy;
     protected final Object websocket;
@@ -51,8 +52,9 @@ public abstract class AbstractEventDriver extends AbstractLifeCycle implements I
 
     public AbstractEventDriver(WebSocketPolicy policy, Object websocket)
     {
+        this.logger = Log.getLogger(this.getClass());
         this.policy = policy;
-        this.websocket = websocket;
+        this.websocket = Objects.requireNonNull(websocket, "WebSocket endpoint may not be null");
         this.targetLog = Log.getLogger(websocket.getClass());
     }
 
@@ -87,9 +89,9 @@ public abstract class AbstractEventDriver extends AbstractLifeCycle implements I
     @Override
     public void incomingFrame(Frame frame)
     {
-        if (LOG.isDebugEnabled())
+        if (logger.isDebugEnabled())
         {
-            LOG.debug("incomingFrame({})", frame);
+            logger.debug("incomingFrame({})", frame);
         }
 
         try
@@ -112,9 +114,9 @@ public abstract class AbstractEventDriver extends AbstractLifeCycle implements I
                 }
                 case OpCode.PING:
                 {
-                    if (LOG.isDebugEnabled())
+                    if (logger.isDebugEnabled())
                     {
-                        LOG.debug("PING: {}", BufferUtil.toDetailString(frame.getPayload()));
+                        logger.debug("PING: {}", BufferUtil.toDetailString(frame.getPayload()));
                     }
                     ByteBuffer pongBuf;
                     if (frame.hasPayload())
@@ -133,9 +135,9 @@ public abstract class AbstractEventDriver extends AbstractLifeCycle implements I
                 }
                 case OpCode.PONG:
                 {
-                    if (LOG.isDebugEnabled())
+                    if (logger.isDebugEnabled())
                     {
-                        LOG.debug("PONG: {}", BufferUtil.toDetailString(frame.getPayload()));
+                        logger.debug("PONG: {}", BufferUtil.toDetailString(frame.getPayload()));
                     }
                     onPong(frame.getPayload());
                     break;
@@ -157,8 +159,8 @@ public abstract class AbstractEventDriver extends AbstractLifeCycle implements I
                 }
                 default:
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Unhandled OpCode: {}", opcode);
+                    if (logger.isDebugEnabled())
+                        logger.debug("Unhandled OpCode: {}", opcode);
                 }
             }
         }
@@ -202,10 +204,9 @@ public abstract class AbstractEventDriver extends AbstractLifeCycle implements I
     @Override
     public void openSession(WebSocketSession session)
     {
-        if (LOG.isDebugEnabled())
+        if (logger.isDebugEnabled())
         {
-            LOG.debug("openSession({})", session);
-            LOG.debug("objectFactory={}", session.getContainerScope().getObjectFactory());
+            logger.debug("openSession({}) objectFactory={}", session, session.getContainerScope().getObjectFactory());
         }
         this.session = session;
         this.session.getContainerScope().getObjectFactory().decorate(this.websocket);

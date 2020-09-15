@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.http2.server;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
@@ -72,9 +73,9 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
         }
 
         if (windowFrame == null)
-            frames(null, Callback.NOOP, settingsFrame, Frame.EMPTY_ARRAY);
+            frames(null, Collections.singletonList(settingsFrame), Callback.NOOP);
         else
-            frames(null, Callback.NOOP, settingsFrame, windowFrame);
+            frames(null, Arrays.asList(settingsFrame, windowFrame), Callback.NOOP);
     }
 
     @Override

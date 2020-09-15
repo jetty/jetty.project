@@ -30,7 +30,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -603,7 +602,8 @@ public class HttpClient extends ContainerLifeCycle
             @Override
             public void succeeded(List<InetSocketAddress> socketAddresses)
             {
-                Map<String, Object> context = new HashMap<>();
+                // Multiple threads may access the map, especially with DEBUG logging enabled.
+                Map<String, Object> context = new ConcurrentHashMap<>();
                 context.put(ClientConnectionFactory.CONNECTOR_CONTEXT_KEY, HttpClient.this);
                 context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, destination);
                 connect(socketAddresses, 0, context);

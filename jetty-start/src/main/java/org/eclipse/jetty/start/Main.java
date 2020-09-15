@@ -206,7 +206,7 @@ public class Main
 
         StartLog.debug("%s - %s", invokedClass, invokedClass.getPackage().getImplementationVersion());
 
-        CommandLineBuilder cmd = args.getMainArgs(false);
+        CommandLineBuilder cmd = args.getMainArgs(StartArgs.ARG_PARTS);
         String[] argArray = cmd.getArgs().toArray(new String[0]);
         StartLog.debug("Command Line Args: %s", cmd.toString());
 
@@ -415,7 +415,7 @@ public class Main
         // Show Command Line to execute Jetty
         if (args.isDryRun())
         {
-            CommandLineBuilder cmd = args.getMainArgs(true);
+            CommandLineBuilder cmd = args.getMainArgs(args.getDryRunParts());
             System.out.println(cmd.toString(StartLog.isDebugEnabled() ? " \\\n" : " "));
         }
 
@@ -454,7 +454,7 @@ public class Main
         // execute Jetty in another JVM
         if (args.isExec())
         {
-            CommandLineBuilder cmd = args.getMainArgs(true);
+            CommandLineBuilder cmd = args.getMainArgs(StartArgs.ALL_PARTS);
             cmd.debug();
             ProcessBuilder pbuilder = new ProcessBuilder(cmd.getArgs());
             StartLog.endStartLog();

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.http2.client;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -127,11 +128,11 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
             if (windowDelta > 0)
             {
                 session.updateRecvWindow(windowDelta);
-                session.frames(null, this, prefaceFrame, settingsFrame, new WindowUpdateFrame(0, windowDelta));
+                session.frames(null, Arrays.asList(prefaceFrame, settingsFrame, new WindowUpdateFrame(0, windowDelta)), this);
             }
             else
             {
-                session.frames(null, this, prefaceFrame, settingsFrame);
+                session.frames(null, Arrays.asList(prefaceFrame, settingsFrame), this);
             }
         }
 

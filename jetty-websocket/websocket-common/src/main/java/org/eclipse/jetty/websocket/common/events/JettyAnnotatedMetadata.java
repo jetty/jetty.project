@@ -24,27 +24,27 @@ import org.eclipse.jetty.websocket.common.events.annotated.OptionalSessionCallab
 public class JettyAnnotatedMetadata
 {
     /**
-     * &#064;OnWebSocketConnect ()
+     * {@code @OnWebSocketConnect ()}
      */
     public CallableMethod onConnect;
     /**
-     * &#064;OnWebSocketMessage (byte[], or ByteBuffer, or InputStream)
+     * {@code @OnWebSocketMessage (byte[], or ByteBuffer, or InputStream)}
      */
     public OptionalSessionCallableMethod onBinary;
     /**
-     * &#064;OnWebSocketMessage (String, or Reader)
+     * {@code @OnWebSocketMessage (String, or Reader)}
      */
     public OptionalSessionCallableMethod onText;
     /**
-     * &#064;OnWebSocketFrame (Frame)
+     * {@code @OnWebSocketFrame (Frame)}
      */
     public OptionalSessionCallableMethod onFrame;
     /**
-     * &#064;OnWebSocketError (Throwable)
+     * {@code @OnWebSocketError (Throwable)}
      */
     public OptionalSessionCallableMethod onError;
     /**
-     * &#064;OnWebSocketClose (Frame)
+     * {@code @OnWebSocketClose (Frame)}
      */
     public OptionalSessionCallableMethod onClose;
 
@@ -52,7 +52,8 @@ public class JettyAnnotatedMetadata
     public String toString()
     {
         StringBuilder s = new StringBuilder();
-        s.append("JettyPojoMetadata[");
+        s.append(this.getClass().getSimpleName());
+        s.append("[");
         s.append("onConnect=").append(onConnect);
         s.append(",onBinary=").append(onBinary);
         s.append(",onText=").append(onText);

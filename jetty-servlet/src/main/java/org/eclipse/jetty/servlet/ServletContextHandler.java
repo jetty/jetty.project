@@ -34,6 +34,7 @@ import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
+import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
@@ -68,6 +69,7 @@ import org.eclipse.jetty.util.DeprecationWarning;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -336,9 +338,15 @@ public class ServletContextHandler extends ContextHandler
     @Override
     protected void startContext() throws Exception
     {
-        ServletContainerInitializerCaller sciBean = getBean(ServletContainerInitializerCaller.class);
-        if (sciBean != null)
-            sciBean.start();
+        for (ServletContainerInitializerCaller  sci : getBeans(ServletContainerInitializerCaller.class))
+        {
+            if (sci.isStopped())
+            {
+                sci.start();
+                if (isAuto(sci))
+                    manage(sci);
+            }
+        }
 
         if (_servletHandler != null)
         {
@@ -749,13 +757,13 @@ public class ServletContextHandler extends ContextHandler
 
     public static class JspPropertyGroup implements JspPropertyGroupDescriptor
     {
-        private List<String> _urlPatterns = new ArrayList<>();
+        private final List<String> _urlPatterns = new ArrayList<>();
         private String _elIgnored;
         private String _pageEncoding;
         private String _scriptingInvalid;
         private String _isXml;
-        private List<String> _includePreludes = new ArrayList<>();
-        private List<String> _includeCodas = new ArrayList<>();
+        private final List<String> _includePreludes = new ArrayList<>();
+        private final List<String> _includeCodas = new ArrayList<>();
         private String _deferredSyntaxAllowedAsLiteral;
         private String _trimDirectiveWhitespaces;
         private String _defaultContentType;
@@ -1001,8 +1009,8 @@ public class ServletContextHandler extends ContextHandler
 
     public static class JspConfig implements JspConfigDescriptor
     {
-        private List<TaglibDescriptor> _taglibs = new ArrayList<>();
-        private List<JspPropertyGroupDescriptor> _jspPropertyGroups = new ArrayList<>();
+        private final List<TaglibDescriptor> _taglibs = new ArrayList<>();
+        private final List<JspPropertyGroupDescriptor> _jspPropertyGroups = new ArrayList<>();
 
         public JspConfig()
         {
@@ -1474,7 +1482,7 @@ public class ServletContextHandler extends ContextHandler
      */
     private static class LegacyDecorator implements Decorator
     {
-        private org.eclipse.jetty.util.Decorator decorator;
+        private final org.eclipse.jetty.util.Decorator decorator;
 
         public LegacyDecorator(org.eclipse.jetty.util.Decorator decorator)
         {
@@ -1491,6 +1499,45 @@ public class ServletContextHandler extends ContextHandler
         public void destroy(Object o)
         {
             decorator.destroy(o);
+        }
+    }
+
+    /**
+     * A utility class to hold a {@link ServletContainerInitializer} and implement the
+     * {@link ServletContainerInitializerCaller} interface so that the SCI is correctly
+     * started if an instance of this class is added as a bean to a {@link ServletContextHandler}.
+     */
+    public static class Initializer extends AbstractLifeCycle implements ServletContainerInitializerCaller
+    {
+        private final ServletContextHandler _context;
+        private final ServletContainerInitializer _sci;
+        private final Set<Class<?>> _classes;
+
+        public Initializer(ServletContextHandler context, ServletContainerInitializer sci, Set<Class<?>> classes)
+        {
+            _context = context;
+            _sci = sci;
+            _classes = classes;
+        }
+
+        public Initializer(ServletContextHandler context, ServletContainerInitializer sci)
+        {
+            this(context, sci, Collections.emptySet());
+        }
+
+        @Override
+        protected void doStart() throws Exception
+        {
+            boolean oldExtended = _context.getServletContext().isExtendedListenerTypes();
+            try
+            {
+                _context.getServletContext().setExtendedListenerTypes(true);
+                _sci.onStartup(_classes, _context.getServletContext());
+            }
+            finally
+            {
+                _context.getServletContext().setExtendedListenerTypes(oldExtended);
+            }
         }
     }
 }

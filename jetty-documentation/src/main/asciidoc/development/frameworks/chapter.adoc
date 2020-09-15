@@ -19,7 +19,8 @@
 [[frameworks]]
 == Frameworks
 
+include::cdi.adoc[]
+include::weld.adoc[]
 include::spring-usage.adoc[]
 include::osgi.adoc[]
-include::weld.adoc[]
 include::metro.adoc[]
