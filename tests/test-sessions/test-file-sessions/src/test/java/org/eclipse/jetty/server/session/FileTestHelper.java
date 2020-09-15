@@ -85,7 +85,11 @@ public class FileTestHelper
         String fname = null;
         for (String name : files)
         {
-            if (name.contains(sessionId))
+            int i = name.lastIndexOf('_');
+            if (i < 0 || i == name.length()-1)
+                continue;
+            String id = name.substring(i+1);
+            if (id.equals(sessionId))
             {
                 fname = name;
                 break;
@@ -108,7 +112,11 @@ public class FileTestHelper
         boolean found = false;
         for (String name : files)
         {
-            if (name.contains(sessionId))
+            int i = name.lastIndexOf('_');
+            if (i < 0)
+                continue;
+            String id = name.substring(i);
+            if (id.equals(sessionId))
             {
                 found = true;
                 break;
