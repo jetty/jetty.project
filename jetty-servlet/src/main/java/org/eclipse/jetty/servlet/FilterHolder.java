@@ -24,13 +24,18 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
+import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.FilterRegistration;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -173,6 +178,26 @@ public class FilterHolder extends Holder<Filter>
     public Filter getFilter()
     {
         return _filter;
+    }
+
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+    {
+        if (isAsyncSupported() || !request.isAsyncSupported())
+            getFilter().doFilter(request, response, chain);
+        else
+        {
+            Request baseRequest = Request.getBaseRequest(request);
+            Objects.requireNonNull(baseRequest);
+            try
+            {
+                baseRequest.setAsyncSupported(false, this);
+                getFilter().doFilter(request, response, chain);
+            }
+            finally
+            {
+                baseRequest.setAsyncSupported(true, null);
+            }
+        }
     }
 
     @Override

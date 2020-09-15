@@ -29,10 +29,8 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -101,7 +99,7 @@ public class ServletHandler extends ScopedHandler
     private int _matchBeforeIndex = -1; //index of last programmatic FilterMapping with isMatchAfter=false
     private int _matchAfterIndex = -1;  //index of 1st programmatic FilterMapping with isMatchAfter=true
     private boolean _filterChainsCached = true;
-    private int _maxFilterChainsCacheSize = 512;
+    private int _maxFilterChainsCacheSize = 1024;
     private boolean _startWithUnavailable = false;
     private boolean _ensureDefaultServlet = true;
     private IdentityService _identityService;
@@ -115,7 +113,6 @@ public class ServletHandler extends ScopedHandler
     private List<FilterMapping> _wildFilterNameMappings;
 
     private final Map<String, ServletHolder> _servletNameMap = new HashMap<>();
-    // private PathMap<ServletHolder> _servletPathMap;
     private PathMappings<ServletHolder> _servletPathMap;
 
     private ListenerHolder[] _listeners = new ListenerHolder[0];
@@ -123,9 +120,6 @@ public class ServletHandler extends ScopedHandler
 
     @SuppressWarnings("unchecked")
     protected final ConcurrentMap<String, FilterChain>[] _chainCache = new ConcurrentMap[FilterMapping.ALL];
-
-    @SuppressWarnings("unchecked")
-    protected final Queue<String>[] _chainLRU = new Queue[FilterMapping.ALL];
 
     /**
      * Constructor.
@@ -185,12 +179,6 @@ public class ServletHandler extends ScopedHandler
             _chainCache[FilterMapping.INCLUDE] = new ConcurrentHashMap<>();
             _chainCache[FilterMapping.ERROR] = new ConcurrentHashMap<>();
             _chainCache[FilterMapping.ASYNC] = new ConcurrentHashMap<>();
-
-            _chainLRU[FilterMapping.REQUEST] = new ConcurrentLinkedQueue<>();
-            _chainLRU[FilterMapping.FORWARD] = new ConcurrentLinkedQueue<>();
-            _chainLRU[FilterMapping.INCLUDE] = new ConcurrentLinkedQueue<>();
-            _chainLRU[FilterMapping.ERROR] = new ConcurrentLinkedQueue<>();
-            _chainLRU[FilterMapping.ASYNC] = new ConcurrentLinkedQueue<>();
         }
 
         if (_contextHandler == null)
@@ -598,25 +586,6 @@ public class ServletHandler extends ScopedHandler
         return new MappedResource<>(null, holder);
     }
 
-    private FilterChain linkFilterChain(ServletHolder servletHolder, FilterHolder filterHolder, FilterChain chain)
-    {
-        if (chain == null)
-            chain = new ServletFilterChain(servletHolder);
-        FilterChain next = newFilterChain(filterHolder.getFilter(), chain);
-        return filterHolder.isAsyncSupported() ? next : new NotAsyncFilterChain(filterHolder, chain);
-    }
-
-    /**
-     * Create a FilterChain that calls the passed filter with the passed chain
-     * @param filter The filter to invoke
-     * @param chain The chain to pass to the filter
-     * @return A FilterChain that invokes the filter with the chain
-     */
-    protected FilterChain newFilterChain(Filter filter, FilterChain chain)
-    {
-        return new Chain(filter, chain);
-    }
-
     protected FilterChain getFilterChain(Request baseRequest, String pathInContext, ServletHolder servletHolder)
     {
         String key = pathInContext == null ? servletHolder.getName() : pathInContext;
@@ -638,12 +607,12 @@ public class ServletHandler extends ScopedHandler
         {
             if (_wildFilterNameMappings != null)
                 for (FilterMapping mapping : _wildFilterNameMappings)
-                    chain = linkFilterChain(servletHolder, mapping.getFilterHolder(), chain);
+                    chain = newFilterChain(mapping.getFilterHolder(), chain == null ? new ChainEnd(servletHolder) : chain);
 
             for (FilterMapping mapping : _filterNameMappings.get(servletHolder.getName()))
             {
                 if (mapping.appliesTo(dispatch))
-                    chain = linkFilterChain(servletHolder, mapping.getFilterHolder(), chain);
+                    chain = newFilterChain(mapping.getFilterHolder(), chain == null ? new ChainEnd(servletHolder) : chain);
             }
         }
 
@@ -652,48 +621,43 @@ public class ServletHandler extends ScopedHandler
             for (FilterMapping mapping : _filterPathMappings)
             {
                 if (mapping.appliesTo(pathInContext, dispatch))
-                    chain = linkFilterChain(servletHolder, mapping.getFilterHolder(), chain);
+                    chain = newFilterChain(mapping.getFilterHolder(), chain == null ? new ChainEnd(servletHolder) : chain);
             }
         }
 
         if (_filterChainsCached)
         {
             final Map<String, FilterChain> cache = _chainCache[dispatch];
-            final Queue<String> lru = _chainLRU[dispatch];
-
             // Do we have too many cached chains?
-            while (_maxFilterChainsCacheSize > 0 && cache.size() >= _maxFilterChainsCacheSize)
+            if (_maxFilterChainsCacheSize > 0 && cache.size() >= _maxFilterChainsCacheSize)
             {
-                // The LRU list is not atomic with the cache map, so be prepared to invalidate if
-                // a key is not found to delete.
-                // Delete by LRU (where U==created)
-                String k = lru.poll();
-                if (k == null)
-                {
-                    cache.clear();
-                    break;
-                }
-                cache.remove(k);
+                // flush the cache
+                LOG.debug("{} flushed filter chain cache for {}", this, baseRequest.getDispatcherType());
+                cache.clear();
             }
-
-            if (chain == null)
-                chain = new ServletFilterChain(servletHolder);
+            chain = chain == null ? new ChainEnd(servletHolder) : chain;
+            // flush the cache
+            LOG.debug("{} cached filter chain for {}: {}", this, baseRequest.getDispatcherType(), chain);
             cache.put(key, chain);
-            lru.add(key);
         }
         return chain;
     }
 
+    /**
+     * Create a FilterChain that calls the passed filter with the passed chain
+     * @param filterHolder The filter to invoke
+     * @param chain The chain to pass to the filter
+     * @return A FilterChain that invokes the filter with the chain
+     */
+    protected FilterChain newFilterChain(FilterHolder filterHolder, FilterChain chain)
+    {
+        return new Chain(filterHolder, chain);
+    }
+
     protected void invalidateChainsCache()
     {
-        if (_chainLRU[FilterMapping.REQUEST] != null)
+        if (_chainCache[FilterMapping.REQUEST] != null)
         {
-            _chainLRU[FilterMapping.REQUEST].clear();
-            _chainLRU[FilterMapping.FORWARD].clear();
-            _chainLRU[FilterMapping.INCLUDE].clear();
-            _chainLRU[FilterMapping.ERROR].clear();
-            _chainLRU[FilterMapping.ASYNC].clear();
-
             _chainCache[FilterMapping.REQUEST].clear();
             _chainCache[FilterMapping.FORWARD].clear();
             _chainCache[FilterMapping.INCLUDE].clear();
@@ -1626,31 +1590,35 @@ public class ServletHandler extends ScopedHandler
 
     static class Chain implements FilterChain
     {
-        private final Filter _filter;
-        private final FilterChain _chain;
+        private final FilterHolder _filterHolder;
+        private final FilterChain _filterChain;
 
-        Chain(Filter filter, FilterChain chain)
+        Chain(FilterHolder filter, FilterChain chain)
         {
-            _filter = filter;
-            _chain = chain;
+            _filterHolder = filter;
+            _filterChain = chain;
         }
 
         @Override
         public void doFilter(ServletRequest request, ServletResponse response) throws IOException, ServletException
         {
-            _filter.doFilter(request, response, _chain);
+            _filterHolder.doFilter(request, response, _filterChain);
         }
 
-        // TODO toString
+        @Override
+        public String toString()
+        {
+            return String.format("Chain@%x(%s)->%s", hashCode(), _filterHolder, _filterChain);
+        }
     }
 
-    static class ServletFilterChain implements FilterChain
+    static class ChainEnd implements FilterChain
     {
-        private final ServletHolder _holder;
+        private final ServletHolder _servletHolder;
 
-        ServletFilterChain(ServletHolder holder)
+        ChainEnd(ServletHolder holder)
         {
-            _holder = holder;
+            _servletHolder = holder;
         }
 
         @Override
@@ -1658,44 +1626,13 @@ public class ServletHandler extends ScopedHandler
         {
             Request baseRequest = Request.getBaseRequest(request);
             Objects.requireNonNull(baseRequest);
-            _holder.handle(baseRequest, request, response);
-        }
-
-        // TODO toString
-    }
-
-    static class NotAsyncFilterChain implements FilterChain
-    {
-        private final FilterHolder _holder;
-        private final FilterChain _chain;
-
-        NotAsyncFilterChain(FilterHolder holder, FilterChain chain)
-        {
-            _holder = holder;
-            _chain = chain;
+            _servletHolder.handle(baseRequest, request, response);
         }
 
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response) throws IOException, ServletException
+        public String toString()
         {
-            if (!request.isAsyncSupported())
-                _holder.getFilter().doFilter(request, response, _chain);
-            else
-            {
-                Request baseRequest = Request.getBaseRequest(request);
-                Objects.requireNonNull(baseRequest);
-                try
-                {
-                    baseRequest.setAsyncSupported(false, _holder);
-                    _holder.getFilter().doFilter(request, response, _chain);
-                }
-                finally
-                {
-                    baseRequest.setAsyncSupported(true, null);
-                }
-            }
+            return String.format("ChainEnd@%x(%s)->%s", hashCode(), _servletHolder);
         }
-
-        // TODO toString
     }
 }
