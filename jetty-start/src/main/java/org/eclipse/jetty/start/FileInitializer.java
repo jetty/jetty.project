@@ -128,9 +128,9 @@ public abstract class FileInitializer
     protected void download(URI uri, Path destination) throws IOException
     {
         if (FS.ensureDirectoryExists(destination.getParent()))
-            StartLog.log("MKDIR", _basehome.toShortForm(destination.getParent()));
+            StartLog.info("mkdir " + _basehome.toShortForm(destination.getParent()));
 
-        StartLog.log("DOWNLD", "%s to %s", uri, _basehome.toShortForm(destination));
+        StartLog.info("download %s to %s", uri, _basehome.toShortForm(destination));
 
         HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
         http.setInstanceFollowRedirects(true);
@@ -206,7 +206,7 @@ public abstract class FileInitializer
                 {
                     if (FS.ensureDirectoryExists(to))
                     {
-                        StartLog.log("MKDIR", _basehome.toShortForm(to));
+                        StartLog.info("mkdir " + _basehome.toShortForm(to));
                         modified = true;
                     }
 
@@ -215,7 +215,7 @@ public abstract class FileInitializer
                 }
                 else if (!Files.exists(to))
                 {
-                    StartLog.log("COPY ", "%s to %s", _basehome.toShortForm(from), _basehome.toShortForm(to));
+                    StartLog.info("copy %s to %s", _basehome.toShortForm(from), _basehome.toShortForm(to));
                     Files.copy(from, to);
                     modified = true;
                 }

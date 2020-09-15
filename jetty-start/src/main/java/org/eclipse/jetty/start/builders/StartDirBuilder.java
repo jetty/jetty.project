@@ -35,7 +35,7 @@ import org.eclipse.jetty.start.StartLog;
 /**
  * Management of the <code>${jetty.base}/start.d/</code> based configuration.
  * <p>
- * Implementation of the <code>--add-to-startd=[name]</code> command line behavior
+ * Implementation of the <code>--add-modules=[name]</code> command line behavior
  */
 public class StartDirBuilder implements BaseBuilder.Config
 {
@@ -47,7 +47,7 @@ public class StartDirBuilder implements BaseBuilder.Config
         this.baseHome = baseBuilder.getBaseHome();
         this.startDir = baseHome.getBasePath("start.d");
         if (FS.ensureDirectoryExists(startDir))
-            StartLog.log("MKDIR", baseHome.toShortForm(startDir));
+            StartLog.info("mkdir " + baseHome.toShortForm(startDir));
     }
 
     @Override
