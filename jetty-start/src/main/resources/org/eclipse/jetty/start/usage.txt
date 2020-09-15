@@ -101,45 +101,48 @@ Jetty Module Management:
                    dependencies, tags, libraries and XMLs
 
   --module=<modulename>(,<modulename>)*
-                   Temporarily enable a module from the command line.
-                   Note: this can also be used in the ${jetty.base}/start.ini
-                   or ${jetty.base}/start.d/*.ini files.
+                   Enable a module for this run.  To enable a module for all
+                   future runs, use --add-module
+                   Note: this option is used in the ${jetty.base}/start.ini
+                   or ${jetty.base}/start.d/*.ini files created by --add-module.
                    
-  --add-to-start=<modulename>(,<modulename>)*
+  --add-module=<modulename>(,<modulename>)*
                    Add the modules to the list of modules enabled at start. 
                    Transitive dependencies are followed and dependent
                    modules may also explicitly added.
                    Modules are added to the start by creating an ini file
                    that contains the --module argument and any other parameters
                    defined in the modules ini template.                    
-                   If the directory ${jetty.base}/start.d 
-                   exists then <modulename>.ini files are created within
-                   that directory, otherwise then enabling configuration
-                   is appended to the ${jetty.base}/start.ini file.
+                   If the ${jetty.base}/start.ini file exists, configuration is
+                   appended, otherwise the directory ${jetty.base}/start.d
+                   is used to create <modulename>.ini files.
                    If the ini template contains properties, these may be 
                    amended in the generated file by specifying those 
                    properties on the command line.
 
-                   Note: not all modules have ini templates and thus may
-                   be transitively enabled and not explicitly enabled in
-                   a ini file.
-                   
+                   If a module is transitively enabled, it's ini file will not
+                   be generated. An explicit --add-module is required to generate
+                   an ini file.
+
+                   This option replaces the depecated --add-to-start and --add-to-startd.
+
   --update-ini     Scan all start.ini and start.d/*.ini files and update
                    any properties with values specified on the command
                    line. e.g. --update-ini jetty.http.port=8888
 
-  --create-startd  Ensure that a start.d directory exists for use by
-                   subsequent --add-to-start=*. If a start.ini file exists
-                   it is moved to the start.d directory
+  --create-start-ini
+                   Create a ${jetty.base}/start.ini file.  If a ${jetty.base}/start.d
+                   directory exists, then all it's contained ini files are concatinated into
+                   the start.ini file.
 
   --write-module-graph=<filename>
                    Create a graphviz *.dot file of the module graph as it
                    exists for the active ${jetty.base}.
                    See http://graphviz.org/ for details on how to post-process
                    this file into the output best suited for your needs.
-                   
-  --create-files   Create any missing files that are required by initialized 
-                   modules.  This may download a file from the network if the 
+
+  --create-files   Create any missing files that are required by initialized
+                   modules.  This may download a file from the network if the
                    module provides a URL.
 
   --skip-file-validation=<modulename>(,<modulename)*
@@ -148,14 +151,14 @@ Jetty Module Management:
                    module.  Useful for modules that have downloadable
                    content that is being overridden with alternatives
                    in the ${jetty.base} directory.
-                   CAUTION: 
+                   CAUTION:
                      This advanced option is for administrators that
                      fully understand the configuration of their
                      ${jetty.base} and are willing to forego some of the
                      safety checks built into the jetty-start mechanism.
-                     
+
   --approve-all-licenses
-                   Approve all license questions. Useful for enabling 
+                   Approve all license questions. Useful for enabling
                    modules from a script that does not require user interaction.
 
 Startup / Shutdown Command Line:
@@ -170,7 +173,7 @@ Advanced Commands:
 
   --lib=<classpath>
                    Add arbitrary classpath entries to the the server classpath.
-                   
+
   --include-jetty-dir=<path>
                    Include an extra jetty directory to use as a source
                    for configuration details.  This directory behaves similarly

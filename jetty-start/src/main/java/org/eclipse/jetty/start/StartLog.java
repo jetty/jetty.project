@@ -78,12 +78,12 @@ public class StartLog
         return INSTANCE;
     }
 
-    public static void log(String type, String msg)
+    private static void log(String type, String msg)
     {
         logStream.printf("%-6s: %s%n", type, msg);
     }
 
-    public static void log(String type, String format, Object... args)
+    private static void log(String type, String format, Object... args)
     {
         log(type, String.format(format, args));
     }

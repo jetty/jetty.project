@@ -62,14 +62,21 @@ public class DirConfigSource implements ConfigSource
         BANNED_ARGS.add("--exec-print");
         BANNED_ARGS.add("--list-config");
         BANNED_ARGS.add("--list-classpath");
+        BANNED_ARGS.add("--list-module");
         BANNED_ARGS.add("--list-modules");
+        BANNED_ARGS.add("--show-module");
+        BANNED_ARGS.add("--show-modules");
         BANNED_ARGS.add("--write-module-graph");
         BANNED_ARGS.add("--version");
         BANNED_ARGS.add("-v");
         BANNED_ARGS.add("--download");
         BANNED_ARGS.add("--create-files");
+        BANNED_ARGS.add("--create-startd");
+        BANNED_ARGS.add("--create-start-ini");
         BANNED_ARGS.add("--add-to-startd");
         BANNED_ARGS.add("--add-to-start");
+        BANNED_ARGS.add("--add-module");
+        BANNED_ARGS.add("--add-modules");
     }
 
     private final String id;

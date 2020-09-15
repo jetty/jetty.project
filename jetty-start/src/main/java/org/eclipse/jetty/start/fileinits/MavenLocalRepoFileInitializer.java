@@ -129,8 +129,8 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
             if (localRepoFile != null)
             {
                 if (FS.ensureDirectoryExists(destination.getParent()))
-                    StartLog.log("MKDIR", _basehome.toShortForm(destination.getParent()));
-                StartLog.log("COPY ", "%s to %s", localRepoFile, _basehome.toShortForm(destination));
+                    StartLog.info("mkdir " + _basehome.toShortForm(destination.getParent()));
+                StartLog.info("copy %s to %s", localRepoFile, _basehome.toShortForm(destination));
                 Files.copy(localRepoFile, destination);
                 return true;
             }

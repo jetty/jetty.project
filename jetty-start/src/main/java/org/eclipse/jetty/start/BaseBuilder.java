@@ -18,10 +18,13 @@
 
 package org.eclipse.jetty.start;
 
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -125,11 +128,11 @@ public class BaseBuilder
         {
             for (String name : startArgs.getStartModules())
             {
-                newlyAdded.addAll(modules.enable(name, "--add-to-start"));
+                newlyAdded.addAll(modules.enable(name, "--add-module"));
                 if (!newlyAdded.contains(name))
                 {
                     Set<String> sources = modules.get(name).getEnableSources();
-                    sources.remove("--add-to-start");
+                    sources.remove("--add-module");
                     StartLog.info("%s already enabled by %s", name, sources);
                 }
             }
@@ -169,35 +172,70 @@ public class BaseBuilder
         Path startd = getBaseHome().getBasePath("start.d");
         Path startini = getBaseHome().getBasePath("start.ini");
 
-        if (startArgs.isCreateStartd() && !Files.exists(startd))
+        if (startArgs.isCreateStartIni())
         {
-            if (FS.ensureDirectoryExists(startd))
+            if (!Files.exists(startini))
             {
-                StartLog.log("MKDIR", baseHome.toShortForm(startd));
+                StartLog.info("create " + baseHome.toShortForm(startini));
+                Files.createFile(startini);
                 modified.set(true);
             }
-            if (Files.exists(startini))
+
+            if (Files.exists(startd))
             {
-                int ini = 0;
-                Path startdStartIni = startd.resolve("start.ini");
-                while (Files.exists(startdStartIni))
+                // Copy start.d files into start.ini
+                DirectoryStream.Filter<Path> filter = new DirectoryStream.Filter<Path>()
                 {
-                    ini++;
-                    startdStartIni = startd.resolve("start" + ini + ".ini");
+                    PathMatcher iniMatcher = PathMatchers.getMatcher("glob:**/start.d/*.ini");
+                    @Override
+                    public boolean accept(Path entry) throws IOException
+                    {
+                        return iniMatcher.matches(entry);
+                    }
+                };
+                List<Path> paths = new ArrayList<>();
+                for (Path path : Files.newDirectoryStream(startd, filter))
+                    paths.add(path);
+                paths.sort(new NaturalSort.Paths());
+
+                // Read config from start.d
+                List<String> startLines = new ArrayList<>();
+                for (Path path : paths)
+                {
+                    StartLog.info("copy " + baseHome.toShortForm(path) + " into " + baseHome.toShortForm(startini));
+                    startLines.add("");
+                    startLines.add("# Config from " + baseHome.toShortForm(path));
+                    startLines.addAll(Files.readAllLines(path));
                 }
-                Files.move(startini, startdStartIni);
-                modified.set(true);
+
+                // append config to start.ini
+                try (FileWriter out = new FileWriter(startini.toFile(), true))
+                {
+                    for (String line : startLines)
+                        out.append(line).append(System.lineSeparator());
+                }
+
+                // delete start.d files
+                for (Path path : paths)
+                    Files.delete(path);
+                Files.delete(startd);
             }
         }
 
         if (!newlyAdded.isEmpty())
         {
+            if (!Files.exists(startini) && !Files.exists(startd) && FS.ensureDirectoryExists(startd))
+            {
+                StartLog.info("mkdir " + baseHome.toShortForm(startd));
+                modified.set(true);
+            }
+
             if (Files.exists(startini) && Files.exists(startd))
                 StartLog.warn("Use both %s and %s is deprecated", getBaseHome().toShortForm(startd), getBaseHome().toShortForm(startini));
 
             boolean useStartD = Files.exists(startd);
             builder.set(useStartD ? new StartDirBuilder(this) : new StartIniBuilder(this));
-            newlyAdded.stream().map(n -> modules.get(n)).forEach(module ->
+            newlyAdded.stream().map(modules::get).forEach(module ->
             {
                 String ini = null;
                 try
@@ -236,16 +274,18 @@ public class BaseBuilder
                 else if (module.isTransitive())
                 {
                     if (module.hasIniTemplate())
-                        StartLog.info("%-15s transitively enabled, ini template available with --add-to-start=%s",
+                        StartLog.info("%-15s transitively enabled, ini template available with --add-module=%s",
                             module.getName(),
                             module.getName());
                     else
                         StartLog.info("%-15s transitively enabled", module.getName());
                 }
                 else
+                {
                     StartLog.info("%-15s initialized in %s",
                         module.getName(),
                         ini);
+                }
             });
         }
 

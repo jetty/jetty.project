@@ -57,7 +57,7 @@ public class TestFileInitializer extends FileInitializer
                 FS.ensureDirectoryExists(destination.getParent());
         }
 
-        StartLog.log("TESTING MODE", "Skipping download of " + uri);
+        StartLog.info("Skipping download of %s", uri);
         return true;
     }
 }
