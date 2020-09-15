@@ -195,7 +195,7 @@ public class Request implements HttpServletRequest
     private String _servletPath;
     private String _pathInfo;
     private boolean _secure;
-    private String _asyncNotSupportedSource = null;
+    private Object _asyncNotSupportedSource = null;
     private boolean _newContext;
     private boolean _cookiesExtracted = false;
     private boolean _handled = false;
@@ -1940,7 +1940,7 @@ public class Request implements HttpServletRequest
         _requestAttributeListeners.remove(listener);
     }
 
-    public void setAsyncSupported(boolean supported, String source)
+    public void setAsyncSupported(boolean supported, Object source)
     {
         _asyncNotSupportedSource = supported ? null : (source == null ? "unknown" : source);
     }
