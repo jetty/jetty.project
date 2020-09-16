@@ -1,0 +1,68 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[pg-server-session-sessionhandler]]
+==== Session Components: The SessionHandler
+
+Each context can have a single `SessionHandler`.
+The purpose of the `SessionHandler` is to interact with the `Request` and `Response` to create, maintain and propagate sessions
+It also calls the context-level session listeners at appropriate points in the session lifecycle.
+
+The majority of configuration for the `SessionHandler` can be done via `web.xml` `<session-config>` declarations, or the `javax.servlet.SessionCookieConfig` api.
+There are also a few jetty-specific configuration options that we will cover here:
+
+checkingRemoteSessionIdEncoding::
+Boolean, default `false`.
+This controls whether or not the `javax.servlet.http.Response.encodeURL(String)` method will include the session id as a path parameter when the URL is destined for a remote node.
+
+
+setMaxInactiveInterval::
+Integer, seconds.
+This is equivalent to the `<session-config><session-timeout/></session-config>` that can be set in `web.xml`, although take note that that in `web.xml` this is specified in _minutes_ but this method uses _seconds_.
+
+setHttpOnly::
+Boolean, default `false`.
+This is equivalent to using `javax.servlet.SessionCookieConfig.setHttpOnly(boolean)` method, or the `<session-config><cookie-config><http-only/></cookie-config></session-config>` element.
+If `true`, the session cookie will not be exposed to client-side scripting code.
+
+refreshCookieAge::
+Integer, seconds, default is `-1`.
+This controls resetting the session cookie when `SessionCookieConfig.setMaxAge(int)` is non-zero.
+If the amount of time since the session cookie was last set exceeds this time, the session cookie is regenerated to keep the session cookie valid.
+
+sameSite::
+
+secureRequestOnly::
+Boolean, default true.
+
+
+sessionCookie::
+String, default is `JSESSIONID`.
+
+sessionIdPathParameterName::
+String, default is `jsessionid`.
+
+sessionTrackingModes::
+
+usingCookies::
+Boolean, default `true`.
+
+
+
+
+

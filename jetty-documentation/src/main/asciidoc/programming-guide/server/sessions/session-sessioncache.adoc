@@ -71,7 +71,8 @@ The `AbstractSessionCache` does not implement this behaviour, a subclass must im
 
 flushOnResponseCommit::
 This forces a "dirty" session to be written to the `SessionDataStore` just before a response is returned to the client, rather than waiting until the request is finished.
-This ensures that subsequent requests to either the same node or a different node see the changed session data.
+A "dirty" session is one whose attributes have changed, or it has been freshly created.
+Using this option ensures that all subsequent requests - either to the same or a different node - will see the latest changes to the session.
 
 Jetty provides two `SessionCache` implementations: the link:{JDURL}/org/eclipse/jetty/server/session/DefaultSessionCache.html[DefaultSessionCache] and the link:{JDURL}/org/eclipse/jetty/server/session/NullSessionCache.html[NullSessionCache].
 
