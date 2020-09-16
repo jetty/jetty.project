@@ -1632,7 +1632,7 @@ public class ServletHandler extends ScopedHandler
         @Override
         public String toString()
         {
-            return String.format("ChainEnd@%x(%s)->%s", hashCode(), _servletHolder);
+            return String.format("ChainEnd@%x(%s)", hashCode(), _servletHolder);
         }
     }
 }

@@ -82,7 +82,7 @@ public class TestJettyOSGiBootHTTP2
         options.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("http2-http-client-transport").versionAsInProject().start());
 
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
-        options.add(systemProperty("org.eclipse.jetty.LEVEL").value("DEBUG"));
+        options.add(systemProperty("org.eclipse.jetty.LEVEL").value("INFO"));
         options.add(CoreOptions.cleanCaches(true));
         return options.toArray(new Option[0]);
     }
@@ -154,7 +154,7 @@ public class TestJettyOSGiBootHTTP2
             httpClient.start();
 
             ContentResponse response = httpClient.GET("https://localhost:" + port + "/jsp/jstl.jsp");
-            assertEquals(response.toString(), response.getStatus(), HttpStatus.OK_200);
+            assertEquals(HttpStatus.OK_200,response.getStatus());
             String body = response.getContentAsString();
             assertTrue("Body contains \"JSTL Example\": " + body, body.contains("JSTL Example"));
         }
