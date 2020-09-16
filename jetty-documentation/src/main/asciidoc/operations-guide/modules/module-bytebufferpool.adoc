@@ -16,31 +16,19 @@
 // ========================================================================
 //
 
-[[og-intro]]
-== Eclipse Jetty Operations Guide
+[[og-module-bytebufferpool]]
+==== Module `bytebufferpool`
 
-The Eclipse Jetty Operations Guide targets sysops, devops, and developers who want to install Eclipse Jetty as a standalone server to deploy web applications.
+The `bytebufferpool` module allows you to configure the server-wide `ByteBuffer` pool.
 
-=== Eclipse Jetty Introduction
+// TODO: expand
 
-If you are new to Eclipse Jetty, read xref:og-begin[here] to download, install, start and deploy web applications to Jetty.
+The module file is `$JETTY_HOME/modules/bytebufferpool.mod`:
 
-=== Eclipse Jetty Features
+----
+include::{JETTY_HOME}/modules/bytebufferpool.mod[]
+----
 
-If you know Jetty already, jump to a feature:
-
-TODO
-
-* Jetty Overview
-* Jetty Modules
-* Rewrite Modules
-
-=== Eclipse Jetty How-Tos
-
-* xref:og-protocols-http[Configure Clear-Text HTTP/1.1]
-* xref:og-protocols-https[Configure Secure HTTP/1.1 (https)]
+Among the configurable properties, the most relevant are:
 
 TODO
-
-* Jetty Behind a Load Balancer
-** Forward Header Customizer

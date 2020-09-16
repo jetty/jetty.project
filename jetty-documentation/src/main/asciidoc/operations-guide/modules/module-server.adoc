@@ -16,31 +16,21 @@
 // ========================================================================
 //
 
-[[og-intro]]
-== Eclipse Jetty Operations Guide
+[[og-module-server]]
+==== Module `server`
 
-The Eclipse Jetty Operations Guide targets sysops, devops, and developers who want to install Eclipse Jetty as a standalone server to deploy web applications.
+The `server` module provides generic server support, and configures generic HTTP properties that apply to all HTTP protocols, the scheduler properties and the server specific properties.
 
-=== Eclipse Jetty Introduction
+The `server` module depends on the xref:og-module-threadpool[`threadpool` module], the xref:og-module-bytebufferpool[`bytebufferpool` module] and the xref:og-module-logging[`logging`  module].
 
-If you are new to Eclipse Jetty, read xref:og-begin[here] to download, install, start and deploy web applications to Jetty.
+The module file is `$JETTY_HOME/modules/server.mod`:
 
-=== Eclipse Jetty Features
+----
+include::{JETTY_HOME}/modules/server.mod[]
+----
 
-If you know Jetty already, jump to a feature:
-
-TODO
-
-* Jetty Overview
-* Jetty Modules
-* Rewrite Modules
-
-=== Eclipse Jetty How-Tos
-
-* xref:og-protocols-http[Configure Clear-Text HTTP/1.1]
-* xref:og-protocols-https[Configure Secure HTTP/1.1 (https)]
+Among the configurable properties, the most relevant are:
 
 TODO
 
-* Jetty Behind a Load Balancer
-** Forward Header Customizer
+// TODO: consider extracting the httpConfig and scheduler properties into separate files.

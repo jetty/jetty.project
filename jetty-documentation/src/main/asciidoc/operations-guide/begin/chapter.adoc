@@ -16,31 +16,13 @@
 // ========================================================================
 //
 
-[[og-intro]]
-== Eclipse Jetty Operations Guide
+[[og-begin]]
+=== Introduction to Eclipse Jetty
 
-The Eclipse Jetty Operations Guide targets sysops, devops, and developers who want to install Eclipse Jetty as a standalone server to deploy web applications.
+This section will get you started with Eclipse Jetty.
 
-=== Eclipse Jetty Introduction
-
-If you are new to Eclipse Jetty, read xref:og-begin[here] to download, install, start and deploy web applications to Jetty.
-
-=== Eclipse Jetty Features
-
-If you know Jetty already, jump to a feature:
-
-TODO
-
-* Jetty Overview
-* Jetty Modules
-* Rewrite Modules
-
-=== Eclipse Jetty How-Tos
-
-* xref:og-protocols-http[Configure Clear-Text HTTP/1.1]
-* xref:og-protocols-https[Configure Secure HTTP/1.1 (https)]
-
-TODO
-
-* Jetty Behind a Load Balancer
-** Forward Header Customizer
+include::download.adoc[]
+include::install.adoc[]
+include::architecture.adoc[]
+include::start.adoc[]
+include::deploy.adoc[]

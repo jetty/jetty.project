@@ -16,31 +16,17 @@
 // ========================================================================
 //
 
-[[og-intro]]
-== Eclipse Jetty Operations Guide
+[[og-module-ssl]]
+==== Module `ssl`
 
-The Eclipse Jetty Operations Guide targets sysops, devops, and developers who want to install Eclipse Jetty as a standalone server to deploy web applications.
+The `ssl` module provides the secure connector, and allows you to configure the keystore properties and the TLS parameters.
 
-=== Eclipse Jetty Introduction
+The module file is `$JETTY_HOME/modules/ssl.mod`:
 
-If you are new to Eclipse Jetty, read xref:og-begin[here] to download, install, start and deploy web applications to Jetty.
+----
+include::{JETTY_HOME}/modules/ssl.mod[]
+----
 
-=== Eclipse Jetty Features
-
-If you know Jetty already, jump to a feature:
-
-TODO
-
-* Jetty Overview
-* Jetty Modules
-* Rewrite Modules
-
-=== Eclipse Jetty How-Tos
-
-* xref:og-protocols-http[Configure Clear-Text HTTP/1.1]
-* xref:og-protocols-https[Configure Secure HTTP/1.1 (https)]
+Among the configurable properties, the most relevant are:
 
 TODO
-
-* Jetty Behind a Load Balancer
-** Forward Header Customizer

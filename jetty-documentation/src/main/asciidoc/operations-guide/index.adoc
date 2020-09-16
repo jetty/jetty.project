@@ -17,48 +17,19 @@
 //
 
 :doctitle: Eclipse Jetty: Operations Guide
-:author: Jetty Developers
-:email: jetty-dev@eclipse.org
-:revnumber: {version}
-:revdate: {TIMESTAMP}
-:toc: left
 :toc-title: Operations Guide
-:toc-style:
-
-:header-style: eclipse-thin
-:breadcrumb-style: eclipse-thin
-:footer-style: default
-
 :breadcrumb: Home:../index.html | Operations Guide:./index.html
+:idprefix: og-
 
-// docinfo lets you pull in shared content and/or influence via render type
-//:docinfodir: {DOCINFODIR}/documentation
-//:docinfo1:
-
-// html specific directives
-ifdef::backend-html5[]
-:safe-mode-unsafe:
-:stylesdir: ../common/css
-:stylesheet: jetty.css
-:linkcss:
-:scriptsdir: ../common/js
-endif::[]
-
-// options for special blocks, code snippets, screen, etc
-:sub-order: attributes+
-
-// uncomment to allow include::https:// style content inclusion
-//:allow-uri-read: true
-
-// use fonts for admonitions
-:icons: font
-
-// suppress automatic id generation
-:sectids!:
-
-// download and install
+include::../config.adoc[]
+include::.asciidoctorconfig[]
 include::introduction.adoc[]
-// TODO: jetty.home vs jetty.base
+include::begin/chapter.adoc[]
+
+include::start/chapter.adoc[]
+include::deploy/chapter.adoc[]
+include::protocols/chapter.adoc[]
+include::modules/chapter.adoc[]
 
 // TODO: how jetty standalone work what start.jar does, command line options, modules, etc.
 // TODO: this is mostly in old_docs/startup.

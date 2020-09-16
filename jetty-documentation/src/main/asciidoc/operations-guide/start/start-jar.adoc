@@ -16,8 +16,10 @@
 // ========================================================================
 //
 
-[[start-jar]]
+[[og-start-jar]]
 === Using start.jar
+
+TODO: review in light of Jetty 10
 
 The most basic way of starting the Jetty standalone server is to execute the `start.jar`, which is a bootstrap for starting Jetty with the configuration you want.
 

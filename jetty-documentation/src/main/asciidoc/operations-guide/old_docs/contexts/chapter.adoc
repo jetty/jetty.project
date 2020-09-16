@@ -22,8 +22,6 @@
 This chapter discusses various options for configuring Jetty contexts.
 
 include::setting-context-path.adoc[]
-include::configuring-virtual-hosts.adoc[]
 include::temporary-directories.adoc[]
-include::serving-webapp-from-particular-port.adoc[]
 include::custom-error-pages.adoc[]
 include::setting-form-size.adoc[]
