@@ -23,7 +23,7 @@ import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /**
- * <p>An indexed {@link ConnectionPool} that provides connections
+ * <p>A {@link ConnectionPool} that provides connections
  * randomly among the ones that are available.</p>
  */
 @ManagedObject
@@ -33,5 +33,4 @@ public class RandomConnectionPool extends MultiplexConnectionPool
     {
         super(destination, new Pool<>(Pool.StrategyType.RANDOM, maxConnections, false), requester, maxMultiplex);
     }
-
 }

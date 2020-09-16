@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
  *     <li>the server takes different times to serve different requests; if a request takes a long
  *     time to be processed by the server, it would be a performance penalty to stall sending requests
  *     waiting for that connection to be available - better skip it and try another connection</li>
- *     <li>connections may be closed by the client or by the server, so it should be a performance
+ *     <li>connections may be closed by the client or by the server, so it would be a performance
  *     penalty to stall sending requests waiting for a new connection to be opened</li>
  *     <li>thread scheduling on both client and server may temporarily penalize a connection</li>
  * </ul>
