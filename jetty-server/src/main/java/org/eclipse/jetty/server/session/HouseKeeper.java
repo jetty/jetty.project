@@ -130,7 +130,8 @@ public class HouseKeeper extends AbstractLifeCycle
                 _task.cancel();
             if (_runner == null)
                 _runner = new Runner();
-            LOG.info("{} scavenging every {}ms", _sessionIdManager.getWorkerName(), _intervalMs);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} scavenging every {}ms", _sessionIdManager.getWorkerName(), _intervalMs);
             _task = _scheduler.schedule(_runner, _intervalMs, TimeUnit.MILLISECONDS);
         }
     }
@@ -147,7 +148,8 @@ public class HouseKeeper extends AbstractLifeCycle
             if (_task != null)
             {
                 _task.cancel();
-                LOG.info("{} stopped scavenging", _sessionIdManager.getWorkerName());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} stopped scavenging", _sessionIdManager.getWorkerName());
             }
             _task = null;
             if (_ownScheduler && _scheduler != null)
@@ -186,7 +188,8 @@ public class HouseKeeper extends AbstractLifeCycle
                 if (sec <= 0)
                 {
                     _intervalMs = 0L;
-                    LOG.info("{} scavenging disabled", _sessionIdManager.getWorkerName());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} scavenging disabled", _sessionIdManager.getWorkerName());
                     stopScavenging();
                 }
                 else

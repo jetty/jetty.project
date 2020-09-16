@@ -334,6 +334,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
             addBean(_houseKeeper, true);
         }
 
+        LOG.info("Session workerName={}", _workerName);
         _houseKeeper.start();
     }
 
