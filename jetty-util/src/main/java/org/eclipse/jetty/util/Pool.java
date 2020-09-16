@@ -71,6 +71,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
     private volatile int maxMultiplex = 1;
     private volatile int maxUsageCount = -1;
 
+    /**
+     * The type of the strategy to use for the pool.
+     * The strategy primarily determines where iteration over the pool entries begins.
+     */
     public enum StrategyType
     {
         /**
