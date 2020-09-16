@@ -215,31 +215,6 @@ public class Pool<T> implements AutoCloseable, Dumpable
     }
 
     /**
-     * Acquire the entry from the pool at the specified index. This method bypasses the thread-local mechanism.
-     * @deprecated No longer supported. Instead use a {@link StrategyType} to configure the pool.
-     * @param idx the index of the entry to acquire.
-     * @return the specified entry or null if there is none at the specified index or if it is not available.
-     */
-    @Deprecated
-    public Entry acquireAt(int idx)
-    {
-        if (closed)
-            return null;
-
-        try
-        {
-            Entry entry = entries.get(idx);
-            if (entry.tryAcquire())
-                return entry;
-        }
-        catch (IndexOutOfBoundsException e)
-        {
-            // no entry at that index
-        }
-        return null;
-    }
-
-    /**
      * Acquire an entry from the pool.
      * Only enabled entries will be returned from this method and their enable method must not be called.
      * @return an entry from the pool or null if none is available.
@@ -272,7 +247,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
             }
             catch (IndexOutOfBoundsException e)
             {
-                LOGGER.ignore(e);
+                LOGGER.trace("IGNORED", e);
                 size = entries.size();
             }
             index = (index + 1) % size;

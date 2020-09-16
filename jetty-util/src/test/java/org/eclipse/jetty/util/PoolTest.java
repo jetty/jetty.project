@@ -309,22 +309,6 @@ public class PoolTest
 
     @ParameterizedTest
     @MethodSource(value = "strategy")
-    public void testAcquireAt(Factory factory)
-    {
-        Pool<String> pool = factory.getPool(2);
-
-        pool.reserve(-1).enable("aaa", false);
-        pool.reserve(-1).enable("bbb", false);
-
-        assertThat(pool.acquireAt(2), nullValue());
-        assertThat(pool.acquireAt(0), notNullValue());
-        assertThat(pool.acquireAt(0), nullValue());
-        assertThat(pool.acquireAt(1), notNullValue());
-        assertThat(pool.acquireAt(1), nullValue());
-    }
-
-    @ParameterizedTest
-    @MethodSource(value = "strategy")
     public void testMaxUsageCount(Factory factory)
     {
         Pool<String> pool = factory.getPool(1);
