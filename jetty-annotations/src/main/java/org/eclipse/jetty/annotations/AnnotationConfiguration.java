@@ -480,10 +480,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
         boolean timeout = !latch.await(getMaxScanWait(context), TimeUnit.SECONDS);
         long elapsedMs = TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS);
 
-        LOG.info("Annotation scanning elapsed time={}ms", elapsedMs);
 
         if (LOG.isDebugEnabled())
         {
+            LOG.debug("Annotation scanning elapsed time={}ms", elapsedMs);
             for (ParserTask p : _parserTasks)
             {
                 LOG.debug("Scanned {} in {}ms", p.getResource(), TimeUnit.MILLISECONDS.convert(p.getStatistic().getElapsed(), TimeUnit.NANOSECONDS));

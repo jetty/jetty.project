@@ -127,7 +127,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         if (_monitored.size() == 0)
             throw new IllegalStateException("No configuration dir specified");
 
-        LOG.info("Deployment monitor {} at interval {}", _monitored, _scanInterval);
+        LOG.info("Deployment monitor {}", _monitored);
         List<File> files = new ArrayList<>();
         for (Resource resource : _monitored)
         {
