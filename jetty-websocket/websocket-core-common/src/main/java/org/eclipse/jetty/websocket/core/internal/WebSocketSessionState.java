@@ -221,7 +221,7 @@ public class WebSocketSessionState
         return false;
     }
 
-    public boolean onIncomingFrame(Frame frame) throws ProtocolException
+    public boolean onIncomingFrame(Frame frame) throws ProtocolException, ClosedChannelException
     {
         byte opcode = frame.getOpCode();
         boolean fin = frame.isFin();
@@ -229,7 +229,7 @@ public class WebSocketSessionState
         try (AutoLock l = lock.lock())
         {
             if (!isInputOpen())
-                throw new IllegalStateException(_sessionState.toString());
+                throw new ClosedChannelException();
 
             if (opcode == OpCode.CLOSE)
             {

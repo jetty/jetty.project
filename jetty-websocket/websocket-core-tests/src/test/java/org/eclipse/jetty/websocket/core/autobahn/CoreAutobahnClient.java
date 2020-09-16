@@ -25,6 +25,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -150,21 +151,20 @@ public class CoreAutobahnClient
         this.client.start();
     }
 
-    public int getCaseCount() throws IOException, InterruptedException
+    public int getCaseCount() throws Exception
     {
         URI wsUri = baseWebsocketUri.resolve("/getCaseCount");
         TestMessageHandler onCaseCount = new TestMessageHandler();
-        Future<CoreSession> response = client.connect(onCaseCount, wsUri);
+        CoreSession session = client.connect(onCaseCount, wsUri).get(5, TimeUnit.SECONDS);
+        assertTrue(onCaseCount.openLatch.await(5, TimeUnit.SECONDS));
+        String msg = onCaseCount.textMessages.poll(5, TimeUnit.SECONDS);
 
-        if (waitForUpgrade(wsUri, response))
-        {
-            String msg = onCaseCount.textMessages.poll(10, TimeUnit.SECONDS);
-            onCaseCount.getCoreSession().abort(); // Don't expect normal close
-            assertTrue(onCaseCount.closeLatch.await(2, TimeUnit.SECONDS));
-            assertNotNull(msg);
-            return Integer.decode(msg);
-        }
-        throw new IllegalStateException("Unable to get Case Count");
+        // Close the connection.
+        session.close(Callback.NOOP);
+        assertTrue(onCaseCount.closeLatch.await(5, TimeUnit.SECONDS));
+
+        assertNotNull(msg);
+        return Integer.decode(msg);
     }
 
     public void runCaseByNumber(int caseNumber) throws IOException, InterruptedException

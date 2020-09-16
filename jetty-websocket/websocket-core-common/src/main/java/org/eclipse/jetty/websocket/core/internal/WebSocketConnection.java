@@ -250,7 +250,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             public void failed(Throwable cause)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("failed onFrame(" + frame + ")", cause);
+                    LOG.debug("failed onFrame({}) {}", frame, cause.toString());
 
                 frame.close();
                 if (referenced != null)
@@ -470,7 +470,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         catch (Throwable t)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Error during fillAndParse()", t);
+                LOG.debug("Error during fillAndParse() {}", t.toString());
 
             if (networkBuffer != null)
             {

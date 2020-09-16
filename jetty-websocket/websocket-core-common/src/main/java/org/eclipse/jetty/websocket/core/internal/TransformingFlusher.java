@@ -137,7 +137,7 @@ public abstract class TransformingFlusher
         protected void onCompleteFailure(Throwable t)
         {
             if (log.isDebugEnabled())
-                log.debug("failed to flush", t);
+                log.debug("onCompleteFailure {}", t.toString());
 
             notifyCallbackFailure(current.callback, t);
             current = null;
@@ -157,14 +157,14 @@ public abstract class TransformingFlusher
         }
         catch (Throwable x)
         {
-            log.warn("Exception while notifying success of callback " + callback, x);
+            log.warn("Exception while notifying success of callback {}", callback, x);
         }
     }
 
     private void notifyCallbackFailure(Callback callback, Throwable failure)
     {
         if (log.isDebugEnabled())
-            log.debug("notifyCallbackFailure {} {}", callback, failure);
+            log.debug("notifyCallbackFailure {} {}", callback, failure.toString());
 
         try
         {
@@ -173,7 +173,7 @@ public abstract class TransformingFlusher
         }
         catch (Throwable x)
         {
-            log.warn("Exception while notifying failure of callback " + callback, x);
+            log.warn("Exception while notifying failure of callback {}", callback, x);
         }
     }
 }

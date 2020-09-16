@@ -24,9 +24,13 @@ import java.time.Duration;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.TestMessageHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AutobahnFrameHandler extends TestMessageHandler
 {
+    protected static final Logger LOG = LoggerFactory.getLogger(AutobahnFrameHandler.class);
+
     @Override
     public void onOpen(CoreSession coreSession, Callback callback)
     {
@@ -46,5 +50,12 @@ public class AutobahnFrameHandler extends TestMessageHandler
     public void onText(String wholeMessage, Callback callback)
     {
         sendText(wholeMessage, callback, false);
+    }
+
+    @Override
+    public void onError(Throwable cause, Callback callback)
+    {
+        LOG.warn("Error from AutobahnFrameHandler: {}", cause.toString());
+        super.onError(cause, callback);
     }
 }
