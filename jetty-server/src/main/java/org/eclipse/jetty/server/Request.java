@@ -516,7 +516,7 @@ public class Request implements HttpServletRequest
                     {
                         String contentEncoding = getHttpFields().get(HttpHeader.CONTENT_ENCODING);
                         if (contentEncoding != null && !HttpHeaderValue.IDENTITY.is(contentEncoding))
-                            throw new BadMessageException(HttpStatus.NOT_IMPLEMENTED_501, "Unsupported Content-Encoding");
+                            throw new BadMessageException(HttpStatus.UNSUPPORTED_MEDIA_TYPE_415, "Unsupported Content-Encoding");
                     }
                     extractFormParameters(_contentParameters);
                 }
@@ -527,7 +527,7 @@ public class Request implements HttpServletRequest
                     try
                     {
                         if (_metaData != null && getHttpFields().contains(HttpHeader.CONTENT_ENCODING))
-                            throw new BadMessageException(HttpStatus.NOT_IMPLEMENTED_501, "Unsupported Content-Encoding");
+                            throw new BadMessageException(HttpStatus.UNSUPPORTED_MEDIA_TYPE_415, "Unsupported Content-Encoding");
                         getParts(_contentParameters);
                     }
                     catch (IOException e)
