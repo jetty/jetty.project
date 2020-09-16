@@ -48,6 +48,27 @@ _____
 To view statistics, you have to be able to connect to Jetty using either JConsole or some other JMX agent. See xref:using-jmx[] for more information.
 _____
 
+[[request-statistics]]
+==== Request Statistics
+
+To collect request statistics a `StatisticsHandler` must be configured as one of the handlers of the server.
+Typically this can be done as the top level handler, but you may choose to configure a statistics handler for just one context by creating a context configuration file.
+You can enable the `StatisticsHandler` by activating the `stats` modules on the command line.
+
+Alternately, if you are making multiple changes to the Jetty configuration, you could include statistics handler configuration into your own Jetty xml configuration.
+The following fragment shows how to configure a top level statistics handler:
+
+[source, xml, subs="{sub-order}"]
+----
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="insertHandler">
+    <Arg>
+      <New id="StatsHandler" class="org.eclipse.jetty.server.handler.StatisticsHandler"/>
+    </Arg>
+  </Call>
+</Configure>
+----
+
 [[connection-statistics]]
 ==== Connection Statistics
 
@@ -67,22 +88,17 @@ The following example shows how to turn on connection statistics in the Jetty XM
 </Configure>
 ----
 
-[[request-statistics]]
-==== Request Statistics
+A special variant of `ConnectionStatistics` called `IncludeExcludeConnectionStatistics` allows you to refine which types of connection you want to collect statistics for.
 
-To collect request statistics a `StatisticsHandler` must be configured as one of the handlers of the server.
-Typically this can be done as the top level handler, but you may choose to configure a statistics handler for just one context by creating a context configuration file.
-You can enable the `StatisticsHandler` by activating the `stats` modules on the command line.
-
-Alternately, if you are making multiple changes to the Jetty configuration, you could include statistics handler configuration into your own Jetty xml configuration.
-The following fragment shows how to configure a top level statistics handler:
-
+The following example shows how this can be used to record statistics only for WebSocket connections.
 [source, xml, subs="{sub-order}"]
 ----
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-  <Call name="insertHandler">
+  <Call name="addBeanToAllConnectors">
     <Arg>
-      <New id="StatsHandler" class="org.eclipse.jetty.server.handler.StatisticsHandler"/>
+      <New class="org.eclipse.jetty.io.IncludeExcludeConnectionStatistics">
+        <Call name="include" arg="org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection"/>
+      </New>
     </Arg>
   </Call>
 </Configure>
