@@ -163,7 +163,7 @@ Set all parameters on the `org.apache.jasper.servlet.JspServlet` instance define
 
 ____
 [NOTE]
-Be careful: for all of these parameters, if the value you set doesn't take effect, try using all lower case instead of camel case, or capitalizing only some of the words in the name, as JSP is inconsistent in its parameter naming strategyType.
+Be careful: for all of these parameters, if the value you set doesn't take effect, try using all lower case instead of camel case, or capitalizing only some of the words in the name, as JSP is inconsistent in its parameter naming strategy.
 ____
 
 [[modifying-configuration]]

@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
@@ -51,21 +50,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
 {
     private static final Logger LOGGER = Log.getLogger(Pool.class);
 
-    private final List<Entry> entries = new CopyOnWriteArrayList<Entry>()
-    {
-        @Override
-        public ListIterator<Entry> listIterator(int index)
-        {
-            try
-            {
-                return super.listIterator(index);
-            }
-            catch (IndexOutOfBoundsException e)
-            {
-                return listIterator();
-            }
-        }
-    };
+    private final List<Entry> entries = new CopyOnWriteArrayList<>();
 
     private final int maxEntries;
     private final AtomicInteger pending = new AtomicInteger();
@@ -77,7 +62,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
      * the release isn't done by the acquiring thread or when the entry pool is
      * undersized compared to the load applied on it.
      * When an entry can't be found in the cache, the global list is iterated
-     * with the normal strategy so the cache has no visible effect besides performance.
+     * with the configured strategy so the cache has no visible effect besides performance.
      */
     private final Locker locker = new Locker();
     private final ThreadLocal<Entry> cache;
@@ -227,7 +212,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
     /**
      * Acquire the entry from the pool at the specified index. This method bypasses the thread-local mechanism.
-     *
+     * @deprecated No longer supported. Instead use a {@link StrategyType} to configure the pool.
      * @param idx the index of the entry to acquire.
      * @return the specified entry or null if there is none at the specified index or if it is not available.
      */

@@ -59,10 +59,10 @@ public class PoolTest
     public static Stream<Object[]> strategy()
     {
         List<Object[]> data = new ArrayList<>();
-        data.add(new Object[]{(Factory)s -> new Pool<String>(FIRST, s)});
-        data.add(new Object[]{(Factory)s -> new Pool<String>(RANDOM, s)});
-        data.add(new Object[]{(Factory)s -> new Pool<String>(FIRST, s, true)});
-        data.add(new Object[]{(Factory)s -> new Pool<String>(ROUND_ROBIN, s)});
+        data.add(new Object[]{(Factory)s -> new Pool<>(FIRST, s)});
+        data.add(new Object[]{(Factory)s -> new Pool<>(RANDOM, s)});
+        data.add(new Object[]{(Factory)s -> new Pool<>(FIRST, s, true)});
+        data.add(new Object[]{(Factory)s -> new Pool<>(ROUND_ROBIN, s)});
         return data.stream();
     }
 
@@ -389,7 +389,12 @@ public class PoolTest
         pool.reserve(-1).enable("aaa", false);
 
         Pool<String>.Entry e1 = pool.acquire();
+        assertThat(e1, notNullValue());
         Pool<String>.Entry e2 = pool.acquire();
+        assertThat(e2, notNullValue());
+        assertThat(e2, sameInstance(e1));
+        assertThat(e2.getUsageCount(), is(2));
+
         assertThat(pool.values().stream().findFirst().get().isIdle(), is(false));
 
         assertThat(pool.remove(e1), is(false));
@@ -543,6 +548,7 @@ public class PoolTest
         Pool<String>.Entry e1 = pool.acquire();
         assertThat(e1.getUsageCount(), is(1));
         Pool<String>.Entry e2 = pool.acquire();
+        assertThat(e2, sameInstance(e1));
         assertThat(e1.getUsageCount(), is(2));
         assertThat(pool.acquire(), nullValue());
         assertThat(e1.getUsageCount(), is(2));
