@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.net.URI;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.WritePendingException;
 import java.time.Duration;
 import java.util.List;
@@ -390,7 +391,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     public void processConnectionError(Throwable cause, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("processConnectionError {} {}", this, cause);
+            LOG.debug("processConnectionError {}", this, cause);
 
         int code;
         if (cause instanceof CloseException)
@@ -424,11 +425,13 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     public void processHandlerError(Throwable cause, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("processHandlerError {} {}", this, cause);
+            LOG.debug("processHandlerError {}", this, cause);
 
         int code;
         if (cause instanceof CloseException)
             code = ((CloseException)cause).getStatusCode();
+        else if (cause instanceof ClosedChannelException)
+            code = CloseStatus.NO_CLOSE;
         else if (cause instanceof Utf8Appendable.NotUtf8Exception)
             code = CloseStatus.BAD_PAYLOAD;
         else if (cause instanceof WebSocketTimeoutException || cause instanceof TimeoutException || cause instanceof SocketTimeoutException)
@@ -438,7 +441,14 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
         else
             code = CloseStatus.SERVER_ERROR;
 
-        close(new CloseStatus(code, cause), callback);
+        CloseStatus closeStatus = new CloseStatus(code, cause);
+        if (CloseStatus.isTransmittableStatusCode(code))
+            close(closeStatus, callback);
+        else
+        {
+            if (sessionState.onClosed(closeStatus))
+                closeConnection(closeStatus, callback);
+        }
     }
 
     /**
@@ -458,10 +468,10 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
             () ->
             {
                 sessionState.onOpen();
-                if (!demanding)
-                    connection.demand(1);
                 if (LOG.isDebugEnabled())
                     LOG.debug("ConnectionState: Transition to OPEN");
+                if (!demanding)
+                    connection.demand(1);
             },
             x ->
             {
@@ -544,9 +554,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
         }
         catch (Throwable t)
         {
-            if (LOG.isDebugEnabled())
-                LOG.warn("Invalid outgoing frame: {}", frame, t);
-
+            LOG.warn("Invalid outgoing frame: {}", frame, t);
             callback.failed(t);
             return;
         }
@@ -574,7 +582,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
         catch (Throwable t)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Failed sendFrame()", t);
+                LOG.debug("Failed sendFrame() {}", t.toString());
 
             if (frame.getOpCode() == OpCode.CLOSE)
             {

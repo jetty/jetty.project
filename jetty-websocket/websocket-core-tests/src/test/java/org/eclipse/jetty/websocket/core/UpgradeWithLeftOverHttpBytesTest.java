@@ -19,20 +19,22 @@
 package org.eclipse.jetty.websocket.core;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
@@ -43,8 +45,8 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
@@ -74,10 +76,21 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
     @Test
     public void testUpgradeWithLeftOverHttpBytes() throws Exception
     {
-        TestMessageHandler clientEndpoint = new TestMessageHandler();
-        CompletableFuture<CoreSession> clientConnect = client.connect(clientEndpoint, serverUri);
+        CountDownLatch onOpenWait = new CountDownLatch(1);
+        TestMessageHandler clientEndpoint = new TestMessageHandler()
+        {
+            @Override
+            public void onOpen(CoreSession coreSession, Callback callback)
+            {
+                assertDoesNotThrow(() -> onOpenWait.await(5, TimeUnit.SECONDS));
+                super.onOpen(coreSession, callback);
+            }
+        };
+        CoreClientUpgradeRequest coreUpgrade = CoreClientUpgradeRequest.from(client, serverUri, clientEndpoint);
+        client.connect(coreUpgrade);
         Socket serverSocket = server.accept();
 
+        // Receive the upgrade request with the Socket.
         String upgradeRequest = getRequestHeaders(serverSocket.getInputStream());
         assertThat(upgradeRequest, containsString("HTTP/1.1"));
         assertThat(upgradeRequest, containsString("Upgrade: websocket"));
@@ -88,21 +101,34 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
             "Connection: Upgrade\n" +
             "Sec-WebSocket-Accept: " + getAcceptKey(upgradeRequest) + "\n" +
             "\n";
+        Frame firstFrame = new Frame(OpCode.TEXT, BufferUtil.toBuffer("first message payload"));
+        byte[] bytes = combineToByteArray(BufferUtil.toBuffer(upgradeResponse), generateFrame(firstFrame));
+        serverSocket.getOutputStream().write(bytes);
 
-        Frame dataFrame = new Frame(OpCode.TEXT, BufferUtil.toBuffer("first message payload"));
+        // Now we send the rest of the data.
+        int numFrames = 1000;
+        for (int i = 0; i < numFrames; i++)
+        {
+            Frame frame = new Frame(OpCode.TEXT, BufferUtil.toBuffer(Integer.toString(i)));
+            serverSocket.getOutputStream().write(toByteArray(frame));
+        }
         Frame closeFrame = new CloseStatus(CloseStatus.NORMAL, "closed by test").toFrame();
+        serverSocket.getOutputStream().write(toByteArray(closeFrame));
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        baos.write(upgradeResponse.getBytes(StandardCharsets.ISO_8859_1));
-        BufferUtil.writeTo(generateFrame(dataFrame), baos);
-        BufferUtil.writeTo(generateFrame(closeFrame), baos);
-        serverSocket.getOutputStream().write(baos.toByteArray());
-
-        // Check the client receives upgrade response and then the two websocket frames.
-        CoreSession coreSession = clientConnect.get(5, TimeUnit.SECONDS);
-        assertNotNull(coreSession);
+        // First payload sent with upgrade request, delay to ensure HttpConnection is not still reading from network.
+        Thread.sleep(1000);
+        onOpenWait.countDown();
         assertTrue(clientEndpoint.openLatch.await(5, TimeUnit.SECONDS));
         assertThat(clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS), is("first message payload"));
+
+        // We receive the rest of the frames all sent as separate writes.
+        for (int i = 0; i < numFrames; i++)
+        {
+            String msg = clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS);
+            assertThat(msg, is(Integer.toString(i)));
+        }
+
+        // Closed successfully with correct status.
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
         assertThat(clientEndpoint.closeStatus.getCode(), is(CloseStatus.NORMAL));
         assertThat(clientEndpoint.closeStatus.getReason(), is("closed by test"));
@@ -130,5 +156,21 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
     {
         Scanner s = new Scanner(is).useDelimiter("\r\n\r\n");
         return s.hasNext() ? s.next() : "";
+    }
+
+    byte[] combineToByteArray(ByteBuffer... buffers) throws IOException
+    {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        for (ByteBuffer bb : buffers)
+        {
+            BufferUtil.writeTo(bb, baos);
+        }
+
+        return baos.toByteArray();
+    }
+
+    byte[] toByteArray(Frame frame)
+    {
+        return BufferUtil.toArray(generateFrame(frame));
     }
 }
