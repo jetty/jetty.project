@@ -92,7 +92,8 @@ public class NullSessionCache extends AbstractSessionCache
     @Override
     public void setEvictionPolicy(int evictionTimeout)
     {
-        LOG.warn("Ignoring eviction setting: {}", evictionTimeout);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Ignoring eviction setting: {}", evictionTimeout);
     }
 
     @Override
