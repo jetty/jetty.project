@@ -562,6 +562,12 @@
           <version>${conscrypt.version}</version>
           <scope>test</scope>
         </dependency>
+        <dependency>
+          <groupId>org.mortbay.jetty.alpn</groupId>
+          <artifactId>jetty-alpn-agent</artifactId>
+          <version>${alpn.agent.version}</version>
+          <scope>test</scope>
+        </dependency>
       </dependencies>
       <build>
         <plugins>
