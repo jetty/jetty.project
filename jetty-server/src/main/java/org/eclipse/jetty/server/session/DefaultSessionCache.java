@@ -92,10 +92,7 @@ public class DefaultSessionCache extends AbstractSessionCache
     {
         if (id == null)
             return null;
-
-        Session session = _sessions.get(id);
-
-        return session;
+        return _sessions.get(id);
     }
 
     @Override
@@ -177,21 +174,18 @@ public class DefaultSessionCache extends AbstractSessionCache
     @Override
     public Session newSession(HttpServletRequest request, SessionData data)
     {
-        Session s = new Session(getSessionHandler(), request, data);
-        return s;
+        return new Session(getSessionHandler(), request, data);
     }
 
     @Override
     public Session newSession(SessionData data)
     {
-        Session s = new Session(getSessionHandler(), data);
-        return s;
+        return new Session(getSessionHandler(), data);
     }
 
     @Override
     public boolean doReplace(String id, Session oldValue, Session newValue)
     {
-        boolean result = _sessions.replace(id, oldValue, newValue);
-        return result;
+        return _sessions.replace(id, oldValue, newValue);
     }
 }
