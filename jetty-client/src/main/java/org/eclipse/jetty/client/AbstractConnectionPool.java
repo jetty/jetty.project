@@ -32,6 +32,7 @@ import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.Sweeper;
 import org.slf4j.Logger;
@@ -40,7 +41,7 @@ import org.slf4j.LoggerFactory;
 import static java.util.stream.Collectors.toCollection;
 
 @ManagedObject
-public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable, Sweeper.Sweepable
+public abstract class AbstractConnectionPool extends ContainerLifeCycle implements ConnectionPool, Dumpable, Sweeper.Sweepable
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractConnectionPool.class);
 
@@ -51,16 +52,21 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
 
     protected AbstractConnectionPool(HttpDestination destination, int maxConnections, boolean cache, Callback requester)
     {
+        this(destination, new Pool<>(Pool.StrategyType.FIRST, maxConnections, cache), requester);
+    }
+
+    protected AbstractConnectionPool(HttpDestination destination, Pool<Connection> pool, Callback requester)
+    {
         this.destination = destination;
         this.requester = requester;
-        @SuppressWarnings("unchecked")
-        Pool<Connection> pool = destination.getBean(Pool.class);
-        if (pool == null)
-        {
-            pool = new Pool<>(maxConnections, cache ? 1 : 0);
-            destination.addBean(pool);
-        }
         this.pool = pool;
+        addBean(pool);
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        pool.close();
     }
 
     @Override
