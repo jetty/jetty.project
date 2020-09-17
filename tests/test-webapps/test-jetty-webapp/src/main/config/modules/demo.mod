@@ -11,6 +11,7 @@ Configure the Jetty Demo base.
 rewrite
 jaas
 test-keystore
+work
 
 [tags]
 demo

@@ -572,7 +572,10 @@ public class IdleTimeoutTest extends AbstractTest
                 }
             }
         });
-        connector.setIdleTimeout(2 * delay);
+        // The timeout is going to be reset each time a DATA frame is fully consumed, hence
+        // every 2 loops in the above servlet. So the IdleTimeout must be greater than (2 * delay)
+        // to make sure it does not fire spuriously.
+        connector.setIdleTimeout(3 * delay);
 
         Session session = newClient(new Session.Listener.Adapter());
         MetaData.Request metaData = newRequest("POST", HttpFields.EMPTY);
