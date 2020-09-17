@@ -115,7 +115,7 @@ public class FileTestHelper
             int i = name.lastIndexOf('_');
             if (i < 0)
                 continue;
-            String id = name.substring(i);
+            String id = name.substring(i + 1);
             if (id.equals(sessionId))
             {
                 found = true;
