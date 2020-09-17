@@ -139,7 +139,7 @@ As previously mentioned, we highly recommend that you extend the link:{JDURL}/or
 
 ===== Heterogenous Caching
 
-Using one of the s`SessionCacheFactory``s will ensure that every time a `SessionHandler` starts it will create a new instance of the corresponding type of `SessionCache`.
+Using one of the ``SessionCacheFactory``s will ensure that every time a `SessionHandler` starts it will create a new instance of the corresponding type of `SessionCache`.
 
 But, what if you deploy multiple webapps, and for one of them, you don't want to use sessions?
 Or alternatively, you don't want to use sessions, but you have one webapp that now needs them?

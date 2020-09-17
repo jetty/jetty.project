@@ -45,7 +45,7 @@ The `DefaultSessionIdManager` uses `SecureRandom` to generate unique session ids
 
 The `SessionHandler` class, which is used by both the `ServletContextHandler` and the `WebAppContext` classes, will instantiate a `DefaultSessionIdManager` on startup if it does not detect one already present for the `Server`.
 
-Here is an example of explicitly setting up a `DefaultSessionIdManager` in code:
+Here is an example of explicitly setting up a `DefaultSessionIdManager` with a `workerName` of `server3` in code:
 
 [source,java,indent=0]
 ----
