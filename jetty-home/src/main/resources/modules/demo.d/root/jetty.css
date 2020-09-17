@@ -1,0 +1,351 @@
+BODY
+{
+  font-family: Arial, Helvetica, sans-serif;
+  background-color: #FFFFFF;
+  font-size: 10pt;
+  color: #666666;
+}
+
+img
+{
+  border: 0px;
+}
+
+
+div#header
+{
+  clear: both;
+  background-image: url('images/jetty-header.jpg');
+  background-repeat: no-repeat;
+  background-position: center;
+  height:200px;
+  border-bottom: 3px ridge #cccccc;
+  border-right: 3px ridge #cccccc;
+  border-top: 3px groove #cccccc;
+  border-left: 3px groove #cccccc;
+  width: 850px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+div#content
+{
+  clear: both;
+  font-size: 10pt;
+  font-weight: normal;
+  color: #666666;
+  margin-top: 30px;
+  width: 850px;
+  margin-left: auto;
+  margin-right: auto;
+}
+ 
+div#links table
+{
+  width: 850px;
+}
+ 
+div#links td
+{
+  vertical-align: top;
+  text-align: left;
+  border: 2px dotted #cccccc; 
+  padding: 8px;
+  background-color: #efefef;
+  width: 280px;
+}
+
+
+div#links
+{
+  margin-top:  20px;
+  width: 850px;
+  color: #999999;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+
+div#links h1,h2,p 
+{
+  font-size: 10pt;
+  font-family: sans-serif;
+  text-align:left;
+  margin: 5px;
+}
+
+div#links h1
+{
+  font-size: 22pt;
+  font-weight: normal;
+  font-family: sans-serif;
+  letter-spacing: 6pt;
+  color: #666666;
+  text-align: center;
+  margin-top:20px;
+}
+
+
+div#links h2
+{
+  font-size: 12pt;
+  font-weight: normal;
+  letter-spacing: 2pt;
+  color: #666666;
+}
+
+
+
+div#blog
+{
+  margin-top:  20px;
+  width: 850px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+div#blog iframe
+{
+  width: 100%;
+  height:350px;
+  border: 2px dotted #cccccc; 
+}
+
+
+
+div#footer
+{
+  clear: both;
+  border-top: 4px groove #cccccc;
+  margin-top:20px;
+  padding-top:10px;
+  width: 850px;
+}
+
+
+
+h1
+{
+  font-size: 14pt;
+  text-align:center;
+}
+
+A:link 
+{ 
+  color: #0099cc; 
+  text-decoration: none;
+  font-weight: normal;
+  font-size: 10pt;
+  font-family:sans-serif;
+}
+
+A:visited 
+{ 
+  color: #0099cc; 
+  text-decoration: none;
+  font-weight: normal;
+  font-size: 10pt;
+  font-family:sans-serif;
+}
+
+A:hover 
+{ 
+  color: #ff6600; 
+  text-decoration: none;
+  font-weight: normal;
+  font-size: 10pt;
+  font-family:sans-serif;
+} 
+
+A:active 
+{ 
+  color: #0099cc; 
+  text-decoration: none;
+  font-weight: normal;
+  font-size: 10pt;
+  font-family:sans-serif;
+} 
+
+A.disabled
+{
+	color: #666666;
+}
+
+
+form
+{
+  display: inline;
+}
+
+.SEVERE
+{
+  background-color: #ff0000;
+}
+
+.WARNING
+{
+  background-color: #ff6633;
+}
+
+.INFO
+{
+  background-color: #00cc33;
+}
+
+.CONFIG
+{
+  background-color: #999999;
+}
+
+.FINE
+{
+  background-color: #3333ff;
+}
+
+.FINER
+{
+  background-color: #3333cc;
+}
+
+.FINEST
+{
+  background-color: #333399;
+}
+
+
+table
+{
+  width: 100%;
+  border-spacing: 0px;
+  border-collapse: separate;
+}
+
+
+td
+{
+  font-family: Arial,sans-serif;
+  font-size: 10pt;
+  padding: 2px;
+  margin: 0px;
+  border: #eeeeee groove 2px;
+}
+
+
+#content td
+{
+  vertical-align: top;
+}
+
+#key
+{
+  border-spacing: 0px;
+  border: 0px;
+}
+
+#key td
+{
+  border: #eeeeee groove 2px;
+  font-size: 8pt;
+  font-family: Helvetica;
+  font-weight: bold;
+  color: white;
+}
+
+thead th
+{
+  border: #eeeeee groove 2px;
+}
+
+.seq
+{
+    width: 7em;
+    min-width: 7em;
+    max-width: 7em;
+    color: white;
+    font-family: Helvetica;
+    font-weight: bold;
+}
+
+.date
+{
+    width: 19em;
+    min-width: 19em;
+    max-width: 19em;
+    color: black;
+    background-color: #eeeeee;
+}
+
+.thread
+{
+    width: 3em;
+    min-width: 3em;
+    max-width: 3em;
+    color: black;
+    background-color: #eeeeee;
+}
+
+.logger
+{
+    width: 30em;
+    min-width: 30em;
+    max-width: 30em;
+    background-color: #eeeeee;
+}
+
+.logclass
+{
+    width: 30em;
+    min-width: 30em;
+    max-width: 30em;
+    background-color: #eeeeee;
+}
+
+.method
+{
+    width: 20em;
+    min-width: 20em;
+    max-width: 20em;
+    background-color: #eeeeee;
+}
+
+.message
+{
+    width: 250em;
+    min-width: 250em;
+    max-width: 250em;
+    text-align: left;
+    background-color: #eeeeee;
+    font-family: monospace;
+}
+
+
+.message table
+{
+    border: 0px;
+}
+
+.message td,tr
+{
+    text-align: left;
+    vertical-align: top;
+    padding-top: 0px;
+    border: 0px;
+}
+
+.except
+{  
+    background: #eeeeee;
+    padding-top: 2px;
+}
+
+.excepticon
+{
+    width: 40px;
+    max-width: 40px;
+    min-width: 40px;
+}
+
+button
+{
+  background: white;
+}
