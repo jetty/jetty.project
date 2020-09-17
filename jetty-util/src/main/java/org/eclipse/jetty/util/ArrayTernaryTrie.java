@@ -141,6 +141,8 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
     {
         super(insensitive);
         _value = (V[])new Object[capacity];
+        if (capacity > Character.MAX_VALUE)
+            throw new IllegalStateException("Capacity too large > 32768");
         _tree = new char[capacity * ROW_SIZE];
         _key = new String[capacity];
     }
@@ -223,6 +225,8 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         if (t == _rows)
         {
             _rows++;
+            if (_rows == Character.MAX_VALUE)
+                throw new IllegalStateException("Overflow");
             if (_rows >= _key.length)
             {
                 _rows--;

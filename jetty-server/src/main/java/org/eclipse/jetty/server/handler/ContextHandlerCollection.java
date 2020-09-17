@@ -33,6 +33,7 @@ import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
+import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Trie;
@@ -143,7 +144,7 @@ public class ContextHandlerCollection extends HandlerCollection
             {
                 if (!mapping._pathBranches.put(entry.getKey().substring(1), entry))
                 {
-                    capacity += 512;
+                    capacity += Math.min(8192, capacity);
                     continue loop;
                 }
             }
@@ -434,7 +435,9 @@ public class ContextHandlerCollection extends HandlerCollection
         private Mapping(Handler[] handlers, int capacity)
         {
             super(handlers);
-            _pathBranches = new ArrayTernaryTrie<>(false, capacity);
+            _pathBranches = capacity < Character.MAX_VALUE
+                ? new ArrayTernaryTrie<>(false, capacity)
+                : new ArrayTrie<>();
         }
     }
 }
