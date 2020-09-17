@@ -421,6 +421,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     protected void doStart() throws Exception
     {
         _deflaterPool = newDeflaterPool(_poolCapacity);
+        addBean(_deflaterPool);
         _vary = (_agentPatterns.size() > 0) ? GzipHttpOutputInterceptor.VARY_ACCEPT_ENCODING_USER_AGENT : GzipHttpOutputInterceptor.VARY_ACCEPT_ENCODING;
         super.doStart();
     }
