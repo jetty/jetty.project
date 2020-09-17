@@ -101,6 +101,7 @@ public class ListenerHolder extends BaseHolder<EventListener>
                     throw ex;
                 }
             }
+            _listener = wrap(_listener, WrapFunction.class, WrapFunction::wrapEventListener);
             contextHandler.addEventListener(_listener);
         }
     }
@@ -132,7 +133,7 @@ public class ListenerHolder extends BaseHolder<EventListener>
                 ContextHandler contextHandler = ContextHandler.getCurrentContext().getContextHandler();
                 if (contextHandler != null)
                     contextHandler.removeEventListener(_listener);
-                getServletHandler().destroyListener(_listener);
+                getServletHandler().destroyListener(unwrap(_listener));
             }
             finally
             {
@@ -145,5 +146,47 @@ public class ListenerHolder extends BaseHolder<EventListener>
     public String toString()
     {
         return super.toString() + ": " + getClassName();
+    }
+
+    /**
+     * Experimental Wrapper mechanism for Servlet EventListeners.
+     * <p>
+     * Beans in {@code ServletContextHandler} or {@code WebAppContext} that implement this interface
+     * will be called to optionally wrap any newly created Servlet EventListeners before
+     * they are used for the first time.
+     * </p>
+     */
+    public interface WrapFunction
+    {
+        /**
+         * Optionally wrap the Servlet EventListener.
+         *
+         * @param listener the Servlet EventListener being passed in.
+         * @return the Servlet EventListener (extend from {@link ListenerHolder.Wrapper}
+         * if you do wrap the Servlet EventListener)
+         */
+        EventListener wrapEventListener(EventListener listener);
+    }
+
+    public static class Wrapper implements EventListener, Wrapped<EventListener>
+    {
+        final EventListener _listener;
+
+        public Wrapper(EventListener listener)
+        {
+            _listener = listener;
+        }
+
+        @Override
+        public EventListener getWrapped()
+        {
+            return _listener;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s:%s", this.getClass().getSimpleName(), _listener.toString());
+        }
     }
 }
