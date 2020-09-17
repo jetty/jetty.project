@@ -26,26 +26,20 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * A fast pool of objects, with optional support for
- * multiplexing, max usage count and thread-local caching.
- * <p>
- * The thread-local caching mechanism is about remembering up to N previously
- * used entries into a thread-local single-threaded collection.
- * When that collection is not empty, its entries are removed one by one
- * during acquisition until an entry that can be acquired is found.
- * This can greatly speed up acquisition when both the acquisition and the
- * release of the entries is done on the same thread as this avoids iterating
- * the global, thread-safe collection of entries.
- * </p>
+ * multiplexing, max usage count and several optimized strategies plus
+ * an optional {@link ThreadLocal} cache of the last release entry.
  * <p>
  * When the method {@link #close()} is called, all {@link Closeable}s in the pool
  * are also closed.
@@ -56,38 +50,88 @@ public class Pool<T> implements AutoCloseable, Dumpable
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(Pool.class);
 
-    private final List<Entry> sharedList = new CopyOnWriteArrayList<>();
+    private final List<Entry> entries = new CopyOnWriteArrayList<>();
+
+    private final int maxEntries;
+    private final AtomicInteger pending = new AtomicInteger();
+    private final StrategyType strategyType;
+
     /*
      * The cache is used to avoid hammering on the first index of the entry list.
      * Caches can become poisoned (i.e.: containing entries that are in use) when
      * the release isn't done by the acquiring thread or when the entry pool is
      * undersized compared to the load applied on it.
      * When an entry can't be found in the cache, the global list is iterated
-     * normally so the cache has no visible effect besides performance.
+     * with the configured strategy so the cache has no visible effect besides performance.
      */
-    private final ThreadLocal<List<Entry>> cache;
     private final AutoLock lock = new AutoLock();
-    private final int maxEntries;
-    private final int cacheSize;
-    private final AtomicInteger pending = new AtomicInteger();
+    private final ThreadLocal<Entry> cache;
+    private final AtomicInteger nextIndex;
     private volatile boolean closed;
     private volatile int maxMultiplex = 1;
     private volatile int maxUsageCount = -1;
 
     /**
-     * Construct a Pool with the specified thread-local cache size.
-     *
-     * @param maxEntries the maximum amount of entries that the pool will accept.
-     * @param cacheSize the thread-local cache size. A value less than 1 means the cache is disabled.
+     * The type of the strategy to use for the pool.
+     * The strategy primarily determines where iteration over the pool entries begins.
      */
-    public Pool(int maxEntries, int cacheSize)
+    public enum StrategyType
+    {
+        /**
+         * A strategy that looks for an entry always starting from the first entry.
+         * It will favour the early entries in the pool, but may contend on them more.
+         */
+        FIRST,
+
+        /**
+         * A strategy that looks for an entry by iterating from a random starting
+         * index.  No entries are favoured and contention is reduced.
+         */
+        RANDOM,
+
+        /**
+         * A strategy that uses the {@link Thread#getId()} of the current thread
+         * to select a starting point for an entry search.  Whilst not as performant as
+         * using the {@link ThreadLocal} cache, it may be suitable when the pool is substantially smaller
+         * than the number of available threads.
+         * No entries are favoured and contention is reduced.
+         */
+        THREAD_ID,
+
+        /**
+         * A strategy that looks for an entry by iterating from a starting point
+         * that is incremented on every search. This gives similar results to the
+         * random strategy but with more predictable behaviour.
+         * No entries are favoured and contention is reduced.
+         */
+        ROUND_ROBIN,
+    }
+
+    /**
+     * Construct a Pool with a specified lookup strategy and no
+     * {@link ThreadLocal} cache.
+     *
+     * @param strategyType The strategy to used for looking up entries.
+     * @param maxEntries the maximum amount of entries that the pool will accept.
+     */
+    public Pool(StrategyType strategyType, int maxEntries)
+    {
+        this(strategyType, maxEntries, false);
+    }
+
+    /**
+     * Construct a Pool with the specified thread-local cache size and
+     * an optional {@link ThreadLocal} cache.
+     * @param strategyType The strategy to used for looking up entries.
+     * @param maxEntries the maximum amount of entries that the pool will accept.
+     * @param cache True if a {@link ThreadLocal} cache should be used to try the most recently released entry.
+     */
+    public Pool(StrategyType strategyType, int maxEntries, boolean cache)
     {
         this.maxEntries = maxEntries;
-        this.cacheSize = cacheSize;
-        if (cacheSize > 0)
-            this.cache = ThreadLocal.withInitial(() -> new ArrayList<Entry>(cacheSize));
-        else
-            this.cache = null;
+        this.strategyType = strategyType;
+        this.cache = cache ? new ThreadLocal<>() : null;
+        nextIndex = strategyType == StrategyType.ROUND_ROBIN ? new AtomicInteger() : null;
     }
 
     public int getReservedCount()
@@ -97,12 +141,12 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
     public int getIdleCount()
     {
-        return (int)sharedList.stream().filter(Entry::isIdle).count();
+        return (int)entries.stream().filter(Entry::isIdle).count();
     }
 
     public int getInUseCount()
     {
-        return (int)sharedList.stream().filter(Entry::isInUse).count();
+        return (int)entries.stream().filter(Entry::isInUse).count();
     }
 
     public int getMaxEntries()
@@ -153,7 +197,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
             if (closed)
                 return null;
 
-            int space = maxEntries - sharedList.size();
+            int space = maxEntries - entries.size();
             if (space <= 0)
                 return null;
 
@@ -165,33 +209,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
             pending.incrementAndGet();
 
             Entry entry = new Entry();
-            sharedList.add(entry);
+            entries.add(entry);
             return entry;
         }
-    }
-
-    /**
-     * Acquire the entry from the pool at the specified index. This method bypasses the thread-local mechanism.
-     *
-     * @param idx the index of the entry to acquire.
-     * @return the specified entry or null if there is none at the specified index or if it is not available.
-     */
-    public Entry acquireAt(int idx)
-    {
-        if (closed)
-            return null;
-
-        try
-        {
-            Entry entry = sharedList.get(idx);
-            if (entry.tryAcquire())
-                return entry;
-        }
-        catch (IndexOutOfBoundsException e)
-        {
-            // no entry at that index
-        }
-        return null;
     }
 
     /**
@@ -204,25 +224,52 @@ public class Pool<T> implements AutoCloseable, Dumpable
         if (closed)
             return null;
 
-        // first check the thread-local cache
+        int size = entries.size();
+        if (size == 0)
+            return null;
+
         if (cache != null)
         {
-            List<Entry> cachedList = cache.get();
-            while (!cachedList.isEmpty())
-            {
-                Entry cachedEntry = cachedList.remove(cachedList.size() - 1);
-                if (cachedEntry.tryAcquire())
-                    return cachedEntry;
-            }
-        }
-
-        // then iterate the shared list
-        for (Entry entry : sharedList)
-        {
-            if (entry.tryAcquire())
+            Pool<T>.Entry entry = cache.get();
+            if (entry != null && entry.tryAcquire())
                 return entry;
         }
+
+        int index = startIndex(size);
+
+        for (int tries = size; tries-- > 0;)
+        {
+            try
+            {
+                Pool<T>.Entry entry = entries.get(index);
+                if (entry != null && entry.tryAcquire())
+                    return entry;
+            }
+            catch (IndexOutOfBoundsException e)
+            {
+                LOGGER.trace("IGNORED", e);
+                size = entries.size();
+            }
+            index = (index + 1) % size;
+        }
         return null;
+    }
+
+    private int startIndex(int size)
+    {
+        switch (strategyType)
+        {
+            case FIRST:
+                return 0;
+            case RANDOM:
+                return ThreadLocalRandom.current().nextInt(size);
+            case ROUND_ROBIN:
+                return nextIndex.getAndUpdate(c -> Math.max(0, c + 1)) % size;
+            case THREAD_ID:
+                return (int)(Thread.currentThread().getId() % size);
+            default:
+                throw new IllegalArgumentException("Unknown strategy type: " + strategyType);
+        }
     }
 
     /**
@@ -278,17 +325,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
         if (closed)
             return false;
 
-        // first mark it as unused
-        boolean reusable = entry.tryRelease();
-
-        // then cache the released entry
-        if (cache != null && reusable)
-        {
-            List<Entry> cachedList = cache.get();
-            if (cachedList.size() < cacheSize)
-                cachedList.add(entry);
-        }
-        return reusable;
+        boolean released = entry.tryRelease();
+        if (released && cache != null)
+            cache.set(entry);
+        return released;
     }
 
     /**
@@ -309,12 +349,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
             return false;
         }
 
-        boolean removed = sharedList.remove(entry);
-        if (!removed)
-        {
-            if (LOGGER.isDebugEnabled())
-                LOGGER.debug("Attempt to remove an object from the pool that does not exist: {}", entry);
-        }
+        boolean removed = entries.remove(entry);
+        if (!removed && LOGGER.isDebugEnabled())
+            LOGGER.debug("Attempt to remove an object from the pool that does not exist: {}", entry);
 
         return removed;
     }
@@ -331,8 +368,8 @@ public class Pool<T> implements AutoCloseable, Dumpable
         try (AutoLock l = lock.lock())
         {
             closed = true;
-            copy = new ArrayList<>(sharedList);
-            sharedList.clear();
+            copy = new ArrayList<>(entries);
+            entries.clear();
         }
 
         // iterate the copy and close its entries
@@ -345,29 +382,30 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
     public int size()
     {
-        return sharedList.size();
+        return entries.size();
     }
 
     public Collection<Entry> values()
     {
-        return Collections.unmodifiableCollection(sharedList);
+        return Collections.unmodifiableCollection(entries);
     }
 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out, indent, this);
+        Dumpable.dumpObjects(out, indent, this,
+            new DumpableCollection("entries", entries));
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x[size=%d closed=%s entries=%s]",
+        return String.format("%s@%x[size=%d closed=%s pending=%d]",
             getClass().getSimpleName(),
             hashCode(),
-            sharedList.size(),
+            entries.size(),
             closed,
-            sharedList);
+            pending.get());
     }
 
     public class Entry
@@ -500,6 +538,13 @@ public class Pool<T> implements AutoCloseable, Dumpable
             return !(overUsed && newMultiplexingCount == 0);
         }
 
+        public boolean isOverUsed()
+        {
+            int currentMaxUsageCount = maxUsageCount;
+            int usageCount = state.getHi();
+            return currentMaxUsageCount > 0 && usageCount >= currentMaxUsageCount;
+        }
+
         /**
          * Try to mark the entry as removed.
          * @return true if the entry has to be removed from the containing pool, false otherwise.
@@ -549,12 +594,17 @@ public class Pool<T> implements AutoCloseable, Dumpable
         public String toString()
         {
             long encoded = state.get();
-            return String.format("%s@%x{usage=%d/%d,multiplex=%d/%d,pooled=%s}",
+            int usageCount = AtomicBiInteger.getHi(encoded);
+            int multiplexCount = AtomicBiInteger.getLo(encoded);
+
+            String state = usageCount < 0 ? "CLOSED" : multiplexCount == 0 ? "IDLE" : "INUSE";
+
+            return String.format("%s@%x{%s, usage=%d, multiplex=%d/%d, pooled=%s}",
                 getClass().getSimpleName(),
                 hashCode(),
-                AtomicBiInteger.getHi(encoded),
-                getMaxUsageCount(),
-                AtomicBiInteger.getLo(encoded),
+                state,
+                Math.max(usageCount, 0),
+                Math.max(multiplexCount, 0),
                 getMaxMultiplex(),
                 pooled);
         }
