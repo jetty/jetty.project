@@ -418,7 +418,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     }
 
     @Override
-    public Deflater getDeflater(Request request, long contentLength)
+    public DeflaterPool.Entry getDeflaterEntry(Request request, long contentLength)
     {
         if (contentLength >= 0 && contentLength < _minGzipSize)
         {
@@ -728,12 +728,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             return true;
 
         return _paths.test(requestURI);
-    }
-
-    @Override
-    public void recycle(Deflater deflater)
-    {
-        _deflaterPool.release(deflater);
     }
 
     /**

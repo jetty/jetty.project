@@ -92,13 +92,14 @@ public class DeflaterPoolBenchmark
     @SuppressWarnings("deprecation")
     public long testPool() throws Exception
     {
-        Deflater deflater = _pool.acquire();
+        DeflaterPool.Entry entry = _pool.acquire();
+        Deflater deflater = entry.get();
         deflater.setInput(COMPRESSION_STRING.getBytes());
         deflater.finish();
 
         byte[] output = new byte[COMPRESSION_STRING.length() + 1];
         int compressedDataLength = deflater.deflate(output);
-        _pool.release(deflater);
+        _pool.release(entry);
 
         return compressedDataLength;
     }

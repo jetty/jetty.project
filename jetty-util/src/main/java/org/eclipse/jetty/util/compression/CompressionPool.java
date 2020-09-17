@@ -23,9 +23,10 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
 public abstract class CompressionPool<T> extends AbstractLifeCycle
 {
-    public static final int INFINITE_CAPACITY = -1;
+    public static final int INFINITE_CAPACITY = Integer.MAX_VALUE;
 
-    private final Pool<T> _pool;
+    private int _capacity;
+    private Pool<T> _pool;
 
     /**
      * Create a Pool of {@link T} instances.
@@ -38,7 +39,7 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
      */
     public CompressionPool(int capacity)
     {
-        _pool = new Pool<T>(capacity, 1);
+        _capacity = capacity;
     }
 
     public int getCapacity()
@@ -48,6 +49,8 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
 
     public void setCapacity(int capacity)
     {
+        if (isStarted())
+            throw new IllegalStateException("Already Started");
         _capacity = capacity;
     }
 
@@ -62,7 +65,10 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
      */
     public Entry acquire()
     {
-        return new Entry(_pool.acquire(e -> newObject()));
+        if (_pool != null)
+            return new Entry(_pool.acquire(e -> newObject()));
+        else
+            return new Entry();
     }
 
     /**
@@ -74,16 +80,31 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
     }
 
     @Override
-    public void doStop()
+    protected void doStart() throws Exception
     {
-        // TODO: We can't use this because it will not end the entries after it removes them.
-        // _pool.close();
+        if (_capacity > 0)
+            _pool = new Pool<>(Pool.StrategyType.RANDOM, _capacity, true);
+        super.doStart();
+    }
+
+    @Override
+    public void doStop() throws Exception
+    {
+        // TODO: Pool.close() will not end the entries after it removes them.
+        _pool.close();
+        _pool = null;
+        super.doStop();
     }
 
     public class Entry
     {
         private T _value;
         private Pool<T>.Entry _entry;
+
+        Entry()
+        {
+            this(null);
+        }
 
         Entry(Pool<T>.Entry entry)
         {
@@ -125,6 +146,6 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
             hashCode(),
             getState(),
             _pool.size(),
-            _capacity < 0 ? "UNLIMITED" : _capacity);
+            _capacity);
     }
 }

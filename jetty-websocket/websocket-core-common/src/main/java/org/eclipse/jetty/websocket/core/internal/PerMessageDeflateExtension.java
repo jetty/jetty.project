@@ -27,6 +27,8 @@ import java.util.zip.Inflater;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.compression.DeflaterPool;
+import org.eclipse.jetty.util.compression.InflaterPool;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -52,8 +54,8 @@ public class PerMessageDeflateExtension extends AbstractExtension
 
     private final TransformingFlusher outgoingFlusher;
     private final TransformingFlusher incomingFlusher;
-    private Deflater deflaterImpl;
-    private Inflater inflaterImpl;
+    private DeflaterPool.Entry deflaterEntry;
+    private InflaterPool.Entry inflaterEntry;
     private boolean incomingCompressed;
 
     private ExtensionConfig configRequested;
@@ -178,28 +180,28 @@ public class PerMessageDeflateExtension extends AbstractExtension
 
     public Deflater getDeflater()
     {
-        if (deflaterImpl == null)
-            deflaterImpl = getDeflaterPool().acquire();
-        return deflaterImpl;
+        if (deflaterEntry == null)
+            deflaterEntry = getDeflaterPool().acquire();
+        return deflaterEntry.get();
     }
 
     public Inflater getInflater()
     {
-        if (inflaterImpl == null)
-            inflaterImpl = getInflaterPool().acquire();
-        return inflaterImpl;
+        if (inflaterEntry == null)
+            inflaterEntry = getInflaterPool().acquire();
+        return inflaterEntry.get();
     }
 
     public void releaseInflater()
     {
-        getInflaterPool().release(inflaterImpl);
-        inflaterImpl = null;
+        inflaterEntry.release();
+        inflaterEntry = null;
     }
 
     public void releaseDeflater()
     {
-        getDeflaterPool().release(deflaterImpl);
-        deflaterImpl = null;
+        deflaterEntry.release();
+        deflaterEntry = null;
     }
 
     @Override

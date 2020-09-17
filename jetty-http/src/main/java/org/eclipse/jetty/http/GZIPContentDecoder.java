@@ -42,9 +42,9 @@ public class GZIPContentDecoder implements Destroyable
     private static final long UINT_MAX = 0xFFFFFFFFL;
 
     private final List<ByteBuffer> _inflateds = new ArrayList<>();
-    private final InflaterPool _inflaterPool;
     private final ByteBufferPool _pool;
     private final int _bufferSize;
+    private InflaterPool.Entry _inflaterEntry;
     private Inflater _inflater;
     private State _state;
     private int _size;
@@ -64,13 +64,12 @@ public class GZIPContentDecoder implements Destroyable
 
     public GZIPContentDecoder(ByteBufferPool pool, int bufferSize)
     {
-        this(null, pool, bufferSize);
+        this(new InflaterPool(0, true), pool, bufferSize);
     }
 
     public GZIPContentDecoder(InflaterPool inflaterPool, ByteBufferPool pool, int bufferSize)
     {
-        _inflaterPool = inflaterPool;
-        _inflater = (inflaterPool == null) ? new Inflater(true) : inflaterPool.acquire();
+        _inflaterEntry = inflaterPool.acquire();
         _bufferSize = bufferSize;
         _pool = pool;
         reset();
@@ -416,11 +415,8 @@ public class GZIPContentDecoder implements Destroyable
     @Override
     public void destroy()
     {
-        if (_inflaterPool == null)
-            _inflater.end();
-        else
-            _inflaterPool.release(_inflater);
-
+        _inflaterEntry.release();
+        _inflaterEntry = null;
         _inflater = null;
     }
 
