@@ -19,6 +19,7 @@
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
+import java.util.function.BiFunction;
 import javax.servlet.ServletContext;
 import javax.servlet.UnavailableException;
 
@@ -239,6 +240,47 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
         }
     }
 
+    /**
+     * Wrap component using component specific Wrapper Function beans.
+     *
+     * @param component the component to optionally wrap
+     * @param wrapperFunctionType the bean class type to look for in the {@link ServletContextHandler}
+     * @param function the BiFunction to execute for each {@code wrapperFunctionType} Bean found (passing in the component and component type)
+     * @param <W> the "wrapper function" implementation. (eg: {@code ServletHolder.WrapperFunction} or {@code FilterHolder.WrapperFunction}, etc)
+     * @return the component that has passed through all Wrapper Function beans found.
+     */
+    protected <W> T wrap(final T component, final Class<W> wrapperFunctionType, final BiFunction<W, T, T> function)
+    {
+        T ret = component;
+        ServletContextHandler contextHandler = getServletHandler().getServletContextHandler();
+        if (contextHandler == null)
+        {
+            ContextHandler.Context context = ContextHandler.getCurrentContext();
+            contextHandler = (ServletContextHandler)(context == null ? null : context.getContextHandler());
+        }
+
+        if (contextHandler != null)
+        {
+            for (W wrapperFunction : contextHandler.getBeans(wrapperFunctionType))
+            {
+                ret = function.apply(wrapperFunction, ret);
+            }
+        }
+        return ret;
+    }
+
+    protected T unwrap(final T component)
+    {
+        T ret = component;
+
+        while (ret instanceof Wrapped)
+        {
+            // noinspection unchecked,rawtypes
+            ret = (T)((Wrapped)ret).getWrapped();
+        }
+        return ret;
+    }
+
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
@@ -249,5 +291,10 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     public String dump()
     {
         return Dumpable.dump(this);
+    }
+
+    interface Wrapped<C>
+    {
+        C getWrapped();
     }
 }

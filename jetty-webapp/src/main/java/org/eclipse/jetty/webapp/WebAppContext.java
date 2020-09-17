@@ -532,6 +532,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             _metadata.setAllowDuplicateFragmentNames(isAllowDuplicateFragmentNames());
             Boolean validate = (Boolean)getAttribute(MetaData.VALIDATE_XML);
             _metadata.setValidateXml((validate != null && validate));
+            wrapConfigurations();
             preConfigure();
             super.doStart();
             postConfigure();
@@ -547,6 +548,26 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             setAvailable(false); // webapp cannot be accessed (results in status code 503)
             if (isThrowUnavailableOnStartupException())
                 throw t;
+        }
+    }
+
+    private void wrapConfigurations()
+    {
+        Collection<Configuration.WrapperFunction> wrappers = getBeans(Configuration.WrapperFunction.class);
+        if (wrappers == null || wrappers.isEmpty())
+            return;
+
+        List<Configuration> configs = new ArrayList<>(_configurations.getConfigurations());
+        _configurations.clear();
+
+        for (Configuration config : configs)
+        {
+            Configuration wrapped = config;
+            for (Configuration.WrapperFunction wrapperFunction : getBeans(Configuration.WrapperFunction.class))
+            {
+                wrapped = wrapperFunction.wrapConfiguration(wrapped);
+            }
+            _configurations.add(wrapped);
         }
     }
 

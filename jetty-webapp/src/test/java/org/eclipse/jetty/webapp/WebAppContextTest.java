@@ -185,15 +185,22 @@ public class WebAppContextTest
         Configurations.cleanKnown();
         WebAppContext wac = new WebAppContext();
         wac.setServer(new Server());
-        assertThat(wac.getConfigurations().stream().map(c -> c.getClass().getName()).collect(Collectors.toList()),
-            Matchers.contains(
-                "org.eclipse.jetty.webapp.JmxConfiguration",
-                "org.eclipse.jetty.webapp.WebInfConfiguration",
-                "org.eclipse.jetty.webapp.WebXmlConfiguration",
-                "org.eclipse.jetty.webapp.MetaInfConfiguration",
-                "org.eclipse.jetty.webapp.FragmentConfiguration",
-                "org.eclipse.jetty.webapp.WebAppConfiguration",
-                "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"));
+        List<String> actualConfigurations = wac.getConfigurations().stream().map(c -> c.getClass().getName()).collect(Collectors.toList());
+        List<String> expectedConfigurations = new ArrayList<>();
+
+        JmxConfiguration jmx = new JmxConfiguration();
+        if (jmx.isAvailable()) // depending on JVM runtime, this might not be available when this test is run
+        {
+            expectedConfigurations.add("org.eclipse.jetty.webapp.JmxConfiguration");
+        }
+        expectedConfigurations.add("org.eclipse.jetty.webapp.WebInfConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.webapp.WebXmlConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.webapp.MetaInfConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.webapp.FragmentConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.webapp.WebAppConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.webapp.JettyWebXmlConfiguration");
+
+        assertThat(actualConfigurations, Matchers.contains(expectedConfigurations.toArray()));
     }
 
     @Test

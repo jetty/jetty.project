@@ -572,7 +572,7 @@ public class RequestTest
                 }
                 catch (BadMessageException e)
                 {
-                    return e.getCode() == 501;
+                    return e.getCode() == 415;
                 }
             }
         };
