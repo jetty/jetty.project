@@ -980,8 +980,21 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         }
         for (String configClass : _configurationClasses)
         {
-            _configurations.add((Configuration)Loader.loadClass(configClass).getDeclaredConstructor().newInstance());
+            @SuppressWarnings("unchecked")
+            Configuration configuration = (Configuration)Loader.loadClass(configClass).getDeclaredConstructor().newInstance();
+            configuration = wrap(configuration);
+            _configurations.add(configuration);
         }
+    }
+
+    private Configuration wrap(final Configuration configuration)
+    {
+        Configuration ret = configuration;
+        for (Configuration.WrapperFunction wrapperFunction : getBeans(Configuration.WrapperFunction.class))
+        {
+            ret = wrapperFunction.wrapConfiguration(ret);
+        }
+        return ret;
     }
 
     @Override

@@ -395,6 +395,11 @@ public class ServletHandler extends ScopedHandler
         return _servletContext;
     }
 
+    public ServletContextHandler getServletContextHandler()
+    {
+        return _contextHandler;
+    }
+
     @ManagedAttribute(value = "mappings of servlets", readonly = true)
     public ServletMapping[] getServletMappings()
     {
@@ -1617,7 +1622,6 @@ public class ServletHandler extends ScopedHandler
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("call filter {}", _filterHolder);
-                Filter filter = _filterHolder.getFilter();
 
                 //if the request already does not support async, then the setting for the filter
                 //is irrelevant. However if the request supports async but this filter does not
@@ -1627,7 +1631,7 @@ public class ServletHandler extends ScopedHandler
                     try
                     {
                         baseRequest.setAsyncSupported(false, _filterHolder.toString());
-                        filter.doFilter(request, response, _next);
+                        _filterHolder.doFilter(request, response, _next);
                     }
                     finally
                     {
@@ -1635,7 +1639,7 @@ public class ServletHandler extends ScopedHandler
                     }
                 }
                 else
-                    filter.doFilter(request, response, _next);
+                    _filterHolder.doFilter(request, response, _next);
 
                 return;
             }
@@ -1690,7 +1694,6 @@ public class ServletHandler extends ScopedHandler
                 FilterHolder holder = _chain.get(_filter++);
                 if (LOG.isDebugEnabled())
                     LOG.debug("call filter " + holder);
-                Filter filter = holder.getFilter();
 
                 //if the request already does not support async, then the setting for the filter
                 //is irrelevant. However if the request supports async but this filter does not
@@ -1700,7 +1703,7 @@ public class ServletHandler extends ScopedHandler
                     try
                     {
                         _baseRequest.setAsyncSupported(false, holder.toString());
-                        filter.doFilter(request, response, this);
+                        holder.doFilter(request, response, this);
                     }
                     finally
                     {
@@ -1708,7 +1711,7 @@ public class ServletHandler extends ScopedHandler
                     }
                 }
                 else
-                    filter.doFilter(request, response, this);
+                    holder.doFilter(request, response, this);
 
                 return;
             }
