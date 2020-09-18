@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.config.ConfigSources;
@@ -30,7 +29,6 @@ import org.eclipse.jetty.start.config.JettyBaseConfigSource;
 import org.eclipse.jetty.start.config.JettyHomeConfigSource;
 import org.eclipse.jetty.start.fileinits.MavenLocalRepoFileInitializer.Coordinates;
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,11 +53,15 @@ public class MavenLocalRepoFileInitializerTest
     @BeforeEach
     public void setupBaseHome() throws IOException
     {
-        Path homeDir = testdir.getEmptyPathDir();
+        Path homeDir = testdir.getEmptyPathDir().resolve("home");
+        Path baseDir = testdir.getEmptyPathDir().resolve("base");
+
+        FS.ensureDirExists(homeDir);
+        FS.ensureDirExists(baseDir);
 
         ConfigSources config = new ConfigSources();
         config.add(new JettyHomeConfigSource(homeDir));
-        config.add(new JettyBaseConfigSource(homeDir));
+        config.add(new JettyBaseConfigSource(baseDir));
 
         this.baseHome = new BaseHome(config);
     }
@@ -193,7 +195,7 @@ public class MavenLocalRepoFileInitializerTest
         assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(),
             is("https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-http/9.4.31.v20200723/jetty-http-9.4.31.v20200723-tests.jar"));
 
-        Path destination = Paths.get(System.getProperty("java.io.tmpdir"), "jetty-http-9.4.31.v20200723-tests.jar");
+        Path destination = testdir.getEmptyPathDir().resolve("jetty-http-9.4.31.v20200723-tests.jar");
         Files.deleteIfExists(destination);
         repo.download(coords.toCentralURI(), destination);
         assertThat(Files.exists(destination), is(true));
@@ -204,7 +206,7 @@ public class MavenLocalRepoFileInitializerTest
     public void testDownloadSnapshotRepo()
         throws Exception
     {
-        Path snapshotLocalRepoDir = MavenTestingUtils.getTargetTestingPath("snapshot-repo");
+        Path snapshotLocalRepoDir = testdir.getPath().resolve("snapshot-repo");
         FS.ensureEmpty(snapshotLocalRepoDir);
 
         MavenLocalRepoFileInitializer repo =
@@ -222,10 +224,43 @@ public class MavenLocalRepoFileInitializerTest
         assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(),
             is("https://oss.sonatype.org/content/repositories/jetty-snapshots/org/eclipse/jetty/jetty-rewrite/10.0.0-SNAPSHOT/jetty-rewrite-10.0.0-SNAPSHOT.jar"));
 
-        Path destination = Paths.get(System.getProperty("java.io.tmpdir"), "jetty-rewrite-10.0.0-SNAPSHOT.jar");
-        Files.deleteIfExists(destination);
+        Path destination = baseHome.getBasePath().resolve("jetty-rewrite-10.0.0-SNAPSHOT.jar");
         repo.download(coords, destination);
         assertThat(Files.exists(destination), is(true));
         assertThat("Snapshot File size", destination.toFile().length(), greaterThan(10_000L));
+    }
+
+    @Test
+    public void testDownloadSnapshotRepoWithExtractDeep()
+        throws Exception
+    {
+        Path snapshotLocalRepoDir = testdir.getPath().resolve("snapshot-repo");
+        FS.ensureEmpty(snapshotLocalRepoDir);
+
+        MavenLocalRepoFileInitializer repo =
+            new MavenLocalRepoFileInitializer(baseHome, snapshotLocalRepoDir, false,
+                "https://oss.sonatype.org/content/repositories/jetty-snapshots/");
+        String ref = "maven://org.eclipse.jetty/test-jetty-webapp/10.0.0-SNAPSHOT/jar/config";
+        Path baseDir = baseHome.getBasePath();
+        repo.create(URI.create(ref), "extract:company/");
+
+        assertThat(Files.exists(baseDir.resolve("company/webapps/test.d/override-web.xml")), is(true));
+    }
+
+    @Test
+    public void testDownloadSnapshotRepoWithExtractDefault()
+        throws Exception
+    {
+        Path snapshotLocalRepoDir = testdir.getPath().resolve("snapshot-repo");
+        FS.ensureEmpty(snapshotLocalRepoDir);
+
+        MavenLocalRepoFileInitializer repo =
+            new MavenLocalRepoFileInitializer(baseHome, snapshotLocalRepoDir, false,
+                "https://oss.sonatype.org/content/repositories/jetty-snapshots/");
+        String ref = "maven://org.eclipse.jetty/test-jetty-webapp/10.0.0-SNAPSHOT/jar/config";
+        Path baseDir = baseHome.getBasePath();
+        repo.create(URI.create(ref), "extract:/");
+
+        assertThat(Files.exists(baseDir.resolve("webapps/test.d/override-web.xml")), is(true));
     }
 }

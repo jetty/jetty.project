@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.eclipse.jetty.start.BaseHome;
@@ -105,7 +106,7 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
         }
     }
 
-    private Path localRepositoryDir;
+    private final Path localRepositoryDir;
     private final boolean readonly;
     private String mavenRepoUri;
 
@@ -116,17 +117,22 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
 
     public MavenLocalRepoFileInitializer(BaseHome baseHome, Path localRepoDir, boolean readonly)
     {
-        super(baseHome, "maven");
-        this.localRepositoryDir = localRepoDir;
-        this.readonly = readonly;
+        this(baseHome, localRepoDir, readonly, null);
     }
 
     public MavenLocalRepoFileInitializer(BaseHome baseHome, Path localRepoDir, boolean readonly, String mavenRepoUri)
     {
         super(baseHome, "maven");
-        this.localRepositoryDir = localRepoDir;
+        this.localRepositoryDir = localRepoDir != null ? localRepoDir : newTempRepo();
         this.readonly = readonly;
         this.mavenRepoUri = mavenRepoUri;
+    }
+
+    private static Path newTempRepo()
+    {
+        Path javaTempDir = Paths.get(System.getProperty("java.io.tmpdir"));
+        // Simple return here, don't create the directory, unless it's being used.
+        return javaTempDir.resolve("jetty-start-downloads");
     }
 
     @Override
@@ -139,16 +145,55 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
             return false;
         }
 
-        Path destination = getDestination(uri, location);
-
-        if (isFilePresent(destination))
-            return false;
-
-        // If using local repository
-        if (this.localRepositoryDir != null)
+        URI destURI = URI.create(location);
+        if (destURI.isAbsolute() && destURI.getScheme().equals("extract"))
         {
-            // Grab copy from local repository (download if needed to local
-            // repository)
+            // Extract Flow
+
+            // Download to local repo.
+            Path localFile = localRepositoryDir.resolve(coords.toPath());
+            if (!FS.canReadFile(localFile))
+            {
+                if (FS.ensureDirectoryExists(localFile.getParent()))
+                    StartLog.info("mkdir " + _basehome.toShortForm(localFile.getParent()));
+                download(coords, localFile);
+                if (!FS.canReadFile(localFile))
+                {
+                    throw new IOException("Unable to establish temp copy of file to extract: " + localFile);
+                }
+            }
+
+            // Destination Directory
+            Path destination;
+            String extractLocation = destURI.getSchemeSpecificPart();
+            if (extractLocation.equals("/"))
+            {
+                destination = _basehome.getBasePath();
+            }
+            else
+            {
+                extractLocation = extractLocation.replaceFirst("^[/\\\\]*", "");
+                if (!extractLocation.endsWith("/"))
+                    throw new IOException("Extract mode can only unpack to a directory, end your URL with a slash: " + location);
+                destination = _basehome.getBasePath().resolve(extractLocation);
+
+                if (Files.exists(destination) && !Files.isDirectory(destination))
+                    throw new IOException("Destination already exists, and is not a directory: " + destination);
+
+                if (!destination.startsWith(_basehome.getBasePath()))
+                    throw new IOException("For security reasons, Jetty start is unable to extract outside of the ${jetty.base} - " + location);
+            }
+
+            FS.extract(localFile, destination);
+        }
+        else
+        {
+            // Copy Flow
+            Path destination = getDestination(uri, location);
+            if (isFilePresent(destination))
+                return false;
+
+            // Grab copy from local repository (download if needed to local repository)
             Path localRepoFile = getLocalRepoFile(coords);
 
             if (localRepoFile != null)
@@ -159,10 +204,11 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
                 Files.copy(localRepoFile, destination);
                 return true;
             }
+
+            // normal non-local repo version
+            download(coords, destination);
         }
 
-        // normal non-local repo version
-        download(coords, destination);
         return true;
     }
 
