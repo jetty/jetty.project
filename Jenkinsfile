@@ -49,12 +49,12 @@ pipeline {
           }
         }
 
-        stage("Build / Test - JDK14") {
+        stage("Build / Test - JDK15") {
           agent { node { label 'linux' } }
           steps {
             container( 'jetty-build' ) {
               timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk14", "clean install -T3 -Djacoco.skip=true ", "maven3",
+                mavenBuild( "jdk15", "clean install -T3 -Djacoco.skip=true ", "maven3",
                             [[parserName: 'Maven'], [parserName: 'Java']])
               }
             }
