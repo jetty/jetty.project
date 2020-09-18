@@ -22,12 +22,14 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import javax.xml.parsers.ParserConfigurationException;
 
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.FileInitializer;
 import org.eclipse.jetty.start.StartLog;
 import org.eclipse.jetty.start.Utils;
+import org.xml.sax.SAXException;
 
 /**
  * Attempt to download a <code>maven://</code> URI, by first attempting to find
@@ -36,14 +38,11 @@ import org.eclipse.jetty.start.Utils;
  * <p>
  * Valid URI Formats:
  * <dl>
- * <dt><code>maven://&lt;groupId&gt;/&lt;artifactId&gt;/&lt;version&gt;</code></dt>
- * <dd>minimum requirement (type defaults to <code>jar</code>, with no
- * classifier)</dd>
- * <dt><code>maven://&lt;groupId&gt;/&lt;artifactId&gt;/&lt;version&gt;/&lt;type&gt;</code></dt>
+ * <dt>{@code maven://<groupId>/<artifactId>/<version>}</dt>
+ * <dd>minimum requirement (type defaults to <code>jar</code>, with no classifier)</dd>
+ * <dt>{@code maven://<groupId>/<artifactId>/<version>/<type>}</dt>
  * <dd>optional type requirement</dd>
- * <dt>
- * <code>maven://&lt;groupId&gt;/&lt;artifactId&gt;/&lt;version&gt;/&lt;type&gt;/&lt;classifier&gt;</code>
- * </dt>
+ * <dt><code>{@code maven://<groupId>/<artifactId>/<version>/<type>/<classifier>}</code></dt>
  * <dd>optional type and classifier requirement</dd>
  * </dl>
  */
@@ -60,12 +59,17 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
 
         public String toPath()
         {
+            return toActualPath(version);
+        }
+
+        private String toActualPath(String actualVersion)
+        {
             StringBuilder pathlike = new StringBuilder();
             pathlike.append(groupId.replace('.', '/'));
             pathlike.append('/').append(artifactId);
             pathlike.append('/').append(version);
             pathlike.append('/').append(artifactId);
-            pathlike.append('-').append(version);
+            pathlike.append('-').append(actualVersion);
             if (classifier != null)
             {
                 pathlike.append('-').append(classifier);
@@ -74,9 +78,30 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
             return pathlike.toString();
         }
 
+        public String toMetadataPath()
+        {
+            StringBuilder pathLike = new StringBuilder();
+            pathLike.append(groupId.replace('.', '/'));
+            pathLike.append('/').append(artifactId);
+            pathLike.append('/').append(version);
+            pathLike.append("/maven-metadata.xml");
+
+            return pathLike.toString();
+        }
+
         public URI toCentralURI()
         {
             return URI.create(mavenRepoUri + toPath());
+        }
+
+        public URI toCentralURI(String actualVersion)
+        {
+            return URI.create(mavenRepoUri + toActualPath(actualVersion));
+        }
+
+        public URI toSnapshotMetadataXmlURI()
+        {
+            return URI.create(mavenRepoUri + toMetadataPath());
         }
     }
 
@@ -137,7 +162,7 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
         }
 
         // normal non-local repo version
-        download(coords.toCentralURI(), destination);
+        download(coords, destination);
         return true;
     }
 
@@ -150,7 +175,7 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
         // Download, if needed
         if (!readonly)
         {
-            download(coords.toCentralURI(), localFile);
+            download(coords, localFile);
             return localFile;
         }
 
@@ -217,6 +242,65 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
         }
 
         return coords;
+    }
+
+    protected void download(Coordinates coords, Path destination)
+        throws IOException
+    {
+        if (coords.version.endsWith("-SNAPSHOT"))
+        {
+            Path localRepoMetadataPath = localRepositoryDir.resolve(coords.toMetadataPath());
+            if (isMetadataStale(localRepoMetadataPath))
+            {
+                // Grab a fresh copy of the metadata xml
+                URI mavenMetadataURI = coords.toSnapshotMetadataXmlURI();
+                super.download(mavenMetadataURI, localRepoMetadataPath);
+            }
+
+            if (Files.exists(localRepoMetadataPath))
+            {
+                // parse metadata to get actual SNAPSHOT version
+                String actualVersion = getMetadataVersion(localRepoMetadataPath, coords);
+                super.download(coords.toCentralURI(actualVersion), destination);
+            }
+        }
+        else
+        {
+            super.download(coords.toCentralURI(), destination);
+        }
+    }
+
+    private boolean isMetadataStale(Path localRepoMetadataPath)
+    {
+        if (!Files.exists(localRepoMetadataPath))
+        {
+            // doesn't exist, it's stale.
+            return true;
+        }
+
+        try
+        {
+            MavenMetadata mavenMetadata = new MavenMetadata(localRepoMetadataPath);
+            return MavenMetadata.isExpiredTimestamp(mavenMetadata.getLastUpdated());
+        }
+        catch (IOException | ParserConfigurationException | SAXException e)
+        {
+            return true;
+        }
+    }
+
+    private String getMetadataVersion(Path localRepoMetadataPath, Coordinates coords) throws IOException
+    {
+        try
+        {
+            MavenMetadata mavenMetadata = new MavenMetadata(localRepoMetadataPath);
+            MavenMetadata.Snapshot snapshot = mavenMetadata.getSnapshot(coords.classifier, coords.type);
+            return snapshot.value;
+        }
+        catch (IOException | ParserConfigurationException | SAXException e)
+        {
+            throw new IOException("Unable to parse " + localRepoMetadataPath, e);
+        }
     }
 
     /**

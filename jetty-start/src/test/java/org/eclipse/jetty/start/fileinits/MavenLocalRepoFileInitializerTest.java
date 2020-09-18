@@ -29,6 +29,8 @@ import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.JettyBaseConfigSource;
 import org.eclipse.jetty.start.config.JettyHomeConfigSource;
 import org.eclipse.jetty.start.fileinits.MavenLocalRepoFileInitializer.Coordinates;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +39,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -172,28 +175,57 @@ public class MavenLocalRepoFileInitializerTest
     }
 
     @Test
-    public void testDownloaddefaultrepo()
+    public void testDownloadDefaultRepo()
         throws Exception
     {
         MavenLocalRepoFileInitializer repo =
             new MavenLocalRepoFileInitializer(baseHome, null, false);
-        String ref = "maven://org.eclipse.jetty/jetty-http/9.4.10.v20180503/jar/tests";
+        String ref = "maven://org.eclipse.jetty/jetty-http/9.4.31.v20200723/jar/tests";
         Coordinates coords = repo.getCoordinates(URI.create(ref));
         assertThat("Coordinates", coords, notNullValue());
 
         assertThat("coords.groupId", coords.groupId, is("org.eclipse.jetty"));
         assertThat("coords.artifactId", coords.artifactId, is("jetty-http"));
-        assertThat("coords.version", coords.version, is("9.4.10.v20180503"));
+        assertThat("coords.version", coords.version, is("9.4.31.v20200723"));
         assertThat("coords.type", coords.type, is("jar"));
         assertThat("coords.classifier", coords.classifier, is("tests"));
 
         assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(),
-            is("https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-http/9.4.10.v20180503/jetty-http-9.4.10.v20180503-tests.jar"));
+            is("https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-http/9.4.31.v20200723/jetty-http-9.4.31.v20200723-tests.jar"));
 
-        Path destination = Paths.get(System.getProperty("java.io.tmpdir"), "jetty-http-9.4.10.v20180503-tests.jar");
+        Path destination = Paths.get(System.getProperty("java.io.tmpdir"), "jetty-http-9.4.31.v20200723-tests.jar");
         Files.deleteIfExists(destination);
         repo.download(coords.toCentralURI(), destination);
         assertThat(Files.exists(destination), is(true));
-        assertThat(destination.toFile().length(), is(962621L));
+        assertThat(destination.toFile().length(), is(986193L));
+    }
+
+    @Test
+    public void testDownloadSnapshotRepo()
+        throws Exception
+    {
+        Path snapshotLocalRepoDir = MavenTestingUtils.getTargetTestingPath("snapshot-repo");
+        FS.ensureEmpty(snapshotLocalRepoDir);
+
+        MavenLocalRepoFileInitializer repo =
+            new MavenLocalRepoFileInitializer(baseHome, snapshotLocalRepoDir, false, "https://oss.sonatype.org/content/repositories/jetty-snapshots/");
+        String ref = "maven://org.eclipse.jetty/jetty-rewrite/10.0.0-SNAPSHOT/jar";
+        Coordinates coords = repo.getCoordinates(URI.create(ref));
+        assertThat("Coordinates", coords, notNullValue());
+
+        assertThat("coords.groupId", coords.groupId, is("org.eclipse.jetty"));
+        assertThat("coords.artifactId", coords.artifactId, is("jetty-rewrite"));
+        assertThat("coords.version", coords.version, is("10.0.0-SNAPSHOT"));
+        assertThat("coords.type", coords.type, is("jar"));
+        assertThat("coords.classifier", coords.classifier, is(nullValue()));
+
+        assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(),
+            is("https://oss.sonatype.org/content/repositories/jetty-snapshots/org/eclipse/jetty/jetty-rewrite/10.0.0-SNAPSHOT/jetty-rewrite-10.0.0-SNAPSHOT.jar"));
+
+        Path destination = Paths.get(System.getProperty("java.io.tmpdir"), "jetty-rewrite-10.0.0-SNAPSHOT.jar");
+        Files.deleteIfExists(destination);
+        repo.download(coords, destination);
+        assertThat(Files.exists(destination), is(true));
+        assertThat("Snapshot File size", destination.toFile().length(), greaterThan(10_000L));
     }
 }
