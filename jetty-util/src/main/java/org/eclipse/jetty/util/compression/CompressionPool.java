@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.util.compression;
 
+import java.io.Closeable;
+
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
@@ -26,7 +28,7 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
     public static final int INFINITE_CAPACITY = Integer.MAX_VALUE;
 
     private int _capacity;
-    private Pool<T> _pool;
+    private Pool<Entry> _pool;
 
     /**
      * Create a Pool of {@link T} instances.
@@ -65,10 +67,18 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
      */
     public Entry acquire()
     {
+        Entry entry = null;
         if (_pool != null)
-            return new Entry(_pool.acquire(e -> newObject()));
-        else
-            return new Entry();
+        {
+            Pool<Entry>.Entry acquiredEntry = _pool.acquire(e -> new Entry(newObject()));
+            if (acquiredEntry != null)
+            {
+                entry = acquiredEntry.getPooled();
+                entry.setEntry(acquiredEntry);
+            }
+        }
+
+        return (entry == null) ? new Entry(newObject()) : entry;
     }
 
     /**
@@ -90,26 +100,25 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
     @Override
     public void doStop() throws Exception
     {
-        // TODO: Pool.close() will not end the entries after it removes them.
         _pool.close();
         _pool = null;
         super.doStop();
     }
 
-    public class Entry
+    public class Entry implements Closeable
     {
         private T _value;
-        private Pool<T>.Entry _entry;
+        private Pool<Entry>.Entry _entry;
 
-        Entry()
+        Entry(T value)
         {
-            this(null);
+            _value = value;
+            _entry = null;
         }
 
-        Entry(Pool<T>.Entry entry)
+        void setEntry(Pool<Entry>.Entry entry)
         {
             _entry = entry;
-            _value = (_entry != null) ? _entry.getPooled() : newObject();
         }
 
         public T get()
@@ -127,12 +136,18 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
                 // If release return false, the entry should be removed and the object should be disposed.
                 if (!_pool.release(_entry))
                 {
-                    // TODO: what does it mean if this returns false???
                     if (_pool.remove(_entry))
-                        end(_value);
+                        close();
                 }
-            }
 
+                _entry = null;
+            }
+        }
+
+        @Override
+        public void close()
+        {
+            end(_value);
             _value = null;
             _entry = null;
         }
@@ -145,7 +160,7 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
             getClass().getSimpleName(),
             hashCode(),
             getState(),
-            _pool.size(),
+            (_pool == null) ? -1 : _pool.size(),
             _capacity);
     }
 }
