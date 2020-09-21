@@ -650,42 +650,48 @@ public class ForwardedRequestCustomizer implements Customizer
         public static final int IMPLIED = 0;
 
         String _host;
-        Priority _hostPriority = Priority.UNSET;
+        Source _hostSource = Source.UNSET;
         int _port = UNSET;
-        Priority _portPriority = Priority.UNSET;
+        Source _portSource = Source.UNSET;
 
-        public void setHost(String host, Priority priority)
+        public void setHostPort(String host, int port, Source source)
         {
-            if (priority.ordinal() > _hostPriority.ordinal())
+            setHost(host, source);
+            setPort(port, source);
+        }
+
+        public void setHost(String host, Source source)
+        {
+            if (source.priority() > _hostSource.priority())
             {
                 _host = host;
-                _hostPriority = priority;
+                _hostSource = source;
             }
         }
 
-        public void setPort(int port, Priority priority)
+        public void setPort(int port, Source source)
         {
-            if (priority.ordinal() > _portPriority.ordinal())
+            if (source.priority() > _portSource.priority())
             {
                 _port = port;
-                _portPriority = priority;
+                _portSource = source;
             }
         }
 
-        public void setHostPort(HostPort hostPort, Priority priority)
+        public void setHostPort(HostPort hostPort, Source source)
         {
-            if (priority.ordinal() > _hostPriority.ordinal())
+            if (source.priority() > _hostSource.priority())
             {
                 _host = hostPort.getHost();
-                _hostPriority = priority;
+                _hostSource = source;
             }
 
             int port = hostPort.getPort();
             // Is port supplied?
-            if (port > 0 && priority.ordinal() > _portPriority.ordinal())
+            if (port > 0 && source.priority() > _portSource.priority())
             {
                 _port = hostPort.getPort();
-                _portPriority = priority;
+                _portSource = source;
             }
             // Since we are Host:Port pair, the port could be unspecified
             // Meaning it's implied.
@@ -701,21 +707,21 @@ public class ForwardedRequestCustomizer implements Customizer
         public String toString()
         {
             final StringBuilder sb = new StringBuilder("MutableHostPort{");
-            sb.append("host='").append(_host).append("'/").append(_hostPriority);
+            sb.append("host='").append(_host).append("'/").append(_hostSource);
             sb.append(", port=").append(_port);
-            sb.append("/").append(_portPriority);
+            sb.append("/").append(_portSource);
             sb.append('}');
             return sb.toString();
         }
     }
 
     /**
-     * Ordered Priority Enum.
+     * Ordered Source Enum.
      * <p>
-     * Lowest priority first.
+     * Lowest first, Last/Highest priority wins
      * </p>
      */
-    public enum Priority
+    public enum Source
     {
         UNSET,
         XPROXIED_HTTPS,
@@ -725,7 +731,12 @@ public class ForwardedRequestCustomizer implements Customizer
         XFORWARDED_FOR,
         XFORWARDED_HOST,
         FORWARDED,
-        FORCED
+        FORCED;
+
+        int priority()
+        {
+            return ordinal();
+        }
     }
 
     private class Forwarded extends QuotedCSVParser
@@ -736,7 +747,7 @@ public class ForwardedRequestCustomizer implements Customizer
         MutableHostPort _authority;
         MutableHostPort _for;
         String _proto;
-        Priority _protoPriority = Priority.UNSET;
+        Source _protoSource = Source.UNSET;
         Boolean _secure;
 
         public Forwarded(Request request, HttpConfiguration config)
@@ -746,8 +757,10 @@ public class ForwardedRequestCustomizer implements Customizer
             _config = config;
             if (_forcedHost != null)
             {
-                getAuthority().setHost(_forcedHost.getHostPort().getHost(), Priority.FORCED);
-                getAuthority().setPort(_forcedHost.getHostPort().getPort(), Priority.FORCED);
+                getAuthority().setHostPort(
+                    _forcedHost.getHostPort().getHost(),
+                    _forcedHost.getHostPort().getPort(),
+                    Source.FORCED);
             }
         }
 
@@ -802,14 +815,14 @@ public class ForwardedRequestCustomizer implements Customizer
         @SuppressWarnings("unused")
         public void handleForwardedHost(HttpField field)
         {
-            updateAuthority(getLeftMost(field.getValue()), Priority.XFORWARDED_HOST);
+            updateAuthority(getLeftMost(field.getValue()), Source.XFORWARDED_HOST);
         }
 
         @SuppressWarnings("unused")
         public void handleForwardedFor(HttpField field)
         {
             HostPort hostField = new HostPort(getLeftMost(field.getValue()));
-            getFor().setHostPort(hostField, Priority.XFORWARDED_FOR);
+            getFor().setHostPort(hostField, Source.XFORWARDED_FOR);
         }
 
         @SuppressWarnings("unused")
@@ -817,7 +830,7 @@ public class ForwardedRequestCustomizer implements Customizer
         {
             if (getProxyAsAuthority())
                 return;
-            updateAuthority(getLeftMost(field.getValue()), Priority.XFORWARDED_SERVER);
+            updateAuthority(getLeftMost(field.getValue()), Source.XFORWARDED_SERVER);
         }
 
         @SuppressWarnings("unused")
@@ -825,13 +838,13 @@ public class ForwardedRequestCustomizer implements Customizer
         {
             int port = HostPort.parsePort(getLeftMost(field.getValue()));
 
-            updatePort(port, Priority.XFORWARDED_PORT);
+            updatePort(port, Source.XFORWARDED_PORT);
         }
 
         @SuppressWarnings("unused")
         public void handleProto(HttpField field)
         {
-            updateProto(getLeftMost(field.getValue()), Priority.XFORWARDED_PROTO);
+            updateProto(getLeftMost(field.getValue()), Source.XFORWARDED_PROTO);
         }
 
         @SuppressWarnings("unused")
@@ -840,8 +853,8 @@ public class ForwardedRequestCustomizer implements Customizer
             if ("on".equalsIgnoreCase(field.getValue()) || "true".equalsIgnoreCase(field.getValue()))
             {
                 _secure = true;
-                updateProto(HttpScheme.HTTPS.asString(), Priority.XPROXIED_HTTPS);
-                updatePort(getSecurePort(_config), Priority.XPROXIED_HTTPS);
+                updateProto(HttpScheme.HTTPS.asString(), Source.XPROXIED_HTTPS);
+                updatePort(getSecurePort(_config), Source.XPROXIED_HTTPS);
             }
         }
 
@@ -867,8 +880,7 @@ public class ForwardedRequestCustomizer implements Customizer
                         if (value.startsWith("_") || "unknown".equals(value))
                             break;
                         HostPort hostField = new HostPort(value);
-                        getAuthority().setHost(hostField.getHost(), Priority.FORWARDED);
-                        getAuthority().setPort(hostField.getPort(), Priority.FORWARDED);
+                        getAuthority().setHostPort(hostField.getHost(), hostField.getPort(), Source.FORWARDED);
                         break;
                     }
                     case "for":
@@ -876,8 +888,7 @@ public class ForwardedRequestCustomizer implements Customizer
                         if (value.startsWith("_") || "unknown".equals(value))
                             break;
                         HostPort hostField = new HostPort(value);
-                        getFor().setHost(hostField.getHost(), Priority.FORWARDED);
-                        getFor().setPort(hostField.getPort(), Priority.FORWARDED);
+                        getFor().setHostPort(hostField.getHost(), hostField.getPort(), Source.FORWARDED);
                         break;
                     }
                     case "host":
@@ -885,41 +896,40 @@ public class ForwardedRequestCustomizer implements Customizer
                         if (value.startsWith("_") || "unknown".equals(value))
                             break;
                         HostPort hostField = new HostPort(value);
-                        getAuthority().setHost(hostField.getHost(), Priority.FORWARDED);
-                        getAuthority().setPort(hostField.getPort(), Priority.FORWARDED);
+                        getAuthority().setHostPort(hostField.getHost(), hostField.getPort(), Source.FORWARDED);
                         break;
                     }
                     case "proto":
-                        updateProto(value, Priority.FORWARDED);
+                        updateProto(value, Source.FORWARDED);
                         break;
                 }
             }
         }
 
-        private void updateAuthority(String value, Priority priority)
+        private void updateAuthority(String value, Source source)
         {
             HostPort hostField = new HostPort(value);
-            getAuthority().setHostPort(hostField, priority);
+            getAuthority().setHostPort(hostField, source);
         }
 
-        private void updatePort(int port, Priority priority)
+        private void updatePort(int port, Source source)
         {
             if (getForwardedPortAsAuthority())
             {
-                getAuthority().setPort(port, priority);
+                getAuthority().setPort(port, source);
             }
             else
             {
-                getFor().setPort(port, priority);
+                getFor().setPort(port, source);
             }
         }
 
-        private void updateProto(String proto, Priority priority)
+        private void updateProto(String proto, Source source)
         {
-            if (priority.ordinal() > _protoPriority.ordinal())
+            if (source.priority() > _protoSource.priority())
             {
                 _proto = proto;
-                _protoPriority = priority;
+                _protoSource = source;
 
                 if (_proto.equalsIgnoreCase(_config.getSecureScheme()))
                 {
