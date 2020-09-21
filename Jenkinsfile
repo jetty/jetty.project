@@ -65,17 +65,6 @@ pipeline {
             }
           }
         }
-        stage( "Build Compact3" ) {
-          agent { node { label 'linux' } }
-          steps {
-            container( 'jetty-build' ) {
-              timeout( time: 30, unit: 'MINUTES' ) {
-                mavenBuild( "jdk11", "-T3 -Pcompact3 clean install -DskipTests", "maven3", true )
-                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
-              }
-            }
-          }
-        }
       }
     }
   }
