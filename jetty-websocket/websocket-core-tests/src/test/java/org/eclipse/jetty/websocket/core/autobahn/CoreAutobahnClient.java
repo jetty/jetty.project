@@ -18,18 +18,19 @@
 
 package org.eclipse.jetty.websocket.core.autobahn;
 
-import java.io.IOException;
 import java.net.URI;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.websocket.core.CoreSession;
+import org.eclipse.jetty.websocket.core.MessageHandler;
 import org.eclipse.jetty.websocket.core.TestMessageHandler;
+import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -155,7 +156,7 @@ public class CoreAutobahnClient
     {
         URI wsUri = baseWebsocketUri.resolve("/getCaseCount");
         TestMessageHandler onCaseCount = new TestMessageHandler();
-        CoreSession session = client.connect(onCaseCount, wsUri).get(5, TimeUnit.SECONDS);
+        CoreSession session = upgrade(onCaseCount, wsUri).get(5, TimeUnit.SECONDS);
         assertTrue(onCaseCount.openLatch.await(5, TimeUnit.SECONDS));
         String msg = onCaseCount.textMessages.poll(5, TimeUnit.SECONDS);
 
@@ -167,13 +168,13 @@ public class CoreAutobahnClient
         return Integer.decode(msg);
     }
 
-    public void runCaseByNumber(int caseNumber) throws IOException, InterruptedException
+    public void runCaseByNumber(int caseNumber) throws Exception
     {
         URI wsUri = baseWebsocketUri.resolve("/runCase?case=" + caseNumber + "&agent=" + UrlEncoded.encodeString(userAgent));
         LOG.info("test uri: {}", wsUri);
 
         AutobahnFrameHandler echoHandler = new AutobahnFrameHandler();
-        Future<CoreSession> response = client.connect(echoHandler, wsUri);
+        Future<CoreSession> response = upgrade(echoHandler, wsUri);
         if (waitForUpgrade(wsUri, response))
         {
             // Wait up to 5 min as some of the tests can take a while
@@ -197,11 +198,19 @@ public class CoreAutobahnClient
         }
     }
 
-    public void updateReports() throws IOException, InterruptedException, ExecutionException, TimeoutException
+    public Future<CoreSession> upgrade(MessageHandler handler, URI uri) throws Exception
+    {
+        // We manually set the port as we run the server in docker container.
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, uri, handler);
+        upgradeRequest.addHeader(new HttpField(HttpHeader.HOST, "localhost:9001"));
+        return client.connect(upgradeRequest);
+    }
+
+    public void updateReports() throws Exception
     {
         URI wsUri = baseWebsocketUri.resolve("/updateReports?agent=" + UrlEncoded.encodeString(userAgent));
         TestMessageHandler onUpdateReports = new TestMessageHandler();
-        Future<CoreSession> response = client.connect(onUpdateReports, wsUri);
+        Future<CoreSession> response = upgrade(onUpdateReports, wsUri);
         response.get(5, TimeUnit.SECONDS);
         assertTrue(onUpdateReports.closeLatch.await(15, TimeUnit.SECONDS));
         LOG.info("Reports updated.");
