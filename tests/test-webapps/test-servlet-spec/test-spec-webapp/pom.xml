@@ -27,13 +27,13 @@
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
           <execution>
+            <id>web-bundle-assembly</id>
             <phase>package</phase>
             <goals>
               <goal>single</goal>
             </goals>
             <configuration>
               <descriptors>
-                <descriptor>src/main/assembly/config.xml</descriptor>
                 <descriptor>src/main/assembly/web-bundle.xml</descriptor>
               </descriptors>
               <archive>
@@ -134,37 +134,6 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-maven-plugin</artifactId>
-        <version>${project.version}</version>
-        <configuration>
-          <scan>10</scan>
-          <useTestClasspath>true</useTestClasspath>
-          <contextXml>${project.build.directory}/plugin-context.xml</contextXml>
-          <webApp>
-            <war>src/main/webapp</war>
-            <descriptor>src/main/webapp/WEB-INF/web.xml</descriptor>
-            <contextPath>/test-spec</contextPath>
-            <containerIncludeJarPattern>.*/jetty-servlet-api-[^/]*\.jar$</containerIncludeJarPattern>
-            <configurationDiscovered>true</configurationDiscovered>
-            <jettyEnvXml>${basedir}/src/main/webapp/WEB-INF/jetty-env.xml</jettyEnvXml>
-          </webApp>
-          <loginServices>
-            <loginService implementation="org.eclipse.jetty.security.HashLoginService">
-              <name>Test Realm</name>
-              <config>src/etc/realm.properties</config>
-            </loginService>
-          </loginServices>
-        </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>org.eclipse.jetty.tests</groupId>
-            <artifactId>test-mock-resources</artifactId>
-            <version>${project.version}</version>
-          </dependency>
-        </dependencies>
-      </plugin>
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
         <executions>
@@ -186,6 +155,40 @@
         </executions>
       </plugin>
     </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-maven-plugin</artifactId>
+          <version>${project.version}</version>
+          <configuration>
+            <scan>10</scan>
+            <contextXml>${project.build.directory}/plugin-context.xml</contextXml>
+            <webApp>
+              <war>src/main/webapp</war>
+              <descriptor>src/main/webapp/WEB-INF/web.xml</descriptor>
+              <contextPath>/test-spec</contextPath>
+              <containerIncludeJarPattern>.*/jetty-servlet-api-[^/]*\.jar$</containerIncludeJarPattern>
+              <configurationDiscovered>true</configurationDiscovered>
+              <jettyEnvXml>${basedir}/src/main/webapp/WEB-INF/jetty-env.xml</jettyEnvXml>
+            </webApp>
+            <loginServices>
+              <loginService implementation="org.eclipse.jetty.security.HashLoginService">
+                <name>Test Realm</name>
+                <config>src/etc/realm.properties</config>
+              </loginService>
+            </loginServices>
+          </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.eclipse.jetty.tests</groupId>
+              <artifactId>test-mock-resources</artifactId>
+              <version>${project.version}</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
 
   <dependencies>

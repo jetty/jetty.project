@@ -10,16 +10,16 @@ demo
 http
 https
 http2
-webapp-root
-webapp-async-rest
-webapp-test-spec
 test-keystore
 work
+demo-root
+demo-async-rest
+demo-proxy
+demo-spec
+
+demo-jetty
 demo-rewrite
 demo-moved-context
-
-[files]
-maven://org.eclipse.jetty.example-async-rest/example-async-rest-webapp/${jetty.version}/war|webapps/async-rest.war
 
 [ini-template]
 # Websocket chat examples needs websocket enabled

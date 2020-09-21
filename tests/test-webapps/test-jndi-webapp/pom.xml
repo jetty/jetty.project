@@ -60,50 +60,36 @@
           </execution>
         </executions>
       </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>src/main/assembly/config.xml</descriptor>
-              </descriptors>
-              <!-- filters> <filter>src/filters/filter.properties</filter> </filters -->
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-maven-plugin</artifactId>
-        <version>${project.version}</version>
-        <configuration>
-          <contextXml>${project.build.directory}/plugin-context.xml</contextXml>
-          <webApp>
-            <war>src/main/webapp</war>
-            <descriptor>src/main/webapp/WEB-INF/web.xml</descriptor>
-            <contextPath>/test-jndi</contextPath>
-          </webApp>
-        </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>org.eclipse.jetty.tests</groupId>
-            <artifactId>test-mock-resources</artifactId>
-            <version>${project.version}</version>
-          </dependency>
-          <dependency>
-            <groupId>org.eclipse.jetty.orbit</groupId>
-            <artifactId>javax.mail.glassfish</artifactId>
-            <version>1.4.1.v201005082020</version>
-          </dependency>
-        </dependencies>
-      </plugin>
     </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-maven-plugin</artifactId>
+          <version>${project.version}</version>
+          <configuration>
+            <contextXml>${project.build.directory}/plugin-context.xml</contextXml>
+            <webApp>
+              <war>src/main/webapp</war>
+              <descriptor>src/main/webapp/WEB-INF/web.xml</descriptor>
+              <contextPath>/test-jndi</contextPath>
+            </webApp>
+          </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.eclipse.jetty.tests</groupId>
+              <artifactId>test-mock-resources</artifactId>
+              <version>${project.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>org.eclipse.jetty.orbit</groupId>
+              <artifactId>javax.mail.glassfish</artifactId>
+              <version>1.4.1.v201005082020</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
   <dependencies>
     <dependency>

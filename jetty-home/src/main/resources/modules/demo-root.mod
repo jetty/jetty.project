@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Deploy demo root webapp.
+Demo root webapp.
 
 [tags]
 demo
