@@ -230,6 +230,7 @@ public class StartArgs
     private boolean dryRun = false;
     private final Set<String> dryRunParts = new HashSet<>();
     private boolean jpms = false;
+    private boolean createStartD = false;
     private boolean createStartIni = false;
     private boolean updateIni = false;
     private String mavenBaseUri;
@@ -716,7 +717,6 @@ public class StartArgs
 
                     Prop p = processSystemProperty(key, value, null);
                     cmd.addRawArg("-D" + p.key + "=" + getProperties().expand(p.value));
-
                 }
                 else
                 {
@@ -1024,6 +1024,11 @@ public class StartArgs
         return version;
     }
 
+    public boolean isCreateStartD()
+    {
+        return createStartD;
+    }
+
     public boolean isCreateStartIni()
     {
         return createStartIni;
@@ -1289,9 +1294,9 @@ public class StartArgs
             licenseCheckRequired = true;
             return;
         }
-        if ("--create-startd".equals(arg))
+        if ("--create-startd".equals(arg) || "--create-start-d".equals(arg))
         {
-            StartLog.warn("--create-startd option is deprecated! By default start.d is used");
+            createStartD = true;
             run = false;
             createFiles = true;
             licenseCheckRequired = true;

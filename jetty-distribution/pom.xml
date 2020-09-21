@@ -311,7 +311,7 @@
                 <argument>jetty.home=${home-directory}</argument>
                 <argument>jetty.base=${base-directory}</argument>
                 <argument>--create-startd</argument>
-                <argument>--add-to-start=server,requestlog,deploy,websocket,ext,resources,client,annotations,jndi,servlets,jsp,jstl,http,https,demo</argument>
+                <argument>--add-module=server,requestlog,deploy,websocket,ext,resources,client,annotations,jndi,servlets,jsp,jstl,http,https,demo</argument>
               </arguments>
             </configuration>
             <goals>

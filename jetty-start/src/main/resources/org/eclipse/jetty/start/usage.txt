@@ -124,15 +124,21 @@ Jetty Module Management:
                    be generated. An explicit --add-module is required to generate
                    an ini file.
 
-                   This option replaces the depecated --add-to-start and --add-to-startd.
+                   This option replaces the deprecated --add-to-start and --add-to-startd.
 
   --update-ini     Scan all start.ini and start.d/*.ini files and update
                    any properties with values specified on the command
                    line. e.g. --update-ini jetty.http.port=8888
 
+  --create-start-d
+                   Create a ${jetty.base}/start.d directory.  If a ${jetty.base}/start.ini
+                   files exists, then all it is moved into start.d. This is the default
+                   action and this option is only need to force the creation of a
+                   ${jetty.home}/start.d
+
   --create-start-ini
                    Create a ${jetty.base}/start.ini file.  If a ${jetty.base}/start.d
-                   directory exists, then all it's contained ini files are concatinated into
+                   directory exists, then all it's contained ini files are concatenated into
                    the start.ini file.
 
   --write-module-graph=<filename>
