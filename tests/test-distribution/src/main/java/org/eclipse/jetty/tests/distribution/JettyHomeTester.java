@@ -82,7 +82,7 @@ import org.slf4j.LoggerFactory;
  *         .build();
  *
  * // The first run initializes the Jetty Base.
- * try (DistributionTester.Run run1 = distribution.start("--create-startd", "--add-to-start=http2c,jsp,deploy"))
+ * try (DistributionTester.Run run1 = distribution.start("--create-start-ini", "--add-modules=http2c,jsp,deploy"))
  * {
  *     assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
  *     assertEquals(0, run1.getExitValue());
@@ -107,13 +107,13 @@ import org.slf4j.LoggerFactory;
  * }
  * </pre>
  */
-public class DistributionTester
+public class JettyHomeTester
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DistributionTester.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(JettyHomeTester.class);
 
     private Config config;
 
-    private DistributionTester(Config config)
+    private JettyHomeTester(Config config)
     {
         this.config = config;
     }
@@ -123,7 +123,7 @@ public class DistributionTester
      *
      * @param args arguments to use to start the distribution
      */
-    public DistributionTester.Run start(String... args) throws Exception
+    public JettyHomeTester.Run start(String... args) throws Exception
     {
         return start(Arrays.asList(args));
     }
@@ -143,7 +143,7 @@ public class DistributionTester
      *
      * @param args arguments to use to start the distribution
      */
-    public DistributionTester.Run start(List<String> args) throws Exception
+    public JettyHomeTester.Run start(List<String> args) throws Exception
     {
         File jettyBaseDir = config.jettyBase.toFile();
         Path workDir = Files.createDirectories(jettyBaseDir.toPath().resolve("work"));
@@ -245,11 +245,8 @@ public class DistributionTester
 
     private void init() throws Exception
     {
-        if (config.jettyDistro == null)
-            config.jettyDistro = resolveDistribution(config.jettyVersion);
-
         if (config.jettyHome == null)
-            config.jettyHome = config.jettyDistro.resolve("jetty-home");
+            config.jettyHome = resolveHomeArtifact(config.jettyVersion);
 
         if (config.jettyBase == null)
         {
@@ -260,7 +257,9 @@ public class DistributionTester
         else
         {
             if (!config.jettyBase.isAbsolute())
-                config.jettyBase = config.jettyDistro.resolve(config.jettyBase);
+            {
+                throw new IllegalStateException("Jetty Base is not an absolute path: " + config.jettyBase);
+            }
         }
     }
 
@@ -312,17 +311,19 @@ public class DistributionTester
         }
     }
 
-    private Path resolveDistribution(String version) throws Exception
+    private Path resolveHomeArtifact(String version) throws Exception
     {
-        File artifactFile = resolveArtifact("org.eclipse.jetty:jetty-distribution:zip:" + version);
+        File artifactFile = resolveArtifact("org.eclipse.jetty:jetty-home:zip:" + version);
 
         // create tmp directory to unzip distribution
-        Path tmp = Files.createTempDirectory("jetty_home_");
+        Path homes = MavenTestingUtils.getTargetTestingPath("homes");
+        FS.ensureDirExists(homes);
+        Path tmp = Files.createTempDirectory(homes, "jetty_home_");
         File tmpFile = tmp.toFile();
 
         unzip(artifactFile, tmpFile);
 
-        return tmp.resolve("jetty-distribution-" + version);
+        return tmp.resolve("jetty-home-" + version);
     }
 
     private RepositorySystem newRepositorySystem()
@@ -373,7 +374,6 @@ public class DistributionTester
 
     private static class Config
     {
-        private Path jettyDistro;
         private Path jettyBase;
         private Path jettyHome;
         private String jettyVersion;
@@ -384,10 +384,9 @@ public class DistributionTester
         @Override
         public String toString()
         {
-            return String.format("%s@%x{jettyDistro=%s, jettyBase=%s, jettyHome=%s, jettyVersion=%s, mavenLocalRepository=%s, mavenRemoteRepositories=%s}",
+            return String.format("%s@%x{jettyBase=%s, jettyHome=%s, jettyVersion=%s, mavenLocalRepository=%s, mavenRemoteRepositories=%s}",
                 getClass().getSimpleName(),
                 hashCode(),
-                jettyDistro,
                 jettyBase,
                 jettyHome,
                 jettyVersion,
@@ -730,11 +729,11 @@ public class DistributionTester
         }
 
         /**
-         * @return a new configured instance of {@link DistributionTester}
+         * @return a new configured instance of {@link JettyHomeTester}
          */
-        public DistributionTester build() throws Exception
+        public JettyHomeTester build() throws Exception
         {
-            DistributionTester tester = new DistributionTester(config);
+            JettyHomeTester tester = new JettyHomeTester(config);
             tester.init();
             return tester;
         }

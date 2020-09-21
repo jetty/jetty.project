@@ -18,12 +18,17 @@
 
 package org.eclipse.jetty.tests.distribution;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.AfterEach;
 
-public class AbstractDistributionTest
+public class AbstractJettyHomeTest
 {
     protected HttpClient client;
 
@@ -36,6 +41,13 @@ public class AbstractDistributionTest
     {
         client = supplier.get();
         client.start();
+    }
+
+    public static Path newTestJettyBaseDirectory() throws IOException
+    {
+        Path bases = MavenTestingUtils.getTargetTestingPath("bases");
+        FS.ensureDirExists(bases);
+        return Files.createTempDirectory(bases, "jetty_base_");
     }
 
     @AfterEach
