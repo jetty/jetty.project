@@ -141,7 +141,7 @@ public class ResourceCollection extends Resource
      */
     public ResourceCollection(String csvResources) throws IOException
     {
-        setResourcesAsCSV(csvResources);
+        setResources(csvResources);
     }
 
     /**
@@ -197,24 +197,25 @@ public class ResourceCollection extends Resource
      * Sets the resources as string of comma-separated values.
      * This method should be used when configuring jetty-maven-plugin.
      *
-     * @param csvResources the comma-separated string containing
+     * @param resources the comma-separated string containing
      * one or more resource strings.
      * @throws IOException if unable resource declared is not valid
+     * @see Resource#fromList(String, boolean)
      */
-    public void setResourcesAsCSV(String csvResources) throws IOException
+    public void setResources(String resources) throws IOException
     {
-        if (StringUtil.isBlank(csvResources))
+        if (StringUtil.isBlank(resources))
         {
-            throw new IllegalArgumentException("CSV String is blank");
+            throw new IllegalArgumentException("String is blank");
         }
 
-        List<Resource> resources = Resource.fromList(csvResources, false);
-        if (resources.isEmpty())
+        List<Resource> list = Resource.fromList(resources, false);
+        if (list.isEmpty())
         {
-            throw new IllegalArgumentException("CSV String contains no entries");
+            throw new IllegalArgumentException("String contains no entries");
         }
         List<Resource> ret = new ArrayList<>();
-        for (Resource resource : resources)
+        for (Resource resource : list)
         {
             assertResourceValid(resource);
             ret.add(resource);
@@ -241,46 +242,32 @@ public class ResourceCollection extends Resource
             return this;
         }
 
+        ArrayList<Resource> resources = null;
+
         // Attempt a simple (single) Resource lookup that exists
         for (Resource res : _resources)
         {
-            Resource fileResource = res.addPath(path);
-            if (fileResource.exists())
-            {
-                if (!fileResource.isDirectory())
-                {
-                    return fileResource;
-                }
-            }
-        }
-
-        // Create a list of potential resource for directories of this collection
-        ArrayList<Resource> potentialResources = null;
-        for (Resource res : _resources)
-        {
             Resource r = res.addPath(path);
-            if (r.exists() && r.isDirectory())
+            if (!r.isDirectory() && r.exists())
             {
-                if (potentialResources == null)
-                {
-                    potentialResources = new ArrayList<>();
-                }
-
-                potentialResources.add(r);
+                // Return simple (non-directory) Resource
+                return r;
             }
+
+            if (resources == null)
+            {
+                resources = new ArrayList<>();
+            }
+
+            resources.add(r);
         }
 
-        if (potentialResources == null || potentialResources.isEmpty())
+        if (resources.size() == 1)
         {
-            throw new MalformedURLException("path does not result in Resource: " + path);
+            return resources.get(0);
         }
 
-        if (potentialResources.size() == 1)
-        {
-            return potentialResources.get(0);
-        }
-
-        return new ResourceCollection(potentialResources);
+        return new ResourceCollection(resources);
     }
 
     @Override

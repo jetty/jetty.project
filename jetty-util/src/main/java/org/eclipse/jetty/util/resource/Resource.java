@@ -923,14 +923,14 @@ public abstract class Resource implements ResourceFactory, Closeable
      * found directories within the glob reference.
      * </p>
      *
-     * @param delimitedReferences the comma {@code ,} or semicolon {@code ;} delimited
+     * @param resources the comma {@code ,} or semicolon {@code ;} delimited
      * String of resource references.
-     * @param globDirs true if glob references return directories within the glob as well
+     * @param globDirs true to return directories in addition to files at the level of the glob
      * @return the list of resources parsed from input string.
      */
-    public static List<Resource> fromList(String delimitedReferences, boolean globDirs) throws IOException
+    public static List<Resource> fromList(String resources, boolean globDirs) throws IOException
     {
-        return fromList(delimitedReferences, globDirs, Resource::newResource);
+        return fromList(resources, globDirs, Resource::newResource);
     }
 
     /**
@@ -942,22 +942,22 @@ public abstract class Resource implements ResourceFactory, Closeable
      * found directories within the glob reference.
      * </p>
      *
-     * @param delimitedReferences the comma {@code ,} or semicolon {@code ;} delimited
+     * @param resources the comma {@code ,} or semicolon {@code ;} delimited
      * String of resource references.
-     * @param globDirs true if glob references return directories within the glob as well
+     * @param globDirs true to return directories in addition to files at the level of the glob
      * @param resourceFactory the ResourceFactory used to create new Resource references
      * @return the list of resources parsed from input string.
      */
-    public static List<Resource> fromList(String delimitedReferences, boolean globDirs, ResourceFactory resourceFactory) throws IOException
+    public static List<Resource> fromList(String resources, boolean globDirs, ResourceFactory resourceFactory) throws IOException
     {
-        if (StringUtil.isBlank(delimitedReferences))
+        if (StringUtil.isBlank(resources))
         {
             return Collections.emptyList();
         }
 
-        List<Resource> resources = new ArrayList<>();
+        List<Resource> returnedResources = new ArrayList<>();
 
-        StringTokenizer tokenizer = new StringTokenizer(delimitedReferences, StringUtil.DEFAULT_DELIMS);
+        StringTokenizer tokenizer = new StringTokenizer(resources, StringUtil.DEFAULT_DELIMS);
         while (tokenizer.hasMoreTokens())
         {
             String token = tokenizer.nextToken().trim();
@@ -982,11 +982,11 @@ public abstract class Resource implements ResourceFactory, Closeable
                                 Resource resource = dirResource.addPath(entry);
                                 if (!resource.isDirectory())
                                 {
-                                    resources.add(resource);
+                                    returnedResources.add(resource);
                                 }
                                 else if (globDirs)
                                 {
-                                    resources.add(resource);
+                                    returnedResources.add(resource);
                                 }
                             }
                             catch (Exception ex)
@@ -1000,10 +1000,10 @@ public abstract class Resource implements ResourceFactory, Closeable
             else
             {
                 // Simple reference, add as-is
-                resources.add(resourceFactory.getResource(token));
+                returnedResources.add(resourceFactory.getResource(token));
             }
         }
 
-        return resources;
+        return returnedResources;
     }
 }
