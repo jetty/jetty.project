@@ -130,7 +130,7 @@
     <module>tests</module>
     <module>examples</module>
     <module>jetty-quickstart</module>
-    <module>jetty-distribution</module>
+    <!-- <module>jetty-distribution</module> -->
     <module>jetty-runner</module>
     <module>jetty-http-spi</module>
     <module>jetty-osgi</module>
@@ -1246,6 +1246,7 @@
             <artifactId>maven-assembly-plugin</artifactId>
             <executions>
               <execution>
+                <id>config-assembly</id>
                 <phase>package</phase>
                 <goals>
                   <goal>single</goal>
