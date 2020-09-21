@@ -943,4 +943,62 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         UncompressedMetadata metadata = parseResponseContent(response);
         assertThat("Response Content Length", metadata.contentLength, is(fileSize));
     }
+
+    @Test
+    public void testUpperCaseMimeType() throws Exception
+    {
+        GzipHandler gzipHandler = new GzipHandler();
+        gzipHandler.addExcludedMimeTypes("text/PLAIN");
+
+        server = new Server();
+        LocalConnector localConnector = new LocalConnector(server);
+        server.addConnector(localConnector);
+
+        Path contextDir = workDir.resolve("context");
+        FS.ensureDirExists(contextDir);
+
+        ServletContextHandler servletContextHandler = new ServletContextHandler();
+        servletContextHandler.setContextPath("/context");
+        servletContextHandler.setBaseResource(new PathResource(contextDir));
+        ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
+        holder.setInitParameter("etags", "true");
+        servletContextHandler.addServlet(holder, "/");
+        servletContextHandler.insertHandler(gzipHandler);
+
+        server.setHandler(servletContextHandler);
+
+        // Prepare Server File
+        int fileSize = DEFAULT_OUTPUT_BUFFER_SIZE * 4;
+        Path file = createFile(contextDir, "file.txt", fileSize);
+        String expectedSha1Sum = Sha1Sum.calculate(file);
+
+        server.start();
+
+        // Setup request
+        HttpTester.Request request = HttpTester.newRequest();
+        request.setMethod("GET");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Host", "tester");
+        request.setHeader("Connection", "close");
+        request.setHeader("Accept-Encoding", "gzip");
+        request.setURI("/context/file.txt");
+
+        // Issue request
+        ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
+
+        // Parse response
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
+
+        // Response Content-Encoding check
+        assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), not(containsString("gzip")));
+        assertThat("Response[Vary]", response.get("Vary"), is(nullValue()));
+
+        // Response Content checks
+        UncompressedMetadata metadata = parseResponseContent(response);
+        assertThat("Response Content Length", metadata.contentLength, is(fileSize));
+        assertThat("(Uncompressed) Content Length", metadata.uncompressedSize, is(fileSize));
+        assertThat("(Uncompressed) Content Hash", metadata.uncompressedSha1Sum, is(expectedSha1Sum));
+    }
 }

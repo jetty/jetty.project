@@ -196,7 +196,6 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
                 contentLength = content.remaining();
 
             _deflater = _factory.getDeflater(_channel.getRequest(), contentLength);
-
             if (_deflater == null)
             {
                 LOG.debug("{} exclude no deflater", this);
@@ -355,7 +354,9 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
                         int off = slice.arrayOffset() + slice.position();
                         int len = slice.remaining();
                         _crc.update(array, off, len);
-                        _deflater.setInput(array, off, len);  // TODO use ByteBuffer API in Jetty-10
+                        // Ideally we would want to use the ByteBuffer API for Deflaters. However due the the ByteBuffer implementation
+                        // of the CRC32.update() it is less efficient for us to use this rather than to convert to array ourselves.
+                        _deflater.setInput(array, off, len);
                         slice.position(slice.position() + len);
                         if (_last && BufferUtil.isEmpty(_content))
                             _deflater.finish();

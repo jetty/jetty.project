@@ -25,6 +25,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.HttpInput.Content;
 import org.eclipse.jetty.util.component.Destroyable;
+import org.eclipse.jetty.util.compression.InflaterPool;
 
 /**
  * An HttpInput Interceptor that inflates GZIP encoded request content.
@@ -34,9 +35,9 @@ public class GzipHttpInputInterceptor implements HttpInput.Interceptor, Destroya
     private final Decoder _decoder;
     private ByteBuffer _chunk;
 
-    public GzipHttpInputInterceptor(ByteBufferPool pool, int bufferSize)
+    public GzipHttpInputInterceptor(InflaterPool inflaterPool, ByteBufferPool pool, int bufferSize)
     {
-        _decoder = new Decoder(pool, bufferSize);
+        _decoder = new Decoder(inflaterPool, pool, bufferSize);
     }
 
     @Override
@@ -66,9 +67,9 @@ public class GzipHttpInputInterceptor implements HttpInput.Interceptor, Destroya
 
     private class Decoder extends GZIPContentDecoder
     {
-        private Decoder(ByteBufferPool pool, int bufferSize)
+        private Decoder(InflaterPool inflaterPool, ByteBufferPool bufferPool, int bufferSize)
         {
-            super(pool, bufferSize);
+            super(inflaterPool, bufferPool, bufferSize);
         }
 
         @Override
