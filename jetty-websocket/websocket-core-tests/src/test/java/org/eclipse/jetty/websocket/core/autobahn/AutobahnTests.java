@@ -50,6 +50,9 @@ public class AutobahnTests
     @BeforeEach
     public void before() throws Exception
     {
+        String workspace = System.getenv().get("WORKSPACE");
+        LOG.info("Workspace: {}", workspace);
+
         fuzzingServer = USER_DIR.resolve("fuzzingserver.json");
         assertTrue(Files.exists(fuzzingServer));
 
