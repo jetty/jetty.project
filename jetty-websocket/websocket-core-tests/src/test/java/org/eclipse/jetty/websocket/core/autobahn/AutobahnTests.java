@@ -50,16 +50,20 @@ public class AutobahnTests
     @BeforeEach
     public void before() throws Exception
     {
-        String workspace = System.getenv().get("WORKSPACE");
+        String workspace;
+        workspace = System.getenv().get("WORKSPACE");
         LOG.info("Workspace: {}", workspace);
+        LOG.info("User Dir: {}", USER_DIR);
+        Path baseDir = (workspace != null) ? Paths.get(workspace) : USER_DIR;
+        LOG.info("Base Dir: {}", baseDir);
 
-        fuzzingServer = USER_DIR.resolve("fuzzingserver.json");
+        fuzzingServer = baseDir.resolve("fuzzingserver.json");
         assertTrue(Files.exists(fuzzingServer));
 
-        fuzzingClient = USER_DIR.resolve("fuzzingclient.json");
+        fuzzingClient = baseDir.resolve("fuzzingclient.json");
         assertTrue(Files.exists(fuzzingClient));
 
-        reportDir = USER_DIR.resolve("target/reports");
+        reportDir = baseDir.resolve("target/reports");
         if (!Files.exists(reportDir))
             Files.createDirectory(reportDir);
     }
