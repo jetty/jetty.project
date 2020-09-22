@@ -1355,7 +1355,7 @@ public class Request implements HttpServletRequest
 
         // If no port specified, return the default port for the scheme
         if (port <= 0)
-            return HttpScheme.getNormalPort(getScheme());
+            return HttpScheme.getDefaultPort(getScheme());
 
         // return a specific port
         return port;

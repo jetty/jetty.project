@@ -639,7 +639,7 @@ public interface HttpURI
         public Mutable normalize()
         {
             HttpScheme scheme = _scheme == null ? null : HttpScheme.CACHE.get(_scheme);
-            if (scheme != null && _port == scheme.getNormalPort())
+            if (scheme != null && _port == scheme.getDefaultPort())
             {
                 _port = 0;
                 _uri = null;

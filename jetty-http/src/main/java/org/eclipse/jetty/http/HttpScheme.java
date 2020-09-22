@@ -46,13 +46,13 @@ public enum HttpScheme
 
     private final String _string;
     private final ByteBuffer _buffer;
-    private final int _normalPort;
+    private final int _defaultPort;
 
     HttpScheme(String s, int port)
     {
         _string = s;
         _buffer = BufferUtil.toBuffer(s);
-        _normalPort = port;
+        _defaultPort = port;
     }
 
     public ByteBuffer asByteBuffer()
@@ -70,14 +70,14 @@ public enum HttpScheme
         return _string;
     }
 
-    public int getNormalPort()
+    public int getDefaultPort()
     {
-        return _normalPort;
+        return _defaultPort;
     }
 
     public int normalizePort(int port)
     {
-        return port == _normalPort ? 0 : port;
+        return port == _defaultPort ? 0 : port;
     }
 
     @Override
@@ -86,10 +86,10 @@ public enum HttpScheme
         return _string;
     }
 
-    public static int getNormalPort(String scheme)
+    public static int getDefaultPort(String scheme)
     {
         HttpScheme httpScheme = scheme == null ? null : CACHE.get(scheme);
-        return httpScheme == null ? HTTP.getNormalPort() : httpScheme.getNormalPort();
+        return httpScheme == null ? HTTP.getDefaultPort() : httpScheme.getDefaultPort();
     }
 
     public static int normalizePort(String scheme, int port)
