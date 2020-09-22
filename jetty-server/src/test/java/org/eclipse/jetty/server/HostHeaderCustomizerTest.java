@@ -91,7 +91,6 @@ public class HostHeaderCustomizerTest
         }
     }
 
-
     @Test
     public void testHostPort() throws Exception
     {
