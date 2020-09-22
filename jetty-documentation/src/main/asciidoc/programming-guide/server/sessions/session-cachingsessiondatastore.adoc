@@ -1,0 +1,39 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[pg-server-session-cachingsessiondatastore]]
+==== Session Components: The CachingSessionDataStore
+
+[plantuml]
+----
+interface SessionDataMap
+class CachingSessionDataStore
+interface SessionDataStore
+
+CachingSessionDataStore "1" *-down- "1" SessionDataMap
+CachingSessionDataStore "`" *-down- "1" SessionDataStore
+----
+
+The `CachingSessionDataStore` is a special type of `SessionDataStore` that acts as an L2 cache for `SessionData`.
+It has 2 components: the cache, and the actual backing `SessionDataStore`.
+The cache is an instance of a link:{JDURL}/org/eclipse/jetty/server/session/SessionDataMap.html[SessionDataMap].
+The `CachingSessionDataStore` consults this cache before consulting the actual `SessionDataStore`.
+Using a cache for the `SessionData` can improve the performance of slow stores.
+
+Jetty provides one implementation of this L2 cache based on `Memcached`, link:{JDURL}/org/eclipse/jetty/memcached/session/MemcachedSessionDataMap.html[MemcachedSessionDataMap].
+

@@ -23,15 +23,20 @@ There is one `SessionCache` per `SessionHandler`, and thus one per context.
 Its purpose is to provide an L1 cache of `Session` objects.
 Having a working set of `Session` objects in memory allows multiple simultaneous requests for the same session to share the same `Session` object.
 A `SessionCache` uses a `SessionDataStore` to create, read, store and delete the `SessionData` associated with the `Session`.
-``SessionCache``s can be created by `SessionHandlers` as needed via a `SessionCacheFactory` registered as a bean on the `Server`.
-Alternatively, you can construct and configure an instance of a `SessionCache` and explicitly set it on a `SessionHander`.
-Be aware that in this case, you must _also_ ensure your instance is set up with a `SessionDataStore`.
-If instead the `SessionHandler` uses the `SessionCacheFactory` to create a `SessionCache` instance, it will be responsible for choosing a `SessionDataStore`: if a `SessionDataStoreFactory` bean is found on the `Server` instance, it will use that; otherwise it uses the `NullSessionDataStore`.
-More on ``SessionDataStore``s later, in this section we will concentrate the `SessionCache`.
+
+There are two ways to create a `SessionCache` for a `SessionHandler`:
+
+. allow the `SessionHandler` to create one lazily at startup
+The `SessionHandler` looks for a `SessionCacheFactory` bean on the server to produce the `SessionCache` instance.
+It then looks for a `SessionDataStoreFactory` bean on the server to produce a `SessionDataStore` instance to use with the `SessionCache`.
+. pass a fully configured `SessionCache` instance to the `SessionHandler`
+You are responsible for configuring both the `SessionCache` instance and its `SessionDataStore` 
+
+More on ``SessionDataStore``s xref:pg-server-session-sessiondatastore[later], in this section we will concentrate on the `SessionCache` and `SessionCacheFactory`.
 
 
 The link:{JDURL}/org/eclipse/jetty/server/session/AbstractSessionCache.html[AbstractSessionCache] provides most of the behaviour of ``SessionCache``s.
-If you are implementing a custom `SessionCache` we recommend you extend this base class, as the Servlet Specification has many subtleties and extending the base class ensures that your implementation will take account of them.
+If you are implementing a custom `SessionCache` we strongly recommend you extend this base class, as the Servlet Specification has many subtleties and extending the base class ensures that your implementation will take account of them.
 
 Some of the important behaviours of ``SessionCache``s are:
 
@@ -51,7 +56,7 @@ The eviction strategies are:
 saveOnInactiveEviction::
 This controls whether a session will be persisted to the `SessionDataStore` if it is being evicted due to the EVICT_ON_INACTIVITY policy.
 Usually sessions are written to the `SessionDataStore` whenever the last simultaneous request exits the session.
-However, as `SessionDataStores` can be configured to xref:pg-server-session-sessiondatastore[skip some writes], this option ensures that the session will be written out.
+However, as `SessionDataStores` can be configured to xref:pg-server-session-sessiondatastore-skip[skip some writes], this option ensures that the session will be written out.
 
 saveOnCreate::
 Usually a session will be written through to the configured `SessionDataStore` when the last request for it finishes.
@@ -99,14 +104,16 @@ The link:{JDURL}/org/eclipse/jetty/server/session/DefaultSessionCache.html#getSe
 reset::
 The link:{JDURL}/org/eclipse/jetty/server/session/DefaultSessionCache.html#resetStats()[DefaultSessionCache.resetStats()] zeros out the statistics counters.
 
-As a convenience, you can use the link:{JDURL}/org/eclipse/jetty/server/session/DefaultSessionCacheFactory.html[DefaultSessionFactory] to create a `DefaultSessionCache` whenever a new `SessionHandler` is started.
+If you create a link:{JDURL}/org/eclipse/jetty/server/session/DefaultSessionCacheFactory.html[DefaultSessionFactory] and register it as `Server` bean, a `SessionHandler` will be able to lazily create a `DefaultSessionCache`.
+The `DefaultSessionCacheFactory` has all of the same configuration setters as a `DefaultSessionCache`.
+Alternatively, if you only have a single `SessionHandler`, or you need to configure a `DefaultSessionCache` differently for every `SessionHandler`, then you could dispense with the `DefaultSessionCacheFactory` and simply instantiate, configure and pass in the `DefaultSessionCache` yourself.
 
 [source,java,indent=0]
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/session/SessionDocs.java[tags=defaultsessioncache]
 ----
 
-NOTE:: If you don't configure any `SessionCache` or `SessionCacheFactory`, the `SessionHandler` will automatically use a `DefaultSessionCache`.
+NOTE:: If you don't configure any `SessionCache` or `SessionCacheFactory`, the `SessionHandler` will automatically create a `DefaultSessionCache`.
  
 [[pg-server-session-null]]
 ===== The NullSessionCache
@@ -114,6 +121,11 @@ The `NullSessionCache` does not actually cache any objects: each request uses a 
 It is suitable for clustered deployments without a sticky load balancer and non-clustered deployments when purely minimal support for sessions is needed.
 
 As no sessions are actually cached, of course functions like `invalidateOnShutdown` and all of the eviction strategies have no meaning for the `NullSessionCache`.
+
+There is a `NullSessionCacheFactory` which you can instantiate, configure and set as a `Server` bean to enable the `SessionHandler` to automatically create new ``NullCache``s as needed.
+All of the same configuration options are available on the `NullSessionCacheFactory` as the `NullSessionCache` itself.
+Alternatively, if you only have a single `SessionHandler`, or you need to configure a `NullSessionCache` differently for every `SessionHandler`, then you could dispense with the `NullSessionCacheFactory` and simply instantiate, configure and pass in the `NullSessionCache` yourself.
+
 
 [source,java,indent=0]
 ----
@@ -123,15 +135,15 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/session/Sess
 [[pg-server-session-customcache]]
 ===== Implementing a Custom SessionCache
 
-As previously mentioned, the best thing to do is to extend the `AbstractSessionCache`.
+As previously mentioned, we highly recommend that you extend the link:{JDURL}/org/eclipse/jetty/server/session/AbstractSessionCache.html[AbstractSessionCache].
 
 ===== Heterogenous Caching
 
-Using the `DefaultSessionCacheFactory` or the `NullSessionCacheFactory` will ensure that every time a `SessionHandler` starts, by default it will create a new instance of the corresponding type of `SessionCache`.
+Using one of the ``SessionCacheFactory``s will ensure that every time a `SessionHandler` starts it will create a new instance of the corresponding type of `SessionCache`.
 
 But, what if you deploy multiple webapps, and for one of them, you don't want to use sessions?
 Or alternatively, you don't want to use sessions, but you have one webapp that now needs them?
-In that case, you can configure the factory appropriate to the majority, and then specifically create the right type of cache for the others.
+In that case, you can configure the `SessionCacheFactory` appropriate to the majority, and then specifically create the right type of `SessionCache` for the others.
 Here's an example where we configure the `DefaultSessionCacheFactory` to handle most webapps, but then specifically use a `NullSessionCache` for another:
 
 [source,java,indent=0]

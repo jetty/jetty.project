@@ -19,8 +19,8 @@
 [[pg-server-session-sessiondatastore]]
 ==== Session Components: The SessionDataStore
 
-There is one link:{JDURL}/org/eclipse/jetty/server/session/SessionDataStore.html[SessionDataStore] per `SessionCache`.
-Its purpose is to create, store, read and delete the `SessionData` related to a `Session`.
+A link:{JDURL}/org/eclipse/jetty/server/session/SessionDataStore.html[SessionDataStore] mediates the storage, retrieval and deletion of `SessionData`.
+There is one `SessionDataStore` per `SessionCache`.
 The server libraries provide a number of alternative `SessionDataStore` implementations.
 
 [plantuml]
@@ -48,50 +48,33 @@ AbstractSessionDataStore <|-- MongoSessionDataStore
 SessionDataStore <|-- CachingSessionDataStore
 ----
 
-The `AbstractSessionDataStore` provides most of the behaviour common to ``SessionDataStore``s.
-The common characteristics for all ``SessionDataStore``s that derive from `AbstractSessionDataStore` are:
+The link:{JDURL}/org/eclipse/jetty/server/session/AbstractSessionDataStore.html[AbstractSessionDataStore] provides most of the behaviour common to ``SessionDataStore``s:
 
 passivation::
 Supporting passivation means that session data is serialized.
 Some persistence mechanisms serialize, such as JDBC, GCloud Datastore etc.
-Others store an object in shared memory, e.g. Infinispan.
-Whether or not a clustering technology entails passivation controls whether or not ``HttpSessionActivationListener``s will be called.
+Others store an object in shared memory, e.g. Infinispan and thus don't serialize session data.
+Whether or not a persistence technology entails passivation controls whether or not ``HttpSessionActivationListener``s will be called.
 When implementing a custom `SessionDataStore` you need to decide whether or not passivation will be supported.
+
+[[pg-server-session-sessiondata-skip]]
 savePeriod::
 This is an interval defined in seconds.
 It is used to reduce the frequency with which `SessionData` is written.
 Normally, whenever the last concurrent request leaves a `Session`, the `SessionData` for that `Session` is always persisted, even if the only thing that changed is the `lastAccessTime`.
-If the `savePeriod` is non-zero, the `SessionData` will not be persisted if no session attributes changed, unless the time since the last save exceeds the `savePeriod`.
+If the `savePeriod` is non-zero, the `SessionData` will not be persisted if no session attributes changed, _unless_ the time since the last save exceeds the `savePeriod`.
 Setting a non-zero value can reduce the load on the persistence mechanism, but in a clustered environment runs the risk that other nodes will see the session as expired because it has not been persisted sufficiently recently.
+
+[[pg-server-session-sessiondata-grace]]
 gracePeriod::
 The `gracePeriod` is an interval defined in seconds. 
 It is an attempt to deal with the non-transactional nature of sessions with regard to finding sessions that have expired.
-Because the servlet api does not define session transactions, in a clustered configuration - even with a sticky load balancer - it is always possible that a session is live on a node but not yet updated in the persistent store.
+In a clustered configuration - even with a sticky load balancer - it is always possible that a session is "live" on a node but not yet updated in the persistent store.
 This means that it can be hard to determine at any given moment whether a clustered session has truly expired.
-Thus, we use the `gracePeriod` to provide a bit of leeway around the moment of expiry.
-The `AbstraceSessionDataStore` uses the `gracePeriod` in the following manner to help xref:pg-server-session-housekeeper[scavenge] expired sessions:
+Thus, we use the `gracePeriod` to provide a bit of leeway around the moment of expiry during xref:pg-server-session-housekeeper[scavenge]:
 
-* on every scavenge cycle it searches for sessions that belong to our context that expired at least one `gracePeriod` ago
-* infrequently we also do a scan to find and summarily delete sessions - from any context - that expired at least 10 `gracePeriod``s ago
+* on every xref:pg-server-session-housekeeper[scavenge] cycle an `AbstractSessionDataStore` searches for sessions that belong to the context that expired at least one `gracePeriod` ago
+* infrequently the `AbstractSessionDataStore` searches for and summarily deletes sessions - from any context - that expired at least 10 ``gracePeriod``s ago
 
-The trivial link:{JDURL}/org/eclipse/jetty/server/session/NullSessionDataStore.html[NullSessionDataStore] - which does not persist sessions - is the default used by the `SessionHandler`.
-
-===== CachingSessionDataStore
-[plantuml]
-----
-interface SessionDataMap
-class CachingSessionDataStore
-interface SessionDataStore
-
-CachingSessionDataStore "1" *-down- "1" SessionDataMap
-CachingSessionDataStore "`" *-down- "1" SessionDataStore
-----
-
-The `CachingSessionDataStore` is a special type of `SessionDataStore` that acts as an L2 cache for `SessionData`.
-It has 2 components: the cache, and the actual backing `SessionDataStore`.
-The cache is an instance of a link:{JDURL}/org/eclipse/jetty/server/session/SessionDataMap.html[SessionDataMap].
-The `CachingSessionDataStore` consults this cache before consulting the actual `SessionDataStore`.
-Using a cache for the `SessionData` can improve the performance of slow stores.
-
-Jetty provides one implementation of this L2 cache based on `Memcached`, link:{JDURL}/org/eclipse/jetty/memcached/session/MemcachedSessionDataMap.html[MemcachedSessionDataMap].
+NOTE:: The trivial link:{JDURL}/org/eclipse/jetty/server/session/NullSessionDataStore.html[NullSessionDataStore] - which does not persist sessions - is the default used by the `SessionHandler`.
 

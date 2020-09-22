@@ -16,15 +16,23 @@
 // ========================================================================
 //
 
-[[pg-server-session]]
-=== Session Management
+package org.eclipse.jetty.util;
 
-Sessions are a concept within the Servlet API which allow requests to store and retrieve information across the time a user spends in an application.
+import java.util.HashSet;
 
-include::session-architecture.adoc[]
-include::session-sessionidmgr.adoc[]
-include::session-sessionhandler.adoc[]
-include::session-sessioncache.adoc[]
-include::session-sessiondatastore.adoc[]
-include::session-sessiondatastore-file.adoc[]
-include::session-cachingsessiondatastore.adoc[]
+public class AsciiLowerCaseSet extends HashSet<String>
+{
+    @Override
+    public boolean add(String s)
+    {
+        return super.add(s == null ? null : StringUtil.asciiToLowerCase(s));
+    }
+
+    @Override
+    public boolean contains(Object o)
+    {
+        if (o instanceof String)
+            return super.contains(StringUtil.asciiToLowerCase((String)o));
+        return super.contains(o);
+    }
+}

@@ -24,7 +24,7 @@
     <logback.version>1.3.0-alpha5</logback.version>
     <spring-version>5.1.1.RELEASE</spring-version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
-    <servlet.api.version>4.0.3</servlet.api.version>
+    <servlet.api.version>4.0.4</servlet.api.version>
     <websocket.api.version>1.1.2</websocket.api.version>
     <jsp.version>9.0.29</jsp.version>
     <infinispan.version>9.4.8.Final</infinispan.version>
@@ -39,6 +39,7 @@
     <maven.resolver.version>1.3.1</maven.resolver.version>
     <weld.version>3.1.3.Final</weld.version>
     <jetty.perf-helper.version>1.0.5</jetty.perf-helper.version>
+    <ant.version>1.10.8</ant.version>
     <unix.socket.tmp></unix.socket.tmp>
     <!-- enable or not TestTracker junit5 extension i.e log message when test method is starting -->
     <jetty.testtracker.log>false</jetty.testtracker.log>
@@ -1150,6 +1151,16 @@
         <groupId>io.grpc</groupId>
         <artifactId>grpc-core</artifactId>
         <version>1.0.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.ant</groupId>
+        <artifactId>ant</artifactId>
+        <version>${ant.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.ant</groupId>
+        <artifactId>ant-launcher</artifactId>
+        <version>${ant.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
