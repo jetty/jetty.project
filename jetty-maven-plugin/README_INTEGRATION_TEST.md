@@ -23,4 +23,4 @@ Running Logs
 --------------------
 The output of each Maven build will be located in /target/it/${project-name}/build.log
 
-The jetty log output for those goals that fork a new process (currently "distro" and "run-forked") can be found in /target/it/${project-name}/jetty-simple-webapp/target/jetty.out.
+The jetty log output for those goals that fork a new process (currently "home" and "run-forked") can be found in /target/it/${project-name}/jetty-simple-webapp/target/jetty.out.

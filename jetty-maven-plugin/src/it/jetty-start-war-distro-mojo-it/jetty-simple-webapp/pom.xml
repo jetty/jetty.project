@@ -16,7 +16,7 @@
   <properties>
     <jetty.port.file>${project.build.directory}/jetty-start-war-distro-port.txt</jetty.port.file>
     <jetty.jvmArgs>@jetty.jvmArgs@</jetty.jvmArgs>
-    <jetty.deployMode>DISTRO</jetty.deployMode>
+    <jetty.deployMode>HOME</jetty.deployMode>
   </properties>
 
   <dependencies>

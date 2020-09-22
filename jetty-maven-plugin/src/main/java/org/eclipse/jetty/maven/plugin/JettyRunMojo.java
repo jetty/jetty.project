@@ -74,11 +74,11 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
 
     /**
      * Only one of the following will be used, depending the mode
-     * the mojo is started in: EMBED, FORK, DISTRO
+     * the mojo is started in: EMBED, FORK, HOME
      */
     protected JettyEmbedder embedder;
     protected JettyForker forker;
-    protected JettyDistroForker distroForker;
+    protected JettyHomeForker homeForker;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException
@@ -124,15 +124,15 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
     }
 
     @Override
-    public void startJettyDistro() throws MojoExecutionException
+    public void startJettyHome() throws MojoExecutionException
     {
         try
         {
-            distroForker = newJettyDistroForker();
-            distroForker.setWaitForChild(true); //we always run at the command line, echo child output and wait for it
+            homeForker = newJettyHomeForker();
+            homeForker.setWaitForChild(true); //we always run at the command line, echo child output and wait for it
             //TODO is it ok to start the scanner before we start jetty?
             startScanner();
-            distroForker.start(); //forks a jetty distro
+            homeForker.start(); //forks a jetty distro
         }
         catch (Exception e)
         {
@@ -371,7 +371,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
                     scanner.start();
                 break;
             }
-            case DISTRO:
+            case HOME:
             {
                 verifyPomConfiguration();
                 if (reconfigure)
@@ -379,7 +379,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
                     getLog().info("Reconfiguring scanner after change to pom.xml ...");
 
                     warArtifacts = null; //TODO if there are any changes to the pom, then we would have to tell the
-                    //existing forked distro process to stop, then rerun the configuration and then refork - too complicated??!
+                    //existing forked home process to stop, then rerun the configuration and then refork - too complicated??!
                     if (scanner != null)
                     {
                         scanner.reset();
@@ -388,7 +388,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
                 }
                 configureWebApp();
                 //regenerate the webapp and redeploy it
-                distroForker.redeployWebApp();
+                homeForker.redeployWebApp();
                 //restart scanner
                 if (scanner != null)
                     scanner.start();

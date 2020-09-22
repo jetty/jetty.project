@@ -44,12 +44,12 @@ import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
- * JettyDistroForker
+ * JettyHomeBaseForker
  *
- * Unpacks a jetty distribution and configures it with a base that allows it
+ * Unpacks a jetty-home and configures it with a base that allows it
  * to run an unassembled webapp.
  */
-public class JettyDistroForker extends AbstractForker
+public class JettyHomeForker extends AbstractForker
 {
     protected MavenWebAppContext webApp;
 
@@ -61,9 +61,9 @@ public class JettyDistroForker extends AbstractForker
     protected File jettyHome;
 
     /**
-     * Zip of jetty distro
+     * Zip of jetty-home
      */
-    protected File jettyDistro;
+    protected File jettyHomeZip;
 
     /**
      * Location of existing jetty base directory
@@ -135,14 +135,14 @@ public class JettyDistroForker extends AbstractForker
         this.contextXml = contextXml;
     }
 
-    public File getJettyDistro()
+    public File getJettyHomeZip()
     {
-        return jettyDistro;
+        return jettyHomeZip;
     }
 
-    public void setJettyDistro(File jettyDistro)
+    public void setJettyHomeZip(File jettyHomeZip)
     {
-        this.jettyDistro = jettyDistro;
+        this.jettyHomeZip = jettyHomeZip;
     }
 
     public MavenWebAppContext getWebApp()
@@ -229,7 +229,7 @@ public class JettyDistroForker extends AbstractForker
         ProcessBuilder builder = new ProcessBuilder(cmd);
         builder.directory(workDir);
 
-        PluginLog.getLog().info("Distro process starting");
+        PluginLog.getLog().info("Home process starting");
 
         //set up extra environment vars if there are any
         if (!env.isEmpty())
@@ -389,20 +389,20 @@ public class JettyDistroForker extends AbstractForker
     private void configureJettyHome()
         throws Exception
     {
-        if (jettyHome == null && jettyDistro == null)
-            throw new IllegalStateException("No jettyDistro");
+        if (jettyHome == null && jettyHomeZip == null)
+            throw new IllegalStateException("No jettyHome");
 
         if (baseDir == null)
             throw new IllegalStateException("No baseDir");
 
         if (jettyHome == null)
         {
-            JarResource res = (JarResource)JarResource.newJarResource(Resource.newResource(jettyDistro));
+            JarResource res = (JarResource)JarResource.newJarResource(Resource.newResource(jettyHomeZip));
             res.copyTo(baseDir);
             //zip will unpack to target/jetty-home-<VERSION>
-            String name = jettyDistro.getName();
+            String name = jettyHome.getName();
             int i = name.lastIndexOf('.');
-            name = (i > 0 ? name.substring(0, i) : "distro");
+            name = (i > 0 ? name.substring(0, i) : "home");
             jettyHome = new File(baseDir, name);
         }
     }

@@ -102,9 +102,7 @@ public class TestForkedChild
     {
         baseDir = MavenTestingUtils.getTestResourceDir("root");
         testDir = MavenTestingUtils.getTargetTestingDir("forkedChild");
-        if (testDir.exists())
-            FS.delete(testDir);
-        testDir.mkdirs();
+        FS.ensureEmpty(testDir);
         tmpDir = new File(testDir, "tmp");
         webappPropsFile = new File(testDir, "webapp.props");
 

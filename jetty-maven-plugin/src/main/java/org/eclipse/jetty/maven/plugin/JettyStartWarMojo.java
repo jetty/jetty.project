@@ -50,7 +50,7 @@ import org.eclipse.jetty.util.StringUtil;
  * </p>
  * <p>
  * You can configure this goal to run the webapp either in-process with maven, or 
- * forked into a new process, or deployed into a jetty distribution.
+ * forked into a new process, or deployed into a {@code ${jetty.base}} directory.
  * </p>
  */
 @Mojo(name = "start-war", requiresDependencyResolution = ResolutionScope.RUNTIME)
@@ -61,7 +61,7 @@ public class JettyStartWarMojo extends AbstractWebAppMojo
     
     protected JettyEmbedder embedder;
     protected JettyForker forker;
-    protected JettyDistroForker distroForker;
+    protected JettyHomeForker homeForker;
 
     @Override
     public void configureWebApp() throws Exception
@@ -122,16 +122,16 @@ public class JettyStartWarMojo extends AbstractWebAppMojo
      * Fork a jetty distro to run the given war.
      */
     @Override
-    public void startJettyDistro() throws MojoExecutionException
+    public void startJettyHome() throws MojoExecutionException
     {
         try
         {
-            distroForker = newJettyDistroForker();
-            distroForker.setWaitForChild(false); //never wait for child tofinish
-            distroForker.setMaxChildStartCheckMs(maxChildStartCheckMs);
-            distroForker.setMaxChildStartChecks(maxChildStartChecks);
-            distroForker.setJettyOutputFile(getJettyOutputFile("jetty-start-war.out"));
-            distroForker.start(); //forks a jetty distro
+            homeForker = newJettyHomeForker();
+            homeForker.setWaitForChild(false); //never wait for child tofinish
+            homeForker.setMaxChildStartCheckMs(maxChildStartCheckMs);
+            homeForker.setMaxChildStartChecks(maxChildStartChecks);
+            homeForker.setJettyOutputFile(getJettyOutputFile("jetty-start-war.out"));
+            homeForker.start(); //forks a jetty distro
         }
         catch (Exception e)
         {
