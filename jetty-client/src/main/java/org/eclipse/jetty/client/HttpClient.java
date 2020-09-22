@@ -1126,18 +1126,13 @@ public class HttpClient extends ContainerLifeCycle
     {
         if (port > 0)
             return port;
-        else if (isSchemeSecure(scheme))
-            return 443;
-        else
-            return 80;
+        return HttpScheme.normalizePort(scheme, port);
     }
 
     public boolean isDefaultPort(String scheme, int port)
     {
-        if (isSchemeSecure(scheme))
-            return port == 443;
-        else
-            return port == 80;
+        HttpScheme httpScheme = scheme == null ? null : HttpScheme.CACHE.get(scheme);
+        return httpScheme != null && port == httpScheme.getNormalPort();
     }
 
     public static boolean isSchemeSecure(String scheme)

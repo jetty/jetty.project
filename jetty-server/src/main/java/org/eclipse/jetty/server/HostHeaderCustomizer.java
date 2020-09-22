@@ -18,12 +18,11 @@
 
 package org.eclipse.jetty.server;
 
-import java.util.Objects;
-
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 
 /**
@@ -38,6 +37,10 @@ public class HostHeaderCustomizer implements HttpConfiguration.Customizer
     private final String serverName;
     private final int serverPort;
 
+    /**
+     * Construct customizer that uses {@link Request#getServerName()} and
+     * {@link Request#getServerPort()} to create a host header.
+     */
     public HostHeaderCustomizer()
     {
         this(null, 0);
@@ -57,7 +60,7 @@ public class HostHeaderCustomizer implements HttpConfiguration.Customizer
      */
     public HostHeaderCustomizer(String serverName, int serverPort)
     {
-        this.serverName = Objects.requireNonNull(serverName);
+        this.serverName = serverName;
         this.serverPort = serverPort;
     }
 
@@ -67,11 +70,10 @@ public class HostHeaderCustomizer implements HttpConfiguration.Customizer
         if (request.getHttpVersion() != HttpVersion.HTTP_1_1 && !request.getHttpFields().contains(HttpHeader.HOST))
         {
             String host = serverName == null ? request.getServerName() : serverName;
-            int port = serverPort == 0 ? request.getServerPort() : 0;
-            String proto = request.getProtocol();
+            int port = HttpScheme.normalizePort(request.getScheme(), serverPort == 0 ? request.getServerPort() : serverPort);
 
-            if ((HttpScheme.HTTPS.is(proto) && port == 443) || (HttpScheme.HTTP.is(proto) && port == 80))
-                port = 0;
+            if (serverName != null || serverPort > 0)
+                request.setHttpURI(HttpURI.build(request.getHttpURI()).authority(host, port));
 
             HttpFields original = request.getHttpFields();
             HttpFields.Mutable httpFields = HttpFields.build(original.size() + 1);
