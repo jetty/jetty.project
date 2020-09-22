@@ -20,7 +20,6 @@ package com.acme.test;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import javax.servlet.ServletException;
 import javax.servlet.annotation.HttpConstraint;
 import javax.servlet.annotation.ServletSecurity;
 import javax.servlet.annotation.WebServlet;
@@ -32,10 +31,9 @@ import javax.servlet.http.HttpServletResponse;
 @ServletSecurity(@HttpConstraint(rolesAllowed = "admin"))
 public class SecuredServlet extends HttpServlet
 {
-
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
-        throws ServletException, IOException
+        throws IOException
     {
         PrintWriter writer = resp.getWriter();
         writer.println("<html>");
