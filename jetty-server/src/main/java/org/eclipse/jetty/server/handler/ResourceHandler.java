@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -78,7 +80,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     }
 
     @Override
-    public String getWelcomeFile(String pathInContext)
+    public String getWelcomeFile(String pathInContext) throws IOException
     {
         if (_welcomes == null)
             return null;
@@ -87,7 +89,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         {
             String welcomeInContext = URIUtil.addPaths(pathInContext, _welcomes[i]);
             Resource welcome = getResource(welcomeInContext);
-            if (welcome != null && welcome.exists())
+            if (welcome.exists())
                 return welcomeInContext;
         }
         // not found
@@ -140,44 +142,51 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     }
 
     @Override
-    public Resource getResource(String path)
+    public Resource getResource(String path) throws IOException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} getResource({})", _context == null ? _baseResource : _context, path);
 
-        if (path == null || !path.startsWith("/"))
-            return null;
-
-        try
+        if (StringUtil.isBlank(path))
         {
-            Resource r = null;
+            throw new IllegalArgumentException("Path is blank");
+        }
 
-            if (_baseResource != null)
+        if (!path.startsWith("/"))
+        {
+            throw new IllegalArgumentException("Path reference invalid: " + path);
+        }
+
+        Resource r = null;
+
+        if (_baseResource != null)
+        {
+            path = URIUtil.canonicalPath(path);
+            r = _baseResource.addPath(path);
+
+            if (r.isAlias() && (_context == null || !_context.checkAlias(path, r)))
             {
-                path = URIUtil.canonicalPath(path);
-                r = _baseResource.addPath(path);
-
-                if (r != null && r.isAlias() && (_context == null || !_context.checkAlias(path, r)))
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("resource={} alias={}", r, r.getAlias());
-                    return null;
-                }
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Rejected alias resource={} alias={}", r, r.getAlias());
+                throw new IllegalStateException("Rejected alias reference: " + path);
             }
-            else if (_context != null)
-                r = _context.getResource(path);
-
-            if ((r == null || !r.exists()) && path.endsWith("/jetty-dir.css"))
-                r = getStylesheet();
-
-            return r;
         }
-        catch (Exception e)
+        else if (_context != null)
         {
-            LOG.debug("Unable to get Resource for {}", path, e);
+            r = _context.getResource(path);
+            if (r != null)
+                return r;
         }
 
-        return null;
+        if ((r == null || !r.exists()) && path.endsWith("/jetty-dir.css"))
+            r = getStylesheet();
+
+        if (r == null)
+        {
+            throw new FileNotFoundException("Resource: " + path);
+        }
+
+        return r;
     }
 
     /**

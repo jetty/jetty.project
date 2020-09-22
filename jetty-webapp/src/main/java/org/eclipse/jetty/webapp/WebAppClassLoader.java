@@ -41,6 +41,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.ClassVisibilityChecker;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -87,7 +88,6 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
      */
     public interface Context extends ClassVisibilityChecker
     {
-
         /**
          * Convert a URL or path to a Resource.
          * The default implementation
@@ -112,7 +112,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
          */
         boolean isParentLoaderPriority();
 
-        String getExtraClasspath();
+        List<Resource> getExtraClasspath();
 
         boolean isServerResource(String name, URL parentUrl);
 
@@ -185,7 +185,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         String extensions = System.getProperty(WebAppClassLoader.class.getName() + ".extensions");
         if (extensions != null)
         {
-            StringTokenizer tokenizer = new StringTokenizer(extensions, ",;");
+            StringTokenizer tokenizer = new StringTokenizer(extensions, StringUtil.DEFAULT_DELIMS);
             while (tokenizer.hasMoreTokens())
             {
                 _extensions.add(tokenizer.nextToken().trim());
@@ -193,7 +193,12 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         }
 
         if (context.getExtraClasspath() != null)
-            addClassPath(context.getExtraClasspath());
+        {
+            for (Resource resource : context.getExtraClasspath())
+            {
+                addClassPath(resource);
+            }
+        }
     }
 
     /**
@@ -235,7 +240,23 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         }
         else
         {
-            addClassPath(resource.toString());
+            // Resolve file path if possible
+            File file = resource.getFile();
+            if (file != null)
+            {
+                URL url = resource.getURI().toURL();
+                addURL(url);
+            }
+            else if (resource.isDirectory())
+            {
+                addURL(resource.getURI().toURL());
+            }
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Check file exists and is not nested jar: {}", resource);
+                throw new IllegalArgumentException("File not resolvable or incompatible with URLClassloader: " + resource);
+            }
         }
     }
 
@@ -251,53 +272,9 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         if (classPath == null)
             return;
 
-        StringTokenizer tokenizer = new StringTokenizer(classPath, ",;");
-        while (tokenizer.hasMoreTokens())
+        for (Resource resource : Resource.fromList(classPath, false, _context::newResource))
         {
-            String token = tokenizer.nextToken().trim();
-
-            if (token.endsWith("*"))
-            {
-                if (token.length() > 1)
-                {
-                    token = token.substring(0, token.length() - 1);
-                    Resource resource = _context.newResource(token);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Glob Path resource={}", resource);
-                    resource = _context.newResource(token);
-                    addJars(resource);
-                }
-                return;
-            }
-
-            Resource resource = _context.newResource(token);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Path resource={}", resource);
-
-            if (resource.isDirectory() && resource instanceof ResourceCollection)
-            {
-                addClassPath(resource);
-            }
-            else
-            {
-                // Resolve file path if possible
-                File file = resource.getFile();
-                if (file != null)
-                {
-                    URL url = resource.getURI().toURL();
-                    addURL(url);
-                }
-                else if (resource.isDirectory())
-                {
-                    addURL(resource.getURI().toURL());
-                }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Check file exists and is not nested jar: {}", resource);
-                    throw new IllegalArgumentException("File not resolvable or incompatible with URLClassloader: " + resource);
-                }
-            }
+            addClassPath(resource);
         }
     }
 

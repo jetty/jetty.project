@@ -20,15 +20,12 @@ package org.eclipse.jetty.osgi.boot.internal.webapp;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.jar.JarFile;
 import javax.servlet.http.HttpServlet;
 
@@ -201,22 +198,16 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
     @Override
     public void addClassPath(String classPath) throws IOException
     {
-
-        StringTokenizer tokenizer = new StringTokenizer(classPath, ",;");
-        while (tokenizer.hasMoreTokens())
+        for (Resource resource : Resource.fromList(classPath, false, (path) -> getContext().newResource(path)))
         {
-            String path = tokenizer.nextToken();
-            Resource resource = getContext().newResource(path);
-
-            // Resolve file path if possible
             File file = resource.getFile();
             if (file != null && isAcceptableLibrary(file, JAR_WITH_SUCH_CLASS_MUST_BE_EXCLUDED))
             {
-                super.addClassPath(path);
+                super.addClassPath(resource);
             }
             else
             {
-                LOG.info("Did not add {} to the classloader of the webapp {}", path, getContext());
+                LOG.info("Did not add {} to the classloader of the webapp {}", resource, getContext());
             }
         }
     }
@@ -271,38 +262,5 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
             LOG.trace("IGNORED", e);
         }
         return true;
-    }
-
-    private static Field _contextField;
-
-    /**
-     * In the case of the generation of a webapp via a jetty context file we
-     * need a proper classloader to setup the app before we have the
-     * WebappContext So we place a fake one there to start with. We replace it
-     * with the actual webapp context with this method. We also apply the
-     * extraclasspath there at the same time.
-     *
-     * @param webappContext the web app context
-     */
-    public void setWebappContext(WebAppContext webappContext)
-    {
-        try
-        {
-            if (_contextField == null)
-            {
-                _contextField = WebAppClassLoader.class.getDeclaredField("_context");
-                _contextField.setAccessible(true);
-            }
-            _contextField.set(this, webappContext);
-            if (webappContext.getExtraClasspath() != null)
-            {
-                addClassPath(webappContext.getExtraClasspath());
-            }
-        }
-        catch (Throwable t)
-        {
-            // humf that will hurt if it does not work.
-            LOG.warn("Unable to set webappcontext", t);
-        }
     }
 }

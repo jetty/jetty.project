@@ -210,7 +210,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         return (len > 0 && (_useFileMappedBuffer || (len < _maxCachedFileSize && len < _maxCacheSize)));
     }
 
-    private HttpContent load(String pathInContext, Resource resource, int maxBufferSize)
+    private HttpContent load(String pathInContext, Resource resource, int maxBufferSize) throws IOException
     {
         if (resource == null || !resource.exists())
             return null;

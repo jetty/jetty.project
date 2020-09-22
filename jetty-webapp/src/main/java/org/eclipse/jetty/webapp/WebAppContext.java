@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -204,7 +205,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _persistTmpDir = false;
 
     private String _war;
-    private String _extraClasspath;
+    private List<Resource> _extraClasspath;
     private Throwable _unavailableException;
 
     private Map<String, String> _resourceAliases;
@@ -1248,17 +1249,29 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     @Override
     @ManagedAttribute(value = "extra classpath for context classloader", readonly = true)
-    public String getExtraClasspath()
+    public List<Resource> getExtraClasspath()
     {
         return _extraClasspath;
     }
 
     /**
+     * Set the Extra ClassPath via delimited String.
+     * <p>
+     * This is a convenience method for {@link #setExtraClasspath(List)}
+     * </p>
+     *
      * @param extraClasspath Comma or semicolon separated path of filenames or URLs
      * pointing to directories or jar files. Directories should end
      * with '/'.
+     * @throws IOException if unable to resolve the resources referenced
+     * @see #setExtraClasspath(List)
      */
-    public void setExtraClasspath(String extraClasspath)
+    public void setExtraClasspath(String extraClasspath) throws IOException
+    {
+        setExtraClasspath(Resource.fromList(extraClasspath, false, this::newResource));
+    }
+
+    public void setExtraClasspath(List<Resource> extraClasspath)
     {
         _extraClasspath = extraClasspath;
     }
@@ -1450,11 +1463,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             // Should we go to the original war?
             if (resource.isDirectory() && resource instanceof ResourceCollection && !WebAppContext.this.isExtractWAR())
             {
-                Resource[] resources = ((ResourceCollection)resource).getResources();
-                for (int i = resources.length; i-- > 0; )
+                List<Resource> resources = ((ResourceCollection)resource).getResources();
+                for (int i = resources.size(); i-- > 0; )
                 {
-                    if (resources[i].getName().startsWith("jar:file"))
-                        return resources[i].getURI().toURL();
+                    Resource r = resources.get(i);
+                    if (r.getName().startsWith("jar:file"))
+                        return r.getURI().toURL();
                 }
             }
 
