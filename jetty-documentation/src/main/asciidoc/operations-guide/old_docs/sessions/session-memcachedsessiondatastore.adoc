@@ -25,27 +25,13 @@ The `CachingSessionDataStore` is a special type of `SessionDataStore` that local
 
 ==== MemcachedSessionDataMap
 
-The `MemcachedSessionDataMap` uses `memcached` to perform caching.
+The `MemcachedSessionDataMap` uses `memcached` to perform caching of `SessionData`.
 
-To enable it with the Jetty distribution, enable the `session-store-cache` link:#startup-modules[module], along with your chosen `session-store-xxxx` module, and optionally the `session-cache-hash` or `session-cache-null` modules.
+To enable it with the Jetty distribution, enable the `session-store-cache` link:#startup-modules[module], along with your chosen `session-store-xxxx` module.
 
-After enabling, the `$jetty.base/start.d/session-store-cache.ini` file will be generated:
+===== Configuration
 
-[source, screen, subs="{sub-order}"]
-----
---module=session-store-cache
-
-
-## Session Data Cache type: xmemcached
-session-data-cache=xmemcached
-#jetty.session.memcached.host=localhost
-#jetty.session.memcached.port=11211
-#jetty.session.memcached.expirySec=
-#jetty.session.memcached.heartbeats=true
-----
-
-
-The configuration properties are:
+The `$jetty.base/start.d/session-store-cache.ini` contains the following configurable properties:
 
 jetty.session.memcached.host::
 Default value is `localhost`.

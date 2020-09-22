@@ -19,9 +19,13 @@
 package org.eclipse.jetty.docs.programming.server.session;
 
 import java.io.File;
+import java.net.InetSocketAddress;
 
+import org.eclipse.jetty.memcached.session.MemcachedSessionDataMapFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.session.CachingSessionDataStoreFactory;
+import org.eclipse.jetty.server.session.DatabaseAdaptor;
 import org.eclipse.jetty.server.session.DefaultSessionCache;
 import org.eclipse.jetty.server.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.server.session.DefaultSessionIdManager;
@@ -239,5 +243,49 @@ public class SessionDocs
         app1.getSessionHandler().setSessionCache(cache);
         
       //end::filesessiondatastore[]  
+    }
+    
+    public void cachingSessionDataStore()
+    {
+        //tag::cachingsds[]
+        Server server = new Server();
+        
+        //Make a factory for memcached L2 caches for SessionData
+        MemcachedSessionDataMapFactory mapFactory = new MemcachedSessionDataMapFactory();
+        mapFactory.setExpirySec(0); //items in memcached don't expire
+        mapFactory.setHeartbeats(true);//tell memcached to use heartbeats
+        mapFactory.setAddresses(new InetSocketAddress("localhost", 11211)); //use a local memcached instance
+        mapFactory.setWeights(new int[] {100}); //set the weighting
+        
+        
+        //Make a FileSessionDataStoreFactory for creating FileSessionDataStores
+        //to persist the session data
+        FileSessionDataStoreFactory storeFactory = new FileSessionDataStoreFactory();
+        storeFactory.setStoreDir(new File("/tmp/sessions"));
+        storeFactory.setGracePeriodSec(3600);
+        storeFactory.setSavePeriodSec(0);
+        
+        //Make a factory that plugs the L2 cache into the SessionDataStore
+        CachingSessionDataStoreFactory cachingSessionDataStoreFactory = new CachingSessionDataStoreFactory();
+        cachingSessionDataStoreFactory.setSessionDataMapFactory(mapFactory);
+        cachingSessionDataStoreFactory.setSessionStoreFactory(storeFactory);
+        
+        //Register it as a bean so that all SessionHandlers will use it
+        //to make FileSessionDataStores that use memcached as an L2 SessionData cache.
+        server.addBean(cachingSessionDataStoreFactory);
+        //end::cachingsds[]
+    }
+
+    public void jdbcSessionDataStore()
+    {
+        //tag::dbaDatasource[]
+        DatabaseAdaptor datasourceAdaptor = new DatabaseAdaptor();
+        datasourceAdaptor.setDatasourceName("/jdbc/myDS");
+        //end::dbaDatasource[]
+        
+        //tag::dbaDriver[]
+        DatabaseAdaptor driverAdaptor = new DatabaseAdaptor();
+        driverAdaptor.setDriverInfo("com.mysql.jdbc.Driver", "jdbc:mysql://127.0.0.1:3306/sessions?user=sessionsadmin");
+        //end::dbaDriver[]
     }
 }
