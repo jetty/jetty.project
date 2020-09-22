@@ -32,6 +32,8 @@ import org.eclipse.jetty.server.session.NullSessionCache;
 import org.eclipse.jetty.server.session.NullSessionCacheFactory;
 import org.eclipse.jetty.server.session.NullSessionDataStore;
 import org.eclipse.jetty.server.session.SessionCache;
+import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class SessionDocs
@@ -68,6 +70,38 @@ public class SessionDocs
         {
             e.printStackTrace();
         }
+    }
+    
+    public void servletContextWithSessionHandler()
+    {
+        //tag:schsession[]
+        Server server = new Server();
+        
+        ServletContextHandler context = new ServletContextHandler(server, "/foo", ServletContextHandler.SESSIONS);
+        SessionHandler sessions = context.getSessionHandler();
+        //make idle sessions valid for only 5mins
+        sessions.setMaxInactiveInterval(300);
+        //turn off use of cookies
+        sessions.setUsingCookies(false);
+        
+        server.setHandler(context);
+        //end::schsession[]
+    }
+    
+    public void webAppWithSessionHandler()
+    {
+        //tag:wacsession[]
+        Server server = new Server();
+        
+        WebAppContext context = new WebAppContext();
+        SessionHandler sessions = context.getSessionHandler();
+        //make idle sessions valid for only 5mins
+        sessions.setMaxInactiveInterval(300);
+        //turn off use of cookies
+        sessions.setUsingCookies(false);
+        
+        server.setHandler(context);
+        //end::wacsession[]
     }
     
     public void defaultSessionCache()
