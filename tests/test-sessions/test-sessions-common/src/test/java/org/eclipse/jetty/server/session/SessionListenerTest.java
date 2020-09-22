@@ -18,14 +18,16 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.HttpCookie;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -34,17 +36,25 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionBindingEvent;
 import javax.servlet.http.HttpSessionBindingListener;
+import javax.servlet.http.HttpSessionEvent;
+import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.IO;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -58,8 +68,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * Test that session listeners are called.
  */
+@ExtendWith(WorkDirExtension.class)
 public class SessionListenerTest
 {
+    public WorkDir workDir;
+
     /**
      * Test that listeners are called when a session is deliberately invalidated.
      */
@@ -73,8 +86,8 @@ public class SessionListenerTest
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
-        SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
-        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengePeriod);
+        TestSessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
+        storeFactory.setGracePeriodSec(scavengePeriod);
 
         TestServer server = new TestServer(0, inactivePeriod, scavengePeriod,
             cacheFactory, storeFactory);
@@ -99,7 +112,7 @@ public class SessionListenerTest
                 ContentResponse response1 = client.GET(url + "?action=init");
                 assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
                 String sessionCookie = response1.getHeaders().get("Set-Cookie");
-                assertTrue(sessionCookie != null);
+                assertNotNull(sessionCookie);
                 assertTrue(TestServlet.bindingListener.bound);
 
                 String sessionId = TestServer.extractSessionId(sessionCookie);
@@ -115,12 +128,12 @@ public class SessionListenerTest
             }
             finally
             {
-                client.stop();
+                LifeCycle.stop(client);
             }
         }
         finally
         {
-            server.stop();
+            LifeCycle.stop(server);
         }
     }
 
@@ -131,17 +144,20 @@ public class SessionListenerTest
     @Test
     public void testSessionExpiresWithListener() throws Exception
     {
+        Path foodir = workDir.getEmptyPathDir();
+        Path fooClass = foodir.resolve("Foo.class");
+
         //Use a class that would only be known to the webapp classloader
-        InputStream foostream = Thread.currentThread().getContextClassLoader().getResourceAsStream("Foo.clazz");
-        File foodir = new File(MavenTestingUtils.getTargetDir(), "foo");
-        foodir.mkdirs();
-        File fooclass = new File(foodir, "Foo.class");
-        IO.copy(foostream, new FileOutputStream(fooclass));
+        try (InputStream foostream = Thread.currentThread().getContextClassLoader().getResourceAsStream("Foo.clazz");
+             OutputStream out = Files.newOutputStream(fooClass))
+        {
+            IO.copy(foostream, out);
+        }
 
-        assertTrue(fooclass.exists());
-        assertTrue(fooclass.length() != 0);
+        assertTrue(Files.exists(fooClass));
+        assertThat(Files.size(fooClass), greaterThan(0L));
 
-        URL[] foodirUrls = new URL[]{foodir.toURI().toURL()};
+        URL[] foodirUrls = new URL[]{foodir.toUri().toURL()};
         URLClassLoader contextClassLoader = new URLClassLoader(foodirUrls, Thread.currentThread().getContextClassLoader());
 
         String contextPath = "/";
@@ -151,8 +167,8 @@ public class SessionListenerTest
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
-        SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
-        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengePeriod);
+        TestSessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
+        storeFactory.setGracePeriodSec(scavengePeriod);
 
         TestServer server1 = new TestServer(0, inactivePeriod, scavengePeriod,
             cacheFactory, storeFactory);
@@ -164,31 +180,38 @@ public class SessionListenerTest
         TestHttpSessionListener listener = new TestHttpSessionListenerWithWebappClasses(true);
         context.getSessionHandler().addEventListener(listener);
 
-        server1.start();
-        int port1 = server1.getPort();
-
         try
         {
+            server1.start();
+            int port1 = server1.getPort();
+
             HttpClient client = new HttpClient();
-            client.start();
-            String url = "http://localhost:" + port1 + contextPath + servletMapping.substring(1);
+            try
+            {
+                client.start();
+                String url = "http://localhost:" + port1 + contextPath + servletMapping.substring(1);
 
-            //make a request to set up a session on the server
-            ContentResponse response1 = client.GET(url + "?action=init");
-            assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
-            String sessionCookie = response1.getHeaders().get("Set-Cookie");
-            assertTrue(sessionCookie != null);
+                //make a request to set up a session on the server
+                ContentResponse response1 = client.GET(url + "?action=init");
+                assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
+                String sessionCookie = response1.getHeaders().get("Set-Cookie");
+                assertNotNull(sessionCookie);
 
-            String sessionId = TestServer.extractSessionId(sessionCookie);
+                String sessionId = TestServer.extractSessionId(sessionCookie);
 
-            assertThat(sessionId, is(in(listener.createdSessions)));
+                assertThat(sessionId, is(in(listener.createdSessions)));
 
-            //and wait until the session should have expired
-            Thread.currentThread().sleep(TimeUnit.SECONDS.toMillis(inactivePeriod + (2 * scavengePeriod)));
+                //and wait until the session should have expired
+                Thread.sleep(TimeUnit.SECONDS.toMillis(inactivePeriod + (2 * scavengePeriod)));
 
-            assertThat(sessionId, is(in(listener.destroyedSessions)));
+                assertThat(sessionId, is(in(listener.destroyedSessions)));
 
-            assertNull(listener.ex);
+                assertNull(listener.ex);
+            }
+            finally
+            {
+                LifeCycle.stop(client);
+            }
         }
         finally
         {
@@ -209,8 +232,8 @@ public class SessionListenerTest
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
-        SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
-        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengePeriod);
+        TestSessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
+        storeFactory.setGracePeriodSec(scavengePeriod);
 
         TestServer server1 = new TestServer(0, inactivePeriod, scavengePeriod,
             cacheFactory, storeFactory);
@@ -222,11 +245,11 @@ public class SessionListenerTest
 
         context.getSessionHandler().addEventListener(listener);
 
-        server1.start();
-        int port1 = server1.getPort();
-
         try
         {
+            server1.start();
+            int port1 = server1.getPort();
+
             //save a session that has already expired
             long now = System.currentTimeMillis();
             SessionData data = context.getSessionHandler().getSessionCache().getSessionDataStore().newSessionData("1234", now - 10, now - 5, now - 10, 30000);
@@ -234,28 +257,71 @@ public class SessionListenerTest
             context.getSessionHandler().getSessionCache().getSessionDataStore().store("1234", data);
 
             HttpClient client = new HttpClient();
-            client.start();
+            try
+            {
+                client.start();
 
-            port1 = server1.getPort();
-            String url = "http://localhost:" + port1 + contextPath + servletMapping.substring(1);
+                port1 = server1.getPort();
+                String url = "http://localhost:" + port1 + contextPath + servletMapping.substring(1);
 
-            //make another request using the id of the expired session
-            Request request = client.newRequest(url + "?action=test");
-            request.cookie(new HttpCookie("JSESSIONID", "1234"));
-            ContentResponse response = request.send();
-            assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+                //make another request using the id of the expired session
+                Request request = client.newRequest(url + "?action=test");
+                request.cookie(new HttpCookie("JSESSIONID", "1234"));
+                ContentResponse response = request.send();
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
-            //should be a new session id
-            String cookie2 = response.getHeaders().get("Set-Cookie");
-            assertNotEquals("1234", TestServer.extractSessionId(cookie2));
+                //should be a new session id
+                String cookie2 = response.getHeaders().get("Set-Cookie");
+                assertNotEquals("1234", TestServer.extractSessionId(cookie2));
 
-            assertTrue(listener.destroyedSessions.contains("1234"));
+                assertTrue(listener.destroyedSessions.contains("1234"));
 
-            assertNull(listener.ex);
+                assertNull(listener.ex);
+            }
+            finally
+            {
+                LifeCycle.stop(client);
+            }
         }
         finally
         {
             server1.stop();
+        }
+    }
+
+    public static class MyHttpSessionListener implements HttpSessionListener
+    {
+        @Override
+        public void sessionCreated(HttpSessionEvent se)
+        {
+        }
+
+        @Override
+        public void sessionDestroyed(HttpSessionEvent se)
+        {
+        }
+    }
+
+    @Test
+    public void testSessionListeners()
+    {
+        Server server = new Server();
+        try
+        {
+            WebAppContext wac = new WebAppContext();
+
+            wac.setServer(server);
+            server.setHandler(wac);
+            wac.addEventListener(new MyHttpSessionListener());
+
+            Collection<MyHttpSessionListener> listeners = wac.getSessionHandler().getBeans(MyHttpSessionListener.class);
+            assertNotNull(listeners);
+
+            assertEquals(1, listeners.size());
+        }
+        finally
+        {
+            LifeCycle.stop(server);
         }
     }
 
@@ -314,7 +380,7 @@ public class SessionListenerTest
             if ("test".equals(action))
             {
                 HttpSession session = request.getSession(true);
-                assertTrue(session != null);
+                assertNotNull(session);
             }
         }
     }
