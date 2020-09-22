@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util.resource;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -281,7 +282,15 @@ public class ResourceCollection extends Resource
     {
         assertResourcesSet();
 
-        return true;
+        for (Resource r : _resources)
+        {
+            if (r.exists())
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @Override
@@ -307,13 +316,19 @@ public class ResourceCollection extends Resource
 
         for (Resource r : _resources)
         {
+            if (!r.exists())
+            {
+                // Skip, cannot open anyway
+                continue;
+            }
             InputStream is = r.getInputStream();
             if (is != null)
             {
                 return is;
             }
         }
-        return null;
+
+        throw new FileNotFoundException("Resource does not exist");
     }
 
     @Override
