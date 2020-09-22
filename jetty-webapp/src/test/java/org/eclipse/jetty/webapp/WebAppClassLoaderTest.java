@@ -342,7 +342,7 @@ public class WebAppClassLoaderTest
     }
 
     @Test
-    public void ordering() throws Exception
+    public void testClashingResource() throws Exception
     {
         // The existence of a URLStreamHandler changes the behavior
         assumeTrue(URLStreamHandlerUtil.getFactory() == null, "URLStreamHandler changes behavior, skip test");
