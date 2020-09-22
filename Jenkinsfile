@@ -49,12 +49,12 @@ pipeline {
           }
         }
 
-        stage("Build / Test - JDK14") {
+        stage("Build / Test - JDK15") {
           agent { node { label 'linux' } }
           steps {
             container( 'jetty-build' ) {
               timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk14", "clean install -T3 -Djacoco.skip=true ", "maven3",
+                mavenBuild( "jdk15", "clean install -T3 -Djacoco.skip=true ", "maven3",
                             [[parserName: 'Maven'], [parserName: 'Java']])
               }
             }
@@ -136,7 +136,11 @@ def mavenBuild(jdk, cmdline, mvnName, consoleParsers) {
       withEnv(["JAVA_HOME=${ tool "$jdk" }",
                "PATH+MAVEN=${env.JAVA_HOME}/bin:${tool "$mvnName"}/bin",
                "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
-        sh "mvn -Dmaven.repo.local=.repository -Premote-session-tests -Pci -V -B -e -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" + env.JENKINS_HOME
+        configFileProvider(
+                [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
+          sh "mvn -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Premote-session-tests -Pci -V -B -e -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" +
+                     env.JENKINS_HOME
+        }
       }
     }
     finally

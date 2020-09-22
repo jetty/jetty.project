@@ -133,6 +133,7 @@ public class FilterHolder extends Holder<Filter>
                     throw ex;
                 }
             }
+            _filter = wrap(_filter, FilterHolder.WrapFunction.class, FilterHolder.WrapFunction::wrapFilter);
             _config = new Config();
             if (LOG.isDebugEnabled())
                 LOG.debug("Filter.init {}", _filter);
@@ -161,13 +162,19 @@ public class FilterHolder extends Holder<Filter>
 
     @Override
     public void destroyInstance(Object o)
-        throws Exception
     {
         if (o == null)
             return;
-        Filter f = (Filter)o;
-        f.destroy();
-        getServletHandler().destroyFilter(f);
+
+        Filter filter = (Filter)o;
+
+        // need to use the unwrapped filter because lifecycle callbacks such as
+        // postconstruct and predestroy are based off the classname and the wrapper
+        // classes are unknown outside the ServletHolder
+        getServletHandler().destroyFilter(unwrap(filter));
+
+        // destroy the wrapped filter, in case there is special behaviour
+        filter.destroy();
     }
 
     public synchronized void setFilter(Filter filter)
@@ -289,11 +296,69 @@ public class FilterHolder extends Holder<Filter>
 
     class Config extends HolderConfig implements FilterConfig
     {
-
         @Override
         public String getFilterName()
         {
             return getName();
+        }
+    }
+
+    /**
+     * Experimental Wrapper mechanism for Filter objects.
+     * <p>
+     * Beans in {@code ServletContextHandler} or {@code WebAppContext} that implement this interface
+     * will be called to optionally wrap any newly created Filters
+     * (before their {@link Filter#init(FilterConfig)} method is called)
+     * </p>
+     */
+    public interface WrapFunction
+    {
+        /**
+         * Optionally wrap the Filter.
+         *
+         * @param filter the Filter being passed in.
+         * @return the Filter (extend from {@link FilterHolder.Wrapper} if you do wrap the Filter)
+         */
+        Filter wrapFilter(Filter filter);
+    }
+
+    public static class Wrapper implements Filter, Wrapped<Filter>
+    {
+        private final Filter _filter;
+
+        public Wrapper(Filter filter)
+        {
+            _filter = Objects.requireNonNull(filter, "Filter cannot be null");
+        }
+
+        @Override
+        public Filter getWrapped()
+        {
+            return _filter;
+        }
+
+        @Override
+        public void init(FilterConfig filterConfig) throws ServletException
+        {
+            _filter.init(filterConfig);
+        }
+
+        @Override
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        {
+            _filter.doFilter(request, response, chain);
+        }
+
+        @Override
+        public void destroy()
+        {
+            _filter.destroy();
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s:%s", this.getClass().getSimpleName(), _filter.toString());
         }
     }
 }

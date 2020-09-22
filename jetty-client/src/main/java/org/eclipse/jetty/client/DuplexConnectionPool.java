@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.client;
 
+import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
@@ -27,12 +29,17 @@ public class DuplexConnectionPool extends AbstractConnectionPool
 {
     public DuplexConnectionPool(HttpDestination destination, int maxConnections, Callback requester)
     {
-        this(destination, maxConnections, true, requester);
+        this(destination, maxConnections, false, requester);
     }
 
     public DuplexConnectionPool(HttpDestination destination, int maxConnections, boolean cache, Callback requester)
     {
-        super(destination, maxConnections, cache, requester);
+        this(destination, new Pool<>(Pool.StrategyType.FIRST, maxConnections, cache), requester);
+    }
+
+    public DuplexConnectionPool(HttpDestination destination, Pool<Connection> pool, Callback requester)
+    {
+        super(destination, pool, requester);
     }
 
     @Override

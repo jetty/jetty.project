@@ -384,6 +384,11 @@ public class ServletHandler extends ScopedHandler
         return _servletContext;
     }
 
+    public ServletContextHandler getServletContextHandler()
+    {
+        return _contextHandler;
+    }
+
     @ManagedAttribute(value = "mappings of servlets", readonly = true)
     public ServletMapping[] getServletMappings()
     {

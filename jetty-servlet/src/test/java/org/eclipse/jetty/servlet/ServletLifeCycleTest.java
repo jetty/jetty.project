@@ -110,10 +110,10 @@ public class ServletLifeCycleTest
         server.stop();
 
         assertThat(events, Matchers.contains(
-            "destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter2",
             "Destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter2",
-            "destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter",
+            "destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter2",
             "Destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter",
+            "destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter",
             "Destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet3",
             "destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet3",
             "Destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet2",
