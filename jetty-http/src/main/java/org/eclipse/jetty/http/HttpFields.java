@@ -639,13 +639,13 @@ public interface HttpFields extends Iterable<HttpField>
 
         public Mutable add(HttpFields fields)
         {
-            if (fields.size() == 0)
-                return this;
-
             if (_fields == null)
                 _fields = new HttpField[fields.size() + 4];
             else if (_size + fields.size() >= _fields.length)
                 _fields = Arrays.copyOf(_fields, _size + fields.size() + 4);
+
+            if (fields.size() == 0)
+                return this;
 
             if (fields instanceof Immutable)
             {
