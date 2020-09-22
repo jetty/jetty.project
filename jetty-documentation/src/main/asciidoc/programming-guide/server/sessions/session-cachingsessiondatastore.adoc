@@ -26,14 +26,20 @@ class CachingSessionDataStore
 interface SessionDataStore
 
 CachingSessionDataStore "1" *-down- "1" SessionDataMap
-CachingSessionDataStore "`" *-down- "1" SessionDataStore
+CachingSessionDataStore "1" *-down- "1" SessionDataStore
+SessionDataMap <|-- MemcachedSessionDataMap
 ----
 
-The `CachingSessionDataStore` is a special type of `SessionDataStore` that acts as an L2 cache for `SessionData`.
-It has 2 components: the cache, and the actual backing `SessionDataStore`.
-The cache is an instance of a link:{JDURL}/org/eclipse/jetty/server/session/SessionDataMap.html[SessionDataMap].
-The `CachingSessionDataStore` consults this cache before consulting the actual `SessionDataStore`.
-Using a cache for the `SessionData` can improve the performance of slow stores.
+The `CachingSessionDataStore` is a special type of `SessionDataStore` that checks an L2 cache for `SessionData` before checking a delegate `SessionDataStore`.
+This can improve the performance of slow stores.
 
-Jetty provides one implementation of this L2 cache based on `Memcached`, link:{JDURL}/org/eclipse/jetty/memcached/session/MemcachedSessionDataMap.html[MemcachedSessionDataMap].
+The L2 cache is an instance of a link:{JDURL}/org/eclipse/jetty/server/session/SessionDataMap.html[SessionDataMap].
+Jetty provides one implementation of this L2 cache based on `memcached`, link:{JDURL}/org/eclipse/jetty/memcached/session/MemcachedSessionDataMap.html[MemcachedSessionDataMap].
+
+Here's an example of how to programmatically configure ``CachingSessionDataStore``s, using a `FileSessionDataStore` as a delegate, and `memcached` as the L2 cache:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/session/SessionDocs.java[tags=cachingsds]
+----
 

@@ -59,9 +59,6 @@ etc/jetty-ssl-context.xml
 ## Connect Timeout in milliseconds
 # jetty.ssl.connectTimeout=15000
 
-## Whether SNI is required for all secure connections. Rejections are in TLS handshakes.
-# jetty.sslContext.sniRequired=false
-
 ## Whether SNI is required for all secure connections. Rejections are in HTTP 400 response.
 # jetty.ssl.sniRequired=false
 
@@ -78,6 +75,9 @@ etc/jetty-ssl-context.xml
 ## Note that OBF passwords are not secure, just protected from casual observation
 ## See http://www.eclipse.org/jetty/documentation/current/configuring-security-secure-passwords.html
 
+## Whether SNI is required for all secure connections. Rejections are in TLS handshakes.
+# jetty.sslContext.sniRequired=false
+
 ## The Endpoint Identification Algorithm
 ## Same as javax.net.ssl.SSLParameters#setEndpointIdentificationAlgorithm(String)
 #jetty.sslContext.endpointIdentificationAlgorithm=
@@ -86,10 +86,10 @@ etc/jetty-ssl-context.xml
 # jetty.sslContext.provider=
 
 ## Keystore file path (relative to $jetty.base)
-# jetty.sslContext.keyStorePath=etc/keystore
+# jetty.sslContext.keyStorePath=etc/keystore.p12
 
 ## Truststore file path (relative to $jetty.base)
-# jetty.sslContext.trustStorePath=etc/keystore
+# jetty.sslContext.trustStorePath=etc/keystore.p12
 
 ## Keystore password
 # jetty.sslContext.keyStorePassword=

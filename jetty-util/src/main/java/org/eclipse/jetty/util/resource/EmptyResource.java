@@ -124,6 +124,6 @@ public class EmptyResource extends Resource
     @Override
     public Resource addPath(String path) throws IOException, MalformedURLException
     {
-        return null;
+        return this;
     }
 }

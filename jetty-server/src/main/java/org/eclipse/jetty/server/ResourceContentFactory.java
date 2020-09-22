@@ -50,20 +50,26 @@ public class ResourceContentFactory implements ContentFactory
     }
 
     @Override
-    public HttpContent getContent(String pathInContext, int maxBufferSize)
-        throws IOException
+    public HttpContent getContent(String pathInContext, int maxBufferSize) throws IOException
     {
         try
         {
             // try loading the content from our factory.
             Resource resource = _factory.getResource(pathInContext);
-            HttpContent loaded = load(pathInContext, resource, maxBufferSize);
-            return loaded;
+            return load(pathInContext, resource, maxBufferSize);
         }
         catch (Throwable t)
         {
-            // Any error has potential to reveal fully qualified path
-            throw (InvalidPathException)new InvalidPathException(pathInContext, "Invalid PathInContext").initCause(t);
+            // There are many potential Exceptions that can reveal a fully qualified path.
+            // See Issue #2560 - Always wrap a Throwable here in an InvalidPathException
+            // that is limited to only the provided pathInContext.
+            // The cause (which might reveal a fully qualified path) is still available,
+            // on the Exception and the logging, but is not reported in normal error page situations.
+            // This specific exception also allows WebApps to specifically hook into a known / reliable
+            // Exception type for ErrorPageErrorHandling logic.
+            InvalidPathException saferException = new InvalidPathException(pathInContext, "Invalid PathInContext");
+            saferException.initCause(t);
+            throw saferException;
         }
     }
 

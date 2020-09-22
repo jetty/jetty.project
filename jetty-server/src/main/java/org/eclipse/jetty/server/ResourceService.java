@@ -881,6 +881,6 @@ public class ResourceService
          * @param pathInContext the path of the request
          * @return The path of the matching welcome file in context or null.
          */
-        String getWelcomeFile(String pathInContext);
+        String getWelcomeFile(String pathInContext) throws IOException;
     }
 }

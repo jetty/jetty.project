@@ -26,6 +26,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
 
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpContent;
@@ -110,7 +111,7 @@ public class ResourceCacheTest
     }
 
     @Test
-    public void testMutlipleSources1() throws Exception
+    public void testMultipleSources1() throws Exception
     {
         Path basePath = createUtilTestResources(workDir.getEmptyPathDir());
 
@@ -119,12 +120,12 @@ public class ResourceCacheTest
             new PathResource(basePath.resolve("two")),
             new PathResource(basePath.resolve("three")));
 
-        Resource[] r = rc.getResources();
+        List<Resource> r = rc.getResources();
         MimeTypes mime = new MimeTypes();
 
-        CachedContentFactory rc3 = new CachedContentFactory(null, r[2], mime, false, false, CompressedContentFormat.NONE);
-        CachedContentFactory rc2 = new CachedContentFactory(rc3, r[1], mime, false, false, CompressedContentFormat.NONE);
-        CachedContentFactory rc1 = new CachedContentFactory(rc2, r[0], mime, false, false, CompressedContentFormat.NONE);
+        CachedContentFactory rc3 = new CachedContentFactory(null, r.get(2), mime, false, false, CompressedContentFormat.NONE);
+        CachedContentFactory rc2 = new CachedContentFactory(rc3, r.get(1), mime, false, false, CompressedContentFormat.NONE);
+        CachedContentFactory rc1 = new CachedContentFactory(rc2, r.get(0), mime, false, false, CompressedContentFormat.NONE);
 
         assertEquals(getContent(rc1, "1.txt"), "1 - one");
         assertEquals(getContent(rc1, "2.txt"), "2 - two");
@@ -149,11 +150,11 @@ public class ResourceCacheTest
             new PathResource(basePath.resolve("two")),
             new PathResource(basePath.resolve("three")));
 
-        Resource[] r = rc.getResources();
+        List<Resource> r = rc.getResources();
         MimeTypes mime = new MimeTypes();
 
-        CachedContentFactory rc3 = new CachedContentFactory(null, r[2], mime, false, false, CompressedContentFormat.NONE);
-        CachedContentFactory rc2 = new CachedContentFactory(rc3, r[1], mime, false, false, CompressedContentFormat.NONE)
+        CachedContentFactory rc3 = new CachedContentFactory(null, r.get(2), mime, false, false, CompressedContentFormat.NONE);
+        CachedContentFactory rc2 = new CachedContentFactory(rc3, r.get(1), mime, false, false, CompressedContentFormat.NONE)
         {
             @Override
             public boolean isCacheable(Resource resource)
@@ -162,7 +163,7 @@ public class ResourceCacheTest
             }
         };
 
-        CachedContentFactory rc1 = new CachedContentFactory(rc2, r[0], mime, false, false, CompressedContentFormat.NONE);
+        CachedContentFactory rc1 = new CachedContentFactory(rc2, r.get(0), mime, false, false, CompressedContentFormat.NONE);
 
         assertEquals(getContent(rc1, "1.txt"), "1 - one");
         assertEquals(getContent(rc1, "2.txt"), "2 - two");

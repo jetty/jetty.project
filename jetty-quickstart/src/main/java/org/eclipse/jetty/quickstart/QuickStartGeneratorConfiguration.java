@@ -51,6 +51,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler.JspConfig;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
+import org.eclipse.jetty.servlet.Source;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -212,6 +213,9 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         if (context.getServletHandler().getListeners() != null)
             for (ListenerHolder e : context.getServletHandler().getListeners())
             {
+                if (e.getSource() == Source.EMBEDDED)
+                    continue;
+                
                 out.openTag("listener", origin(md, e.getClassName() + ".listener"))
                     .tag("listener-class", e.getClassName())
                     .closeTag();
@@ -223,14 +227,20 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         {
             for (FilterHolder holder : servlets.getFilters())
             {
+                if (holder.getSource() == Source.EMBEDDED)
+                    continue;
                 outholder(out, md, holder);
             }
         }
 
         if (servlets.getFilterMappings() != null)
         {
-            for (FilterMapping mapping : servlets.getFilterMappings())
+            for (FilterMapping mapping :servlets.getFilterMappings())
             {
+                FilterHolder f = servlets.getFilter(mapping.getFilterName());
+                if (f != null && f.getSource() == Source.EMBEDDED)
+                    continue;
+                
                 out.openTag("filter-mapping");
                 out.tag("filter-name", mapping.getFilterName());
                 if (mapping.getPathSpecs() != null)
@@ -265,6 +275,8 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         {
             for (ServletHolder holder : servlets.getServlets())
             {
+                if (holder.getSource() == Source.EMBEDDED)
+                    continue;
                 outholder(out, md, holder);
             }
         }
@@ -273,6 +285,10 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         {
             for (ServletMapping mapping : servlets.getServletMappings())
             {
+                ServletHolder sh = servlets.getServlet(mapping.getServletName());
+                if (sh != null && sh.getSource() == Source.EMBEDDED)
+                    continue;
+                
                 out.openTag("servlet-mapping", origin(md, mapping.getServletName() + ".servlet.mappings"));
                 out.tag("servlet-name", mapping.getServletName());
                 if (mapping.getPathSpecs() != null)

@@ -19,19 +19,23 @@
 package org.eclipse.jetty.quickstart;
 
 import java.io.File;
-import java.net.URL;
-import java.net.URLClassLoader;
+import java.util.Arrays;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ListenerHolder;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.xml.XmlConfiguration;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -42,17 +46,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class TestQuickStart
 {
-    File testDir;
-    File webInf;
     Server server;
 
     @BeforeEach
     public void setUp()
     {
-        testDir = MavenTestingUtils.getTargetTestingDir("foo");
-        FS.ensureEmpty(testDir);
-        webInf = new File(testDir, "WEB-INF");
-        FS.ensureDirExists(webInf);
         server = new Server();
     }
     
@@ -65,6 +63,11 @@ public class TestQuickStart
     @Test
     public void testProgrammaticOverrideOfDefaultServletMapping() throws Exception
     {
+        File testDir = MavenTestingUtils.getTargetTestingDir("pgoverride");
+        FS.ensureEmpty(testDir);
+        File webInf = new File(testDir, "WEB-INF");
+        FS.ensureDirExists(webInf);
+        
         File quickstartXml = new File(webInf, "quickstart-web.xml");
         assertFalse(quickstartXml.exists());
 
@@ -87,27 +90,36 @@ public class TestQuickStart
 
         assertTrue(quickstartXml.exists());
 
-        //now run the webapp again purely from the generated quickstart
+        //now run the webapp again
         WebAppContext webapp = new WebAppContext();
         webapp.setResourceBase(testDir.getAbsolutePath());
         webapp.addConfiguration(new QuickStartConfiguration());
+        webapp.getServerClassMatcher().exclude("org.eclipse.jetty.quickstart.");
         webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
-        webapp.setClassLoader(new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader()));
+        //add in the servlet
+        webapp.getServletHandler().addServlet(fooHolder);
+        //add in the listener
+        webapp.getServletHandler().addListener(lholder);
+        
         server.setHandler(webapp);
 
         server.setDryRun(false);
         server.start();
-        server.dumpStdErr();
 
         //verify that FooServlet is now mapped to / and not the DefaultServlet
         ServletHolder sh = webapp.getServletHandler().getMappedServlet("/").getServletHolder();
         assertNotNull(sh);
-        assertEquals("foo", sh.getName());
+        assertThat(sh.getClassName(), Matchers.equalTo("org.eclipse.jetty.quickstart.FooServlet"));
     }
 
     @Test
     public void testDefaultContextPath() throws Exception
     {
+        File testDir = MavenTestingUtils.getTargetTestingDir("dfltcp");
+        FS.ensureEmpty(testDir);
+        File webInf = new File(testDir, "WEB-INF");
+        FS.ensureDirExists(webInf);
+        
         File quickstartXml = new File(webInf, "quickstart-web.xml");
         assertFalse(quickstartXml.exists());
 
@@ -132,7 +144,7 @@ public class TestQuickStart
         webapp.addConfiguration(new QuickStartConfiguration());
         quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
         webapp.setResourceBase(testDir.getAbsolutePath());
-        webapp.setClassLoader(new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader()));
+        webapp.getServerClassMatcher().exclude("org.eclipse.jetty.quickstart.");
         server.setHandler(webapp);
 
         server.setDryRun(false);
@@ -146,6 +158,11 @@ public class TestQuickStart
     @Test
     public void testDefaultRequestAndResponseEncodings() throws Exception
     {
+        File testDir = MavenTestingUtils.getTargetTestingDir("dfltenc");
+        FS.ensureEmpty(testDir);
+        File webInf = new File(testDir, "WEB-INF");
+        FS.ensureDirExists(webInf);
+        
         File quickstartXml = new File(webInf, "quickstart-web.xml");
         assertFalse(quickstartXml.exists());
 
@@ -168,7 +185,7 @@ public class TestQuickStart
         webapp.addConfiguration(new QuickStartConfiguration());
         quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
         webapp.setResourceBase(testDir.getAbsolutePath());
-        webapp.setClassLoader(new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader()));
+        webapp.getServerClassMatcher().exclude("org.eclipse.jetty.quickstart.");
         server.setHandler(webapp);
 
         server.setDryRun(false);
@@ -181,6 +198,11 @@ public class TestQuickStart
     @Test
     public void testListenersNotCalledInPreConfigure() throws Exception
     {
+        File testDir = MavenTestingUtils.getTargetTestingDir("listeners");
+        FS.ensureEmpty(testDir);
+        File webInf = new File(testDir, "WEB-INF");
+        FS.ensureDirExists(webInf);
+        
         File quickstartXml = new File(webInf, "quickstart-web.xml");
         assertFalse(quickstartXml.exists());
         
@@ -202,5 +224,70 @@ public class TestQuickStart
         server.start();
         assertTrue(quickstartXml.exists());
         assertEquals(0, FooContextListener.___initialized);
+    }
+    
+    @Test
+    public void testDuplicateGenerationFromContextXml() throws Exception
+    {
+        File testDir = MavenTestingUtils.getTargetTestingDir("dups");
+        FS.ensureEmpty(testDir);
+        File webInf = new File(testDir, "WEB-INF");
+        FS.ensureDirExists(webInf);
+        
+        File quickstartXml = new File(webInf, "quickstart-web.xml");
+        assertFalse(quickstartXml.exists());
+
+        //no servlets, filters or listeners defined in web.xml
+        WebAppContext quickstart = new WebAppContext();
+        quickstart.addConfiguration(new QuickStartConfiguration());
+        quickstart.setWar(testDir.toURI().toURL().toExternalForm());
+        quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
+        quickstart.setDescriptor(MavenTestingUtils.getTestResourceFile("web.xml").getAbsolutePath());
+
+        //apply the context xml file
+        XmlConfiguration xmlConfig = new XmlConfiguration(Resource.newResource(MavenTestingUtils.getTestResourceFile("context.xml")));
+        xmlConfig.configure(quickstart);
+
+        //generate the quickstart
+        server.setHandler(quickstart);
+        server.setDryRun(true);
+        server.start();
+        
+        assertTrue(quickstartXml.exists());
+        assertTrue(server.isStopped());
+        
+        //Make a new webappcontext to mimic starting the server over again with
+        //a freshly applied context xml
+        quickstart = new WebAppContext();
+        //need visibility of FooServlet, FooFilter, FooContextListener when we quickstart
+        quickstart.getServerClassMatcher().exclude("org.eclipse.jetty.quickstart.");
+        quickstart.addConfiguration(new QuickStartConfiguration());
+        quickstart.setWar(testDir.toURI().toURL().toExternalForm());
+        quickstart.setDescriptor(MavenTestingUtils.getTestResourceFile("web.xml").getAbsolutePath());
+        quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.AUTO);
+        server.setHandler(quickstart);
+        
+        //apply the context xml file like a restart would
+        xmlConfig.configure(quickstart);
+        server.setDryRun(false);
+        
+        //restart the server
+        server.start();
+               
+        //test that we only get 1 FoOServlet, FooFilter and FooContextListener
+        ServletHolder[] servlets = quickstart.getServletHandler().getServlets();
+        assertNotNull(servlets);
+        assertEquals(1,
+            Arrays.stream(servlets).filter(s -> "org.eclipse.jetty.quickstart.FooServlet".equals(s.getClassName())).count());
+        
+        FilterHolder[] filters = quickstart.getServletHandler().getFilters();
+        assertNotNull(filters);
+        assertEquals(1,
+            Arrays.stream(filters).filter(f -> "org.eclipse.jetty.quickstart.FooFilter".equals(f.getClassName())).count());
+        
+        ListenerHolder[] listeners = quickstart.getServletHandler().getListeners();
+        assertNotNull(listeners);
+        assertEquals(1,
+            Arrays.stream(listeners).filter(l -> "org.eclipse.jetty.quickstart.FooContextListener".equals(l.getClassName())).count());
     }
 }
