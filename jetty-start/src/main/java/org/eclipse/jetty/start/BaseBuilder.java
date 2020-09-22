@@ -266,7 +266,7 @@ public class BaseBuilder
 
         boolean useStartD = Files.exists(startd);
         if (useStartD && Files.exists(startini))
-            StartLog.warn("Use both %s and %s is deprecated", getBaseHome().toShortForm(startd), getBaseHome().toShortForm(startini));
+            StartLog.warn("Use of both %s and %s is deprecated", getBaseHome().toShortForm(startd), getBaseHome().toShortForm(startini));
 
         builder.set(useStartD ? new StartDirBuilder(this) : new StartIniBuilder(this));
         newlyAdded.stream().map(modules::get).forEach(module ->
