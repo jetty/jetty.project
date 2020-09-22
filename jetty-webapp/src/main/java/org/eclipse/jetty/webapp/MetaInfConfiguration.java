@@ -447,17 +447,17 @@ public class MetaInfConfiguration extends AbstractConfiguration
             if (resourcesDir == EmptyResource.INSTANCE)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug(target + " cached as containing no META-INF/resources");
+                    LOG.debug("{} cached as containing no META-INF/resources", target);
                 return;
             }
             else if (LOG.isDebugEnabled())
-                LOG.debug(target + " META-INF/resources found in cache ");
+                LOG.debug("{} META-INF/resources found in cache ", target);
         }
         else
         {
             //not using caches or not in the cache so check for the resources dir
             if (LOG.isDebugEnabled())
-                LOG.debug(target + " META-INF/resources checked");
+                LOG.debug("{} META-INF/resources checked", target);
             if (target.isDirectory())
             {
                 //TODO think  how to handle an unpacked jar file (eg for osgi)
@@ -482,7 +482,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 if (old != null)
                     resourcesDir = old;
                 else if (LOG.isDebugEnabled())
-                    LOG.debug(target + " META-INF/resources cache updated");
+                    LOG.debug("{} META-INF/resources cache updated", target);
             }
 
             if (resourcesDir == EmptyResource.INSTANCE)
@@ -499,7 +499,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             context.setAttribute(METAINF_RESOURCES, dirs);
         }
         if (LOG.isDebugEnabled())
-            LOG.debug(resourcesDir + " added to context");
+            LOG.debug("{} added to context", resourcesDir);
 
         dirs.add(resourcesDir);
     }
@@ -522,17 +522,17 @@ public class MetaInfConfiguration extends AbstractConfiguration
             if (webFrag == EmptyResource.INSTANCE)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug(jar + " cached as containing no META-INF/web-fragment.xml");
+                    LOG.debug("{} cached as containing no META-INF/web-fragment.xml", jar);
                 return;
             }
             else if (LOG.isDebugEnabled())
-                LOG.debug(jar + " META-INF/web-fragment.xml found in cache ");
+                LOG.debug("{} META-INF/web-fragment.xml found in cache ", jar);
         }
         else
         {
             //not using caches or not in the cache so check for the web-fragment.xml
             if (LOG.isDebugEnabled())
-                LOG.debug(jar + " META-INF/web-fragment.xml checked");
+                LOG.debug("{} META-INF/web-fragment.xml checked", jar);
             if (jar.isDirectory())
             {
                 webFrag = Resource.newResource(new File(jar.getFile(), "/META-INF/web-fragment.xml"));
@@ -555,7 +555,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 if (old != null)
                     webFrag = old;
                 else if (LOG.isDebugEnabled())
-                    LOG.debug(jar + " META-INF/web-fragment.xml cache updated");
+                    LOG.debug("{} META-INF/web-fragment.xml cache updated", jar);
             }
 
             if (webFrag == EmptyResource.INSTANCE)
@@ -570,7 +570,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         }
         fragments.put(jar, webFrag);
         if (LOG.isDebugEnabled())
-            LOG.debug(webFrag + " added to context");
+            LOG.debug("{} added to context", webFrag);
     }
 
     /**
@@ -592,14 +592,14 @@ public class MetaInfConfiguration extends AbstractConfiguration
             if (tmp.isEmpty())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug(jar + " cached as containing no tlds");
+                    LOG.debug("{} cached as containing no tlds", jar);
                 return;
             }
             else
             {
                 tlds = tmp;
                 if (LOG.isDebugEnabled())
-                    LOG.debug(jar + " tlds found in cache ");
+                    LOG.debug("{} tlds found in cache ", jar);
             }
         }
         else
@@ -619,7 +619,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             if (cache != null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug(jar + " tld cache updated");
+                    LOG.debug("{} tld cache updated", jar);
                 Collection<URL> old = (Collection<URL>)cache.putIfAbsent(jar, tlds);
                 if (old != null)
                     tlds = old;

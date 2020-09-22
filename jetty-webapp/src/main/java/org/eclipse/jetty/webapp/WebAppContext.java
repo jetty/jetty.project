@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -532,6 +533,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             _metadata.setAllowDuplicateFragmentNames(isAllowDuplicateFragmentNames());
             Boolean validate = (Boolean)getAttribute(MetaData.VALIDATE_XML);
             _metadata.setValidateXml((validate != null && validate));
+            wrapConfigurations();
             preConfigure();
             super.doStart();
             postConfigure();
@@ -542,11 +544,31 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         catch (Throwable t)
         {
             // start up of the webapp context failed, make sure it is not started
-            LOG.warn("Failed startup of context " + this, t);
+            LOG.warn("Failed startup of context {}", this, t);
             _unavailableException = t;
             setAvailable(false); // webapp cannot be accessed (results in status code 503)
             if (isThrowUnavailableOnStartupException())
                 throw t;
+        }
+    }
+
+    private void wrapConfigurations()
+    {
+        Collection<Configuration.WrapperFunction> wrappers = getBeans(Configuration.WrapperFunction.class);
+        if (wrappers == null || wrappers.isEmpty())
+            return;
+
+        List<Configuration> configs = new ArrayList<>(_configurations.getConfigurations());
+        _configurations.clear();
+
+        for (Configuration config : configs)
+        {
+            Configuration wrapped = config;
+            for (Configuration.WrapperFunction wrapperFunction : getBeans(Configuration.WrapperFunction.class))
+            {
+                wrapped = wrapperFunction.wrapConfiguration(wrapped);
+            }
+            _configurations.add(wrapped);
         }
     }
 
@@ -586,7 +608,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             if (displayName == null)
                 displayName = "WebApp@" + Arrays.hashCode(connectors);
 
-            LOG.info(displayName + " at http://" + connectors[i].toString() + getContextPath());
+            LOG.info("{} at http://{}{}", displayName, connectors[i].toString(), getContextPath());
         }
     }
 
@@ -1441,11 +1463,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             // Should we go to the original war?
             if (resource.isDirectory() && resource instanceof ResourceCollection && !WebAppContext.this.isExtractWAR())
             {
-                Resource[] resources = ((ResourceCollection)resource).getResources();
-                for (int i = resources.length; i-- > 0; )
+                List<Resource> resources = ((ResourceCollection)resource).getResources();
+                for (int i = resources.size(); i-- > 0; )
                 {
-                    if (resources[i].getName().startsWith("jar:file"))
-                        return resources[i].getURI().toURL();
+                    Resource r = resources.get(i);
+                    if (r.getName().startsWith("jar:file"))
+                        return r.getURI().toURL();
                 }
             }
 

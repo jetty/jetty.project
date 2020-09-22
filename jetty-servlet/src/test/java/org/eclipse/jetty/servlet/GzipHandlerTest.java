@@ -101,7 +101,6 @@ public class GzipHandlerTest
         _server.addConnector(_connector);
 
         GzipHandler gzipHandler = new GzipHandler();
-        gzipHandler.setExcludedAgentPatterns();
         gzipHandler.setMinGzipSize(16);
         gzipHandler.setInflateBufferSize(4096);
 
@@ -174,7 +173,7 @@ public class GzipHandlerTest
         }
 
         @Override
-        protected void doDelete(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+        protected void doDelete(HttpServletRequest req, HttpServletResponse response) throws IOException
         {
             String ifm = req.getHeader("If-Match");
             if (ifm != null && ifm.equals(__contentETag))
@@ -312,7 +311,7 @@ public class GzipHandlerTest
         assertThat(response.getStatus(), is(200));
         assertThat(response.get("Content-Encoding"), not(equalToIgnoringCase("gzip")));
         assertThat(response.get("ETag"), is(__contentETag));
-        assertThat(response.getValuesList("Vary"), Matchers.contains("Other", "Accept-Encoding"));
+        assertThat(response.getCSV("Vary", false), Matchers.contains("Other", "Accept-Encoding"));
 
         InputStream testIn = new ByteArrayInputStream(response.getContentBytes());
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();

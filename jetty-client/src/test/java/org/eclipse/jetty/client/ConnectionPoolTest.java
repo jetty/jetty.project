@@ -50,7 +50,6 @@ import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -66,10 +65,16 @@ public class ConnectionPoolTest
 
     public static Stream<ConnectionPoolFactory> pools()
     {
+        return Stream.concat(poolsNoRoundRobin(),
+            Stream.of(new ConnectionPoolFactory("round-robin", destination -> new RoundRobinConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination))));
+    }
+
+    public static Stream<ConnectionPoolFactory> poolsNoRoundRobin()
+    {
         return Stream.of(
             new ConnectionPoolFactory("duplex", destination -> new DuplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination)),
-            new ConnectionPoolFactory("round-robin", destination -> new RoundRobinConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination)),
-            new ConnectionPoolFactory("multiplex", destination -> new MultiplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, 1))
+            new ConnectionPoolFactory("multiplex", destination -> new MultiplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, 1)),
+            new ConnectionPoolFactory("random", destination -> new RandomConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, 1))
         );
     }
 
@@ -301,11 +306,11 @@ public class ConnectionPoolTest
     }
 
     @ParameterizedTest
-    @MethodSource("pools")
+    @MethodSource("poolsNoRoundRobin")
     public void testConcurrentRequestsDontOpenTooManyConnections(ConnectionPoolFactory factory) throws Exception
     {
-        // Round robin connection pool does open a few more connections than expected.
-        Assumptions.assumeFalse(factory.name.equals("round-robin"));
+        // Round robin connection pool does open a few more
+        // connections than expected, exclude it from this test.
 
         startServer(new EmptyServerHandler());
 

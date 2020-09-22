@@ -290,7 +290,7 @@ public class NamingContext implements Context, Dumpable
         else
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Checking for existing binding for name=" + cname + " for first element of name=" + cname.get(0));
+                LOG.debug("Checking for existing binding for name={} for first element of name={}", cname, cname.get(0));
 
             //walk down the subcontext hierarchy
             //need to ignore trailing empty "" name components
@@ -431,7 +431,7 @@ public class NamingContext implements Context, Dumpable
         throws NamingException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Looking up name=\"" + name + "\"");
+            LOG.debug("Looking up name=\"{}\"", name);
         Name cname = toCanonicalName(name);
 
         if ((cname == null) || (cname.size() == 0))
@@ -564,7 +564,7 @@ public class NamingContext implements Context, Dumpable
         throws NamingException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("list() on Context=" + getName() + " for name=" + name);
+            LOG.debug("list() on Context={} for name={}", getName(), name);
         Name cname = toCanonicalName(name);
 
         if (cname == null)
@@ -962,7 +962,7 @@ public class NamingContext implements Context, Dumpable
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Adding binding with key=" + key + " obj=" + obj + " for context=" + _name + " as " + binding);
+            LOG.debug("Adding binding with key={}  obj={} for context={} as {}", key, obj, _name, binding);
 
         if (binding != null)
         {
@@ -1006,7 +1006,7 @@ public class NamingContext implements Context, Dumpable
     {
         String key = name.toString();
         if (LOG.isDebugEnabled())
-            LOG.debug("Removing binding with key=" + key);
+            LOG.debug("Removing binding with key={}", key);
         Binding binding = _bindings.remove(key);
         if (binding != null)
         {

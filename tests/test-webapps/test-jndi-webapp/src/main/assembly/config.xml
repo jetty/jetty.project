@@ -18,14 +18,14 @@
     </fileSet>
     <fileSet>
       <directory>target</directory>
-      <outputDirectory>demo-base/webapps</outputDirectory>
+      <outputDirectory>webapps</outputDirectory>
       <includes>
         <include>test-jndi.xml</include>
       </includes>
     </fileSet>
     <fileSet>
       <directory>target/lib/jndi</directory>
-      <outputDirectory>demo-base/lib/ext</outputDirectory>
+      <outputDirectory>lib/ext</outputDirectory>
       <includes>
         <include>*.jar</include>
       </includes>

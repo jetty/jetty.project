@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -35,6 +36,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -82,104 +84,130 @@ public class Modules implements Iterable<Module>
         }
     }
 
-    public void dump(List<String> tags)
+    public void showModules(List<String> modules)
     {
-        Set<String> exclude = tags.stream().filter(t -> t.startsWith("-")).map(t -> t.substring(1)).collect(Collectors.toSet());
-        Set<String> include = tags.stream().filter(t -> !t.startsWith("-")).collect(Collectors.toSet());
-        boolean all = include.contains("*") || include.isEmpty();
-        AtomicReference<String> tag = new AtomicReference<>();
+        Stream<Module> stream = (modules.contains("*") || modules.isEmpty())
+            ? _modules.stream().sorted()
+            : modules.stream().map(this::get);
 
-        _modules.stream()
-            .filter(m ->
-            {
-                boolean included = all || m.getTags().stream().anyMatch(include::contains);
-                boolean excluded = m.getTags().stream().anyMatch(exclude::contains);
-                return included && !excluded;
-            })
-            .sorted()
-            .forEach(module ->
-            {
-                if (!module.getPrimaryTag().equals(tag.get()))
-                {
-                    tag.set(module.getPrimaryTag());
-                    System.out.printf("%nModules for tag '%s':%n", module.getPrimaryTag());
-                    System.out.print("-------------------");
-                    for (int i = module.getPrimaryTag().length(); i-- > 0; )
-                    {
-                        System.out.print("-");
-                    }
-                    System.out.println();
-                }
+        stream.forEach(module ->
+        {
+            if (module == null)
+                return;
 
-                String label;
-                Set<String> provides = module.getProvides();
-                provides.remove(module.getName());
-                System.out.printf("%n     Module: %s %s%n", module.getName(), provides.size() > 0 ? provides : "");
-                for (String description : module.getDescription())
+            String label;
+            Set<String> provides = module.getProvides();
+            provides.remove(module.getName());
+            System.out.printf("%n     Module: %s %s%n", module.getName(), provides.size() > 0 ? provides : "");
+            for (String description : module.getDescription())
+            {
+                System.out.printf("           : %s%n", description);
+            }
+            if (!module.getTags().isEmpty())
+            {
+                label = "       Tags: %s";
+                for (String t : module.getTags())
                 {
-                    System.out.printf("           : %s%n", description);
+                    System.out.printf(label, t);
+                    label = ", %s";
                 }
-                if (!module.getTags().isEmpty())
+                System.out.println();
+            }
+            if (!module.getDepends().isEmpty())
+            {
+                label = "     Depend: %s";
+                for (String parent : module.getDepends())
                 {
-                    label = "       Tags: %s";
-                    for (String t : module.getTags())
-                    {
-                        System.out.printf(label, t);
-                        label = ", %s";
-                    }
-                    System.out.println();
+                    parent = Module.normalizeModuleName(parent);
+                    System.out.printf(label, parent);
+                    if (Module.isConditionalDependency(parent))
+                        System.out.print(" [conditional]");
+                    label = ", %s";
                 }
-                if (!module.getDepends().isEmpty())
+                System.out.println();
+            }
+            if (!module.getOptional().isEmpty())
+            {
+                label = "   Optional: %s";
+                for (String parent : module.getOptional())
                 {
-                    label = "     Depend: %s";
-                    for (String parent : module.getDepends())
-                    {
-                        parent = Module.normalizeModuleName(parent);
-                        System.out.printf(label, parent);
-                        if (Module.isConditionalDependency(parent))
-                            System.out.print(" [conditional]");
-                        label = ", %s";
-                    }
-                    System.out.println();
+                    System.out.printf(label, parent);
+                    label = ", %s";
                 }
-                if (!module.getOptional().isEmpty())
+                System.out.println();
+            }
+            for (String lib : module.getLibs())
+            {
+                System.out.printf("        LIB: %s%n", lib);
+            }
+            for (String xml : module.getXmls())
+            {
+                System.out.printf("        XML: %s%n", xml);
+            }
+            for (String jpms : module.getJPMS())
+            {
+                System.out.printf("        JPMS: %s%n", jpms);
+            }
+            for (String jvm : module.getJvmArgs())
+            {
+                System.out.printf("        JVM: %s%n", jvm);
+            }
+            if (module.isEnabled())
+            {
+                for (String selection : module.getEnableSources())
                 {
-                    label = "   Optional: %s";
-                    for (String parent : module.getOptional())
-                    {
-                        System.out.printf(label, parent);
-                        label = ", %s";
-                    }
-                    System.out.println();
+                    System.out.printf("    Enabled: %s%n", selection);
                 }
-                for (String lib : module.getLibs())
-                {
-                    System.out.printf("        LIB: %s%n", lib);
-                }
-                for (String xml : module.getXmls())
-                {
-                    System.out.printf("        XML: %s%n", xml);
-                }
-                for (String jpms : module.getJPMS())
-                {
-                    System.out.printf("        JPMS: %s%n", jpms);
-                }
-                for (String jvm : module.getJvmArgs())
-                {
-                    System.out.printf("        JVM: %s%n", jvm);
-                }
-                if (module.isEnabled())
-                {
-                    for (String selection : module.getEnableSources())
-                    {
-                        System.out.printf("    Enabled: %s%n", selection);
-                    }
-                }
-            });
+            }
+        });
     }
 
-    public void dumpEnabled()
+    public void listModules(List<String> tags)
     {
+        if (tags.contains("-*"))
+            return;
+
+        boolean wild = tags.contains("*");
+        Set<String> included = new HashSet<>();
+        if (wild)
+            tags.remove("*");
+        else
+            tags.stream().filter(t -> !t.startsWith("-")).forEach(included::add);
+        Set<String> excluded = new HashSet<>();
+        tags.stream().filter(t -> t.startsWith("-")).map(t -> t.substring(1)).forEach(excluded::add);
+        if (!included.contains("internal"))
+            excluded.add("internal");
+
+        Predicate<Module> filter = m -> (included.isEmpty() || m.getTags().stream().anyMatch(included::contains)) &&
+            !m.getTags().stream().anyMatch(excluded::contains);
+
+        Optional<Integer> max = _modules.stream().filter(filter).map(Module::getName).map(String::length).max(Integer::compareTo);
+        if (max.isEmpty())
+            return;
+        String format = "%" + max.get() + "s - %s%n";
+
+        Comparator<Module> comparator = wild ? Comparator.comparing(Module::getName) : Module::compareTo;
+        AtomicReference<String> tag = new AtomicReference<>();
+        _modules.stream().filter(filter).sorted(comparator).forEach(module ->
+        {
+            if (!wild && !module.getPrimaryTag().equals(tag.get()))
+            {
+                tag.set(module.getPrimaryTag());
+                System.out.printf("%n%s modules:", module.getPrimaryTag());
+                System.out.printf("%n%s---------%n", "-".repeat(module.getPrimaryTag().length()));
+            }
+
+            List<String> description = module.getDescription();
+            System.out.printf(format, module.getName(), description != null && description.size() > 0 ? description.get(0) : "");
+        });
+    }
+
+    public void listEnabled()
+    {
+        System.out.println();
+        System.out.println("Enabled Modules:");
+        System.out.println("----------------");
+
         int i = 0;
         List<Module> enabled = getEnabled();
         for (Module module : enabled)
@@ -193,7 +221,7 @@ public class Modules implements Iterable<Module>
                 name = "";
             }
             if (module.isTransitive() && module.hasIniTemplate())
-                System.out.printf("                       init template available with --add-to-start=%s%n", module.getName());
+                System.out.printf("                       init template available with --add-module=%s%n", module.getName());
         }
     }
 

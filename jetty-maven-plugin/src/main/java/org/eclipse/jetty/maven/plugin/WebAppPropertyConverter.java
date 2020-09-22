@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.server.Server;
@@ -337,17 +338,8 @@ public class WebAppPropertyConverter
      * @param resources the resources to convert
      * @return csv string of resource filenames
      */
-    private static String toCSV(Resource[] resources)
+    private static String toCSV(List<Resource> resources)
     {
-        StringBuilder rb = new StringBuilder();
-
-        for (Resource r : resources)
-        {
-            if (rb.length() > 0)
-                rb.append(",");
-            rb.append(r.toString());
-        }
-
-        return rb.toString();
+        return resources.stream().map(Object::toString).collect(Collectors.joining(","));
     }
 }

@@ -29,6 +29,7 @@ import java.util.zip.ZipException;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Destroyable;
+import org.eclipse.jetty.util.compression.InflaterPool;
 
 /**
  * <p>Decoder for the "gzip" content encoding.</p>
@@ -41,9 +42,10 @@ public class GZIPContentDecoder implements Destroyable
     private static final long UINT_MAX = 0xFFFFFFFFL;
 
     private final List<ByteBuffer> _inflateds = new ArrayList<>();
-    private final Inflater _inflater = new Inflater(true);
+    private final InflaterPool _inflaterPool;
     private final ByteBufferPool _pool;
     private final int _bufferSize;
+    private Inflater _inflater;
     private State _state;
     private int _size;
     private long _value;
@@ -62,6 +64,13 @@ public class GZIPContentDecoder implements Destroyable
 
     public GZIPContentDecoder(ByteBufferPool pool, int bufferSize)
     {
+        this(null, pool, bufferSize);
+    }
+
+    public GZIPContentDecoder(InflaterPool inflaterPool, ByteBufferPool pool, int bufferSize)
+    {
+        _inflaterPool = inflaterPool;
+        _inflater = (inflaterPool == null) ? new Inflater(true) : inflaterPool.acquire();
         _bufferSize = bufferSize;
         _pool = pool;
         reset();
@@ -207,8 +216,9 @@ public class GZIPContentDecoder implements Destroyable
 
                             try
                             {
-                                int length = _inflater.inflate(buffer.array(), buffer.arrayOffset(), buffer.capacity());
-                                buffer.limit(length);
+                                int pos = BufferUtil.flipToFill(buffer);
+                                _inflater.inflate(buffer);
+                                BufferUtil.flipToFlush(buffer, pos);
                             }
                             catch (DataFormatException x)
                             {
@@ -226,23 +236,10 @@ public class GZIPContentDecoder implements Destroyable
                             {
                                 if (!compressed.hasRemaining())
                                     return;
-                                if (compressed.hasArray())
-                                {
-                                    _inflater.setInput(compressed.array(), compressed.arrayOffset() + compressed.position(), compressed.remaining());
-                                    compressed.position(compressed.limit());
-                                }
-                                else
-                                {
-                                    // TODO use the pool
-                                    byte[] input = new byte[compressed.remaining()];
-                                    compressed.get(input);
-                                    _inflater.setInput(input);
-                                }
+                                _inflater.setInput(compressed);
                             }
                             else if (_inflater.finished())
                             {
-                                int remaining = _inflater.getRemaining();
-                                compressed.position(compressed.limit() - remaining);
                                 _state = State.CRC;
                                 _size = 0;
                                 _value = 0;
@@ -386,7 +383,6 @@ public class GZIPContentDecoder implements Destroyable
                             if (_value != (_inflater.getBytesWritten() & UINT_MAX))
                                 throw new ZipException("Invalid input size");
 
-                            // TODO ByteBuffer result = output == null ? BufferUtil.EMPTY_BUFFER : ByteBuffer.wrap(output);
                             reset();
                             return;
                         }
@@ -420,7 +416,12 @@ public class GZIPContentDecoder implements Destroyable
     @Override
     public void destroy()
     {
-        _inflater.end();
+        if (_inflaterPool == null)
+            _inflater.end();
+        else
+            _inflaterPool.release(_inflater);
+
+        _inflater = null;
     }
 
     public boolean isFinished()

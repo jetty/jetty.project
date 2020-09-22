@@ -31,9 +31,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 
 /**
  * Client based UpgradeRequest API

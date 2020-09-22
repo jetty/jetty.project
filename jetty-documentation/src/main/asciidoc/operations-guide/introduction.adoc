@@ -1,0 +1,48 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-guide]]
+== Eclipse Jetty Operations Guide
+
+The Eclipse Jetty Operations Guide targets sysops, devops, and developers who want to install Eclipse Jetty as a standalone server to deploy web applications.
+
+[[og-download]]
+=== Downloading Eclipse Jetty
+
+The Eclipse Jetty distribution is available for download from link:https://www.eclipse.org/jetty/download.html[]
+
+The Eclipse Jetty distribution is available in both `zip` and `gzip` formats; download the one most appropriate for your system, typically `zip` for Windows and `gzip` for other operative systems.
+
+[[og-install]]
+=== Installing Eclipse Jetty
+
+After the download, unpacking the Eclipse Jetty distribution will extract the files into a directory called `jetty-distribution-VERSION`, where `VERSION` is the version that you downloaded, for example `10.0.0`, so that the directory is called `jetty-distribution-10.0.0`.
+
+Unpack the Eclipse Jetty distribution compressed file in a convenient location, for example under `/opt`.
+
+The rest of the instructions in this documentation will refer to this location as `$JETTY_HOME`.
+
+IMPORTANT: It is important that *only* stable release versions are used in production environments.
+Versions that have been deprecated or are released as Milestones (M), Alpha, Beta or Release Candidates (RC) are *not* suitable for production as they may contain security flaws or incomplete/non-functioning feature sets.
+
+[[og-running]]
+=== Running Eclipse Jetty
+
+Eclipse Jetty as a standalone server has no graphical user interface, so configuring and running the server is done from the command line.
+
+TODO: section about general architecture - modules etc.

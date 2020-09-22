@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.common;
 
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
-public class ExtensionConfigParser implements org.eclipse.jetty.websocket.api.extensions.ExtensionConfig.Parser
+public class ExtensionConfigParser implements org.eclipse.jetty.websocket.api.ExtensionConfig.Parser
 {
     /**
      * Parse a single parameterized name.

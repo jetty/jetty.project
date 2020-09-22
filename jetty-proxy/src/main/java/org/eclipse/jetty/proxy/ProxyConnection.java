@@ -126,7 +126,7 @@ public abstract class ProxyConnection extends AbstractConnection
             catch (IOException x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug(ProxyConnection.this + " could not fill", x);
+                    LOG.debug("{} could not fill", ProxyConnection.this, x);
                 bufferPool.release(buffer);
                 disconnect(x);
                 return Action.SUCCEEDED;
@@ -151,7 +151,7 @@ public abstract class ProxyConnection extends AbstractConnection
         protected void onCompleteFailure(Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(ProxyConnection.this + " failed to write " + filled + " bytes", x);
+                LOG.debug("{} failed to write {} bytes", ProxyConnection.this, filled, x);
             bufferPool.release(buffer);
             disconnect(x);
         }

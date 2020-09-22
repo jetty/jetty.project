@@ -38,7 +38,7 @@ import org.eclipse.jetty.start.StartLog;
 /**
  * Management of the <code>${jetty.base}/start.ini</code> based configuration.
  * <p>
- * Implementation of the <code>--add-to-start=[name]</code> command line behavior
+ * Implementation of the <code>--add-module=[name]</code> command line behavior
  */
 public class StartIniBuilder implements BaseBuilder.Config
 {

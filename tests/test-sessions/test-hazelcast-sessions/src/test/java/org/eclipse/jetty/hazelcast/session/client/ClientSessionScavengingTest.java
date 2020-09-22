@@ -27,7 +27,6 @@ import org.junit.jupiter.api.BeforeEach;
 public class ClientSessionScavengingTest
     extends AbstractClusteredSessionScavengingTest
 {
-
     HazelcastTestHelper _testHelper;
 
     @Override

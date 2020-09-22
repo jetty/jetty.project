@@ -23,6 +23,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
@@ -38,6 +41,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -68,7 +72,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -77,6 +82,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,17 +93,19 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class AsyncMiddleManServletTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncMiddleManServletTest.class);
     private static final String PROXIED_HEADER = "X-Proxied";
 
+    public WorkDir workDir;
     private HttpClient client;
     private Server proxy;
     private ServerConnector proxyConnector;
+    private AsyncMiddleManServlet proxyServlet;
     private Server server;
     private ServerConnector serverConnector;
-    private StacklessLogging stackless;
 
     private void startServer(HttpServlet servlet) throws Exception
     {
@@ -135,13 +143,12 @@ public class AsyncMiddleManServletTest
         proxy.addConnector(proxyConnector);
 
         ServletContextHandler proxyContext = new ServletContextHandler(proxy, "/", true, false);
+        this.proxyServlet = proxyServlet;
         ServletHolder proxyServletHolder = new ServletHolder(proxyServlet);
         proxyServletHolder.setInitParameters(initParams);
         proxyContext.addServlet(proxyServletHolder, "/*");
 
         proxy.start();
-
-        stackless = new StacklessLogging(proxyServlet._log);
     }
 
     private void startClient() throws Exception
@@ -160,7 +167,6 @@ public class AsyncMiddleManServletTest
         client.stop();
         proxy.stop();
         server.stop();
-        stackless.close();
     }
 
     @Test
@@ -191,7 +197,7 @@ public class AsyncMiddleManServletTest
         testClientRequestContentKnownLengthGzipped(1024 * 1024, true);
     }
 
-    private void testClientRequestContentKnownLengthGzipped(int length, final boolean expectChunked) throws Exception
+    private void testClientRequestContentKnownLengthGzipped(int length, boolean expectChunked) throws Exception
     {
         byte[] bytes = new byte[length];
         new Random().nextBytes(bytes);
@@ -238,7 +244,7 @@ public class AsyncMiddleManServletTest
     {
         byte[] bytes = new byte[1024];
         new Random().nextBytes(bytes);
-        final byte[] gzipBytes = gzip(bytes);
+        byte[] gzipBytes = gzip(bytes);
 
         startServer(new HttpServlet()
         {
@@ -448,7 +454,7 @@ public class AsyncMiddleManServletTest
     @Test
     public void testDiscardUpstreamAndDownstreamKnownContentLengthGzipped() throws Exception
     {
-        final byte[] bytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes(StandardCharsets.UTF_8);
+        byte[] bytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes(StandardCharsets.UTF_8);
         startServer(new HttpServlet()
         {
             @Override
@@ -506,43 +512,46 @@ public class AsyncMiddleManServletTest
         });
         startClient();
 
-        byte[] bytes = new byte[1024];
-        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-            .body(new BytesRequestContent(bytes))
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
+        try (StacklessLogging ignored = new StacklessLogging(proxyServlet._log))
+        {
+            byte[] bytes = new byte[1024];
+            ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+                .body(new BytesRequestContent(bytes))
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
 
-        assertEquals(500, response.getStatus());
+            assertEquals(500, response.getStatus());
+        }
     }
 
     @Test
     public void testUpstreamTransformationThrowsAfterCommittingProxyRequest() throws Exception
     {
-        try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class))
+        startServer(new EchoHttpServlet());
+        startProxy(new AsyncMiddleManServlet()
         {
-            startServer(new EchoHttpServlet());
-            startProxy(new AsyncMiddleManServlet()
+            @Override
+            protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
             {
-                @Override
-                protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
+                return new ContentTransformer()
                 {
-                    return new ContentTransformer()
+                    private int count;
+
+                    @Override
+                    public void transform(ByteBuffer input, boolean finished, List<ByteBuffer> output)
                     {
-                        private int count;
+                        if (++count < 2)
+                            output.add(input);
+                        else
+                            throw new NullPointerException("explicitly_thrown_by_test");
+                    }
+                };
+            }
+        });
+        startClient();
 
-                        @Override
-                        public void transform(ByteBuffer input, boolean finished, List<ByteBuffer> output)
-                        {
-                            if (++count < 2)
-                                output.add(input);
-                            else
-                                throw new NullPointerException("explicitly_thrown_by_test");
-                        }
-                    };
-                }
-            });
-            startClient();
-
+        try (StacklessLogging ignored = new StacklessLogging(proxyServlet._log))
+        {
             CountDownLatch latch = new CountDownLatch(1);
             AsyncRequestContent content = new AsyncRequestContent();
             client.newRequest("localhost", serverConnector.getLocalPort())
@@ -623,11 +632,14 @@ public class AsyncMiddleManServletTest
         });
         startClient();
 
-        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
+        try (StacklessLogging ignored = new StacklessLogging(proxyServlet._log))
+        {
+            ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
 
-        assertEquals(502, response.getStatus());
+            assertEquals(502, response.getStatus());
+        }
     }
 
     @Test
@@ -642,7 +654,7 @@ public class AsyncMiddleManServletTest
         testLargeChunkedBufferedDownstreamTransformation(true);
     }
 
-    private void testLargeChunkedBufferedDownstreamTransformation(final boolean gzipped) throws Exception
+    private void testLargeChunkedBufferedDownstreamTransformation(boolean gzipped) throws Exception
     {
         // Tests the race between a incomplete write performed from ProxyResponseListener.onSuccess()
         // and ProxyResponseListener.onComplete() being called before the write has completed.
@@ -682,7 +694,7 @@ public class AsyncMiddleManServletTest
         });
         startClient();
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", serverConnector.getLocalPort())
             .onResponseContent((response, content) ->
             {
@@ -822,7 +834,7 @@ public class AsyncMiddleManServletTest
         testProxyResponseWriteFails(2);
     }
 
-    private void testProxyResponseWriteFails(final int writeCount) throws Exception
+    private void testProxyResponseWriteFails(int writeCount) throws Exception
     {
         startServer(new HttpServlet()
         {
@@ -926,9 +938,9 @@ public class AsyncMiddleManServletTest
         testAfterContentTransformerInputStreamReset(true);
     }
 
-    private void testAfterContentTransformerInputStreamReset(final boolean overflow) throws Exception
+    private void testAfterContentTransformerInputStreamReset(boolean overflow) throws Exception
     {
-        final byte[] data = new byte[]{'c', 'o', 'f', 'f', 'e', 'e'};
+        byte[] data = new byte[]{'c', 'o', 'f', 'f', 'e', 'e'};
         startServer(new HttpServlet()
         {
             @Override
@@ -982,7 +994,7 @@ public class AsyncMiddleManServletTest
     public void testAfterContentTransformerOverflowingToDisk() throws Exception
     {
         // Make sure the temporary directory we use exists and it's empty.
-        Path targetTestsDir = prepareTargetTestsDir();
+        Path targetTestsDir = workDir.getEmptyPathDir();
 
         String key0 = "id";
         long value0 = 1;
@@ -1034,37 +1046,76 @@ public class AsyncMiddleManServletTest
         });
         startClient();
 
-        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
-
-        assertEquals(200, response.getStatus());
-        @SuppressWarnings("unchecked")
-        Map<String, Object> obj = (Map<String, Object>)json.fromJSON(response.getContentAsString());
-        assertNotNull(obj);
-        assertEquals(2, obj.size());
-        assertEquals(value0, obj.get(key0));
-        assertEquals(value1, obj.get(key2));
-        // Make sure the files do not exist.
-        try (DirectoryStream<Path> paths = Files.newDirectoryStream(targetTestsDir, inputPrefix + "*.*"))
+        try
         {
-            assertFalse(paths.iterator().hasNext());
-        }
+            ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+                .timeout(15, TimeUnit.SECONDS)
+                .send();
 
-        // File deletion is delayed on windows, testing for deletion is not going to work
-        if (!OS.WINDOWS.isCurrentOs())
-        {
-            try (DirectoryStream<Path> paths = Files.newDirectoryStream(targetTestsDir, outputPrefix + "*.*"))
+            assertEquals(200, response.getStatus());
+            @SuppressWarnings("unchecked")
+            Map<String, Object> obj = (Map<String, Object>)new JSON().fromJSON(response.getContentAsString());
+            assertNotNull(obj);
+            assertEquals(2, obj.size());
+            assertEquals(value0, obj.get(key0));
+            assertEquals(value1, obj.get(key2));
+
+            // File deletion is delayed on windows, testing for deletion is not going to work
+            if (!OS.WINDOWS.isCurrentOs())
             {
-                assertFalse(paths.iterator().hasNext());
+                try (DirectoryStream<Path> paths = Files.newDirectoryStream(targetTestsDir, outputPrefix + "*.*"))
+                {
+                    assertFalse(paths.iterator().hasNext());
+                }
             }
         }
+        catch (TimeoutException e)
+        {
+            LOG.warn("Client Dump");
+            QueuedThreadPool qtp = (QueuedThreadPool)client.getExecutor();
+            qtp.setDetailedDump(true);
+            client.dumpStdErr();
+            LOG.warn("Server Dump");
+            qtp = (QueuedThreadPool)server.getThreadPool();
+            qtp.setDetailedDump(true);
+            server.dumpStdErr();
+            LOG.warn("Thread Dump");
+            System.err.println(generateThreadDump());
+            throw e;
+        }
+    }
+
+    public static String generateThreadDump()
+    {
+        StringBuilder dump = new StringBuilder();
+        ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+        for (ThreadInfo thread : threadMXBean.getThreadInfo(threadMXBean.getAllThreadIds(), 400))
+        {
+            dump.append('"').append(thread.getThreadName()).append("\" ");
+            dump.append(" #").append(thread.getThreadId());
+            dump.append("\n   java.lang.Thread.State: ");
+            Thread.State state = thread.getThreadState();
+            dump.append(state.name());
+            if (state == Thread.State.BLOCKED || state == Thread.State.WAITING || state == Thread.State.TIMED_WAITING)
+            {
+                dump.append(" (locked on ");
+                dump.append(thread.getLockInfo());
+                dump.append(')');
+            }
+            for (StackTraceElement stackTraceElement : thread.getStackTrace())
+            {
+                dump.append("\n\tat ");
+                dump.append(stackTraceElement);
+            }
+            dump.append("\n\n");
+        }
+        return dump.toString();
     }
 
     @Test
     public void testAfterContentTransformerClosingFilesOnClientRequestException() throws Exception
     {
-        final Path targetTestsDir = prepareTargetTestsDir();
+        Path targetTestsDir = workDir.getEmptyPathDir();
 
         startServer(new HttpServlet()
         {
@@ -1074,7 +1125,7 @@ public class AsyncMiddleManServletTest
                 IO.copy(request.getInputStream(), IO.getNullStream());
             }
         });
-        final CountDownLatch destroyLatch = new CountDownLatch(1);
+        CountDownLatch destroyLatch = new CountDownLatch(1);
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
@@ -1109,7 +1160,7 @@ public class AsyncMiddleManServletTest
         startClient();
 
         // Send only part of the content; the proxy will idle timeout.
-        final byte[] data = new byte[]{'c', 'a', 'f', 'e'};
+        byte[] data = new byte[]{'c', 'a', 'f', 'e'};
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
             .body(new BytesRequestContent(data)
             {
@@ -1119,7 +1170,7 @@ public class AsyncMiddleManServletTest
                     return data.length + 1;
                 }
             })
-            .timeout(5 * idleTimeout, TimeUnit.MILLISECONDS)
+            .timeout(15 * idleTimeout, TimeUnit.MILLISECONDS)
             .send();
 
         assertTrue(destroyLatch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
@@ -1129,9 +1180,9 @@ public class AsyncMiddleManServletTest
     @Test
     public void testAfterContentTransformerClosingFilesOnServerResponseException() throws Exception
     {
-        final Path targetTestsDir = prepareTargetTestsDir();
+        Path targetTestsDir = workDir.getEmptyPathDir();
 
-        final CountDownLatch serviceLatch = new CountDownLatch(1);
+        CountDownLatch serviceLatch = new CountDownLatch(1);
         startServer(new HttpServlet()
         {
             @Override
@@ -1146,7 +1197,7 @@ public class AsyncMiddleManServletTest
                 serviceLatch.countDown();
             }
         });
-        final CountDownLatch destroyLatch = new CountDownLatch(1);
+        CountDownLatch destroyLatch = new CountDownLatch(1);
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
@@ -1179,7 +1230,7 @@ public class AsyncMiddleManServletTest
         startClient();
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-            .timeout(5, TimeUnit.SECONDS)
+            .timeout(15, TimeUnit.SECONDS)
             .send();
 
         assertTrue(serviceLatch.await(5, TimeUnit.SECONDS));
@@ -1199,7 +1250,7 @@ public class AsyncMiddleManServletTest
         testAfterContentTransformerDoNoTransform(true, true);
     }
 
-    private void testAfterContentTransformerDoNoTransform(final boolean readSource, final boolean useDisk) throws Exception
+    private void testAfterContentTransformerDoNoTransform(boolean readSource, boolean useDisk) throws Exception
     {
         String key0 = "id";
         long value0 = 1;
@@ -1268,7 +1319,7 @@ public class AsyncMiddleManServletTest
                 response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Basic realm=\"test\"");
             }
         });
-        final AtomicBoolean transformed = new AtomicBoolean();
+        AtomicBoolean transformed = new AtomicBoolean();
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
@@ -1299,7 +1350,7 @@ public class AsyncMiddleManServletTest
     public void testProxyRequestHeadersSentWhenDiscardingContent() throws Exception
     {
         startServer(new EchoHttpServlet());
-        final CountDownLatch proxyRequestLatch = new CountDownLatch(1);
+        CountDownLatch proxyRequestLatch = new CountDownLatch(1);
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
@@ -1347,7 +1398,7 @@ public class AsyncMiddleManServletTest
     public void testProxyRequestHeadersNotSentUntilContent() throws Exception
     {
         startServer(new EchoHttpServlet());
-        final CountDownLatch proxyRequestLatch = new CountDownLatch(1);
+        CountDownLatch proxyRequestLatch = new CountDownLatch(1);
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
@@ -1395,7 +1446,7 @@ public class AsyncMiddleManServletTest
     public void testProxyRequestHeadersNotSentUntilFirstContent() throws Exception
     {
         startServer(new EchoHttpServlet());
-        final CountDownLatch proxyRequestLatch = new CountDownLatch(1);
+        CountDownLatch proxyRequestLatch = new CountDownLatch(1);
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
@@ -1464,7 +1515,7 @@ public class AsyncMiddleManServletTest
     @Test
     public void testTransparentProxyWithIdentityContentTransformer() throws Exception
     {
-        final String target = "/test";
+        String target = "/test";
         startServer(new HttpServlet()
         {
             @Override
@@ -1475,7 +1526,7 @@ public class AsyncMiddleManServletTest
                 resp.setStatus(target.equals(req.getRequestURI()) ? 200 : 404);
             }
         });
-        final String proxyTo = "http://localhost:" + serverConnector.getLocalPort();
+        String proxyTo = "http://localhost:" + serverConnector.getLocalPort();
         AsyncMiddleManServlet proxyServlet = new AsyncMiddleManServlet.Transparent()
         {
             @Override
@@ -1496,21 +1547,6 @@ public class AsyncMiddleManServletTest
             .send();
         assertEquals(200, response.getStatus());
         assertTrue(response.getHeaders().contains(PROXIED_HEADER));
-    }
-
-    private Path prepareTargetTestsDir() throws IOException
-    {
-        final Path targetTestsDir = MavenTestingUtils.getTargetTestingDir().toPath();
-        Files.createDirectories(targetTestsDir);
-        try (DirectoryStream<Path> files = Files.newDirectoryStream(targetTestsDir, "*.*"))
-        {
-            for (Path file : files)
-            {
-                if (!Files.isDirectory(file))
-                    Files.delete(file);
-            }
-        }
-        return targetTestsDir;
     }
 
     private void sleep(long delay)

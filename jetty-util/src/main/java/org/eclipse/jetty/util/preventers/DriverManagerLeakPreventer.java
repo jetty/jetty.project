@@ -34,7 +34,7 @@ public class DriverManagerLeakPreventer extends AbstractLeakPreventer
     public void prevent(ClassLoader loader)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Pinning DriverManager classloader with " + loader);
+            LOG.debug("Pinning DriverManager classloader with {}", loader);
         DriverManager.getDrivers();
     }
 }

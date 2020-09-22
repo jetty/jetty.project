@@ -20,6 +20,7 @@ package org.eclipse.jetty.memcached.sessions;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -57,7 +58,7 @@ public class MemcachedTestHelper
         }
 
         @Override
-        public boolean exists(String id) throws Exception
+        public boolean doExists(String id) throws Exception
         {
             return _store.get(id) != null;
         }
@@ -92,10 +93,9 @@ public class MemcachedTestHelper
         }
 
         @Override
-        public Set<String> doGetExpired(Set<String> candidates)
+        public Set<String> doCheckExpired(Set<String> candidates, long time)
         {
             Set<String> expiredIds = new HashSet<>();
-            long now = System.currentTimeMillis();
             if (candidates != null)
             {
                 for (String id : candidates)
@@ -103,7 +103,7 @@ public class MemcachedTestHelper
                     SessionData sd = _store.get(id);
                     if (sd == null)
                         expiredIds.add(id);
-                    else if (sd.isExpiredAt(now))
+                    else if (sd.isExpiredAt(time))
                         expiredIds.add(id);
                 }
             }
@@ -111,11 +111,23 @@ public class MemcachedTestHelper
             for (String id : _store.keySet())
             {
                 SessionData sd = _store.get(id);
-                if (sd.isExpiredAt(now))
+                if (sd.isExpiredAt(time))
                     expiredIds.add(id);
             }
 
             return expiredIds;
+        }
+        
+        @Override
+        public Set<String> doGetExpired(long timeLimit)
+        {
+            return Collections.emptySet();
+        }
+
+        @Override
+        public void doCleanOrphans(long timeLimit)
+        {
+            //noop
         }
 
         @Override
@@ -139,6 +151,7 @@ public class MemcachedTestHelper
 
     private static final Logger MEMCACHED_LOG = LoggerFactory.getLogger("org.eclipse.jetty.memcached.sessions.MemcachedLogs");
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     static GenericContainer memcached =
         new GenericContainer("memcached:" + System.getProperty("memcached.docker.version", "1.6.6"))
             .withLogConsumer(new Slf4jLogConsumer(MEMCACHED_LOG));

@@ -24,15 +24,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Session;
@@ -53,6 +52,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ProxyTest
@@ -137,14 +137,49 @@ public class ProxyTest
     }
 
     @Test
-    public void testServerBigDownloadSlowClient() throws Exception
+    public void testHTTPVersion() throws Exception
     {
-        final CountDownLatch serverLatch = new CountDownLatch(1);
-        final byte[] content = new byte[1024 * 1024];
         startServer(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+            {
+                assertEquals(HttpVersion.HTTP_1_1.asString(), request.getProtocol());
+            }
+        });
+        Map<String, String> params = new HashMap<>();
+        params.put("proxyTo", "http://localhost:" + serverConnector.getLocalPort());
+        startProxy(new AsyncProxyServlet.Transparent(), params);
+        startClient();
+
+        CountDownLatch clientLatch = new CountDownLatch(1);
+        Session session = newClient(new Session.Listener.Adapter());
+        MetaData.Request metaData = newRequest("GET", "/", HttpFields.EMPTY);
+        HeadersFrame frame = new HeadersFrame(metaData, null, true);
+        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                assertTrue(frame.isEndStream());
+                MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                clientLatch.countDown();
+            }
+        });
+
+        assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testServerBigDownloadSlowClient() throws Exception
+    {
+        CountDownLatch serverLatch = new CountDownLatch(1);
+        byte[] content = new byte[1024 * 1024];
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 response.getOutputStream().write(content);
                 serverLatch.countDown();
@@ -152,18 +187,10 @@ public class ProxyTest
         });
         Map<String, String> params = new HashMap<>();
         params.put("proxyTo", "http://localhost:" + serverConnector.getLocalPort());
-        startProxy(new AsyncProxyServlet.Transparent()
-        {
-            @Override
-            protected void sendProxyRequest(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest)
-            {
-                proxyRequest.version(HttpVersion.HTTP_1_1);
-                super.sendProxyRequest(clientRequest, proxyResponse, proxyRequest);
-            }
-        }, params);
+        startProxy(new AsyncProxyServlet.Transparent(), params);
         startClient();
 
-        final CountDownLatch clientLatch = new CountDownLatch(1);
+        CountDownLatch clientLatch = new CountDownLatch(1);
         Session session = newClient(new Session.Listener.Adapter());
         MetaData.Request metaData = newRequest("GET", "/", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);

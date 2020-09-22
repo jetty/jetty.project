@@ -81,7 +81,7 @@ public class PreDestroyCallback extends LifeCycleCallback
         }
         catch (Exception e)
         {
-            LOG.warn("Ignoring exception thrown on preDestroy call to " + getTargetClass() + "." + getTarget().getName(), e);
+            LOG.warn("Ignoring exception thrown on preDestroy call to {}.{}", getTargetClass(), getTarget().getName(), e);
         }
     }
 

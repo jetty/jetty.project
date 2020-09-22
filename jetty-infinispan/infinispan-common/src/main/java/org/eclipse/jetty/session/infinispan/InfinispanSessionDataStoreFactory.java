@@ -30,7 +30,7 @@ import org.infinispan.commons.api.BasicCache;
 public class InfinispanSessionDataStoreFactory extends AbstractSessionDataStoreFactory
 {
     int _infinispanIdleTimeoutSec;
-    BasicCache<String, SessionData> _cache;
+    BasicCache<String, InfinispanSessionData> _cache;
     protected QueryManager _queryManager;
 
     /**
@@ -66,7 +66,7 @@ public class InfinispanSessionDataStoreFactory extends AbstractSessionDataStoreF
      *
      * @return the cache
      */
-    public BasicCache<String, SessionData> getCache()
+    public BasicCache<String, InfinispanSessionData> getCache()
     {
         return _cache;
     }
@@ -76,7 +76,7 @@ public class InfinispanSessionDataStoreFactory extends AbstractSessionDataStoreF
      *
      * @param cache the cache
      */
-    public void setCache(BasicCache<String, SessionData> cache)
+    public void setCache(BasicCache<String, InfinispanSessionData> cache)
     {
         this._cache = cache;
     }

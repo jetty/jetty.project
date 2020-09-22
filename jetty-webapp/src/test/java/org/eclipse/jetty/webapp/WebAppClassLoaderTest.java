@@ -20,7 +20,6 @@ package org.eclipse.jetty.webapp;
 
 import java.io.InputStream;
 import java.lang.instrument.ClassFileTransformer;
-import java.lang.instrument.IllegalClassFormatException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
@@ -45,6 +44,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -79,7 +79,7 @@ public class WebAppClassLoaderTest
         assertThat("Can Load Class [" + clazz + "]", _loader.loadClass(clazz), notNullValue());
     }
 
-    public void assertCanLoadResource(String res) throws ClassNotFoundException
+    public void assertCanLoadResource(String res)
     {
         assertThat("Can Load Resource [" + res + "]", _loader.getResource(res), notNullValue());
     }
@@ -112,7 +112,7 @@ public class WebAppClassLoaderTest
         assertCantLoadClass("org.eclipse.jetty.webapp.Configuration");
 
         Class<?> clazzA = _loader.loadClass("org.acme.webapp.ClassInJarA");
-        assertTrue(clazzA.getField("FROM_PARENT") != null);
+        assertNotNull(clazzA.getField("FROM_PARENT"));
     }
 
     @Test
@@ -131,21 +131,18 @@ public class WebAppClassLoaderTest
 
         Class<?> clazzA = _loader.loadClass("org.acme.webapp.ClassInJarA");
         assertThrows(NoSuchFieldException.class, () ->
-        {
-            clazzA.getField("FROM_PARENT");
-        });
+            clazzA.getField("FROM_PARENT"));
     }
 
     @Test
     public void testClassFileTranslations() throws Exception
     {
-        final List<Object> results = new ArrayList<Object>();
+        final List<Object> results = new ArrayList<>();
 
         _loader.addTransformer(new ClassFileTransformer()
         {
             @Override
             public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer)
-                throws IllegalClassFormatException
             {
                 results.add(loader);
                 byte[] b = new byte[classfileBuffer.length];
@@ -160,7 +157,6 @@ public class WebAppClassLoaderTest
         {
             @Override
             public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer)
-                throws IllegalClassFormatException
             {
                 results.add(className);
                 byte[] b = new byte[classfileBuffer.length];
@@ -196,7 +192,6 @@ public class WebAppClassLoaderTest
         {
             @Override
             public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer)
-                throws IllegalClassFormatException
             {
                 return null;
             }
@@ -235,7 +230,6 @@ public class WebAppClassLoaderTest
         assertCantLoadClass("org.eclipse.jetty.webapp.JarScanner");
     }
 
-    @SuppressWarnings("deprecation")
     @Test
     public void testSystemServerClassDeprecated() throws Exception
     {
@@ -377,7 +371,7 @@ public class WebAppClassLoaderTest
     }
 
     @Test
-    public void ordering() throws Exception
+    public void testClashingResource() throws Exception
     {
         // The existence of a URLStreamHandler changes the behavior
         assumeTrue(URLStreamHandlerUtil.getFactory() == null, "URLStreamHandler changes behavior, skip test");

@@ -18,17 +18,23 @@
 
 package org.eclipse.jetty.tests.distribution;
 
+import java.io.File;
+import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -150,6 +156,52 @@ public class BadAppTests extends AbstractDistributionTest
                 assertEquals(HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus());
                 assertThat(response.getContentAsString(), containsString("<h2>HTTP ERROR 503 Service Unavailable</h2>"));
                 assertThat(response.getContentAsString(), containsString("<tr><th>URI:</th><td>/badapp/</td></tr>"));
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "",
+        "--jpms",
+    })
+    public void testBadWebSocketWebapp(String arg) throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        DistributionTester distribution = DistributionTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+        String[] args1 = {
+            "--create-startd",
+            "--approve-all-licenses",
+            "--add-to-start=resources,server,http,webapp,deploy,jsp,jmx,servlet,servlets,websocket"
+        };
+
+        try (DistributionTester.Run run1 = distribution.start(args1))
+        {
+            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            File badWebApp = distribution.resolveArtifact("org.eclipse.jetty.tests:test-bad-websocket-webapp:war:" + jettyVersion);
+            distribution.installWarFile(badWebApp, "test");
+
+            int port = distribution.freePort();
+            String[] args2 = {arg, "jetty.http.port=" + port};
+
+            try (DistributionTester.Run run2 = distribution.start(args2))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+                assertFalse(run2.getLogs().stream().anyMatch(s -> s.contains("LinkageError")));
+
+                startHttpClient();
+                WebSocketClient wsClient = new WebSocketClient(client);
+                wsClient.start();
+                URI serverUri = URI.create("ws://localhost:" + port);
+
+                // Verify /test is not able to establish a WebSocket connection.
+                ContentResponse response = client.GET(serverUri.resolve("/test/badonopen/a"));
+                assertEquals(HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus());
             }
         }
     }

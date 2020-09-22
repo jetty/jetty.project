@@ -119,7 +119,7 @@ public class HouseKeeper extends AbstractLifeCycle
                     _ownScheduler = true;
                     _scheduler.start();
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Using own scheduler for scavenging");
+                        LOG.debug("{} using own scheduler for scavenging", _sessionIdManager.getWorkerName());
                 }
                 else if (!_scheduler.isStarted())
                     throw new IllegalStateException("Shared scheduler not started");
@@ -130,7 +130,8 @@ public class HouseKeeper extends AbstractLifeCycle
                 _task.cancel();
             if (_runner == null)
                 _runner = new Runner();
-            LOG.info("{} Scavenging every {}ms", _sessionIdManager.getWorkerName(), _intervalMs);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} scavenging every {}ms", _sessionIdManager.getWorkerName(), _intervalMs);
             _task = _scheduler.schedule(_runner, _intervalMs, TimeUnit.MILLISECONDS);
         }
     }
@@ -147,7 +148,8 @@ public class HouseKeeper extends AbstractLifeCycle
             if (_task != null)
             {
                 _task.cancel();
-                LOG.info("{} Stopped scavenging", _sessionIdManager.getWorkerName());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} stopped scavenging", _sessionIdManager.getWorkerName());
             }
             _task = null;
             if (_ownScheduler && _scheduler != null)
@@ -186,13 +188,14 @@ public class HouseKeeper extends AbstractLifeCycle
                 if (sec <= 0)
                 {
                     _intervalMs = 0L;
-                    LOG.info("{} Scavenging disabled", _sessionIdManager.getWorkerName());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} scavenging disabled", _sessionIdManager.getWorkerName());
                     stopScavenging();
                 }
                 else
                 {
                     if (sec < 10)
-                        LOG.warn("{} Short interval of {}sec for session scavenging.", _sessionIdManager.getWorkerName(), sec);
+                        LOG.warn("{} short interval of {}sec for session scavenging.", _sessionIdManager.getWorkerName(), sec);
 
                     _intervalMs = sec * 1000L;
 

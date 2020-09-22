@@ -164,7 +164,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
             Violation section = Violation.valueOf(element);
             if (section == null)
             {
-                LOG.warn("Unknown section '" + element + "' in HttpCompliance spec: " + spec);
+                LOG.warn("Unknown section '{}' in HttpCompliance spec: {}", element, spec);
                 continue;
             }
             if (exclude)

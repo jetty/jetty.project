@@ -66,7 +66,7 @@ public class HazelcastTestHelper
         Config config = new Config();
         config.setInstanceName(_hazelcastInstanceName);
         config.setNetworkConfig(new NetworkConfig().setJoin(new JoinConfig().setMulticastConfig(new MulticastConfig().setEnabled(false))));
-        config.addMapConfig(new MapConfig().setName(_name));
+        config.addMapConfig(new MapConfig().setName(_name)).setClassLoader(null);
         config.getSerializationConfig().addSerializerConfig(_serializerConfig);
         _instance = Hazelcast.getOrCreateHazelcastInstance(config);
     }
@@ -81,6 +81,7 @@ public class HazelcastTestHelper
         HazelcastSessionDataStoreFactory factory = new HazelcastSessionDataStoreFactory();
         factory.setOnlyClient(onlyClient);
         factory.setMapName(_name);
+        factory.setUseQueries(true);
         if (onlyClient)
         {
             ClientNetworkConfig clientNetworkConfig = new ClientNetworkConfig()
@@ -109,7 +110,7 @@ public class HazelcastTestHelper
 
     public void createSession(SessionData data)
     {
-        _instance.getMap(_name).put(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId(), data);
+        Object o = _instance.getMap(_name).put(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId(), data);
     }
 
     public boolean checkSessionExists(SessionData data)

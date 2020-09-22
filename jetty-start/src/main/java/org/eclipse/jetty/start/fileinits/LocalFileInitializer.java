@@ -78,7 +78,7 @@ public class LocalFileInitializer extends FileInitializer
             // Create directory
             boolean mkdir = FS.ensureDirectoryExists(destination);
             if (mkdir)
-                StartLog.log("MKDIR", _basehome.toShortForm(destination));
+                StartLog.info("mkdir " + _basehome.toShortForm(destination));
             return mkdir;
         }
 

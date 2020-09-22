@@ -197,7 +197,7 @@ public class ResponseContentParser extends StreamContentParser
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Exception while invoking listener " + listener, x);
+                    LOG.debug("Exception while invoking listener {}", listener, x);
             }
         }
 
@@ -210,7 +210,7 @@ public class ResponseContentParser extends StreamContentParser
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Exception while invoking listener " + listener, x);
+                    LOG.debug("Exception while invoking listener {}", listener, x);
             }
         }
 
@@ -223,7 +223,7 @@ public class ResponseContentParser extends StreamContentParser
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Exception while invoking listener " + listener, x);
+                    LOG.debug("Exception while invoking listener {}", listener, x);
             }
         }
 
@@ -247,7 +247,7 @@ public class ResponseContentParser extends StreamContentParser
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Exception while invoking listener " + listener, x);
+                    LOG.debug("Exception while invoking listener {}", listener, x);
                 return false;
             }
         }
@@ -283,7 +283,7 @@ public class ResponseContentParser extends StreamContentParser
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Exception while invoking listener " + listener, x);
+                    LOG.debug("Exception while invoking listener {}", listener, x);
                 return false;
             }
         }
@@ -323,7 +323,7 @@ public class ResponseContentParser extends StreamContentParser
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Exception while invoking listener " + listener, x);
+                    LOG.debug("Exception while invoking listener {}", listener, x);
             }
         }
     }

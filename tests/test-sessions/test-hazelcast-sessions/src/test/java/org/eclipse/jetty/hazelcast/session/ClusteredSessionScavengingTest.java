@@ -29,7 +29,6 @@ import org.junit.jupiter.api.BeforeEach;
 public class ClusteredSessionScavengingTest
     extends AbstractClusteredSessionScavengingTest
 {
-
     HazelcastSessionDataStoreFactory factory;
 
     HazelcastTestHelper _testHelper;

@@ -24,27 +24,29 @@
     <logback.version>1.3.0-alpha5</logback.version>
     <spring-version>5.1.1.RELEASE</spring-version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
-    <servlet.api.version>4.0.3</servlet.api.version>
+    <servlet.api.version>4.0.4</servlet.api.version>
     <websocket.api.version>1.1.2</websocket.api.version>
     <jsp.version>9.0.29</jsp.version>
     <infinispan.version>9.4.8.Final</infinispan.version>
+    <hazelcast.version>4.0.1</hazelcast.version>
     <conscrypt.version>2.4.0</conscrypt.version>
-    <asm.version>7.3.1</asm.version>
-    <jmh.version>1.21</jmh.version>
+    <asm.version>8.0.1</asm.version>
+    <jmh.version>1.25.2</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
-    <tycho-version>1.4.0</tycho-version>
+    <tycho-version>2.0.0</tycho-version>
     <junit.version>5.6.2</junit.version>
     <maven.version>3.6.0</maven.version>
     <maven.resolver.version>1.3.1</maven.resolver.version>
-    <weld.version>3.1.2.Final</weld.version>
+    <weld.version>3.1.3.Final</weld.version>
     <jetty.perf-helper.version>1.0.5</jetty.perf-helper.version>
+    <ant.version>1.10.8</ant.version>
     <unix.socket.tmp></unix.socket.tmp>
     <!-- enable or not TestTracker junit5 extension i.e log message when test method is starting -->
     <jetty.testtracker.log>false</jetty.testtracker.log>
     <jetty.surefire.argLine>-Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx2g -Xms2g -Xlog:gc:stderr:time,level,tags</jetty.surefire.argLine>
 
     <!-- some maven plugins versions -->
-    <maven.surefire.version>3.0.0-M5</maven.surefire.version>
+    <maven.surefire.version>3.0.0-M4</maven.surefire.version>
     <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.1.2</maven.dependency.plugin.version>
     <maven.resources.plugin.version>3.2.0</maven.resources.plugin.version>
@@ -757,7 +759,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
-          <version>1.6.0</version>
+          <version>3.0.0</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
@@ -938,9 +940,9 @@
           </configuration>
         </plugin>
         <plugin>
-          <groupId>com.github.madgnome</groupId>
+          <groupId>org.mortbay.jetty</groupId>
           <artifactId>h2spec-maven-plugin</artifactId>
-          <version>0.6</version>
+          <version>1.0.0</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -1127,7 +1129,12 @@
       <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-unixsocket</artifactId>
-        <version>0.24</version>
+        <version>0.34</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.jnr</groupId>
+        <artifactId>jnr-ffi</artifactId>
+        <version>2.1.16</version>
       </dependency>
       <dependency>
         <groupId>org.apache.derby</groupId>
@@ -1137,13 +1144,23 @@
       <dependency>
         <groupId>org.apache.derby</groupId>
         <artifactId>derbytools</artifactId>
-        <version>10.14.2.0</version>
+        <version>10.15.2.0</version>
       </dependency>
       <!-- avoid depending on a range dependency from a transitive dependency -->
       <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-core</artifactId>
         <version>1.0.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.ant</groupId>
+        <artifactId>ant</artifactId>
+        <version>${ant.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.ant</groupId>
+        <artifactId>ant-launcher</artifactId>
+        <version>${ant.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

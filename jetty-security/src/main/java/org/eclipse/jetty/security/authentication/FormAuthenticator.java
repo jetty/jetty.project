@@ -295,7 +295,7 @@ public class FormAuthenticator extends LoginAuthenticator
 
                 // not authenticated
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Form authentication FAILED for " + StringUtil.printable(username));
+                    LOG.debug("Form authentication FAILED for {}", StringUtil.printable(username));
                 if (_formErrorPage == null)
                 {
                     LOG.debug("auth failed {}->403", username);

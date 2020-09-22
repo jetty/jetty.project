@@ -647,7 +647,7 @@ public class ConnectHandler extends HandlerWrapper
                 {
                     buffer = null;
                     if (LOG.isDebugEnabled())
-                        LOG.debug(this + " failed to write initial " + remaining + " bytes to server", x);
+                        LOG.debug("{} failed to write initial {} bytes to server", this, remaining, x);
                     close();
                     getConnection().close();
                 }

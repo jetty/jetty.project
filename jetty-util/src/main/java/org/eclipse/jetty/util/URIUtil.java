@@ -526,7 +526,8 @@ public class URIUtil
         }
         catch (NotUtf8Exception e)
         {
-            LOG.debug(path.substring(offset, offset + length) + " " + e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} {}", path.substring(offset, offset + length), e.toString());
             return decodeISO88591Path(path, offset, length);
         }
         catch (IllegalArgumentException e)

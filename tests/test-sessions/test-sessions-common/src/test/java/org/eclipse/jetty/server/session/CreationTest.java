@@ -28,14 +28,18 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionEvent;
+import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.servlet.ListenerHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.servlet.Source;
 import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -55,7 +59,62 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class CreationTest
 {
+    static ThreadLocal<HttpServletRequest> currentRequest = new ThreadLocal<>();
 
+    @Test
+    public void testRequestGetSessionInsideListener() throws Exception
+    {
+        String contextPath = "";
+        String servletMapping = "/server";
+
+        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
+        SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
+
+        TestServer server1 = new TestServer(0, -1, -1, cacheFactory, storeFactory);
+        TestServlet servlet = new TestServlet();
+        ServletHolder holder = new ServletHolder(servlet);
+        ServletContextHandler contextHandler = server1.addContext(contextPath);
+      
+        ListenerHolder h = contextHandler.getServletHandler().newListenerHolder(Source.EMBEDDED);
+        h.setListener(new MySessionListener());
+        contextHandler.getServletHandler().addListener(h);
+        
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        server1.getServerConnector().addBean(scopeListener);
+        contextHandler.addServlet(holder, servletMapping);
+        servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
+        server1.start();
+        int port1 = server1.getPort();
+        try (StacklessLogging stackless = new StacklessLogging(CreationTest.class.getPackage()))
+        {
+            HttpClient client = new HttpClient();
+            client.start();
+            
+            //make a session
+            String url = "http://localhost:" + port1 + contextPath + servletMapping + "?action=create&check=false";
+
+            CountDownLatch synchronizer = new CountDownLatch(1);
+            scopeListener.setExitSynchronizer(synchronizer);
+
+            //make a request to set up a session on the server
+            ContentResponse response = client.GET(url);
+            assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+
+            String sessionCookie = response.getHeaders().get("Set-Cookie");
+            assertTrue(sessionCookie != null);
+
+            //ensure request has finished being handled
+            synchronizer.await(5, TimeUnit.SECONDS);
+        }
+        finally
+        {
+            server1.stop();
+        }
+
+    }
+    
+    
     /**
      * Test creating a session when the cache is set to
      * evict after the request exits.
@@ -386,6 +445,21 @@ public class CreationTest
         }
     }
 
+    public static class MySessionListener implements HttpSessionListener
+    {
+        @Override
+        public void sessionCreated(HttpSessionEvent se)
+        {
+            currentRequest.get().getSession(true);
+        }
+
+        @Override
+        public void sessionDestroyed(HttpSessionEvent se)
+        {
+        }
+
+    }
+    
     public static class TestServlet extends HttpServlet
     {
         private static final long serialVersionUID = 1L;
@@ -435,6 +509,7 @@ public class CreationTest
             }
             else if (action != null && action.startsWith("create"))
             {
+                currentRequest.set(request);
                 HttpSession session = request.getSession(true);
                 _id = session.getId();
                 session.setAttribute("value", 1);

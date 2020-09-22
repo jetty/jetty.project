@@ -41,6 +41,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -899,7 +900,6 @@ public class HttpFieldsTest
     {
         HttpFields.Mutable fields = HttpFields.build();
         assertThat(fields.size(), is(0));
-
         fields.computeField("Test", (n, f) -> null);
         assertThat(fields.size(), is(0));
 
@@ -921,5 +921,141 @@ public class HttpFieldsTest
 
         fields.computeField("TEST", (n, f) -> null);
         assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value", "After: value"));
+    }
+
+    @Test
+    public void testEnsureSingleValue()
+    {
+        HttpFields.Mutable fields = HttpFields.build();
+
+        // 0 existing case
+        assertThat(fields.size(), is(0));
+        fields.ensureField(new PreEncodedHttpField(HttpHeader.VARY, "one"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one"));
+        assertThat(fields.getField(0), instanceOf(PreEncodedHttpField.class));
+
+        // 1 existing cases
+        fields.ensureField(new HttpField(HttpHeader.VARY, "one"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one"));
+;
+        fields.ensureField(new HttpField(HttpHeader.VARY, "two"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one, two"));
+
+        // many existing cases
+        fields.put(new HttpField(HttpHeader.VARY, "one"));
+        fields.add(new HttpField(HttpHeader.VARY, "two"));
+        fields.ensureField(new HttpField(HttpHeader.VARY, "one"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one, two"));
+
+        fields.put(new HttpField(HttpHeader.VARY, "one"));
+        fields.add(new HttpField(HttpHeader.VARY, "two"));
+        fields.ensureField(new HttpField(HttpHeader.VARY, "three"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one, two, three"));
+    }
+
+    @Test
+    public void testEnsureMultiValue()
+    {
+        HttpFields.Mutable fields = HttpFields.build();
+
+        // zero existing case
+        assertThat(fields.size(), is(0));
+        fields.ensureField(new PreEncodedHttpField(HttpHeader.VARY, "one, two"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one, two"));
+        assertThat(fields.getField(0), instanceOf(PreEncodedHttpField.class));
+
+        // one existing cases
+        fields.ensureField(new HttpField(HttpHeader.VARY, "two, one"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one, two"));
+
+        fields.ensureField(new HttpField(HttpHeader.VARY, "three, one"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one, two, three"));
+
+        fields.ensureField(new HttpField(HttpHeader.VARY, "four, five"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one, two, three, four, five"));
+
+        // many existing cases
+        fields.put(new HttpField(HttpHeader.VARY, "one"));
+        fields.add(new HttpField(HttpHeader.VARY, "two"));
+        fields.ensureField(new HttpField(HttpHeader.VARY, "two, one"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one, two"));
+
+        fields.put(new HttpField(HttpHeader.VARY, "one"));
+        fields.add(new HttpField(HttpHeader.VARY, "two"));
+        fields.ensureField(new HttpField(HttpHeader.VARY, "three, two"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one, two, three"));
+
+        fields.put(new HttpField(HttpHeader.VARY, "one"));
+        fields.add(new HttpField(HttpHeader.VARY, "two"));
+        fields.ensureField(new HttpField(HttpHeader.VARY, "three, four"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one, two, three, four"));
+    }
+
+    @Test
+    public void testEnsureStringSingleValue()
+    {
+        HttpFields.Mutable fields = HttpFields.build();
+
+        // 0 existing case
+        assertThat(fields.size(), is(0));
+        fields.ensureField(new PreEncodedHttpField("Test", "one"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Test: one"));
+        assertThat(fields.getField(0), instanceOf(PreEncodedHttpField.class));
+
+        // 1 existing cases
+        fields.ensureField(new HttpField("Test", "one"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Test: one"));
+        ;
+        fields.ensureField(new HttpField("Test", "two"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Test: one, two"));
+
+        // many existing cases
+        fields.put(new HttpField("Test", "one"));
+        fields.add(new HttpField("Test", "two"));
+        fields.ensureField(new HttpField("Test", "one"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Test: one, two"));
+
+        fields.put(new HttpField("Test", "one"));
+        fields.add(new HttpField("Test", "two"));
+        fields.ensureField(new HttpField("Test", "three"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Test: one, two, three"));
+    }
+
+    @Test
+    public void testEnsureStringMultiValue()
+    {
+        HttpFields.Mutable fields = HttpFields.build();
+
+        // zero existing case
+        assertThat(fields.size(), is(0));
+        fields.ensureField(new PreEncodedHttpField("Test", "one, two"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Test: one, two"));
+        assertThat(fields.getField(0), instanceOf(PreEncodedHttpField.class));
+
+        // one existing cases
+        fields.ensureField(new HttpField("Test", "two, one"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Test: one, two"));
+
+        fields.ensureField(new HttpField("Test", "three, one"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Test: one, two, three"));
+
+        fields.ensureField(new HttpField("Test", "four, five"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Test: one, two, three, four, five"));
+
+        // many existing cases
+        fields.put(new HttpField("Test", "one"));
+        fields.add(new HttpField("Test", "two"));
+        fields.ensureField(new HttpField("Test", "two, one"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Test: one, two"));
+
+        fields.put(new HttpField("Test", "one"));
+        fields.add(new HttpField("Test", "two"));
+        fields.ensureField(new HttpField("Test", "three, two"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Test: one, two, three"));
+
+        fields.put(new HttpField("Test", "one"));
+        fields.add(new HttpField("Test", "two"));
+        fields.ensureField(new HttpField("Test", "three, four"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Test: one, two, three, four"));
     }
 }

@@ -168,7 +168,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             public void onFillable()
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Proxy v1 onFillable current index = ", _index);
+                    LOG.debug("Proxy v1 onFillable current index = {}", _index);
                 try
                 {
                     while (_index < LF_INDEX)
@@ -493,7 +493,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 try
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Proxy v2 onFillable header parsed? ", _headerParsed);
+                        LOG.debug("Proxy v2 onFillable header parsed? {}", _headerParsed);
                     while (!_headerParsed)
                     {
                         // Read data
@@ -541,7 +541,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 }
                 catch (Throwable x)
                 {
-                    LOG.warn("Proxy v2 error for " + getEndPoint(), x);
+                    LOG.warn("Proxy v2 error for {}", getEndPoint(), x);
                     releaseAndClose();
                 }
             }

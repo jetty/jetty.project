@@ -13,6 +13,7 @@
        <Set name="deleteUnrestorableFiles" property="jetty.session.file.deleteUnrestorableFiles"/>
        <Set name="storeDir" property="jetty.session.file.storeDir"/>
        <Set name="savePeriodSec" property="jetty.session.savePeriod.seconds"/>
+       <Set name="gracePeriodSec" property="jetty.session.gracePeriod.seconds"/>
     </New>
    </Arg>
   </Call>

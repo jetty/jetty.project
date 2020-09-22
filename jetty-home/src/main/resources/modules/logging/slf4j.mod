@@ -1,8 +1,9 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Configure logging to use slf4j with no impl
-(If you don't select an impl, then NOP will be used by slf4j)
+Configure logging to use SLF4J.
+A specific implementation of SLF4J is not enabled. 
+If one is not selected then NOP implementation will be used.
 
 [tags]
 logging

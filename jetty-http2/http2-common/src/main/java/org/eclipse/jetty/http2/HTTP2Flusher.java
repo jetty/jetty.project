@@ -115,6 +115,25 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         return false;
     }
 
+    public boolean append(List<Entry> list)
+    {
+        Throwable closed;
+        synchronized (this)
+        {
+            closed = terminated;
+            if (closed == null)
+            {
+                list.forEach(entries::offer);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Appended {}, entries={}", list, entries.size());
+            }
+        }
+        if (closed == null)
+            return true;
+        list.forEach(entry -> closed(entry, closed));
+        return false;
+    }
+
     private int getWindowQueueSize()
     {
         try (AutoLock l = lock.lock())
@@ -218,7 +237,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                 catch (HpackException.StreamException failure)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Failure generating " + entry, failure);
+                        LOG.debug("Failure generating {}", entry, failure);
                     entry.failed(failure);
                     pending.remove();
                 }
@@ -226,7 +245,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                 {
                     // Failure to generate the entry is catastrophic.
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Failure generating " + entry, failure);
+                        LOG.debug("Failure generating {}", entry, failure);
                     failed(failure);
                     return Action.SUCCEEDED;
                 }
@@ -415,6 +434,11 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         protected abstract boolean generate(ByteBufferPool.Lease lease) throws HpackException;
 
         public abstract long onFlushed(long bytes) throws IOException;
+
+        boolean hasHighPriority()
+        {
+            return false;
+        }
 
         @Override
         public void failed(Throwable x)

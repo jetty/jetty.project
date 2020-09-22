@@ -34,6 +34,7 @@ public class TestMessageHandler extends MessageHandler
     public CoreSession coreSession;
     public BlockingQueue<String> textMessages = new BlockingArrayQueue<>();
     public BlockingQueue<ByteBuffer> binaryMessages = new BlockingArrayQueue<>();
+    public CloseStatus closeStatus;
     public volatile Throwable error;
     public CountDownLatch openLatch = new CountDownLatch(1);
     public CountDownLatch errorLatch = new CountDownLatch(1);
@@ -42,26 +43,14 @@ public class TestMessageHandler extends MessageHandler
     @Override
     public void onOpen(CoreSession coreSession, Callback callback)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("onOpen {}", coreSession);
-        this.coreSession = coreSession;
         super.onOpen(coreSession, callback);
+        this.coreSession = coreSession;
         openLatch.countDown();
-    }
-
-    @Override
-    public void onFrame(Frame frame, Callback callback)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("onFrame {}", frame);
-        super.onFrame(frame, callback);
     }
 
     @Override
     public void onError(Throwable cause, Callback callback)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("onError {}", cause);
         super.onError(cause, callback);
         error = cause;
         errorLatch.countDown();
@@ -70,9 +59,8 @@ public class TestMessageHandler extends MessageHandler
     @Override
     public void onClosed(CloseStatus closeStatus, Callback callback)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("onClosed {}", closeStatus);
         super.onClosed(closeStatus, callback);
+        this.closeStatus = closeStatus;
         closeLatch.countDown();
     }
 
@@ -82,6 +70,7 @@ public class TestMessageHandler extends MessageHandler
         if (LOG.isDebugEnabled())
             LOG.debug("onText {}", message);
         textMessages.offer(message);
+        callback.succeeded();
     }
 
     @Override
@@ -90,5 +79,6 @@ public class TestMessageHandler extends MessageHandler
         if (LOG.isDebugEnabled())
             LOG.debug("onBinary {}", message);
         binaryMessages.offer(message);
+        callback.succeeded();
     }
 }

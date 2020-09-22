@@ -480,10 +480,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
         boolean timeout = !latch.await(getMaxScanWait(context), TimeUnit.SECONDS);
         long elapsedMs = TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS);
 
-        LOG.info("Annotation scanning elapsed time={}ms", elapsedMs);
 
         if (LOG.isDebugEnabled())
         {
+            LOG.debug("Annotation scanning elapsed time={}ms", elapsedMs);
             for (ParserTask p : _parserTasks)
             {
                 LOG.debug("Scanned {} in {}ms", p.getResource(), TimeUnit.MILLISECONDS.convert(p.getStatistic().getElapsed(), TimeUnit.NANOSECONDS));
@@ -612,7 +612,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
                         if (c.isAnnotation())
                         {
                             if (LOG.isDebugEnabled())
-                                LOG.debug("Registering annotation handler for " + c.getName());
+                                LOG.debug("Registering annotation handler for {}", c.getName());
                             _containerInitializerAnnotationHandlers.add(new ContainerInitializerAnnotationHandler(initializer, c));
                         }
                     }
@@ -621,14 +621,14 @@ public class AnnotationConfiguration extends AbstractConfiguration
                 {
                     initializer = new ContainerInitializer(service, null);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("No classes in HandlesTypes on initializer " + service.getClass());
+                        LOG.debug("No classes in HandlesTypes on initializer {}", service.getClass());
                 }
             }
             else
             {
                 initializer = new ContainerInitializer(service, null);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("No HandlesTypes annotation on initializer " + service.getClass());
+                    LOG.debug("No HandlesTypes annotation on initializer {}", service.getClass());
             }
 
             initializers.add(initializer);

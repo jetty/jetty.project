@@ -127,7 +127,7 @@ public class HpackDecoder
                         // change table size
                         int size = NBitInteger.decode(buffer, 5);
                         if (LOG.isDebugEnabled())
-                            LOG.debug("decode resize=" + size);
+                            LOG.debug("decode resize={}", size);
                         if (size > _localMaxDynamicTableSize)
                             throw new IllegalArgumentException();
                         if (emitted)

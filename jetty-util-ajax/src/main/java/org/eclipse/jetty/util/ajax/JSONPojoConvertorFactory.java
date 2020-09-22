@@ -82,7 +82,7 @@ public class JSONPojoConvertorFactory implements JSON.Convertor
                 }
                 catch (ClassNotFoundException e)
                 {
-                    LOG.warn("Unable to find class: " + clsName, e);
+                    LOG.warn("Unable to find class: {}", clsName, e);
                 }
             }
             if (convertor != null)

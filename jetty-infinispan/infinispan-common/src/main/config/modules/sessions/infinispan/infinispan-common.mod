@@ -1,8 +1,9 @@
 [description]
-Common to all infinispan modules
+Common to all infinispan modules.
 
 [tags]
 session
+internal
 
 [depend]
 sessions

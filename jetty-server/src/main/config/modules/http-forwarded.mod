@@ -1,8 +1,8 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Adds a forwarded request customizer to the HTTP Connector
-to process forwarded-for style headers from a proxy.
+Adds a forwarded request customizer to the HTTP Connector.
+Processes forwarded-for style headers from a proxy.
 
 [tags]
 connector

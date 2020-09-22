@@ -22,8 +22,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Objects;
 
-// @checkstyle-disable-check : AbbreviationAsWordInNameCheck
-
 /**
  * Utility methods for converting a {@link URI} between a HTTP(S) and WS(S) URI.
  */

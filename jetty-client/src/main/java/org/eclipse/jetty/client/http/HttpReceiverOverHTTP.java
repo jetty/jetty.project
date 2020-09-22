@@ -51,6 +51,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     private RetainableByteBuffer networkBuffer;
     private boolean shutdown;
     private boolean complete;
+    private boolean unsolicited;
+    private int status;
 
     public HttpReceiverOverHTTP(HttpChannelOverHTTP channel)
     {
@@ -131,16 +133,18 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
     protected ByteBuffer onUpgradeFrom()
     {
+        ByteBuffer upgradeBuffer = null;
         if (networkBuffer.hasRemaining())
         {
             HttpClient client = getHttpDestination().getHttpClient();
-            ByteBuffer upgradeBuffer = BufferUtil.allocate(networkBuffer.remaining(), client.isUseInputDirectByteBuffers());
+            upgradeBuffer = BufferUtil.allocate(networkBuffer.remaining(), client.isUseInputDirectByteBuffers());
             BufferUtil.clearToFill(upgradeBuffer);
             BufferUtil.put(networkBuffer.getBuffer(), upgradeBuffer);
             BufferUtil.flipToFlush(upgradeBuffer, 0);
-            return upgradeBuffer;
         }
-        return null;
+
+        releaseNetworkBuffer();
+        return upgradeBuffer;
     }
 
     private void process()
@@ -159,12 +163,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                     return;
                 }
 
-                // Connection may be closed or upgraded in a parser callback.
-                boolean upgraded = connection != endPoint.getConnection();
-                if (connection.isClosed() || upgraded)
+                // Connection may be closed in a parser callback.
+                if (connection.isClosed())
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} {}", upgraded ? "Upgraded" : "Closed", connection);
+                        LOG.debug("Closed {}", connection);
                     releaseNetworkBuffer();
                     return;
                 }
@@ -229,6 +232,14 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             if (LOG.isDebugEnabled())
                 LOG.debug("Parse complete={}, remaining {} {}", complete, networkBuffer.remaining(), parser);
 
+            if (complete)
+            {
+                int status = this.status;
+                this.status = 0;
+                if (status == HttpStatus.SWITCHING_PROTOCOLS_101)
+                    return true;
+            }
+
             if (networkBuffer.isEmpty())
                 return false;
 
@@ -272,9 +283,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     public void startResponse(HttpVersion version, int status, String reason)
     {
         HttpExchange exchange = getHttpExchange();
+        unsolicited = exchange == null;
         if (exchange == null)
             return;
 
+        this.status = status;
         String method = exchange.getRequest().getMethod();
         parser.setHeadResponse(HttpMethod.HEAD.is(method) ||
             (HttpMethod.CONNECT.is(method) && status == HttpStatus.OK_200));
@@ -287,7 +300,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     public void parsedHeader(HttpField field)
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange == null)
+        unsolicited |= exchange == null;
+        if (unsolicited)
             return;
 
         responseHeader(exchange, field);
@@ -297,7 +311,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     public boolean headerComplete()
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange == null)
+        unsolicited |= exchange == null;
+        if (unsolicited)
             return false;
 
         // Store the EndPoint is case of upgrades, tunnels, etc.
@@ -309,7 +324,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     public boolean content(ByteBuffer buffer)
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange == null)
+        unsolicited |= exchange == null;
+        if (unsolicited)
             return false;
 
         RetainableByteBuffer networkBuffer = this.networkBuffer;
@@ -331,7 +347,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     public void parsedTrailer(HttpField trailer)
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange == null)
+        unsolicited |= exchange == null;
+        if (unsolicited)
             return;
 
         exchange.getResponse().trailer(trailer);
@@ -341,8 +358,12 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     public boolean messageComplete()
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange == null)
+        if (exchange == null || unsolicited)
+        {
+            // We received an unsolicited response from the server.
+            getHttpConnection().close();
             return false;
+        }
 
         int status = exchange.getResponse().getStatus();
         if (status != HttpStatus.CONTINUE_100)
@@ -359,7 +380,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     {
         HttpExchange exchange = getHttpExchange();
         HttpConnectionOverHTTP connection = getHttpConnection();
-        if (exchange == null)
+        if (exchange == null || unsolicited)
             connection.close();
         else
             failAndClose(new EOFException(String.valueOf(connection)));
@@ -369,7 +390,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     public void badMessage(BadMessageException failure)
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange != null)
+        if (exchange == null || unsolicited)
+        {
+            getHttpConnection().close();
+        }
+        else
         {
             HttpResponse response = exchange.getResponse();
             response.status(failure.getCode()).reason(failure.getReason());

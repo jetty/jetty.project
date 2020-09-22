@@ -25,7 +25,6 @@ import org.junit.jupiter.api.BeforeEach;
  */
 public class InfinispanFileSessionDataStoreTest extends InfinispanSessionDataStoreTest
 {
-
     @BeforeEach
     public void setup() throws Exception
     {
@@ -33,5 +32,4 @@ public class InfinispanFileSessionDataStoreTest extends InfinispanSessionDataSto
         _testSupport.setUseFileStore(true);
         _testSupport.setup();
     }
-
 }

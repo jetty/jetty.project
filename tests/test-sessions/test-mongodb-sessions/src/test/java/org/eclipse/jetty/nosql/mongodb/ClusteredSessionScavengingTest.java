@@ -25,7 +25,6 @@ import org.junit.jupiter.api.BeforeAll;
 
 public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
-
     @BeforeAll
     public static void beforeClass() throws Exception
     {

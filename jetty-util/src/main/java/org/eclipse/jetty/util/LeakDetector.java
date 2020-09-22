@@ -163,7 +163,7 @@ public class LeakDetector<T> extends AbstractLifeCycle implements Runnable
      */
     protected void leaked(LeakInfo leakInfo)
     {
-        LOG.warn("Resource leaked: " + leakInfo.description, leakInfo.stackFrames);
+        LOG.warn("Resource leaked: {}", leakInfo.description, leakInfo.stackFrames);
     }
 
     /**

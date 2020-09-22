@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server.session;
 
+import java.util.Collections;
 import java.util.Set;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -31,7 +32,6 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject
 public class NullSessionDataStore extends AbstractSessionDataStore
 {
-
     @Override
     public SessionData doLoad(String id) throws Exception
     {
@@ -57,11 +57,20 @@ public class NullSessionDataStore extends AbstractSessionDataStore
     }
 
     @Override
-    public Set<String> doGetExpired(Set<String> candidates)
+    public Set<String> doCheckExpired(Set<String> candidates, long time)
     {
         return candidates; //whatever is suggested we accept
     }
 
+    @Override
+    public Set<String> doGetExpired(long timeLimit)
+    {
+        return Collections.emptySet();
+    }
+    
+    /** 
+     * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
+     */
     @ManagedAttribute(value = "does this store serialize sessions", readonly = true)
     @Override
     public boolean isPassivating()
@@ -70,8 +79,14 @@ public class NullSessionDataStore extends AbstractSessionDataStore
     }
 
     @Override
-    public boolean exists(String id)
+    public boolean doExists(String id)
     {
         return false;
+    }
+
+    @Override
+    public void doCleanOrphans(long timeLimit)
+    {
+        //noop
     }
 }

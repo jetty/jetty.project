@@ -144,12 +144,12 @@ public class SelectiveJarResource extends JarResource
             {
                 String entryName = entry.getName();
 
-                LOG.debug("Looking at " + entryName);
+                LOG.debug("Looking at {}", entryName);
                 String dotCheck = StringUtil.replace(entryName, '\\', '/');
                 dotCheck = URIUtil.canonicalPath(dotCheck);
                 if (dotCheck == null)
                 {
-                    LOG.info("Invalid entry: " + entryName);
+                    LOG.info("Invalid entry: {}", entryName);
                     continue;
                 }
 

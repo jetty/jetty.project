@@ -32,6 +32,7 @@ import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.Sweeper;
 import org.slf4j.Logger;
@@ -40,26 +41,32 @@ import org.slf4j.LoggerFactory;
 import static java.util.stream.Collectors.toCollection;
 
 @ManagedObject
-public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable, Sweeper.Sweepable
+public abstract class AbstractConnectionPool extends ContainerLifeCycle implements ConnectionPool, Dumpable, Sweeper.Sweepable
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractConnectionPool.class);
 
     private final HttpDestination destination;
     private final Callback requester;
     private final Pool<Connection> pool;
+    private boolean maximizeConnections;
 
     protected AbstractConnectionPool(HttpDestination destination, int maxConnections, boolean cache, Callback requester)
     {
+        this(destination, new Pool<>(Pool.StrategyType.FIRST, maxConnections, cache), requester);
+    }
+
+    protected AbstractConnectionPool(HttpDestination destination, Pool<Connection> pool, Callback requester)
+    {
         this.destination = destination;
         this.requester = requester;
-        @SuppressWarnings("unchecked")
-        Pool<Connection> pool = destination.getBean(Pool.class);
-        if (pool == null)
-        {
-            pool = new Pool<>(maxConnections, cache ? 1 : 0);
-            destination.addBean(pool);
-        }
         this.pool = pool;
+        addBean(pool);
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        pool.close();
     }
 
     @Override
@@ -68,7 +75,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
         CompletableFuture<?>[] futures = new CompletableFuture[connectionCount];
         for (int i = 0; i < connectionCount; i++)
         {
-            futures[i] = tryCreateReturningFuture(pool.getMaxEntries());
+            futures[i] = tryCreateAsync(getMaxConnectionCount());
         }
         return CompletableFuture.allOf(futures);
     }
@@ -130,16 +137,47 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
     }
 
     @Override
+    @ManagedAttribute("Whether this pool is closed")
     public boolean isClosed()
     {
         return pool.isClosed();
     }
 
+    @ManagedAttribute("Whether the pool tries to maximize the number of connections used")
+    public boolean isMaximizeConnections()
+    {
+        return maximizeConnections;
+    }
+
+    /**
+     * <p>Sets whether the number of connections should be maximized.</p>
+     *
+     * @param maximizeConnections whether the number of connections should be maximized
+     */
+    public void setMaximizeConnections(boolean maximizeConnections)
+    {
+        this.maximizeConnections = maximizeConnections;
+    }
+
+    /**
+     * <p>Returns an idle connection, if available;
+     * if an idle connection is not available, and the given {@code create} parameter is {@code true}
+     * or {@link #isMaximizeConnections()} is {@code true},
+     * then schedules the opening of a new connection, if possible within the configuration of this
+     * connection pool (for example, if it does not exceed the max connection count);
+     * otherwise returns {@code null}.</p>
+     *
+     * @param create whether to schedule the opening of a connection if no idle connections are available
+     * @return an idle connection or {@code null} if no idle connections are available
+     * @see #tryCreate(int)
+     */
     @Override
     public Connection acquire(boolean create)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Acquiring create={} on {}", create, this);
         Connection connection = activate();
-        if (connection == null && create)
+        if (connection == null && (create || isMaximizeConnections()))
         {
             tryCreate(destination.getQueuedRequestCount());
             connection = activate();
@@ -159,22 +197,21 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
      */
     protected void tryCreate(int maxPending)
     {
-        tryCreateReturningFuture(maxPending);
+        tryCreateAsync(maxPending);
     }
 
-    private CompletableFuture<Void> tryCreateReturningFuture(int maxPending)
+    private CompletableFuture<Void> tryCreateAsync(int maxPending)
     {
+        int connectionCount = getConnectionCount();
         if (LOG.isDebugEnabled())
-        {
-            LOG.debug("tryCreate {}/{} connections {}/{} pending", pool.size(), pool.getMaxEntries(), getPendingConnectionCount(), maxPending);
-        }
+            LOG.debug("Try creating connection {}/{} with {}/{} pending", connectionCount, getMaxConnectionCount(), getPendingConnectionCount(), maxPending);
 
         Pool<Connection>.Entry entry = pool.reserve(maxPending);
         if (entry == null)
             return CompletableFuture.completedFuture(null);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("newConnection {}/{} connections {}/{} pending", pool.size(), pool.getMaxEntries(), getPendingConnectionCount(), maxPending);
+            LOG.debug("Creating connection {}/{}", connectionCount, getMaxConnectionCount());
 
         CompletableFuture<Void> future = new CompletableFuture<>();
         destination.newConnection(new Promise<>()
@@ -183,7 +220,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
             public void succeeded(Connection connection)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Connection {}/{} creation succeeded {}", pool.size(), pool.getMaxEntries(), connection);
+                    LOG.debug("Connection {}/{} creation succeeded {}", connectionCount, getMaxConnectionCount(), connection);
                 if (!(connection instanceof Attachable))
                 {
                     failed(new IllegalArgumentException("Invalid connection object: " + connection));
@@ -201,7 +238,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
             public void failed(Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Connection " + pool.size() + "/" + pool.getMaxEntries() + " creation failed", x);
+                    LOG.debug("Connection {}/{} creation failed", connectionCount, getMaxConnectionCount(), x);
                 entry.remove();
                 future.completeExceptionally(x);
                 requester.failed(x);
@@ -240,7 +277,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
         if (entry != null)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("activated {}", entry);
+                LOG.debug("Activated {} {}", entry, pool);
             Connection connection = entry.getPooled();
             acquired(connection);
             return connection;
@@ -258,8 +295,6 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
         Pool<Connection>.Entry entry = (Pool<Connection>.Entry)attachable.getAttachment();
         if (entry == null)
             return false;
-        if (LOG.isDebugEnabled())
-            LOG.debug("isActive {}", entry);
         return !entry.isIdle();
     }
 
@@ -283,7 +318,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
             return true;
         boolean reusable = pool.release(entry);
         if (LOG.isDebugEnabled())
-            LOG.debug("Released ({}) {}", reusable, entry);
+            LOG.debug("Released ({}) {} {}", reusable, entry, pool);
         if (reusable)
             return true;
         remove(connection);
@@ -308,7 +343,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
         attachable.setAttachment(null);
         boolean removed = pool.remove(entry);
         if (LOG.isDebugEnabled())
-            LOG.debug("Removed ({}) {}", removed, entry);
+            LOG.debug("Removed ({}) {} {}", removed, entry, pool);
         if (removed || force)
         {
             released(connection);

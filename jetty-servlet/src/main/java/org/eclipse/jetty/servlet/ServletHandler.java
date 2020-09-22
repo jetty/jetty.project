@@ -377,6 +377,11 @@ public class ServletHandler extends ScopedHandler
         return _servletContext;
     }
 
+    public ServletContextHandler getServletContextHandler()
+    {
+        return _contextHandler;
+    }
+
     @ManagedAttribute(value = "mappings of servlets", readonly = true)
     public ServletMapping[] getServletMappings()
     {
@@ -1413,11 +1418,8 @@ public class ServletHandler extends ScopedHandler
 
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("filterNameMap=" + _filterNameMap);
-                LOG.debug("pathFilters=" + _filterPathMappings);
-                LOG.debug("servletFilterMap=" + _filterNameMappings);
-                LOG.debug("servletPathMap=" + _servletPathMap);
-                LOG.debug("servletNameMap=" + _servletNameMap);
+                LOG.debug("filterNameMap={} pathFilters={} servletFilterMap={} servletPathMap={} servletNameMap={}",
+                    _filterNameMap, _filterPathMappings, _filterNameMappings, _servletPathMap, _servletNameMap);
             }
 
             try
@@ -1578,7 +1580,6 @@ public class ServletHandler extends ScopedHandler
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("call filter {}", _filterHolder);
-                Filter filter = _filterHolder.getFilter();
 
                 //if the request already does not support async, then the setting for the filter
                 //is irrelevant. However if the request supports async but this filter does not
@@ -1588,7 +1589,7 @@ public class ServletHandler extends ScopedHandler
                     try
                     {
                         baseRequest.setAsyncSupported(false, _filterHolder.toString());
-                        filter.doFilter(request, response, _next);
+                        _filterHolder.doFilter(request, response, _next);
                     }
                     finally
                     {
@@ -1596,7 +1597,7 @@ public class ServletHandler extends ScopedHandler
                     }
                 }
                 else
-                    filter.doFilter(request, response, _next);
+                    _filterHolder.doFilter(request, response, _next);
 
                 return;
             }
@@ -1608,7 +1609,7 @@ public class ServletHandler extends ScopedHandler
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("call servlet " + _servletHolder);
+                    LOG.debug("call servlet {}", _servletHolder);
                 _servletHolder.handle(baseRequest, request, response);
             }
         }
@@ -1643,15 +1644,14 @@ public class ServletHandler extends ScopedHandler
             throws IOException, ServletException
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("doFilter " + _filter);
+                LOG.debug("doFilter {}", _filter);
 
             // pass to next filter
             if (_filter < _chain.size())
             {
                 FilterHolder holder = _chain.get(_filter++);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("call filter " + holder);
-                Filter filter = holder.getFilter();
+                    LOG.debug("call filter {}", holder);
 
                 //if the request already does not support async, then the setting for the filter
                 //is irrelevant. However if the request supports async but this filter does not
@@ -1661,7 +1661,7 @@ public class ServletHandler extends ScopedHandler
                     try
                     {
                         _baseRequest.setAsyncSupported(false, holder.toString());
-                        filter.doFilter(request, response, this);
+                        holder.doFilter(request, response, this);
                     }
                     finally
                     {
@@ -1669,7 +1669,7 @@ public class ServletHandler extends ScopedHandler
                     }
                 }
                 else
-                    filter.doFilter(request, response, this);
+                    holder.doFilter(request, response, this);
 
                 return;
             }

@@ -799,8 +799,8 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertThat(count(dump, " - STARTED"), is(2));
         assertThat(dump, containsString(",3<=3<=4,i=3,r=2,q=0"));
         assertThat(dump, containsString("[ReservedThreadExecutor@"));
-        assertThat(count(dump, " IDLE "), is(3));
-        assertThat(count(dump, " RESERVED "), is(0));
+        assertThat(count(dump, " IDLE"), is(3));
+        assertThat(count(dump, " RESERVED"), is(0));
 
         CountDownLatch started = new CountDownLatch(1);
         CountDownLatch waiting = new CountDownLatch(1);
@@ -822,9 +822,9 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertThat(count(dump, " - STARTED"), is(2));
         assertThat(dump, containsString(",3<=3<=4,i=2,r=2,q=0"));
         assertThat(dump, containsString("[ReservedThreadExecutor@"));
-        assertThat(count(dump, " IDLE "), is(2));
-        assertThat(count(dump, " WAITING "), is(1));
-        assertThat(count(dump, " RESERVED "), is(0));
+        assertThat(count(dump, " IDLE"), is(2));
+        assertThat(count(dump, " WAITING"), is(1));
+        assertThat(count(dump, " RESERVED"), is(0));
         assertThat(count(dump, "QueuedThreadPoolTest.lambda$testDump$"), is(0));
 
         pool.setDetailedDump(true);
@@ -833,9 +833,9 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertThat(dump, containsString(",3<=3<=4,i=2,r=2,q=0"));
         assertThat(dump, containsString("s=0/2"));
         assertThat(dump, containsString("[ReservedThreadExecutor@"));
-        assertThat(count(dump, " IDLE "), is(2));
-        assertThat(count(dump, " WAITING "), is(1));
-        assertThat(count(dump, " RESERVED "), is(0));
+        assertThat(count(dump, " IDLE"), is(2));
+        assertThat(count(dump, " WAITING"), is(1));
+        assertThat(count(dump, " RESERVED"), is(0));
         assertThat(count(dump, "QueuedThreadPoolTest.lambda$testDump$"), is(1));
 
         assertFalse(pool.tryExecute(() ->
@@ -848,9 +848,9 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertThat(dump, containsString(",3<=3<=4,i=1,r=2,q=0"));
         assertThat(dump, containsString("s=1/2"));
         assertThat(dump, containsString("[ReservedThreadExecutor@"));
-        assertThat(count(dump, " IDLE "), is(1));
-        assertThat(count(dump, " WAITING "), is(1));
-        assertThat(count(dump, " RESERVED "), is(1));
+        assertThat(count(dump, " IDLE"), is(1));
+        assertThat(count(dump, " WAITING"), is(1));
+        assertThat(count(dump, " RESERVED"), is(1));
         assertThat(count(dump, "QueuedThreadPoolTest.lambda$testDump$"), is(1));
     }
 

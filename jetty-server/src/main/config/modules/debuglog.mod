@@ -5,7 +5,9 @@ Deprecated Debug Log using the DebugHandle.
 Replaced with the debug module.
 
 [tags]
+server
 debug
+internal
 
 [depend]
 server

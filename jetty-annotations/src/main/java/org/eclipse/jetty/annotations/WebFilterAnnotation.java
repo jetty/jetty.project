@@ -62,14 +62,14 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
         Class clazz = getTargetClass();
         if (clazz == null)
         {
-            LOG.warn(_className + " cannot be loaded");
+            LOG.warn("{} cannot be loaded", _className);
             return;
         }
 
         //Servlet Spec 8.1.2
         if (!Filter.class.isAssignableFrom(clazz))
         {
-            LOG.warn(clazz.getName() + " is not assignable from javax.servlet.Filter");
+            LOG.warn("{} is not assignable from javax.servlet.Filter", clazz.getName());
             return;
         }
         MetaData metaData = _context.getMetaData();
@@ -78,7 +78,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
 
         if (filterAnnotation.value().length > 0 && filterAnnotation.urlPatterns().length > 0)
         {
-            LOG.warn(clazz.getName() + " defines both @WebFilter.value and @WebFilter.urlPatterns");
+            LOG.warn("{} defines both @WebFilter.value and @WebFilter.urlPatterns", clazz.getName());
             return;
         }
 

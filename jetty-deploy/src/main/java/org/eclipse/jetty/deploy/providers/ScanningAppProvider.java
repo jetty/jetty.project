@@ -123,18 +123,18 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
     protected void doStart() throws Exception
     {
         if (LOG.isDebugEnabled())
-            LOG.debug(this.getClass().getSimpleName() + ".doStart()");
+            LOG.debug("{}.doStart()", this.getClass().getSimpleName());
         if (_monitored.size() == 0)
             throw new IllegalStateException("No configuration dir specified");
 
-        LOG.info("Deployment monitor " + _monitored + " at interval " + _scanInterval);
+        LOG.info("Deployment monitor {}", _monitored);
         List<File> files = new ArrayList<>();
         for (Resource resource : _monitored)
         {
             if (resource.exists() && resource.getFile().canRead())
                 files.add(resource.getFile());
             else
-                LOG.warn("Does not exist: " + resource);
+                LOG.warn("Does not exist: {}", resource);
         }
 
         _scanner = new Scanner();

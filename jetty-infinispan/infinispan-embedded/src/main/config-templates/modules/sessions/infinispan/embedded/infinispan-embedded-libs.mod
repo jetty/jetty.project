@@ -1,9 +1,10 @@
 [description]
-The Infinispan embedded libraries
+The Infinispan embedded libraries.
 
 [tags]
 3rdparty
 infinispan
+internal
 
 [depends]
 sessions/infinispan/embedded/infinispan-embedded-serverclasses

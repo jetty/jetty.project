@@ -20,9 +20,13 @@ package org.eclipse.jetty.session.infinispan;
 
 import java.util.Set;
 
+import org.eclipse.jetty.server.session.SessionContext;
+
 public interface QueryManager
 {
-    Set<String> queryExpiredSessions();
+    Set<String> queryExpiredSessions(SessionContext sessionContext, long currentTime);
 
-    Set<String> queryExpiredSessions(long currentTime);
+    public void deleteOrphanSessions(long time);
+    
+    public boolean exists(SessionContext sessionContext, String id);
 }

@@ -89,7 +89,7 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
                 if (connector.getPort() == addr.getPort() || connector.getLocalPort() == addr.getPort())
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("server already bound to port " + addr.getPort() + ", no need to rebind");
+                        LOG.debug("server already bound to port {}, no need to rebind", addr.getPort());
                     return;
                 }
             }
@@ -99,7 +99,7 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
             throw new IOException("jetty server is not bound to port " + addr.getPort());
 
         if (LOG.isDebugEnabled())
-            LOG.debug("binding server to port " + addr.getPort());
+            LOG.debug("binding server to port {}", addr.getPort());
         ServerConnector connector = new ServerConnector(_server);
         connector.setPort(addr.getPort());
         connector.setHost(addr.getHostName());

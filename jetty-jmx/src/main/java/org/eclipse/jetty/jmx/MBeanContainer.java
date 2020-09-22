@@ -398,7 +398,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
         }
         catch (Throwable x)
         {
-            LOG.warn("bean: " + obj, x);
+            LOG.warn("bean: {}", obj, x);
         }
     }
 

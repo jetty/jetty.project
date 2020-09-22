@@ -268,7 +268,7 @@ public class Runner
                 case "--out":
                     String outFile = args[++i];
                     PrintStream out = new PrintStream(new RolloverFileOutputStream(outFile, true, -1));
-                    LOG.info("Redirecting stderr/stdout to " + outFile);
+                    LOG.info("Redirecting stderr/stdout to {}", outFile);
                     System.setErr(out);
                     System.setOut(out);
                     break;

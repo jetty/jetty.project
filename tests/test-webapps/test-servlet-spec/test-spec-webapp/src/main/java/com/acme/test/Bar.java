@@ -20,7 +20,6 @@ package com.acme.test;
 
 public class Bar
 {
-
     @com.acme.initializer.Foo(2)
     public void someMethod()
     {

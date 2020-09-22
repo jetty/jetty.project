@@ -304,7 +304,7 @@ public class javaRootURLContext implements Context
             String head = name.get(0);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Head element of name is: " + head);
+                LOG.debug("Head element of name is: {}", head);
 
             if (head.startsWith(URL_PREFIX))
             {
@@ -314,7 +314,7 @@ public class javaRootURLContext implements Context
                     name.add(0, head);
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("name modified to " + name.toString());
+                    LOG.debug("name modified to {}", name.toString());
             }
         }
 

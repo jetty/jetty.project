@@ -23,8 +23,8 @@ public class CloseStatus
     private static final int MAX_CONTROL_PAYLOAD = 125;
     public static final int MAX_REASON_PHRASE = MAX_CONTROL_PAYLOAD - 2;
 
-    private int code;
-    private String phrase;
+    private final int code;
+    private final String phrase;
 
     /**
      * Creates a reason for closing a web socket connection with the given code and reason phrase.

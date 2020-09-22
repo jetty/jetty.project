@@ -30,6 +30,7 @@ import org.eclipse.jetty.deploy.PropertiesConfigurationManager;
 import org.eclipse.jetty.deploy.bindings.DebugListenerBinding;
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.plus.webapp.PlusConfiguration;
@@ -45,7 +46,6 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LowResourceMonitor;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnectionStatistics;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -66,13 +66,13 @@ public class LikeJettyXml
     public static Server createServer(int port, int securePort, boolean addDebugListener) throws Exception
     {
         // Path to as-built jetty-distribution directory
-        Path jettyHomeBuild = JettyDistribution.get();
+        Path jettyDistro = JettyDistribution.get();
 
         // Find jetty home and base directories
-        String homePath = System.getProperty("jetty.home", jettyHomeBuild.toString());
+        String homePath = System.getProperty("jetty.home", jettyDistro.resolve("jetty-home").toString());
         Path homeDir = Paths.get(homePath);
 
-        String basePath = System.getProperty("jetty.base", homeDir.resolve("demo-base").toString());
+        String basePath = System.getProperty("jetty.base", jettyDistro.resolve("demo-base").toString());
         Path baseDir = Paths.get(basePath);
 
         // Configure jetty.home and jetty.base system properties
@@ -171,7 +171,7 @@ public class LikeJettyXml
         StatisticsHandler stats = new StatisticsHandler();
         stats.setHandler(server.getHandler());
         server.setHandler(stats);
-        ServerConnectionStatistics.addToAllConnectors(server);
+        server.addBeanToAllConnectors(new ConnectionStatistics());
 
         // === Rewrite Handler
         RewriteHandler rewrite = new RewriteHandler();
@@ -181,7 +181,7 @@ public class LikeJettyXml
         rewrite.addRule(new ValidUrlRule());
 
         // === jetty-requestlog.xml ===
-        AsyncRequestLogWriter logWriter = new AsyncRequestLogWriter(jettyHome + "/logs/yyyy_mm_dd.request.log");
+        AsyncRequestLogWriter logWriter = new AsyncRequestLogWriter(jettyBase + "/logs/yyyy_mm_dd.request.log");
         logWriter.setFilenameDateFormat("yyyy_MM_dd");
         logWriter.setRetainDays(90);
         logWriter.setTimeZone("GMT");

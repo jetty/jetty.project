@@ -68,7 +68,7 @@ public class PreEncodedHttpField extends HttpField
             if (__encoders[i] == null)
                 __encoders[i] = e;
             else
-                LOG.warn("multiple PreEncoders for " + e.getHttpVersion());
+                LOG.warn("multiple PreEncoders for {}", e.getHttpVersion());
         }
 
         // Always support HTTP1

@@ -112,7 +112,7 @@ public class TimerScheduler extends AbstractLifeCycle implements Scheduler, Runn
             }
             catch (Throwable x)
             {
-                LOG.warn("Exception while executing task " + _task, x);
+                LOG.warn("Exception while executing task {}", _task, x);
             }
         }
 

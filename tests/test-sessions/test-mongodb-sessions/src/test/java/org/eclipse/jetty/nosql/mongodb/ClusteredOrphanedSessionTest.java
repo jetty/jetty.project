@@ -29,7 +29,6 @@ import org.junit.jupiter.api.Test;
  */
 public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
 {
-
     @BeforeAll
     public static void beforeClass() throws Exception
     {

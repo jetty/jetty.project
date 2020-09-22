@@ -206,7 +206,7 @@ public class Main
 
         StartLog.debug("%s - %s", invokedClass, invokedClass.getPackage().getImplementationVersion());
 
-        CommandLineBuilder cmd = args.getMainArgs(false);
+        CommandLineBuilder cmd = args.getMainArgs(StartArgs.ARG_PARTS);
         String[] argArray = cmd.getArgs().toArray(new String[0]);
         StartLog.debug("Command Line Args: %s", cmd.toString());
 
@@ -221,6 +221,10 @@ public class Main
     public void listConfig(StartArgs args)
     {
         StartLog.endStartLog();
+        Modules modules = args.getAllModules();
+
+        // Dump Enabled Modules
+        modules.listEnabled();
 
         // Dump Jetty Home / Base
         args.dumpEnvironment();
@@ -244,20 +248,17 @@ public class Main
     public void listModules(StartArgs args)
     {
         final List<String> tags = args.getListModules();
-
         StartLog.endStartLog();
-        System.out.println();
-        System.out.println("Available Modules:");
-        System.out.println("==================");
-        System.out.println("tags: " + tags);
-        args.getAllModules().dump(tags);
+        String t = tags.toString();
+        System.out.printf("%nModules %s:%n", t);
+        System.out.printf("=========%s%n", "=".repeat(t.length()));
+        args.getAllModules().listModules(tags);
+    }
 
-        // Dump Enabled Modules
-        System.out.println();
-        System.out.println("Enabled Modules:");
-        System.out.println("================");
-        Modules modules = args.getAllModules();
-        modules.dumpEnabled();
+    public void showModules(StartArgs args)
+    {
+        StartLog.endStartLog();
+        args.getAllModules().showModules(args.getShowModules());
     }
 
     /**
@@ -388,10 +389,16 @@ public class Main
             listConfig(args);
         }
 
-        // Show modules
+        // List modules
         if (args.getListModules() != null)
         {
             listModules(args);
+        }
+
+        // Show modules
+        if (args.getShowModules() != null)
+        {
+            showModules(args);
         }
 
         // Generate Module Graph File
@@ -407,7 +414,7 @@ public class Main
         // Show Command Line to execute Jetty
         if (args.isDryRun())
         {
-            CommandLineBuilder cmd = args.getMainArgs(true);
+            CommandLineBuilder cmd = args.getMainArgs(args.getDryRunParts());
             System.out.println(cmd.toString(StartLog.isDebugEnabled() ? " \\\n" : " "));
         }
 
@@ -446,7 +453,7 @@ public class Main
         // execute Jetty in another JVM
         if (args.isExec())
         {
-            CommandLineBuilder cmd = args.getMainArgs(true);
+            CommandLineBuilder cmd = args.getMainArgs(StartArgs.ALL_PARTS);
             cmd.debug();
             ProcessBuilder pbuilder = new ProcessBuilder(cmd.getArgs());
             StartLog.endStartLog();

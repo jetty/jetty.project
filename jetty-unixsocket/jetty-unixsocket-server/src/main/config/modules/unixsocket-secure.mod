@@ -1,8 +1,8 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enable a secure request customizer on the HTTP Configuration
-used by the Unix Domain Socket Connector.
+Enable a secure request customizer on the HTTP Configuration.
+Used by the Unix Domain Socket Connector.
 This looks for a secure scheme transported either by the
 unixsocket-forwarded, unixsocket-proxy-protocol or in a
 HTTP2 request.

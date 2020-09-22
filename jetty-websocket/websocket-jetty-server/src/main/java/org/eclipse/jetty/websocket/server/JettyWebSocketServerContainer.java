@@ -150,7 +150,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
             }
             catch (Exception e)
             {
-                throw new org.eclipse.jetty.websocket.api.WebSocketException("Unable to create instance of " + endpointClass.getName(), e);
+                throw new org.eclipse.jetty.websocket.api.exceptions.WebSocketException("Unable to create instance of " + endpointClass.getName(), e);
             }
         });
     }
@@ -184,7 +184,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
             }
             catch (Throwable x)
             {
-                LOG.info("Exception while invoking listener " + listener, x);
+                LOG.info("Exception while invoking listener {}", listener, x);
             }
         }
     }

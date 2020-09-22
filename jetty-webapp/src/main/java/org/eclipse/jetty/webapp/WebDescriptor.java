@@ -295,7 +295,7 @@ public class WebDescriptor extends Descriptor
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug(_xml.toString() + ": Calculated metadatacomplete = " + _metaDataComplete + " with version=" + version);
+            LOG.debug("{}: Calculated metadatacomplete = {} with version = {}", _xml.toString(), _metaDataComplete, version);
     }
 
     public void processOrdering()

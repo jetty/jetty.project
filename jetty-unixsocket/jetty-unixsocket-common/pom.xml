@@ -34,6 +34,10 @@
       <artifactId>jnr-unixsocket</artifactId>
     </dependency>
     <dependency>
+      <groupId>com.github.jnr</groupId>
+      <artifactId>jnr-ffi</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>

@@ -145,7 +145,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     public Resource getResource(String path) throws IOException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} getResource({}): baseResource:{}", _context == null ? _baseResource : _context, path, _baseResource);
+            LOG.debug("{} getResource({})", _context == null ? _baseResource : _context, path);
 
         if (StringUtil.isBlank(path))
         {
@@ -418,7 +418,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
             _stylesheet = Resource.newResource(stylesheet);
             if (!_stylesheet.exists())
             {
-                LOG.warn("unable to find custom stylesheet: " + stylesheet);
+                LOG.warn("unable to find custom stylesheet: {}", stylesheet);
                 _stylesheet = null;
             }
         }

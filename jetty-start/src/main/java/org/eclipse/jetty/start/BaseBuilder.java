@@ -18,13 +18,19 @@
 
 package org.eclipse.jetty.start;
 
+import java.io.BufferedReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URI;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -125,11 +131,11 @@ public class BaseBuilder
         {
             for (String name : startArgs.getStartModules())
             {
-                newlyAdded.addAll(modules.enable(name, "--add-to-start"));
+                newlyAdded.addAll(modules.enable(name, "--add-module"));
                 if (!newlyAdded.contains(name))
                 {
                     Set<String> sources = modules.get(name).getEnableSources();
-                    sources.remove("--add-to-start");
+                    sources.remove("--add-module");
                     StartLog.info("%s already enabled by %s", name, sources);
                 }
             }
@@ -169,85 +175,150 @@ public class BaseBuilder
         Path startd = getBaseHome().getBasePath("start.d");
         Path startini = getBaseHome().getBasePath("start.ini");
 
-        if (startArgs.isCreateStartd() && !Files.exists(startd))
+        if (startArgs.isCreateStartIni())
         {
+            if (!Files.exists(startini))
+            {
+                if (Files.exists(getBaseHome().getBasePath("start.jar")))
+                    StartLog.warn("creating start.ini in ${jetty.home} is not recommended!");
+                StartLog.info("create %s", baseHome.toShortForm(startini));
+                Files.createFile(startini);
+                modified.set(true);
+            }
+
+            if (Files.exists(startd))
+            {
+                // Copy start.d files into start.ini
+                DirectoryStream.Filter<Path> filter = new DirectoryStream.Filter<Path>()
+                {
+                    PathMatcher iniMatcher = PathMatchers.getMatcher("glob:**/start.d/*.ini");
+                    @Override
+                    public boolean accept(Path entry) throws IOException
+                    {
+                        return iniMatcher.matches(entry);
+                    }
+                };
+                List<Path> paths = new ArrayList<>();
+                for (Path path : Files.newDirectoryStream(startd, filter))
+                    paths.add(path);
+                paths.sort(new NaturalSort.Paths());
+
+                // Read config from start.d
+                List<String> startLines = new ArrayList<>();
+                for (Path path : paths)
+                {
+                    StartLog.info("copy " + baseHome.toShortForm(path) + " into " + baseHome.toShortForm(startini));
+                    startLines.add("");
+                    startLines.add("# Config from " + baseHome.toShortForm(path));
+                    startLines.addAll(Files.readAllLines(path));
+                }
+
+                // append config to start.ini
+                try (FileWriter out = new FileWriter(startini.toFile(), true))
+                {
+                    for (String line : startLines)
+                        out.append(line).append(System.lineSeparator());
+                }
+
+                // delete start.d files
+                for (Path path : paths)
+                    Files.delete(path);
+                Files.delete(startd);
+            }
+        }
+
+        if ((startArgs.isCreateStartD() && (!Files.exists(startd) || Files.exists(startini))) ||
+            (!newlyAdded.isEmpty() && !Files.exists(startini) && !Files.exists(startd)))
+        {
+            if (Files.exists(getBaseHome().getBasePath("start.jar")) && !startArgs.isCreateStartD())
+            {
+                StartLog.warn("creating start.d in ${jetty.home} is not recommended!");
+                if (!startArgs.isCreateStartD())
+                {
+                    BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
+                    System.err.printf("%nProceed (y/N)? ");
+                    String response = input.readLine();
+
+                    if (Utils.isBlank(response) || !response.toLowerCase(Locale.ENGLISH).startsWith("y"))
+                        System.exit(1);
+                }
+            }
+
             if (FS.ensureDirectoryExists(startd))
             {
-                StartLog.log("MKDIR", baseHome.toShortForm(startd));
+                StartLog.info("mkdir " + baseHome.toShortForm(startd));
                 modified.set(true);
             }
-            if (Files.exists(startini))
+
+            if (Files.exists(startini) && startArgs.isCreateStartD())
             {
                 int ini = 0;
-                Path startdStartIni = startd.resolve("start.ini");
-                while (Files.exists(startdStartIni))
+                Path startdStartini = startd.resolve("start.ini");
+                while (Files.exists(startdStartini))
                 {
                     ini++;
-                    startdStartIni = startd.resolve("start" + ini + ".ini");
+                    startdStartini = startd.resolve("start" + ini + ".ini");
                 }
-                Files.move(startini, startdStartIni);
+                Files.move(startini, startdStartini);
                 modified.set(true);
             }
         }
 
-        if (!newlyAdded.isEmpty())
+        boolean useStartD = Files.exists(startd);
+        if (useStartD && Files.exists(startini))
+            StartLog.warn("Use of both %s and %s is deprecated", getBaseHome().toShortForm(startd), getBaseHome().toShortForm(startini));
+
+        builder.set(useStartD ? new StartDirBuilder(this) : new StartIniBuilder(this));
+        newlyAdded.stream().map(modules::get).forEach(module ->
         {
-            if (Files.exists(startini) && Files.exists(startd))
-                StartLog.warn("Use both %s and %s is deprecated", getBaseHome().toShortForm(startd), getBaseHome().toShortForm(startini));
-
-            boolean useStartD = Files.exists(startd);
-            builder.set(useStartD ? new StartDirBuilder(this) : new StartIniBuilder(this));
-            newlyAdded.stream().map(n -> modules.get(n)).forEach(module ->
+            String ini = null;
+            try
             {
-                String ini = null;
-                try
+                if (module.isSkipFilesValidation())
                 {
-                    if (module.isSkipFilesValidation())
-                    {
-                        StartLog.debug("Skipping [files] validation on %s", module.getName());
-                    }
-                    else
-                    {
-                        // if (explicitly added and ini file modified)
-                        if (startArgs.getStartModules().contains(module.getName()))
-                        {
-                            ini = builder.get().addModule(module, startArgs.getProperties());
-                            if (ini != null)
-                                modified.set(true);
-                        }
-                        for (String file : module.getFiles())
-                        {
-                            files.add(new FileArg(module, startArgs.getProperties().expand(file)));
-                        }
-                    }
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-
-                if (module.isDynamic())
-                {
-                    for (String s : module.getEnableSources())
-                    {
-                        StartLog.info("%-15s %s", module.getName(), s);
-                    }
-                }
-                else if (module.isTransitive())
-                {
-                    if (module.hasIniTemplate())
-                        StartLog.info("%-15s transitively enabled, ini template available with --add-to-start=%s",
-                            module.getName(),
-                            module.getName());
-                    else
-                        StartLog.info("%-15s transitively enabled", module.getName());
+                    StartLog.debug("Skipping [files] validation on %s", module.getName());
                 }
                 else
-                    StartLog.info("%-15s initialized in %s",
+                {
+                    // if (explicitly added and ini file modified)
+                    if (startArgs.getStartModules().contains(module.getName()))
+                    {
+                        ini = builder.get().addModule(module, startArgs.getProperties());
+                        if (ini != null)
+                            modified.set(true);
+                    }
+                    for (String file : module.getFiles())
+                    {
+                        files.add(new FileArg(module, startArgs.getProperties().expand(file)));
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+
+            if (module.isDynamic())
+            {
+                for (String s : module.getEnableSources())
+                {
+                    StartLog.info("%-15s %s", module.getName(), s);
+                }
+            }
+            else if (module.isTransitive())
+            {
+                if (module.hasIniTemplate())
+                    StartLog.info("%-15s transitively enabled, ini template available with --add-module=%s",
                         module.getName(),
-                        ini);
-            });
-        }
+                        module.getName());
+                else
+                    StartLog.info("%-15s transitively enabled", module.getName());
+            }
+            else
+            {
+                StartLog.info("%-15s initialized in %s", module.getName(), ini);
+            }
+        });
 
         files.addAll(startArgs.getFiles());
         if (!files.isEmpty() && processFileResources(files))

@@ -66,19 +66,18 @@ public class IdleSessionTest
     {
         String contextPath = "";
         String servletMapping = "/server";
-        int inactivePeriod = 20;
-        int scavengePeriod = 3;
-        int evictionSec = 5; //evict from cache if idle for 5 sec
+        int inactivePeriod = 10;
+        int scavengePeriod = 1;
+        int evictionSec = 2; //evict from cache if idle for 2 sec
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(evictionSec);
+        cacheFactory.setFlushOnResponseCommit(true);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
         _server1 = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         ServletHolder holder = new ServletHolder(_servlet);
         ServletContextHandler contextHandler = _server1.addContext(contextPath);
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        _server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         _server1.start();
         int port1 = _server1.getPort();
@@ -90,15 +89,11 @@ public class IdleSessionTest
             String url = "http://localhost:" + port1 + contextPath + servletMapping;
 
             //make a request to set up a session on the server
-            CountDownLatch synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
+
             ContentResponse response = client.GET(url + "?action=init");
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             String sessionCookie = response.getHeaders().get("Set-Cookie");
             assertNotNull(sessionCookie);
-            
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
 
             //and wait until the session should be passivated out
             pause(evictionSec * 2);
@@ -109,14 +104,9 @@ public class IdleSessionTest
             assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
 
             //make another request to reactivate the session
-            synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
             Request request = client.newRequest(url + "?action=test");
             ContentResponse response2 = request.send();
             assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
-            
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
             
             //check session reactivated
             assertTrue(contextHandler.getSessionHandler().getSessionCache().contains(id));
@@ -133,27 +123,17 @@ public class IdleSessionTest
             ((TestSessionDataStore)contextHandler.getSessionHandler().getSessionCache().getSessionDataStore())._map.clear();
 
             //make a request
-            synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
             request = client.newRequest(url + "?action=testfail");
             response2 = request.send();
             assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
-
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
             
             //Test trying to reactivate an expired session (ie before the scavenger can get to it)
             //make a request to set up a session on the server
-            synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
             response = client.GET(url + "?action=init");
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             sessionCookie = response.getHeaders().get("Set-Cookie");
             assertNotNull(sessionCookie);
             id = TestServer.extractSessionId(sessionCookie);
-            
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
 
             //and wait until the session should be idled out
             pause(evictionSec * 2);
@@ -170,15 +150,9 @@ public class IdleSessionTest
             pause(inactivePeriod + (3 * scavengePeriod));
 
             //make another request to reactivate the session
-            synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
             request = client.newRequest(url + "?action=testfail");
             response2 = request.send();
             assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
-            
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
-
             assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
             assertFalse(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
         }
@@ -198,13 +172,12 @@ public class IdleSessionTest
         int scavengePeriod = 3;
 
         NullSessionCacheFactory cacheFactory = new NullSessionCacheFactory();
+        cacheFactory.setFlushOnResponseCommit(true);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
         _server1 = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         ServletHolder holder = new ServletHolder(_servlet);
         ServletContextHandler contextHandler = _server1.addContext(contextPath);
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        _server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         _server1.start();
         int port1 = _server1.getPort();
@@ -216,15 +189,10 @@ public class IdleSessionTest
             String url = "http://localhost:" + port1 + contextPath + servletMapping;
 
             //make a request to set up a session on the server
-            CountDownLatch synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
             ContentResponse response = client.GET(url + "?action=init");
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             String sessionCookie = response.getHeaders().get("Set-Cookie");
             assertNotNull(sessionCookie);
-            
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
 
             //the session should never be cached
             String id = TestServer.extractSessionId(sessionCookie);
@@ -232,14 +200,9 @@ public class IdleSessionTest
             assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
 
             //make another request to reactivate the session
-            synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
             Request request = client.newRequest(url + "?action=test");
             ContentResponse response2 = request.send();
             assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
-            
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
             
             //check session still not in the cache
             assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
@@ -250,29 +213,18 @@ public class IdleSessionTest
             ((TestSessionDataStore)contextHandler.getSessionHandler().getSessionCache().getSessionDataStore())._map.clear();
 
             //make a request
-            synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
             request = client.newRequest(url + "?action=testfail");
             response2 = request.send();
             assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
-
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
             
             //Test trying to reactivate an expired session (ie before the scavenger can get to it)
             //make a request to set up a session on the server
-            synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
             response = client.GET(url + "?action=init");
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             sessionCookie = response.getHeaders().get("Set-Cookie");
             assertNotNull(sessionCookie);
             id = TestServer.extractSessionId(sessionCookie);
             
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
-            
-
             //stop the scavenger
             if (_server1.getHouseKeeper() != null)
                 _server1.getHouseKeeper().stop();
@@ -285,14 +237,9 @@ public class IdleSessionTest
             pause(inactivePeriod + (3 * scavengePeriod));
 
             //make another request to reactivate the session
-            synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
             request = client.newRequest(url + "?action=testfail");
             response2 = request.send();
             assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
-            
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
             
             assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
             assertFalse(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));

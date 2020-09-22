@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server.session;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
@@ -45,7 +46,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class SessionEvictionFailureTest
 {
-
     /**
      * MockSessionDataStore
      */
@@ -66,7 +66,7 @@ public class SessionEvictionFailureTest
         }
 
         @Override
-        public boolean exists(String id) throws Exception
+        public boolean doExists(String id) throws Exception
         {
             return true;
         }
@@ -93,9 +93,21 @@ public class SessionEvictionFailureTest
         }
 
         @Override
-        public Set<String> doGetExpired(Set<String> candidates)
+        public Set<String> doCheckExpired(Set<String> candidates, long timeLimit)
         {
             return candidates;
+        }
+
+        @Override
+        public Set<String> doGetExpired(long timeLimit)
+        {
+            return Collections.emptySet();
+        }
+
+        @Override
+        public void doCleanOrphans(long timeLimit)
+        {
+            //noop
         }
     }
 

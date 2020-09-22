@@ -22,8 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-
 /**
  * The HTTP Upgrade to WebSocket Response
  */

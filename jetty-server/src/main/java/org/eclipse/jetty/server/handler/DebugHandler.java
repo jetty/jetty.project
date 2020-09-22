@@ -55,7 +55,6 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
         final Thread thread = Thread.currentThread();
         final String old_name = thread.getName();
 
-        boolean suspend = false;
         boolean retry = false;
         String name = (String)request.getAttribute("org.eclipse.jetty.thread.name");
         if (name == null)
@@ -97,11 +96,10 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
         finally
         {
             thread.setName(old_name);
-            suspend = baseRequest.getHttpChannelState().isSuspended();
-            if (suspend)
+            if (baseRequest.getHttpChannelState().isAsyncStarted())
             {
                 request.setAttribute("org.eclipse.jetty.thread.name", name);
-                print(name, "SUSPEND");
+                print(name, "ASYNC");
             }
             else
                 print(name, "RESPONSE " + base_response.getStatus() + (ex == null ? "" : ("/" + ex)) + " " + base_response.getContentType());

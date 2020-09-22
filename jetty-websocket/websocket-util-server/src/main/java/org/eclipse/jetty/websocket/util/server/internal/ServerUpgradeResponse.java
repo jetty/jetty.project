@@ -128,8 +128,7 @@ public class ServerUpgradeResponse
     public Map<String, List<String>> getHeadersMap()
     {
         Map<String, List<String>> headers = response.getHeaderNames().stream()
-            .collect(Collectors.toMap((name) -> name,
-                (name) -> new ArrayList<>(response.getHeaders(name))));
+            .collect(Collectors.toMap((name) -> name, (name) -> new ArrayList<>(response.getHeaders(name))));
         return Collections.unmodifiableMap(headers);
     }
 

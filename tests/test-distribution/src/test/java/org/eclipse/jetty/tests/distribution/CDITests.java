@@ -60,7 +60,7 @@ public class CDITests extends AbstractDistributionTest
             // -- Weld --
             Arguments.of("weld", "cdi-spi", null), // Weld >= 3.1.2
             Arguments.of("weld", "decorate", null), // Weld >= 3.1.2
-            // TODO Arguments.of("weld", "cdi-decorate", null), // Weld >= 3.1.3
+            Arguments.of("weld", "cdi-decorate", null), // Weld >= 3.1.3
 
             // -- Apache OpenWebBeans --
             Arguments.of("owb", "cdi-spi", null)

@@ -19,9 +19,11 @@
 package org.eclipse.jetty.server.session;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.session.infinispan.EmbeddedQueryManager;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStore;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
+import org.eclipse.jetty.session.infinispan.QueryManager;
 import org.infinispan.query.Search;
 import org.infinispan.query.dsl.Query;
 import org.infinispan.query.dsl.QueryFactory;
@@ -62,6 +64,8 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
     {
         InfinispanSessionDataStoreFactory factory = new InfinispanSessionDataStoreFactory();
         factory.setCache(_testSupport.getCache());
+        QueryManager qm = new EmbeddedQueryManager(_testSupport.getCache());
+        factory.setQueryManager(qm);
         return factory;
     }
 
@@ -113,31 +117,6 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
         assertThrows(UnreadableSessionDataException.class, () -> store.load("222"));
     }
 
-    /**
-     * This test currently won't work for Infinispan - there is currently no
-     * means to query it to find sessions that have expired.
-     *
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStoreTest#testGetExpiredPersistedAndExpiredOnly()
-     */
-    @Override
-    public void testGetExpiredPersistedAndExpiredOnly() throws Exception
-    {
-
-    }
-
-    /**
-     * This test won't work for Infinispan - there is currently no
-     * means to query infinispan to find other expired sessions.
-     */
-    @Override
-    public void testGetExpiredDifferentNode() throws Exception
-    {
-        //Ignore
-    }
-
-    /**
-     *
-     */
     @Override
     public boolean checkSessionPersisted(SessionData data) throws Exception
     {
@@ -152,7 +131,7 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
             Thread.currentThread().setContextClassLoader(old);
         }
     }
-
+    
     @Test
     public void testQuery() throws Exception
     {

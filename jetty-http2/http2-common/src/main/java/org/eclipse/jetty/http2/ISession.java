@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http2;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.http2.api.Session;
@@ -48,18 +49,25 @@ public interface ISession extends Session
     public void removeStream(IStream stream);
 
     /**
-     * <p>Enqueues the given frames to be written to the connection.</p>
+     * <p>Sends the given list of frames to create a new {@link Stream}.</p>
      *
-     * @param stream the stream the frames belong to
-     * @param callback the callback that gets notified when the frames have been sent
-     * @param frame the first frame to enqueue
-     * @param frames additional frames to enqueue
+     * @param frames the list of frames to send
+     * @param promise the promise that gets notified of the stream creation
+     * @param listener the listener that gets notified of stream events
      */
-    public void frames(IStream stream, Callback callback, Frame frame, Frame... frames);
+    public void newStream(IStream.FrameList frames, Promise<Stream> promise, Stream.Listener listener);
+
+    /**
+     * <p>Enqueues the given frames to be written to the connection.</p>
+     * @param stream the stream the frames belong to
+     * @param frames the frames to enqueue
+     * @param callback the callback that gets notified when the frames have been sent
+     */
+    public void frames(IStream stream, List<? extends Frame> frames, Callback callback);
 
     /**
      * <p>Enqueues the given PUSH_PROMISE frame to be written to the connection.</p>
-     * <p>Differently from {@link #frames(IStream, Callback, Frame, Frame...)}, this method
+     * <p>Differently from {@link #frames(IStream, List, Callback)}, this method
      * generates atomically the stream id for the pushed stream.</p>
      *
      * @param stream the stream associated to the pushed stream

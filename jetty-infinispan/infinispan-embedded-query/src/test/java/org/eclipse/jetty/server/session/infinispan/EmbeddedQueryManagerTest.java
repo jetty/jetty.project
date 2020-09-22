@@ -24,8 +24,11 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.session.infinispan.EmbeddedQueryManager;
+import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
 import org.eclipse.jetty.session.infinispan.QueryManager;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.hibernate.search.cfg.Environment;
@@ -39,12 +42,15 @@ import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class EmbeddedQueryManagerTest
 {
     public static final String DEFAULT_CACHE_NAME = "session_test_cache";
+    private static final Random r = new Random();
+    private static final int NUM_SESSIONS = 10;
+    private static int count = 0;
+    private static final int MAX_EXPIRY_TIME = 1000;
 
     @Test
     public void test()
@@ -54,7 +60,8 @@ public class EmbeddedQueryManagerTest
 
         //TODO verify that this is being indexed properly, if you change expiry to something that is not a valid field it still passes the tests
         SearchMapping mapping = new SearchMapping();
-        mapping.entity(SessionData.class).indexed().providedId().property("expiry", ElementType.FIELD).field();
+        mapping.entity(InfinispanSessionData.class).indexed().property("expiry", ElementType.FIELD).field();
+
         Properties properties = new Properties();
         properties.put(Environment.MODEL_MAPPING, mapping);
         properties.put("hibernate.search.default.indexBase", MavenTestingUtils.getTargetTestingDir().getAbsolutePath());
@@ -64,43 +71,64 @@ public class EmbeddedQueryManagerTest
         if (dcc != null)
             b = b.read(dcc);
 
-        b.indexing().index(Index.ALL).addIndexedEntity(SessionData.class).withProperties(properties);
+        b.indexing().index(Index.ALL).addIndexedEntity(InfinispanSessionData.class).withProperties(properties);
         Configuration c = b.build();
 
         cacheManager.defineConfiguration(name, c);
-        Cache<String, SessionData> cache = cacheManager.getCache(name);
+        Cache<String, InfinispanSessionData> cache = cacheManager.getCache(name);
 
-        //put some sessions into the cache
-        int numSessions = 10;
-        long currentTime = 500;
-        int maxExpiryTime = 1000;
-        Set<String> expiredSessions = new HashSet<>();
-        Random r = new Random();
+        //put some sessions into the cache for "foo" context
+        ContextHandler fooHandler = new ContextHandler();
+        fooHandler.setContextPath("/foo");
+        SessionContext fooSessionContext = new SessionContext("w0", fooHandler.getServletContext());
+        Set<InfinispanSessionData> fooSessions = createSessions(cache, fooSessionContext);
 
-        for (int i = 0; i < numSessions; i++)
+        //put some sessions into the cache for "bar" context
+        ContextHandler barHandler = new ContextHandler();
+        barHandler.setContextPath("/bar");
+        SessionContext barSessionContext = new SessionContext("w0", barHandler.getServletContext());
+        Set<InfinispanSessionData> barSessions = createSessions(cache, barSessionContext);
+
+        int time = 500;
+
+        //run the query for "foo" context
+        checkResults(cache, fooSessionContext, time, fooSessions);
+
+        //run the query for the "bar" context
+        checkResults(cache, barSessionContext, time, barSessions);
+    }
+
+    private Set<InfinispanSessionData> createSessions(Cache<String, InfinispanSessionData> cache, SessionContext sessionContext)
+    {
+        Set<InfinispanSessionData> sessions = new HashSet<>();
+
+        for (int i = 0; i < NUM_SESSIONS; i++)
         {
             //create new sessiondata with random expiry time
-            long expiryTime = r.nextInt(maxExpiryTime);
-            SessionData sd = new SessionData("sd" + i, "", "", 0, 0, 0, 0);
+            long expiryTime = r.nextInt(MAX_EXPIRY_TIME);
+            String id = "sd" + count;
+            ++count;
+            InfinispanSessionData sd = new InfinispanSessionData(id, sessionContext.getCanonicalContextPath(), sessionContext.getVhost(), 0, 0, 0, 0);
             sd.setExpiry(expiryTime);
-
-            //if this entry has expired add it to expiry list
-            if (expiryTime <= currentTime)
-                expiredSessions.add("sd" + i);
-
+            sessions.add(sd);
             //add to cache
-            cache.put("sd" + i, sd);
+            cache.put(id, sd);
         }
+        return sessions;
+    }
 
-        //run the query
+    private void checkResults(Cache<String, InfinispanSessionData> cache, SessionContext sessionContext, int time, Set<InfinispanSessionData> sessions)
+    {
         QueryManager qm = new EmbeddedQueryManager(cache);
-        Set<String> queryResult = qm.queryExpiredSessions(currentTime);
+        Set<String> queryResult = qm.queryExpiredSessions(sessionContext, time);
 
-        // Check that the result is correct
-        assertEquals(expiredSessions.size(), queryResult.size());
-        for (String s : expiredSessions)
+        for (SessionData s : sessions)
         {
-            assertTrue(queryResult.contains(s));
+            if (s.getExpiry() > 0 && s.getExpiry() <= time)
+            {
+                assertTrue(queryResult.remove(s.getId()));
+            }
         }
+        assertTrue(queryResult.isEmpty()); //check we got them all
     }
 }

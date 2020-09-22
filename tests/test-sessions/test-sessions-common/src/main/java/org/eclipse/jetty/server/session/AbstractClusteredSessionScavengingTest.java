@@ -51,7 +51,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public abstract class AbstractClusteredSessionScavengingTest extends AbstractTestBase
 {
-
     public void pause(int secs)
         throws InterruptedException
     {
