@@ -21,7 +21,6 @@ package com.acme.test;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.HttpConstraint;
 import jakarta.servlet.annotation.ServletSecurity;
 import jakarta.servlet.annotation.WebServlet;
@@ -33,10 +32,9 @@ import jakarta.servlet.http.HttpServletResponse;
 @ServletSecurity(@HttpConstraint(rolesAllowed = "admin"))
 public class SecuredServlet extends HttpServlet
 {
-
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
-        throws ServletException, IOException
+        throws IOException
     {
         PrintWriter writer = resp.getWriter();
         writer.println("<html>");

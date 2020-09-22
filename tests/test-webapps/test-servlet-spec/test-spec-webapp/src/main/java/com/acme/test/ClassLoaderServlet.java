@@ -39,7 +39,6 @@ public class ClassLoaderServlet extends HttpServlet
     {
         try
         {
-
             PrintWriter writer = resp.getWriter();
             writer.println("<html>");
             writer.println("<HEAD><link rel=\"stylesheet\" type=\"text/css\"  href=\"stylesheet.css\"/></HEAD>");
