@@ -1,19 +1,19 @@
 //
-// ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  ========================================================================
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
 //
-// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
-// ========================================================================
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
 //
 
 package org.eclipse.jetty.websocket.tests;
@@ -94,7 +94,7 @@ public class UpgradeWithLeftOverHttpBytesTest
     }
 
     @Test
-    public void testRequestCompletesFirst_NoWebSocketBytesInResponse() throws Exception
+    public void testRequestCompletesFirstNoWebSocketBytesInResponse() throws Exception
     {
         // Initiate connection.
         OnOpenSocket clientEndpoint = new OnOpenSocket();
@@ -141,7 +141,7 @@ public class UpgradeWithLeftOverHttpBytesTest
     }
 
     @Test
-    public void testRequestCompletesFirst_WithWebSocketBytesInResponse() throws Exception
+    public void testRequestCompletesFirstWithWebSocketBytesInResponse() throws Exception
     {
         // Initiate connection.
         OnOpenSocket clientEndpoint = new OnOpenSocket();
@@ -192,7 +192,7 @@ public class UpgradeWithLeftOverHttpBytesTest
     }
 
     @Test
-    public void testResponseCompletesFirst_NoWebSocketBytesInResponse() throws Exception
+    public void testResponseCompletesFirstNoWebSocketBytesInResponse() throws Exception
     {
         // We delay the request to finish until after the response is complete.
         client.addBean(new Request.Listener()
@@ -220,12 +220,10 @@ public class UpgradeWithLeftOverHttpBytesTest
             "\n";
         serverSocket.getOutputStream().write(upgradeResponse.getBytes(StandardCharsets.ISO_8859_1));
 
-
         // Wait for WebSocket to be opened, wait 1 sec before allowing it to continue.
         assertTrue(clientEndpoint.openLatch.await(5, TimeUnit.SECONDS));
         Thread.sleep(1000);
         clientEndpoint.onOpenBlocked.countDown();
-
 
         // Send some websocket data.
         int numFrames = 1000;
@@ -251,7 +249,7 @@ public class UpgradeWithLeftOverHttpBytesTest
     }
 
     @Test
-    public void testResponseCompletesFirst_WithWebSocketBytesInResponse() throws Exception
+    public void testResponseCompletesFirstWithWebSocketBytesInResponse() throws Exception
     {
         // We delay the request to finish until after the response is complete.
         client.addBean(new Request.Listener()
