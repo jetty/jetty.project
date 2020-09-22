@@ -132,9 +132,9 @@ Jetty Module Management:
 
   --create-start-d
                    Create a ${jetty.base}/start.d directory.  If a ${jetty.base}/start.ini
-                   files exists, then all it is moved into start.d. This is the default
-                   action and this option is only need to force the creation of a
-                   ${jetty.home}/start.d
+                   files exists, then all it is moved into start.d. Using a start.d directory
+                   is the default and this option is only needed to either force the creation of a
+                   ${jetty.home}/start.d or to move a start.ini file to start.d
 
   --create-start-ini
                    Create a ${jetty.base}/start.ini file.  If a ${jetty.base}/start.d
