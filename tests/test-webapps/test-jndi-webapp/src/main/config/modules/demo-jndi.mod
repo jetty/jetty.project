@@ -8,8 +8,10 @@ demo
 webapp
 
 [depends]
-plus
+deploy
+ext
 jdbc
+plus
 
 [files]
 basehome:modules/demo.d/demo-jndi.xml|webapps/demo-jndi.xml

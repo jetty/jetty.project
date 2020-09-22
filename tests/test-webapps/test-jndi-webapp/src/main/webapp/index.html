@@ -22,11 +22,12 @@ This example shows how to configure and lookup resources such as DataSources, a 
   <p>To enable JNDI in a base jetty instance do:
     <pre>
     $ cd $JETTY_BASE
-    $ java -jar $JETTY_HOME/start.jar --add-to-startd=jndi
+    $ java -jar $JETTY_HOME/start.jar --add-module=jndi
     </pre>
   </p>
-  <p>This will create a $JETTY_BASE/start.d/jndi.ini file to enable and parameterise JNDI.  If the --add-to-start option instead, then the same initialisation will be appended to the
-  $JETTY_BASE/start.ini file instead. The jetty demo-base already has JNDI enabled in the start.ini file and some mock resources included.  </p>
+  <p>This will create a $JETTY_BASE/start.d/jndi.ini file to enable and parameterise JNDI. 
+  The jetty demo-base already has JNDI enabled and some mock resources included by the
+  demo-jndi module.  </p>
 <p>The full source of this demonstration is available <a href="https://github.com/eclipse/jetty.project/blob/master/tree/tests/test-webapps/test-jndi-webapp">here</a>.</p>
 
 
