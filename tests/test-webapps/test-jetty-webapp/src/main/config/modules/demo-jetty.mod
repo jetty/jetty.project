@@ -11,12 +11,12 @@ webapp
 deploy
 jdbc
 jsp
+jstl
 annotations
 ext
 servlets
 websocket-javax
 websocket-jetty
-test-keystore
 demo-realm
 
 [files]
