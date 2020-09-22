@@ -642,7 +642,9 @@ public interface HttpFields extends Iterable<HttpField>
             if (fields.size() == 0)
                 return this;
 
-            if (_size + fields.size() >= _fields.length)
+            if (_fields == null)
+                _fields = new HttpField[fields.size() + 4];
+            else if (_size + fields.size() >= _fields.length)
                 _fields = Arrays.copyOf(_fields, _size + fields.size() + 4);
 
             if (fields instanceof Immutable)

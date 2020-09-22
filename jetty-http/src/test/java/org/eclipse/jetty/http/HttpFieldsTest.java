@@ -747,6 +747,9 @@ public class HttpFieldsTest
     {
         HttpFields.Mutable fields = HttpFields.build();
         fields.add("One", "1");
+
+        fields = new HttpFields.Mutable(fields);
+
         fields.add(HttpFields.build().add("two", "2").add("three", "3"));
         fields.add(HttpFields.build().add("four", "4").add("five", "5").asImmutable());
 
