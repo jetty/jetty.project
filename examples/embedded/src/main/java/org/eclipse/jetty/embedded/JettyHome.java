@@ -27,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A utility test class to locate a Jetty Distribution for testing purposes by searching:
+ * A utility test class to locate a Jetty Home for testing purposes by searching:
  * <ul>
  * <li>The <code>jetty.home</code> system property</li>
  * <li>The <code>JETTY_HOME</code> environment variable</li>
@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 public class JettyHome
 {
     private static final Logger LOG = LoggerFactory.getLogger(JettyHome.class);
-    public static final Path DISTRIBUTION;
+    public static final Path JETTY_HOME;
 
     static
     {
@@ -51,13 +51,9 @@ public class JettyHome
 
         Path distro = null;
 
-        if (jettyHome != null)
+        if (jettyHome != null && Files.exists(jettyHome.resolve("start.jar")))
         {
-            Path parent = jettyHome.getParent();
-            if (hasDemoBase(parent))
-            {
-                distro = parent;
-            }
+            distro = jettyHome;
         }
 
         if (distro == null)
@@ -70,7 +66,7 @@ public class JettyHome
                 while (dir == null && working != null)
                 {
                     dir = asDirectory(working.resolve("jetty-home/target/jetty-home").toString());
-                    if (dir != null && hasDemoBase(dir))
+                    if (dir != null && Files.exists(dir.resolve("start.jar")))
                     {
                         distro = dir;
                     }
@@ -95,13 +91,7 @@ public class JettyHome
             if (LOG.isDebugEnabled())
                 LOG.debug("JettyHome() FOUND = {}", distro);
         }
-        DISTRIBUTION = distro;
-    }
-
-    private static boolean hasDemoBase(Path path)
-    {
-        Path demoBase = path.resolve("demo-base");
-        return Files.exists(demoBase) && Files.isDirectory(demoBase);
+        JETTY_HOME = distro;
     }
 
     private static Path asDirectory(String path)
@@ -144,9 +134,9 @@ public class JettyHome
 
     public static Path get()
     {
-        if (DISTRIBUTION == null)
-            throw new RuntimeException("jetty-distribution not found");
-        return DISTRIBUTION;
+        if (JETTY_HOME == null)
+            throw new RuntimeException("jetty-home not found");
+        return JETTY_HOME;
     }
 
     public static Path resolve(String path)
@@ -156,6 +146,6 @@ public class JettyHome
 
     public static void main(String... arg)
     {
-        System.err.println("Jetty Distribution is " + DISTRIBUTION);
+        System.err.println("Jetty Home is " + JETTY_HOME);
     }
 }

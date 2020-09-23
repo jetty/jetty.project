@@ -44,7 +44,7 @@ public class LikeJettyXmlTest extends AbstractEmbeddedTest
     @BeforeEach
     public void startServer() throws Exception
     {
-        assumeTrue(JettyHome.DISTRIBUTION != null, "jetty-distribution not found");
+        assumeTrue(JettyHome.JETTY_HOME != null, "jetty-distribution not found");
 
         server = LikeJettyXml.createServer(0, 0, false);
         server.start();

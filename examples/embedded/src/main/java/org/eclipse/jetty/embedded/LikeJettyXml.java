@@ -65,21 +65,13 @@ public class LikeJettyXml
 {
     public static Server createServer(int port, int securePort, boolean addDebugListener) throws Exception
     {
-        // Path to as-built jetty-distribution directory
-        Path jettyDistro = JettyHome.get();
-
         // Find jetty home and base directories
-        String homePath = System.getProperty("jetty.home", jettyDistro.resolve("jetty-home").toString());
-        Path homeDir = Paths.get(homePath);
-
-        String basePath = System.getProperty("jetty.base", jettyDistro.resolve("demo-base").toString());
-        Path baseDir = Paths.get(basePath);
+        Path jettyHome = JettyHome.get();
+        Path jettyBase = JettyDemoBase.get();
 
         // Configure jetty.home and jetty.base system properties
-        String jettyHome = homeDir.toAbsolutePath().toString();
-        String jettyBase = baseDir.toAbsolutePath().toString();
-        System.setProperty("jetty.home", jettyHome);
-        System.setProperty("jetty.base", jettyBase);
+        System.setProperty("jetty.home", jettyHome.toString());
+        System.setProperty("jetty.base", jettyBase.toString());
 
         // === jetty.xml ===
         // Setup Threadpool
