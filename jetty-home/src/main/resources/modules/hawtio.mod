@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Deploys the Hawtio console as a webapplication.
+Deploys the Hawtio console as a web application.
 
 [tags]
 3rdparty

@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enable JASPI authentication for deployed webapplications.
+Enables JASPI authentication for deployed web applications.
 
 [depend]
 security

@@ -1,7 +1,6 @@
-#
-# Thread Limit module
-# Applies ThreadLimiteHandler to entire server
-#
+
+[description]
+Applies ThreadLimiteHandler to entire server
 
 [tags]
 server

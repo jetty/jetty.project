@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enable a server wide accept rate limit.
+Enables a server-wide accept rate limit.
 
 [tags]
 connector

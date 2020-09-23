@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Integration of CDI within webapp to Jetty container object lifecycles.
+Provides integration of CDI within webapp to Jetty container object lifecycles.
 This module does not provide CDI, but configures jetty to support various
 integration modes with a CDI implementation on the webapp classpath.
 CDI integration modes can be selected per webapp with the "org.eclipse.jetty.cdi"

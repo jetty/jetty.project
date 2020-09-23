@@ -2,8 +2,7 @@
 
 [description]
 Enables a TLS(SSL) Connector on the server.
-This may be used for HTTPS and/or HTTP2 by enabling
-the associated support modules.
+This may be used for HTTPS and/or HTTP2 by enabling the associated support modules.
 
 [tags]
 connector

@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Deprecated Debug Log using the DebugHandle.
+Deprecated Debug Log using DebugHandle.
 Replaced with the debug module.
 
 [tags]
