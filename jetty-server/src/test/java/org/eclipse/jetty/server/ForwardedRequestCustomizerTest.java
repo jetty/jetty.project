@@ -76,6 +76,7 @@ public class ForwardedRequestCustomizerTest
         http.getHttpConfiguration().setRequestHeaderSize(512);
         http.getHttpConfiguration().setResponseHeaderSize(512);
         http.getHttpConfiguration().setOutputBufferSize(2048);
+        http.getHttpConfiguration().setSecurePort(443);
         customizer = new ForwardedRequestCustomizer();
         http.getHttpConfiguration().addCustomizer(customizer);
         connector = new LocalConnector(server, http);
@@ -277,6 +278,83 @@ public class ForwardedRequestCustomizerTest
                     .requestURL("https://myhost/")
             ),
 
+            // =================================================================
+            // ProxyPass usages
+            Arguments.of(new Request("ProxyPass (example.com:80 to localhost:8080)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: localhost:8080",
+                        "X-Forwarded-For: 10.20.30.40",
+                        "X-Forwarded-Host: example.com"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("example.com").serverPort(80)
+                    .remoteAddr("10.20.30.40")
+                    .requestURL("http://example.com/")
+            ),
+            Arguments.of(new Request("ProxyPass (example.com:81 to localhost:8080)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: localhost:8080",
+                        "X-Forwarded-For: 10.20.30.40",
+                        "X-Forwarded-Host: example.com:81",
+                        "X-Forwarded-Server: example.com",
+                        "X-Forwarded-Proto: https"
+                    ),
+                new Expectations()
+                    .scheme("https").serverName("example.com").serverPort(81)
+                    .remoteAddr("10.20.30.40")
+                    .requestURL("https://example.com:81/")
+            ),
+            Arguments.of(new Request("ProxyPass (example.com:443 to localhost:8443)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: localhost:8443",
+                        "X-Forwarded-Host: example.com",
+                        "X-Forwarded-Proto: https"
+                    ),
+                new Expectations()
+                    .scheme("https").serverName("example.com").serverPort(443)
+                    .requestURL("https://example.com/")
+            ),
+            Arguments.of(new Request("ProxyPass (IPv6 from [::1]:80 to localhost:8080)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: localhost:8080",
+                        "X-Forwarded-For: 10.20.30.40",
+                        "X-Forwarded-Host: [::1]"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("[::1]").serverPort(80)
+                    .remoteAddr("10.20.30.40")
+                    .requestURL("http://[::1]/")
+            ),
+            Arguments.of(new Request("ProxyPass (IPv6 from [::1]:8888 to localhost:8080)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: localhost:8080",
+                        "X-Forwarded-For: 10.20.30.40",
+                        "X-Forwarded-Host: [::1]:8888"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("[::1]").serverPort(8888)
+                    .remoteAddr("10.20.30.40")
+                    .requestURL("http://[::1]:8888/")
+            ),
+            Arguments.of(new Request("Multiple ProxyPass (example.com:80 to rp.example.com:82 to localhost:8080)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: localhost:8080",
+                        "X-Forwarded-For: 10.20.30.40, 10.0.0.1",
+                        "X-Forwarded-Host: example.com, rp.example.com:82",
+                        "X-Forwarded-Server: example.com, rp.example.com",
+                        "X-Forwarded-Proto: https, http"
+                    ),
+                new Expectations()
+                    .scheme("https").serverName("example.com").serverPort(443)
+                    .remoteAddr("10.20.30.40")
+                    .requestURL("https://example.com/")
+            ),
             // =================================================================
             // X-Forwarded-* usages
             Arguments.of(new Request("X-Forwarded-Proto (old syntax)")
@@ -574,7 +652,34 @@ public class ForwardedRequestCustomizerTest
                     .requestURL("http://example.com/")
                     .remoteAddr("192.0.2.43").remotePort(0)
             ),
-
+            // =================================================================
+            // Forced Behavior
+            Arguments.of(new Request("Forced Host (no port)")
+                    .configureCustomizer((customizer) -> customizer.setForcedHost("always.example.com"))
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "X-Forwarded-For: 11.9.8.7:1111",
+                        "X-Forwarded-Host: example.com:2222"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("always.example.com").serverPort(80)
+                    .requestURL("http://always.example.com/")
+                    .remoteAddr("11.9.8.7").remotePort(1111)
+            ),
+            Arguments.of(new Request("Forced Host with port")
+                    .configureCustomizer((customizer) -> customizer.setForcedHost("always.example.com:9090"))
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "X-Forwarded-For: 11.9.8.7:1111",
+                        "X-Forwarded-Host: example.com:2222"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("always.example.com").serverPort(9090)
+                    .requestURL("http://always.example.com:9090/")
+                    .remoteAddr("11.9.8.7").remotePort(1111)
+            ),
             // =================================================================
             // Legacy Headers
             Arguments.of(new Request("X-Proxied-Https")
@@ -650,7 +755,7 @@ public class ForwardedRequestCustomizerTest
         request.configure(customizer);
 
         String rawRequest = request.getRawRequest((header) -> header);
-        System.out.println(rawRequest);
+        // System.out.println(rawRequest);
 
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
         assertThat("status", response.getStatus(), is(200));
@@ -670,7 +775,7 @@ public class ForwardedRequestCustomizerTest
             .replaceFirst("X-Proxied-Https:", "Jetty-Proxied-Https:")
             .replaceFirst("Proxy-Ssl-Id:", "Jetty-Proxy-Ssl-Id:")
             .replaceFirst("Proxy-auth-cert:", "Jetty-Proxy-Auth-Cert:"));
-        System.out.println(rawRequest);
+        // System.out.println(rawRequest);
 
         HttpTester.Response response = HttpTester.parseResponse(connectorConfigured.getResponse(rawRequest));
         assertThat("status", response.getStatus(), is(200));
@@ -691,7 +796,7 @@ public class ForwardedRequestCustomizerTest
         request.configure(customizer);
 
         String rawRequest = request.getRawRequest((header) -> header);
-        System.out.println(rawRequest);
+        // System.out.println(rawRequest);
 
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
         assertThat("status", response.getStatus(), is(400));
