@@ -11,5 +11,5 @@ webapp
 deploy
 
 [files]
-maven://org.eclipse.jetty.examples/example-async-rest-webapp/${jetty.version}/war|webapps/demo-async-rest.war
+maven://org.eclipse.jetty.demos/demo-async-rest-webapp/${jetty.version}/war|webapps/demo-async-rest.war
 
