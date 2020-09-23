@@ -259,28 +259,28 @@
       <type>zip</type>
       <exclusions>
         <exclusion>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>test-jetty-webapp</artifactId>
+          <groupId>org.eclipse.jetty.demos</groupId>
+          <artifactId>demo-jetty-webapp</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.eclipse.jetty.tests</groupId>
-          <artifactId>test-jndi-webapp</artifactId>
+          <groupId>org.eclipse.jetty.demos</groupId>
+          <artifactId>demo-jndi-webapp</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.eclipse.jetty.tests</groupId>
-          <artifactId>test-jaas-webapp</artifactId>
+          <groupId>org.eclipse.jetty.demos</groupId>
+          <artifactId>demo-jaas-webapp</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.eclipse.jetty.tests</groupId>
-          <artifactId>test-spec-webapp</artifactId>
+          <groupId>org.eclipse.jetty.demos</groupId>
+          <artifactId>demo-spec-webapp</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.eclipse.jetty.tests</groupId>
-          <artifactId>test-proxy-webapp</artifactId>
+          <groupId>org.eclipse.jetty.demos</groupId>
+          <artifactId>demo-proxy-webapp</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.eclipse.jetty.examples</groupId>
-          <artifactId>example-async-rest-webapp</artifactId>
+          <groupId>org.eclipse.jetty.demos</groupId>
+          <artifactId>demo-async-rest-webapp</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
