@@ -102,36 +102,6 @@
       <artifactId>jetty-home</artifactId>
       <version>${project.version}</version>
       <type>pom</type>
-      <exclusions>
-        <exclusion>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-jaspi</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty.demos</groupId>
-          <artifactId>demo-jetty-webapp</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty.demos</groupId>
-          <artifactId>demo-jndi-webapp</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty.demos</groupId>
-          <artifactId>demo-jaas-webapp</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty.demos</groupId>
-          <artifactId>demo-spec-webapp</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty.demos</groupId>
-          <artifactId>demo-proxy-webapp</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty.demos</groupId>
-          <artifactId>demo-async-rest-webapp</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
