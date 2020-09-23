@@ -31,22 +31,22 @@ import org.slf4j.LoggerFactory;
  * <ul>
  * <li>The <code>jetty.home</code> system property</li>
  * <li>The <code>JETTY_HOME</code> environment variable</li>
- * <li>The working directory hierarchy with subdirectory <code>jetty-distribution/target/distribution</code></li>
+ * <li>The working directory hierarchy with subdirectory <code>jetty-home/target/jetty-home</code></li>
  * </ul>
  */
-public class JettyDistribution
+public class JettyHome
 {
-    private static final Logger LOG = LoggerFactory.getLogger(JettyDistribution.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JettyHome.class);
     public static final Path DISTRIBUTION;
 
     static
     {
         Path jettyHome = asDirectory(System.getProperty("jetty.home"));
-        LOG.debug("JettyDistribution(prop(jetty.home)) = {}", jettyHome);
+        LOG.debug("JettyHome(prop(jetty.home)) = {}", jettyHome);
         if (jettyHome == null)
         {
             jettyHome = asDirectory(System.getenv().get("JETTY_HOME"));
-            LOG.debug("JettyDistribution(env(JETTY_HOME)) = {}", jettyHome);
+            LOG.debug("JettyHome(env(JETTY_HOME)) = {}", jettyHome);
         }
 
         Path distro = null;
@@ -66,10 +66,10 @@ public class JettyDistribution
             {
                 Path working = Paths.get(System.getProperty("user.dir"));
                 Path dir = null;
-                LOG.debug("JettyDistribution(prop(user.dir)) = {}", working);
+                LOG.debug("JettyHome(prop(user.dir)) = {}", working);
                 while (dir == null && working != null)
                 {
-                    dir = asDirectory(working.resolve("jetty-distribution/target/distribution").toString());
+                    dir = asDirectory(working.resolve("jetty-home/target/jetty-home").toString());
                     if (dir != null && hasDemoBase(dir))
                     {
                         distro = dir;
@@ -78,7 +78,7 @@ public class JettyDistribution
                     working = working.getParent();
                 }
                 if (LOG.isDebugEnabled())
-                    LOG.debug("JettyDistribution(working.resolve(...)) = {}", distro);
+                    LOG.debug("JettyHome(working.resolve(...)) = {}", distro);
             }
             catch (Throwable th)
             {
@@ -88,12 +88,12 @@ public class JettyDistribution
 
         if (distro == null)
         {
-            LOG.info("JettyDistribution() FAILURE: NOT FOUND");
+            LOG.info("JettyHome() FAILURE: NOT FOUND");
         }
         else
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("JettyDistribution() FOUND = {}", distro);
+                LOG.debug("JettyHome() FOUND = {}", distro);
         }
         DISTRIBUTION = distro;
     }

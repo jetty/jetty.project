@@ -42,7 +42,7 @@ public class OneWebAppTest extends AbstractEmbeddedTest
     @BeforeEach
     public void startServer() throws Exception
     {
-        assumeTrue(JettyDistribution.DISTRIBUTION != null, "jetty-distribution not found");
+        assumeTrue(JettyHome.DISTRIBUTION != null, "jetty-distribution not found");
 
         server = OneWebApp.createServer(0);
         server.start();

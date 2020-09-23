@@ -51,7 +51,7 @@ public class ServerWithAnnotations
         webapp.addConfiguration(new EnvConfiguration(), new PlusConfiguration(), new AnnotationConfiguration());
 
         webapp.setContextPath("/");
-        File warFile = JettyDistribution.resolve("demo-base/webapps/test-spec.war").toFile();
+        File warFile = JettyHome.resolve("demo-base/webapps/test-spec.war").toFile();
         webapp.setWar(warFile.getAbsolutePath());
         webapp.setAttribute(
             "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",

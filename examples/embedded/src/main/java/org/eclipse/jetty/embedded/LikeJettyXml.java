@@ -66,7 +66,7 @@ public class LikeJettyXml
     public static Server createServer(int port, int securePort, boolean addDebugListener) throws Exception
     {
         // Path to as-built jetty-distribution directory
-        Path jettyDistro = JettyDistribution.get();
+        Path jettyDistro = JettyHome.get();
 
         // Find jetty home and base directories
         String homePath = System.getProperty("jetty.home", jettyDistro.resolve("jetty-home").toString());

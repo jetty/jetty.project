@@ -42,7 +42,7 @@ public class ServerWithJNDITest extends AbstractEmbeddedTest
     @BeforeEach
     public void startServer() throws Exception
     {
-        assumeTrue(JettyDistribution.DISTRIBUTION != null, "jetty-distribution not found");
+        assumeTrue(JettyHome.DISTRIBUTION != null, "jetty-distribution not found");
 
         server = ServerWithJNDI.createServer(0);
         server.start();
