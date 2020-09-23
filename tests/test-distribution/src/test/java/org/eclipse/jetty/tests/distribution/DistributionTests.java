@@ -395,7 +395,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 writer.write("org.eclipse.jetty.LEVEL=INFO");
             }
 
-            File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-proxy-webapp:war:" + jettyVersion);
+            File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-proxy-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "proxy");
 
             int port = distribution.freePort();

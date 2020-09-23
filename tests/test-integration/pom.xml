@@ -167,8 +167,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>test-jetty-webapp</artifactId>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>demo-jetty-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>

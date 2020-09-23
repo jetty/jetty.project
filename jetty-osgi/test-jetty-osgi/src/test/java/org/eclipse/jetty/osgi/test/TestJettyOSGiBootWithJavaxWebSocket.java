@@ -84,7 +84,7 @@ public class TestJettyOSGiBootWithJavaxWebSocket
     {
         List<Option> res = new ArrayList<>();
         //test webapp bundle
-        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("test-jetty-webapp").classifier("webbundle").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-jetty-webapp").classifier("webbundle").versionAsInProject().noStart());
         return res;
     }
 

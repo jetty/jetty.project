@@ -58,7 +58,7 @@ public class DynamicListenerTests
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            File war = distribution.resolveArtifact("org.eclipse.jetty:test-jetty-webapp:war:" + jettyVersion);
+            File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-jetty-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
             Path etc = Paths.get(jettyBase.toString(), "etc");

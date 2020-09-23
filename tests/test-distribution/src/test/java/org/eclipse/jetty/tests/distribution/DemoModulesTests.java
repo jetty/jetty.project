@@ -120,19 +120,19 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                 startHttpClient();
                 ContentResponse response;
 
-                response = client.GET("http://localhost:" + httpPort + "/async-rest/testSerial?items=kayak");
+                response = client.GET("http://localhost:" + httpPort + "/demo-async-rest/testSerial?items=kayak");
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("Blocking: kayak"));
 
-                response = client.GET("http://localhost:" + httpPort + "/async-rest/testSerial?items=mouse,beer,gnome");
+                response = client.GET("http://localhost:" + httpPort + "/demo-async-rest/testSerial?items=mouse,beer,gnome");
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("Blocking: mouse,beer,gnome"));
 
-                response = client.GET("http://localhost:" + httpPort + "/async-rest/testAsync?items=kayak");
+                response = client.GET("http://localhost:" + httpPort + "/demo-async-rest/testAsync?items=kayak");
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("Asynchronous: kayak"));
 
-                response = client.GET("http://localhost:" + httpPort + "/async-rest/testAsync?items=mouse,beer,gnome");
+                response = client.GET("http://localhost:" + httpPort + "/demo-async-rest/testAsync?items=mouse,beer,gnome");
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("Asynchronous: mouse,beer,gnome"));
             }
