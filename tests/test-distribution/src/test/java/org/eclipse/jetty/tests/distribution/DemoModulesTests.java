@@ -55,7 +55,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
 
         String[] argsConfig = {
-            "--add-modules=demo-base"
+            "--add-modules=demo"
         };
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
@@ -99,7 +99,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
 
         String[] argsConfig = {
-            "--add-modules=demo-base"
+            "--add-modules=demo"
         };
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
@@ -155,7 +155,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
 
         String[] argsConfig = {
-            "--add-modules=demo-base"
+            "--add-modules=demo"
         };
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
@@ -207,7 +207,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             .build();
 
         String[] argsConfig = {
-            "--add-modules=demo-base"
+            "--add-modules=demo"
         };
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
@@ -246,7 +246,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             .build();
 
         String[] argsConfig = {
-            "--add-modules=demo-base"
+            "--add-modules=demo"
         };
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))

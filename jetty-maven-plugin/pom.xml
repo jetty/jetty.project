@@ -279,7 +279,7 @@
           <artifactId>test-proxy-webapp</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.eclipse.jetty.example-async-rest</groupId>
+          <groupId>org.eclipse.jetty.examples</groupId>
           <artifactId>example-async-rest-webapp</artifactId>
         </exclusion>
       </exclusions>
