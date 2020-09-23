@@ -92,14 +92,6 @@ public class MavenMetadataTest
         assertTrue(MavenMetadata.isExpiredTimestamp(timestamp), "Timestamp should be stale: " + timestamp);
     }
 
-    @Test
-    public void testIsExpiredTimestamp12HoursOld()
-    {
-        LocalDateTime oldish = LocalDateTime.now().minusHours(12);
-        String timestamp = getTimestampFormatter().format(oldish);
-        assertFalse(MavenMetadata.isExpiredTimestamp(timestamp), "Timestamp should NOT be stale: " + timestamp);
-    }
-
     private DateTimeFormatter getTimestampFormatter()
     {
         return DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(ZoneId.of("UTC"));
