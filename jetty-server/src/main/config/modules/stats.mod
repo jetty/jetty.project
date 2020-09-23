@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enable detailed statistics collection for the server.
+Enables detailed statistics collection for the server.
 
 [tags]
 server

@@ -3,7 +3,7 @@
 [description]
 Enables a low resource monitor on the server.
 Can take actions if threads and/or connections
-cross configured threshholds.
+across configured threshholds.
 
 [depend]
 server

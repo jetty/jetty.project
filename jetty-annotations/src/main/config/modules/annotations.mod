@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enables Annotation scanning for deployed webapplications.
+Enables Annotation scanning for deployed web applications.
 
 [depend]
 plus

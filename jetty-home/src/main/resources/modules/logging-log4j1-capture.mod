@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Capture Apache log4j events and bridge them to SLF4J.
+Captures Apache log4j events and bridges them to SLF4J.
 
 [tags]
 logging

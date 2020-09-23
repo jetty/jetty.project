@@ -2,7 +2,7 @@
 
 [description]
 Redirects JVMs console stderr and stdout to a log file.
-includes output from Jetty's default StdErrLog logging.
+Includes output from Jetty's default StdErrLog logging.
 
 [tags]
 logging

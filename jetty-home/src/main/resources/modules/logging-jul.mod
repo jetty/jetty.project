@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Configure jetty logging to use Java Util Logging (jul).
+Configures jetty logging to use Java Util Logging (jul).
 SLF4J is used as the core logging mechanism.
 
 [tags]

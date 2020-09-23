@@ -1,9 +1,9 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enables the unix setUID configuration.
+Enables the UNIX setUID configuration.
 The server may be started as root to open privileged ports/files before
-changing to a restricted user (eg jetty).
+changing to a restricted user (e.g. Jetty).
 
 [depend]
 server

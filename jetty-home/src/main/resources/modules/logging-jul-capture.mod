@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Capture java.util.logging events and bridge them to slf4j.
+Captures java.util.logging events and bridges them to slf4j.
 
 [tags]
 logging

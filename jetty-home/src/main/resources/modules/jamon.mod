@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Deploys the JAMon webapplication.
+Deploys the JAMon web application.
 
 [tags]
 3rdparty

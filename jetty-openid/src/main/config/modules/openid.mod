@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Adds OpenId Connect authentication.
+Adds OpenId Connect authentication to the server.
 
 [depend]
 security

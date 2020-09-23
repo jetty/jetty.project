@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enable java.sql JPMS module.
+Enables the java.sql JPMS module.
 
 [tags]
 jpms
