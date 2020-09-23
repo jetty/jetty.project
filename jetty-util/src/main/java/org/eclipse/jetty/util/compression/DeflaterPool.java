@@ -44,7 +44,7 @@ public class DeflaterPool extends CompressionPool<Deflater>
     }
 
     @Override
-    protected Deflater newObject()
+    protected Deflater newPooled()
     {
         return new Deflater(compressionLevel, nowrap);
     }

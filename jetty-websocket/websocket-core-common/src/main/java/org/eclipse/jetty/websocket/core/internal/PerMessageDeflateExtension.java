@@ -54,8 +54,8 @@ public class PerMessageDeflateExtension extends AbstractExtension
 
     private final TransformingFlusher outgoingFlusher;
     private final TransformingFlusher incomingFlusher;
-    private DeflaterPool.Entry deflaterEntry;
-    private InflaterPool.Entry inflaterEntry;
+    private DeflaterPool.Entry deflaterHolder;
+    private InflaterPool.Entry inflaterHolder;
     private boolean incomingCompressed;
 
     private ExtensionConfig configRequested;
@@ -180,28 +180,34 @@ public class PerMessageDeflateExtension extends AbstractExtension
 
     public Deflater getDeflater()
     {
-        if (deflaterEntry == null)
-            deflaterEntry = getDeflaterPool().acquire();
-        return deflaterEntry.get();
+        if (deflaterHolder == null)
+            deflaterHolder = getDeflaterPool().acquire();
+        return deflaterHolder.get();
     }
 
     public Inflater getInflater()
     {
-        if (inflaterEntry == null)
-            inflaterEntry = getInflaterPool().acquire();
-        return inflaterEntry.get();
+        if (inflaterHolder == null)
+            inflaterHolder = getInflaterPool().acquire();
+        return inflaterHolder.get();
     }
 
     public void releaseInflater()
     {
-        inflaterEntry.release();
-        inflaterEntry = null;
+        if (inflaterHolder != null)
+        {
+            inflaterHolder.release();
+            inflaterHolder = null;
+        }
     }
 
     public void releaseDeflater()
     {
-        deflaterEntry.release();
-        deflaterEntry = null;
+        if (deflaterHolder != null)
+        {
+            deflaterHolder.release();
+            deflaterHolder = null;
+        }
     }
 
     @Override

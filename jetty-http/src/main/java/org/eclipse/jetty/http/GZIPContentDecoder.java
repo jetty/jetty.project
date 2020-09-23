@@ -70,6 +70,7 @@ public class GZIPContentDecoder implements Destroyable
     public GZIPContentDecoder(InflaterPool inflaterPool, ByteBufferPool pool, int bufferSize)
     {
         _inflaterEntry = inflaterPool.acquire();
+        _inflater = _inflaterEntry.get();
         _bufferSize = bufferSize;
         _pool = pool;
         reset();

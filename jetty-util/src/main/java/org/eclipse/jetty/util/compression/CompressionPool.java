@@ -56,7 +56,7 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
         _capacity = capacity;
     }
 
-    protected abstract T newObject();
+    protected abstract T newPooled();
 
     protected abstract void end(T object);
 
@@ -70,15 +70,12 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
         Entry entry = null;
         if (_pool != null)
         {
-            Pool<Entry>.Entry acquiredEntry = _pool.acquire(e -> new Entry(newObject()));
+            Pool<Entry>.Entry acquiredEntry = _pool.acquire(e -> new Entry(newPooled(), e));
             if (acquiredEntry != null)
-            {
                 entry = acquiredEntry.getPooled();
-                entry.setEntry(acquiredEntry);
-            }
         }
 
-        return (entry == null) ? new Entry(newObject()) : entry;
+        return (entry == null) ? new Entry(newPooled()) : entry;
     }
 
     /**
@@ -107,17 +104,20 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
 
     public class Entry implements Closeable
     {
-        private T _value;
-        private Pool<Entry>.Entry _entry;
+        private final T _value;
+        private final Pool<Entry>.Entry _entry;
 
         Entry(T value)
         {
-            _value = value;
-            _entry = null;
+            this(value, null);
         }
 
-        void setEntry(Pool<Entry>.Entry entry)
+        Entry(T value, Pool<Entry>.Entry entry)
         {
+            if (entry != null && entry.getPooled() != value)
+                throw new IllegalArgumentException("value does not match pooled entry");
+
+            _value = value;
             _entry = entry;
         }
 
@@ -139,8 +139,6 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
                     if (_pool.remove(_entry))
                         close();
                 }
-
-                _entry = null;
             }
         }
 
@@ -148,8 +146,6 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
         public void close()
         {
             end(_value);
-            _value = null;
-            _entry = null;
         }
     }
 

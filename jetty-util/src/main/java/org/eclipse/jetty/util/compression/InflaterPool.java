@@ -41,7 +41,7 @@ public class InflaterPool extends CompressionPool<Inflater>
     }
 
     @Override
-    protected Inflater newObject()
+    protected Inflater newPooled()
     {
         return new Inflater(nowrap);
     }
