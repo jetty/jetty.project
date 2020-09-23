@@ -48,6 +48,7 @@ import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HostHeaderCustomizer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
@@ -226,12 +227,14 @@ public class TransportScenario
             }
             case H2C:
             {
+                httpConfig.addCustomizer(new HostHeaderCustomizer());
                 result.add(new HTTP2CServerConnectionFactory(httpConfig));
                 break;
             }
             case H2:
             {
                 httpConfig.addCustomizer(new SecureRequestCustomizer());
+                httpConfig.addCustomizer(new HostHeaderCustomizer());
                 HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfig);
                 ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory("h2");
                 SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, alpn.getProtocol());
