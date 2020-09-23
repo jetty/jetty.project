@@ -16,20 +16,19 @@
 // ========================================================================
 //
 
-[[ops-session-filesystem]]
+[[og-session-filesystem]]
+==== Modules for Persistent HTTP Sessions: File System
 
-=== Modules for Persistent Sessions: File System
-
-The `session-store-file` module supports persistent storage of session data in a filesystem.
+The `session-store-file` Jetty module supports persistent storage of session data in a filesystem.
 
 IMPORTANT: Persisting sessions to the local file system should *never* be used in a clustered environment.
 
-Enabling this module creates the `$jetty.base/sessions` directory.
+Enabling this module creates the `$JETTY_BASE/sessions` directory.
 By default session data will be saved to this directory, one file representing each session.
 
 File names follow this pattern:
 
-+[expiry]_[contextpath]_[virtualhost]_[id]+
+`+[expiry]_[contextpath]_[virtualhost]_[id]+`
 
 expiry::
 This is the expiry time in milliseconds since the epoch.
@@ -38,12 +37,11 @@ contextpath::
 This is the context path with any special characters, including `/`, replaced by the `_` underscore character.
 For example, a context path of `/catalog` would become `_catalog`.
 A context path of simply `/` becomes just `__`.
-virtualhost::
-This is the first virtual host associated with the context and has the form of 4 digits separated by `.` characters.
-If there are no virtual hosts associated with a context, then `0.0.0.0` is used:
 
-  [digit].[digit].[digit].[digit]
-  
+virtualhost::
+This is the first virtual host associated with the context and has the form of 4 digits separated by `.` characters: `+[digit].[digit].[digit].[digit]+`.
+If there are no virtual hosts associated with a context, then `0.0.0.0` is used.
+
 id::
 This is the unique id of the session.
 
@@ -51,22 +49,24 @@ Putting all of the above together as an example, a session with an id of `node0e
 
 `1599558193150__test_0.0.0.0_node0ek3vx7x2y1e7pmi3z00uqj1k0`
 
+===== Configuration
 
-==== Configuration
-
-The `$jetty.base/start.d/sessions.ini` file contains the following properties which may be modified to customise filesystem session storage:
+The `$JETTY_BASE/start.d/sessions.ini` file contains the following properties which may be modified to customise filesystem session storage:
 
 jetty.session.storeDir::
-The default is `${jetty.base}/sessions`.
+The default is `$JETTY_BASE/sessions`.
 This is a path that defines the location for storage of session files.
+
 jetty.session.file.deleteUnrestorableFiles::
 Boolean, default `false`.
 If set to `true`, unreadable files will be deleted.
 This is useful to prevent repeated logging of the same error when the scavenger periodically (re-)attempts to load the corrupted information for a session in order to expire it.
+
 jetty.session.gracePeriod.seconds::
 Integer, default 3600.
-Used during session xref:ops-session-base-scavenge[scavenging].
-Multiples of this period are used to define how long ago a stored session must have expired before it should be xref:ops-session-base-scavenge[scavenged].
+Used during session xref:og-session-base-scavenge[scavenging].
+Multiples of this period are used to define how long ago a stored session must have expired before it should be xref:og-session-base-scavenge[scavenged].
+
 jetty.session.savePeriod.seconds::
 Integer, in seconds, default is `0`.
 Whenever a session is accessed by a request, its `lastAccessTime` and `expiry` are updated.

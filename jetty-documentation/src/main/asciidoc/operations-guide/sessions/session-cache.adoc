@@ -16,24 +16,24 @@
 // ========================================================================
 //
 
-[[ops-session-sessioncache]]
-=== Modules for Session Caching
+[[og-session-cache]]
+==== Modules for HTTP Session Caching
 
-In this section we will look at the alternatives for the `SessionCache`, ie the L1 cache of in-use session objects.
+In this section we will look at the alternatives for the `SessionCache`, i.e. the L1 cache of in-use session objects.
 Jetty ships with 2 alternatives: an in-memory cache, and a null cache.
 The latter does not actually do any caching of sessions, and can be useful if you either want to minimize your support for sessions, or you are in a clustered deployment without a sticky loadbalancer.
 
-The xref:ops-session-usecases[scenarios] go into more detail on this.
+The xref:og-session-usecases[scenarios] go into more detail on this.
 
-[[ops-session-hash]]
-==== Caching in Memory
+[[og-session-cache-hash]]
+===== Caching in Memory
 
 If you wish to change any of the default configuration values you should enable the `session-cache-hash` xref:startup-modules[module].
 The name `"hash"` harks back to historical Jetty session implementations, whereby sessions were kept in memory using a HashMap.
 
-===== Configuration
+====== Configuration
 
-The `$jetty.base/start.d/session-cache-hash.ini` contains the following configurable properties:
+The `$JETTY_BASE/start.d/session-cache-hash.ini` contains the following configurable properties:
 
 jetty.session.evictionPolicy::
 Integer, default -1.
@@ -81,16 +81,15 @@ jetty.session.invalidateOnShutdown::
 Boolean, default `false`.
 If true, when a context is shutdown, all sessions in the cache are invalidated and deleted both from the cache and from the `SessionDataStore`.
 
-
-[[ops-session-null]]
-==== No Caching
+[[og-session-cache-null]]
+===== No Caching
 
 You may need to use the `session-cache-null` module if your clustering setup does not have a sticky load balancer, or if you want absolutely minimal support for sessions.
 If you enable this module, but you don't enable a module that provides session persistence (ie one of the `session-store-xxx` modules), then sessions will _neither_ be retained in memory _nor_ persisted.
 
-===== Configuration
+====== Configuration
 
-The `$jetty.base/start.d/session-cache-null.ini` contains the following configurable properties:
+The `$JETTY_BASE/start.d/session-cache-null.ini` contains the following configurable properties:
 
 jetty.session.saveOnCreate::
 Boolean, default `false`.

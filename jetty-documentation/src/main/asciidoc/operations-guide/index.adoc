@@ -30,6 +30,7 @@ include::start/chapter.adoc[]
 include::deploy/chapter.adoc[]
 include::protocols/chapter.adoc[]
 include::modules/chapter.adoc[]
+include::sessions/chapter.adoc[]
 
 // TODO: how jetty standalone work what start.jar does, command line options, modules, etc.
 // TODO: this is mostly in old_docs/startup.

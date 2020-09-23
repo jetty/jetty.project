@@ -23,7 +23,7 @@ TODO : decide whether to keep this info
 With the provided session modules, there is no need to configure a context xml or `jetty-web.xml` file for sessions.
 That said, if a user wishes to configure sessions this way, it is possible using xref:jetty-xml-syntax[Jetty IoC XML format.]
 
-Below is an example of how you could configure a the xref:ops-session-filesystem[`FileSessionDataStore`], but the same concept would apply to any of the *SessionDataStores discussed in this chapter:
+Below is an example of how you could configure a the xref:og-session-filesystem[`FileSessionDataStore`], but the same concept would apply to any of the *SessionDataStores discussed in this chapter:
 
 [source, xml, subs="{sub-order}"]
 ----
