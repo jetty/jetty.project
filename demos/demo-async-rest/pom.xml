@@ -8,7 +8,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>demo-async-rest-parent</artifactId>
   <packaging>pom</packaging>
-  <name>Example Async Rest</name>
+  <name>Demo Async Rest</name>
 
   <modules>
     <module>demo-async-rest-jar</module>
