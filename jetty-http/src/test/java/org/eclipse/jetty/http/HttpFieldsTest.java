@@ -743,6 +743,25 @@ public class HttpFieldsTest
     }
 
     @Test
+    public void testAddHttpFields()
+    {
+        HttpFields.Mutable fields = new HttpFields.Mutable(new HttpFields.Mutable());
+        fields.add("One", "1");
+
+        fields = new HttpFields.Mutable(fields);
+
+        fields.add(HttpFields.build().add("two", "2").add("three", "3"));
+        fields.add(HttpFields.build().add("four", "4").add("five", "5").asImmutable());
+
+        assertThat(fields.size(), is(5));
+        assertThat(fields.get("one"), is("1"));
+        assertThat(fields.get("two"), is("2"));
+        assertThat(fields.get("three"), is("3"));
+        assertThat(fields.get("four"), is("4"));
+        assertThat(fields.get("five"), is("5"));
+    }
+
+    @Test
     public void testPutNullName()
     {
         HttpFields.Mutable fields = HttpFields.build();

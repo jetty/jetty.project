@@ -330,7 +330,7 @@ public class Response implements HttpServletResponse
             path = (path == null ? "" : path);
             int port = uri.getPort();
             if (port < 0)
-                port = HttpScheme.HTTPS.asString().equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
+                port = HttpScheme.getDefaultPort(uri.getScheme());
 
             // Is it the same server?
             if (!request.getServerName().equalsIgnoreCase(uri.getHost()))

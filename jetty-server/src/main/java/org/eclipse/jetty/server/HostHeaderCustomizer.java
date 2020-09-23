@@ -18,30 +18,33 @@
 
 package org.eclipse.jetty.server;
 
-import java.util.Objects;
-import javax.servlet.http.HttpServletRequest;
-
+import org.eclipse.jetty.http.HostPortHttpField;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.HttpVersion;
 
 /**
- * Customizes requests that lack the {@code Host} header (for example, HTTP 1.0 requests).
+ * Adds a missing {@code Host} header (for example, HTTP 1.0 or 2.0 requests).
  * <p>
- * In case of HTTP 1.0 requests that lack the {@code Host} header, the application may issue
- * a redirect, and the {@code Location} header is usually constructed from the {@code Host}
- * header; if the {@code Host} header is missing, the server may query the connector for its
- * IP address in order to construct the {@code Location} header, and thus leak to clients
- * internal IP addresses.
- * <p>
- * This {@link HttpConfiguration.Customizer} is configured with a {@code serverName} and
- * optionally a {@code serverPort}.
- * If the {@code Host} header is absent, the configured {@code serverName} will be set on
- * the request so that {@link HttpServletRequest#getServerName()} will return that value,
- * and likewise for {@code serverPort} and {@link HttpServletRequest#getServerPort()}.
+ * The host and port may be provided in the constructor or taken from the
+ * {@link Request#getServerName()} and {@link Request#getServerPort()} methods.
+ * </p>
  */
 public class HostHeaderCustomizer implements HttpConfiguration.Customizer
 {
     private final String serverName;
     private final int serverPort;
+
+    /**
+     * Construct customizer that uses {@link Request#getServerName()} and
+     * {@link Request#getServerPort()} to create a host header.
+     */
+    public HostHeaderCustomizer()
+    {
+        this(null, 0);
+    }
 
     /**
      * @param serverName the {@code serverName} to set on the request (the {@code serverPort} will not be set)
@@ -57,15 +60,26 @@ public class HostHeaderCustomizer implements HttpConfiguration.Customizer
      */
     public HostHeaderCustomizer(String serverName, int serverPort)
     {
-        this.serverName = Objects.requireNonNull(serverName);
+        this.serverName = serverName;
         this.serverPort = serverPort;
     }
 
     @Override
     public void customize(Connector connector, HttpConfiguration channelConfig, Request request)
     {
-        if (request.getHeader("Host") == null)
-            // TODO set the field as well?
-            request.setHttpURI(HttpURI.build(request.getHttpURI()).host(serverName).port(serverPort));
+        if (request.getHttpVersion() != HttpVersion.HTTP_1_1 && !request.getHttpFields().contains(HttpHeader.HOST))
+        {
+            String host = serverName == null ? request.getServerName() : serverName;
+            int port = HttpScheme.normalizePort(request.getScheme(), serverPort == 0 ? request.getServerPort() : serverPort);
+
+            if (serverName != null || serverPort > 0)
+                request.setHttpURI(HttpURI.build(request.getHttpURI()).authority(host, port));
+
+            HttpFields original = request.getHttpFields();
+            HttpFields.Mutable httpFields = HttpFields.build(original.size() + 1);
+            httpFields.add(new HostPortHttpField(host, port));
+            httpFields.add(request.getHttpFields());
+            request.setHttpFields(httpFields);
+        }
     }
 }
