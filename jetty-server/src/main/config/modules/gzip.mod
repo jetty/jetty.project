@@ -27,11 +27,32 @@ etc/jetty-gzip.xml
 ## Inflate request buffer size, or 0 for no request inflation
 # jetty.gzip.inflateBufferSize=0
 
-## Deflater pool max size (-1 for unlimited, 0 for no pool)
+## Deflater pool max size (-1 for unlimited, 0 for no pooling)
 # jetty.gzip.deflaterPoolCapacity=-1
 
-## Comma separated list of included methods
+## Inflater pool max size (-1 for unlimited, 0 for no pooling)
+# jetty.gzip.inflaterPoolCapacity=-1
+
+## Set the {@link Deflater} flush mode to use.
+# jetty.gzip.syncFlush=false
+
+## The set of DispatcherType that this filter will operate on
+# jetty.gzip.dispatcherTypes=REQUEST
+
+## Comma separated list of included HTTP methods
 # jetty.gzip.includedMethodList=GET,POST
 
-## Comma separated list of excluded methods
+## Comma separated list of excluded HTTP methods
 # jetty.gzip.excludedMethodList=
+
+## Comma separated list of included MIME types
+# jetty.gzip.includedMimeTypeList=
+
+## Comma separated list of excluded MIME types
+# jetty.gzip.excludedMimeTypeList=
+
+## Comma separated list of included Path specs
+# jetty.gzip.includedPathList=
+
+## Comma separated list of excluded Path specs
+# jetty.gzip.excludedPathList=

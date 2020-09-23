@@ -18,8 +18,10 @@
 
 package org.eclipse.jetty.start;
 
+import java.io.BufferedReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -28,6 +30,7 @@ import java.nio.file.PathMatcher;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -176,7 +179,9 @@ public class BaseBuilder
         {
             if (!Files.exists(startini))
             {
-                StartLog.info("create " + baseHome.toShortForm(startini));
+                if (Files.exists(getBaseHome().getBasePath("start.jar")))
+                    StartLog.warn("creating start.ini in ${jetty.home} is not recommended!");
+                StartLog.info("create %s", baseHome.toShortForm(startini));
                 Files.createFile(startini);
                 modified.set(true);
             }
@@ -222,72 +227,98 @@ public class BaseBuilder
             }
         }
 
-        if (!newlyAdded.isEmpty())
+        if ((startArgs.isCreateStartD() && (!Files.exists(startd) || Files.exists(startini))) ||
+            (!newlyAdded.isEmpty() && !Files.exists(startini) && !Files.exists(startd)))
         {
-            if (!Files.exists(startini) && !Files.exists(startd) && FS.ensureDirectoryExists(startd))
+            if (Files.exists(getBaseHome().getBasePath("start.jar")) && !startArgs.isCreateStartD())
+            {
+                StartLog.warn("creating start.d in ${jetty.home} is not recommended!");
+                if (!startArgs.isCreateStartD())
+                {
+                    BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
+                    System.err.printf("%nProceed (y/N)? ");
+                    String response = input.readLine();
+
+                    if (Utils.isBlank(response) || !response.toLowerCase(Locale.ENGLISH).startsWith("y"))
+                        System.exit(1);
+                }
+            }
+
+            if (FS.ensureDirectoryExists(startd))
             {
                 StartLog.info("mkdir " + baseHome.toShortForm(startd));
                 modified.set(true);
             }
 
-            if (Files.exists(startini) && Files.exists(startd))
-                StartLog.warn("Use both %s and %s is deprecated", getBaseHome().toShortForm(startd), getBaseHome().toShortForm(startini));
-
-            boolean useStartD = Files.exists(startd);
-            builder.set(useStartD ? new StartDirBuilder(this) : new StartIniBuilder(this));
-            newlyAdded.stream().map(modules::get).forEach(module ->
+            if (Files.exists(startini) && startArgs.isCreateStartD())
             {
-                String ini = null;
-                try
+                int ini = 0;
+                Path startdStartini = startd.resolve("start.ini");
+                while (Files.exists(startdStartini))
                 {
-                    if (module.isSkipFilesValidation())
-                    {
-                        StartLog.debug("Skipping [files] validation on %s", module.getName());
-                    }
-                    else
-                    {
-                        // if (explicitly added and ini file modified)
-                        if (startArgs.getStartModules().contains(module.getName()))
-                        {
-                            ini = builder.get().addModule(module, startArgs.getProperties());
-                            if (ini != null)
-                                modified.set(true);
-                        }
-                        for (String file : module.getFiles())
-                        {
-                            files.add(new FileArg(module, startArgs.getProperties().expand(file)));
-                        }
-                    }
+                    ini++;
+                    startdStartini = startd.resolve("start" + ini + ".ini");
                 }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
+                Files.move(startini, startdStartini);
+                modified.set(true);
+            }
+        }
 
-                if (module.isDynamic())
+        boolean useStartD = Files.exists(startd);
+        if (useStartD && Files.exists(startini))
+            StartLog.warn("Use of both %s and %s is deprecated", getBaseHome().toShortForm(startd), getBaseHome().toShortForm(startini));
+
+        builder.set(useStartD ? new StartDirBuilder(this) : new StartIniBuilder(this));
+        newlyAdded.stream().map(modules::get).forEach(module ->
+        {
+            String ini = null;
+            try
+            {
+                if (module.isSkipFilesValidation())
                 {
-                    for (String s : module.getEnableSources())
-                    {
-                        StartLog.info("%-15s %s", module.getName(), s);
-                    }
-                }
-                else if (module.isTransitive())
-                {
-                    if (module.hasIniTemplate())
-                        StartLog.info("%-15s transitively enabled, ini template available with --add-module=%s",
-                            module.getName(),
-                            module.getName());
-                    else
-                        StartLog.info("%-15s transitively enabled", module.getName());
+                    StartLog.debug("Skipping [files] validation on %s", module.getName());
                 }
                 else
                 {
-                    StartLog.info("%-15s initialized in %s",
-                        module.getName(),
-                        ini);
+                    // if (explicitly added and ini file modified)
+                    if (startArgs.getStartModules().contains(module.getName()))
+                    {
+                        ini = builder.get().addModule(module, startArgs.getProperties());
+                        if (ini != null)
+                            modified.set(true);
+                    }
+                    for (String file : module.getFiles())
+                    {
+                        files.add(new FileArg(module, startArgs.getProperties().expand(file)));
+                    }
                 }
-            });
-        }
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+
+            if (module.isDynamic())
+            {
+                for (String s : module.getEnableSources())
+                {
+                    StartLog.info("%-15s %s", module.getName(), s);
+                }
+            }
+            else if (module.isTransitive())
+            {
+                if (module.hasIniTemplate())
+                    StartLog.info("%-15s transitively enabled, ini template available with --add-module=%s",
+                        module.getName(),
+                        module.getName());
+                else
+                    StartLog.info("%-15s transitively enabled", module.getName());
+            }
+            else
+            {
+                StartLog.info("%-15s initialized in %s", module.getName(), ini);
+            }
+        });
 
         files.addAll(startArgs.getFiles());
         if (!files.isEmpty() && processFileResources(files))

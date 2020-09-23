@@ -37,6 +37,7 @@ public class StringUtil
 
     public static final String ALL_INTERFACES = "0.0.0.0";
     public static final String CRLF = "\r\n";
+    public static final String DEFAULT_DELIMS = ",;";
 
     public static final String __ISO_8859_1 = "iso-8859-1";
     public static final String __UTF8 = "utf-8";

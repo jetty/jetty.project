@@ -113,7 +113,7 @@ public class ResourceCollectionTest
     }
 
     @Test
-    public void testSetResourceNullThrowsISE()
+    public void testSetResourceArrayNullThrowsISE()
     {
         // Create a ResourceCollection with one valid entry
         Path path = MavenTestingUtils.getTargetPath();
@@ -121,7 +121,7 @@ public class ResourceCollectionTest
         ResourceCollection coll = new ResourceCollection(resource);
 
         // Reset collection to invalid state
-        coll.setResources(null);
+        coll.setResources((Resource[])null);
 
         assertThrowIllegalStateException(coll);
     }
@@ -152,7 +152,7 @@ public class ResourceCollectionTest
         assertThrows(IllegalStateException.class, () -> coll.setResources(new Resource[]{null, null, null}));
 
         // Ensure not modified.
-        assertThat(coll.getResources().length, is(1));
+        assertThat(coll.getResources().size(), is(1));
     }
 
     private void assertThrowIllegalStateException(ResourceCollection coll)

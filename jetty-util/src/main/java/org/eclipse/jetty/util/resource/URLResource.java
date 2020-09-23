@@ -27,6 +27,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -287,10 +288,9 @@ public class URLResource extends Resource
      */
     @Override
     public Resource addPath(String path)
-        throws IOException, MalformedURLException
+        throws IOException
     {
-        if (path == null)
-            return null;
+        Objects.requireNonNull(path, "Path may not be null");
 
         path = URIUtil.canonicalPath(path);
 

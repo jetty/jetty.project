@@ -73,6 +73,7 @@ public class DirConfigSource implements ConfigSource
         BANNED_ARGS.add("--create-files");
         BANNED_ARGS.add("--create-startd");
         BANNED_ARGS.add("--create-start-ini");
+        BANNED_ARGS.add("--create-start-d");
         BANNED_ARGS.add("--add-to-startd");
         BANNED_ARGS.add("--add-to-start");
         BANNED_ARGS.add("--add-module");

@@ -179,7 +179,6 @@ public class SessionHandler extends ScopedHandler
     protected String _sessionPath;
     protected int _maxCookieAge = -1;
     protected int _refreshCookieAge;
-    protected boolean _nodeIdInSessionId;
     protected boolean _checkingRemoteSessionIdEncoding;
     protected String _sessionComment;
     protected SessionCache _sessionCache;
@@ -959,22 +958,6 @@ public class SessionHandler extends ScopedHandler
     {
         updateBean(_sessionCache, cache);
         _sessionCache = cache;
-    }
-
-    /**
-     * @return true if the cluster node id (worker id) is returned as part of the session id by {@link HttpSession#getId()}. Default is false.
-     */
-    public boolean isNodeIdInSessionId()
-    {
-        return _nodeIdInSessionId;
-    }
-
-    /**
-     * @param nodeIdInSessionId true if the cluster node id (worker id) will be returned as part of the session id by {@link HttpSession#getId()}. Default is false.
-     */
-    public void setNodeIdInSessionId(boolean nodeIdInSessionId)
-    {
-        _nodeIdInSessionId = nodeIdInSessionId;
     }
 
     /**

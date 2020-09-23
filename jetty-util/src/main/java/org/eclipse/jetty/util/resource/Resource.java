@@ -34,10 +34,13 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.StringTokenizer;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
@@ -412,7 +415,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      * given name.
      *
      * @param path The path segment to add, which is not encoded
-     * @return the Resource for the resolved path within this Resource.
+     * @return the Resource for the resolved path within this Resource, never null
      * @throws IOException if unable to resolve the path
      * @throws MalformedURLException if the resolution of the path fails because the input path parameter is malformed.
      */
@@ -421,22 +424,11 @@ public abstract class Resource implements ResourceFactory, Closeable
 
     /**
      * Get a resource from within this resource.
-     * <p>
-     * This method is essentially an alias for {@link #addPath(String)}, but without checked exceptions.
-     * This method satisfied the {@link ResourceFactory} interface.
      */
     @Override
-    public Resource getResource(String path)
+    public Resource getResource(String path) throws IOException
     {
-        try
-        {
-            return addPath(path);
-        }
-        catch (Exception e)
-        {
-            LOG.debug("Unable to addPath", e);
-            return null;
-        }
+        return addPath(path);
     }
 
     // FIXME: this appears to not be used
@@ -922,5 +914,98 @@ public abstract class Resource implements ResourceFactory, Closeable
     public static URL toURL(File file) throws MalformedURLException
     {
         return file.toURI().toURL();
+    }
+
+    /**
+     * Parse a list of String delimited resources and
+     * return the List of Resources instances it represents.
+     * <p>
+     * Supports glob references that end in {@code /*} or {@code \*}.
+     * Glob references will only iterate through the level specified and will not traverse
+     * found directories within the glob reference.
+     * </p>
+     *
+     * @param resources the comma {@code ,} or semicolon {@code ;} delimited
+     * String of resource references.
+     * @param globDirs true to return directories in addition to files at the level of the glob
+     * @return the list of resources parsed from input string.
+     */
+    public static List<Resource> fromList(String resources, boolean globDirs) throws IOException
+    {
+        return fromList(resources, globDirs, Resource::newResource);
+    }
+
+    /**
+     * Parse a delimited String of resource references and
+     * return the List of Resources instances it represents.
+     * <p>
+     * Supports glob references that end in {@code /*} or {@code \*}.
+     * Glob references will only iterate through the level specified and will not traverse
+     * found directories within the glob reference.
+     * </p>
+     *
+     * @param resources the comma {@code ,} or semicolon {@code ;} delimited
+     * String of resource references.
+     * @param globDirs true to return directories in addition to files at the level of the glob
+     * @param resourceFactory the ResourceFactory used to create new Resource references
+     * @return the list of resources parsed from input string.
+     */
+    public static List<Resource> fromList(String resources, boolean globDirs, ResourceFactory resourceFactory) throws IOException
+    {
+        if (StringUtil.isBlank(resources))
+        {
+            return Collections.emptyList();
+        }
+
+        List<Resource> returnedResources = new ArrayList<>();
+
+        StringTokenizer tokenizer = new StringTokenizer(resources, StringUtil.DEFAULT_DELIMS);
+        while (tokenizer.hasMoreTokens())
+        {
+            String token = tokenizer.nextToken().trim();
+
+            // Is this a glob reference?
+            if (token.endsWith("/*") || token.endsWith("\\*"))
+            {
+                String dir = token.substring(0, token.length() - 2);
+                // Use directory
+                Resource dirResource = resourceFactory.getResource(dir);
+                if (dirResource.exists() && dirResource.isDirectory())
+                {
+                    // To obtain the list of entries
+                    String[] entries = dirResource.list();
+                    if (entries != null)
+                    {
+                        Arrays.sort(entries);
+                        for (String entry : entries)
+                        {
+                            try
+                            {
+                                Resource resource = dirResource.addPath(entry);
+                                if (!resource.isDirectory())
+                                {
+                                    returnedResources.add(resource);
+                                }
+                                else if (globDirs)
+                                {
+                                    returnedResources.add(resource);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                LOG.warn("Bad glob [{}] entry: {}", token, entry, ex);
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // Simple reference, add as-is
+                returnedResources.add(resourceFactory.getResource(token));
+            }
+        }
+
+        return returnedResources;
     }
 }

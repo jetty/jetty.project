@@ -13,6 +13,7 @@ ssl
 ssl
 
 [optional]
+alpn
 http2
 http-forwarded
 

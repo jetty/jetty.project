@@ -11,23 +11,6 @@
   <name>Jetty :: Documentation</name>
   <packaging>jar</packaging>
 
-  <properties>
-    <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
-    <html.common.directory>${project.build.directory}/html/common</html.common.directory>
-    <html.image.directory>${project.build.directory}/html/common/images</html.image.directory>
-    <javadoc.version>${project.version}</javadoc.version>
-    <asciidoctor.maven.plugin.version>1.5.7.1</asciidoctor.maven.plugin.version>
-    <asciidoctorj.pdf.version>1.5.0-alpha.16</asciidoctorj.pdf.version>
-    <asciidoctorj.epub.version>1.5.0-alpha.8.1</asciidoctorj.epub.version>
-    <asciidoctorj.version>1.5.8.1</asciidoctorj.version>
-    <jruby.version>1.7.27</jruby.version>
-    <web.resources.version>1.2</web.resources.version>
-    <web.resources.directory>${project.build.directory}/web-resources</web.resources.directory>
-    <!-- old properties -->
-    <html.directory>${project.build.directory}/current</html.directory>
-    <javadoc.version>${project.version}</javadoc.version>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -99,73 +82,32 @@
       <version>${project.version}</version>
       <scope>compile</scope>
     </dependency>
+	<dependency>
+	  <groupId>org.eclipse.jetty.memcached</groupId>
+      <artifactId>jetty-memcached-sessions</artifactId>
+      <version>${project.version}</version>
+	</dependency>
   </dependencies>
 
   <build>
     <plugins>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>unpack-jetty-web-resouces</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>unpack</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty.toolchain</groupId>
-                  <artifactId>jetty-web-resources</artifactId>
-                  <version>${web.resources.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <outputDirectory>${web.resources.directory}</outputDirectory>
-                </artifactItem>
-              </artifactItems>
-              <excludes>META-INF/**</excludes>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-resources-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>copy-base-html-assets</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <configuration>
-              <resources>
-                <resource>
-                  <directory>${web.resources.directory}/html</directory>
-                  <includes>
-                    <include>**</include>
-                  </includes>
-                </resource>
-              </resources>
-              <outputDirectory>${html.common.directory}</outputDirectory>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.asciidoctor</groupId>
         <artifactId>asciidoctor-maven-plugin</artifactId>
-        <version>${asciidoctor.maven.plugin.version}</version>
         <dependencies>
           <dependency>
             <groupId>org.asciidoctor</groupId>
             <artifactId>asciidoctorj-diagram</artifactId>
-            <version>2.0.1</version>
+            <version>2.0.2</version>
           </dependency>
         </dependencies>
         <configuration>
+          <backend>html5</backend>
+          <requires>
+            <require>asciidoctor-diagram</require>
+          </requires>
           <attributes>
-            <JDURL>http://www.eclipse.org/jetty/javadoc/${javadoc.version}</JDURL>
+            <JDURL>http://www.eclipse.org/jetty/javadoc/${project.version}</JDURL>
             <JXURL>http://download.eclipse.org/jetty/stable-9/xref</JXURL>
             <SRCDIR>${basedir}/..</SRCDIR>
             <GITBROWSEURL>https://github.com/eclipse/jetty.project/tree/master</GITBROWSEURL>
@@ -187,8 +129,6 @@
               <goal>process-asciidoc</goal>
             </goals>
             <configuration>
-              <backend>html5</backend>
-              <templateDir>${web.resources.directory}/asciidoc/slim-template</templateDir>
               <sourceDirectory>src/main/asciidoc/operations-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/operations-guide</outputDirectory>
@@ -201,12 +141,9 @@
               <goal>process-asciidoc</goal>
             </goals>
             <configuration>
-              <backend>html5</backend>
-              <templateDir>${web.resources.directory}/asciidoc/slim-template</templateDir>
               <sourceDirectory>${basedir}/src/main/asciidoc/contribution-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/contribution-guide</outputDirectory>
-              <sourceHighlighter>coderay</sourceHighlighter>
             </configuration>
           </execution>
           <execution>
@@ -216,15 +153,9 @@
               <goal>process-asciidoc</goal>
             </goals>
             <configuration>
-              <backend>html5</backend>
-              <templateDir>${web.resources.directory}/asciidoc/slim-template</templateDir>
               <sourceDirectory>${basedir}/src/main/asciidoc/programming-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/programming-guide</outputDirectory>
-              <sourceHighlighter>coderay</sourceHighlighter>
-              <requires>
-                <require>asciidoctor-diagram</require>
-              </requires>
             </configuration>
           </execution>
         </executions>
@@ -249,113 +180,4 @@
       </plugin>
     </plugins>
   </build>
-
-  <profiles>
-    <profile>
-      <id>alt-formats</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.asciidoctor</groupId>
-            <artifactId>asciidoctor-maven-plugin</artifactId>
-            <version>${asciidoctor.maven.plugin.version}</version>
-            <dependencies>
-              <dependency>
-                <groupId>org.asciidoctor</groupId>
-                <artifactId>asciidoctorj-pdf</artifactId>
-                <version>${asciidoctorj.pdf.version}</version>
-              </dependency>
-              <dependency>
-                <groupId>org.asciidoctor</groupId>
-                <artifactId>asciidoctorj-epub3</artifactId>
-                <version>${asciidoctorj.epub.version}</version>
-              </dependency>
-              <dependency>
-                <groupId>org.jruby</groupId>
-                <artifactId>jruby-complete</artifactId>
-                <version>${jruby.version}</version>
-              </dependency>
-              <dependency>
-                <groupId>org.asciidoctor</groupId>
-                <artifactId>asciidoctorj</artifactId>
-                <version>${asciidoctorj.version}</version>
-              </dependency>
-            </dependencies>
-            <configuration>
-              <imagesdir />
-              <backend>docbook</backend>
-              <attributes>
-                <revnumber>${project.version}</revnumber>
-                <JDURL>http://www.eclipse.org/jetty/javadoc/${javadoc.version}</JDURL>
-                <JXURL>http://download.eclipse.org/jetty/stable-9/xref</JXURL>
-                <SRCDIR>${basedir}/..</SRCDIR>
-                <GITBROWSEURL>https://github.com/eclipse/jetty.project/tree/master</GITBROWSEURL>
-                <MVNCENTRAL>http://central.maven.org/maven2</MVNCENTRAL>
-                <VERSION>${project.version}</VERSION>
-              </attributes>
-            </configuration>
-            <executions>
-              <execution>
-                <id>contribution-guide-pdf</id>
-                <phase>generate-resources</phase>
-                <goals>
-                  <goal>process-asciidoc</goal>
-                </goals>
-                <configuration>
-                  <backend>pdf</backend>
-                  <sourceHighlighter>coderay</sourceHighlighter>
-                  <attributes>
-                    <icons>font</icons>
-                    <pagenums />
-                    <toc />
-                    <idprefix />
-                    <idseparator>-</idseparator>
-                  </attributes>
-                  <sourceDirectory>${basedir}/src/main/asciidoc/contribution-guide</sourceDirectory>
-                  <sourceDocumentName>index.adoc</sourceDocumentName>
-                  <outputFile>${project.build.directory}/pdf/contribution-guide/contribution-guide.pdf</outputFile>
-                </configuration>
-              </execution>
-              <execution>
-                <id>quickstart-distribution-guide-pdf</id>
-                <phase>generate-resources</phase>
-                <goals>
-                  <goal>process-asciidoc</goal>
-                </goals>
-                <configuration>
-                  <backend>pdf</backend>
-                  <sourceHighlighter>coderay</sourceHighlighter>
-                  <attributes>
-                    <icons>font</icons>
-                    <pagenums />
-                    <toc />
-                    <idprefix />
-                    <idseparator>-</idseparator>
-                  </attributes>
-                  <sourceDirectory>${basedir}/src/main/asciidoc/quickstart-distribution-guide</sourceDirectory>
-                  <sourceDocumentName>index.adoc</sourceDocumentName>
-                  <outputFile>${project.build.directory}/pdf/quickstart-distribution-guide/quickstart-distribution-guide.pdf</outputFile>
-                </configuration>
-              </execution>
-              <execution>
-                <id>contribution-guide-epub</id>
-                <phase>generate-resources</phase>
-                <goals>
-                  <goal>process-asciidoc</goal>
-                </goals>
-                <configuration>
-                  <backend>epub3</backend>
-                  <sourceHighlighter>coderay</sourceHighlighter>
-                  <sourceDirectory>${basedir}/src/main/asciidoc/contribution-guide</sourceDirectory>
-                  <sourceDocumentName>index.adoc</sourceDocumentName>
-                  <outputFile>${project.build.directory}/epub/contribution-guide/contribution-guide.epub</outputFile>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
-
 </project>

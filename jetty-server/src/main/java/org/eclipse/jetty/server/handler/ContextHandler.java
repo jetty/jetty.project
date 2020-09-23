@@ -1896,6 +1896,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         return Collections.unmodifiableMap(_localeEncodingMap);
     }
 
+    /**
+     * Attempt to get a Resource from the Context.
+     *
+     * @param path the path within the resource to attempt to get
+     * @return the resource, or null if not available.
+     * @throws MalformedURLException if unable to form a Resource from the provided path
+     */
     public Resource getResource(String path) throws MalformedURLException
     {
         if (path == null || !path.startsWith(URIUtil.SLASH))

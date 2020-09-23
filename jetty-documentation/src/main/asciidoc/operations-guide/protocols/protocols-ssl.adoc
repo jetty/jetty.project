@@ -1,0 +1,48 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-protocols-ssl]]
+==== Configuring Secure Protocols
+
+Secure protocols are normal protocols such as HTTP/1.1 or WebSocket that are wrapped by the link:https://en.wikipedia.org/wiki/Transport_Layer_Security[TLS protocol].
+Any network protocol can be wrapped with TLS.
+
+The `https` scheme used in URIs really means `tls+http/1.1` and similarly the `wss` scheme used in URIs really means `tls+websocket`, etc.
+Senders wrap the underlying protocol bytes (e.g. HTTP/1.1 bytes or WebSocket bytes) with the TLS protocol, while receivers first interpret the TLS protocol to obtain the underlying protocol bytes, and then interpret the wrapped bytes.
+
+Secure protocols have a slightly more complicated configuration since they require to configure a _keystore_.
+
+A keystore is a file on the file system that contains a private key and a public certificate, along with the certificate chain of the certificate authorities that issued the certificate.
+The private key, the public certificate and the certificate chain, but more generally the items present in a keystore, are typically referred to as "cryptographic material".
+
+Keystores may encode the cryptographic material with different encodings, the most common being link:https://en.wikipedia.org/wiki/PKCS_12[PKCS12], and are typically protected by a password.
+
+After configuring the keystore path and keystore password, you may want to further customize the parameters of the TLS protocol, such as the minimum TLS protocol version, or the TLS algorithms, etc.
+
+The Jetty `ssl` module allows you to configure the keystore and the TLS parameters; if other modules require encryption, they declare a dependency on the `ssl` module.
+
+Since the `ssl` module is only about encryption, it does not configure a connector listening on a network port because it does not know what is the wrapped protocol.
+It is the job of other Jetty modules to configure the wrapped protocol.
+
+For example, it is the xref:og-protocols-https[`https` module] that configures the listening network port for secure HTTP/1.1.
+The `https` module depends on the `ssl` module to allow the configuration of keystore and TLS, and adds HTTP/1.1 as the protocol wrapped by TLS.
+
+Recall from the xref:og-modules[section about modules], that only modules that are explicitly enabled get their module configuration file (`+*.ini+`) saved in `$JETTY_BASE/start.d/`, and you want `$JETTY_BASE/start.d/ssl.ini` to be present so that you can configure the keystore and TLS properties.
+
+// TODO: section about client authentication with certificates?
+//  See readme_keystores.txt about the fact that the server keystore needs the CA=true extension.

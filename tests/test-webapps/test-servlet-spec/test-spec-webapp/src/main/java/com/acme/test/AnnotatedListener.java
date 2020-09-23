@@ -18,6 +18,7 @@
 
 package com.acme.test;
 
+import java.util.logging.Logger;
 import javax.annotation.Resource;
 import javax.servlet.ServletContextAttributeEvent;
 import javax.servlet.ServletContextAttributeListener;
@@ -35,69 +36,77 @@ import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
 
 @WebListener
-public class AnnotatedListener implements HttpSessionListener, HttpSessionAttributeListener, HttpSessionActivationListener, ServletContextListener, ServletContextAttributeListener, ServletRequestListener, ServletRequestAttributeListener
+public class AnnotatedListener implements HttpSessionListener,
+    HttpSessionAttributeListener,
+    HttpSessionActivationListener,
+    ServletContextListener,
+    ServletContextAttributeListener,
+    ServletRequestListener,
+    ServletRequestAttributeListener
 {
+    private static final Logger LOG = Logger.getLogger(AnnotatedListener.class.getName());
+
     @Resource(mappedName = "maxAmount")
     private Double maxAmount;
 
     @Override
     public void attributeAdded(HttpSessionBindingEvent se)
     {
-        // System.err.println("attributedAdded "+se);
+        LOG.fine("attributedAdded " + se);
     }
 
     @Override
-    public void attributeAdded(ServletContextAttributeEvent scab)
+    public void attributeAdded(ServletContextAttributeEvent scae)
     {
-        // System.err.println("attributeAdded "+scab);
+        LOG.fine("attributeAdded " + scae);
     }
 
     @Override
     public void attributeAdded(ServletRequestAttributeEvent srae)
     {
-        // System.err.println("attributeAdded "+srae);
+        LOG.fine("attributeAdded " + srae);
     }
 
     @Override
     public void attributeRemoved(HttpSessionBindingEvent se)
     {
-        // System.err.println("attributeRemoved "+se);
+        LOG.fine("attributeRemoved " + se);
     }
 
     @Override
     public void attributeRemoved(ServletContextAttributeEvent scab)
     {
-        // System.err.println("attributeRemoved "+scab);
+        LOG.fine("attributeRemoved " + scab);
     }
 
     @Override
     public void attributeRemoved(ServletRequestAttributeEvent srae)
     {
-        // System.err.println("attributeRemoved "+srae);
+        LOG.fine("attributeRemoved " + srae);
     }
 
     @Override
     public void attributeReplaced(HttpSessionBindingEvent se)
     {
-        // System.err.println("attributeReplaced "+se);
+        LOG.fine("attributeReplaced " + se);
     }
 
     @Override
     public void attributeReplaced(ServletContextAttributeEvent scab)
     {
-        // System.err.println("attributeReplaced "+scab);
+        LOG.fine("attributeReplaced " + scab);
     }
 
     @Override
     public void attributeReplaced(ServletRequestAttributeEvent srae)
     {
-        // System.err.println("attributeReplaced "+srae);
+        LOG.fine("attributeReplaced " + srae);
     }
 
     @Override
     public void contextDestroyed(ServletContextEvent sce)
     {
-        // System.err.println("contextDestroyed "+sce);
+        LOG.fine("contextDestroyed " + sce);
     }
 
     @Override
@@ -106,7 +115,7 @@ public class AnnotatedListener implements HttpSessionListener, HttpSessionAttrib
         if (sce.getServletContext().getAttribute("com.acme.AnnotationTest.sclInjectWebListenerTest") != null)
             throw new IllegalStateException("AnnotatedListener already initialized");
 
-        sce.getServletContext().setAttribute("com.acme.AnnotationTest.sclInjectWebListenerTest", Boolean.valueOf(maxAmount != null));
+        sce.getServletContext().setAttribute("com.acme.AnnotationTest.sclInjectWebListenerTest", maxAmount != null);
 
         boolean setSessionTimeout;
         try
@@ -118,7 +127,7 @@ public class AnnotatedListener implements HttpSessionListener, HttpSessionAttrib
         {
             setSessionTimeout = false;
         }
-        sce.getServletContext().setAttribute("com.acme.AnnotationTest.sclSetSessionTimeout", Boolean.valueOf(setSessionTimeout));
+        sce.getServletContext().setAttribute("com.acme.AnnotationTest.sclSetSessionTimeout", setSessionTimeout);
 
         boolean getSessionTimeout;
         try
@@ -129,60 +138,42 @@ public class AnnotatedListener implements HttpSessionListener, HttpSessionAttrib
         {
             getSessionTimeout = false;
         }
-        sce.getServletContext().setAttribute("com.acme.AnnotationTest.sclGetSessionTimeout", Boolean.valueOf(getSessionTimeout));
-    }
-
-    public void requestCompleted(ServletRequestEvent rre)
-    {
-        // TODO Auto-generated method stub
-
+        sce.getServletContext().setAttribute("com.acme.AnnotationTest.sclGetSessionTimeout", getSessionTimeout);
     }
 
     @Override
     public void requestDestroyed(ServletRequestEvent sre)
     {
-        // System.err.println("requestDestroyed "+sre);
+        LOG.fine("requestDestroyed " + sre);
     }
 
     @Override
     public void requestInitialized(ServletRequestEvent sre)
     {
-        // System.err.println("requestInitialized "+sre);
-    }
-
-    public void requestResumed(ServletRequestEvent rre)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    public void requestSuspended(ServletRequestEvent rre)
-    {
-        // TODO Auto-generated method stub
-
+        LOG.fine("requestInitialized " + sre);
     }
 
     @Override
     public void sessionCreated(HttpSessionEvent se)
     {
-        // System.err.println("sessionCreated "+se);
+        LOG.fine("sessionCreated " + se);
     }
 
     @Override
     public void sessionDestroyed(HttpSessionEvent se)
     {
-        // System.err.println("sessionDestroyed "+se);
+        LOG.fine("sessionDestroyed " + se);
     }
 
     @Override
     public void sessionDidActivate(HttpSessionEvent se)
     {
-        // System.err.println("sessionDidActivate "+se);
+        LOG.fine("sessionDidActivate " + se);
     }
 
     @Override
     public void sessionWillPassivate(HttpSessionEvent se)
     {
-        // System.err.println("sessionWillPassivate "+se);
+        LOG.fine("sessionWillPassivate " + se);
     }
 }

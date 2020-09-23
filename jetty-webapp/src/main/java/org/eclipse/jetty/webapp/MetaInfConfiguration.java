@@ -36,13 +36,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.PatternMatcher;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.EmptyResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
@@ -802,7 +801,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
      *
      * @param context the context to find extra classpath jars in
      * @return the list of Resources with the extra classpath, or null if not found
-     * @throws Exception if unable to find the extra classpath jars
+     * @throws Exception if unable to resolve the extra classpath jars
      */
     protected List<Resource> findExtraClasspathJars(WebAppContext context)
         throws Exception
@@ -810,55 +809,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (context == null || context.getExtraClasspath() == null)
             return null;
 
-        List<Resource> jarResources = new ArrayList<>();
-        StringTokenizer tokenizer = new StringTokenizer(context.getExtraClasspath(), ",;");
-        while (tokenizer.hasMoreTokens())
-        {
-            String token = tokenizer.nextToken().trim();
-
-            // Is this a Glob Reference?
-            if (isGlobReference(token))
-            {
-                String dir = token.substring(0, token.length() - 2);
-                // Use directory
-                Resource dirResource = context.newResource(dir);
-                if (dirResource.exists() && dirResource.isDirectory())
-                {
-                    // To obtain the list of files
-                    String[] entries = dirResource.list();
-                    if (entries != null)
-                    {
-                        Arrays.sort(entries);
-                        for (String entry : entries)
-                        {
-                            try
-                            {
-                                Resource fileResource = dirResource.addPath(entry);
-                                if (isFileSupported(fileResource))
-                                {
-                                    jarResources.add(fileResource);
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                LOG.warn("Error resolving file {}", entry, ex);
-                            }
-                        }
-                    }
-                }
-            }
-            else
-            {
-                // Simple reference, add as-is
-                Resource resource = context.newResource(token);
-                if (isFileSupported(resource))
-                {
-                    jarResources.add(resource);
-                }
-            }
-        }
-
-        return jarResources;
+        return context.getExtraClasspath()
+            .stream()
+            .filter(this::isFileSupported)
+            .collect(Collectors.toList());
     }
 
     /**
@@ -892,7 +846,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
      *
      * @param context the context to look for extra classpaths in
      * @return the list of Resources to the extra classpath
-     * @throws Exception if unable to find the extra classpaths
+     * @throws Exception if unable to resolve the extra classpath resources
      */
     protected List<Resource> findExtraClasspathDirs(WebAppContext context)
         throws Exception
@@ -900,23 +854,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (context == null || context.getExtraClasspath() == null)
             return null;
 
-        List<Resource> dirResources = new ArrayList<>();
-        StringTokenizer tokenizer = new StringTokenizer(context.getExtraClasspath(), ",;");
-        while (tokenizer.hasMoreTokens())
-        {
-            String token = tokenizer.nextToken().trim();
-            // ignore glob references, they only refer to lists of jars/zips anyway
-            if (!isGlobReference(token))
-            {
-                Resource resource = context.newResource(token);
-                if (resource.exists() && resource.isDirectory())
-                {
-                    dirResources.add(resource);
-                }
-            }
-        }
-
-        return dirResources;
+        return context.getExtraClasspath()
+            .stream()
+            .filter(Resource::isDirectory)
+            .collect(Collectors.toList());
     }
 
     private String uriJarPrefix(URI uri, String suffix)
@@ -932,13 +873,23 @@ public class MetaInfConfiguration extends AbstractConfiguration
         }
     }
 
-    private boolean isGlobReference(String token)
-    {
-        return token.endsWith("/*") || token.endsWith("\\*");
-    }
-
     private boolean isFileSupported(Resource resource)
     {
+        try
+        {
+            if (resource.isDirectory())
+                return false;
+
+            if (resource.getFile() == null)
+                return false;
+        }
+        catch (Throwable t)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Bad Resource reference: {}", resource, t);
+            return false;
+        }
+
         String filenameLowercase = resource.getName().toLowerCase(Locale.ENGLISH);
         int dot = filenameLowercase.lastIndexOf('.');
         String extension = (dot < 0 ? null : filenameLowercase.substring(dot));

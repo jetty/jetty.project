@@ -18,15 +18,26 @@
 
 package org.eclipse.jetty.docs.programming.server.session;
 
+import java.io.File;
+import java.net.InetSocketAddress;
+
+import org.eclipse.jetty.memcached.session.MemcachedSessionDataMapFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.session.CachingSessionDataStoreFactory;
+import org.eclipse.jetty.server.session.DatabaseAdaptor;
+import org.eclipse.jetty.server.session.DefaultSessionCache;
 import org.eclipse.jetty.server.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.server.session.DefaultSessionIdManager;
+import org.eclipse.jetty.server.session.FileSessionDataStore;
+import org.eclipse.jetty.server.session.FileSessionDataStoreFactory;
 import org.eclipse.jetty.server.session.HouseKeeper;
 import org.eclipse.jetty.server.session.NullSessionCache;
 import org.eclipse.jetty.server.session.NullSessionCacheFactory;
 import org.eclipse.jetty.server.session.NullSessionDataStore;
 import org.eclipse.jetty.server.session.SessionCache;
+import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class SessionDocs
@@ -37,7 +48,7 @@ public class SessionDocs
         Server server = new Server();
         DefaultSessionIdManager idMgr = new DefaultSessionIdManager(server);
         //you must set the workerName unless you set the env viable JETTY_WORKER_NAME
-        idMgr.setWorkerName("3");
+        idMgr.setWorkerName("server3");
         server.setSessionIdManager(idMgr);
         //end::default[]
     }
@@ -49,7 +60,7 @@ public class SessionDocs
             //tag::housekeeper[]
             Server server = new Server();
             DefaultSessionIdManager idMgr = new DefaultSessionIdManager(server);
-            idMgr.setWorkerName("7");
+            idMgr.setWorkerName("server7");
             server.setSessionIdManager(idMgr);
 
             HouseKeeper houseKeeper = new HouseKeeper();
@@ -63,6 +74,38 @@ public class SessionDocs
         {
             e.printStackTrace();
         }
+    }
+    
+    public void servletContextWithSessionHandler()
+    {
+        //tag:schsession[]
+        Server server = new Server();
+        
+        ServletContextHandler context = new ServletContextHandler(server, "/foo", ServletContextHandler.SESSIONS);
+        SessionHandler sessions = context.getSessionHandler();
+        //make idle sessions valid for only 5mins
+        sessions.setMaxInactiveInterval(300);
+        //turn off use of cookies
+        sessions.setUsingCookies(false);
+        
+        server.setHandler(context);
+        //end::schsession[]
+    }
+    
+    public void webAppWithSessionHandler()
+    {
+        //tag:wacsession[]
+        Server server = new Server();
+        
+        WebAppContext context = new WebAppContext();
+        SessionHandler sessions = context.getSessionHandler();
+        //make idle sessions valid for only 5mins
+        sessions.setMaxInactiveInterval(300);
+        //turn off use of cookies
+        sessions.setUsingCookies(false);
+        
+        server.setHandler(context);
+        //end::wacsession[]
     }
     
     public void defaultSessionCache()
@@ -138,5 +181,111 @@ public class SessionDocs
         nullSessionCache.setSessionDataStore(new NullSessionDataStore());
         app2.getSessionHandler().setSessionCache(nullSessionCache);
         //end::mixedsessioncache[]
+    }
+    
+    public void fileSessionDataStoreFactory()
+    {
+      //tag::filesessiondatastorefactory[]
+        Server server = new Server();
+
+        //First lets configure a DefaultSessionCacheFactory
+        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        //NEVER_EVICT
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        cacheFactory.setFlushOnResponseCommit(true);
+        cacheFactory.setInvalidateOnShutdown(false);
+        cacheFactory.setRemoveUnloadableSessions(true);
+        cacheFactory.setSaveOnCreate(true);
+
+        //Add the factory as a bean to the server, now whenever a 
+        //SessionHandler starts it will consult the bean to create a new DefaultSessionCache
+        server.addBean(cacheFactory);
+        
+        //Now, lets configure a FileSessionDataStoreFactory
+        FileSessionDataStoreFactory storeFactory = new FileSessionDataStoreFactory();
+        storeFactory.setStoreDir(new File("/tmp/sessions"));
+        storeFactory.setGracePeriodSec(3600);
+        storeFactory.setSavePeriodSec(0);
+        
+        //Add the factory as a bean on the server, now whenever a
+        //SessionHandler starts, it will consult the bean to create a new FileSessionDataStore
+        //for use by the DefaultSessionCache
+        server.addBean(storeFactory);
+      //end::filesessiondatastorefactory[]  
+    }
+    
+    public void fileSessionDataStore()
+    {
+      //tag::filesessiondatastore[]
+
+        //create a context
+        WebAppContext app1 = new WebAppContext();
+        app1.setContextPath("/app1");
+        
+        //First, we create a DefaultSessionCache
+        DefaultSessionCache cache = new DefaultSessionCache(app1.getSessionHandler());
+        cache.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        cache.setFlushOnResponseCommit(true);
+        cache.setInvalidateOnShutdown(false);
+        cache.setRemoveUnloadableSessions(true);
+        cache.setSaveOnCreate(true);
+        
+        //Now, we configure a FileSessionDataStore
+        FileSessionDataStore store = new FileSessionDataStore();
+        store.setStoreDir(new File("/tmp/sessions"));
+        store.setGracePeriodSec(3600);
+        store.setSavePeriodSec(0);
+        
+        //Tell the cache to use the store
+        cache.setSessionDataStore(store);
+        
+        //Tell the contex to use the cache/store combination
+        app1.getSessionHandler().setSessionCache(cache);
+        
+      //end::filesessiondatastore[]  
+    }
+    
+    public void cachingSessionDataStore()
+    {
+        //tag::cachingsds[]
+        Server server = new Server();
+        
+        //Make a factory for memcached L2 caches for SessionData
+        MemcachedSessionDataMapFactory mapFactory = new MemcachedSessionDataMapFactory();
+        mapFactory.setExpirySec(0); //items in memcached don't expire
+        mapFactory.setHeartbeats(true);//tell memcached to use heartbeats
+        mapFactory.setAddresses(new InetSocketAddress("localhost", 11211)); //use a local memcached instance
+        mapFactory.setWeights(new int[] {100}); //set the weighting
+        
+        
+        //Make a FileSessionDataStoreFactory for creating FileSessionDataStores
+        //to persist the session data
+        FileSessionDataStoreFactory storeFactory = new FileSessionDataStoreFactory();
+        storeFactory.setStoreDir(new File("/tmp/sessions"));
+        storeFactory.setGracePeriodSec(3600);
+        storeFactory.setSavePeriodSec(0);
+        
+        //Make a factory that plugs the L2 cache into the SessionDataStore
+        CachingSessionDataStoreFactory cachingSessionDataStoreFactory = new CachingSessionDataStoreFactory();
+        cachingSessionDataStoreFactory.setSessionDataMapFactory(mapFactory);
+        cachingSessionDataStoreFactory.setSessionStoreFactory(storeFactory);
+        
+        //Register it as a bean so that all SessionHandlers will use it
+        //to make FileSessionDataStores that use memcached as an L2 SessionData cache.
+        server.addBean(cachingSessionDataStoreFactory);
+        //end::cachingsds[]
+    }
+
+    public void jdbcSessionDataStore()
+    {
+        //tag::dbaDatasource[]
+        DatabaseAdaptor datasourceAdaptor = new DatabaseAdaptor();
+        datasourceAdaptor.setDatasourceName("/jdbc/myDS");
+        //end::dbaDatasource[]
+        
+        //tag::dbaDriver[]
+        DatabaseAdaptor driverAdaptor = new DatabaseAdaptor();
+        driverAdaptor.setDriverInfo("com.mysql.jdbc.Driver", "jdbc:mysql://127.0.0.1:3306/sessions?user=sessionsadmin");
+        //end::dbaDriver[]
     }
 }

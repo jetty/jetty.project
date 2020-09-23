@@ -39,12 +39,13 @@ pipeline {
             }
           }
         }
-        stage( "Build / Test - JDK14" ) {
+
+        stage("Build / Test - JDK15") {
           agent { node { label 'linux' } }
           steps {
             container( 'jetty-build' ) {
               timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk14", "-T3 clean install", "maven3", true )
+                mavenBuild( "jdk15", "-T3 clean install", "maven3", true )
                 warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
                 junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
               }

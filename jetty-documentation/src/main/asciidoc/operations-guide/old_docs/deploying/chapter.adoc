@@ -23,12 +23,9 @@ This chapter discusses various ways to deploy applications with Jetty.
 Topics range from deployment bindings to deploying third party products.
 It also includes information about the Deployment Manager and WebApp Provider.
 
-include::anatomy-of-a-webapp.adoc[]
-include::automatic-webapp-deployment.adoc[]
 include::configuring-specific-webapp-deployment.adoc[]
 include::deployment-processing-webapps.adoc[]
 include::static-content-deployment.adoc[]
-include::hot-deployment.adoc[]
 include::deployment-architecture.adoc[]
 include::quickstart-webapp.adoc[]
 //include::overlay-deployer.adoc[]

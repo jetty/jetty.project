@@ -17,45 +17,11 @@
 //
 
 :doctitle: Eclipse Jetty: Contribution Guide
-:author: Jetty Developers
-:email: jetty-dev@eclipse.org
-:revnumber: 1.0
-:revdate: {TIMESTAMP}
-:toc: left
 :toc-title: Contribution Guide
-:toc-style: 
-
-:header-style: eclipse-thin
-:breadcrumb-style: eclipse-thin
-:footer-style: default
 :breadcrumb: Home:../index.html | Contribution Guide:./index.html
+:idprefix: cg-
 
-// docinfo lets you pull in shared content and/or influence via render type
-//:docinfodir: {DOCINFODIR}/documentation
-//:docinfo1:
-
-// html specific directives
-ifdef::backend-html5[]
-:safe-mode-unsafe:
-:stylesdir: ../common/css
-:stylesheet: jetty.css
-:linkcss:
-:scriptsdir: ../common/js
-endif::[]
-
-// options for special blocks, code snippets, screen, etc
-:sub-order: attributes+
-
-// uncomment to allow include::https:// style content inclusion
-//:allow-uri-read: true
-
-// use fonts for admonitions
-:icons: font
-
-// suppress automatic id generation
-:sectids!:
-
-
+include::../config.adoc[]
 include::1-introduction.adoc[]
 include::2-community.adoc[]
 include::3-source.adoc[]

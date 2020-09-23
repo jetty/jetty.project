@@ -638,11 +638,12 @@ public interface HttpURI
 
         public Mutable normalize()
         {
-            if (_port == 80 && HttpScheme.HTTP.is(_scheme))
+            HttpScheme scheme = _scheme == null ? null : HttpScheme.CACHE.get(_scheme);
+            if (scheme != null && _port == scheme.getDefaultPort())
+            {
                 _port = 0;
-            if (_port == 443 && HttpScheme.HTTPS.is(_scheme))
-                _port = 0;
-            _uri = null;
+                _uri = null;
+            }
             return this;
         }
 
