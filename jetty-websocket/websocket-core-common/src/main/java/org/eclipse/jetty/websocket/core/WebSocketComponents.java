@@ -42,8 +42,8 @@ public class WebSocketComponents
     public WebSocketComponents()
     {
         this(new WebSocketExtensionRegistry(), new DecoratedObjectFactory(), new MappedByteBufferPool(),
-            new InflaterPool(CompressionPool.INFINITE_CAPACITY, true),
-            new DeflaterPool(CompressionPool.INFINITE_CAPACITY, Deflater.DEFAULT_COMPRESSION, true));
+            new InflaterPool(CompressionPool.DEFAULT_CAPACITY, true),
+            new DeflaterPool(CompressionPool.DEFAULT_CAPACITY, Deflater.DEFAULT_COMPRESSION, true));
     }
 
     public WebSocketComponents(WebSocketExtensionRegistry extensionRegistry, DecoratedObjectFactory objectFactory,

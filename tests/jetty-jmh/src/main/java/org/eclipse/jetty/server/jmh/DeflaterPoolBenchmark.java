@@ -49,7 +49,7 @@ public class DeflaterPoolBenchmark
     public static final String COMPRESSION_STRING = "hello world";
     DeflaterPool _pool;
 
-    @Param({"NO_POOL", "DEFLATER_POOL_10", "DEFLATER_POOL_20", "DEFLATER_POOL_50"})
+    @Param({"NO_POOL", "DEFLATER_POOL_10", "DEFLATER_POOL_20", "DEFLATER_POOL_50", "DEFLATER_POOL_DEFAULT"})
     public static String poolType;
 
     @Setup(Level.Trial)
@@ -73,6 +73,10 @@ public class DeflaterPoolBenchmark
 
             case "DEFLATER_POOL_50":
                 capacity = 50;
+                break;
+
+            case "DEFLATER_POOL_DEFAULT":
+                capacity = DeflaterPool.DEFAULT_CAPACITY;
                 break;
 
             default:

@@ -923,12 +923,12 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
     protected InflaterPool newInflaterPool()
     {
-        return new InflaterPool(CompressionPool.INFINITE_CAPACITY, true);
+        return new InflaterPool(CompressionPool.DEFAULT_CAPACITY, true);
     }
 
     protected DeflaterPool newDeflaterPool()
     {
-        return new DeflaterPool(CompressionPool.INFINITE_CAPACITY, Deflater.DEFAULT_COMPRESSION, true);
+        return new DeflaterPool(CompressionPool.DEFAULT_CAPACITY, Deflater.DEFAULT_COMPRESSION, true);
     }
 
     @Override

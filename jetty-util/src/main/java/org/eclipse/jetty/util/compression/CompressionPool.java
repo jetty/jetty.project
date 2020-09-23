@@ -25,7 +25,7 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
 public abstract class CompressionPool<T> extends AbstractLifeCycle
 {
-    public static final int INFINITE_CAPACITY = Integer.MAX_VALUE;
+    public static final int DEFAULT_CAPACITY = 1024;
 
     private int _capacity;
     private Pool<Entry> _pool;
