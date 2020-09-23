@@ -15,7 +15,6 @@ jsp
 annotations
 ext
 demo-realm
-demo-jndi
 
 [files]
 basehome:modules/demo.d/demo-jaas.xml|webapps/demo-jaas.xml
