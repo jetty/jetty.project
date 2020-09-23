@@ -10,7 +10,7 @@
   <artifactId>demo-spec-webapp</artifactId>
   <packaging>war</packaging>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.spec</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.spec.webapp</bundle-symbolic-name>
   </properties>
   <build>
     <plugins>
