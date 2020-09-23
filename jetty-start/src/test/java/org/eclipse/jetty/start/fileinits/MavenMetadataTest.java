@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.TimeZone;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -37,8 +36,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MavenMetadataTest
 {
-    private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
-
     @Test
     public void testParseExample() throws ParserConfigurationException, SAXException, IOException
     {
