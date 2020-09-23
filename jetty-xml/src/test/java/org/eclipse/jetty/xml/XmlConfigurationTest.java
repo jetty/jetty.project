@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -172,6 +173,11 @@ public class XmlConfigurationTest
         Map<String, String> map = (Map<String, String>)configuration.getIdMap().get("map");
         assertEquals(map.get("key0"), "value0");
         assertEquals(map.get("key1"), "value1");
+
+        @SuppressWarnings("unchecked")
+        Map<String, String> concurrentMap = (Map<String, String>)configuration.getIdMap().get("concurrentMap");
+        assertThat(concurrentMap, instanceOf(ConcurrentMap.class));
+        assertEquals(concurrentMap.get("KEY"), "ITEM");
     }
 
     @ParameterizedTest

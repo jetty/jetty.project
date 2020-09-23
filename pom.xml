@@ -576,7 +576,7 @@
             <attach>true</attach>
             <isOffline>true</isOffline>
             <excludePackageNames>com.*:org.slf4j*:org.mortbay*:*.jmh*:org.eclipse.jetty.embedded*:org.eclipse.jetty.example.asyncrest*:org.eclipse.jetty.test*</excludePackageNames>
-            <skippedModules>apache-jstl,jetty-osgi-alpn,infinispan-common,infinispan-embedded,infinispan-embedded-query,infinispan-remote,infinispan-remote-query,jetty-plus,jetty-jndi,jetty-documentation,jetty-distribution,jetty-home,jetty-bom,jetty-all,jetty-runner</skippedModules>
+            <skippedModules>apache-jstl,jetty-osgi-alpn,infinispan-common,infinispan-embedded,infinispan-embedded-query,infinispan-remote,infinispan-remote-query,jetty-plus,jetty-jndi,jetty-documentation,jetty-distribution,jetty-home,jetty-bom,jetty-runner</skippedModules>
           </configuration>
         </plugin>
         <plugin>
@@ -1276,9 +1276,6 @@
     </profile>
     <profile>
       <id>eclipse-release</id>
-      <modules>
-        <module>aggregates/jetty-all</module>
-      </modules>
       <build>
         <plugins>
           <plugin>
@@ -1344,9 +1341,6 @@
         <invoker.mergeUserSettings>true</invoker.mergeUserSettings>
         <surefire.rerunFailingTestsCount>3</surefire.rerunFailingTestsCount>
       </properties>
-      <modules>
-        <module>aggregates/jetty-all</module>
-      </modules>
       <build>
         <pluginManagement>
           <plugins>

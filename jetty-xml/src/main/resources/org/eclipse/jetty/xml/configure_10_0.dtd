@@ -259,8 +259,8 @@ This is equivalent to:
  Map m = new HashMap();
  m.put("keyName", new String("value1"));
 -->
-<!ELEMENT Map (Id?,Entry*) >
-<!ATTLIST Map %ID_ATTR; >
+<!ELEMENT Map (Id?,Class?,Entry*) >
+<!ATTLIST Map %ID_ATTR; %CLASS_ATTR; >
 <!ELEMENT Entry (Item,Item) >
 
 

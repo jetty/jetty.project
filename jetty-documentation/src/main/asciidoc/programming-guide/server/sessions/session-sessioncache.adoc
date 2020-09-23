@@ -16,8 +16,8 @@
 // ========================================================================
 //
 
-[[pg-server-session-sessioncache]]
-==== Session Components: The SessionCache
+[[pg-server-session-cache]]
+==== The SessionCache
 
 There is one `SessionCache` per `SessionHandler`, and thus one per context.
 Its purpose is to provide an L1 cache of `Session` objects.
@@ -26,13 +26,14 @@ A `SessionCache` uses a `SessionDataStore` to create, read, store and delete the
 
 There are two ways to create a `SessionCache` for a `SessionHandler`:
 
-. allow the `SessionHandler` to create one lazily at startup
+. allow the `SessionHandler` to create one lazily at startup.
 The `SessionHandler` looks for a `SessionCacheFactory` bean on the server to produce the `SessionCache` instance.
 It then looks for a `SessionDataStoreFactory` bean on the server to produce a `SessionDataStore` instance to use with the `SessionCache`.
-. pass a fully configured `SessionCache` instance to the `SessionHandler`
+
+. pass a fully configured `SessionCache` instance to the `SessionHandler`.
 You are responsible for configuring both the `SessionCache` instance and its `SessionDataStore` 
 
-More on ``SessionDataStore``s xref:pg-server-session-sessiondatastore[later], in this section we will concentrate on the `SessionCache` and `SessionCacheFactory`.
+More on ``SessionDataStore``s xref:pg-server-session-datastore[later], in this section we will concentrate on the `SessionCache` and `SessionCacheFactory`.
 
 
 The link:{JDURL}/org/eclipse/jetty/server/session/AbstractSessionCache.html[AbstractSessionCache] provides most of the behaviour of ``SessionCache``s.
@@ -56,7 +57,7 @@ The eviction strategies are:
 saveOnInactiveEviction::
 This controls whether a session will be persisted to the `SessionDataStore` if it is being evicted due to the EVICT_ON_INACTIVITY policy.
 Usually sessions are written to the `SessionDataStore` whenever the last simultaneous request exits the session.
-However, as `SessionDataStores` can be configured to xref:pg-server-session-sessiondatastore-skip[skip some writes], this option ensures that the session will be written out.
+However, as `SessionDataStores` can be configured to xref:pg-server-session-datastore-skip[skip some writes], this option ensures that the session will be written out.
 
 saveOnCreate::
 Usually a session will be written through to the configured `SessionDataStore` when the last request for it finishes.
@@ -83,7 +84,7 @@ Jetty provides two `SessionCache` implementations: the link:{JDURL}/org/eclipse/
 
 [[pg-server-session-hash]]
 ===== The DefaultSessionCache
-The `DefaultSessionCache` retains `Session` objects in memory in a `ConcurrentHashMap`.
+The link:{JDURL}/org/eclipse/jetty/server/session/DefaultSessionCache.html[DefaultSessionCache] retains `Session` objects in memory in a `ConcurrentHashMap`.
 It is suitable for non-clustered and clustered deployments.
 For clustered deployments, a sticky load balancer is *strongly* recommended, otherwise you risk indeterminate session state as the session bounces around multiple nodes.
 
@@ -113,16 +114,16 @@ Alternatively, if you only have a single `SessionHandler`, or you need to config
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/session/SessionDocs.java[tags=defaultsessioncache]
 ----
 
-NOTE:: If you don't configure any `SessionCache` or `SessionCacheFactory`, the `SessionHandler` will automatically create a `DefaultSessionCache`.
+NOTE: If you don't configure any `SessionCache` or `SessionCacheFactory`, the `SessionHandler` will automatically create a `DefaultSessionCache`.
  
 [[pg-server-session-null]]
 ===== The NullSessionCache
-The `NullSessionCache` does not actually cache any objects: each request uses a fresh `Session` object.
+The link:{JDURL}/org/eclipse/jetty/server/session/NullSessionCache.html[NullSessionCache] does not actually cache any objects: each request uses a fresh `Session` object.
 It is suitable for clustered deployments without a sticky load balancer and non-clustered deployments when purely minimal support for sessions is needed.
 
 As no sessions are actually cached, of course functions like `invalidateOnShutdown` and all of the eviction strategies have no meaning for the `NullSessionCache`.
 
-There is a `NullSessionCacheFactory` which you can instantiate, configure and set as a `Server` bean to enable the `SessionHandler` to automatically create new ``NullCache``s as needed.
+There is a link:{JDURL}/org/eclipse/jetty/server/session/NullSessionCacheFactory.html[NullSessionCacheFactory] which you can instantiate, configure and set as a `Server` bean to enable the `SessionHandler` to automatically create new ``NullCache``s as needed.
 All of the same configuration options are available on the `NullSessionCacheFactory` as the `NullSessionCache` itself.
 Alternatively, if you only have a single `SessionHandler`, or you need to configure a `NullSessionCache` differently for every `SessionHandler`, then you could dispense with the `NullSessionCacheFactory` and simply instantiate, configure and pass in the `NullSessionCache` yourself.
 

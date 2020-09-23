@@ -16,8 +16,8 @@
 // ========================================================================
 //
 
-[[pg-server-session-sessiondatastore]]
-==== Session Components: The SessionDataStore
+[[pg-server-session-datastore]]
+==== The SessionDataStore
 
 A link:{JDURL}/org/eclipse/jetty/server/session/SessionDataStore.html[SessionDataStore] mediates the storage, retrieval and deletion of `SessionData`.
 There is one `SessionDataStore` per `SessionCache`.
@@ -57,7 +57,8 @@ Others store an object in shared memory, e.g. Infinispan and thus don't serializ
 Whether or not a persistence technology entails passivation controls whether or not ``HttpSessionActivationListener``s will be called.
 When implementing a custom `SessionDataStore` you need to decide whether or not passivation will be supported.
 
-[[pg-server-session-sessiondata-skip]]
+[[pg-server-session-datastore-skip]]
+//tag::common-datastore-config[]
 savePeriod::
 This is an interval defined in seconds.
 It is used to reduce the frequency with which `SessionData` is written.
@@ -65,7 +66,7 @@ Normally, whenever the last concurrent request leaves a `Session`, the `SessionD
 If the `savePeriod` is non-zero, the `SessionData` will not be persisted if no session attributes changed, _unless_ the time since the last save exceeds the `savePeriod`.
 Setting a non-zero value can reduce the load on the persistence mechanism, but in a clustered environment runs the risk that other nodes will see the session as expired because it has not been persisted sufficiently recently.
 
-[[pg-server-session-sessiondata-grace]]
+[[pg-server-session-datastore-grace]]
 gracePeriod::
 The `gracePeriod` is an interval defined in seconds. 
 It is an attempt to deal with the non-transactional nature of sessions with regard to finding sessions that have expired.
@@ -75,6 +76,7 @@ Thus, we use the `gracePeriod` to provide a bit of leeway around the moment of e
 
 * on every xref:pg-server-session-housekeeper[scavenge] cycle an `AbstractSessionDataStore` searches for sessions that belong to the context that expired at least one `gracePeriod` ago
 * infrequently the `AbstractSessionDataStore` searches for and summarily deletes sessions - from any context - that expired at least 10 ``gracePeriod``s ago
+//end::common-datastore-config[]
 
 NOTE:: The trivial link:{JDURL}/org/eclipse/jetty/server/session/NullSessionDataStore.html[NullSessionDataStore] - which does not persist sessions - is the default used by the `SessionHandler`.
 

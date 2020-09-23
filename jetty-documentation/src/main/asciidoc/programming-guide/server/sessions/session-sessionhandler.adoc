@@ -16,8 +16,8 @@
 // ========================================================================
 //
 
-[[pg-server-session-sessionhandler]]
-==== Session Components: The SessionHandler
+[[pg-server-session-handler]]
+==== The SessionHandler
 
 Each context can have a single `SessionHandler`.
 The purpose of the `SessionHandler` is to interact with the `Request` and `Response` to create, maintain and propagate sessions.
@@ -25,7 +25,7 @@ It also calls the context-level session listeners at appropriate points in the s
 
 ===== Configuration =====
 
-The majority of configuration for the `SessionHandler` can be done via `web.xml` `<session-config>` declarations, or the `javax.servlet.SessionCookieConfig` api.
+The majority of configuration for the link:{JDURL}/org/eclipse/jetty/server/session/SessionHandler.html[SessionHandler] can be done via `web.xml` `<session-config>` declarations, or the `javax.servlet.SessionCookieConfig` api.
 There are also a few jetty-specific configuration options that we will cover here:
 
 checkingRemoteSessionIdEncoding::
@@ -50,7 +50,7 @@ This can also be configured by:
 * using `javax.servlet.SessionCookieConfig.setHttpOnly(boolean)` method
 * defining the `<session-config><cookie-config><http-only/></cookie-config></session-config>` element in `web.xml`
 
-[[pg-server-session-refreshcookie]]
+[[pg-server-session-handler-refreshcookie]]
 refreshCookieAge::
 Integer, seconds, default is `-1`.
 This controls resetting the session cookie when `SessionCookieConfig.setMaxAge(int)` is non-zero.
@@ -105,7 +105,7 @@ This can also be configured by:
 
 There are also a few session settings that do not have SessionHandler setters, but can be configured with context init parameters:
 
-[[pg-server-session-maxAge]]
+[[pg-server-session-handler-maxAge]]
 org.eclipse.jetty.servlet.MaxAge::
 This is the maximum number of seconds that the session cookie will be considered to be valid.
 By default, the cookie has no maximum validity time.

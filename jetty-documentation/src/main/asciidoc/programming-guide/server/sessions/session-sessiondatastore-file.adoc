@@ -16,8 +16,8 @@
 // ========================================================================
 //
 
-[[pg-server-session-sessiondatastore-file]]
-==== Session Components: The FileSessionDataStore
+[[pg-server-session-datastore-file]]
+===== The FileSessionDataStore
 
 The `FileSessionDataStore` supports persistent storage of session data in a filesystem.
 
@@ -50,9 +50,9 @@ Putting all of the above together as an example, a session with an id of `node0e
 `1599558193150__test_0.0.0.0_node0ek3vx7x2y1e7pmi3z00uqj1k0`
 
 
-==== Configuration
+====== Configuration
 
-You can configure either a `FileSessionDataStore` individually, or a `FileSessionDataStoreFactory` if you want multiple ``SessionHandler``s to use ``FileSessionDataStore``s that are identically configured.
+You can configure either a link:{JDURL}/org/eclipse/jetty/server/session/FileSessionDataStore.html[FileSessionDataStore] individually, or a `FileSessionDataStoreFactory` if you want multiple ``SessionHandler``s to use ``FileSessionDataStore``s that are identically configured.
 The configuration methods are:
 
 storeDir::
@@ -67,11 +67,7 @@ Boolean, default `false`.
 If set to `true`, unreadable files will be deleted.
 This is useful to prevent repeated logging of the same error when the xref:pg-server-session-housekeeper[scavenger] periodically (re-)attempts to load the corrupted information for a session in order to expire it.
 
-gracePeriod::
-See xref:pg-server-session-sessiondata-grace[the gracePeriod].
-
-savePeriod::
-See xref:pg-server-session-sessiondata-skip[the savePeriod].
+include::session-sessiondatastore.adoc[tag=common-datastore-config]
 
 Let's look at an example of configuring a `FileSessionDataStoreFactory`:
 
