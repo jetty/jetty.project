@@ -80,16 +80,17 @@ public class DeflaterPoolBenchmark
         }
 
         _pool = new DeflaterPool(capacity, Deflater.DEFAULT_COMPRESSION, true);
+        _pool.start();
     }
 
     @TearDown(Level.Trial)
-    public static void stopTrial() throws Exception
+    public void stopTrial() throws Exception
     {
+        _pool.stop();
     }
 
     @Benchmark
     @BenchmarkMode({Mode.Throughput})
-    @SuppressWarnings("deprecation")
     public long testPool() throws Exception
     {
         DeflaterPool.Entry entry = _pool.acquire();

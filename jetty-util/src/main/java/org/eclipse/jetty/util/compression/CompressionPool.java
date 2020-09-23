@@ -97,8 +97,11 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
     @Override
     public void doStop() throws Exception
     {
-        _pool.close();
-        _pool = null;
+        if (_pool != null)
+        {
+            _pool.close();
+            _pool = null;
+        }
         super.doStop();
     }
 
