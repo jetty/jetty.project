@@ -578,7 +578,25 @@
             <isOffline>true</isOffline>
             <excludePackageNames>com.*:org.slf4j*:org.mortbay*:*.jmh*:org.eclipse.jetty.embedded*:org.eclipse.jetty.example.asyncrest*:org.eclipse.jetty.test*</excludePackageNames>
             <skippedModules>
-              apache-jstl, jetty-osgi-alpn, infinispan-common, infinispan-embedded, infinispan-embedded-query, infinispan-remote, infinispan-remote-query, jetty-plus, jetty-jndi, jetty-documentation, jetty-home, jetty-bom, jetty-runner, demo-async-rest-webapp, demo-jaas-webapp, demo-jetty-webapp, demo-jndi-webapp, demo-proxy-webapp, demo-spec-webapp
+              apache-jstl,
+              jetty-osgi-alpn,
+              infinispan-common,
+              infinispan-embedded,
+              infinispan-embedded-query,
+              infinispan-remote,
+              infinispan-remote-query,
+              jetty-plus,
+              jetty-jndi,
+              jetty-documentation,
+              jetty-home,
+              jetty-bom,
+              jetty-runner,
+              demo-async-rest-webapp,
+              demo-jaas-webapp,
+              demo-jetty-webapp,
+              demo-jndi-webapp,
+              demo-proxy-webapp,
+              demo-spec-webapp
             </skippedModules>
           </configuration>
         </plugin>
