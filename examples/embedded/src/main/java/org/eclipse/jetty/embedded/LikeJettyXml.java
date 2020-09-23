@@ -34,7 +34,6 @@ import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.plus.webapp.PlusConfiguration;
-import org.eclipse.jetty.rewrite.handler.MsieSslRule;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.rewrite.handler.ValidUrlRule;
 import org.eclipse.jetty.security.HashLoginService;
@@ -169,7 +168,6 @@ public class LikeJettyXml
         RewriteHandler rewrite = new RewriteHandler();
         rewrite.setHandler(server.getHandler());
         server.setHandler(rewrite);
-        rewrite.addRule(new MsieSslRule());
         rewrite.addRule(new ValidUrlRule());
 
         // === jetty-requestlog.xml ===
@@ -192,7 +190,7 @@ public class LikeJettyXml
         // === test-realm.xml ===
         HashLoginService login = new HashLoginService();
         login.setName("Test Realm");
-        login.setConfig(jettyBase + "/etc/realm.properties");
+        login.setConfig(jettyBase + "/etc/demo-realm.properties");
         login.setHotReload(false);
         server.addBean(login);
 

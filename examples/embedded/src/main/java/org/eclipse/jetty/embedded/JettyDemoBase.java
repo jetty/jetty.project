@@ -18,12 +18,14 @@
 
 package org.eclipse.jetty.embedded;
 
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Properties;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -62,23 +64,43 @@ public class JettyDemoBase
                 jettyBase = Files.createTempDirectory("jetty-base");
 
                 Path startJar = jettyHome.resolve("start.jar");
+
                 URLClassLoader urlClassLoader = new URLClassLoader(new URL[]{
                     startJar.toUri().toURL()
                 });
 
                 Thread.currentThread().setContextClassLoader(urlClassLoader);
 
+                String pomRef = "META-INF/maven/org.eclipse.jetty/jetty-start/pom.properties";
+                URL urlPom = urlClassLoader.findResource(pomRef);
+                if (urlPom == null)
+                    throw new IllegalStateException("Unable to find " + pomRef);
+
+                String jettyVersion = null;
+
+                try (InputStream input = urlPom.openStream())
+                {
+                    Properties pomProps = new Properties();
+                    pomProps.load(input);
+                    jettyVersion = pomProps.getProperty("version");
+                }
+
                 Class<?> mainClass = urlClassLoader.loadClass("org.eclipse.jetty.start.Main");
                 Method mainMethod = mainClass.getMethod("main", String[].class);
 
                 String[] args = new String[]{
+                    "jetty.version=" + jettyVersion,
                     "jetty.home=" + jettyHome.toString(),
                     "jetty.base=" + jettyBase.toString(),
-                    "--add-modules=demo"
+                    "--add-modules=logging-jetty,demo"
                 };
 
                 LOG.info("Creating DemoBase in {}", jettyBase);
                 mainMethod.invoke(mainClass, new Object[]{args});
+
+                Path logsDir = jettyBase.resolve("logs");
+                if (!Files.exists(logsDir))
+                    Files.createDirectory(logsDir);
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("JettyHome(working.resolve(...)) = {}", jettyBase);
