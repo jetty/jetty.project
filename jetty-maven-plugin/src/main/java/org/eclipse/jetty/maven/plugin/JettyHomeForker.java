@@ -30,6 +30,7 @@ import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
@@ -84,6 +85,7 @@ public class JettyHomeForker extends AbstractForker
     protected Path libPath;
     protected Path webappPath;
     protected Path mavenLibPath;
+    protected String version;
 
     public List<File> getLibExtJarFiles()
     {
@@ -400,10 +402,7 @@ public class JettyHomeForker extends AbstractForker
             JarResource res = (JarResource)JarResource.newJarResource(Resource.newResource(jettyHomeZip));
             res.copyTo(baseDir);
             //zip will unpack to target/jetty-home-<VERSION>
-            String name = jettyHome.getName();
-            int i = name.lastIndexOf('.');
-            name = (i > 0 ? name.substring(0, i) : "home");
-            jettyHome = new File(baseDir, name);
+            jettyHome = new File(baseDir,"jetty-home-" + version);
         }
     }
 }

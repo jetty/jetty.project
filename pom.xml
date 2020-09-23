@@ -65,6 +65,7 @@
     <jackson-databind.version>2.9.9</jackson-databind.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <settingsPath>src/it/settings.xml</settingsPath>
+    <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
     <testcontainers.version>1.14.3</testcontainers.version>
   </properties>
@@ -512,7 +513,7 @@
           <artifactId>maven-invoker-plugin</artifactId>
           <version>3.2.1</version>
           <configuration>
-            <mergeUserSettings>true</mergeUserSettings>
+            <mergeUserSettings>${invoker.mergeUserSettings}</mergeUserSettings>
             <writeJunitReport>true</writeJunitReport>
             <junitPackageName>org.eclipse.jetty.maven.its</junitPackageName>
             <debug>${it.debug}</debug>
@@ -1329,6 +1330,7 @@
       <id>ci</id>
       <properties>
         <settingsPath>${env.GLOBAL_MVN_SETTINGS}</settingsPath>
+        <invoker.mergeUserSettings>true</invoker.mergeUserSettings>
         <surefire.rerunFailingTestsCount>3</surefire.rerunFailingTestsCount>
       </properties>
       <modules>
