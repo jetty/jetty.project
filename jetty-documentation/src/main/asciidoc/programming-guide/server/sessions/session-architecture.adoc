@@ -20,16 +20,15 @@
 
 ==== Session Architecture
 
-===== Terminology
-
-SessionIdManager:: is responsible for allocation of session ids
-HouseKeeper::  is responsible for orchestrating the detection and removal of expired sessions
-SessionHandler:: is responsible for managing the lifecycle of sessions within its associated context
-SessionCache:: is an L1 cache of in-use `Session` objects
-Session:: is a stateful object representing a `HttpSession`
-SessionData:: encapsulates the attributes and metadata associated with a `Session`
-SessionDataStore:: is responsible for creating, storing and reading `SessionData`
-CachingSessionDataStore:: is an L2 cache of `SessionData`
+Terminology::
+SessionIdManager::: is responsible for allocation of session ids
+HouseKeeper:::  is responsible for orchestrating the detection and removal of expired sessions
+SessionHandler::: is responsible for managing the lifecycle of sessions within its associated context
+SessionCache::: is an L1 cache of in-use `Session` objects
+Session::: is a stateful object representing a `HttpSession`
+SessionData::: encapsulates the attributes and metadata associated with a `Session`
+SessionDataStore::: is responsible for creating, storing and reading `SessionData`
+CachingSessionDataStore::: is an L2 cache of `SessionData`
 
 The session architecture can be represented like so:
 
