@@ -114,9 +114,6 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
 
         Entry(T value, Pool<Entry>.Entry entry)
         {
-            if (entry != null && entry.getPooled() != value)
-                throw new IllegalArgumentException("value does not match pooled entry");
-
             _value = value;
             _entry = entry;
         }
