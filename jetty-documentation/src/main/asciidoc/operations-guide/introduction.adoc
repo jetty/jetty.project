@@ -21,13 +21,15 @@
 
 The Eclipse Jetty Operations Guide targets sysops, devops, and developers who want to install Eclipse Jetty as a standalone server to deploy web applications.
 
-=== Eclipse Jetty Introduction
+=== Introduction
 
 If you are new to Eclipse Jetty, read xref:og-begin[here] to download, install, start and deploy web applications to Jetty.
 
 === Eclipse Jetty Features
 
-If you know Jetty already, jump to a feature:
+If you know Eclipse Jetty already, jump to a feature:
+
+* xref:og-sessions[HTTP Session Caching and Clustering]
 
 TODO
 

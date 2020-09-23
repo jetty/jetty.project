@@ -16,21 +16,20 @@
 // ========================================================================
 //
 
-[[ops-sessions-jdbc]]
-
-=== Modules for Persistent Sessions: JDBC
+[[og-session-jdbc]]
+==== Modules for Persistent HTTP Sessions: JDBC
 
 Enabling the `session-store-jdbc` module configures Jetty to persist session data in a relational database.
 
+===== Configuration
 
-==== Configuration
-
-After enabling the module, the `$jetty.base/start.d/session-store-jdbc.ini` file contains the following customizable properties:
+After enabling the module, the `$JETTY_BASE/start.d/session-store-jdbc.ini` file contains the following customizable properties:
 
 jetty.session.gracePeriod.seconds::
 Integer, default 3600.
-Used during session xref:ops-session-base-scavenge[scavenging].
-Multiples of this period are used to define how long ago a stored session must have expired before it should be xref:ops-session-base-scavenge[scavenged].
+Used during session xref:og-session-base-scavenge[scavenging].
+Multiples of this period are used to define how long ago a stored session must have expired before it should be xref:og-session-base-scavenge[scavenged].
+
 jetty.session.savePeriod.seconds::
 Integer, in seconds, default is `0`.
 Whenever a session is accessed by a request, its `lastAccessTime` and `expiry` are updated.
@@ -49,27 +48,29 @@ Default `datasource`.
 Set to either `datasource` or `driver` depending on the type of connection being used.
 Depending which you select, there are additional properties available:
 
-   `datasource`:::
-   	jetty.session.jdbc.datasourceName::::
-    Name of the remote datasource.
-   
-   `driver`:::
-    jetty.session.jdbc.driverClass::::
-    Name of the JDBC driver that controls access to the remote database, such as `com.mysql.jdbc.Driver`
-    jetty.session.jdbc.driverUrl::::
-    URL of the database which includes the driver type, host name and port, service name and any specific attributes unique to the database, such as a username.
-    As an example, here is a mysql connection with the username appended: `jdbc:mysql://127.0.0.1:3306/sessions?user=sessionsadmin`.
+`datasource`:::
+jetty.session.jdbc.datasourceName::::
+Name of the remote datasource.
+
+`driver`:::
+jetty.session.jdbc.driverClass::::
+Name of the JDBC driver that controls access to the remote database, such as `com.mysql.jdbc.Driver`
+jetty.session.jdbc.driverUrl::::
+URL of the database which includes the driver type, host name and port, service name and any specific attributes unique to the database, such as a username.
+As an example, here is a mysql connection with the username appended: `jdbc:mysql://127.0.0.1:3306/sessions?user=sessionsadmin`.
 
 jetty.session.jdbc.blobType::
 Optional.
 Default `blob` or `bytea` for Postgres.
 This is the keyword used by the particular database to identify the blob data type.
 If netiher default is suitable you can set this value explicitly.
+
 jetty.session.jdbc.longType::
 Optional.
 Default `bigint` or `number(20)` for Oracle.
 This is the keyword used by the particular database to identify the long integer data type.
 Set this explicitly if neither of the default values is appropriate.
+
 jetty.session.jdbc.stringType::
 Optional.
 Default `varchar`.
@@ -80,7 +81,7 @@ jetty.session.jdbc.schema.schemaName::
 jetty.session.jdbc.schema.catalogName::
 Optional.
 The exact meaning of these two properties is dependent on your database vendor, but can broadly be described as further scoping for the session table name.
-See https://en.wikipedia.org/wiki/Database_schema and https://en.wikipedia.org/wiki/Database_catalog.
+See link:https://en.wikipedia.org/wiki/Database_schema[] and link:https://en.wikipedia.org/wiki/Database_catalog[].
 These extra scoping names can come into play at startup time when Jetty determines if the session table already exists, or otherwise creates it on-the-fly.
 If you have employed either of these concepts when you pre-created the session table, or you want to ensure that Jetty uses them when it auto-creates the session table, then you have two options: either set them explicitly, or let Jetty infer them from a database connection (obtained using either a Datasource or Driver according to the `db-connection-type` you have configured).
 To set them explicitly, uncomment and supply appropriate values for the `jetty.session.jdbc.schema.schemaName` and/or `jetty.session.jdbc.schema.catalogName` properties.

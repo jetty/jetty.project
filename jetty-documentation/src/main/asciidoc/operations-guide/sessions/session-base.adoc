@@ -16,18 +16,20 @@
 // ========================================================================
 //
 
-[[ops-session-base]]
-=== The Base Session Module
+[[og-session-base]]
+==== The Base Session Module
+
 The `sessions` module is the base module that all other session modules depend upon.
 As such it will be _transitively_ enabled if you enable any of the other session modules: you need to _explicitly_ enable it if you wish to _change_ any settings from their defaults.
 
-Enabling the `sessions` module puts the `$jetty.home/etc/sessions/id-manager.xml` file onto the execution path and generates a `$jetty.base/start.d/sessions.ini` file.
+Enabling the `sessions` module puts the `$JETTY_HOME/etc/sessions/id-manager.xml` file onto the execution path and generates a `$JETTY_BASE/start.d/sessions.ini` file.
 
 The `id-manager.xml` file instantiates a `DefaultSessionIdManager` and `HouseKeeper`.
-The former is used to generate and manage session ids whilst the latter is responsible for periodic xref:ops-session-base-scavenge[scavenging] of expired sessions.
+The former is used to generate and manage session ids whilst the latter is responsible for periodic xref:og-session-base-scavenge[scavenging] of expired sessions.
 
-==== Configuration
-The `$jetty.base/start.d/sessions.ini` file contains these configuration properties:
+===== Configuration
+
+The `$JETTY_BASE/start.d/sessions.ini` file contains these configuration properties:
 
 jetty.sessionIdManager.workerName::
 This uniquely identifies the jetty server instance and is applied to the `SessionIdManager`.
@@ -43,17 +45,17 @@ IMPORTANT: If you have more than one Jetty instance, it is *crucial* that you co
 
 jetty.sessionScavengeInterval.seconds::
 This is the period in _seconds_ between runs of the `HouseKeeper`, responsible for orchestrating the removal of expired sessions.
-By default it will run appproximately every 600 secs (ie 10 mins).
-As a rule of thumb, you should ensure that the xref:ops-session-base-scavenge[scavenge] interval is shorter than the `<session-timeout>` of your sessions to ensure that they are promptly scavenged.
-On the other hand, if you have a backend store configured for your sessions, xref:ops-session-base-scavenge[scavenging] too frequently can increase the load on it.
+By default it will run approximately every 600 secs (ie 10 mins).
+As a rule of thumb, you should ensure that the xref:og-session-base-scavenge[scavenge] interval is shorter than the `<session-timeout>` of your sessions to ensure that they are promptly scavenged.
+On the other hand, if you have a backend store configured for your sessions, xref:og-session-base-scavenge[scavenging] too frequently can increase the load on it.
 
-TIP: Don't forget that the `<session-timeout>` is specified in web.xml in _minutes_ and the value of the `jetty.sessionScavengeInterval.seconds` is in _seconds_.
+CAUTION: Don't forget that the `<session-timeout>` is specified in `web.xml` in _minutes_ and the value of the `jetty.sessionScavengeInterval.seconds` is in _seconds_.
 
-[[ops-session-base-scavenge]]
-==== Session Scavenging
+[[og-session-base-scavenge]]
+===== Session Scavenging
 
 The `HouseKeeper` is responsible for the periodic initiation of session scavenge cycles.
-The `jetty.sessionScavengeInterval.seconds` property in `$jetty.base/start.d/sessions.ini` controls the periodicity of the cycle.
+The `jetty.sessionScavengeInterval.seconds` property in `$JETTY_BASE/start.d/sessions.ini` controls the periodicity of the cycle.
 
 [NOTE]
 ====
@@ -68,7 +70,7 @@ Scavenging occurs for all contexts on a server at every cycle.
 The `HouseKeeper` sequentially asks the `SessionHandler` in each context to find and remove expired sessions.
 The `SessionHandler` works with the `SessionDataStore` to evaluate candidates for expiry held in the `SessionCache`, and also to sweep the persistence mechanism to find expired sessions.
 
-The sweep takes two forms: once per cycle the `SessionDataStore` searches for sessions for it's own context that have expired; infrequently, the `SessionDataStore` will widen the search to expired sessions in all contexts.
+The sweep takes two forms: once per cycle the `SessionDataStore` searches for sessions for its own context that have expired; infrequently, the `SessionDataStore` will widen the search to expired sessions in all contexts.
 The former finds sessions that are no longer in this context's `SessionCache`, and using some heuristics, are unlikely to be in the `SessionCache` of the same context on another node either.
 These sessions will be loaded and fully expired, meaning that `HttpSessionListener.destroy()` will be called for them.
 The latter finds sessions that have not been disposed of by scavenge cycles on any other context/node.

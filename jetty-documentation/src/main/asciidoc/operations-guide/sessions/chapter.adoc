@@ -16,21 +16,22 @@
 // ========================================================================
 //
 
-[[op-session]]
-== Session Management
+[[og-sessions]]
+=== HTTP Session Management
+http://
 
-Http sessions are a concept within the Servlet API which allow requests to store and retrieve information across the time a user spends in an application.
+HTTP sessions are a concept within the Servlet API which allow requests to store and retrieve information across the time a user spends in an application.
 Jetty offers a number of pluggable alternatives for managing and distributing/persisting sessions.
 Choosing the best alternative is an important consideration for every application as is the correct configuration to achieve optimum performance.
 
 include::session-overview.adoc[]
 include::session-base.adoc[]
-include::session-sessioncache.adoc[]
+include::session-cache.adoc[]
 include::session-filesystem.adoc[]
 include::session-jdbc.adoc[]
 include::session-mongodb.adoc[]
 include::session-infinispan.adoc[]
 include::session-hazelcast.adoc[]
 include::session-gcloud.adoc[]
-include::session-memcachedsessiondatastore.adoc[]
+include::session-memcached.adoc[]
 include::session-usecases.adoc[]
