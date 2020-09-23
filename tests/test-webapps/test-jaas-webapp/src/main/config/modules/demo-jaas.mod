@@ -9,6 +9,7 @@ webapp
 
 [depends]
 deploy
+jaas
 jdbc
 jsp
 annotations
