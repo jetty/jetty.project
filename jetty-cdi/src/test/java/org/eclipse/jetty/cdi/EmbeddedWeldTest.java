@@ -16,8 +16,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.embedded;
+package org.eclipse.jetty.cdi;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.EnumSet;
 import javax.enterprise.inject.Produces;
@@ -39,7 +40,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.cdi.CdiConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ListenerHolder;
@@ -54,13 +54,38 @@ import static org.hamcrest.Matchers.containsString;
 
 public class EmbeddedWeldTest
 {
+    static
+    {
+        // Wire up java.util.logging (used by weld) to slf4j.
+        org.slf4j.bridge.SLF4JBridgeHandler.removeHandlersForRootLogger();
+        org.slf4j.bridge.SLF4JBridgeHandler.install();
+    }
+
+    // @BeforeEach
+    public void dumpClassLoaderState()
+    {
+        String[] cpEntries = System.getProperty("java.class.path").split(File.pathSeparator);
+
+        for (int i = 0; i < cpEntries.length; i++)
+        {
+            String entry = cpEntries[i];
+            if (entry.contains(".m2/repo"))
+                System.out.print(" maven");
+            else if (entry.contains("/idea"))
+                System.out.print(" idea ");
+            else if (entry.contains("/target/"))
+                System.out.print("*JETTY");
+            System.out.printf(" [%2d] %s%n", i, entry);
+        }
+    }
+
     public static Server createServerWithServletContext(String mode)
     {
         Server server = new Server();
         server.addConnector(new LocalConnector(server));
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
-        context.setResourceBase("src/test/resources/weldtest");
+        context.setResourceBase("src/test/weldtest");
         server.setHandler(context);
 
         // Setup context
@@ -71,7 +96,7 @@ public class EmbeddedWeldTest
         // Setup Jetty weld integration
         switch (mode)
         {
-            case "none" : // Do nothing, let weld work it out.
+            case "none": // Do nothing, let weld work it out.
                 // Expect:INFO: WELD-ENV-001201: Jetty 7.2+ detected, CDI injection will be available in Servlets and Filters. Injection into Listeners is not supported.
                 context.getServletHandler().addListener(new ListenerHolder(org.jboss.weld.environment.servlet.Listener.class));
                 break;
@@ -163,21 +188,38 @@ public class EmbeddedWeldTest
     }
 
     @Test
+    public void testServletContextSimone() throws Exception
+    {
+        Server server = createServerWithServletContext("none");
+        server.start();
+        LocalConnector connector = server.getBean(LocalConnector.class);
+        String response = connector.getResponse("GET / HTTP/1.0\r\n\r\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("Hello GreetingsServlet filtered by Weld BeanManager "));
+        assertThat(response, containsString("Beans from Weld BeanManager "));
+        assertThat(response, containsString("Listener saw null"));
+        assertThat(response, containsString("Beans from Weld BeanManager for "));
+
+        server.stop();
+    }
+
+    @Test
     public void testWebappContext() throws Exception
     {
-        Server server = new Server(8080);
+        Server server = new Server();
         server.addConnector(new LocalConnector(server));
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        webapp.setResourceBase("src/test/resources/weldtest");
+        webapp.setResourceBase("src/test/weldtest");
         server.setHandler(webapp);
 
         webapp.setInitParameter(org.eclipse.jetty.cdi.CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, org.eclipse.jetty.cdi.CdiDecoratingListener.MODE);
         webapp.addBean(new ServletContextHandler.Initializer(webapp, new org.eclipse.jetty.cdi.CdiServletContainerInitializer()));
         webapp.addBean(new ServletContextHandler.Initializer(webapp, new org.jboss.weld.environment.servlet.EnhancedListener()));
 
-        webapp.getServerClassMatcher().add("-org.eclipse.jetty.embedded.");
-        webapp.getSystemClassMatcher().add("org.eclipse.jetty.embedded.");
+        String pkg = EmbeddedWeldTest.class.getPackage().getName();
+        webapp.getServerClassMatcher().add("-" + pkg + ".");
+        webapp.getSystemClassMatcher().add(pkg + ".");
 
         webapp.addServlet(GreetingsServlet.class, "/");
         webapp.addFilter(MyFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
@@ -197,11 +239,11 @@ public class EmbeddedWeldTest
     @Test
     public void testWebappContextDiscovered() throws Exception
     {
-        Server server = new Server(8080);
+        Server server = new Server();
         server.addConnector(new LocalConnector(server));
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        webapp.setResourceBase("src/test/resources/weldtest");
+        webapp.setResourceBase("src/test/weldtest");
         server.setHandler(webapp);
 
         // Need the AnnotationConfiguration to detect SCIs
@@ -211,8 +253,9 @@ public class EmbeddedWeldTest
         webapp.addConfiguration(new CdiConfiguration());
 
         // This is ugly but needed for maven for testing in a overlaid war pom
-        webapp.getServerClassMatcher().add("-org.eclipse.jetty.embedded.");
-        webapp.getSystemClassMatcher().add("org.eclipse.jetty.embedded.");
+        String pkg = EmbeddedWeldTest.class.getPackage().getName();
+        webapp.getServerClassMatcher().add("-" + pkg + ".");
+        webapp.getSystemClassMatcher().add(pkg + ".");
 
         webapp.getServletHandler().addListener(new ListenerHolder(MyContextListener.class));
         webapp.addFilter(MyFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
@@ -228,7 +271,6 @@ public class EmbeddedWeldTest
         assertThat(response, containsString("Beans from Weld BeanManager "));
         assertThat(response, containsString("Listener saw Weld BeanManager"));
         server.stop();
-
     }
 
     public static class MyContextListener implements ServletContextListener
@@ -324,5 +366,4 @@ public class EmbeddedWeldTest
             return () -> "Salutations!";
         }
     }
-
 }

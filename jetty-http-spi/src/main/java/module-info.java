@@ -19,6 +19,7 @@
 module org.eclipse.jetty.http.spi
 {
     requires transitive jdk.httpserver;
+    requires transitive java.xml;
     requires transitive org.eclipse.jetty.server;
     requires transitive org.eclipse.jetty.util;
 
