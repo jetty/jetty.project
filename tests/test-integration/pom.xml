@@ -13,7 +13,7 @@
   <properties>
     <test-wars-dir>${project.build.directory}/test-wars</test-wars-dir>
     <test-libs-dir>${project.build.directory}/test-libs</test-libs-dir>
-    <test-dist-dir>${project.build.directory}/test-dist</test-dist-dir>
+    <test-home-dir>${project.build.directory}/test-dist</test-home-dir>
     <bundle-symbolic-name>${project.groupId}.integrations</bundle-symbolic-name>
 
   </properties>
@@ -37,7 +37,7 @@
             </configuration>
           </execution>
           <execution>
-            <id>unpack-jetty-distro</id>
+            <id>unpack-jetty-home</id>
             <phase>process-test-resources</phase>
             <goals>
               <goal>unpack</goal>
@@ -46,14 +46,14 @@
               <artifactItems>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-distribution</artifactId>
+                  <artifactId>jetty-home</artifactId>
                   <version>${project.version}</version>
                   <type>zip</type>
                   <overWrite>true</overWrite>
                 </artifactItem>
               </artifactItems>
               <outputAbsoluteArtifactFilename>true</outputAbsoluteArtifactFilename>
-              <outputDirectory>${test-dist-dir}</outputDirectory>
+              <outputDirectory>${test-home-dir}</outputDirectory>
               <overWriteSnapshots>true</overWriteSnapshots>
               <overWriteIfNewer>true</overWriteIfNewer>
             </configuration>
@@ -99,7 +99,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-distribution</artifactId>
+      <artifactId>jetty-home</artifactId>
       <version>${project.version}</version>
       <type>pom</type>
     </dependency>
@@ -167,8 +167,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>test-jetty-webapp</artifactId>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>demo-jetty-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>

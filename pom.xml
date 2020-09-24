@@ -66,6 +66,7 @@
     <jackson-databind.version>2.9.9</jackson-databind.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <settingsPath>src/it/settings.xml</settingsPath>
+    <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
     <testcontainers.version>1.14.3</testcontainers.version>
   </properties>
@@ -89,6 +90,7 @@
 
   <modules>
     <module>build-resources</module>
+    <module>demos</module>
     <module>jetty-slf4j-impl</module>
     <module>jetty-ant</module>
     <module>jetty-util</module>
@@ -131,7 +133,7 @@
     <module>tests</module>
     <module>examples</module>
     <module>jetty-quickstart</module>
-    <module>jetty-distribution</module>
+    <!-- <module>jetty-distribution</module> -->
     <module>jetty-runner</module>
     <module>jetty-http-spi</module>
     <module>jetty-osgi</module>
@@ -513,7 +515,7 @@
           <artifactId>maven-invoker-plugin</artifactId>
           <version>3.2.1</version>
           <configuration>
-            <mergeUserSettings>true</mergeUserSettings>
+            <mergeUserSettings>${invoker.mergeUserSettings}</mergeUserSettings>
             <writeJunitReport>true</writeJunitReport>
             <junitPackageName>org.eclipse.jetty.maven.its</junitPackageName>
             <debug>${it.debug}</debug>
@@ -575,7 +577,6 @@
             <attach>true</attach>
             <isOffline>true</isOffline>
             <excludePackageNames>com.*:org.slf4j*:org.mortbay*:*.jmh*:org.eclipse.jetty.embedded*:org.eclipse.jetty.example.asyncrest*:org.eclipse.jetty.test*</excludePackageNames>
-            <skippedModules>apache-jstl,jetty-osgi-alpn,infinispan-common,infinispan-embedded,infinispan-embedded-query,infinispan-remote,infinispan-remote-query,jetty-plus,jetty-jndi,jetty-documentation,jetty-distribution,jetty-home,jetty-bom,jetty-runner</skippedModules>
           </configuration>
         </plugin>
         <plugin>
@@ -1257,6 +1258,7 @@
             <artifactId>maven-assembly-plugin</artifactId>
             <executions>
               <execution>
+                <id>config-assembly</id>
                 <phase>package</phase>
                 <goals>
                   <goal>single</goal>
@@ -1313,6 +1315,15 @@
                   <goal>jar</goal>
                 </goals>
               </execution>
+              <execution>
+                <id>aggregate-javadocs</id>
+                <goals>
+                  <goal>aggregate-jar</goal>
+                </goals>
+                <configuration>
+                  <skippedModules>apache-jstl,jetty-osgi-alpn,infinispan-common,infinispan-embedded,infinispan-embedded-query,infinispan-remote,infinispan-remote-query,jetty-ant,jetty-maven-plugin,jetty-plus,jetty-jndi,jetty-documentation,jetty-home,jetty-bom,jetty-runner,demo-async-rest-webapp,demo-jaas-webapp,demo-jetty-webapp,demo-jndi-webapp,demo-proxy-webapp,demo-spec-webapp,demo-async-rest-jar,demo-async-rest-server,jetty-jspc-maven-plugin,jetty-start,jetty-osgi-boot,jetty-osgi-boot-jsp,jetty-osgi-boot-warurl,jetty-httpservice</skippedModules>
+                </configuration>
+              </execution>
             </executions>
           </plugin>
           <plugin>
@@ -1336,6 +1347,7 @@
       <id>ci</id>
       <properties>
         <settingsPath>${env.GLOBAL_MVN_SETTINGS}</settingsPath>
+        <invoker.mergeUserSettings>true</invoker.mergeUserSettings>
         <surefire.rerunFailingTestsCount>3</surefire.rerunFailingTestsCount>
       </properties>
       <build>
@@ -1376,6 +1388,7 @@
                   <filenameExcludes>
                     <filenameExclude>jetty-documentation/.*</filenameExclude>
                     <filenameExclude>examples/.*</filenameExclude>
+                    <filenameExclude>demos/.*</filenameExclude>
                     <filenameExclude>aggregates/.*</filenameExclude>
                     <filenameExclude>.*/test-.*</filenameExclude>
                     <filenameExclude>.*/.*-test/.*</filenameExclude>

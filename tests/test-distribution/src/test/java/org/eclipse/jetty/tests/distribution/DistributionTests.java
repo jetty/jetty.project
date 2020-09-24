@@ -63,24 +63,24 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-public class DistributionTests extends AbstractDistributionTest
+public class DistributionTests extends AbstractJettyHomeTest
 {
     @Test
     public void testStartStop() throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
-        DistributionTester distribution = DistributionTester.Builder.newInstance()
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
-        try (DistributionTester.Run run1 = distribution.start("--add-to-start=http"))
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http"))
         {
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             int port = distribution.freePort();
-            try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
@@ -98,18 +98,17 @@ public class DistributionTests extends AbstractDistributionTest
     public void testQuickStartGenerationAndRun() throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
-        DistributionTester distribution = DistributionTester.Builder.newInstance()
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String[] args1 = {
-            "--create-startd",
             "--approve-all-licenses",
-            "--add-to-start=resources,server,http,webapp,deploy,jsp,servlet,servlets,quickstart" 
+            "--add-modules=resources,server,http,webapp,deploy,jsp,servlet,servlets,quickstart"
         };
-        
-        try (DistributionTester.Run run1 = distribution.start(args1))
+
+        try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
@@ -117,8 +116,7 @@ public class DistributionTests extends AbstractDistributionTest
             File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
-     
-            try (DistributionTester.Run run2 = distribution.start("jetty.quickstart.mode=GENERATE"))
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.quickstart.mode=GENERATE"))
             {
                 assertTrue(run2.awaitConsoleLogsFor("QuickStartGeneratorConfiguration:main: Generated", 10, TimeUnit.SECONDS));
                 Path unpackedWebapp = distribution.getJettyBase().resolve("webapps").resolve("test");
@@ -130,8 +128,8 @@ public class DistributionTests extends AbstractDistributionTest
                 assertNotEquals(0, Files.size(quickstartWebXml));
                 
                 int port = distribution.freePort();
-                
-                try (DistributionTester.Run run3 = distribution.start("jetty.http.port=" + port, "jetty.quickstart.mode=QUICKSTART"))
+
+                try (JettyHomeTester.Run run3 = distribution.start("jetty.http.port=" + port, "jetty.quickstart.mode=QUICKSTART"))
                 {
                     assertTrue(run3.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
@@ -148,27 +146,32 @@ public class DistributionTests extends AbstractDistributionTest
     @Test
     public void testSimpleWebAppWithJSP() throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
-        DistributionTester distribution = DistributionTester.Builder.newInstance()
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String[] args1 = {
-            "--create-startd",
+            "--create-start-ini",
             "--approve-all-licenses",
-            "--add-to-start=resources,server,http,webapp,deploy,jsp,jmx,servlet,servlets"
+            "--add-modules=resources,server,http,webapp,deploy,jsp,jmx,servlet,servlets"
         };
-        try (DistributionTester.Run run1 = distribution.start(args1))
+        try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
+
+            // Verify that --create-start-ini works
+            assertTrue(Files.exists(jettyBase.resolve("start.ini")));
 
             File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
             int port = distribution.freePort();
-            try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
@@ -186,17 +189,16 @@ public class DistributionTests extends AbstractDistributionTest
     public void testSimpleWebAppWithJSPOnModulePath() throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
-        DistributionTester distribution = DistributionTester.Builder.newInstance()
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String[] args1 = {
-            "--create-startd",
             "--approve-all-licenses",
-            "--add-to-start=resources,server,http,webapp,deploy,jsp,jmx,servlet,servlets"
+            "--add-modules=resources,server,http,webapp,deploy,jsp,jmx,servlet,servlets"
         };
-        try (DistributionTester.Run run1 = distribution.start(args1))
+        try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
@@ -209,7 +211,7 @@ public class DistributionTests extends AbstractDistributionTest
                 "--jpms",
                 "jetty.http.port=" + port
             };
-            try (DistributionTester.Run run2 = distribution.start(args2))
+            try (JettyHomeTester.Run run2 = distribution.start(args2))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
@@ -239,16 +241,15 @@ public class DistributionTests extends AbstractDistributionTest
     private void testSimpleWebAppWithJSPOverHTTP2(boolean ssl) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
-        DistributionTester distribution = DistributionTester.Builder.newInstance()
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String[] args1 = {
-            "--create-startd",
-            "--add-to-start=jsp,deploy," + (ssl ? "http2,test-keystore" : "http2c")
+            "--add-modules=jsp,deploy," + (ssl ? "http2,test-keystore" : "http2c")
         };
-        try (DistributionTester.Run run1 = distribution.start(args1))
+        try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
@@ -258,7 +259,7 @@ public class DistributionTests extends AbstractDistributionTest
 
             int port = distribution.freePort();
             String portProp = ssl ? "jetty.ssl.port" : "jetty.http.port";
-            try (DistributionTester.Run run2 = distribution.start(portProp + "=" + port))
+            try (JettyHomeTester.Run run2 = distribution.start(portProp + "=" + port))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
@@ -293,17 +294,16 @@ public class DistributionTests extends AbstractDistributionTest
         assertTrue(Files.deleteIfExists(sockFile), "temp sock file cannot be deleted");
 
         String jettyVersion = System.getProperty("jettyVersion");
-        DistributionTester distribution = DistributionTester.Builder.newInstance()
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String[] args1 = {
-            "--create-startd",
-            "--add-to-start=unixsocket-http,deploy,jsp",
+            "--add-modules=unixsocket-http,deploy,jsp",
             "--approve-all-licenses"
         };
-        try (DistributionTester.Run run1 = distribution.start(args1))
+        try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
             // Give it time to download the dependencies
             assertTrue(run1.awaitFor(30, TimeUnit.SECONDS));
@@ -312,7 +312,7 @@ public class DistributionTests extends AbstractDistributionTest
             File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
-            try (DistributionTester.Run run2 = distribution.start("jetty.unixsocket.path=" + sockFile.toString()))
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.unixsocket.path=" + sockFile.toString()))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
@@ -332,20 +332,19 @@ public class DistributionTests extends AbstractDistributionTest
     @Test
     public void testLog4j2ModuleWithSimpleWebAppWithJSP() throws Exception
     {
-        Path jettyBase = Files.createTempDirectory("jetty_base");
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
-        DistributionTester distribution = DistributionTester.Builder.newInstance()
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String[] args1 = {
-            "--create-startd",
             "--approve-all-licenses",
-            "--add-to-start=resources,server,http,webapp,deploy,jsp,servlet,servlets,logging-log4j2"
+            "--add-modules=resources,server,http,webapp,deploy,jsp,servlet,servlets,logging-log4j2"
         };
-        try (DistributionTester.Run run1 = distribution.start(args1))
+        try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
@@ -355,7 +354,7 @@ public class DistributionTests extends AbstractDistributionTest
             distribution.installWarFile(war, "test");
 
             int port = distribution.freePort();
-            try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
@@ -377,16 +376,15 @@ public class DistributionTests extends AbstractDistributionTest
     public void testWebAppWithProxyAndJPMS() throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
-        DistributionTester distribution = DistributionTester.Builder.newInstance()
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String[] args1 = {
-            "--create-startd",
-            "--add-to-start=http,webapp,deploy,resources"
+            "--add-modules=http,webapp,deploy,resources"
         };
-        try (DistributionTester.Run run1 = distribution.start(args1))
+        try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
@@ -397,11 +395,11 @@ public class DistributionTests extends AbstractDistributionTest
                 writer.write("org.eclipse.jetty.LEVEL=INFO");
             }
 
-            File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-proxy-webapp:war:" + jettyVersion);
+            File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-proxy-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "proxy");
 
             int port = distribution.freePort();
-            try (DistributionTester.Run run2 = distribution.start("--jpms", "jetty.http.port=" + port, "jetty.server.dumpAfterStart=true"))
+            try (JettyHomeTester.Run run2 = distribution.start("--jpms", "jetty.http.port=" + port, "jetty.server.dumpAfterStart=true"))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
@@ -423,16 +421,15 @@ public class DistributionTests extends AbstractDistributionTest
     public void testSimpleWebAppWithWebsocket(String arg) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
-        DistributionTester distribution = DistributionTester.Builder.newInstance()
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
         String[] args1 = {
-            "--create-startd",
             "--approve-all-licenses",
-            "--add-to-start=resources,server,http,webapp,deploy,jsp,jmx,servlet,servlets,websocket"
+            "--add-modules=resources,server,http,webapp,deploy,jsp,jmx,servlet,servlets,websocket"
         };
-        try (DistributionTester.Run run1 = distribution.start(args1))
+        try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
@@ -448,7 +445,7 @@ public class DistributionTests extends AbstractDistributionTest
                 //"jetty.server.dumpAfterStart=true"
             };
 
-            try (DistributionTester.Run run2 = distribution.start(args2))
+            try (JettyHomeTester.Run run2 = distribution.start(args2))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
                 assertFalse(run2.getLogs().stream().anyMatch(s -> s.contains("LinkageError")));
@@ -502,32 +499,31 @@ public class DistributionTests extends AbstractDistributionTest
     @Test
     public void testStartStopLog4j2Modules() throws Exception
     {
-        Path jettyBase = Files.createTempDirectory("jetty_base");
+        Path jettyBase = newTestJettyBaseDirectory();
 
         String jettyVersion = System.getProperty("jettyVersion");
-        DistributionTester distribution = DistributionTester.Builder.newInstance() //
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance() //
             .jettyVersion(jettyVersion) //
             .jettyBase(jettyBase) //
             .mavenLocalRepository(System.getProperty("mavenRepoPath")) //
             .build();
 
         String[] args = {
-            "--create-startd",
             "--approve-all-licenses",
-            "--add-to-start=http,logging-log4j2"
+            "--add-modules=http,logging-log4j2"
         };
 
-        try (DistributionTester.Run run1 = distribution.start(args))
+        try (JettyHomeTester.Run run1 = distribution.start(args))
         {
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             Files.copy(Paths.get("src/test/resources/log4j2.xml"), //
-                       Paths.get(jettyBase.toString(),"resources").resolve("log4j2.xml"), //
-                       StandardCopyOption.REPLACE_EXISTING);
+                Paths.get(jettyBase.toString(), "resources").resolve("log4j2.xml"), //
+                StandardCopyOption.REPLACE_EXISTING);
 
             int port = distribution.freePort();
-            try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
                 assertTrue(run2.awaitLogsFileFor(
                     jettyBase.resolve("logs").resolve("jetty.log"), //

@@ -63,7 +63,7 @@ public class JavaxWebSocketTest
     @Test
     public void testChatEndpoint() throws Exception
     {
-        URI uri = WSURI.toWebsocket(server.getServerURI().resolve("/test-jetty-webapp/javax.websocket"));
+        URI uri = WSURI.toWebsocket(server.getServerURI().resolve("/demo-jetty-webapp/javax.websocket"));
 
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
 

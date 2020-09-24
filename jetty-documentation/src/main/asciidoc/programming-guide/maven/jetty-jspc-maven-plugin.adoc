@@ -181,7 +181,7 @@ We will unpack the overlaid war file, compile the jsps and merge their servlet d
 
 Here's an example configuration of the war plugin that separate those phases into an unpack phase, and then a packing phase:
 
-[source, xml, subs="{sub-order}"]
+[source,xml,subs="{sub-order}"]
 ----
 <plugin>
     <artifactId>maven-war-plugin</artifactId>
@@ -195,8 +195,8 @@ Here's an example configuration of the war plugin that separate those phases int
           <overlays>
             <overlay />
             <overlay>
-              <groupId>org.eclipse.jetty</groupId>
-              <artifactId>test-jetty-webapp</artifactId>
+              <groupId>org.eclipse.jetty.demos</groupId>
+              <artifactId>demo-jetty-webapp</artifactId>
             </overlay>
           </overlays>
         </configuration>

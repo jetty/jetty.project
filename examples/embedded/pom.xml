@@ -151,13 +151,12 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-distribution</artifactId>
+      <artifactId>jetty-home</artifactId>
       <version>${project.version}</version>
-      <type>tar.gz</type>
+      <type>zip</type>
       <scope>test</scope>
     </dependency>
   </dependencies>
-
   <build>
     <plugins>
       <plugin>

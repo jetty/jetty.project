@@ -77,19 +77,19 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     {
         EMBED,
         FORK,
-        DISTRO
+        HOME
     }
-    
+
     /**
      * Max number of times to check to see if jetty has started correctly
-     * when running in FORK or DISTRO mode.
+     * when running in FORK or HOME mode.
      */
     @Parameter (defaultValue = "10")
     protected int maxChildStartChecks;
-    
+
     /**
      * How long to wait in msec between checks to see if jetty has started
-     * correctly when running in FORK or DISTRO mode.
+     * correctly when running in FORK or HOME mode.
      */
     @Parameter (defaultValue = "200")
     protected long maxChildStartCheckMs;
@@ -225,9 +225,9 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      */
     @Parameter
     protected Map<String,String> systemProperties;
-    
-    /** 
-     * Controls how to run jetty. Valid values are EMBED,FORK,DISTRO.
+
+    /**
+     * Controls how to run jetty. Valid values are EMBED,FORK,HOME.
      */
     @Parameter (property = "jetty.deployMode", defaultValue = "EMBED") 
     protected DeploymentMode deployMode;
@@ -272,7 +272,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     //End of EMBED only
     
 
-    //Start of parameters only valid for FORK/DISTRO
+    //Start of parameters only valid for FORK/HOME
     /**
      * Extra environment variables to be passed to the forked process
      */
@@ -301,10 +301,9 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      */
     @Parameter
     protected String stopKey;
-    //End of FORK or DISTRO parameters
-    
-    
-    //Start of parameters only valid for DISTRO
+    //End of FORK or HOME parameters
+
+    //Start of parameters only valid for HOME
     /**
      * Location of jetty home directory
      */
@@ -323,9 +322,8 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      */
     @Parameter
     protected String[] modules;
-    //End of DISTRO only parameters
-    
-    
+    //End of HOME only parameters
+
     //Start of parameters only valid for FORK
     /**
      * The file into which to generate the quickstart web xml for the forked process to use
@@ -445,9 +443,9 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
                 startJettyForked();
                 break;
             }
-            case DISTRO:
+            case HOME:
             {
-                startJettyDistro();
+                startJettyHome();
                 break;
             }
             default:
@@ -460,7 +458,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     
     protected abstract void startJettyForked() throws MojoExecutionException;
     
-    protected abstract void startJettyDistro() throws MojoExecutionException;
+    protected abstract void startJettyHome() throws MojoExecutionException;
 
     protected JettyEmbedder newJettyEmbedder()
         throws Exception
@@ -504,10 +502,10 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         return jetty;
     }
 
-    protected JettyDistroForker newJettyDistroForker()
+    protected JettyHomeForker newJettyHomeForker()
         throws Exception
     {
-        JettyDistroForker jetty = new JettyDistroForker();  
+        JettyHomeForker jetty = new JettyHomeForker();
         jetty.setStopKey(stopKey);
         jetty.setStopPort(stopPort);
         jetty.setEnv(env);
@@ -548,8 +546,9 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         jetty.setContextXml(contextXml);
 
         if (jettyHome == null)
-            jetty.setJettyDistro(mavenProjectHelper.resolveArtifact(JETTY_HOME_GROUPID, JETTY_HOME_ARTIFACTID, plugin.getVersion(), "zip"));
+            jetty.setJettyHomeZip(mavenProjectHelper.resolveArtifact(JETTY_HOME_GROUPID, JETTY_HOME_ARTIFACTID, plugin.getVersion(), "zip"));
 
+        jetty.version = plugin.getVersion();
         jetty.setJettyHome(jettyHome);
         jetty.setJettyBase(jettyBase);
         jetty.setBaseDir(target);

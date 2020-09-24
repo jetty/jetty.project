@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app 
+   xmlns="http://xmlns.jcp.org/xml/ns/javaee" 
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd" 
+   version="3.1"> 
+
+
+<!-- This web.xml format file is an override file that is applied to the test webapp AFTER
+     it has been configured by the default descriptor and the WEB-INF/web.xml descriptor -->
+
+  <!-- Add or override context init parameter -->
+  <context-param>
+    <param-name>context-override-example</param-name>
+    <param-value>a context value</param-value>
+  </context-param>
+
+  <!-- Add or override servlet init parameter -->
+  <servlet>
+    <servlet-name>default</servlet-name>
+    <init-param>
+      <param-name>precompressed</param-name>
+      <param-value>true</param-value>
+    </init-param>
+  </servlet>
+
+  <!-- Add or override servlet init parameter -->
+  <servlet>
+    <servlet-name>Dump</servlet-name>
+    <init-param>
+      <param-name>servlet-override-example</param-name>
+      <param-value>a servlet value</param-value>
+    </init-param>
+  </servlet>
+
+  <!-- Add servlet mapping -->
+  <servlet-mapping>
+    <servlet-name>Dump</servlet-name>
+    <url-pattern>*.more</url-pattern>
+  </servlet-mapping>
+
+  <!-- Reset servlet class and/or start order -->
+  <servlet>
+    <servlet-name>Session</servlet-name>
+    <servlet-class>com.acme.SessionDump</servlet-class>
+    <load-on-startup>5</load-on-startup>
+  </servlet>
+  
+  <!-- Allow remote access to test webapp -->
+  <!--
+  <filter>
+    <filter-name>TestFilter</filter-name>
+    <filter-class>com.acme.TestFilter</filter-class>
+    <async-supported>true</async-supported>
+    <init-param>
+      <param-name>remote</param-name>
+      <param-value>true</param-value>
+    </init-param>
+  </filter>
+  -->
+  
+</web-app>
+
+

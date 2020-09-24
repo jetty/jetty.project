@@ -37,12 +37,12 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class CDITests extends AbstractDistributionTest
+public class CDITests extends AbstractJettyHomeTest
 {
     // Tests from here use these parameters
     public static Stream<Arguments> tests()
     {
-        Consumer<DistributionTester> renameJettyWebOwbXml = d ->
+        Consumer<JettyHomeTester> renameJettyWebOwbXml = d ->
         {
             try
             {
@@ -75,20 +75,19 @@ public class CDITests extends AbstractDistributionTest
      */
     @ParameterizedTest
     @MethodSource("tests")
-    public void testCDIIncludedInWebapp(String implementation, String integration, Consumer<DistributionTester> configure) throws Exception
+    public void testCDIIncludedInWebapp(String implementation, String integration, Consumer<JettyHomeTester> configure) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
-        DistributionTester distribution = DistributionTester.Builder.newInstance()
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String[] args1 = {
-            "--create-startd",
             "--approve-all-licenses",
-            "--add-to-start=http,deploy,annotations,jsp" + (integration == null ? "" : ("," + integration))
+            "--add-modules=http,deploy,annotations,jsp" + (integration == null ? "" : ("," + integration))
         };
-        try (DistributionTester.Run run1 = distribution.start(args1))
+        try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
@@ -99,7 +98,7 @@ public class CDITests extends AbstractDistributionTest
                 configure.accept(distribution);
 
             int port = distribution.freePort();
-            try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 

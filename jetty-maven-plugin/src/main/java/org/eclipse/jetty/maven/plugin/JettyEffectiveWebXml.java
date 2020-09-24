@@ -72,7 +72,7 @@ public class JettyEffectiveWebXml extends AbstractUnassembledWebAppMojo
     }
 
     @Override
-    protected void startJettyDistro() throws MojoExecutionException
+    protected void startJettyHome() throws MojoExecutionException
     {
         generate();
     }

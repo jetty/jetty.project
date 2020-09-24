@@ -56,7 +56,7 @@ There is an example of link:#rewrite-rules[rules] configuration in the standard 
 
 [source, xml, subs="{sub-order}"]
 ----
-include::{SRCDIR}/tests/test-webapps/test-jetty-webapp/src/main/config/demo-base/etc/demo-rewrite-rules.xml[]
+include::{SRCDIR}/demos/demo-jetty-webapp/src/main/config/modules/demo.d/demo-rewrite-rules.xml[]
 ----
 
 ===== Embedded Example

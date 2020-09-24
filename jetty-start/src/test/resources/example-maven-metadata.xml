@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata modelVersion="1.1.0">
+  <groupId>org.eclipse.jetty</groupId>
+  <artifactId>jetty-rewrite</artifactId>
+  <version>10.0.0-SNAPSHOT</version>
+  <versioning>
+    <snapshot>
+      <timestamp>20200918.022411</timestamp>
+      <buildNumber>580</buildNumber>
+    </snapshot>
+    <lastUpdated>20200918022411</lastUpdated>
+    <snapshotVersions>
+      <snapshotVersion>
+        <extension>jar</extension>
+        <value>10.0.0-20200918.022411-580</value>
+        <updated>20200918022411</updated>
+      </snapshotVersion>
+      <snapshotVersion>
+        <extension>pom</extension>
+        <value>10.0.0-20200918.022411-580</value>
+        <updated>20200918022411</updated>
+      </snapshotVersion>
+      <snapshotVersion>
+        <classifier>sources</classifier>
+        <extension>jar</extension>
+        <value>10.0.0-20200918.022411-580</value>
+        <updated>20200918022411</updated>
+      </snapshotVersion>
+      <snapshotVersion>
+        <classifier>config</classifier>
+        <extension>jar</extension>
+        <value>10.0.0-20200918.022411-580</value>
+        <updated>20200918022411</updated>
+      </snapshotVersion>
+    </snapshotVersions>
+  </versioning>
+</metadata>

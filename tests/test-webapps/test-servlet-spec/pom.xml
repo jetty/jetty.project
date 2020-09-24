@@ -24,7 +24,6 @@
   <modules>
     <module>test-web-fragment</module>
     <module>test-container-initializer</module>
-    <module>test-spec-webapp</module>
   </modules>
 
 </project>

@@ -34,7 +34,6 @@ import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.plus.webapp.PlusConfiguration;
-import org.eclipse.jetty.rewrite.handler.MsieSslRule;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.rewrite.handler.ValidUrlRule;
 import org.eclipse.jetty.security.HashLoginService;
@@ -65,21 +64,13 @@ public class LikeJettyXml
 {
     public static Server createServer(int port, int securePort, boolean addDebugListener) throws Exception
     {
-        // Path to as-built jetty-distribution directory
-        Path jettyDistro = JettyDistribution.get();
-
         // Find jetty home and base directories
-        String homePath = System.getProperty("jetty.home", jettyDistro.resolve("jetty-home").toString());
-        Path homeDir = Paths.get(homePath);
-
-        String basePath = System.getProperty("jetty.base", jettyDistro.resolve("demo-base").toString());
-        Path baseDir = Paths.get(basePath);
+        Path jettyHome = JettyHome.get();
+        Path jettyBase = JettyDemoBase.get();
 
         // Configure jetty.home and jetty.base system properties
-        String jettyHome = homeDir.toAbsolutePath().toString();
-        String jettyBase = baseDir.toAbsolutePath().toString();
-        System.setProperty("jetty.home", jettyHome);
-        System.setProperty("jetty.base", jettyBase);
+        System.setProperty("jetty.home", jettyHome.toString());
+        System.setProperty("jetty.base", jettyBase.toString());
 
         // === jetty.xml ===
         // Setup Threadpool
@@ -177,7 +168,6 @@ public class LikeJettyXml
         RewriteHandler rewrite = new RewriteHandler();
         rewrite.setHandler(server.getHandler());
         server.setHandler(rewrite);
-        rewrite.addRule(new MsieSslRule());
         rewrite.addRule(new ValidUrlRule());
 
         // === jetty-requestlog.xml ===
@@ -200,7 +190,7 @@ public class LikeJettyXml
         // === test-realm.xml ===
         HashLoginService login = new HashLoginService();
         login.setName("Test Realm");
-        login.setConfig(jettyBase + "/etc/realm.properties");
+        login.setConfig(jettyBase + "/etc/demo-realm.properties");
         login.setHotReload(false);
         server.addBean(login);
 
