@@ -1321,7 +1321,7 @@
                   <goal>aggregate-jar</goal>
                 </goals>
                 <configuration>
-                  <skippedModules>apache-jstl,jetty-osgi-alpn,infinispan-common,infinispan-embedded,infinispan-embedded-query,infinispan-remote,infinispan-remote-query,jetty-ant,jetty-maven-plugin,jetty-plus,jetty-jndi,jetty-documentation,jetty-home,jetty-bom,jetty-runner,demo-async-rest-webapp,demo-jaas-webapp,demo-jetty-webapp,demo-jndi-webapp,demo-proxy-webapp,demo-spec-webapp,demo-async-rest-jar,demo-async-rest-server,jetty-jspc-maven-plugin,jetty-start,jetty-osgi-boot,jetty-osgi-boot-jsp,jetty-osgi-boot-warurl,jetty-httpservice</skippedModules>
+                  <skippedModules>apache-jstl,jetty-osgi-alpn,infinispan-common,infinispan-embedded,infinispan-embedded-query,infinispan-remote,infinispan-remote-query,jetty-ant,jetty-maven-plugin,jetty-plus,jetty-jndi,jetty-documentation,jetty-home,jetty-bom,jetty-runner,demo-async-rest-webapp,demo-jaas-webapp,demo-jetty-webapp,demo-jndi-webapp,demo-proxy-webapp,demo-spec-webapp,demo-async-rest-jar,demo-async-rest-server,jetty-jspc-maven-plugin,jetty-start,jetty-osgi-boot,jetty-osgi-boot-jsp,jetty-osgi-boot-warurl,jetty-httpservice,jetty-gcloud-session-manager</skippedModules>
                 </configuration>
               </execution>
             </executions>
