@@ -19,8 +19,8 @@
 [[jetty-dump-tool]]
 === Jetty Dump Tool
 
-The dump feature in Jetty provides a good snapshot of the status of the threadpool, select sets, classloaders, and so forth. 
-To get maximum detail from the dump, you need to `setDetailDump(true)` on any `QueuedThreadPools` you are using. 
+The dump feature in Jetty provides a good snapshot of the status of the threadpool, select sets, classloaders, and so forth.
+To get maximum detail from the dump, you need to `setDetailDump(true)` on any `QueuedThreadPools` you are using.
 You can do this by a direct call if you are embedding Jetty, or in `jetty.xml`.
 
 [[configuring-dump-feature]]
@@ -229,9 +229,9 @@ org.eclipse.jetty.server.Server@76f08fe1 - STARTING
  |   |   |   |   |   |   |   +- scratchdir=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/jsp
  |   |   |   |   |   |   |   +- xpoweredBy=false
  |   |   |   |   |   |   +- [*.jsp, *.jspf, *.jspx, *.xsp, *.JSP, *.JSPF, *.JSPX, *.XSP]=>jsp
- |   |   |   |   |   |   += SerialRestServlet@461411d==org.eclipse.jetty.example.asyncrest.SerialRestServlet,-1,false - STARTED
+ |   |   |   |   |   |   += SerialRestServlet@461411d==SerialRestServlet,-1,false - STARTED
  |   |   |   |   |   |   +- [/testSerial]=>SerialRestServlet
- |   |   |   |   |   |   += AsyncRestServlet@73eb9bd5==org.eclipse.jetty.example.asyncrest.AsyncRestServlet,-1,false - STARTED
+ |   |   |   |   |   |   += AsyncRestServlet@73eb9bd5==AsyncRestServlet,-1,false - STARTED
  |   |   |   |   |   |   +- [/testAsync]=>AsyncRestServlet
  |   |   |   |   |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
  |   |   |   |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
@@ -728,9 +728,9 @@ org.eclipse.jetty.server.Server@76f08fe1 - STARTING
  |   +- org.eclipse.jetty.servlet.ErrorPageErrorHandler@321f8d38=org.eclipse.jetty.servlet:context=xref-proxy,type=errorpageerrorhandler,id=0
  |   +- org.eclipse.jetty.server.handler.ResourceHandler@8f9c8a7=org.eclipse.jetty.server.handler:context=javadoc,type=resourcehandler,id=0
  |   +- CGI@10465==org.eclipse.jetty.servlets.CGI,1,true=org.eclipse.jetty.servlet:context=test,type=servletholder,name=CGI,id=0
- |   +- SerialRestServlet@461411d==org.eclipse.jetty.example.asyncrest.SerialRestServlet,-1,false=org.eclipse.jetty.servlet:context=async-rest,type=servletholder,name=SerialRestServlet,id=0
+ |   +- SerialRestServlet@461411d==SerialRestServlet,-1,false=org.eclipse.jetty.servlet:context=async-rest,type=servletholder,name=SerialRestServlet,id=0
  |   +- HashLoginService[Test Realm]=org.eclipse.jetty.security:type=hashloginservice,id=0
- |   +- AsyncRestServlet@73eb9bd5==org.eclipse.jetty.example.asyncrest.AsyncRestServlet,-1,false=org.eclipse.jetty.servlet:context=async-rest,type=servletholder,name=AsyncRestServlet,id=0
+ |   +- AsyncRestServlet@73eb9bd5==AsyncRestServlet,-1,false=org.eclipse.jetty.servlet:context=async-rest,type=servletholder,name=AsyncRestServlet,id=0
  |   +- org.eclipse.jetty.server.Server@76f08fe1=org.eclipse.jetty.server:type=server,id=0
  |   +- org.eclipse.jetty.servlet.ErrorPageErrorHandler@3c41a9ce=org.eclipse.jetty.servlet:context=ROOT,type=errorpageerrorhandler,id=0
  |   +- [/apidocs/*]=>JavadocTransparentProxy=org.eclipse.jetty.servlet:context=xref-proxy,type=servletmapping,name=JavadocTransparentProxy,id=0

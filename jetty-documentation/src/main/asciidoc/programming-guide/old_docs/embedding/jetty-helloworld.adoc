@@ -79,7 +79,7 @@ The following command runs the HelloWorld example:
 
 [source, screen, subs="{sub-order}"]
 ....
-> java -cp classes:jetty-all-uber.jar org.eclipse.jetty.embedded.HelloWorld
+> java -cp classes:jetty-all-uber.jar org.eclipse.jetty.demos.HelloWorld
 ....
 
 You can now point your browser at http://localhost:8080/[http://localhost:8080] to see your hello world page.
