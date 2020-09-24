@@ -24,7 +24,7 @@
         <executions>
           <execution>
             <id>copy-base-assembly-tree</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-resources</goal>
             </goals>
@@ -46,7 +46,7 @@
         <executions>
           <execution>
             <id>copy</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy</goal>
             </goals>
@@ -78,7 +78,7 @@
           </execution>
           <execution>
             <id>copy-setuid-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy</goal>
             </goals>
@@ -116,7 +116,7 @@
 
           <execution>
             <id>copy-lib-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -134,7 +134,7 @@
           </execution>
           <execution>
             <id>copy-lib-src-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -153,7 +153,7 @@
           </execution>
           <execution>
             <id>copy-lib-logging-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -166,7 +166,7 @@
           </execution>
           <execution>
             <id>copy-lib-logging-src-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -180,7 +180,7 @@
           </execution>
           <execution>
             <id>copy-lib-websocket-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -192,7 +192,7 @@
           </execution>
           <execution>
             <id>copy-lib-websocket-src-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -205,7 +205,7 @@
           </execution>
           <execution>
             <id>copy-lib-javax-websocket-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -218,7 +218,7 @@
           </execution>
           <execution>
             <id>copy-lib-javax-websocket-src-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -232,7 +232,7 @@
           </execution>
           <execution>
             <id>copy-lib-http2-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -245,7 +245,7 @@
           </execution>
           <execution>
             <id>copy-lib-http2-src-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -259,7 +259,7 @@
           </execution>
           <execution>
             <id>copy-lib-fcgi-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -271,7 +271,7 @@
           </execution>
           <execution>
             <id>copy-lib-fcgi-src-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -284,7 +284,7 @@
           </execution>
           <execution>
             <id>copy-lib-spring-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -297,7 +297,7 @@
           </execution>
           <execution>
             <id>copy-lib-spring-src-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -311,7 +311,7 @@
           </execution>
           <execution>
             <id>copy-servlet-api-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy</goal>
             </goals>
@@ -330,7 +330,7 @@
           </execution>
           <execution>
             <id>copy-servlet-src-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -343,7 +343,7 @@
           </execution>
           <execution>
             <id>copy-annotations-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -356,7 +356,7 @@
           </execution>
           <execution>
             <id>copy-annotations-src-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -370,7 +370,7 @@
           </execution>
           <execution>
             <id>copy-apache-jsp-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -386,7 +386,7 @@
           </execution>
           <execution>
             <id>copy-apache-jsp-src-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -403,7 +403,7 @@
           </execution>
           <execution>
             <id>copy-apache-jstl-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -417,7 +417,7 @@
           </execution>
           <execution>
             <id>copy-apache-jstl-src-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -432,7 +432,7 @@
           </execution>
           <execution>
             <id>copy-jaspi-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -445,7 +445,7 @@
           </execution>
           <execution>
             <id>copy-jaspi-src-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -459,7 +459,7 @@
           </execution>
           <execution>
             <id>unpack-config-deps</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>unpack-dependencies</goal>
             </goals>
@@ -476,7 +476,7 @@
           </execution>
           <execution>
             <id>unpack-infinispan-config</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>unpack</goal>
             </goals>

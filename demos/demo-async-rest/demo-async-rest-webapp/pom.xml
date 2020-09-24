@@ -10,10 +10,6 @@
   <packaging>war</packaging>
   <name>Demo Async Rest :: Webapp</name>
 
-  <build>
-    <finalName>async-rest</finalName>
-  </build>
-
   <dependencies>
     <dependency>
       <groupId>org.slf4j</groupId>
