@@ -150,9 +150,8 @@
               <goal>javadoc</goal>
             </goals>
             <configuration>
-              <excludePackageNames>
-                javax.mail,javax.servlet,javax.websocket,javax.security
-              </excludePackageNames>
+              <doctitle>Eclipse Jetty API Doc - v${project.version}</doctitle>
+              <windowtitle>Eclipse Jetty API Doc - v${project.version}</windowtitle>
             </configuration>
           </execution>
         </executions>
