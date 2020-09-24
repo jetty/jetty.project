@@ -23,5 +23,6 @@
     <module>demo-jetty-webapp</module>
     <module>demo-proxy-webapp</module>
     <module>demo-spec-webapp</module>
+    <module>embedded</module>
   </modules>
 </project>

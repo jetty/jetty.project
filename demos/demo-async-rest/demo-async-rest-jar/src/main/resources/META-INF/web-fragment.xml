@@ -6,21 +6,21 @@
    xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-fragment_3_1.xsd"
    version="3.1">
 	<servlet>
-		<display-name>SerialRestServlet</display-name>
-		<servlet-name>SerialRestServlet</servlet-name>
-		<servlet-class>org.eclipse.jetty.example.asyncrest.SerialRestServlet</servlet-class>
-	</servlet>
+    <display-name>SerialRestServlet</display-name>
+    <servlet-name>SerialRestServlet</servlet-name>
+    <servlet-class>org.eclipse.jetty.demos.SerialRestServlet</servlet-class>
+  </servlet>
 	<servlet-mapping>
 		<servlet-name>SerialRestServlet</servlet-name>
 		<url-pattern>/testSerial</url-pattern>
 	</servlet-mapping>
-	
-	<servlet>
-		<display-name>AsyncRestServlet</display-name>
-		<servlet-name>AsyncRestServlet</servlet-name>
-		<servlet-class>org.eclipse.jetty.example.asyncrest.AsyncRestServlet</servlet-class>
-		<async-supported>true</async-supported>
-	</servlet>
+
+  <servlet>
+    <display-name>AsyncRestServlet</display-name>
+    <servlet-name>AsyncRestServlet</servlet-name>
+    <servlet-class>org.eclipse.jetty.demos.AsyncRestServlet</servlet-class>
+    <async-supported>true</async-supported>
+  </servlet>
 	<servlet-mapping>
 		<servlet-name>AsyncRestServlet</servlet-name>
 		<url-pattern>/testAsync</url-pattern>
