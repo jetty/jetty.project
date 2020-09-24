@@ -24,12 +24,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.sun.net.httpserver</groupId>
-      <artifactId>http</artifactId>
-      <version>20070405</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
       <version>${project.version}</version>
