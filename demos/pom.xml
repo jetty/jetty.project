@@ -23,6 +23,7 @@
     <module>demo-jetty-webapp</module>
     <module>demo-proxy-webapp</module>
     <module>demo-spec-webapp</module>
+    <module>demo-mock-resources</module>
     <module>embedded</module>
   </modules>
 </project>
