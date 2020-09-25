@@ -111,8 +111,8 @@
             <configuration>
               <artifactItems>
                 <artifactItem>
-                  <groupId>org.eclipse.jetty.tests</groupId>
-                  <artifactId>test-mock-resources</artifactId>
+                  <groupId>org.eclipse.jetty.demos</groupId>
+                  <artifactId>demo-mock-resources</artifactId>
                   <version>${project.version}</version>
                   <type>jar</type>
                   <includes>**</includes>
@@ -172,8 +172,8 @@
           </configuration>
           <dependencies>
             <dependency>
-              <groupId>org.eclipse.jetty.tests</groupId>
-              <artifactId>test-mock-resources</artifactId>
+              <groupId>org.eclipse.jetty.demos</groupId>
+              <artifactId>demo-mock-resources</artifactId>
               <version>${project.version}</version>
             </dependency>
           </dependencies>

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URLConnection;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -131,18 +132,23 @@ public abstract class FileInitializer
 
         StartLog.info("download %s to %s", uri, _basehome.toShortForm(destination));
 
-        HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
-        http.setInstanceFollowRedirects(true);
-        http.setAllowUserInteraction(false);
+        URLConnection connection = uri.toURL().openConnection();
 
-        int status = http.getResponseCode();
-
-        if (status != HttpURLConnection.HTTP_OK)
+        if (connection instanceof HttpURLConnection)
         {
-            throw new IOException("URL GET Failure [" + status + "/" + http.getResponseMessage() + "] on " + uri);
+            HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
+            http.setInstanceFollowRedirects(true);
+            http.setAllowUserInteraction(false);
+
+            int status = http.getResponseCode();
+
+            if (status != HttpURLConnection.HTTP_OK)
+            {
+                throw new IOException("URL GET Failure [" + status + "/" + http.getResponseMessage() + "] on " + uri);
+            }
         }
 
-        try (InputStream in = http.getInputStream())
+        try (InputStream in = connection.getInputStream())
         {
             Files.copy(in, destination, StandardCopyOption.REPLACE_EXISTING);
         }
