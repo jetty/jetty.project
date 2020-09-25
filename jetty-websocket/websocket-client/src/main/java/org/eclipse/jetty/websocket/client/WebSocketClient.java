@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.StringUtil;
@@ -377,6 +378,11 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         WebSocketUpgradeRequest wsReq = new WebSocketUpgradeRequest(this, httpClient, request);
         wsReq.timeout(request.getTimeout(), TimeUnit.MILLISECONDS);
         wsReq.setUpgradeListener(upgradeListener);
+        for (Request.Listener l : getBeans(Request.Listener.class))
+        {
+            wsReq.listener(l);
+        }
+
         return wsReq.sendAsync();
     }
 
