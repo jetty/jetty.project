@@ -1,11 +1,60 @@
-*.sh	eol=lf
+# Shell Scripts
 *.bat	eol=crlf
-*.txt	eol=lf
-*.properties	eol=lf
+*.sh	eol=lf
+
+# Sources
+*.groovy    eol=lf
 *.java	eol=lf
+
+# Configuration
+*.dtd   eol=lf
+*.ini   eol=lf
+*.json  eol=lf
 *.mod	eol=lf
-*.adoc	eol=lf
+*.properties	eol=lf
+*.sql   eol=lf
+*.xsl   eol=lf
+*.xslt  eol=lf
 *.xml	eol=lf
-Jenkinsfile	eol=lf
+*.yaml  eol=lf
+*.yml   eol=lf
+
+# Text / Documentation
+*.adoc	eol=lf
+*.dot   eol=lf
+*.txt	eol=lf
+*.TXT   eol=lf
+*.md    eol=lf
+*.pdf   binary
+
+# Web
+*.gif   binary
+*.htm   eol=lf
+*.html  eol=lf
+*.ico   binary
+*.jar   binary
+*.jpg   binary
+*.jpeg  binary
 *.js    eol=lf
+*.jsp   eol=lf
+*.jspf  eol=lf
+*.png   binary
+*.svg   eol=lf
+*.svgz  binary
+*.tga   binary
+*.tif   binary
+*.tiff  binary
+*.ttf   binary
+*.war   binary
+
+# Build Files
+Jenkinsfile	eol=lf
+
+# Binaries
 *.raw   binary
+*.gz    binary
+*.zip   binary
+*.br    binary
+*.brotli    binary
+*.bz2   binary
+
