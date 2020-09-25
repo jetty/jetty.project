@@ -140,6 +140,10 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
                         close();
                 }
             }
+            else
+            {
+                close();
+            }
         }
 
         @Override
