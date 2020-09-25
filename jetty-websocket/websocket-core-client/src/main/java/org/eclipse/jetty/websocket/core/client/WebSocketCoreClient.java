@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -87,6 +88,11 @@ public class WebSocketCoreClient extends ContainerLifeCycle
             {
                 throw new IllegalArgumentException("Requested extension [" + reqExt.getName() + "] is not installed");
             }
+        }
+
+        for (Request.Listener l : getBeans(Request.Listener.class))
+        {
+            request.listener(l);
         }
 
         if (LOG.isDebugEnabled())

@@ -25,16 +25,17 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
@@ -73,35 +74,84 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
         server.close();
     }
 
-    @Test
-    public void testUpgradeWithLeftOverHttpBytes() throws Exception
+    public static class OnOpenSocket extends TestMessageHandler
     {
-        CountDownLatch onOpenWait = new CountDownLatch(1);
-        TestMessageHandler clientEndpoint = new TestMessageHandler()
+        CountDownLatch onOpenBlocked = new CountDownLatch(1);
+
+        @Override
+        public void onOpen(CoreSession coreSession, Callback callback)
         {
-            @Override
-            public void onOpen(CoreSession coreSession, Callback callback)
-            {
-                assertDoesNotThrow(() -> onOpenWait.await(5, TimeUnit.SECONDS));
-                super.onOpen(coreSession, callback);
-            }
-        };
-        CoreClientUpgradeRequest coreUpgrade = CoreClientUpgradeRequest.from(client, serverUri, clientEndpoint);
-        client.connect(coreUpgrade);
+            openLatch.countDown();
+            assertDoesNotThrow(() -> assertTrue(onOpenBlocked.await(1, TimeUnit.MINUTES)));
+            super.onOpen(coreSession, callback);
+        }
+    }
+
+    @Test
+    public void testRequestCompletesFirstNoWebSocketBytesInResponse() throws Exception
+    {
+        // Initiate connection.
+        OnOpenSocket clientEndpoint = new OnOpenSocket();
+        client.connect(clientEndpoint, serverUri);
         Socket serverSocket = server.accept();
 
-        // Receive the upgrade request with the Socket.
+        // Upgrade to WebSocket.
         String upgradeRequest = getRequestHeaders(serverSocket.getInputStream());
         assertThat(upgradeRequest, containsString("HTTP/1.1"));
         assertThat(upgradeRequest, containsString("Upgrade: websocket"));
-
-        // Send upgrade response in the same write as two websocket frames.
         String upgradeResponse = "HTTP/1.1 101 Switching Protocols\n" +
             "Upgrade: WebSocket\n" +
             "Connection: Upgrade\n" +
             "Sec-WebSocket-Accept: " + getAcceptKey(upgradeRequest) + "\n" +
             "\n";
-        Frame firstFrame = new Frame(OpCode.TEXT, BufferUtil.toBuffer("first message payload"));
+        serverSocket.getOutputStream().write(upgradeResponse.getBytes(StandardCharsets.ISO_8859_1));
+
+        // Wait for WebSocket to be opened, wait 1 sec before allowing it to continue.
+        assertTrue(clientEndpoint.openLatch.await(5, TimeUnit.SECONDS));
+        Thread.sleep(1000);
+        clientEndpoint.onOpenBlocked.countDown();
+
+        // Send some websocket data.
+        int numFrames = 1000;
+        for (int i = 0; i < numFrames; i++)
+        {
+            Frame frame = new Frame(OpCode.TEXT, BufferUtil.toBuffer(Integer.toString(i)));
+            serverSocket.getOutputStream().write(toByteArray(frame));
+        }
+        Frame closeFrame = new CloseStatus(CloseStatus.NORMAL, "closed by test").toFrame();
+        serverSocket.getOutputStream().write(toByteArray(closeFrame));
+
+        // We receive the data correctly.
+        for (int i = 0; i < numFrames; i++)
+        {
+            String msg = clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS);
+            assertThat(msg, is(Integer.toString(i)));
+        }
+
+        // Closed successfully with correct status.
+        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(clientEndpoint.closeStatus.getCode(), is(CloseStatus.NORMAL));
+        assertThat(clientEndpoint.closeStatus.getReason(), is("closed by test"));
+    }
+
+    @Test
+    public void testRequestCompletesFirstWithWebSocketBytesInResponse() throws Exception
+    {
+        // Initiate connection.
+        OnOpenSocket clientEndpoint = new OnOpenSocket();
+        client.connect(clientEndpoint, serverUri);
+        Socket serverSocket = server.accept();
+
+        // Upgrade to WebSocket, sending first websocket frame with the upgrade response.
+        String upgradeRequest = getRequestHeaders(serverSocket.getInputStream());
+        assertThat(upgradeRequest, containsString("HTTP/1.1"));
+        assertThat(upgradeRequest, containsString("Upgrade: websocket"));
+        String upgradeResponse = "HTTP/1.1 101 Switching Protocols\n" +
+            "Upgrade: WebSocket\n" +
+            "Connection: Upgrade\n" +
+            "Sec-WebSocket-Accept: " + getAcceptKey(upgradeRequest) + "\n" +
+            "\n";
+        Frame firstFrame = new Frame(OpCode.TEXT, "first message payload");
         byte[] bytes = combineToByteArray(BufferUtil.toBuffer(upgradeResponse), generateFrame(firstFrame));
         serverSocket.getOutputStream().write(bytes);
 
@@ -115,13 +165,132 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
         Frame closeFrame = new CloseStatus(CloseStatus.NORMAL, "closed by test").toFrame();
         serverSocket.getOutputStream().write(toByteArray(closeFrame));
 
-        // First payload sent with upgrade request, delay to ensure HttpConnection is not still reading from network.
-        Thread.sleep(1000);
-        onOpenWait.countDown();
+        // Wait for WebSocket to be opened, wait 1 sec before allowing it to continue.
+        // We delay to ensure HttpConnection is not still reading from network.
         assertTrue(clientEndpoint.openLatch.await(5, TimeUnit.SECONDS));
-        assertThat(clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS), is("first message payload"));
+        Thread.sleep(1000);
+        clientEndpoint.onOpenBlocked.countDown();
 
-        // We receive the rest of the frames all sent as separate writes.
+        // We receive the data correctly.
+        assertThat(clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS), is("first message payload"));
+        for (int i = 0; i < numFrames; i++)
+        {
+            String msg = clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS);
+            assertThat(msg, is(Integer.toString(i)));
+        }
+
+        // Closed successfully with correct status.
+        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(clientEndpoint.closeStatus.getCode(), is(CloseStatus.NORMAL));
+        assertThat(clientEndpoint.closeStatus.getReason(), is("closed by test"));
+    }
+
+    @Test
+    public void testResponseCompletesFirstNoWebSocketBytesInResponse() throws Exception
+    {
+        // We delay the request to finish until after the response is complete.
+        client.addBean(new Request.Listener()
+        {
+            @Override
+            public void onCommit(Request request)
+            {
+                assertDoesNotThrow(() -> Thread.sleep(1000));
+            }
+        });
+
+        // Initiate connection.
+        OnOpenSocket clientEndpoint = new OnOpenSocket();
+        client.connect(clientEndpoint, serverUri);
+        Socket serverSocket = server.accept();
+
+        // Upgrade to WebSocket.
+        String upgradeRequest = getRequestHeaders(serverSocket.getInputStream());
+        assertThat(upgradeRequest, containsString("HTTP/1.1"));
+        assertThat(upgradeRequest, containsString("Upgrade: websocket"));
+        String upgradeResponse = "HTTP/1.1 101 Switching Protocols\n" +
+            "Upgrade: WebSocket\n" +
+            "Connection: Upgrade\n" +
+            "Sec-WebSocket-Accept: " + getAcceptKey(upgradeRequest) + "\n" +
+            "\n";
+        serverSocket.getOutputStream().write(upgradeResponse.getBytes(StandardCharsets.ISO_8859_1));
+
+        // Wait for WebSocket to be opened, wait 1 sec before allowing it to continue.
+        assertTrue(clientEndpoint.openLatch.await(5, TimeUnit.SECONDS));
+        Thread.sleep(1000);
+        clientEndpoint.onOpenBlocked.countDown();
+
+        // Send some websocket data.
+        int numFrames = 1000;
+        for (int i = 0; i < numFrames; i++)
+        {
+            Frame frame = new Frame(OpCode.TEXT, BufferUtil.toBuffer(Integer.toString(i)));
+            serverSocket.getOutputStream().write(toByteArray(frame));
+        }
+        Frame closeFrame = new CloseStatus(CloseStatus.NORMAL, "closed by test").toFrame();
+        serverSocket.getOutputStream().write(toByteArray(closeFrame));
+
+        // We receive the data correctly.
+        for (int i = 0; i < numFrames; i++)
+        {
+            String msg = clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS);
+            assertThat(msg, is(Integer.toString(i)));
+        }
+
+        // Closed successfully with correct status.
+        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(clientEndpoint.closeStatus.getCode(), is(CloseStatus.NORMAL));
+        assertThat(clientEndpoint.closeStatus.getReason(), is("closed by test"));
+    }
+
+    @Test
+    public void testResponseCompletesFirstWithWebSocketBytesInResponse() throws Exception
+    {
+        // We delay the request to finish until after the response is complete.
+        client.addBean(new Request.Listener()
+        {
+            @Override
+            public void onCommit(Request request)
+            {
+                assertDoesNotThrow(() -> Thread.sleep(1000));
+            }
+        });
+
+        // Initiate connection.
+        OnOpenSocket clientEndpoint = new OnOpenSocket();
+        client.connect(clientEndpoint, serverUri);
+        Socket serverSocket = server.accept();
+
+        // Upgrade to WebSocket, sending first websocket frame with the upgrade response.
+        String upgradeRequest = getRequestHeaders(serverSocket.getInputStream());
+        assertThat(upgradeRequest, containsString("HTTP/1.1"));
+        assertThat(upgradeRequest, containsString("Upgrade: websocket"));
+        String upgradeResponse = "HTTP/1.1 101 Switching Protocols\n" +
+            "Upgrade: WebSocket\n" +
+            "Connection: Upgrade\n" +
+            "Sec-WebSocket-Accept: " + getAcceptKey(upgradeRequest) + "\n" +
+            "\n";
+        Frame firstFrame = new Frame(OpCode.TEXT, "first message payload");
+        byte[] bytes = combineToByteArray(BufferUtil.toBuffer(upgradeResponse), generateFrame(firstFrame));
+        serverSocket.getOutputStream().write(bytes);
+
+        // Now we send the rest of the data.
+        int numFrames = 1000;
+        for (int i = 0; i < numFrames; i++)
+        {
+            Frame frame = new Frame(OpCode.TEXT, BufferUtil.toBuffer(Integer.toString(i)));
+            serverSocket.getOutputStream().write(toByteArray(frame));
+        }
+        Frame closeFrame = new CloseStatus(CloseStatus.NORMAL, "closed by test").toFrame();
+        serverSocket.getOutputStream().write(toByteArray(closeFrame));
+
+        // Wait for WebSocket to be opened, wait 1 sec before allowing it to continue.
+        // We delay to ensure HttpConnection is not still reading from network.
+        assertTrue(clientEndpoint.openLatch.await(5, TimeUnit.SECONDS));
+        Thread.sleep(1000);
+        clientEndpoint.onOpenBlocked.countDown();
+
+        // We receive the data correctly.
+        assertThat(clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS), is("first message payload"));
         for (int i = 0; i < numFrames; i++)
         {
             String msg = clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS);
