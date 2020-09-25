@@ -40,7 +40,8 @@ can be configured:
     <Configure class="com.acme.MyClass"> ... </Configure>
 -->
 <!ELEMENT Configure (Id?,Class?,Arg*,(%CONFIG;)*) >
-<!ATTLIST Configure %CLASS_ATTR; %ID_ATTR; >
+<!ATTLIST Configure %ID_ATTR; %CLASS_ATTR; >
+
 
 <!--
 Set Element.
@@ -64,7 +65,8 @@ value.
 A Set with a class attribute is treated as a static set method invocation.
 -->
 <!ELEMENT Set (%VALUE;)* >
-<!ATTLIST Set  %ID_ATTR; %NAME_ATTR_REQUIRED; %TYPE_ATTR; %CLASS_ATTR; %PROPERTY_ATTR;>
+<!ATTLIST Set %ID_ATTR; %CLASS_ATTR; %NAME_ATTR_REQUIRED; %TYPE_ATTR; %PROPERTY_ATTR;>
+
 
 <!--
 Get Element.
@@ -77,8 +79,8 @@ which act on the object returned by the get call.
 
 A Get with a class attribute is treated as a static get method or field.
 -->
-<!ELEMENT Get (%CONFIG;)* >
-<!ATTLIST Get %NAME_ATTR_REQUIRED; %CLASS_ATTR; %ID_ATTR; >
+<!ELEMENT Get (Id?,Class?,(%CONFIG;)*) >
+<!ATTLIST Get %ID_ATTR; %CLASS_ATTR; %NAME_ATTR_REQUIRED; >
 
 
 <!--
@@ -162,7 +164,7 @@ This is equivalent to:
 A Call with a class attribute is treated as a static call.
 -->
 <!ELEMENT Call (Id?,Name?,Class?,Arg*,(%CONFIG;)*) >
-<!ATTLIST Call %ARG_ATTR; %NAME_ATTR; %CLASS_ATTR; %ID_ATTR; >
+<!ATTLIST Call %ID_ATTR; %NAME_ATTR; %CLASS_ATTR; %ARG_ATTR; >
 
 
 <!--
@@ -178,7 +180,7 @@ elements they are added as strings before being converted to any
 specified type.
 -->
 <!ELEMENT Arg (%VALUE;)* >
-<!ATTLIST Arg %TYPE_ATTR; %NAME_ATTR; >
+<!ATTLIST Arg %NAME_ATTR; %TYPE_ATTR; >
 
 
 <!--
@@ -202,7 +204,7 @@ This is equivalent to:
  Object o = new com.acme.MyClass("value1");
  o.setTest("Value2");
 -->
-<!ELEMENT New (Id?,Name?,Class?,Arg*,(%CONFIG;)*) >
+<!ELEMENT New (Id?,Class?,Arg*,(%CONFIG;)*) >
 <!ATTLIST New %ID_ATTR; %CLASS_ATTR; %ARG_ATTR; >
 
 
@@ -238,7 +240,7 @@ This is equivalent to:
  String[] a = new String[] { "value0", new String("value1") };
 -->
 <!ELEMENT Array (Id?,Type?,Item*) >
-<!ATTLIST Array %ID_ATTR;%TYPE_ATTR;%ITEM_ATTR; >
+<!ATTLIST Array %ID_ATTR; %TYPE_ATTR; %ITEM_ATTR; >
 
 
 <!--
@@ -259,8 +261,8 @@ This is equivalent to:
  Map m = new HashMap();
  m.put("keyName", new String("value1"));
 -->
-<!ELEMENT Map (Id?,Entry*) >
-<!ATTLIST Map %ID_ATTR; >
+<!ELEMENT Map (Id?,Class?,Entry*) >
+<!ATTLIST Map %ID_ATTR; %CLASS_ATTR; >
 <!ELEMENT Entry (Item,Item) >
 
 
@@ -276,7 +278,7 @@ If it contains multiple value elements they are added as strings
 before being converted to any specified type.
 -->
 <!ELEMENT Item (%VALUE;)* >
-<!ATTLIST Item %TYPE_ATTR; %ID_ATTR; >
+<!ATTLIST Item %ID_ATTR; %TYPE_ATTR; >
 
 
 <!--
@@ -293,7 +295,7 @@ This is equivalent to:
  System.getProperty("Test","value");
 -->
 <!ELEMENT SystemProperty (Id?,Name?,Deprecated*,Default?) >
-<!ATTLIST SystemProperty %NAME_ATTR; %DEFAULT_ATTR; %DEPRECATED_ATTR; %ID_ATTR; >
+<!ATTLIST SystemProperty %ID_ATTR; %NAME_ATTR; %DEPRECATED_ATTR; %DEFAULT_ATTR; >
 
 
 <!--
@@ -312,7 +314,7 @@ This is equivalent to:
 
 -->
 <!ELEMENT Env (Id?,Name?,Deprecated*,Default?) >
-<!ATTLIST Env %NAME_ATTR; %DEFAULT_ATTR; %DEPRECATED_ATTR; %ID_ATTR; >
+<!ATTLIST Env %ID_ATTR; %NAME_ATTR; %DEPRECATED_ATTR; %DEFAULT_ATTR; >
 
 
 <!--
@@ -322,4 +324,4 @@ The name attribute specifies the property name and the optional
 default argument provides a default value.
 -->
 <!ELEMENT Property (Id?,Name?,Deprecated*,Default?) >
-<!ATTLIST Property %NAME_ATTR; %DEFAULT_ATTR; %DEPRECATED_ATTR; %ID_ATTR; >
+<!ATTLIST Property %ID_ATTR; %NAME_ATTR; %DEPRECATED_ATTR; %DEFAULT_ATTR; >

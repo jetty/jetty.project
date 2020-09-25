@@ -16,8 +16,8 @@
 // ========================================================================
 //
 
-[[pg-server-session-sessionidmgr]]
-==== Session Components: The SessionIdManager
+[[pg-server-session-idmgr]]
+==== The SessionIdManager
 
 There is a maximum of one `SessionIdManager` per `Server` instance.
 Its purpose is to generate fresh, unique session ids and to coordinate the re-use of session ids amongst co-operating contexts.
@@ -25,13 +25,15 @@ Its purpose is to generate fresh, unique session ids and to coordinate the re-us
 The `SessionIdManager` is agnostic with respect to the type of clustering technology chosen.
 
 Jetty provides a default implementation - the link:{JDURL}/org/eclipse/jetty/server/session/DefaultSessionIdManager.html[DefaultSessionIdManager]  - which should meet the needs of most users.
-If you do not explicitly configure a `SessionIdManager`, then when the `SessionHandler` starts, it will use an instance of the `DefaultSessionIdManager`.
+
+NOTE: If you do not explicitly configure a `SessionIdManager`, then when the `SessionHandler` starts, it will use an instance of the `DefaultSessionIdManager`.
 
 [[pg-server-session-defaultidmgr]]
 ===== The DefaultSessionIdManager
 
 At startup, if no instance of the `HouseKeeper` has been explicitly set, the `DefaultSessionIdManager` will create one.
 
+[[pg-server-session-workername]]
 Also at startup, the `workerName` is determined. 
 The `workerName` must be unique per `Server`, and identifies the server in a cluster.
 If a `workerName` has not been explicitly set, then the value is derived as follows:
@@ -65,7 +67,7 @@ This restriction is important to support cross-context dispatch.
 * you should be _very_ careful to ensure that the `newSessionId(HttpServletRequest request, long created)` method does not return duplicate or predictable session ids.
 
 [[pg-server-session-housekeeper]]
-===== Session Components: The HouseKeeper
+===== The HouseKeeper
 
 There is a maximum of one link:{JDURL}/org/eclipse/jetty/server/session/HouseKeeper.html[HouseKeeper] per `SessionIdManager`.
 Its purpose is to periodically poll the link:{JDURL}/org/eclipse/jetty/server/session/SessionHandler.html[SessionHandlers] to clean out expired sessions.

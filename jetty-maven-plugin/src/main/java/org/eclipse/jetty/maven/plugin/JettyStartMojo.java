@@ -91,16 +91,16 @@ public class JettyStartMojo extends AbstractUnassembledWebAppMojo
      * jetty:stop goal to terminate
      */
     @Override
-    public void startJettyDistro() throws MojoExecutionException
+    public void startJettyHome() throws MojoExecutionException
     {
         try
         {
-            JettyDistroForker jetty = newJettyDistroForker();
+            JettyHomeForker jetty = newJettyHomeForker();
             jetty.setWaitForChild(false); //never wait for child to finish
             jetty.setMaxChildStartChecks(maxChildStartChecks);
             jetty.setMaxChildStartCheckMs(maxChildStartCheckMs);
             jetty.setJettyOutputFile(getJettyOutputFile("jetty-start.out"));
-            jetty.start(); //forks a jetty distro
+            jetty.start(); //forks a jetty home
         }
         catch (Exception e)
         {

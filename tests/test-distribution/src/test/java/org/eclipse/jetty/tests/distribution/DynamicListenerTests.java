@@ -36,33 +36,32 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DynamicListenerTests
-    extends AbstractDistributionTest
+    extends AbstractJettyHomeTest
 {
     @Test
     public void testSimpleWebAppWithJSP() throws Exception
     {
-        Path jettyBase = Files.createTempDirectory("jetty_base");
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
-        DistributionTester distribution = DistributionTester.Builder.newInstance()
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyBase(jettyBase)
             .jettyVersion(jettyVersion)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String[] args1 = {
-            "--create-startd",
             "--approve-all-licenses",
-            "--add-to-start=resources,server,http,webapp,deploy,jsp,jmx,servlet,servlets,security,websocket"
+            "--add-modules=resources,server,http,webapp,deploy,jsp,jmx,servlet,servlets,security,websocket"
         };
-        try (DistributionTester.Run run1 = distribution.start(args1))
+        try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            File war = distribution.resolveArtifact("org.eclipse.jetty:test-jetty-webapp:war:" + jettyVersion);
+            File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-jetty-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
-            Path etc = Paths.get(jettyBase.toString(),"etc");
+            Path etc = Paths.get(jettyBase.toString(), "etc");
             if (!Files.exists(etc))
             {
                 Files.createDirectory(etc);
@@ -76,7 +75,7 @@ public class DynamicListenerTests
                        etc.resolve("test-realm.xml"));
 
             int port = distribution.freePort();
-            try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 

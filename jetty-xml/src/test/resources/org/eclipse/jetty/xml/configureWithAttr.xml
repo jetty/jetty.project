@@ -132,6 +132,13 @@
     </Entry>
   </Map>
 
+  <Map id="concurrentMap" class="java.util.concurrent.ConcurrentHashMap">
+    <Entry>
+      <Item>KEY</Item>
+      <Item>ITEM</Item>
+    </Entry>
+  </Map>
+
 </Configure>
 
 

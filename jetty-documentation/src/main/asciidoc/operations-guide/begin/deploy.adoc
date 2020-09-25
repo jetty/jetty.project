@@ -109,7 +109,7 @@ $ java -jar $JETTY_HOME/start.jar
 2020-09-16 09:53:38.306:INFO :oejss.DefaultSessionIdManager:main: DefaultSessionIdManager workerName=node0
 2020-09-16 09:53:38.306:INFO :oejss.DefaultSessionIdManager:main: No SessionScavenger set, using defaults
 2020-09-16 09:53:38.307:INFO :oejss.HouseKeeper:main: node0 Scavenging every 660000ms
-2020-09-16 09:53:38.331:INFO :oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@45b4c3a9{Async REST Webservice Example,/test,[file:///tmp/jetty-0_0_0_0-8080-test_war-_test-any-15202033063643714058.dir/webapp/, jar:file:///tmp/jetty-0_0_0_0-8080-test_war-_test-any-15202033063643714058.dir/webapp/WEB-INF/lib/example-async-rest-jar-10.0.0-SNAPSHOT.jar!/META-INF/resources],AVAILABLE}{/tmp/jetty.base/webapps/test.war}
+2020-09-16 09:53:38.331:INFO :oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@45b4c3a9{Async REST Webservice Example,/test,[file:///tmp/jetty-0_0_0_0-8080-test_war-_test-any-15202033063643714058.dir/webapp/, jar:file:///tmp/jetty-0_0_0_0-8080-test_war-_test-any-15202033063643714058.dir/webapp/WEB-INF/lib/example-async-rest-jar-11.0.0-SNAPSHOT.jar!/META-INF/resources],AVAILABLE}{/tmp/jetty.base/webapps/test.war}
 2020-09-16 09:53:38.338:INFO :oejs.AbstractConnector:main: Started ServerConnector@543295b0{HTTP/1.1, (http/1.1)}{0.0.0.0:8080}
 2020-09-16 09:53:38.347:INFO :oejs.Server:main: Started Server@5ffead27{STARTING}[10.0.0-SNAPSHOT,sto=5000] @593ms
 ----

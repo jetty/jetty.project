@@ -64,7 +64,6 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
@@ -1071,11 +1070,16 @@ public class XmlConfiguration
          */
         private Object newMap(Object obj, XmlParser.Node node) throws Exception
         {
-            AttrOrElementNode aoeNode = new AttrOrElementNode(node, "Id", "Entry");
+            AttrOrElementNode aoeNode = new AttrOrElementNode(node, "Id", "Entry", "Class");
             String id = aoeNode.getString("Id");
             List<XmlParser.Node> entries = aoeNode.getNodes("Entry");
+            String clazz = aoeNode.getString("Class");
+            if (clazz == null)
+                clazz = HashMap.class.getName();
+            @SuppressWarnings("unchecked")
+            Class<? extends Map<Object, Object>> oClass = Loader.loadClass(clazz);
 
-            Map<Object, Object> map = new HashMap<>();
+            Map<Object, Object> map = oClass.getConstructor().newInstance();
             if (id != null)
                 _configuration.getIdMap().put(id, map);
 

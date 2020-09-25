@@ -84,7 +84,7 @@ public class TestJettyOSGiBootWithJakartaWebSocket
     {
         List<Option> res = new ArrayList<>();
         //test webapp bundle
-        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("test-jetty-webapp").classifier("webbundle").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-jetty-webapp").classifier("webbundle").versionAsInProject().noStart());
         return res;
     }
 
@@ -101,7 +101,7 @@ public class TestJettyOSGiBootWithJakartaWebSocket
         startBundle(bundleContext, "org.eclipse.jetty.websocket.jakarta.common");
         startBundle(bundleContext, "org.eclipse.jetty.websocket.jakarta.client");
         startBundle(bundleContext, "org.eclipse.jetty.websocket.jakarta.server");
-        startBundle(bundleContext, "org.eclipse.jetty.tests.webapp");
+        startBundle(bundleContext, "org.eclipse.jetty.demos.webapp");
 
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
             TestOSGiUtil.diagnoseBundles(bundleContext);

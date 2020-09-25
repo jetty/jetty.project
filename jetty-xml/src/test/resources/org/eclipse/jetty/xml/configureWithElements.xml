@@ -172,6 +172,15 @@
     </Entry>
   </Map>
 
+  <Map>
+    <Id>concurrentMap</Id>
+    <Class>java.util.concurrent.ConcurrentHashMap</Class>
+    <Entry>
+      <Item>KEY</Item>
+      <Item>ITEM</Item>
+    </Entry>
+  </Map>
+
 </Configure>
 
 

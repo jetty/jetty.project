@@ -172,25 +172,25 @@ Server@59906517{STARTED}[9.4.32-SNAPSHOT] - STARTED
 |  += org.eclipse.jetty.server.session.SessionHandler1089504328==dftMaxIdleSec=-1 - STARTED
 |  |  += ServletHandler@516be40f{STARTED} - STARTED
 |  |  |  +> listeners ServletHandler@516be40f{STARTED} size=2
-|  |  |  |  +> ListenerHolder@3c0a50da{STARTED}: org.eclipse.jetty.embedded.OneServletContext$InitListener - STARTED
-|  |  |  |  +> ListenerHolder@646be2c3{STARTED}: org.eclipse.jetty.embedded.OneServletContext$RequestListener - STARTED
+|  |  |  |  +> ListenerHolder@3c0a50da{STARTED}: org.eclipse.jetty.demos.OneServletContext$InitListener - STARTED
+|  |  |  |  +> ListenerHolder@646be2c3{STARTED}: org.eclipse.jetty.demos.OneServletContext$RequestListener - STARTED
 |  |  |  +> filters ServletHandler@516be40f{STARTED} size=2
-|  |  |  |  +> org.eclipse.jetty.embedded.OneServletContext$TestFilter-e874448@e874448==org.eclipse.jetty.embedded.OneServletContext$TestFilter,inst=true,async=true - STARTED
-|  |  |  |  |  +> org.eclipse.jetty.embedded.OneServletContext$TestFilter@797badd3
-|  |  |  |  +> org.eclipse.jetty.embedded.OneServletContext$TestFilter-60285225@60285225==org.eclipse.jetty.embedded.OneServletContext$TestFilter,inst=true,async=true - STARTED
-|  |  |  |     +> org.eclipse.jetty.embedded.OneServletContext$TestFilter@77be656f
+|  |  |  |  +> org.eclipse.jetty.demos.OneServletContext$TestFilter-e874448@e874448==org.eclipse.jetty.demos.OneServletContext$TestFilter,inst=true,async=true - STARTED
+|  |  |  |  |  +> org.eclipse.jetty.demos.OneServletContext$TestFilter@797badd3
+|  |  |  |  +> org.eclipse.jetty.demos.OneServletContext$TestFilter-60285225@60285225==org.eclipse.jetty.demos.OneServletContext$TestFilter,inst=true,async=true - STARTED
+|  |  |  |     +> org.eclipse.jetty.demos.OneServletContext$TestFilter@77be656f
 |  |  |  +> filterMappings ServletHandler@516be40f{STARTED} size=2
-|  |  |  |  +> [/test/*]/[]/[REQUEST]=>org.eclipse.jetty.embedded.OneServletContext$TestFilter-e874448
-|  |  |  |  +> [*.test]/[]/[ASYNC, REQUEST]=>org.eclipse.jetty.embedded.OneServletContext$TestFilter-60285225
+|  |  |  |  +> [/test/*]/[]/[REQUEST]=>org.eclipse.jetty.demos.OneServletContext$TestFilter-e874448
+|  |  |  |  +> [*.test]/[]/[ASYNC, REQUEST]=>org.eclipse.jetty.demos.OneServletContext$TestFilter-60285225
 |  |  |  +> servlets ServletHandler@516be40f{STARTED} size=3
-|  |  |  |  +> org.eclipse.jetty.embedded.HelloServlet-58c1670b@d20bf05b==org.eclipse.jetty.embedded.HelloServlet,jsp=null,order=-1,inst=false,async=true - STARTED
-|  |  |  |  |  +> class org.eclipse.jetty.embedded.HelloServlet
-|  |  |  |  +> debug@5b09653==org.eclipse.jetty.embedded.DumpServlet,jsp=null,order=-1,inst=false,async=true - STARTED
-|  |  |  |  |  +> class org.eclipse.jetty.embedded.DumpServlet
+|  |  |  |  +> org.eclipse.jetty.demos.HelloServlet-58c1670b@d20bf05b==org.eclipse.jetty.demos.HelloServlet,jsp=null,order=-1,inst=false,async=true - STARTED
+|  |  |  |  |  +> class org.eclipse.jetty.demos.HelloServlet
+|  |  |  |  +> debug@5b09653==org.eclipse.jetty.demos.DumpServlet,jsp=null,order=-1,inst=false,async=true - STARTED
+|  |  |  |  |  +> class org.eclipse.jetty.demos.DumpServlet
 |  |  |  |  +> org.eclipse.jetty.servlet.DefaultServlet-6b9651f3@8eb381d1==org.eclipse.jetty.servlet.DefaultServlet,jsp=null,order=-1,inst=true,async=true - STARTED
 |  |  |  |     +> org.eclipse.jetty.servlet.DefaultServlet@78a2da20
 |  |  |  +> servletMappings ServletHandler@516be40f{STARTED} size=4
-|  |  |     +> [/hello/*]=>org.eclipse.jetty.embedded.HelloServlet-58c1670b
+|  |  |     +> [/hello/*]=>org.eclipse.jetty.demos.HelloServlet-58c1670b
 |  |  |     +> [/dump/*]=>debug
 |  |  |     +> [*.dump]=>debug
 |  |  |     +> [/]=>org.eclipse.jetty.servlet.DefaultServlet-6b9651f3
@@ -199,8 +199,8 @@ Server@59906517{STARTED}[9.4.32-SNAPSHOT] - STARTED
 |  |  +~ DefaultSessionIdManager@58fdd99{STARTED}[worker=node0] - STARTED
 |  +> No ClassLoader
 |  +> eventListeners o.e.j.s.ServletContextHandler@3ffcd140{/,file:///tmp/,AVAILABLE} size=2
-|  |  +> org.eclipse.jetty.embedded.OneServletContext$InitListener@6b1274d2
-|  |  +> org.eclipse.jetty.embedded.OneServletContext$RequestListener@7bc1a03d
+|  |  +> org.eclipse.jetty.demos.OneServletContext$InitListener@6b1274d2
+|  |  +> org.eclipse.jetty.demos.OneServletContext$RequestListener@7bc1a03d
 |  +> handler attributes o.e.j.s.ServletContextHandler@3ffcd140{/,file:///tmp/,AVAILABLE} size=1
 |  |  +> org.eclipse.jetty.server.Executor=QueuedThreadPool[qtp488044861]@1d16f93d{STARTED,8<=8<=200,i=2,r=4,q=0}[ReservedThreadExecutor@16267862{s=2/4,p=0}]
 |  +> context attributes o.e.j.s.ServletContextHandler@3ffcd140{/,file:///tmp/,AVAILABLE} size=2

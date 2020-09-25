@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enable GzipHandler for dynamic gzip compression for the entire server.
+Enables GzipHandler for dynamic gzip compression for the entire server.
 If MSIE prior to version 7 are to be handled, also enable the msie module.
 
 [tags]

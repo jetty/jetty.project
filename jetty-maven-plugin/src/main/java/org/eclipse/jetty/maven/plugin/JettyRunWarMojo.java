@@ -68,7 +68,7 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
     protected Scanner scanner;
     protected JettyEmbedder embedder;
     protected JettyForker forker;
-    protected JettyDistroForker distroForker;
+    protected JettyHomeForker homeForker;
     protected Path war;
     
     @Override
@@ -133,15 +133,14 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
      * Deploy the built war to a jetty distro.
      */
     @Override
-    public void startJettyDistro() throws MojoExecutionException
+    public void startJettyHome() throws MojoExecutionException
     {
         try
         {
-            distroForker = newJettyDistroForker();
-            distroForker.setWaitForChild(true); //we always run at the command line, echo child output and wait for it
+            homeForker = newJettyHomeForker();
+            homeForker.setWaitForChild(true); //we always run at the command line, echo child output and wait for it
             startScanner();
-            distroForker.start(); //forks a jetty distro
-
+            homeForker.start(); //forks a jetty distro
         }
         catch (Exception e)
         {
@@ -268,7 +267,7 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
                 
                 break;
             }
-            case DISTRO:
+            case HOME:
             {
                 verifyPomConfiguration();
                 if (reconfigure)
@@ -280,7 +279,7 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
                 }
                 configureWebApp();
                 //regenerate the webapp and redeploy it
-                distroForker.redeployWebApp();
+                homeForker.redeployWebApp();
                 //restart scanner
                 scanner.start();
 

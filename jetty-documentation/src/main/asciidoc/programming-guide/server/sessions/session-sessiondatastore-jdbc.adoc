@@ -16,8 +16,8 @@
 // ========================================================================
 //
 
-[[pg-server-session-sessiondatastore-jdbc]]
-==== Session Components: The JDBCSessionDataStore
+[[pg-server-session-datastore-jdbc]]
+===== The JDBCSessionDataStore
 
 The `JDBCSessionDataStore` supports persistent storage of session data in a relational database.
 To do that, it requires a `DatabaseAdaptor` that handles the differences between databases (eg Oracle, Postgres etc), and a `SessionTableSchema` that allows for the customization of table and column names.
@@ -59,13 +59,11 @@ This is the table, with the table name, column names and type keywords at their 
 The name of the table and all columns can be configured using the `SessionTableSchema` class described below.
 Many databases use different keywords for the `long`, `blob` and `varchar` types, so you can explicitly configure these if jetty cannot determine what they should be at runtime based on the metadata available from a db connection using the `DatabaseAdaptor` class described below.
 
-==== Configuration
+====== Configuration
 
-gracePeriod::
-See xref:pg-server-session-sessiondata-grace[the gracePeriod].
+The link:{JDURL}/org/eclipse/jetty/server/session/JDBCSessionDataStore.html[JDBCSessionDataStore] and corresponding link:{JDURL}/org/eclipse/jetty/server/session/JDBCSessionDataStoreFactory.html[JDBCSessionDataStoreFactory] supports the following configuration:
 
-savePeriod::
-See xref:pg-server-session-sessiondata-skip[the savePeriod].
+include::session-sessiondatastore.adoc[tag=common-datastore-config]
 
 DatabaseAdaptor::
 The `DatabaseAdaptor` can connect to a database either via a `javax.sql.Datasource` or a `java.sql.Driver`.

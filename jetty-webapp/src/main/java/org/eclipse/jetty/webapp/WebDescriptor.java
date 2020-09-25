@@ -203,6 +203,13 @@ public class WebDescriptor extends Descriptor
                 redirectEntity("web-app_4_0.xsd", webapp40xsd);
                 redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd", webapp40xsd);
 
+                // Handle linewrap hyphon error in PDF spec
+                redirectEntity("webapp_4_0.xsd", webapp40xsd);
+                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/webapp_4_0.xsd", webapp40xsd);
+
+                // handle jakartaee coordinates
+                redirectEntity("http://xmlns.eclipse.org/xml/ns/jakartaee/web-app_4_0.xsd", webapp40xsd);
+
                 redirectEntity("web-fragment_3_0.xsd", webfragment30xsd);
                 redirectEntity("http://java.sun.com/xml/ns/javaee/web-fragment_3_0.xsd", webfragment30xsd);
                 redirectEntity("web-fragment_3_1.xsd", webfragment31xsd);

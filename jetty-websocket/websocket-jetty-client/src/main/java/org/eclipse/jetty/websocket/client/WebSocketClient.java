@@ -35,6 +35,7 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -136,6 +137,11 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
 
         JettyClientUpgradeRequest upgradeRequest = new JettyClientUpgradeRequest(coreClient, request, toUri, frameHandlerFactory, websocket);
         upgradeRequest.setConfiguration(configurationCustomizer);
+        for (Request.Listener l : getBeans(Request.Listener.class))
+        {
+            upgradeRequest.listener(l);
+        }
+
         if (upgradeListener != null)
         {
             upgradeRequest.addListener(new UpgradeListener()

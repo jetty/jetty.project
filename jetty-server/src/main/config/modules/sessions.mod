@@ -1,9 +1,10 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enable session management. 
+Enables session management.
 By enabling this module, it allows session management to be configured via the ini templates
-created or by enabling other session-cache or session-store modules.  Without this module enabled, 
+created or by enabling other session-cache or session-store modules.
+Without this module enabled,
 the server may still use sessions, but their management cannot be configured.
 
 [tags]

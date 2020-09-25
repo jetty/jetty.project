@@ -55,7 +55,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-distribution</artifactId>
+      <artifactId>jetty-home</artifactId>
       <version>${project.version}</version>
       <type>zip</type>
       <scope>test</scope>
@@ -87,8 +87,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>test-jetty-webapp</artifactId>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>demo-jetty-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>

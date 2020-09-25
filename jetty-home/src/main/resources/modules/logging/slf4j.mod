@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Configure logging to use SLF4J.
+Configures logging to use SLF4J.
 A specific implementation of SLF4J is not enabled. 
 If one is not selected then NOP implementation will be used.
 

@@ -25,7 +25,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * ServerListener
  *
  * Listener to create a file that signals that the startup is completed.
- * Used by the JettyRunDistro maven goal to determine that the child
+ * Used by the JettyRunHome maven goal to determine that the child
  * process is started, and that jetty is ready.
  */
 public class ServerListener implements LifeCycle.Listener

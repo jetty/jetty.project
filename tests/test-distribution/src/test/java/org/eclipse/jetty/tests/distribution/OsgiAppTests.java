@@ -30,23 +30,22 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class OsgiAppTests extends AbstractDistributionTest
+public class OsgiAppTests extends AbstractJettyHomeTest
 {
     @Test
     public void testFelixWebappStart() throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
-        DistributionTester distribution = DistributionTester.Builder.newInstance()
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String[] args1 = {
-            "--create-startd",
             "--approve-all-licenses",
-            "--add-to-start=http,deploy,annotations,plus,resources"
+            "--add-modules=http,deploy,annotations,plus,resources"
         };
-        try (DistributionTester.Run run1 = distribution.start(args1))
+        try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
@@ -55,7 +54,7 @@ public class OsgiAppTests extends AbstractDistributionTest
             distribution.installWarFile(war, "test");
 
             int port = distribution.freePort();
-            try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 

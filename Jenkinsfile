@@ -59,20 +59,9 @@ pipeline {
             container( 'jetty-build' ) {
               timeout( time: 30, unit: 'MINUTES' ) {
                 mavenBuild( "jdk11",
-                            "package source:jar javadoc:jar javadoc:aggregate-jar -Peclipse-release  -DskipTests -Dpmd.skip=true -Dcheckstyle.skip=true",
+                            "package source:jar javadoc:jar -Peclipse-release -DskipTests -Dpmd.skip=true -Dcheckstyle.skip=true",
                             "maven3", true )
                 warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'JavaDoc'], [parserName: 'Java']]
-              }
-            }
-          }
-        }
-        stage( "Build Compact3" ) {
-          agent { node { label 'linux' } }
-          steps {
-            container( 'jetty-build' ) {
-              timeout( time: 30, unit: 'MINUTES' ) {
-                mavenBuild( "jdk11", "-T3 -Pcompact3 clean install -DskipTests", "maven3", true )
-                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
               }
             }
           }

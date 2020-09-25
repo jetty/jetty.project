@@ -2,8 +2,7 @@
 
 [description]
 Enables an HTTP connector on the server.
-By default HTTP/1 is support, but HTTP2C can
-be added to the connector with the http2c module.
+By default HTTP/1 is support, but HTTP2C can be added to the connector by enabling the http2c module.
 
 [tags]
 connector

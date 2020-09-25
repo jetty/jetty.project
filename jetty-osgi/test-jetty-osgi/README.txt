@@ -51,7 +51,7 @@ Can be an obvious failure, because the osgi test that exercises your feature fai
 
 Other problems with misconfigured manifests are usually to do with missing or incorrect Import-Package/Export-Package statements. This usually isn't a problem because we mostly automatically generate these using the mvn bnd tool during assembly of the jar, but can become a problem if the manifest has been manually cobbled together in the pom.xml. You'll notice these failures because an osgi test will fail with messages something like the following:
 
-Bundle [id:24, url:mvn:org.eclipse.jetty/jetty-util/10.0.0-SNAPSHOT] is not resolved
+Bundle [id:24, url:mvn:org.eclipse.jetty/jetty-util/11.0.0-SNAPSHOT] is not resolved
 
 To diagnose that further, you can rerun the test, and ask it to spit out a list of the status of every jetty jar that is deployed. To do that, supply the following system property at the command line:
 mvn -Dbundle.debug=true

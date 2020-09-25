@@ -31,6 +31,7 @@ import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
@@ -187,18 +188,30 @@ public class Main
         return "";
     }
 
-    public void invokeMain(ClassLoader classloader, StartArgs args) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, ClassNotFoundException, IOException
+    public void invokeMain(ClassLoader classloader, StartArgs args) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, IOException
     {
+        if (args.getEnabledModules().isEmpty())
+        {
+            if (Files.exists(getBaseHome().getBasePath("start.jar")))
+                StartLog.error("Do not start with ${jetty.base} == ${jetty.home}!");
+            else
+                StartLog.error("No enabled jetty modules found!");
+            StartLog.info("${jetty.home} = " + getBaseHome().getHomePath());
+            StartLog.info("${jetty.base} = " + getBaseHome().getBasePath());
+            StartLog.error("Please create and/or configure a ${jetty.base} directory.");
+            usageExit(ERR_INVOKE_MAIN);
+            return;
+        }
+
         Class<?> invokedClass = null;
         String mainclass = args.getMainClassname();
-
         try
         {
             invokedClass = classloader.loadClass(mainclass);
         }
         catch (ClassNotFoundException e)
         {
-            StartLog.error("Nothing to start, exiting ...");
+            StartLog.error("Unable to find: " + mainclass);
             StartLog.debug(e);
             usageExit(ERR_INVOKE_MAIN);
             return;

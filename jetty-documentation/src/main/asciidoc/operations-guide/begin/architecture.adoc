@@ -52,30 +52,46 @@ For more detailed information about the Jetty module system, see xref:og-modules
 [[og-begin-arch-jetty-base]]
 ===== Eclipse Jetty Architecture: `$JETTY_BASE`
 
-After installing Jetty in `$JETTY_HOME`, you want to create another directory that will be referred to as `$JETTY_BASE`, likely in a different location in the file system from `$JETTY_HOME`.
+Instead of managing multiple Jetty implementations out of several different distribution locations, it is possible to maintain a separation between the binary installation of the standalone Jetty (known as `${jetty.home}`), and the customizations for your specific environment(s) (known as `${jetty.base}`).
+In addition to easy management of multiple server instances, is allows for quick, drop-in upgrades of Jetty.
+There should always only be *one* Jetty Home (per version of Jetty), but there can be multiple Jetty Base directories that reference it.
 
-The `$JETTY_BASE` directory is where you configure which Jetty modules you want to use and what configuration they have, and it is the base directory where you deploy your web applications.
-You do not deploy your web applications in `$JETTY_HOME`, you deploy them in `$JETTY_BASE`.
-
-You can have just one `$JETTY_HOME` but multiple `$JETTY_HOME` directories, each with its own configuration.
-
-This separation between `$JETTY_HOME` and `$JETTY_BASE` allows to upgrade Jetty without affecting your web applications.
+This separation between `$JETTY_HOME` and `$JETTY_BASE` allows upgrades without affecting your web applications.
 `$JETTY_HOME` contains the Jetty runtime and libraries and the default configuration, while a `$JETTY_BASE` contains your web applications and any override of the default configuration.
 
 For example, with the `$JETTY_HOME` installation the default value for the network port for clear-text HTTP is `8080`.
 However, you want that port to be `6060`, for example because you are behind a load balancer that is configured to forward to the backend on port `6060`.
-
-If you had changed the default configuration in `$JETTY_HOME`, when you upgrade Jetty, say from version `10.0.0` to version `10.0.1`, your change will be lost.
-You would have to remember all the changes you made to the default configuration, upgrade Jetty (which would overwrite the configuration files with the default values), and made again all the changes, which results in a maintenance nightmare.
 
 Instead, you want to configure the clear-text HTTP port in your `$JETTY_BASE`.
 When you upgrade Jetty, you will upgrade only files in `$JETTY_HOME`, and all the configuration in `$JETTY_BASE` will remain unchanged.
 
 Installing the Jetty runtime and libraries in `$JETTY_HOME` also allows you to leverage file system permissions: `$JETTY_HOME` may be owned by an administrator user (so that only administrators can upgrade it), while `$JETTY_BASE` directories may be owned by a less privileged user.
 
-[IMPORTANT]
-====
-Install Jetty and never modify the files under `$JETTY_HOME`, unless you are upgrading Jetty itself.
+If you had changed the default configuration in `$JETTY_HOME`, when you upgrade Jetty, say from version `10.0.0` to version `10.0.1`, your change would be lost.
+Maintaining all the changes in `$JETTY_HOME`, and having to reconfigure these with each upgrade results in a massive commitment of time and effort.
 
-Do all the rest in `$JETTY_BASE`.
-====
+To recap:
+
+`$JETTY_BASE`::
+* This is the location for your configurations and customizations to the Jetty distribution.
+`$JETTY_HOME`::
+* This is the location for the Jetty distribution binaries, default XML IoC configurations, and default module definitions.
+
+____
+[IMPORTANT]
+Jetty Home should always be treated as a standard of truth.
+All configuration modifications, changes and additions should *always* be made in the appropriate Jetty Base directory.
+____
+
+[[base-vs-home-resolution]]
+===== Eclipse Jetty Architecture: `$JETTY_HOME` and `$JETTY_BASE` Configuration Resolution
+
+Potential configuration is resolved from these 2 directory locations.
+When Jetty starts up in processes configuration from them as follows:
+
+Check Jetty Base First::
+If the referenced configuration exists, relative to the defined Jetty base, it is used.
+Check Jetty Home Second::
+If the referenced configuration exists, relative to the defined Jetty home, it is used.
+Use java.io.File(String pathname) Logic::
+Lastly, use the reference as a `java.io.File(String pathname)` reference, following the default resolution rules outlined by that constructor.In brief, the reference will be used as-is, be it relative (to current working directory, aka $\{user.dir}) or absolute path, or even network reference (such as on Windows and use of UNC paths).

@@ -19,14 +19,14 @@
         <executions>
           <execution>
             <id>copy-lib-deps</id>
-            <phase>generate-resources</phase>
+            <phase>process-test-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty</includeGroupIds>
-              <excludeGroupIds>org.eclipse.jetty.orbit,org.eclipse.jetty.websocket,org.eclipse.jetty.drafts</excludeGroupIds>
-              <excludeArtifactIds>jetty-all,jetty-start</excludeArtifactIds>
+              <excludeGroupIds>org.eclipse.jetty.orbit,org.eclipse.jetty.websocket</excludeGroupIds>
+              <excludeArtifactIds>jetty-start</excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${project.build.directory}/test-lib</outputDirectory>
             </configuration>

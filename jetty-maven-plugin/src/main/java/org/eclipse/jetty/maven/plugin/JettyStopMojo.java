@@ -61,7 +61,7 @@ public class JettyStopMojo extends AbstractWebAppMojo
     }
 
     @Override
-    protected void startJettyDistro() throws MojoExecutionException
+    protected void startJettyHome() throws MojoExecutionException
     {
         //Does not start jetty
         return;

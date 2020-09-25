@@ -1,8 +1,8 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Adds support for servlet specification webapplication to the server classpath.  
-Without this, only Jetty specific handlers may be deployed.
+Adds support for servlet specification web applications to the server classpath.
+Without this, only Jetty-specific handlers may be deployed.
 
 [depend]
 servlet

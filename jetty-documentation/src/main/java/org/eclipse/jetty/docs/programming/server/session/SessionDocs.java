@@ -22,6 +22,7 @@ import java.io.File;
 import java.net.InetSocketAddress;
 
 import org.eclipse.jetty.memcached.session.MemcachedSessionDataMapFactory;
+import org.eclipse.jetty.nosql.mongodb.MongoSessionDataStoreFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.session.CachingSessionDataStoreFactory;
@@ -287,5 +288,26 @@ public class SessionDocs
         DatabaseAdaptor driverAdaptor = new DatabaseAdaptor();
         driverAdaptor.setDriverInfo("com.mysql.jdbc.Driver", "jdbc:mysql://127.0.0.1:3306/sessions?user=sessionsadmin");
         //end::dbaDriver[]
+    }
+    
+    public void mongoSessionDataStore()
+    {
+        //tag::mongosdfactory[]
+        Server server = new Server();
+        
+        MongoSessionDataStoreFactory mongoSessionDataStoreFactory = new MongoSessionDataStoreFactory();
+        mongoSessionDataStoreFactory.setGracePeriodSec(3600);
+        mongoSessionDataStoreFactory.setSavePeriodSec(0);
+        mongoSessionDataStoreFactory.setDbName("HttpSessions");
+        mongoSessionDataStoreFactory.setCollectionName("JettySessions");
+        
+        //either set the connectionString
+        mongoSessionDataStoreFactory.setConnectionString("mongodb:://localhost");
+        
+        /* or alternatively set the host and port
+         * mongoSessionDataStoreFactory.setHost("localhost");
+         * mongoSessionDatatStoreFactory.setPort(27017);
+         */
+        //end::mongosdfactory[]
     }
 }
