@@ -52,20 +52,6 @@ pipeline {
             }
           }
         }
-
-        stage( "Build Javadoc" ) {
-          agent { node { label 'linux' } }
-          steps {
-            container( 'jetty-build' ) {
-              timeout( time: 30, unit: 'MINUTES' ) {
-                mavenBuild( "jdk11",
-                            "package source:jar javadoc:jar -Peclipse-release -DskipTests -Dpmd.skip=true -Dcheckstyle.skip=true",
-                            "maven3", true )
-                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'JavaDoc'], [parserName: 'Java']]
-              }
-            }
-          }
-        }
       }
     }
   }
