@@ -15,7 +15,7 @@ jstl
 annotations
 ext
 servlets
-websocket-javax
+websocket-jakarta
 websocket-jetty
 demo-realm
 

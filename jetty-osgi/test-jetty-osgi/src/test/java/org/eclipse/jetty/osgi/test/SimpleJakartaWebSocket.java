@@ -19,6 +19,8 @@
 package org.eclipse.jetty.osgi.test;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.CloseReason;
@@ -34,6 +36,7 @@ import static org.junit.Assert.fail;
     subprotocols = {"chat"})
 public class SimpleJakartaWebSocket
 {
+    private static final Logger LOG = Logger.getLogger(SimpleJakartaWebSocket.class.getName());
     private Session session;
     public CountDownLatch messageLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
@@ -41,34 +44,28 @@ public class SimpleJakartaWebSocket
     @OnError
     public void onError(Throwable t)
     {
-        //t.printStackTrace();
+        LOG.log(Level.WARNING, "onError", t);
         fail(t.getMessage());
     }
 
     @OnClose
     public void onClose(CloseReason close)
     {
-        //System.out.printf("Closed: %d, \"%s\"%n",close.getCloseCode().getCode(),close.getReasonPhrase());
+        LOG.info(String.format("Closed: %d, \"%s\"", close.getCloseCode().getCode(), close.getReasonPhrase()));
         closeLatch.countDown();
     }
 
     @OnMessage
     public void onMessage(String message)
     {
-        //System.out.printf("Received: \"%s\"%n",message);
+        LOG.info(String.format("Received: \"%s\"", message));
         messageLatch.countDown();
     }
 
     @OnOpen
     public void onOpen(Session session)
     {
-        //System.out.printf("Opened%n");
+        LOG.info("Opened");
         this.session = session;
-    }
-
-    public void writeMessage(String message) throws Exception
-    {
-        //System.out.printf("Writing: \"%s\"%n",message);
-        session.getBasicRemote().sendText(message);
     }
 }

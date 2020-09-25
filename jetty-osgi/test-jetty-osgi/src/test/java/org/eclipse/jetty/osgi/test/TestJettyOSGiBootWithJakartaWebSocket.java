@@ -22,6 +22,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 import javax.inject.Inject;
 
 import jakarta.websocket.ContainerProvider;
@@ -112,18 +113,24 @@ public class TestJettyOSGiBootWithJakartaWebSocket
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         assertNotNull(container);
 
+        Logger log = Logger.getLogger(this.getClass().getName());
+
         SimpleJakartaWebSocket socket = new SimpleJakartaWebSocket();
         URI uri = new URI("ws://127.0.0.1:" + port + "/jakarta.websocket/");
+        log.info("Attempting to connect to " + uri);
         try (Session session = container.connectToServer(socket, uri))
         {
+            log.info("Got session: " + session);
             RemoteEndpoint.Basic remote = session.getBasicRemote();
+            log.info("Got remote: " + remote);
             String msg = "Foo";
             remote.sendText(msg);
-            assertTrue(socket.messageLatch.await(1, TimeUnit.SECONDS)); // give remote 1 second to respond
+            log.info("Send message");
+            assertTrue(socket.messageLatch.await(2, TimeUnit.SECONDS)); // give remote 1 second to respond
         }
         finally
         {
-            assertTrue(socket.closeLatch.await(1, TimeUnit.SECONDS)); // give remote 1 second to acknowledge response
+            assertTrue(socket.closeLatch.await(2, TimeUnit.SECONDS)); // give remote 1 second to acknowledge response
         }
     }
 
