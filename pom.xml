@@ -936,7 +936,7 @@
         <plugin>
           <groupId>org.mortbay.jetty</groupId>
           <artifactId>h2spec-maven-plugin</artifactId>
-          <version>1.0.0</version>
+          <version>1.0.1-SNAPSHOT</version>
         </plugin>
       </plugins>
     </pluginManagement>
