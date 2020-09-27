@@ -316,7 +316,7 @@ public class Request implements HttpServletRequest
 
         HttpField authField = getHttpFields().getField(HttpHeader.AUTHORIZATION);
         //TODO check what to do for digest etc etc
-        if (getUserPrincipal() != null && authField.getValue().startsWith("Basic"))
+        if (authField != null && getUserPrincipal() != null && authField.getValue().startsWith("Basic"))
             fields.add(authField);
 
         String id;
