@@ -139,7 +139,7 @@
     <dependency>
       <groupId>org.infinispan.protostream</groupId>
       <artifactId>protostream</artifactId>
-      <version>4.2.2.Final</version>
+      <version>4.3.3.Final</version>
       <scope>test</scope>
     </dependency>
     <dependency>
