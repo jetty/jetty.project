@@ -27,7 +27,7 @@
     <servlet.api.version>4.0.4</servlet.api.version>
     <websocket.api.version>1.1.2</websocket.api.version>
     <jsp.version>9.0.29</jsp.version>
-    <infinispan.version>9.4.8.Final</infinispan.version>
+    <infinispan.version>12.0.0.Dev03</infinispan.version>
     <hazelcast.version>4.0.1</hazelcast.version>
     <conscrypt.version>2.4.0</conscrypt.version>
     <asm.version>8.0.1</asm.version>
