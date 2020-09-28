@@ -11,7 +11,8 @@
       <param-value>https://www.eclipse.org/jetty/javadoc/</param-value>
     </init-param>
     <init-param>
-      <param-name>hostHeader</param-name><param-value>eclipse.org</param-value>
+      <param-name>hostHeader</param-name>
+      <param-value>www.eclipse.org</param-value>
     </init-param>
     <load-on-startup>1</load-on-startup>
     <async-supported>true</async-supported>

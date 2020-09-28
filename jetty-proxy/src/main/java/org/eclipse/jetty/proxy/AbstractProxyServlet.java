@@ -55,6 +55,7 @@ import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
@@ -362,7 +363,8 @@ public abstract class AbstractProxyServlet extends HttpServlet
         String value = getServletConfig().getInitParameter("selectors");
         if (value != null)
             selectors = Integer.parseInt(value);
-        return new HttpClient(new HttpClientTransportOverHTTP(selectors), null);
+        SslContextFactory.Client clientSsl = new SslContextFactory.Client();
+        return new HttpClient(new HttpClientTransportOverHTTP(selectors), clientSsl);
     }
 
     protected HttpClient getHttpClient()
