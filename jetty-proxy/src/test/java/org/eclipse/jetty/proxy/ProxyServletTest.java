@@ -78,17 +78,21 @@ import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -129,6 +133,7 @@ public class ProxyServletTest
     private AbstractProxyServlet proxyServlet;
     private Server server;
     private ServerConnector serverConnector;
+    private ServerConnector tlsServerConnector;
 
     private void startServer(HttpServlet servlet) throws Exception
     {
@@ -137,6 +142,16 @@ public class ProxyServletTest
         server = new Server(serverPool);
         serverConnector = new ServerConnector(server);
         server.addConnector(serverConnector);
+
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        String keyStorePath = MavenTestingUtils.getTestResourceFile("server_keystore.p12").getAbsolutePath();
+        sslContextFactory.setKeyStorePath(keyStorePath);
+        sslContextFactory.setKeyStorePassword("storepwd");
+        tlsServerConnector = new ServerConnector(server, new SslConnectionFactory(
+            sslContextFactory,
+            HttpVersion.HTTP_1_1.asString()),
+            new HttpConnectionFactory());
+        server.addConnector(tlsServerConnector);
 
         ServletContextHandler appCtx = new ServletContextHandler(server, "/", true, false);
         ServletHolder appServletHolder = new ServletHolder(servlet);
@@ -738,27 +753,80 @@ public class ProxyServletTest
     public static Stream<Arguments> transparentImpls()
     {
         return Stream.of(
-            ProxyServlet.Transparent.class,
-            AsyncProxyServlet.Transparent.class,
-            AsyncMiddleManServlet.Transparent.class
+            new ProxyServlet.Transparent()
+            {
+                @Override
+                protected HttpClient newHttpClient()
+                {
+                    return newTrustAllClient(super.newHttpClient());
+                }
+
+                @Override
+                public String toString()
+                {
+                    return ProxyServlet.Transparent.class.getName();
+                }
+            },
+            new AsyncProxyServlet.Transparent()
+            {
+                @Override
+                protected HttpClient newHttpClient()
+                {
+                    return newTrustAllClient(super.newHttpClient());
+                }
+
+                @Override
+                public String toString()
+                {
+                    return AsyncProxyServlet.Transparent.class.getName();
+                }
+            },
+            new AsyncMiddleManServlet.Transparent()
+            {
+                @Override
+                protected HttpClient newHttpClient()
+                {
+                    return newTrustAllClient(super.newHttpClient());
+                }
+
+                @Override
+                public String toString()
+                {
+                    return AsyncMiddleManServlet.Transparent.class.getName();
+                }
+            }
         ).map(Arguments::of);
     }
 
-    @ParameterizedTest
-    @MethodSource("transparentImpls")
-    public void testTransparentProxy(Class<? extends ProxyServlet> proxyServletClass) throws Exception
+    private static HttpClient newTrustAllClient(HttpClient client)
     {
-        testTransparentProxyWithPrefix(proxyServletClass, "/proxy");
+        SslContextFactory.Client sslContextFactory = client.getSslContextFactory();
+        sslContextFactory.setTrustAll(true);
+        return client;
     }
 
     @ParameterizedTest
     @MethodSource("transparentImpls")
-    public void testTransparentProxyWithRootContext(Class<? extends ProxyServlet> proxyServletClass) throws Exception
+    public void testTransparentProxy(AbstractProxyServlet proxyServletClass) throws Exception
     {
-        testTransparentProxyWithPrefix(proxyServletClass, "/");
+        testTransparentProxyWithPrefix(proxyServletClass, "http", "/proxy");
     }
 
-    private void testTransparentProxyWithPrefix(Class<? extends ProxyServlet> proxyServletClass, String prefix) throws Exception
+    @ParameterizedTest
+    @MethodSource("transparentImpls")
+    public void testTransparentProxyTls(AbstractProxyServlet proxyServletClass) throws Exception
+    {
+        testTransparentProxyWithPrefix(proxyServletClass, "https", "/proxy");
+    }
+
+    @ParameterizedTest
+    @MethodSource("transparentImpls")
+    public void testTransparentProxyWithRootContext(AbstractProxyServlet proxyServletClass) throws Exception
+    {
+        testTransparentProxyWithPrefix(proxyServletClass, "http", "/");
+    }
+
+    private void testTransparentProxyWithPrefix(AbstractProxyServlet proxyServletClass, String scheme, String prefix) throws Exception
     {
         final String target = "/test";
         startServer(new HttpServlet()
@@ -771,7 +839,10 @@ public class ProxyServletTest
                 resp.setStatus(target.equals(req.getRequestURI()) ? 200 : 404);
             }
         });
-        String proxyTo = "http://localhost:" + serverConnector.getLocalPort();
+        int serverPort = serverConnector.getLocalPort();
+        if (HttpScheme.HTTPS.is(scheme))
+            serverPort = tlsServerConnector.getLocalPort();
+        String proxyTo = scheme + "://localhost:" + serverPort;
         Map<String, String> params = new HashMap<>();
         params.put("proxyTo", proxyTo);
         params.put("prefix", prefix);
@@ -789,33 +860,33 @@ public class ProxyServletTest
 
     @ParameterizedTest
     @MethodSource("transparentImpls")
-    public void testTransparentProxyWithQuery(Class<? extends ProxyServlet> proxyServletClass) throws Exception
+    public void testTransparentProxyWithQuery(AbstractProxyServlet proxyServletClass) throws Exception
     {
         testTransparentProxyWithQuery(proxyServletClass, "/foo", "/proxy", "/test");
     }
 
     @ParameterizedTest
     @MethodSource("transparentImpls")
-    public void testTransparentProxyEmptyContextWithQuery(Class<? extends ProxyServlet> proxyServletClass) throws Exception
+    public void testTransparentProxyEmptyContextWithQuery(AbstractProxyServlet proxyServletClass) throws Exception
     {
         testTransparentProxyWithQuery(proxyServletClass, "", "/proxy", "/test");
     }
 
     @ParameterizedTest
     @MethodSource("transparentImpls")
-    public void testTransparentProxyEmptyTargetWithQuery(Class<? extends ProxyServlet> proxyServletClass) throws Exception
+    public void testTransparentProxyEmptyTargetWithQuery(AbstractProxyServlet proxyServletClass) throws Exception
     {
         testTransparentProxyWithQuery(proxyServletClass, "/bar", "/proxy", "");
     }
 
     @ParameterizedTest
     @MethodSource("transparentImpls")
-    public void testTransparentProxyEmptyContextEmptyTargetWithQuery(Class<? extends ProxyServlet> proxyServletClass) throws Exception
+    public void testTransparentProxyEmptyContextEmptyTargetWithQuery(AbstractProxyServlet proxyServletClass) throws Exception
     {
         testTransparentProxyWithQuery(proxyServletClass, "", "/proxy", "");
     }
 
-    private void testTransparentProxyWithQuery(Class<? extends ProxyServlet> proxyServletClass, String proxyToContext, String prefix, String target) throws Exception
+    private void testTransparentProxyWithQuery(AbstractProxyServlet proxyServletClass, String proxyToContext, String prefix, String target) throws Exception
     {
         final String query = "a=1&b=2";
         startServer(new HttpServlet()
@@ -859,7 +930,7 @@ public class ProxyServletTest
 
     @ParameterizedTest
     @MethodSource("transparentImpls")
-    public void testTransparentProxyWithQueryWithSpaces(Class<? extends ProxyServlet> proxyServletClass) throws Exception
+    public void testTransparentProxyWithQueryWithSpaces(AbstractProxyServlet proxyServletClass) throws Exception
     {
         final String target = "/test";
         final String query = "a=1&b=2&c=1234%205678&d=hello+world";
@@ -901,7 +972,7 @@ public class ProxyServletTest
 
     @ParameterizedTest
     @MethodSource("transparentImpls")
-    public void testTransparentProxyWithoutPrefix(Class<? extends ProxyServlet> proxyServletClass) throws Exception
+    public void testTransparentProxyWithoutPrefix(AbstractProxyServlet proxyServletClass) throws Exception
     {
         final String target = "/test";
         startServer(new HttpServlet()
