@@ -14,7 +14,6 @@ jsp
 annotations
 ext
 demo-realm
-demo-jndi
 
 [files]
 basehome:modules/demo.d/demo-spec.xml|webapps/demo-spec.xml

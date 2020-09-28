@@ -16,10 +16,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.cdi;
+package org.eclipse.jetty.cdi.tests;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.EnumSet;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.BeanManager;
@@ -40,6 +39,10 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.cdi.CdiConfiguration;
+import org.eclipse.jetty.cdi.CdiDecoratingListener;
+import org.eclipse.jetty.cdi.CdiServletContainerInitializer;
+import org.eclipse.jetty.cdi.CdiSpiDecorator;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ListenerHolder;
@@ -53,7 +56,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 
-@Disabled("waiting on weld to release weld-servlet-core with jakarta namespace")
 public class EmbeddedWeldTest
 {
     static
@@ -113,47 +115,41 @@ public class EmbeddedWeldTest
 
             case "CdiDecoratingListener+Listener":
                 // Expect:INFO: WELD-ENV-001212: Jetty CdiDecoratingListener support detected, CDI injection will be available in Listeners, Servlets and Filters.
-                context.addEventListener(new org.eclipse.jetty.cdi.CdiDecoratingListener(context));
+                context.addEventListener(new CdiDecoratingListener(context));
                 context.addEventListener(new org.jboss.weld.environment.servlet.Listener());
                 break;
 
             case "CdiSpiDecorator+Listener":
                 // Expect:INFO: WELD-ENV-001213: Jetty CDI SPI support detected, CDI injection will be available in Listeners, Servlets and Filters.
-                context.getObjectFactory().addDecorator(new org.eclipse.jetty.cdi.CdiSpiDecorator(context));
+                context.getObjectFactory().addDecorator(new CdiSpiDecorator(context));
                 context.getServletHandler().addListener(new ListenerHolder(org.jboss.weld.environment.servlet.Listener.class));
                 break;
 
             case "CdiServletContainerInitializer+Listener":
                 // Expect:INFO: WELD-ENV-001213: Jetty CDI SPI support detected, CDI injection will be available in Listeners, Servlets and Filters.
-                context.addBean(new ServletContextHandler.Initializer(context, new org.eclipse.jetty.cdi.CdiServletContainerInitializer()));
+                context.addBean(new ServletContextHandler.Initializer(context, new CdiServletContainerInitializer()));
                 context.addEventListener(new org.jboss.weld.environment.servlet.Listener());
                 break;
 
             case "CdiServletContainerInitializer(CdiDecoratingListener)+Listener":
                 // Expect:INFO: WELD-ENV-001212: Jetty CdiDecoratingListener support detected, CDI injection will be available in Listeners, Servlets and Filters
-                context.setInitParameter(org.eclipse.jetty.cdi.CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, org.eclipse.jetty.cdi.CdiDecoratingListener.MODE);
-                context.addBean(new ServletContextHandler.Initializer(context, new org.eclipse.jetty.cdi.CdiServletContainerInitializer()));
+                context.setInitParameter(CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, CdiDecoratingListener.MODE);
+                context.addBean(new ServletContextHandler.Initializer(context, new CdiServletContainerInitializer()));
                 context.addEventListener(new org.jboss.weld.environment.servlet.Listener());
                 break;
 
             case "CdiServletContainerInitializer+EnhancedListener":
                 // Expect:INFO: WELD-ENV-001213: Jetty CDI SPI support detected, CDI injection will be available in Listeners, Servlets and Filters.
-                context.addBean(new ServletContextHandler.Initializer(context, new org.eclipse.jetty.cdi.CdiServletContainerInitializer()));
+                context.addBean(new ServletContextHandler.Initializer(context, new CdiServletContainerInitializer()));
                 context.addBean(new ServletContextHandler.Initializer(context, new org.jboss.weld.environment.servlet.EnhancedListener()));
                 break;
 
+            // NOTE: This is the preferred mode from the Weld team.
             case "CdiServletContainerInitializer(CdiDecoratingListener)+EnhancedListener":
                 // Expect:INFO: WELD-ENV-001212: Jetty CdiDecoratingListener support detected, CDI injection will be available in Listeners, Servlets and Filters
-                context.setInitParameter(org.eclipse.jetty.cdi.CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, org.eclipse.jetty.cdi.CdiDecoratingListener.MODE);
-                context.addBean(new ServletContextHandler.Initializer(context, new org.eclipse.jetty.cdi.CdiServletContainerInitializer()));
+                context.setInitParameter(CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, CdiDecoratingListener.MODE);
+                context.addBean(new ServletContextHandler.Initializer(context, new CdiServletContainerInitializer()));
                 context.addBean(new ServletContextHandler.Initializer(context, new org.jboss.weld.environment.servlet.EnhancedListener()));
-                break;
-
-            case "EnhancedListener+CdiServletContainerInitializer(CdiDecoratingListener)":
-                // Expect:INFO: WELD-ENV-001212: Jetty CdiDecoratingListener support detected, CDI injection will be available in Listeners, Servlets and Filters
-                context.setInitParameter(org.eclipse.jetty.cdi.CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, org.eclipse.jetty.cdi.CdiDecoratingListener.MODE);
-                context.addBean(new ServletContextHandler.Initializer(context, new org.jboss.weld.environment.servlet.EnhancedListener()));
-                context.addBean(new ServletContextHandler.Initializer(context, new org.eclipse.jetty.cdi.CdiServletContainerInitializer()));
                 break;
         }
 
@@ -278,99 +274,5 @@ public class EmbeddedWeldTest
         assertThat(response, containsString("Beans from Weld BeanManager "));
         assertThat(response, containsString("Listener saw Weld BeanManager"));
         server.stop();
-    }
-
-    public static class MyContextListener implements ServletContextListener
-    {
-        @Inject
-        BeanManager manager;
-
-        @Override
-        public void contextInitialized(ServletContextEvent sce)
-        {
-            sce.getServletContext().setAttribute("listener", manager);
-        }
-
-        @Override
-        public void contextDestroyed(ServletContextEvent sce)
-        {
-
-        }
-    }
-
-    public static class MyFilter implements Filter
-    {
-        @Inject
-        BeanManager manager;
-
-        @Override
-        public void init(FilterConfig filterConfig) throws ServletException
-        {
-            if (manager == null)
-                throw new IllegalStateException();
-        }
-
-        @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
-            // copy attribute from MyListener to see if it was decorated.
-            request.setAttribute("filter", manager);
-            chain.doFilter(request, response);
-        }
-
-        @Override
-        public void destroy()
-        {
-
-        }
-    }
-
-    public static class GreetingsServlet extends HttpServlet
-    {
-        @Inject
-        @Named("friendly")
-        public Greetings greetings;
-
-        @Inject
-        BeanManager manager;
-
-        @Override
-        public void init()
-        {
-            if (manager == null)
-                throw new IllegalStateException();
-        }
-
-        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
-        {
-            resp.setContentType("text/plain");
-            resp.getWriter().print(greetings == null ? "NULL" : greetings.getGreeting());
-            resp.getWriter().print(" filtered by ");
-            resp.getWriter().println(req.getAttribute("filter"));
-            resp.getWriter().println("Beans from " + manager);
-            resp.getWriter().println("Listener saw " + req.getServletContext().getAttribute("listener"));
-        }
-    }
-
-    public interface Greetings
-    {
-        String getGreeting();
-    }
-
-    public static class FriendlyGreetings
-    {
-        @Produces
-        @Named("friendly")
-        public Greetings friendly(InjectionPoint ip)
-        {
-            return () -> "Hello " + ip.getMember().getDeclaringClass().getSimpleName();
-        }
-
-        @Produces
-        @Named("old")
-        public Greetings old()
-        {
-            return () -> "Salutations!";
-        }
     }
 }

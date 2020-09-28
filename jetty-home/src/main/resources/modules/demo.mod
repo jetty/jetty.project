@@ -19,6 +19,7 @@ demo-moved-context
 demo-proxy
 demo-rewrite
 demo-root
+demo-jndi
 demo-spec
 
 [ini-template]

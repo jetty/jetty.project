@@ -69,5 +69,6 @@
     <module>test-jmx</module>
     <module>test-http-client-transport</module>
     <module>test-distribution</module>
+    <module>test-cdi</module>
   </modules>
 </project>
