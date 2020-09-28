@@ -4,8 +4,9 @@
     <groupId>org.eclipse.jetty.demos</groupId>
     <artifactId>demos-parent</artifactId>
     <version>10.0.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
   </parent>
-  <name>Demos :: WebApp :: Mock Resources</name>
+  <name>Demo :: Servlet Spec :: Mock Resources</name>
   <artifactId>demo-mock-resources</artifactId>
   <packaging>jar</packaging>
   <properties>
