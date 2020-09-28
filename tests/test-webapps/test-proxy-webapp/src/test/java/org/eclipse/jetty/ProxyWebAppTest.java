@@ -39,9 +39,9 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
 /**
- * Test the configuration in WEB-INF/web.xml
+ * Test the configuration found in WEB-INF/web.xml for purposes of the demo-base
  */
-public class WebXmlConfigurationTest
+public class ProxyWebAppTest
 {
     private Server server;
     private HttpClient client;
@@ -59,10 +59,7 @@ public class WebXmlConfigurationTest
         // This is a pieced together WebApp.
         // We don't have a valid WEB-INF/lib to rely on at this point.
         // So, open up server classes here, for purposes of this testcase.
-        webapp.getServerClasspathPattern().add(
-            "-org.eclipse.jetty.proxy.",
-            "-org.eclipse.jetty.client.",
-            "-org.eclipse.jetty.util.ssl.");
+        webapp.getServerClasspathPattern().add("-org.eclipse.jetty.proxy.");
         webapp.setWar(MavenTestingUtils.getProjectDirPath("src/main/webapp").toString());
         webapp.setExtraClasspath(MavenTestingUtils.getTargetPath().resolve("classes").toString());
         server.setHandler(webapp);
@@ -89,7 +86,11 @@ public class WebXmlConfigurationTest
             .send();
 
         // Expecting a 200 OK (not a 302 redirect or other error)
+        // If we got an error here, that means our configuration in web.xml is bad / out of date.
+        // Such as the redirect from the eclipse website, we want all of the requests to go through
+        // this proxy configuration, not redirected to the actual website.
         assertThat("response status", response.getStatus(), is(HttpStatus.OK_200));
+        // Expecting a Javadoc / APIDoc response - look for something unique for APIdoc.
         assertThat("response", response.getContentAsString(), containsString("All&nbsp;Classes"));
     }
 }
