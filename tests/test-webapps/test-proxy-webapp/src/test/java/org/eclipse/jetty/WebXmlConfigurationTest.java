@@ -28,7 +28,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,9 +35,13 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
-public class TestTransparentProxyServer
+/**
+ * Test the configuration in WEB-INF/web.xml
+ */
+public class WebXmlConfigurationTest
 {
     private Server server;
     private HttpClient client;
@@ -60,11 +63,7 @@ public class TestTransparentProxyServer
             "-org.eclipse.jetty.proxy.",
             "-org.eclipse.jetty.client.",
             "-org.eclipse.jetty.util.ssl.");
-        webapp.getSystemClasspathPattern().add(
-            "org.eclipse.jetty.proxy.",
-            "org.eclipse.jetty.client.",
-            "org.eclipse.jetty.util.ss.");
-        webapp.setBaseResource(new PathResource(MavenTestingUtils.getProjectDirPath("src/main/webapp")));
+        webapp.setWar(MavenTestingUtils.getProjectDirPath("src/main/webapp").toString());
         webapp.setExtraClasspath(MavenTestingUtils.getTargetPath().resolve("classes").toString());
         server.setHandler(webapp);
 
@@ -91,5 +90,6 @@ public class TestTransparentProxyServer
 
         // Expecting a 200 OK (not a 302 redirect or other error)
         assertThat("response status", response.getStatus(), is(HttpStatus.OK_200));
+        assertThat("response", response.getContentAsString(), containsString("All&nbsp;Classes"));
     }
 }
