@@ -1874,6 +1874,25 @@ public class RequestTest
     }
 
     @Test
+    public void testPushBuilderWithIdNoAuth() throws Exception
+    {
+        String uri = "/foo/something";
+        Request request = new TestRequest(null, null)
+        {
+            @Override
+            public Principal getUserPrincipal()
+            {
+                return () -> "test";
+            }
+        };
+        HttpFields.Mutable fields = HttpFields.build();
+        request.setMetaData(new MetaData.Request("GET", HttpURI.from(uri), HttpVersion.HTTP_1_0, fields));
+        assertTrue(request.isPushSupported());
+        PushBuilder builder = request.newPushBuilder();
+        assertNotNull(builder);
+    }
+
+    @Test
     public void testServletPathMapping() throws Exception
     {
         ServletPathSpec spec;
