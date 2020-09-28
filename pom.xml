@@ -35,7 +35,7 @@
     <jmhjar.name>benchmarks</jmhjar.name>
     <tycho-version>2.0.0</tycho-version>
     <junit.version>5.7.0</junit.version>
-    <maven.version>3.6.0</maven.version>
+    <maven.version>3.6.3</maven.version>
     <maven.resolver.version>1.3.1</maven.resolver.version>
     <weld.version>3.1.3.Final</weld.version>
     <jetty.perf-helper.version>1.0.5</jetty.perf-helper.version>
