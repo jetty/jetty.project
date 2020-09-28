@@ -10,8 +10,7 @@
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>test-jetty-webapp</artifactId>
   <name>Test :: Jetty Test Webapp</name>
-  <url>http://www.eclipse.org/jetty</url>
-  <packaging>war</packaging>
+<packaging>war</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.tests.webapp</bundle-symbolic-name>
   </properties>

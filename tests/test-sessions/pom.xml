@@ -8,7 +8,6 @@
   </parent>
   <artifactId>test-sessions-parent</artifactId>
   <name>Jetty Tests :: Sessions :: Parent</name>
-  <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
   <dependencyManagement>
     <dependencies>

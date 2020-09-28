@@ -8,14 +8,13 @@
   </parent>
   <artifactId>test-infinispan-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: Infinispan</name>
-  <url>http://www.eclipse.org/jetty</url>
-  <properties>
-    <bundle-symbolic-name>${project.groupId}.sessions.infinispan</bundle-symbolic-name>
-    <!-- if changing this version please update default in RemoteInfinispanTestSupport you will get thanks from Eclipse IDE users -->
-    <infinispan.docker.image.version>${infinispan.version}</infinispan.docker.image.version>
-    <!-- from 10.xx it has changed to jboss/infinispan -->
-    <infinispan.docker.image.name>jboss/infinispan-server</infinispan.docker.image.name>
-  </properties>
+<properties>
+  <bundle-symbolic-name>${project.groupId}.sessions.infinispan</bundle-symbolic-name>
+  <!-- if changing this version please update default in RemoteInfinispanTestSupport you will get thanks from Eclipse IDE users -->
+  <infinispan.docker.image.version>${infinispan.version}</infinispan.docker.image.version>
+  <!-- from 10.xx it has changed to jboss/infinispan -->
+  <infinispan.docker.image.name>jboss/infinispan-server</infinispan.docker.image.name>
+</properties>
   <build>
     <plugins>
       <plugin>

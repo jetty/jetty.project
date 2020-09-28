@@ -8,7 +8,6 @@
   <artifactId>jetty-osgi-boot-jsp</artifactId>
   <name>Jetty :: OSGi :: Boot JSP</name>
   <description>Jetty OSGi Boot JSP bundle</description>
-  <url>http://www.eclipse.org/jetty</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.boot.jsp</bundle-symbolic-name>
   </properties>

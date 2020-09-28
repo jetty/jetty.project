@@ -78,7 +78,7 @@ basehome:modules/ssl/keystore|etc/keystore
 
 ### SslContextFactory Configuration
 ## Note that OBF passwords are not secure, just protected from casual observation
-## See http://www.eclipse.org/jetty/documentation/current/configuring-security-secure-passwords.html
+## See https://eclipse.org/jetty/documentation/current/configuring-security-secure-passwords.html
 
 ## The Endpoint Identification Algorithm
 ## Same as javax.net.ssl.SSLParameters#setEndpointIdentificationAlgorithm(String)
