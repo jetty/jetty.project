@@ -18,118 +18,78 @@
 
 package org.eclipse.jetty;
 
-import java.lang.management.ManagementFactory;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
-import org.eclipse.jetty.http2.HTTP2Cipher;
-import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
-import org.eclipse.jetty.jmx.MBeanContainer;
-import org.eclipse.jetty.server.ForwardedRequestCustomizer;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.SecureRequestCustomizer;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
-@Disabled("Not a test case")
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 public class TestTransparentProxyServer
 {
-    public static void main(String[] args) throws Exception
+    private Server server;
+    private HttpClient client;
+
+    @BeforeEach
+    public void setup() throws Exception
     {
-        ((StdErrLog)Log.getLog()).setSource(false);
+        server = new Server();
 
-        String jettyRoot = "../../..";
+        ServerConnector connector = new ServerConnector(server);
+        connector.setPort(0);
+        server.addConnector(connector);
 
-        // Setup Threadpool
-        QueuedThreadPool threadPool = new QueuedThreadPool();
-        threadPool.setMaxThreads(100);
-
-        // Setup server
-        Server server = new Server(threadPool);
-        server.manage(threadPool);
-
-        // Setup JMX
-        MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
-        server.addBean(mbContainer);
-        server.addBean(Log.getLog());
-
-        // Common HTTP configuration
-        HttpConfiguration config = new HttpConfiguration();
-        config.setSecurePort(8443);
-        config.addCustomizer(new ForwardedRequestCustomizer());
-        config.setSendDateHeader(true);
-        config.setSendServerVersion(true);
-
-        // Http Connector
-        HttpConnectionFactory http = new HttpConnectionFactory(config);
-        ServerConnector httpConnector = new ServerConnector(server, http);
-        httpConnector.setPort(8080);
-        httpConnector.setIdleTimeout(30000);
-        server.addConnector(httpConnector);
-
-        // SSL configurations
-        SslContextFactory sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(jettyRoot + "/jetty-server/src/main/config/etc/keystore");
-        sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
-        sslContextFactory.setTrustStorePath(jettyRoot + "/jetty-server/src/main/config/etc/keystore");
-        sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        sslContextFactory.setExcludeCipherSuites(
-            "SSL_RSA_WITH_DES_CBC_SHA",
-            "SSL_DHE_RSA_WITH_DES_CBC_SHA",
-            "SSL_DHE_DSS_WITH_DES_CBC_SHA",
-            "SSL_RSA_EXPORT_WITH_RC4_40_MD5",
-            "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
-            "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
-            "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
-        sslContextFactory.setCipherComparator(new HTTP2Cipher.CipherComparator());
-
-        // HTTPS Configuration
-        HttpConfiguration httpsConfig = new HttpConfiguration(config);
-        httpsConfig.addCustomizer(new SecureRequestCustomizer());
-
-        // HTTP2 factory
-        HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpsConfig);
-        ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
-        alpn.setDefaultProtocol(h2.getProtocol());
-
-        // SSL Factory
-        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, alpn.getProtocol());
-
-        // HTTP2 Connector
-        ServerConnector http2Connector =
-            new ServerConnector(server, ssl, alpn, h2, new HttpConnectionFactory(httpsConfig));
-        http2Connector.setPort(8443);
-        http2Connector.setIdleTimeout(15000);
-        server.addConnector(http2Connector);
-
-        // Handlers
-        HandlerCollection handlers = new HandlerCollection();
-        ContextHandlerCollection contexts = new ContextHandlerCollection();
-        handlers.setHandlers(new Handler[]
-            {contexts, new DefaultHandler()});
-
-        server.setHandler(handlers);
-
-        // Setup proxy webapp
         WebAppContext webapp = new WebAppContext();
-        webapp.setResourceBase("src/main/webapp");
-        contexts.addHandler(webapp);
+        // This is a pieced together WebApp.
+        // We don't have a valid WEB-INF/lib to rely on at this point.
+        // So, open up server classes here, for purposes of this testcase.
+        webapp.getServerClasspathPattern().add(
+            "-org.eclipse.jetty.proxy.",
+            "-org.eclipse.jetty.client.",
+            "-org.eclipse.jetty.util.ssl.");
+        webapp.getSystemClasspathPattern().add(
+            "org.eclipse.jetty.proxy.",
+            "org.eclipse.jetty.client.",
+            "org.eclipse.jetty.util.ss.");
+        webapp.setBaseResource(new PathResource(MavenTestingUtils.getProjectDirPath("src/main/webapp")));
+        webapp.setExtraClasspath(MavenTestingUtils.getTargetPath().resolve("classes").toString());
+        server.setHandler(webapp);
 
-        // start server
-        server.setStopAtShutdown(true);
         server.start();
-        server.join();
+
+        client = new HttpClient();
+        client.start();
+    }
+
+    @AfterEach
+    public void teardown()
+    {
+        LifeCycle.stop(client);
+        LifeCycle.stop(server);
+    }
+
+    @Test
+    @Tag("external")
+    public void testProxyRequest() throws InterruptedException, ExecutionException, TimeoutException
+    {
+        ContentResponse response = client.newRequest(server.getURI().resolve("/proxy/current/"))
+            .followRedirects(false)
+            .send();
+
+        // Expecting a 200 OK (not a 302 redirect or other error)
+        assertThat("response status", response.getStatus(), is(HttpStatus.OK_200));
     }
 }
