@@ -29,13 +29,14 @@ First we start with how to checkout and build Jetty, then on to our general codi
 The https://github.com/eclipse/jetty.project[Eclipse Jetty project] is located at https://github.com[Github] under the Eclipse Foundation https://github.com/eclipse[parent project]. There are a number of branches that are generally of interest.
 
 .Active Eclipse Jetty Branches
-[cols="3"]
+[cols="4"]
 |===
-| https://github.com/eclipse/jetty.project/tree/jetty-10.0.x[jetty-10.0.x] | Development Branch for Jetty 10 | Java 9+
-| https://github.com/eclipse/jetty.project/tree/jetty-9.4.x[jetty-9.4.x] | Maintenance Branch for Jetty 9.4 (default branch) | Java 8
-| https://github.com/eclipse/jetty.project/tree/jetty-9.3.x[jetty-9.3.x] | Maintenance Branch for Jetty 9.3 | Java 8
-| https://github.com/eclipse/jetty.project/tree/jetty-8.1.x[jetty-8.1.x] | Historical Branch for Jetty 8 | Java 7
-https://github.com/eclipse/jetty.project/tree/jetty-7[jetty-7] | Historical Branch for Jetty 7 | Java 6
+| https://github.com/eclipse/jetty.project/tree/jetty-10.0.x[jetty-11.0.x] | Development | Servlet 5.0 | Java 11+
+| https://github.com/eclipse/jetty.project/tree/jetty-10.0.x[jetty-10.0.x] | Development (default branch) | Servlet 4.0 | Java 11+
+| https://github.com/eclipse/jetty.project/tree/jetty-9.4.x[jetty-9.4.x] | Maintenance | Servlet 3.1 | Java 8
+| https://github.com/eclipse/jetty.project/tree/jetty-9.3.x[jetty-9.3.x] | Maintenance | Servlet 3.0 | Java 8
+| https://github.com/eclipse/jetty.project/tree/jetty-8.1.x[jetty-8.1.x] | Historical | Servlet 2.0 | Java 7
+| https://github.com/eclipse/jetty.project/tree/jetty-7[jetty-7] | Mythical | Servlet 1.0 | Java 6
 |===
 
 If you are planning on working with a specific issue within Jetty it is important to target the correct branch for a pull request. Pull requests that are targeted at Maintenance Branches are typically merged forward into subsequent branches while historical branches are left alone merge wise.  Depending on the nature of an issue a historical branch may have an issue cherrypicked forward, but maintenance releases are merged wholesale forward as a matter of project policy.
