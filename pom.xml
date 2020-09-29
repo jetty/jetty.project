@@ -15,7 +15,7 @@
     <compiler.source>11</compiler.source>
     <compiler.target>11</compiler.target>
     <compiler.release>11</compiler.release>
-    <jetty.url>http://www.eclipse.org/jetty</jetty.url>
+    <jetty.url>https://www.eclipse.org/jetty/</jetty.url>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build-support.version>1.4</build-support.version>
     <checkstyle.version>8.29</checkstyle.version>

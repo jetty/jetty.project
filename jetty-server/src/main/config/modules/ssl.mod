@@ -72,7 +72,7 @@ etc/jetty-ssl-context.xml
 
 ### SslContextFactory Configuration
 ## Note that OBF passwords are not secure, just protected from casual observation
-## See http://www.eclipse.org/jetty/documentation/current/configuring-security-secure-passwords.html
+## See https://eclipse.org/jetty/documentation/current/configuring-security-secure-passwords.html
 
 ## Whether SNI is required for all secure connections. Rejections are in TLS handshakes.
 # jetty.sslContext.sniRequired=false

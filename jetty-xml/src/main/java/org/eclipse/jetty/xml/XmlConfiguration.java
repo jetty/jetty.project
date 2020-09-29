@@ -1897,6 +1897,7 @@ public class XmlConfiguration
             redirectEntity("http://jetty.mortbay.org/configure.dtd", config93);
             redirectEntity("http://jetty.mortbay.org/configure_9_3.dtd", config93);
             redirectEntity("http://jetty.eclipse.org/configure.dtd", config93);
+            redirectEntity("https://jetty.eclipse.org/configure.dtd", config93);
             redirectEntity("http://www.eclipse.org/jetty/configure.dtd", config93);
             redirectEntity("https://www.eclipse.org/jetty/configure.dtd", config93);
             redirectEntity("http://www.eclipse.org/jetty/configure_9_3.dtd", config93);

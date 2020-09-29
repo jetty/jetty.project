@@ -11,6 +11,6 @@ server
 lib/spring/*.jar
 
 [ini-template]
-## See http://www.eclipse.org/jetty/documentation/current/frameworks.html#framework-jetty-spring
+## See https://eclipse.org/jetty/documentation/current/frameworks.html#framework-jetty-spring
 ## for information on how to complete spring configuration
 

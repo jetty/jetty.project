@@ -70,7 +70,7 @@ public class MavenLocalRepoFileInitializerTest
     public void testGetCoordinateNotMaven()
     {
         MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer(baseHome);
-        String ref = "http://www.eclipse.org/jetty";
+        String ref = "https://www.eclipse.org/jetty/";
         Coordinates coords = repo.getCoordinates(URI.create(ref));
         assertThat("Coords", coords, nullValue());
     }

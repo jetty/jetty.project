@@ -10,7 +10,6 @@
   <artifactId>jetty-servlet</artifactId>
   <name>Jetty :: Servlet Handling</name>
   <description>Jetty Servlet Container</description>
-  <url>http://www.eclipse.org/jetty</url>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.servlet</bundle-symbolic-name>
