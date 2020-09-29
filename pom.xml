@@ -346,11 +346,10 @@
                 <include>**/*.adoc</include>
               </includes>
               <excludes>
-                <exclude>jetty-util/src/main/java/org/eclipse/jetty/util/security/UnixCrypt.java</exclude>
-                <exclude>jetty-policy/src/main/java/org/eclipse/jetty/policy/loader/DefaultPolicyLoader.java</exclude>
-                <exclude>jetty-policy/src/main/java/org/eclipse/jetty/policy/loader/PolicyFileScanner.java</exclude>
                 <exclude>jetty-ant/**</exclude>
+                <exclude>jetty-home/src/main/resources/README.adoc</exclude>
                 <exclude>jetty-infinispan/**</exclude>
+                <exclude>jetty-util/src/main/java/org/eclipse/jetty/util/security/UnixCrypt.java</exclude>
                 <exclude>tests/test-sessions/test-infinispan-sessions/**</exclude>
               </excludes>
             </configuration>
