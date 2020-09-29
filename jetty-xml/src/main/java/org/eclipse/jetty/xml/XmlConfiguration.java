@@ -798,20 +798,33 @@ public class XmlConfiguration
          */
         private Object get(Object obj, XmlParser.Node node) throws Exception
         {
-            Class<?> oClass = nodeClass(node);
-            if (oClass != null)
-                obj = null;
-            else
-                oClass = obj.getClass();
+            AttrOrElementNode aoeNode = new AttrOrElementNode(obj, node, "Id", "Name", "Class");
+            String id = aoeNode.getString("Id");
+            String name = aoeNode.getString("Name");
+            String clazz = aoeNode.getString("Class");
 
-            String name = node.getAttribute("name");
-            String id = node.getAttribute("id");
+            Class<?> oClass;
+            if (clazz != null)
+            {
+                // static call
+                oClass = Loader.loadClass(clazz);
+                obj = null;
+            }
+            else if (obj != null)
+            {
+                oClass = obj.getClass();
+            }
+            else
+            {
+                throw new IllegalArgumentException(node.toString());
+            }
+
             if (LOG.isDebugEnabled())
                 LOG.debug("XML get {}", name);
 
             try
             {
-                // Handle getClass explicitly
+                // Handle getClass() explicitly.
                 if ("class".equalsIgnoreCase(name))
                 {
                     obj = oClass;
@@ -824,20 +837,27 @@ public class XmlConfiguration
                 }
                 if (id != null)
                     _configuration.getIdMap().put(id, obj);
-                configure(obj, node, 0);
+                configure(obj, node, aoeNode.getNext());
             }
-            catch (NoSuchMethodException nsme)
+            catch (NoSuchMethodException nsme1)
             {
                 try
+                {
+                    // Try calling a isXxx() method.
+                    Method method = oClass.getMethod("is" + name.substring(0, 1).toUpperCase(Locale.ENGLISH) + name.substring(1));
+                    obj = invokeMethod(method, obj);
+                    if (id != null)
+                        _configuration.getIdMap().put(id, obj);
+                    configure(obj, node, aoeNode.getNext());
+                }
+                catch (NoSuchMethodException nsme2)
                 {
                     // Try the field.
                     Field field = oClass.getField(name);
                     obj = getField(field, obj);
-                    configure(obj, node, 0);
-                }
-                catch (NoSuchFieldException nsfe)
-                {
-                    throw nsme;
+                    if (id != null)
+                        _configuration.getIdMap().put(id, obj);
+                    configure(obj, node, aoeNode.getNext());
                 }
             }
             return obj;
@@ -873,7 +893,9 @@ public class XmlConfiguration
                 oClass = obj.getClass();
             }
             else
+            {
                 throw new IllegalArgumentException(node.toString());
+            }
 
             if (LOG.isDebugEnabled())
                 LOG.debug("XML call {}", name);
