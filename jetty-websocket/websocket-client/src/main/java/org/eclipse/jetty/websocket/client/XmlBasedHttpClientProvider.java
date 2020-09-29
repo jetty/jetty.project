@@ -22,6 +22,7 @@ import java.net.URL;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
@@ -31,13 +32,11 @@ class XmlBasedHttpClientProvider
     {
         URL resource = Thread.currentThread().getContextClassLoader().getResource("jetty-websocket-httpclient.xml");
         if (resource == null)
-        {
             return null;
-        }
 
         try
         {
-            XmlConfiguration configuration = new XmlConfiguration(resource);
+            XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(resource));
             return (HttpClient)configuration.configure();
         }
         catch (Throwable t)

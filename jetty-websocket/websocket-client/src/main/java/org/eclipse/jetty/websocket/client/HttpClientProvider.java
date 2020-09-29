@@ -35,15 +35,13 @@ public final class HttpClientProvider
                 Class<?> xmlClazz = Class.forName("org.eclipse.jetty.websocket.client.XmlBasedHttpClientProvider");
                 Method getMethod = xmlClazz.getMethod("get", WebSocketContainerScope.class);
                 Object ret = getMethod.invoke(null, scope);
-                if ((ret != null) && (ret instanceof HttpClient))
-                {
+                if (ret instanceof HttpClient)
                     return (HttpClient)ret;
-                }
             }
         }
-        catch (Throwable ignore)
+        catch (Throwable t)
         {
-            Log.getLogger(HttpClientProvider.class).ignore(ignore);
+            Log.getLogger(HttpClientProvider.class).ignore(t);
         }
 
         return DefaultHttpClientProvider.newHttpClient(scope);

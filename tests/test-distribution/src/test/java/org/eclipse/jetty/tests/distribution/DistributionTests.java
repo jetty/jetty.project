@@ -19,9 +19,11 @@
 package org.eclipse.jetty.tests.distribution;
 
 import java.io.File;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -31,12 +33,18 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.unixsocket.UnixSocketConnector;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -299,6 +307,97 @@ public class DistributionTests extends AbstractDistributionTest
         finally
         {
             IO.delete(jettyBase.toFile());
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "--jpms"})
+    @DisabledOnJre({JRE.JAVA_14, JRE.JAVA_15})
+    public void testWebsocketClientInWebapp(String arg) throws Exception
+    {
+        Path jettyBase = Files.createTempDirectory("jetty_base");
+        String jettyVersion = System.getProperty("jettyVersion");
+        DistributionTester distribution = DistributionTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        String[] args1 = {
+            "--create-startd",
+            "--approve-all-licenses",
+            "--add-to-start=resources,server,http,webapp,deploy,jsp,jmx,servlet,servlets,websocket"
+        };
+        try (DistributionTester.Run run1 = distribution.start(args1))
+        {
+            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            File webApp = distribution.resolveArtifact("org.eclipse.jetty.tests:test-websocket-client-webapp:war:" + jettyVersion);
+            distribution.installWarFile(webApp, "test");
+
+            int port = distribution.freePort();
+            String[] args2 = {
+                arg,
+                "jetty.http.port=" + port,
+                // "jetty.server.dumpAfterStart=true",
+                // "jetty.webapp.addSystemClasses+=,org.eclipse.jetty.client.",
+                // "jetty.webapp.addServerClasses+=,-org.eclipse.jetty.client.",
+                // "jetty.webapp.addSystemClasses+=,org.eclipse.jetty.util.ssl.",
+                // "jetty.webapp.addServerClasses+=,-org.eclipse.jetty.util.ssl.",
+                // "jetty.webapp.addSystemClasses+=,org.eclipse.jetty.util.component.",
+                // "jetty.webapp.addServerClasses+=,-org.eclipse.jetty.util.component."
+            };
+
+            try (DistributionTester.Run run2 = distribution.start(args2))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
+
+                // We should get the correct configuration from the jetty-websocket-httpclient.xml file.
+                startHttpClient();
+                URI serverUri = URI.create("ws://localhost:" + port + "/test");
+                ContentResponse response = client.GET(serverUri);
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                String content = response.getContentAsString();
+                System.err.println(content);
+                assertThat(content, containsString("ConnectTimeout: 4999"));
+                assertThat(content, containsString("WebSocketEcho: success"));
+            }
+        }
+    }
+
+    public static class WsListener implements WebSocketListener
+    {
+        public BlockingArrayQueue<String> textMessages = new BlockingArrayQueue<>();
+        public final CountDownLatch closeLatch = new CountDownLatch(1);
+        public int closeCode;
+
+        @Override
+        public void onWebSocketClose(int statusCode, String reason)
+        {
+            this.closeCode = statusCode;
+            closeLatch.countDown();
+        }
+
+        @Override
+        public void onWebSocketConnect(Session session)
+        {
+        }
+
+        @Override
+        public void onWebSocketError(Throwable cause)
+        {
+        }
+
+        @Override
+        public void onWebSocketBinary(byte[] payload, int offset, int len)
+        {
+        }
+
+        @Override
+        public void onWebSocketText(String message)
+        {
+            textMessages.add(message);
         }
     }
 }
