@@ -8,7 +8,6 @@
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-cdi</artifactId>
   <name>Jetty :: CDI</name>
-  <url>http://www.eclipse.org/jetty</url>
   <packaging>jar</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.cdi</bundle-symbolic-name>

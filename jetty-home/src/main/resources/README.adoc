@@ -1,0 +1,53 @@
+=== ECLIPSE JETTY
+
+The link:https://www.eclipse.org/jetty/[Eclipse Jetty] Project provides a:
+
+* Java HTTP & WebSocket Server
+* Servlet Container
+* Java HTTP & WebSocket Client
+
+Jetty is available under an open source link:LICENSE.txt[LICENSE], and the full source code is available at link:https://github.com/eclipse/jetty.project[GitHub].
+
+The Jetty documentation is available at link:https://www.eclipse.org/jetty/documentation[].
+
+// tag::quick[]
+==== Quick Jetty Setup
+
+Jetty is distributed in an artifact that expands in a directory called `$JETTY_HOME`, which should not be modified.
+
+Configuration for Jetty is typically done in one (or more) other directories called `$JETTY_BASE`.
+
+The following commands can be used to setup a `$JETTY_BASE` directory that supports deployment of `+*.war+` files and a clear-text HTTP connector:
+
+----
+$ export JETTY_HOME=/path/to/jetty-home
+$ mkdir /path/to/jetty-base
+$ cd /path/to/jetty-base
+$ java -jar $JETTY_HOME/start.jar --add-module=server,http,deploy
+----
+
+This will create a `$JETTY_BASE/start.d/` directory and other directories that contain the configuration of the server, including the `$JETTY_BASE/webapps/` directory, in which standard `+*.war+` files can be deployed.
+
+To deploy Jetty's demo web applications, run this command:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=demo
+----
+
+Now you can start the Jetty server with:
+
+----
+$ java -jar $JETTY_HOME/start.jar
+----
+
+Point your browser at `+http://localhost:8080+` to see the web applications deployed in Jetty.
+
+The Jetty server can be stopped with `ctrl-c` in the terminal window.
+// end::quick[]
+
+For more information about how to start Jetty, run this command (or go to the link:https://www.eclipse.org/jetty/documentation[documentation]):
+
+----
+$ java -jar $JETTY_HOME/start.jar --help
+----
+

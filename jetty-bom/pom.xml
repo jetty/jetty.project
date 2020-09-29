@@ -3,7 +3,7 @@
   <artifactId>jetty-bom</artifactId>
   <name>Jetty :: Bom</name>
   <description>Jetty BOM artifact</description>
-  <url>http://www.eclipse.org/jetty</url>
+  <url>https://eclipse.org/jetty</url>
   <packaging>pom</packaging>
 
   <parent>

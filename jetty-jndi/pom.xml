@@ -9,7 +9,6 @@
   <artifactId>jetty-jndi</artifactId>
   <name>Jetty :: JNDI Naming</name>
   <description>JNDI spi impl for java namespace.</description>
-  <url>http://www.eclipse.org/jetty</url>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.jndi</bundle-symbolic-name>

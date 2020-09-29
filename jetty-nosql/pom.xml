@@ -7,7 +7,6 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-nosql</artifactId>
   <name>Jetty :: NoSQL Session Managers</name>
-  <url>http://www.eclipse.org/jetty</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.nosql</bundle-symbolic-name>
   </properties>

@@ -19,7 +19,6 @@
 [[reference-section]]
 == Jetty XML Reference
 
-include::jetty-xml-syntax.adoc[]
 include::jetty-xml-usage.adoc[]
 include::jetty-xml-config.adoc[]
 include::jetty-web-xml-config.adoc[]
