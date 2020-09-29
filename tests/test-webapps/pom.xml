@@ -32,8 +32,6 @@
   </build>
   <modules>
     <module>test-webapp-rfc2616</module>
-    <module>test-mock-resources</module>
-    <module>test-servlet-spec</module>
     <module>test-http2-webapp</module>
     <module>test-simple-webapp</module>
     <module>test-felix-webapp</module>

@@ -22,6 +22,7 @@
     <module>demo-jndi-webapp</module>
     <module>demo-jetty-webapp</module>
     <module>demo-proxy-webapp</module>
+    <module>demo-mock-resources</module>
     <module>demo-spec</module>
     <module>embedded</module>
   </modules>
