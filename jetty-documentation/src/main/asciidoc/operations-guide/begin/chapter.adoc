@@ -21,6 +21,10 @@
 
 This section will get you started with Eclipse Jetty.
 
+include::../../../../../../jetty-home/src/main/resources/README.adoc[tags=quick]
+
+The following sections will guide you in details about downloading, installing and starting Jetty, as well as deploying your web applications to Jetty.
+
 include::download.adoc[]
 include::install.adoc[]
 include::architecture.adoc[]
