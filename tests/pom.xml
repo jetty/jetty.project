@@ -10,7 +10,7 @@
   <groupId>org.eclipse.jetty.tests</groupId>
   <artifactId>tests-parent</artifactId>
   <name>Jetty Tests :: Parent</name>
-<packaging>pom</packaging>
+  <packaging>pom</packaging>
   <build>
     <pluginManagement>
       <plugins>

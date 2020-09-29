@@ -9,14 +9,14 @@
   <artifactId>test-jetty-osgi</artifactId>
   <name>Jetty :: OSGi :: Test</name>
   <description>Jetty OSGi Integration test</description>
-<properties>
-  <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
-  <jetty-orbit-url>http://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
-  <assembly-directory>target/distribution</assembly-directory>
-  <exam.version>4.13.1</exam.version>
-  <url.version>2.6.1</url.version>
-  <injection.bundle.version>1.0</injection.bundle.version>
-</properties>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
+    <jetty-orbit-url>http://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
+    <assembly-directory>target/distribution</assembly-directory>
+    <exam.version>4.13.1</exam.version>
+    <url.version>2.6.1</url.version>
+    <injection.bundle.version>1.0</injection.bundle.version>
+  </properties>
   <dependencies>
     <!-- Pax Exam Dependencies -->
     <dependency>

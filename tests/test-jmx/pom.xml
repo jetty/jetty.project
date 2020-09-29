@@ -9,8 +9,8 @@
   <artifactId>test-jmx-parent</artifactId>
   <packaging>pom</packaging>
   <name>Jetty Tests :: JMX Parent</name>
-<modules>
-  <module>jmx-webapp</module>
-  <module>jmx-webapp-it</module>
-</modules>
+  <modules>
+    <module>jmx-webapp</module>
+    <module>jmx-webapp-it</module>
+  </modules>
 </project>

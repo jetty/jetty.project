@@ -9,9 +9,9 @@
   <artifactId>test-jetty-osgi-webapp</artifactId>
   <name>Jetty :: OSGi :: Test WebApp</name>
   <description>Test Jetty OSGi Webapp bundle</description>
-<properties>
-  <bundle-symbolic-name>${project.groupId}.webapp</bundle-symbolic-name>
-</properties>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.webapp</bundle-symbolic-name>
+  </properties>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

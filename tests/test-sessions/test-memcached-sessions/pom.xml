@@ -8,10 +8,10 @@
   </parent>
   <artifactId>test-memcached-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: Memcached</name>
-<properties>
-  <bundle-symbolic-name>${project.groupId}.sessions.memcached</bundle-symbolic-name>
-  <memcached.docker.version></memcached.docker.version>
-</properties>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.sessions.memcached</bundle-symbolic-name>
+    <memcached.docker.version></memcached.docker.version>
+  </properties>
   <build>
     <plugins>
       <plugin>

@@ -8,9 +8,9 @@
   </parent>
   <artifactId>test-loginservice</artifactId>
   <name>Jetty Tests :: Login Service</name>
-<properties>
-  <bundle-symbolic-name>${project.groupId}.loginservice</bundle-symbolic-name>
-</properties>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.loginservice</bundle-symbolic-name>
+  </properties>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

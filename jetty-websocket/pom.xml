@@ -11,17 +11,16 @@
   <artifactId>websocket-parent</artifactId>
   <name>Jetty :: Websocket :: Parent</name>
   <packaging>pom</packaging>
-<modules>
-  <module>websocket-common</module>
-  <module>websocket-api</module>
-  <module>websocket-client</module>
-  <module>websocket-server</module>
-  <module>websocket-servlet</module>
-  <module>jetty-websocket-tests</module>
-  <module>javax-websocket-client-impl</module>
-  <module>javax-websocket-server-impl</module>
-</modules>
-
+  <modules>
+    <module>websocket-common</module>
+    <module>websocket-api</module>
+    <module>websocket-client</module>
+    <module>websocket-server</module>
+    <module>websocket-servlet</module>
+    <module>jetty-websocket-tests</module>
+    <module>javax-websocket-client-impl</module>
+    <module>javax-websocket-server-impl</module>
+  </modules>
   <build>
     <plugins>
       <plugin>

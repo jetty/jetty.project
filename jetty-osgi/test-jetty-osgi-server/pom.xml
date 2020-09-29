@@ -8,9 +8,9 @@
   <artifactId>test-jetty-osgi-server</artifactId>
   <name>Jetty :: OSGi :: Server</name>
   <description>Test Jetty OSGi bundle with a Server</description>
-<properties>
-  <bundle-symbolic-name>${project.groupId}.testserver</bundle-symbolic-name>
-</properties>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.testserver</bundle-symbolic-name>
+  </properties>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

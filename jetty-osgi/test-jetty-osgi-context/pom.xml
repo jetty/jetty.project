@@ -8,9 +8,9 @@
   <artifactId>test-jetty-osgi-context</artifactId>
   <name>Jetty :: OSGi :: Test Context</name>
   <description>Test Jetty OSGi bundle with a ContextHandler</description>
-<properties>
-  <bundle-symbolic-name>${project.groupId}.testcontext</bundle-symbolic-name>
-</properties>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.testcontext</bundle-symbolic-name>
+  </properties>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

@@ -8,9 +8,9 @@
   <artifactId>jetty-httpservice</artifactId>
   <name>Jetty :: OSGi :: HttpService</name>
   <description>Jetty OSGi HttpService bundle</description>
-<properties>
-  <bundle-symbolic-name>${project.groupId}.httpservice</bundle-symbolic-name>
-</properties>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.httpservice</bundle-symbolic-name>
+  </properties>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

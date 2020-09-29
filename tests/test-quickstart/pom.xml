@@ -11,9 +11,9 @@
   <artifactId>test-quickstart</artifactId>
   <name>Test :: Jetty Quick Start</name>
   <description>Jetty Quick Start Test</description>
-<properties>
-  <bundle-symbolic-name>${project.groupId}.tests.quickstart</bundle-symbolic-name>
-</properties>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.tests.quickstart</bundle-symbolic-name>
+  </properties>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

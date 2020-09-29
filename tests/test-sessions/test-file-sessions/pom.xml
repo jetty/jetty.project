@@ -8,9 +8,9 @@
   </parent>
   <artifactId>test-file-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: File</name>
-<properties>
-  <bundle-symbolic-name>${project.groupId}.sessions.file</bundle-symbolic-name>
-</properties>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.sessions.file</bundle-symbolic-name>
+  </properties>
   <build>
     <plugins>
       <plugin>

@@ -9,10 +9,10 @@
   <artifactId>jmx-webapp</artifactId>
   <packaging>war</packaging>
   <name>Jetty Tests :: JMX :: WebApp</name>
-<properties>
-  <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  <bundle-symbolic-name>${project.groupId}.jmx.webapp</bundle-symbolic-name>
-</properties>
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <bundle-symbolic-name>${project.groupId}.jmx.webapp</bundle-symbolic-name>
+  </properties>
   <dependencies>
     <dependency>
       <groupId>javax.servlet</groupId>

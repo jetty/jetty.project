@@ -9,7 +9,7 @@
   </parent>
   <artifactId>test-webapps-parent</artifactId>
   <name>Jetty Tests :: WebApps :: Parent</name>
-<packaging>pom</packaging>
+  <packaging>pom</packaging>
   <build>
     <plugins>
       <plugin>

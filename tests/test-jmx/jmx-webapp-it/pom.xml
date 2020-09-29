@@ -9,12 +9,12 @@
   <artifactId>jmx-webapp-it</artifactId>
   <packaging>jar</packaging>
   <name>Jetty Tests :: JMX :: WebApp Integration Tests</name>
-<properties>
-  <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-  <bundle-symbolic-name>${project.groupId}.jmx.webapp.it</bundle-symbolic-name>
-  <test-base-dir>${project.build.directory}/test-base</test-base-dir>
-</properties>
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <bundle-symbolic-name>${project.groupId}.jmx.webapp.it</bundle-symbolic-name>
+    <test-base-dir>${project.build.directory}/test-base</test-base-dir>
+  </properties>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
