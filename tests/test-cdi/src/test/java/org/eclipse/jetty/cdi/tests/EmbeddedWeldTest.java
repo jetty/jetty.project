@@ -20,24 +20,8 @@ package org.eclipse.jetty.cdi.tests;
 
 import java.io.File;
 import java.util.EnumSet;
-import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.spi.BeanManager;
-import javax.enterprise.inject.spi.InjectionPoint;
 
-import jakarta.inject.Inject;
-import jakarta.inject.Named;
 import jakarta.servlet.DispatcherType;
-import jakarta.servlet.Filter;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.FilterConfig;
-import jakarta.servlet.ServletContextEvent;
-import jakarta.servlet.ServletContextListener;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.cdi.CdiConfiguration;
 import org.eclipse.jetty.cdi.CdiDecoratingListener;
@@ -48,7 +32,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ListenerHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -98,8 +81,6 @@ public class EmbeddedWeldTest
         context.getServletHandler().addListener(new ListenerHolder(MyContextListener.class));
 
         // Setup Jetty weld integration
-        /*
-        TODO: uncomment when Weld 4 is used.
         switch (mode)
         {
             case "none": // Do nothing, let weld work it out.
@@ -152,8 +133,6 @@ public class EmbeddedWeldTest
                 context.addBean(new ServletContextHandler.Initializer(context, new org.jboss.weld.environment.servlet.EnhancedListener()));
                 break;
         }
-
-         */
 
         return server;
     }
@@ -217,8 +196,7 @@ public class EmbeddedWeldTest
 
         webapp.setInitParameter(org.eclipse.jetty.cdi.CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, org.eclipse.jetty.cdi.CdiDecoratingListener.MODE);
         webapp.addBean(new ServletContextHandler.Initializer(webapp, new org.eclipse.jetty.cdi.CdiServletContainerInitializer()));
-        // TODO: uncomment with Weld 4.
-        // webapp.addBean(new ServletContextHandler.Initializer(webapp, new org.jboss.weld.environment.servlet.EnhancedListener()));
+        webapp.addBean(new ServletContextHandler.Initializer(webapp, new org.jboss.weld.environment.servlet.EnhancedListener()));
 
         String pkg = EmbeddedWeldTest.class.getPackage().getName();
         webapp.getServerClassMatcher().add("-" + pkg + ".");
