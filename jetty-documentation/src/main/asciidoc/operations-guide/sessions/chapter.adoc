@@ -18,7 +18,6 @@
 
 [[og-sessions]]
 === HTTP Session Management
-http://
 
 HTTP sessions are a concept within the Servlet API which allow requests to store and retrieve information across the time a user spends in an application.
 Jetty offers a number of pluggable alternatives for managing and distributing/persisting sessions.

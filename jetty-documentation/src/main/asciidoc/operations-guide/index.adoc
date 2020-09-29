@@ -31,32 +31,4 @@ include::deploy/chapter.adoc[]
 include::protocols/chapter.adoc[]
 include::modules/chapter.adoc[]
 include::sessions/chapter.adoc[]
-
-// TODO: how jetty standalone work what start.jar does, command line options, modules, etc.
-// TODO: this is mostly in old_docs/startup.
-// TODO: [[quick-start-configure]]
-
-// TODO: list of modules, how to write a custom module, examples e.g. http2, etc.
-
-== OLD DOCUMENTATION
-
-include::old_docs/gettingstarted/introduction/chapter.adoc[]
-include::old_docs/gettingstarted/getting-started/chapter.adoc[]
-// TODO: how about other directories under old_docs/gettingstarted/?
-include::old_docs/startup/chapter.adoc[]
-include::old_docs/contexts/chapter.adoc[]
-include::old_docs/deploying/chapter.adoc[]
-include::old_docs/connectors/chapter.adoc[]
-include::old_docs/http2/chapter.adoc[]
-include::old_docs/logging/chapter.adoc[]
-include::old_docs/security/chapter.adoc[]
-include::old_docs/sessions/sessions.adoc[]
-include::old_docs/jsp/chapter.adoc[]
-include::old_docs/annotations/chapter.adoc[]
-include::old_docs/jmx/chapter.adoc[]
-include::old_docs/jndi/chapter.adoc[]
-include::old_docs/alpn/chapter.adoc[]
-include::old_docs/fastcgi/chapter.adoc[]
-include::old_docs/extras/chapter.adoc[]
-include::old_docs/runner/chapter.adoc[]
-include::old_docs/tuning/chapter.adoc[]
+include::xml/chapter.adoc[]

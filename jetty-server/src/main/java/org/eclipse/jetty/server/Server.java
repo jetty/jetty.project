@@ -387,7 +387,10 @@ public class Server extends HandlerWrapper implements Attributes
 
             LOG.info("jetty-{}; built: {}; git: {}; jvm {}", getVersion(), timestamp, gitHash, System.getProperty("java.runtime.version", System.getProperty("java.version")));
             if (!Jetty.STABLE)
+            {
                 LOG.warn("THIS IS NOT A STABLE RELEASE! DO NOT USE IN PRODUCTION!");
+                LOG.warn("Download a stable release from https://download.eclipse.org/jetty/");
+            }
 
             HttpGenerator.setJettyVersion(HttpConfiguration.SERVER_VERSION);
 

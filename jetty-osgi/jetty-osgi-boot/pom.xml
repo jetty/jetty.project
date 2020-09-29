@@ -8,7 +8,6 @@
   <artifactId>jetty-osgi-boot</artifactId>
   <name>Jetty :: OSGi :: Boot</name>
   <description>Jetty OSGi Boot bundle</description>
-  <url>http://www.eclipse.org/jetty</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.boot</bundle-symbolic-name>
   </properties>

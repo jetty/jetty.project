@@ -11,8 +11,6 @@
   <artifactId>websocket-parent</artifactId>
   <name>Jetty :: Websocket :: Parent</name>
   <packaging>pom</packaging>
-  <url>http://www.eclipse.org/jetty</url>
-
   <modules>
     <!-- WebSocket Core Implementation -->
     <module>websocket-core-common</module>
@@ -34,7 +32,6 @@
     <module>websocket-util</module>
     <module>websocket-util-server</module>
   </modules>
-
   <build>
     <plugins>
       <plugin>

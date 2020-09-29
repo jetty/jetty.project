@@ -74,7 +74,7 @@ Debug and Start Logging:
   --debug          Enable debug output of the startup procedure.
                    Note: this does not setup debug for Jetty itself.
                    If you want debug for Jetty, configure your logging.
-                   http://www.eclipse.org/jetty/documentation/
+                   https://www.eclipse.org/jetty/documentation/
 
   --start-log-file=<filename>
                    A filename, relative to ${jetty.base}, where all startup
@@ -270,4 +270,4 @@ Defaults:
     5) <jetty-dir>/start.d/*.ini
 
 For more information on startup, see the online documentation at
-    http://www.eclipse.org/jetty/documentation/
+    https://www.eclipse.org/jetty/documentation/

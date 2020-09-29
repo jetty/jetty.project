@@ -9,7 +9,6 @@
   <artifactId>jetty-annotations</artifactId>
   <name>Jetty :: Servlet Annotations</name>
   <description>Annotation support for deploying servlets in jetty.</description>
-
   <properties>
     <bundle-symbolic-name>${project.groupId}.annotations</bundle-symbolic-name>
   </properties>

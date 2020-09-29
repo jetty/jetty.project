@@ -188,8 +188,8 @@ public class DefaultHandler extends AbstractHandler
             }
 
             writer.append("</tbody></table><hr/>\n");
-            writer.append("<a href=\"http://eclipse.org/jetty\"><img alt=\"icon\" src=\"/favicon.ico\"/></a>&nbsp;");
-            writer.append("<a href=\"http://eclipse.org/jetty\">Powered by Eclipse Jetty:// Server</a><hr/>\n");
+            writer.append("<a href=\"https://eclipse.org/jetty\"><img alt=\"icon\" src=\"/favicon.ico\"/></a>&nbsp;");
+            writer.append("<a href=\"https://eclipse.org/jetty\">Powered by Eclipse Jetty:// Server</a><hr/>\n");
             writer.append("</body>\n</html>\n");
             writer.flush();
             byte[] content = outputStream.toByteArray();

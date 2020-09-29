@@ -9,7 +9,6 @@
   <groupId>org.eclipse.jetty.osgi</groupId>
   <artifactId>jetty-osgi-project</artifactId>
   <name>Jetty :: OSGi</name>
-  <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
 
   <properties>

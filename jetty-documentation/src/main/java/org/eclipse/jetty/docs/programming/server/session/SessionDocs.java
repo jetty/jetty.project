@@ -41,6 +41,7 @@ import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.webapp.WebAppContext;
 
+@SuppressWarnings("unused")
 public class SessionDocs
 {
     public void minimumDefaultSessionIdManager()
@@ -301,13 +302,11 @@ public class SessionDocs
         mongoSessionDataStoreFactory.setDbName("HttpSessions");
         mongoSessionDataStoreFactory.setCollectionName("JettySessions");
         
-        //either set the connectionString
-        mongoSessionDataStoreFactory.setConnectionString("mongodb:://localhost");
-        
-        /* or alternatively set the host and port
-         * mongoSessionDataStoreFactory.setHost("localhost");
-         * mongoSessionDatatStoreFactory.setPort(27017);
-         */
+        // Either set the connectionString
+        mongoSessionDataStoreFactory.setConnectionString("mongodb:://localhost:27017");
+        // or alternatively set the host and port.
+        mongoSessionDataStoreFactory.setHost("localhost");
+        mongoSessionDataStoreFactory.setPort(27017);
         //end::mongosdfactory[]
     }
 }

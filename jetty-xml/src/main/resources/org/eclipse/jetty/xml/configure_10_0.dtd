@@ -79,8 +79,8 @@ which act on the object returned by the get call.
 
 A Get with a class attribute is treated as a static get method or field.
 -->
-<!ELEMENT Get (Id?,Class?,(%CONFIG;)*) >
-<!ATTLIST Get %ID_ATTR; %CLASS_ATTR; %NAME_ATTR_REQUIRED; >
+<!ELEMENT Get (Id?,Name?,Class?,(%CONFIG;)*) >
+<!ATTLIST Get %ID_ATTR; %NAME_ATTR; %CLASS_ATTR; >
 
 
 <!--

@@ -125,8 +125,11 @@
     </Call>
   </Call>
 
-  <Get name="String">
-     <Call name="toString"/>
+  <Get>
+     <Name>String</Name>
+     <Call>
+       <Name>toString</Name>
+     </Call>
   </Get>
 
   <Call>

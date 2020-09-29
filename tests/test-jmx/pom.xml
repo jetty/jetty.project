@@ -9,7 +9,6 @@
   <artifactId>test-jmx-parent</artifactId>
   <packaging>pom</packaging>
   <name>Jetty Tests :: JMX Parent</name>
-  <url>http://www.eclipse.org/jetty</url>
   <modules>
     <module>jmx-webapp</module>
     <module>jmx-webapp-it</module>

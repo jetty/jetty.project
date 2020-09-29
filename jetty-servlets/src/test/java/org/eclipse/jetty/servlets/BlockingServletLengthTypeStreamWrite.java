@@ -39,7 +39,7 @@ import org.eclipse.jetty.server.handler.gzip.GzipHandler;
  *  4) write
  * </pre>
  *
- * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
+ * @see <a href="Eclipse Bug 354014">https://bugs.eclipse.org/354014</a>
  */
 @SuppressWarnings("serial")
 public class BlockingServletLengthTypeStreamWrite extends AbstractFileContentServlet

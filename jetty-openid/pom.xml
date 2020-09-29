@@ -9,7 +9,6 @@
   <artifactId>jetty-openid</artifactId>
   <name>Jetty :: OpenID</name>
   <description>Jetty OpenID Connect infrastructure</description>
-  <url>http://www.eclipse.org/jetty</url>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.openid</bundle-symbolic-name>
