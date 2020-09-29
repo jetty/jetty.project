@@ -40,33 +40,33 @@ If you have a standard web application, you can hot deploy it into Jetty by copy
 The demo-base/webapps directory contains the following deployable and auxiliary files:
 
 `ROOT/`::
-  A directory of static content that is deployed to the root context / due to it's name.
-  Contains the Jetty demo welcome page.
+A directory of static content that is deployed to the root context / due to it's name.
+Contains the Jetty demo welcome page.
 `test.d`::
-  A directory containing additional configuration files used by `test.xml` to inject extra configuration into `test.war`.
+A directory containing additional configuration files used by `test.xml` to inject extra configuration into `test.war`.
 `test.xml`::
-  A context configuration file that configures and deploys `test.war.`
-  The additional configuration includes the context path as well as setting additional descriptors found in the `test.d` directory.
+A context configuration file that configures and deploys `test.war.`
+The additional configuration includes the context path as well as setting additional descriptors found in the `test.d` directory.
 `test.war`::
-  The demonstration web application that is configured and deployed by `test.xml`.
+The demonstration web application that is configured and deployed by `test.xml`.
 `async-rest.war`::
-  A web application demonstration of asynchronous REST to eBay, automatically deployed to /async-rest based on the file name.
+A web application demonstration of asynchronous REST to eBay, automatically deployed to /async-rest based on the file name.
 `test-jaas.war`::
-  A demonstration web application utilizing link:#jaas-support[JAAS] for authentication.
+A demonstration web application utilizing link:#jaas-support[JAAS] for authentication.
 `test-jaas.xml`::
-  A context configuration file that configures `test-jaas.war`.
-  Additional configuration includes setting up the link:#configuring-login-service[LoginService] for authentication and authorization.
+A context configuration file that configures `test-jaas.war`.
+Additional configuration includes setting up the link:#configuring-login-service[LoginService] for authentication and authorization.
 `test-jndi.war`::
-  A demonstration web application showing the use of link:#jndi[JNDI].
+A demonstration web application showing the use of link:#jndi[JNDI].
 `test-jndi.xml`::
-  A context configuration file that configures `test-jndi.war`.
-  Additional configuration includes defining objects in the naming space that can be referenced from the webapp.
+A context configuration file that configures `test-jndi.war`.
+Additional configuration includes defining objects in the naming space that can be referenced from the webapp.
 `test-spec.war`::
-  A demonstration web application that shows the use of annotations, fragments, `ServletContainerInitializers` and other Servlet Specification 3.0/3.1 features.
+A demonstration web application that shows the use of annotations, fragments, `ServletContainerInitializers` and other Servlet Specification 3.0/3.1 features.
 `test-spec.xml`::
-  A context configuration file that configures `test-spec.war`.
-  Additional configuration includes setting up some objects in the naming space that can be referenced by annotations.
+A context configuration file that configures `test-spec.war`.
+Additional configuration includes setting up some objects in the naming space that can be referenced by annotations.
 `javadoc-proxy.war`::
-  A demonstration web application that uses a transparent proxy to serve the Jetty source link:{JDURL}/[Javadoc] from the http://www.eclipse.org/jetty[Eclipse Jetty website].
+A demonstration web application that uses a transparent proxy to serve the Jetty source link:{JDURL}/[Javadoc] from the https://www.eclipse.org/jetty/[Eclipse Jetty website].
 `example-moved.xml`::
-  A demonstration context configuration file that shows how to use the link:#moved-context-handler[`MovedContextHandler`] to redirect from one path to another.
+A demonstration context configuration file that shows how to use the link:#moved-context-handler[`MovedContextHandler`] to redirect from one path to another.
