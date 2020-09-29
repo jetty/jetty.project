@@ -29,7 +29,7 @@ After installing Jetty, you want to setup a xref:og-begin-arch-jetty-base[`$JETT
 [[og-begin-arch-modules]]
 ===== Eclipse Jetty Architecture: Modules
 
-The Jetty standalone server is made of xref:pg-arch-bean[components] that are assembled together, configured and started to provide different features.
+The Jetty standalone server is made of components that are assembled together, configured and started to provide different features.
 
 A Jetty _module_ is made of one or more components that work together to provide typically one feature, although they may provide more than one feature.
 

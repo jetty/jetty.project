@@ -36,6 +36,3 @@ ifdef::backend-html5[]
 :safe-mode-unsafe:
 :linkcss:
 endif::[]
-
-// TODO: remove this attribute once all documentation has been ported.
-:sub-order: attributes+

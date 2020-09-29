@@ -23,7 +23,6 @@ The `MongoSessionDataStore` supports persistence of `SessionData` in a nosql dat
 The best description for the document model for session information is found in the javadoc for the link:{JDURL}/org/eclipse/jetty/nosql/mongodb/MongoSessionDataStore.html[MongoSessionDataStore].
 In overview, it can be represented thus:
 
-
 [plantuml]
 ----
 database HttpSessions {
@@ -95,12 +94,13 @@ Let's look at an example of configuring a `MongoSessionDataStoreFactory`:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/session/SessionDocs.java[tags=mongosessiondatastorefactory]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/session/SessionDocs.java[tags=mongosdfactory]
 ----
 
-Here's an alternate example, configuring a `MongoSessionDataStore` directly:
+// TODO: the code example is missing.
+// Here's an alternate example, configuring a `MongoSessionDataStore` directly:
 
-[source,java,indent=0]
-----
-include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/session/SessionDocs.java[tags=mongosessiondatastore]
-----
+//[source,java,indent=0]
+//----
+//include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/session/SessionDocs.java[tags=mongosessiondatastore]
+//----

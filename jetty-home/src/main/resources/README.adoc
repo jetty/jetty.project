@@ -44,3 +44,10 @@ Point your browser at `+http://localhost:8080+` to see the web applications depl
 
 The Jetty server can be stopped with `ctrl-c` in the terminal window.
 // end::quick[]
+
+For more information about how to start Jetty, run this command (or go to the link:https://www.eclipse.org/jetty/documentation[documentation]):
+
+----
+$ java -jar $JETTY_HOME/start.jar --help
+----
+
