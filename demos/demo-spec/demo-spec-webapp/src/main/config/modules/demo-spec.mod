@@ -14,6 +14,7 @@ jsp
 annotations
 ext
 demo-realm
+demo-mock-resources
 
 [files]
 basehome:modules/demo.d/demo-spec.xml|webapps/demo-spec.xml
