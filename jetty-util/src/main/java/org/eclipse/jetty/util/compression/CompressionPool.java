@@ -125,4 +125,17 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
         }
         _numObjects.set(0);
     }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder str = new StringBuilder();
+        str.append(getClass().getSimpleName());
+        str.append('@').append(Integer.toHexString(hashCode()));
+        str.append('{').append(getState());
+        str.append(",size=").append(_pool == null ? -1 : _pool.size());
+        str.append(",capacity=").append(_capacity <= 0 ? "UNLIMITED" : _capacity);
+        str.append('}');
+        return str.toString();
+    }
 }

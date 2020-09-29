@@ -62,7 +62,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  * By setting the configuration element <b>waitForChild</b> to <b>false</b>, the plugin will terminate after having forked the jetty process. In this case
  * you can use the <b>jetty:stop</b> goal to terminate the process.
  * <p>
- * See <a href="http://www.eclipse.org/jetty/documentation/">http://www.eclipse.org/jetty/documentation</a> for more information on this and other jetty plugins.
+ * See <a href="https://www.eclipse.org/jetty/documentation/">https://www.eclipse.org/jetty/documentation</a> for more information on this and other jetty plugins.
  *
  * Runs Jetty in forked JVM on an unassembled webapp
  */

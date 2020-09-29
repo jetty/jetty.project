@@ -43,7 +43,7 @@ import static org.hamcrest.Matchers.not;
 /**
  * Test the GzipHandler support for Content-Length setting variations.
  *
- * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
+ * @see <a href="Eclipse Bug 354014">https://bugs.eclipse.org/354014</a>
  */
 @ExtendWith(WorkDirExtension.class)
 public class GzipContentLengthTest
@@ -204,7 +204,7 @@ public class GzipContentLengthTest
      * 4) outputStream.write()
      *
      * @throws Exception on test failure
-     * @see <a href="http://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
+     * @see <a href="https://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
      */
     @ParameterizedTest
     @MethodSource("scenarios")
@@ -221,7 +221,7 @@ public class GzipContentLengthTest
      * 4) outputStream.write()
      *
      * @throws Exception on test failure
-     * @see <a href="http://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
+     * @see <a href="https://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
      */
     @ParameterizedTest
     @MethodSource("scenarios")
@@ -238,7 +238,7 @@ public class GzipContentLengthTest
      * 4) outputStream.write()
      *
      * @throws Exception on test failure
-     * @see <a href="http://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
+     * @see <a href="https://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
      */
     @ParameterizedTest
     @MethodSource("scenarios")
@@ -255,7 +255,7 @@ public class GzipContentLengthTest
      * 4) outputStream.write() (with frequent response flush)
      *
      * @throws Exception on test failure
-     * @see <a href="http://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
+     * @see <a href="https://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
      */
     @ParameterizedTest
     @MethodSource("scenarios")
@@ -272,7 +272,7 @@ public class GzipContentLengthTest
      * 4) outputStream.write()
      *
      * @throws Exception on test failure
-     * @see <a href="http://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
+     * @see <a href="https://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
      */
     @ParameterizedTest
     @MethodSource("scenarios")
@@ -289,7 +289,7 @@ public class GzipContentLengthTest
      * 4) outputStream.write()
      *
      * @throws Exception on test failure
-     * @see <a href="http://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
+     * @see <a href="https://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
      */
     @ParameterizedTest
     @MethodSource("scenarios")
@@ -306,7 +306,7 @@ public class GzipContentLengthTest
      * 4) outputStream.write()
      *
      * @throws Exception on test failure
-     * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
+     * @see <a href="Eclipse Bug 354014">https://bugs.eclipse.org/354014</a>
      */
     @ParameterizedTest
     @MethodSource("scenarios")
@@ -326,7 +326,7 @@ public class GzipContentLengthTest
      * while also using GzipFilter
      *
      * @throws Exception on test failure
-     * @see <a href="http://bugs.eclipse.org/450873">Eclipse Bug 450873</a>
+     * @see <a href="https://bugs.eclipse.org/450873">Eclipse Bug 450873</a>
      */
     @ParameterizedTest
     @MethodSource("scenarios")

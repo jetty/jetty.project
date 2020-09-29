@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  * files. By default, the web.xml is generated to the console output only. Use the <b>effectiveWebXml</b> parameter
  * to provide a file name into which to save the output.
  *
- * See <a href="http://www.eclipse.org/jetty/documentation/">http://www.eclipse.org/jetty/documentation</a> for more information on this and other jetty plugins.
+ * See <a href="https://www.eclipse.org/jetty/documentation/">https://www.eclipse.org/jetty/documentation</a> for more information on this and other jetty plugins.
  *
  * Runs jetty on the unassembled webapp to generate the effective web.xml
  */

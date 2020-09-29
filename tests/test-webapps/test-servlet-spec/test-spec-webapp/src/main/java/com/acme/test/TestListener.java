@@ -19,6 +19,7 @@
 package com.acme.test;
 
 import java.util.EventListener;
+import java.util.logging.Logger;
 import javax.annotation.Resource;
 import javax.servlet.ServletContextAttributeEvent;
 import javax.servlet.ServletContextAttributeListener;
@@ -40,6 +41,8 @@ import javax.servlet.http.HttpSessionListener;
 @WebListener
 public class TestListener implements HttpSessionListener, HttpSessionAttributeListener, HttpSessionActivationListener, ServletContextListener, ServletContextAttributeListener, ServletRequestListener, ServletRequestAttributeListener
 {
+    private static final Logger LOG = Logger.getLogger(TestListener.class.getName());
+
     public static class NaughtyServletContextListener implements ServletContextListener
     {
 
@@ -85,31 +88,31 @@ public class TestListener implements HttpSessionListener, HttpSessionAttributeLi
     @Override
     public void attributeAdded(HttpSessionBindingEvent se)
     {
-        // System.err.println("attributedAdded "+se);
+        LOG.fine("attributeAdded " + se);
     }
 
     @Override
     public void attributeRemoved(HttpSessionBindingEvent se)
     {
-        // System.err.println("attributeRemoved "+se);
+        LOG.fine("attributeRemoved " + se);
     }
 
     @Override
     public void attributeReplaced(HttpSessionBindingEvent se)
     {
-        // System.err.println("attributeReplaced "+se);
+        LOG.fine("attributeReplaced " + se);
     }
 
     @Override
     public void sessionWillPassivate(HttpSessionEvent se)
     {
-        // System.err.println("sessionWillPassivate "+se);
+        LOG.fine("sessionWillPassivate " + se);
     }
 
     @Override
     public void sessionDidActivate(HttpSessionEvent se)
     {
-        // System.err.println("sessionDidActivate "+se);
+        LOG.fine("sessionDidActivate " + se);
     }
 
     @Override
@@ -165,84 +168,66 @@ public class TestListener implements HttpSessionListener, HttpSessionAttributeLi
     @Override
     public void contextDestroyed(ServletContextEvent sce)
     {
-        // System.err.println("contextDestroyed "+sce);
+        LOG.fine("contextDestroyed " + sce);
     }
 
     @Override
     public void attributeAdded(ServletContextAttributeEvent scab)
     {
-        // System.err.println("attributeAdded "+scab);
+        LOG.fine("attributeAdded " + scab);
     }
 
     @Override
     public void attributeRemoved(ServletContextAttributeEvent scab)
     {
-        // System.err.println("attributeRemoved "+scab);
+        LOG.fine("attributeRemoved " + scab);
     }
 
     @Override
     public void attributeReplaced(ServletContextAttributeEvent scab)
     {
-        // System.err.println("attributeReplaced "+scab);
+        LOG.fine("attributeReplaced " + scab);
     }
 
     @Override
     public void requestDestroyed(ServletRequestEvent sre)
     {
-        // System.err.println("requestDestroyed "+sre);
+        LOG.fine("requestDestroyed " + sre);
     }
 
     @Override
     public void requestInitialized(ServletRequestEvent sre)
     {
-        // System.err.println("requestInitialized "+sre);
+        LOG.fine("requestInitialized " + sre);
     }
 
     @Override
     public void attributeAdded(ServletRequestAttributeEvent srae)
     {
-        // System.err.println("attributeAdded "+srae);
+        LOG.fine("attributeAdded " + srae);
     }
 
     @Override
     public void attributeRemoved(ServletRequestAttributeEvent srae)
     {
-        // System.err.println("attributeRemoved "+srae);
+        LOG.fine("attributeRemoved " + srae);
     }
 
     @Override
     public void attributeReplaced(ServletRequestAttributeEvent srae)
     {
-        // System.err.println("attributeReplaced "+srae);
+        LOG.fine("attributeReplaced " + srae);
     }
 
     @Override
     public void sessionCreated(HttpSessionEvent se)
     {
-        // System.err.println("sessionCreated "+se);
+        LOG.fine("sessionCreated " + se);
     }
 
     @Override
     public void sessionDestroyed(HttpSessionEvent se)
     {
-        // System.err.println("sessionDestroyed "+se);
-    }
-
-    public void requestCompleted(ServletRequestEvent rre)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    public void requestResumed(ServletRequestEvent rre)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    public void requestSuspended(ServletRequestEvent rre)
-    {
-        // TODO Auto-generated method stub
-
+        LOG.fine("sessionDestroyed " + se);
     }
 }

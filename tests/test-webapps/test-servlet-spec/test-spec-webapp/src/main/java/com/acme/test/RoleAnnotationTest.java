@@ -32,7 +32,6 @@ import javax.servlet.http.HttpServletResponse;
  *
  * Use DeclareRolesAnnotations from within Jetty.
  */
-
 @DeclareRoles({"server-administrator", "user"})
 public class RoleAnnotationTest extends HttpServlet
 {
