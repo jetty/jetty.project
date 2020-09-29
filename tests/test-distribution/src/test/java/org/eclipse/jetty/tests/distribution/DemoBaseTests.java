@@ -151,6 +151,34 @@ public class DemoBaseTests extends AbstractDistributionTest
     }
 
     @Test
+    public void testJavadocProxy() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        DistributionTester distribution = DistributionTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(Paths.get("demo-base"))
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        int httpPort = distribution.freePort();
+        int httpsPort = distribution.freePort();
+        String[] args = {
+            "jetty.http.port=" + httpPort,
+            "jetty.httpConfig.port=" + httpsPort,
+            "jetty.ssl.port=" + httpsPort
+        };
+        try (DistributionTester.Run run = distribution.start(args))
+        {
+            assertTrue(run.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
+
+            startHttpClient();
+            ContentResponse response = client.GET("http://localhost:" + httpPort + "/proxy/current/");
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertThat("Expecting APIdoc contents", response.getContentAsString(), containsString("All&nbsp;Classes"));
+        }
+    }
+
+    @Test
     @DisabledOnJre(JRE.JAVA_8)
     public void testJPMS() throws Exception
     {
