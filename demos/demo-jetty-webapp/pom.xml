@@ -8,7 +8,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>demo-jetty-webapp</artifactId>
-  <name>Demo :: Jetty Test Webapp</name>
+  <name>Demo :: Jetty :: WebApp</name>
   <packaging>war</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.webapp</bundle-symbolic-name>
@@ -85,6 +85,45 @@
         </configuration>
       </plugin>
     </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-maven-plugin</artifactId>
+          <version>${project.version}</version>
+          <dependencies>
+            <dependency>
+              <groupId>org.eclipse.jetty</groupId>
+              <artifactId>jetty-client</artifactId>
+              <version>${project.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>org.eclipse.jetty</groupId>
+              <artifactId>jetty-servlets</artifactId>
+              <version>${project.version}</version>
+            </dependency>
+          </dependencies>
+          <configuration>
+            <stopPort>8087</stopPort>
+            <stopKey>foo</stopKey>
+            <scan>1</scan>
+            <systemProperties>
+              <fooprop>222</fooprop>
+            </systemProperties>
+            <webApp>
+              <contextPath>/test</contextPath>
+              <tempDirectory>${project.build.directory}/work</tempDirectory>
+            </webApp>
+            <loginServices>
+              <loginService implementation="org.eclipse.jetty.security.HashLoginService">
+                <name>Test Realm</name>
+                <config>src/test/resources/test-realm.properties</config>
+              </loginService>
+            </loginServices>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
   <dependencies>
     <dependency>

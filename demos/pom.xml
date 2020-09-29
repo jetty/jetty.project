@@ -9,7 +9,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.demos</groupId>
   <artifactId>demos-parent</artifactId>
-  <name>Jetty Demos :: Parent</name>
+  <name>Demos :: Parent</name>
   <packaging>pom</packaging>
 
   <properties>
@@ -22,8 +22,8 @@
     <module>demo-jndi-webapp</module>
     <module>demo-jetty-webapp</module>
     <module>demo-proxy-webapp</module>
-    <module>demo-spec-webapp</module>
     <module>demo-mock-resources</module>
+    <module>demo-spec</module>
     <module>embedded</module>
   </modules>
 </project>
