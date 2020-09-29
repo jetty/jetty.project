@@ -118,7 +118,7 @@
             <loginServices>
               <loginService implementation="org.eclipse.jetty.security.HashLoginService">
                 <name>Test Realm</name>
-                <config>../../jetty-home/src/main/resources/modules/demo.d/demo-realm.properties</config>
+                <config>src/test/resources/test-realm.properties</config>
               </loginService>
             </loginServices>
           </configuration>
