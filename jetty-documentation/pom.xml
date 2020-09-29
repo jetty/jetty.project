@@ -60,7 +60,7 @@
                 <toc>true</toc>
                 <revnumber>${project.version}</revnumber>
                 <JDURL>https://eclipse.org/jetty/javadoc/${javadoc.version}</JDURL>
-                <JXURL>http://download.eclipse.org/jetty/stable-9/xref</JXURL>
+                <JXURL>https://download.eclipse.org/jetty/stable-9/xref</JXURL>
                 <SRCDIR>${basedir}/..</SRCDIR>
                 <GITBROWSEURL>https://github.com/eclipse/jetty.project/tree/jetty-9.4.x</GITBROWSEURL>
                 <MVNCENTRAL>https://repo1.maven.org/maven2</MVNCENTRAL>
@@ -223,8 +223,8 @@
                     <allow-uri-read>true</allow-uri-read>
                     <toc>true</toc>
                     <revnumber>${project.version}</revnumber>
-                    <JDURL>http://download.eclipse.org/jetty/stable-9/apidocs</JDURL>
-                    <JXURL>http://download.eclipse.org/jetty/stable-9/xref</JXURL>
+                    <JDURL>https://download.eclipse.org/jetty/stable-9/apidocs</JDURL>
+                    <JXURL>https://download.eclipse.org/jetty/stable-9/xref</JXURL>
                     <SRCDIR>${basedir}/../jetty.project/</SRCDIR>
                     <GITBROWSEURL>https://github.com/eclipse/jetty.project/master</GITBROWSEURL>
                     <icons>font</icons>

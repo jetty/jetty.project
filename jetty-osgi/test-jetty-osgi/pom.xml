@@ -11,7 +11,7 @@
   <description>Jetty OSGi Integration test</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
-    <jetty-orbit-url>http://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
+    <jetty-orbit-url>https://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
     <exam.version>4.13.1</exam.version>
     <url.version>2.6.1</url.version>

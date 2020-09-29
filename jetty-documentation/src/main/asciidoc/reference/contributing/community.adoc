@@ -30,16 +30,16 @@ We have a number of options for people that wish to subscribe to our mailing lis
 
 * Jetty Developers List
 ** Join - https://dev.eclipse.org/mailman/listinfo/jetty-dev
-** Archives - http://dev.eclipse.org/mhonarc/lists/jetty-dev/
+** Archives - https://dev.eclipse.org/mhonarc/lists/jetty-dev/
 * Jetty Users List
 ** Join - https://dev.eclipse.org/mailman/listinfo/jetty-users
-** Archives - http://dev.eclipse.org/mhonarc/lists/jetty-users/
+** Archives - https://dev.eclipse.org/mhonarc/lists/jetty-users/
 * Jetty Announcements List
 ** Join - https://dev.eclipse.org/mailman/listinfo/jetty-announce
-** Archives - http://dev.eclipse.org/mhonarc/lists/jetty-announce/
+** Archives - https://dev.eclipse.org/mhonarc/lists/jetty-announce/
 * Jetty Commit List
 ** Join - https://dev.eclipse.org/mailman/listinfo/jetty-commit
-** Archives - http://dev.eclipse.org/mhonarc/lists/jetty-commit/
+** Archives - https://dev.eclipse.org/mhonarc/lists/jetty-commit/
 
 [[community-irc]]
 ==== Internet Relay Chat - IRC
@@ -48,5 +48,5 @@ Much of our conversations about Jetty occur on IRC in one location or another.
 Users are always welcome to come join our IRC channels and talk with us, other users, or just lurk.
 
 irc.freenode.org - #jetty::
-  Our primary location, we recommend that if your looking to find folks on IRC you try here.
-  We also have commit notifications coming to this channel on the bottom and top of the hour.
+Our primary location, we recommend that if your looking to find folks on IRC you try here.
+We also have commit notifications coming to this channel on the bottom and top of the hour.
