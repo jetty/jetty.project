@@ -396,8 +396,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.tests</groupId>
-      <artifactId>test-container-initializer</artifactId>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>demo-container-initializer</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -421,8 +421,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.tests</groupId>
-      <artifactId>test-mock-resources</artifactId>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>demo-mock-resources</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

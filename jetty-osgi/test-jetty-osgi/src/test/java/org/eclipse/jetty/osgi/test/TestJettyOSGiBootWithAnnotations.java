@@ -84,8 +84,8 @@ public class TestJettyOSGiBootWithAnnotations
     public static List<Option> annotationDependencies()
     {
         List<Option> res = new ArrayList<>();
-        res.add(mavenBundle().groupId("org.eclipse.jetty.tests").artifactId("test-container-initializer").versionAsInProject());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.tests").artifactId("test-mock-resources").versionAsInProject());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-container-initializer").versionAsInProject());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-mock-resources").versionAsInProject());
         //test webapp bundle
         res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-spec-webapp").classifier("webbundle").versionAsInProject());
         return res;

@@ -5,7 +5,7 @@
     <artifactId>demos-parent</artifactId>
     <version>11.0.0-SNAPSHOT</version>
   </parent>
-  <name>Demos :: WebApp :: Mock Resources</name>
+  <name>Demo :: Mock Resources</name>
   <artifactId>demo-mock-resources</artifactId>
   <packaging>jar</packaging>
   <properties>

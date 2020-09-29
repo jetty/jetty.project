@@ -812,6 +812,14 @@
     <!-- Demo Apps -->
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>demo-mock-resources</artifactId>
+      <version>${project.version}</version>
+      <classifier>config</classifier>
+      <type>jar</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>demo-jetty-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>config</classifier>
