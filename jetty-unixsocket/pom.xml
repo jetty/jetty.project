@@ -8,7 +8,6 @@
   <artifactId>jetty-unixsocket</artifactId>
   <name>Jetty :: UnixSocket</name>
   <description>Jetty UnixSocket</description>
-  <url>http://www.eclipse.org/jetty</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.unixsocket</bundle-symbolic-name>
   </properties>

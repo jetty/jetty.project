@@ -7,7 +7,6 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>infinispan-embedded-query</artifactId>
   <name>Jetty :: Infinispan Session Manager Embedded with Querying</name>
-  <url>http://www.eclipse.org/jetty</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.infinispan.embedded.query</bundle-symbolic-name>
   </properties>

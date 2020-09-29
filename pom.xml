@@ -14,7 +14,7 @@
   <properties>
     <compiler.source>1.8</compiler.source>
     <compiler.target>1.8</compiler.target>
-    <jetty.url>http://www.eclipse.org/jetty</jetty.url>
+    <jetty.url>https://eclipse.org/jetty</jetty.url>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build-support.version>1.4</build-support.version>
     <checkstyle.version>8.29</checkstyle.version>
@@ -74,7 +74,7 @@
     </license>
     <license>
       <name>Eclipse Public License - Version 1.0</name>
-      <url>http://www.eclipse.org/org/documents/epl-v10.php</url>
+      <url>https://www.eclipse.org/org/documents/epl-v10.php</url>
     </license>
   </licenses>
 
