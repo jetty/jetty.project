@@ -24,6 +24,7 @@ import jakarta.servlet.ServletContextAttributeListener;
 import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.ServletRequestAttributeListener;
 import jakarta.servlet.ServletRequestListener;
+import jakarta.servlet.annotation.WebListener;
 import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
@@ -81,6 +82,7 @@ public class WebListenerAnnotation extends DiscoveredAnnotation
                     ListenerHolder h = _context.getServletHandler().newListenerHolder(new Source(Source.Origin.ANNOTATION, clazz.getName()));
                     h.setHeldClass(clazz);
                     _context.getServletHandler().addListener(h);
+                    metaData.setOrigin(clazz.getName() + ".listener", clazz.getAnnotation(WebListener.class), clazz);
                 }
             }
             else
