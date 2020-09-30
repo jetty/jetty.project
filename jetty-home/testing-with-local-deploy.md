@@ -43,5 +43,5 @@ rm -rf $HOME/tmp/mybase/*
 cd $HOME/tmp/mybase
 mkdir $JLOCAL_REPO
 rm -rf $JLOCAL_REPO/*
-java -jar $JETTY_HOME/start.jar maven.local.repo=$JLOCAL_REPO/ maven.repo.uri=file://$JDEPLOY_REPO --add-module=demo
+java -jar $JETTY_HOME/start.jar maven.local.repo=$JLOCAL_REPO/ maven.repo.uri=file://$JDEPLOY_REPO/ --add-module=demo
 ```
