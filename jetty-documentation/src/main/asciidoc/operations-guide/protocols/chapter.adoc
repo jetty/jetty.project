@@ -38,6 +38,7 @@ $ java -jar $JETTY_HOME/start.jar --list-modules=connector
 
 include::protocols-http.adoc[]
 include::protocols-https.adoc[]
+include::protocols-http2.adoc[]
 include::protocols-ssl.adoc[]
 
 // TODO: old_docs/connectors/*.adoc

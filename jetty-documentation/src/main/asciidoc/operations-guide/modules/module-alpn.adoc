@@ -16,8 +16,15 @@
 // ========================================================================
 //
 
-[[http2]]
-== HTTP/2
+[[og-module-alpn]]
+==== Module `alpn`
 
-include::configuring-push.adoc[]
-include::configuring-haproxy.adoc[]
+The `alpn` module enables support for the ALPN negotiation mechanism of the TLS protocol.
+
+You can configure the list of application protocols negotiated by the ALPN mechanism, as well as the default protocol to use if the ALPN negotiation fails (for example, the client does not support ALPN).
+
+The module properties are:
+
+----
+include::{JETTY_HOME}/modules/alpn.mod[tags=documentation]
+----

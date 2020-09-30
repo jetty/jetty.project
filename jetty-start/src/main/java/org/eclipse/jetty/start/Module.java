@@ -375,7 +375,9 @@ public class Module implements Comparable<Module>
                         // for the [ini-template] section
                         if ("INI-TEMPLATE".equals(sectionType))
                         {
-                            _iniTemplate.add(line);
+                            // Exclude asciidoc tag lines used in documentation.
+                            if (!line.contains("tag::") && !line.contains("end::"))
+                                _iniTemplate.add(line);
                         }
                     }
                     else
