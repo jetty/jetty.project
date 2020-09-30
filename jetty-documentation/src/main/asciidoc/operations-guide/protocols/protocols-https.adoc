@@ -45,7 +45,7 @@ Then, the xref:og-module-https[`https` module] adds HTTP/1.1 as the protocol sec
 
 The `$JETTY_BASE` directory looks like this:
 
-[source,subs=verbatim]
+[source]
 ----
 $JETTY_BASE
 ├── resources
@@ -55,7 +55,7 @@ $JETTY_BASE
     └── ssl.ini
 ----
 
-Note that the keystore file is missing, because you have to provide one with the cryptographic material you want (read xref:og-ssl[this section] to create your own keystore).
+Note that the keystore file is missing, because you have to provide one with the cryptographic material you want (read xref:og-keystore[this section] to create your own keystore).
 You need to configure these two properties by editing `ssl.ini`:
 
 * `jetty.sslContext.keyStorePath`
@@ -64,7 +64,7 @@ You need to configure these two properties by editing `ssl.ini`:
 As a quick example, you can enable the xref:og-module-test-keystore[`test-keystore` module], that provides a keystore containing a self-signed certificate:
 
 ----
-$ java -jar $JETTY_HOME/start.jar --add-modules=ssl,https
+$ java -jar $JETTY_HOME/start.jar --add-modules=test-keystore
 ----
 ----
 INFO  : test-keystore   initialized in ${jetty.base}/start.d/test-keystore.ini
@@ -75,6 +75,7 @@ INFO  : Base directory was modified
 
 The `$JETTY_BASE` directory is now:
 
+[source,subs=quotes]
 ----
 ├── etc
 │   └── #test-keystore.p12#
@@ -100,3 +101,10 @@ $ java -jar $JETTY_HOME/start.jar
 ----
 
 Note how Jetty is listening on port `8443` for the secure HTTP/1.1 protocol.
+
+[WARNING]
+====
+If you point your browser at `+https://localhost:8443/+` you will get a warning from the browser about a "potential security risk ahead", or that "your connection is not private", or similar message depending on the browser.
+
+This is normal because the certificate contained in `test-keystore.p12` is self-signed -- and as such not signed by a recognized certificate authority -- and therefore browsers do not trust it.
+====

@@ -63,7 +63,7 @@ $ java -jar $JETTY_HOME/start.jar --add-module=server
 
 Now the `$JETTY_BASE` directory looks like this:
 
-[source,subs=quotes]
+[source]
 ----
 JETTY_BASE
 ├── resources

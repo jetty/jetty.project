@@ -1,7 +1,5 @@
-# DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
-
 [description]
-Enables the ALPN (Application Layer Protocol Negotiation) TLS extension.
+Enables the handling of the ALPN (Application Layer Protocol Negotiation) TLS extension.
 
 [tag]
 connector
@@ -20,11 +18,12 @@ lib/jetty-alpn-server-${jetty.version}.jar
 etc/jetty-alpn.xml
 
 [ini-template]
-## Overrides the order protocols are chosen by the server.
-## The default order is that specified by the order of the
-## modules declared in start.ini.
+# tag::documentation[]
+## Specifies the ordered list of application protocols supported by the server.
+## The default list is specified by the list of the protocol modules that have
+## been enabled, and the order is specified by the module dependencies.
 # jetty.alpn.protocols=h2,http/1.1
 
-## Specifies what protocol to use when negotiation fails.
+## Specifies the protocol to use when the ALPN negotiation fails.
 # jetty.alpn.defaultProtocol=http/1.1
-
+# end::documentation[]

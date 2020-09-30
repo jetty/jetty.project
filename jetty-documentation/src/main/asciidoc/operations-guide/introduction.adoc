@@ -30,6 +30,7 @@ If you are new to Eclipse Jetty, read xref:og-begin[here] to download, install, 
 If you know Eclipse Jetty already, jump to a feature:
 
 * xref:og-sessions[HTTP Session Caching and Clustering]
+* xref:og-protocols-http2[HTTP/2 Support]
 
 TODO
 
@@ -41,6 +42,8 @@ TODO
 
 * xref:og-protocols-http[Configure Clear-Text HTTP/1.1]
 * xref:og-protocols-https[Configure Secure HTTP/1.1 (https)]
+* xref:og-protocols-http2c[Configure Clear-Text HTTP/2]
+* xref:og-protocols-http2s[Configure Secure HTTP/2]
 
 TODO
 

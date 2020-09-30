@@ -16,8 +16,8 @@
 // ========================================================================
 //
 
-[[http2]]
-== HTTP/2
+[[og-keystore]]
+=== Configuring KeyStores
 
-include::configuring-push.adoc[]
-include::configuring-haproxy.adoc[]
+TODO
+// TODO: see old_docs/connectors/configuring-ssl.adoc
