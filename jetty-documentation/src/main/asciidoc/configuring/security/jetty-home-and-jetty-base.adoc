@@ -65,18 +65,20 @@ Adding modules in this way will append the associated module properties to the `
 ....
 [my-base]$ java -jar /home/user/jetty-distribution-{VERSION}/start.jar --add-to-start=http,https,deploy
 
-ssl             initialised in ${jetty.base}/start.ini (appended)
-ssl             enabled in     ${jetty.base}/start.ini
-DOWNLOAD: https://github.com/eclipse/jetty.project/raw/master/jetty-server/src/main/config/etc/keystore to etc/keystore
-server          initialised in ${jetty.base}/start.ini (appended)
-server          enabled in     ${jetty.base}/start.ini
-http            initialised in ${jetty.base}/start.ini (appended)
-http            enabled in     ${jetty.base}/start.ini
-server          enabled in     ${jetty.base}/start.ini
-deploy          initialised in ${jetty.base}/start.ini (appended)
-deploy          enabled in     ${jetty.base}/start.ini
-MKDIR: ${jetty.base}/webapps
-server          enabled in     ${jetty.base}/start.ini
+INFO  : webapp          transitively enabled, ini template available with --add-to-start=webapp
+INFO  : server          transitively enabled, ini template available with --add-to-start=server
+INFO  : security        transitively enabled
+INFO  : servlet         transitively enabled
+INFO  : http            initialized in ${jetty.base}/start.ini
+INFO  : https           initialized in ${jetty.base}/start.ini
+INFO  : threadpool      transitively enabled, ini template available with --add-to-start=threadpool
+INFO  : ssl             transitively enabled, ini template available with --add-to-start=ssl
+INFO  : bytebufferpool  transitively enabled, ini template available with --add-to-start=bytebufferpool
+INFO  : deploy          initialized in ${jetty.base}/start.ini
+MKDIR : ${jetty.base}/etc
+COPY  : ${jetty.home}/modules/ssl/keystore to ${jetty.base}/etc/keystore
+MKDIR : ${jetty.base}/webapps
+INFO  : Base directory was modified
 ....
 3.  Look at your directory.
 +
