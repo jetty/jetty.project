@@ -1512,6 +1512,9 @@ public class Request implements HttpServletRequest
             throw new IllegalStateException("No SessionManager");
 
         _session = _sessionHandler.newHttpSession(this);
+        if (_session == null)
+            throw new IllegalStateException("Create session failed");
+        
         HttpCookie cookie = _sessionHandler.getSessionCookie(_session, getContextPath(), isSecure());
         if (cookie != null)
             _channel.getResponse().replaceCookie(cookie);
