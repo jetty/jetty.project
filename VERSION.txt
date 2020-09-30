@@ -1,4 +1,51 @@
-jetty-9.4.32-SNAPSHOT
+jetty-9.4.32.v20200930 - 30 September 2020
+ + 2796 HTTP/2 max local stream count exceeded when request fails
+ + 3766 Introduce HTTP/2 API to batch frames
+ + 3916 multipart/byterange output is invalid to RFC7233
+ + 4809 Set a max number of requests per connection
+ + 4824 WebSocket server outgoing message queue memory growth
+ + 4888 Request getSession() method throws IllegalStateException when Session
+   exists
+ + 4954 Simplify ability to get Byte Counts about requests
+ + 5032 Introduce Listeners to aid in tracking timings within ServletContext
+   and WebApp
+ + 5079 :authority header for IPv6 address not having square brackets
+ + 5103 Proxy sets protocol version to 2.0 instead of 1.1 when accessed from H2
+   client
+ + 5104 AbstractProxyServlet include incorrect protocol version in Via header
+   when accessed over H2
+ + 5105 Graceful shutdown does not wait for resumed requests
+ + 5108 Improve SessionTracker scalability
+ + 5121 Add if (LOG.isDebugEnabled()) in CompressExtension.decompress
+ + 5122 Retrieving websocket connections via jmx
+ + 5129 No jars added when using a folder in extraClasspath of the webapp
+   context xml file
+ + 5147 Set MaxUsageCount with existing connection pool changing the behavior
+ + 5150 Zero connection timeout is not supported in HTTP client with
+   non-blocking connect
+ + 5152 HttpClient should handle unsolicited responses
+ + 5162 DecoratingListener raises a NullPointerException
+ + 5165 Wrong messagesIn count for HttpClient
+ + 5170 NullPointerException in HttpReceiverOverHTTP during WebSocket client
+   Upgrade
+ + 5185 Introduce DoSFilter Listener for Alert messages
+ + 5193 WebSocket unimplemented BINARY message handling can result in TEXT
+   message delivery to fail
+ + 5201 QueuedThreadPool setDetailedDump gives less detail
+ + 5204 SNI does not work with PKIX
+ + 5214 Servlet HEAD doesn't support content-length over Integer.MAX_VALUE
+ + 5217 Review RoundRobinConnectionPool
+ + 5224 HttpServletRequest.getServerName can include port when using
+   ForwardedRequestCustomizer
+ + 5233 Bad/Unsupported HTTP version should return 505 not 400
+ + 5246 GzipHandler's DeflaterPool should be dumpable
+ + 5247 Improve ForwardRequestCustomizer authority priority
+ + 5268 WARN Ignoring eviction setting: 0
+ + 5285 Per RFC7694, if a Content-Encoding isn't recognized, reject with 415
+   Unsupported Media Type
+ + 5362 Default ProxyServlet cannot proxy to https urls
+ + 5365 org.eclipse.jetty.server.Request throws NullPointerException if
+   SessionHandler newHttpSession returns null
 
 jetty-9.4.31.v20200723 - 23 July 2020
  + 1100 JSR356 Encoder#init is not called when created on demand
