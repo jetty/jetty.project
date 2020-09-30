@@ -154,6 +154,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             mapping = new ServletMapping(source);
             mapping.setServletName(holder.getName());
             mapping.setPathSpecs(LazyList.toStringArray(urlPatternList));
+            _context.getMetaData().setOrigin(servletName + ".servlet.mapping." + mapping.hashCode(), annotation, clazz);
         }
         else
         {
@@ -190,6 +191,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
                 mapping = new ServletMapping(new Source(Source.Origin.ANNOTATION, clazz.getName()));
                 mapping.setServletName(servletName);
                 mapping.setPathSpecs(LazyList.toStringArray(urlPatternList));
+                _context.getMetaData().setOrigin(servletName + ".servlet.mapping." + mapping.hashCode(), annotation, clazz);
             }
         }
 
@@ -228,7 +230,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
                             LOG.debug("Removed path {} from mapping {} from defaults descriptor ", p, existingMapping);
                     }
                 }
-                _context.getMetaData().setOrigin(servletName + ".servlet.mapping." + p, annotation, clazz);
+                _context.getMetaData().setOrigin(servletName + ".servlet.mapping.url" + p, annotation, clazz);
             }
             allMappings.add(mapping);
             _context.getServletHandler().setServletMappings(allMappings.toArray(new ServletMapping[allMappings.size()]));
