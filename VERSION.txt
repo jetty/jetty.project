@@ -1,3 +1,5 @@
+jetty-9.4.33-SNAPSHOT
+
 jetty-9.4.32.v20200930 - 30 September 2020
  + 2796 HTTP/2 max local stream count exceeded when request fails
  + 3766 Introduce HTTP/2 API to batch frames
