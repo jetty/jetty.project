@@ -89,7 +89,7 @@ public class AsyncListenerServlet extends HttpServlet
 
         PrintWriter writer = resp.getWriter();
         writer.println("<html>");
-        writer.println("<HEAD><link rel=\"stylesheet\" type=\"text/css\"  href=\"../stylesheet.css\"/></HEAD>");
+        writer.println("<head><link rel=\"stylesheet\" type=\"text/css\"  href=\"../stylesheet.css\"/></head>");
         writer.println("<body>");
         writer.println("<h1>AsyncListener</h2>");
         writer.println("<pre>");

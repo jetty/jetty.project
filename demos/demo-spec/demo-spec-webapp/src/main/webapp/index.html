@@ -1,33 +1,36 @@
-<HTML>
-  <HEAD>
-    <TITLE>Test Specification WebApp</TITLE>
-    <META http-equiv="Pragma" content="no-cache">
-    <META http-equiv="Cache-Control" content="no-cache,no-store">
+<html>
+<head>
+    <title>Test Specification WebApp</title>
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Cache-Control" content="no-cache,no-store">
     <link rel="stylesheet" type="text/css" href="stylesheet.css"/>
-  </HEAD>
-<BODY >
-  <A HREF="https://www.eclipse.org/jetty/"><IMG SRC="images/jetty_banner.gif"></A>
-  <br/>
-  <b><a href="http://localhost:8080/">Demo Home</a></b>
-  <hr/>
-  <center><span style="color:red; font-variant:small-caps; font-weight:bold">Test Web Application Only - Do NOT Deploy in Production</span> </center>
+</head>
+<body>
+<a href="https://www.eclipse.org/jetty/"><img src="images/jetty_banner.gif"></A>
+<br/>
+<b><a href="http://localhost:8080/">Demo Home</a></b>
+<hr/>
+<center><span style="color:red; font-variant:small-caps; font-weight:bold">Demo Web Application Only - Do NOT Deploy in Production</span>
+</center>
 
-<h1>Servlet 3.0/3.1/4.0 Test WebApp</h1>
+<h1>Servlet 4.0 Demo WebApp</h1>
 
 <p>
-This example tests some aspects of the servlet specification:<ul>
-<li>context defaults
-<li>servlet annotations
-<li>web-fragments
-<li>servlet container initializers
-<li>multi-part upload support
+    This example tests some aspects of the servlet specification:
+<ul>
+    <li>context defaults</li>
+    <li>servlet annotations</li>
+    <li>web-fragments</li>
+    <li>servlet container initializers</li>
+    <li>multi-part upload support</li>
 </ul>
-The source repository for this test is available <a href="https://github.com/eclipse/jetty.project/blob/master/tests/test-webapps/test-servlet-spec">here</a>.
+The source repository for this test is available
+<a href="https://github.com/eclipse/jetty.project/tree/jetty-10.0.x/demos/demo-spec/demo-spec-webapp">here</a>.
 </p>
 
 <h3>Test Defaults, Annotations, Fragments and Initializers</h3>
 <form action="test" method="post">
-  <button type="submit">Test</button>
+    <button type="submit">Test</button>
 </form>
 
 <h3>Test Dynamically Added Jsp File</h3>
@@ -54,14 +57,14 @@ The source repository for this test is available <a href="https://github.com/ecl
   <button type="submit">Test ServletSecurity Annotation</button>
 </form>
 
-<h3>Test Servlet 3.0 Multipart Mime</h3>
+<h3>Test Servlet Multipart Mime</h3>
 Test of the annotation:
 <pre>
 @MultipartConfig(location="foo/bar", maxFileSize=10240, maxRequestSize=-1, fileSizeThreshold=2048)
 </pre>
-<form ENCTYPE="multipart/form-data" ACTION="multi" METHOD=POST>
-    File to upload: <INPUT NAME="userfile1" TYPE="file">
- <input TYPE="submit" VALUE="Test Upload">
+<form enctype="multipart/form-data" action="multi" method=POST>
+    File to upload: <input name="userfile1" type="file">
+    <input type="submit" value="Test Upload">
 </form>
 
 <h3>AsyncListener Resource Injection</h3>
@@ -75,9 +78,9 @@ Test of the annotation:
 <a href="classloader">ClassPathServlet</a>
 
 <div style="text-align: center;">
-  <hr/>
+    <hr/>
     <a href="https://www.eclipse.org/jetty/"><img style="border:0" src="images/small_powered_by.gif"/></a>
 </div>
 
-</BODY>
-</HTML>
+</body>
+</html>

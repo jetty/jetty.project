@@ -55,7 +55,7 @@ public class MultiPartTest extends HttpServlet
             response.setContentType("text/html");
             ServletOutputStream out = response.getOutputStream();
             out.println("<html>");
-            out.println("<HEAD><link rel=\"stylesheet\" type=\"text/css\"  href=\"stylesheet.css\"/></HEAD>");
+            out.println("<head><link rel=\"stylesheet\" type=\"text/css\"  href=\"stylesheet.css\"/></head>");
             out.println("<body>");
             out.println("<h1>Results</h1>");
             out.println("<p>");
