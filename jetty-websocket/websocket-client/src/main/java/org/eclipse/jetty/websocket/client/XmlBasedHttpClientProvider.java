@@ -34,7 +34,11 @@ class XmlBasedHttpClientProvider
 
     public static HttpClient get(@SuppressWarnings("unused") WebSocketContainerScope scope)
     {
-        URL resource = Thread.currentThread().getContextClassLoader().getResource("jetty-websocket-httpclient.xml");
+        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+        if (contextClassLoader == null)
+            return null;
+
+        URL resource = contextClassLoader.getResource("jetty-websocket-httpclient.xml");
         if (resource == null)
             return null;
 
