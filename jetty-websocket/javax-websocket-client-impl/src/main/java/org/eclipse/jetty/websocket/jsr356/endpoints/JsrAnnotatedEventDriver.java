@@ -118,10 +118,8 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
                 if (LOG.isDebugEnabled())
                     LOG.debug("Binary Message InputStream");
 
-                final MessageInputStream stream = new MessageInputStream(session);
+                MessageInputStream stream = new MessageInputStream(session);
                 activeMessage = stream;
-
-                // Always dispatch streaming read to another thread.
                 dispatch(() ->
                 {
                     try
@@ -329,11 +327,8 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
                 if (LOG.isDebugEnabled())
                     LOG.debug("Text Message Writer");
 
-                MessageInputStream inputStream = new MessageInputStream(session);
-                final MessageReader reader = new MessageReader(inputStream);
-                activeMessage = inputStream;
-
-                // Always dispatch streaming read to another thread.
+                MessageReader reader = new MessageReader(session);
+                activeMessage = reader;
                 dispatch(() ->
                 {
                     try
@@ -343,9 +338,10 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
                     catch (Throwable e)
                     {
                         session.close(e);
+                        return;
                     }
 
-                    inputStream.close();
+                    reader.handlerComplete();
                 });
             }
         }
