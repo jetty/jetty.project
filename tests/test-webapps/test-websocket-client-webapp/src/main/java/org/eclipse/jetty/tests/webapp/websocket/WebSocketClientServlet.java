@@ -28,7 +28,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -48,9 +47,10 @@ public class WebSocketClientServlet extends HttpServlet
         try
         {
             client = new WebSocketClient();
-            LifeCycle.start(client);
+            WebSocketClient finalClient = client;
+            runThrowExceptionsAsRuntime(() -> finalClient.start());
             resp.setContentType("text/html");
-            resp.getWriter().println("ConnectTimeout: " + client.getHttpClient().getConnectTimeout());
+            //resp.getWriter().println("ConnectTimeout: " + client.getHttpClient().getConnectTimeout());
 
             ClientSocket clientSocket = new ClientSocket();
             URI wsUri = WSURI.toWebsocket(req.getRequestURL()).resolve("echo");
@@ -70,7 +70,28 @@ public class WebSocketClientServlet extends HttpServlet
         }
         finally
         {
-            LifeCycle.stop(client);
+            if (client != null)
+            {
+                WebSocketClient finalClient = client;
+                runThrowExceptionsAsRuntime(() -> finalClient.stop());
+            }
+        }
+    }
+
+    public interface ThrowingRunnable
+    {
+        void run() throws Exception;
+    }
+
+    public void runThrowExceptionsAsRuntime(ThrowingRunnable runnable)
+    {
+        try
+        {
+            runnable.run();
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
         }
     }
 

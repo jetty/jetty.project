@@ -18,30 +18,37 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import java.lang.reflect.Method;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
 public final class HttpClientProvider
 {
     public static HttpClient get(WebSocketContainerScope scope)
     {
+        Logger logger = Log.getLogger(HttpClientProvider.class);
+
+        // Try to load a HttpClient from a jetty-websocket-httpclient.xml configuration file.
+        // If WebAppClassLoader run with server class access, otherwise run normally.
         try
         {
-            if (Class.forName("org.eclipse.jetty.xml.XmlConfiguration") != null)
+            try
             {
-                Class<?> xmlClazz = Class.forName("org.eclipse.jetty.websocket.client.XmlBasedHttpClientProvider");
-                Method getMethod = xmlClazz.getMethod("get", WebSocketContainerScope.class);
-                Object ret = getMethod.invoke(null, scope);
-                if (ret instanceof HttpClient)
-                    return (HttpClient)ret;
+                return WebAppClassLoader.runWithServerClassAccess(() -> XmlBasedHttpClientProvider.get(scope));
+            }
+            catch (NoClassDefFoundError | ClassNotFoundException e)
+            {
+                if (logger.isDebugEnabled())
+                    logger.debug("Could not use WebAppClassLoader to run with Server class access", e);
+                return XmlBasedHttpClientProvider.get(scope);
             }
         }
         catch (Throwable t)
         {
-            Log.getLogger(HttpClientProvider.class).ignore(t);
+            if (logger.isDebugEnabled())
+                logger.debug("Failure to load HttpClient from XML", t);
         }
 
         return DefaultHttpClientProvider.newHttpClient(scope);
