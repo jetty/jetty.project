@@ -23,6 +23,7 @@ import java.util.zip.Deflater;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.compression.CompressionPool;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
@@ -31,7 +32,7 @@ import org.eclipse.jetty.util.compression.InflaterPool;
  * A collection of components which are the resources needed for websockets such as
  * {@link ByteBufferPool}, {@link WebSocketExtensionRegistry}, and {@link DecoratedObjectFactory}.
  */
-public class WebSocketComponents
+public class WebSocketComponents extends ContainerLifeCycle
 {
     private final DecoratedObjectFactory objectFactory;
     private final WebSocketExtensionRegistry extensionRegistry;
@@ -41,19 +42,20 @@ public class WebSocketComponents
 
     public WebSocketComponents()
     {
-        this(new WebSocketExtensionRegistry(), new DecoratedObjectFactory(), new MappedByteBufferPool(),
-            new InflaterPool(CompressionPool.DEFAULT_CAPACITY, true),
-            new DeflaterPool(CompressionPool.DEFAULT_CAPACITY, Deflater.DEFAULT_COMPRESSION, true));
+        this(null, null, null, null, null);
     }
 
     public WebSocketComponents(WebSocketExtensionRegistry extensionRegistry, DecoratedObjectFactory objectFactory,
                                ByteBufferPool bufferPool, InflaterPool inflaterPool, DeflaterPool deflaterPool)
     {
-        this.extensionRegistry = extensionRegistry;
-        this.objectFactory = objectFactory;
-        this.bufferPool = bufferPool;
-        this.deflaterPool = deflaterPool;
-        this.inflaterPool = inflaterPool;
+        this.extensionRegistry = (extensionRegistry == null) ? new WebSocketExtensionRegistry() : extensionRegistry;
+        this.objectFactory = (objectFactory == null) ? new DecoratedObjectFactory() : objectFactory;
+        this.bufferPool = (bufferPool == null) ? new MappedByteBufferPool() : bufferPool;
+        this.inflaterPool = (inflaterPool == null) ? new InflaterPool(CompressionPool.DEFAULT_CAPACITY, true) : inflaterPool;
+        this.deflaterPool = (deflaterPool == null) ? new DeflaterPool(CompressionPool.DEFAULT_CAPACITY, Deflater.DEFAULT_COMPRESSION, true) : deflaterPool;
+
+        addBean(inflaterPool);
+        addBean(deflaterPool);
     }
 
     public ByteBufferPool getBufferPool()
