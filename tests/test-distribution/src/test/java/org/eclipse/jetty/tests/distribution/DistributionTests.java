@@ -309,10 +309,8 @@ public class DistributionTests extends AbstractDistributionTest
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"", "--jpms"})
-    @DisabledOnJre({JRE.JAVA_14, JRE.JAVA_15})
-    public void testWebsocketClientInWebapp(String arg) throws Exception
+    @Test
+    public void testWebsocketClientInWebapp() throws Exception
     {
         Path jettyBase = Files.createTempDirectory("jetty_base");
         String jettyVersion = System.getProperty("jettyVersion");
@@ -337,7 +335,6 @@ public class DistributionTests extends AbstractDistributionTest
 
             int port = distribution.freePort();
             String[] args2 = {
-                arg,
                 "jetty.http.port=" + port,
                 // "jetty.server.dumpAfterStart=true",
                 // "jetty.webapp.addSystemClasses+=,org.eclipse.jetty.client.",
