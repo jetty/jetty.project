@@ -151,6 +151,7 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
     # This is equivalent to 'mvn release:prepare'
     if proceedyn "Update project.versions for $VER_RELEASE? (Y/n)" y; then
         mvn org.codehaus.mojo:versions-maven-plugin:2.7:set \
+            -Peclipse-release \
             -DoldVersion="$VER_CURRENT" \
             -DnewVersion="$VER_RELEASE" \
             -DprocessAllModules=true 
@@ -167,8 +168,7 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
     # This is equivalent to 'mvn release:perform'
     if proceedyn "Build/Deploy from tag $TAG_NAME? (Y/n)" y; then
         git checkout $TAG_NAME
-        mvn clean package deploy \
-            -Peclipse-release $DEPLOY_OPTS
+        mvn clean deploy -Peclipse-release $DEPLOY_OPTS
         reportMavenTestFailures
         git checkout $GIT_BRANCH_ID
     fi
@@ -180,6 +180,7 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
         cat VERSION.txt.backup >> VERSION.txt
         echo "Update project.versions for $VER_NEXT"
         mvn org.codehaus.mojo:versions-maven-plugin:2.7:set \
+            -Peclipse-release \
             -DoldVersion="$VER_RELEASE" \
             -DnewVersion="$VER_NEXT" \
             -DprocessAllModules=true 
