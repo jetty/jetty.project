@@ -1349,12 +1349,12 @@
             </executions>
           </plugin>
           <plugin>
+            <inherited>true</inherited>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-javadoc-plugin</artifactId>
             <executions>
               <execution>
                 <id>attach-javadoc-jar</id>
-                <phase>package</phase>
                 <goals>
                   <goal>jar</goal>
                 </goals>
