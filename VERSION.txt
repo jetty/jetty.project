@@ -35,6 +35,106 @@ jetty-11.0.0.beta1 - 10 July 2020
 
 jetty-11.0.0-alpha0 - 30 May 2020
 
+jetty-10.0.0.beta2 - 02 October 2020
+ + 1337 MultiPart Part.write(String fileName) - Write method used unexpected
+   path
+ + 1761 Make GzipHandler module more configurable
+ + 2609 Make finding orphaned expired sessions common across SessionDataStores
+ + 2796 HTTP/2 max local stream count exceeded when request fails
+ + 3766 Introduce HTTP/2 API to batch frames
+ + 3916 multipart/byterange output is invalid to RFC7233
+ + 4430 Duplicate generation of servlets/filters/listeners from context xml
+   with quickstart
+ + 4572 Replace Jetty Logging with slf4j
+ + 4736 Update Import-Package version start ranges
+ + 4808 Review HttpClient Request header APIs
+ + 4809 Set a max number of requests per connection
+ + 4824 WebSocket server outgoing message queue memory growth
+ + 4888 Request getSession() method throws IllegalStateException when Session
+   exists
+ + 4919 websocket container stop ordering
+ + 4954 Simplify ability to get Byte Counts about requests
+ + 4985 Fix NPE related to use of Attributes.Wrapper getAttributeNameSet()
+ + 4988 The check for whether a mime type is gzipable modifies (lower-cases)
+   the content type
+ + 4996 Warning log printed when debug is enabled in AbstractLifecycle.java
+ + 5013 Bundle-ClassPath and lib place on WEB-INF/lib make classpath duplicate
+ + 5018 WebSocketClient connect / upgrade timeout not configurable
+ + 5019 Automatically hot-reload SSL certificates if keystore file changed
+ + 5020 LifeCycle.Listener not called for Filter/Servlet/Listener lifecycle
+   events
+ + 5025 dispatcher.include() with welcome files lead to stack overflow error
+ + 5029 Open redirect when sending custom Host header to URL with no trailing
+   forward-slash
+ + 5032 Introduce Listeners to aid in tracking timings within ServletContext
+   and WebApp
+ + 5043 WebSocketListener anonymous classes should be invocable
+ + 5044 Jetty WebSocket UpgradeRequest & UpgradeResponse types in Jetty 10
+ + 5053 CWE-331 in DigestAuthentication class
+ + 5057 `javax.servlet.include.context_path` attribute on root context. should
+   be empty string, but is `"/"`
+ + 5064 NotSerializableException for OpenIdConfiguration
+ + 5069 HttpClientTimeoutTests can occasionally fail due to unreachable network
+ + 5079 :authority header for IPv6 address not having square brackets 
+ + 5081 Review HouseKeeper locking
+ + 5083 Convert synchronized usages to AutoLock
+ + 5096 using JettyWebSocketServlet without having a WebSocketUpgradeFilter
+ + 5103 Proxy sets protocol version to 2.0 instead of 1.1 when accessed from H2
+   client
+ + 5104 AbstractProxyServlet include incorrect protocol version in Via header
+   when accessed over H2
+ + 5105 Graceful shutdown does not wait for resumed requests
+ + 5108 Improve SessionTracker scalability
+ + 5122 Retrieving websocket connections via jmx
+ + 5129 No jars added when using a folder in extraClasspath of the webapp
+   context xml file
+ + 5133 Improve ResourceFactory and Resource list handling
+ + 5137 WebAppContext Tests need cleanup
+ + 5147 Set MaxUsageCount with existing connection pool changing the behavior
+ + 5150 Zero connection timeout is not supported in HTTP client with
+   non-blocking connect
+ + 5152 HttpClient should handle unsolicited responses
+ + 5162 DecoratingListener raises a NullPointerException
+ + 5165 Wrong messagesIn count for HttpClient
+ + 5170 NullPointerException in HttpReceiverOverHTTP during WebSocket client
+   Upgrade
+ + 5171 GzipHandler Vary head should be configurable
+ + 5174 Remove jetty-distribution in favor of jetty-home
+ + 5178 Update to asm 8.0.1
+ + 5185 Introduce DoSFilter Listener for Alert messages
+ + 5193 WebSocket unimplemented BINARY message handling can result in TEXT
+   message delivery to fail
+ + 5198 Update GzipHandler
+ + 5201 QueuedThreadPool setDetailedDump gives less detail
+ + 5204 SNI does not work with PKIX
+ + 5214 Servlet HEAD doesn't support content-length over Integer.MAX_VALUE
+ + 5217 Review RoundRobinConnectionPool
+ + 5224 HttpServletRequest.getServerName can include port when using
+   ForwardedRequestCustomizer
+ + 5233 Bad/Unsupported HTTP version should return 505 not 400
+ + 5246 GzipHandler's DeflaterPool should be dumpable
+ + 5247 Improve ForwardRequestCustomizer authority priority
+ + 5254 Short list of Jetty modules
+ + 5256 Cleanup Jetty 10 Start
+ + 5263 Introduce jetty-home contamination warning
+ + 5264 Create demo module
+ + 5268 WARN Ignoring eviction setting: 0
+ + 5280 Remove unused methods on SessionHandler
+ + 5285 Per RFC7694, if a Content-Encoding isn't recognized, reject with 415
+   Unsupported Media Type
+ + 5304 HTTP/2 with HttpServletRequest.getHeader("Host") returns null on Jetty
+   10, but a valid value on Jetty 9
+ + 5316 Review <Map> element in Jetty XML
+ + 5317 Remove jetty-all from Jetty 10
+ + 5321 javadoc:aggregate-jar broken in Jetty 10
+ + 5324 Jetty XML <Get> should support nested elements
+ + 5327 NPE from jetty test webapp
+ + 5357 Update http://eclipse.org to https://eclipse.org in source
+ + 5360 demo-spec module incorrectly depends on demo-jndi
+ + 5362 Default ProxyServlet cannot proxy to https urls
+ + 5365 org.eclipse.jetty.server.Request throws NullPointerException if
+   SessionHandler newHttpSession returns null
+
 jetty-10.0.0.beta1 - 10 July 2020
  + 1100 JSR356 Encoder#init is not called when created on demand
  + 2540 Flaky test: org.eclipse.jetty.client.ConnectionPoolTest
@@ -49,7 +149,7 @@ jetty-10.0.0.beta1 - 10 July 2020
    SETTINGS Frame.
  + 4903 Give better errors for non public Websocket Endpoints
  + 4904 WebsocketClient creates more connections than needed
- + 4907
+ + 4907 
    org.eclipse.jetty.websocket.tests.SuspendResumeTest#testSuspendAfterClose
  + 4913 DirectoryNotEmptyException when using mvn jetty:run-distro
  + 4920 Restore ability to delete sessions on stop
@@ -82,7 +182,7 @@ jetty-9.4.32.v20200930 - 30 September 2020
  + 4954 Simplify ability to get Byte Counts about requests
  + 5032 Introduce Listeners to aid in tracking timings within ServletContext
    and WebApp
- + 5079 :authority header for IPv6 address not having square brackets
+ + 5079 authority header for IPv6 address not having square brackets
  + 5103 Proxy sets protocol version to 2.0 instead of 1.1 when accessed from H2
    client
  + 5104 AbstractProxyServlet include incorrect protocol version in Via header
