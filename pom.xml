@@ -28,7 +28,7 @@
     <infinispan.version>9.4.8.Final</infinispan.version>
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <conscrypt.version>2.4.0</conscrypt.version>
-    <asm.version>7.3.1</asm.version>
+    <asm.version>9.0</asm.version>
     <jmh.version>1.21</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <tycho-version>1.4.0</tycho-version>
