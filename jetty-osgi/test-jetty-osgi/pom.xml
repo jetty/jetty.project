@@ -15,7 +15,7 @@
     <assembly-directory>target/distribution</assembly-directory>
     <pax.exam.version>4.13.1</pax.exam.version>
     <pax.url.version>2.6.1</pax.url.version>
-    <injection.bundle.version>1.0</injection.bundle.version>
+    <injection.bundle.version>1.2</injection.bundle.version>
   </properties>
   <dependencies>
     <!-- Pax Exam Dependencies -->
