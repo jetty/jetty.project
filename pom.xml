@@ -33,7 +33,7 @@
     <transaction-api.version>2.0.0-RC1</transaction-api.version>
     <mail-api.version>2.0.0-RC4</mail-api.version>
     <inject-api.version>2.0.0-RC4</inject-api.version>
-    <infinispan.version>9.4.8.Final</infinispan.version>
+    <infinispan.version>11.0.4.Final</infinispan.version>
     <hazelcast.version>4.0.1</hazelcast.version>
     <conscrypt.version>2.4.0</conscrypt.version>
     <asm.version>8.0.1</asm.version>
