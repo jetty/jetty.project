@@ -1651,21 +1651,35 @@ public class ServletContextHandlerTest
         ServletHandler handler = new ServletHandler();
         _server.setHandler(context);
         context.setHandler(handler);
-        handler.addServletWithMapping(new ServletHolder(new TestServlet()), "/");
+        handler.addServletWithMapping(new ServletHolder(new TestServlet()
+        {
+            @Override
+            public void init() throws ServletException
+            {
+                handler.addFilterWithMapping(new FilterHolder(new MyFilter()), "/test/*", EnumSet.of(DispatcherType.REQUEST));
+            }
+        }), "/test");
 
         _server.start();
 
-
         String request =
-            "GET /hello HTTP/1.0\n" +
+            "GET /test HTTP/1.0\n" +
             "Host: localhost\n" +
             "\n";
         String response = _connector.getResponse(request);
         assertThat(response, containsString("200 OK"));
+        assertThat(response, containsString("filter: filter"));
         assertThat(response, containsString("Test"));
 
-        handler.addFilterWithMapping(new FilterHolder(new MyFilter()), "/*", EnumSet.of(DispatcherType.REQUEST));
-        handler.addServletWithMapping(new ServletHolder(new HelloServlet()), "/hello/*");
+
+        handler.addServletWithMapping(new ServletHolder(new HelloServlet()
+        {
+            @Override
+            public void init() throws ServletException
+            {
+                handler.addFilterWithMapping(new FilterHolder(new MyFilter()), "/hello/*", EnumSet.of(DispatcherType.REQUEST));
+            }
+        }), "/hello/*");
 
         _server.dumpStdErr();
 
