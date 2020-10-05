@@ -1,7 +1,5 @@
-# DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
-
 [description]
-Enables the SSL keystore to be reloaded after any changes are detected on the file system.
+Enables the KeyStore to be reloaded when the KeyStore file changes.
 
 [tags]
 connector
@@ -14,5 +12,7 @@ ssl
 etc/jetty-ssl-context-reload.xml
 
 [ini-template]
-# Monitored directory scan period (seconds)
+# tag::documentation[]
+# Monitored directory scan period, in seconds.
 # jetty.sslContext.reload.scanInterval=1
+# end::documentation[]

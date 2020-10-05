@@ -23,7 +23,7 @@ When you enable secure HTTP/2 you typically want to enable also secure HTTP/1.1,
 
 You need to enable:
 
-* the `ssl` Jetty module, which provides the secure connector and the keystore and TLS configuration
+* the `ssl` Jetty module, which provides the secure connector and the KeyStore and TLS configuration
 * the `http2` Jetty module, which adds ALPN handling and adds the HTTP/2 protocol to the secured connector
 * optionally, the `https` Jetty module, which adds the HTTP/1.1 protocol to the secured connector
 
@@ -33,9 +33,9 @@ Use the following command (issued from within the `$JETTY_BASE` directory):
 $ java -jar $JETTY_HOME/start.jar --add-modules=ssl,http2,https
 ----
 
-As when enabling the `https` Jetty module, you need a valid keystore (read xref:og-keystore[this section] to create your own keystore).
+As when enabling the `https` Jetty module, you need a valid KeyStore (read xref:og-keystore[this section] to create your own KeyStore).
 
-As a quick example, you can enable the xref:og-module-test-keystore[`test-keystore` module], that provides a keystore containing a self-signed certificate:
+As a quick example, you can enable the xref:og-module-test-keystore[`test-keystore` module], that provides a KeyStore containing a self-signed certificate:
 
 ----
 $ java -jar $JETTY_HOME/start.jar --add-modules=test-keystore

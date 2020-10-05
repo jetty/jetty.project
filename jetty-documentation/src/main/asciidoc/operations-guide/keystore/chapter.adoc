@@ -19,5 +19,13 @@
 [[og-keystore]]
 === Configuring KeyStores
 
-TODO
-// TODO: see old_docs/connectors/configuring-ssl.adoc
+A KeyStore is a file on the file system that contains a private key and a public certificate, along with the certificate chain of the certificate authorities that issued the certificate.
+The private key, the public certificate and the certificate chain, but more generally the items present in a KeyStore, are typically referred to as "cryptographic material".
+
+Keystores may encode the cryptographic material with different encodings, the most common being link:https://en.wikipedia.org/wiki/PKCS_12[PKCS12], and are typically protected by a password.
+
+Refer to the xref:og-protocols-ssl[secure protocols section] for more information about how to configure a secure connector using a KeyStore.
+
+include::keystore-create.adoc[]
+include::keystore-csr.adoc[]
+include::keystore-client-authn.adoc[]
