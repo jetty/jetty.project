@@ -70,7 +70,7 @@
     <settingsPath>src/it/settings.xml</settingsPath>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
-    <testcontainers.version>1.14.3</testcontainers.version>
+    <testcontainers.version>1.15.0-rc2</testcontainers.version>
   </properties>
 
   <licenses>
@@ -1091,6 +1091,11 @@
         <groupId>org.testcontainers</groupId>
         <artifactId>junit-jupiter</artifactId>
         <version>${testcontainers.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>net.java.dev.jna</groupId>
+        <artifactId>jna</artifactId>
+        <version>5.5.0</version>
       </dependency>
       <!-- Old Deps -->
       <dependency>
