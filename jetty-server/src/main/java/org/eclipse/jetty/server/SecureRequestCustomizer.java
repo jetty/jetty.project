@@ -256,7 +256,9 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             if (x509 == null)
             {
                 if (_sniRequired)
-                    throw new BadMessageException(400, "SNI required");
+                    throw new BadMessageException(400, "Invalid SNI");
+                else if (_sniHostCheck)
+                    throw new BadMessageException(400, "Host does not match SNI");
             }
             else if (_sniHostCheck && !x509.matches(request.getServerName()))
             {
@@ -266,7 +268,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 
         request.setAttributes(new SslAttributes(request, sslSession, request.getAttributes()));
     }
-    
+
     /**
      * Customizes the request attributes for general secure settings.
      * The default impl calls {@link Request#setSecure(boolean)} with true
