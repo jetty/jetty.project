@@ -87,6 +87,7 @@ public class MessageInputStream extends InputStream implements MessageAppender
                 switch (state)
                 {
                     case CLOSED:
+                        LOG.warn("Received content after InputStream closed");
                         return;
 
                     case RESUMED:
@@ -118,9 +119,11 @@ public class MessageInputStream extends InputStream implements MessageAppender
             if (state == State.CLOSED)
                 return;
 
+            if (!buffers.isEmpty() || (activeBuffer != null && activeBuffer.hasRemaining()))
+                LOG.warn("InputStream closed without fully consuming content");
+
             state = State.CLOSED;
             buffers.clear();
-            buffers.offer(EOF);
         }
     }
 
@@ -156,11 +159,17 @@ public class MessageInputStream extends InputStream implements MessageAppender
         SuspendToken resume;
         synchronized (this)
         {
-            state = State.CLOSED;
+            if (state != State.CLOSED)
+            {
+                if (!buffers.isEmpty() || (activeBuffer != null && activeBuffer.hasRemaining()))
+                    LOG.warn("InputStream closed without fully consuming content");
+
+                state = State.CLOSED;
+                buffers.clear();
+            }
+
             resume = suspendToken;
             suspendToken = null;
-            buffers.clear();
-            buffers.offer(EOF);
         }
 
         if (resume != null)
