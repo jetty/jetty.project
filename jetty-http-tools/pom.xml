@@ -10,6 +10,20 @@
   <artifactId>jetty-http-tools</artifactId>
   <name>Jetty :: HTTP Testing Utilities</name>
 
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>
+            @{argLine} ${jetty.surefire.argLine}
+            --add-modules org.hamcrest
+          </argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
