@@ -37,7 +37,7 @@ public class SecuredServlet extends HttpServlet
     {
         PrintWriter writer = resp.getWriter();
         writer.println("<html>");
-        writer.println("<HEAD><link rel=\"stylesheet\" type=\"text/css\"  href=\"../stylesheet.css\"/></HEAD>");
+        writer.println("<head><link rel=\"stylesheet\" type=\"text/css\"  href=\"../stylesheet.css\"/></head>");
         writer.println("<body>");
         writer.println("<h1>@ServletSecurity</h1>");
         writer.println("<pre>");
@@ -48,7 +48,7 @@ public class SecuredServlet extends HttpServlet
         String context = getServletConfig().getServletContext().getContextPath();
         if (!context.endsWith("/"))
             context += "/";
-        writer.println("<p><A HREF=\"" + context + "logout.jsp\">Logout</A></p>");
+        writer.println("<p><a href=\"" + context + "logout.jsp\">Logout</A></p>");
         writer.println("</body>");
         writer.println("</html>");
         writer.flush();

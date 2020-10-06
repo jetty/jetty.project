@@ -131,7 +131,7 @@ public class SessionDump extends HttpServlet
 
         if (session == null)
         {
-            out.println("<H3>No Session</H3>");
+            out.println("<h3>No Session</h3>");
             out.println("<input type=\"submit\" name=\"Action\" value=\"New Session\"/>");
         }
         else
@@ -167,10 +167,10 @@ public class SessionDump extends HttpServlet
                 out.println("</form><br/>");
 
                 if (request.isRequestedSessionIdFromCookie())
-                    out.println("<P>Turn off cookies in your browser to try url encoding<BR>");
+                    out.println("<p>Turn off cookies in your browser to try url encoding<BR>");
 
                 if (request.isRequestedSessionIdFromURL())
-                    out.println("<P>Turn on cookies in your browser to try cookie encoding<BR>");
+                    out.println("<p>Turn on cookies in your browser to try cookie encoding<BR>");
                 out.println("<a href=\"" + response.encodeURL(request.getRequestURI() + "?q=0") + "\">Encoded Link</a><BR>");
             }
             catch (IllegalStateException e)

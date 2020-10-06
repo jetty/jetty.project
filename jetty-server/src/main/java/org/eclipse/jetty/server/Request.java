@@ -205,7 +205,7 @@ public class Request implements HttpServletRequest
     private String _pathInContext;
     private ServletPathMapping _servletPathMapping;
     private boolean _secure;
-    private String _asyncNotSupportedSource = null;
+    private Object _asyncNotSupportedSource = null;
     private boolean _newContext;
     private boolean _cookiesExtracted = false;
     private boolean _handled = false;
@@ -1512,6 +1512,9 @@ public class Request implements HttpServletRequest
             throw new IllegalStateException("No SessionManager");
 
         _session = _sessionHandler.newHttpSession(this);
+        if (_session == null)
+            throw new IllegalStateException("Create session failed");
+        
         HttpCookie cookie = _sessionHandler.getSessionCookie(_session, getContextPath(), isSecure());
         if (cookie != null)
             _channel.getResponse().replaceCookie(cookie);
@@ -1842,7 +1845,7 @@ public class Request implements HttpServletRequest
         _requestAttributeListeners.remove(listener);
     }
 
-    public void setAsyncSupported(boolean supported, String source)
+    public void setAsyncSupported(boolean supported, Object source)
     {
         _asyncNotSupportedSource = supported ? null : (source == null ? "unknown" : source);
     }

@@ -16,16 +16,14 @@
 // ========================================================================
 //
 
-[[og-module-test-keystore]]
-==== Module `test-keystore`
+[[og-module-ssl-reload]]
+==== Module `ssl-reload`
 
-The `test-keystore` module provides a KeyStore containing a self-signed certificate for domain `localhost`.
+The `ssl-reload` module provides a periodic scanning of the directory where the KeyStore file resides.
+When the scanning detects a change to the KeyStore file, the correspondent `SslContextFactory.Server` component is reloaded with the new KeyStore configuration.
 
-The module file is `$JETTY_HOME/modules/test-keystore.mod`:
+The module properties are:
 
 ----
-include::{JETTY_HOME}/modules/test-keystore.mod[]
+include::{JETTY_HOME}/modules/ssl-reload.mod[tags=documentation]
 ----
-
-Note how properties `jetty.sslContext.keyStorePath` and `jetty.sslContext.keyStorePassword` are configured, only if not already set (via the `?=` operator), directly in the module file, rather than in a `+*.ini+` file.
-This is done to avoid that these properties accidentally overwrite a real KeyStore configuration.
