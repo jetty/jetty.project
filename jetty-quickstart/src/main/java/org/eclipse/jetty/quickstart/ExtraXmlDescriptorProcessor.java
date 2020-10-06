@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.quickstart;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.webapp.Descriptor;
 import org.eclipse.jetty.webapp.IterativeDescriptorProcessor;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -36,12 +37,11 @@ public class ExtraXmlDescriptorProcessor extends IterativeDescriptorProcessor
     private static final Logger LOG = LoggerFactory.getLogger(ExtraXmlDescriptorProcessor.class);
 
     private final StringBuilder _buffer = new StringBuilder();
-    private final boolean _showOrigin;
+    private String _originAttribute;
     private String _origin;
 
     public ExtraXmlDescriptorProcessor()
     {
-        _showOrigin = LOG.isDebugEnabled();
         try
         {
             registerVisitor("env-entry", getClass().getMethod("saveSnippet", __signature));
@@ -68,11 +68,19 @@ public class ExtraXmlDescriptorProcessor extends IterativeDescriptorProcessor
     {
     }
 
+    public void setOriginAttribute(String name)
+    {
+        _originAttribute = name;
+    }
+    
     public void saveSnippet(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
         throws Exception
     {
+        //Note: we have to output the origin as a comment field instead of
+        //as an attribute like the other other elements because
+        //we are copying these elements _verbatim_ from the descriptor
         LOG.debug("save {}", node.getTag());
-        if (_showOrigin)
+        if (!StringUtil.isBlank(_originAttribute))
             _buffer.append(_origin);
         _buffer.append("  ").append(node.toString()).append("\n");
     }

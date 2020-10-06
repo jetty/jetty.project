@@ -790,6 +790,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
     public void preConfigure(WebAppContext context) throws Exception
     {
         ExtraXmlDescriptorProcessor extraXmlProcessor = new ExtraXmlDescriptorProcessor();
+        extraXmlProcessor.setOriginAttribute(getOriginAttribute());
         context.getMetaData().addDescriptorProcessor(extraXmlProcessor);
         context.setAttribute(ExtraXmlDescriptorProcessor.class.getName(), extraXmlProcessor);
         super.preConfigure(context);
