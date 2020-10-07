@@ -77,8 +77,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeader;
-import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeaderValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
@@ -88,7 +86,9 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(WorkDirExtension.class)
@@ -743,7 +743,7 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/other HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/other/"));
+        assertThat(response.get(HttpHeader.LOCATION), containsString("http://0.0.0.0/context/other/"));
 
         // Test alt default
         rawResponse = connector.getResponse("GET /context/alt/dir/ HTTP/1.0\r\n\r\n");
@@ -833,7 +833,7 @@ public class DefaultServletTest
         {
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-                    throws ServletException, IOException
+                throws ServletException, IOException
             {
                 req.getRequestDispatcher("/alt/").include(req, resp);
             }
@@ -889,20 +889,20 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir/index.html"));
+        assertThat(response.get(HttpHeader.LOCATION), containsString("http://0.0.0.0/context/dir/index.html"));
 
         createFile(inde, "<h1>Hello Inde</h1>");
         rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir/index.html"));
+        assertThat(response.get(HttpHeader.LOCATION), containsString("http://0.0.0.0/context/dir/index.html"));
 
         if (deleteFile(index))
         {
             rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-            assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir/index.htm"));
+            assertThat(response.get(HttpHeader.LOCATION), containsString("http://0.0.0.0/context/dir/index.htm"));
 
             if (deleteFile(inde))
             {
@@ -939,12 +939,12 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/dir%3F HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir%3F/"));
+        assertThat(response.get(HttpHeader.LOCATION), containsString("http://0.0.0.0/context/dir%3F/"));
 
         rawResponse = connector.getResponse("GET /context/dir%3F/ HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir%3F/index.html"));
+        assertThat(response.get(HttpHeader.LOCATION), containsString("http://0.0.0.0/context/dir%3F/index.html"));
     }
 
     /**
@@ -973,12 +973,12 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/dir%3B HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir%3B/"));
+        assertThat(response.get(HttpHeader.LOCATION), containsString("http://0.0.0.0/context/dir%3B/"));
 
         rawResponse = connector.getResponse("GET /context/dir%3B/ HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir%3B/index.html"));
+        assertThat(response.get(HttpHeader.LOCATION), containsString("http://0.0.0.0/context/dir%3B/index.html"));
     }
 
     @Test
@@ -1220,7 +1220,7 @@ public class DefaultServletTest
                 "Host: localhost\r\n" +
                 "Connection: close\r\n\r\n",
             HttpStatus.OK_200,
-            (response) -> assertThat(response, containsHeaderValue(HttpHeader.ACCEPT_RANGES, "bytes"))
+            (response) -> assertThat(response.get(HttpHeader.ACCEPT_RANGES), containsString("bytes"))
         );
 
         scenarios.addScenario(
@@ -1232,9 +1232,9 @@ public class DefaultServletTest
             HttpStatus.PARTIAL_CONTENT_206,
             (response) ->
             {
-                assertThat(response, containsHeaderValue("Content-Type", "text/plain"));
-                assertThat(response, containsHeaderValue("Content-Length", "10"));
-                assertThat(response, containsHeaderValue("Content-Range", "bytes 0-9/80"));
+                assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("text/plain"));
+                assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("10"));
+                assertThat(response.get(HttpHeader.CONTENT_RANGE), containsString("bytes 0-9/80"));
             }
         );
 
@@ -1248,8 +1248,8 @@ public class DefaultServletTest
             HttpStatus.PARTIAL_CONTENT_206,
             (response) ->
             {
-                assertThat(response, containsHeaderValue("Content-Type", "text/plain"));
-                assertThat(response, containsHeaderValue("Content-Range", "bytes 0-9/80"));
+                assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("text/plain"));
+                assertThat(response.get(HttpHeader.CONTENT_RANGE), containsString("bytes 0-9/80"));
             });
 
         scenarios.addScenario(
@@ -1263,8 +1263,8 @@ public class DefaultServletTest
             {
                 String body = response.getContent();
 
-                assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
+                assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("multipart/byteranges"));
+                assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("" + body.length()));
 
                 HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                 String boundary = getContentTypeBoundary(contentType);
@@ -1289,8 +1289,8 @@ public class DefaultServletTest
             {
                 String body = response.getContent();
 
-                assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
+                assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("multipart/byteranges"));
+                assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("" + body.length()));
 
                 HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                 String boundary = getContentTypeBoundary(contentType);
@@ -1317,8 +1317,8 @@ public class DefaultServletTest
             {
                 String body = response.getContent();
 
-                assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
+                assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("multipart/byteranges"));
+                assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("" + body.length()));
 
                 HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                 String boundary = getContentTypeBoundary(contentType);
@@ -1343,7 +1343,7 @@ public class DefaultServletTest
                 "Host: localhost\r\n" +
                 "\r\n",
             HttpStatus.OK_200,
-            (response) -> assertThat(response, containsHeaderValue(HttpHeader.ACCEPT_RANGES, "bytes"))
+            (response) -> assertThat(response.get(HttpHeader.ACCEPT_RANGES), containsString("bytes"))
         );
 
         scenarios.addScenario(
@@ -1355,9 +1355,9 @@ public class DefaultServletTest
             HttpStatus.PARTIAL_CONTENT_206,
             (response) ->
             {
-                assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "10"));
-                assertThat(response, containsHeaderValue(HttpHeader.CONTENT_RANGE, "bytes 0-9/80"));
-                assertThat(response, not(containsHeader(HttpHeader.CONTENT_TYPE)));
+                assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("10"));
+                assertThat(response.get(HttpHeader.CONTENT_RANGE), containsString("bytes 0-9/80"));
+                assertFalse(response.contains(HttpHeader.CONTENT_TYPE));
             }
         );
 
@@ -1372,8 +1372,8 @@ public class DefaultServletTest
             {
                 String body = response.getContent();
 
-                assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
+                assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("multipart/byteranges"));
+                assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("" + body.length()));
 
                 HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                 String boundary = getContentTypeBoundary(contentType);
@@ -1399,8 +1399,8 @@ public class DefaultServletTest
             {
                 String body = response.getContent();
 
-                assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
+                assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("multipart/byteranges"));
+                assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("" + body.length()));
 
                 HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                 String boundary = getContentTypeBoundary(contentType);
@@ -1469,9 +1469,9 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "12"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
-        assertThat(response, not(containsHeaderValue(HttpHeader.CONTENT_TYPE, "charset=")));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("12"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("text/plain"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), not(containsString("charset=")));
         body = response.getContent();
         assertThat(body, not(containsString("Extra Info")));
 
@@ -1483,18 +1483,18 @@ public class DefaultServletTest
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         body = response.getContent();
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "" + body.length()));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "charset="));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("" + body.length()));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("text/plain"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("charset="));
         assertThat(body, containsString("Extra Info"));
 
         rawResponse = connector.getResponse("GET /context/image.jpg HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         body = response.getContent();
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "" + body.length()));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "image/jpeg"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "charset=utf-8"));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("" + body.length()));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("image/jpeg"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("charset=utf-8"));
         assertThat(body, containsString("Extra Info"));
 
         server.stop();
@@ -1507,8 +1507,8 @@ public class DefaultServletTest
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         body = response.getContent();
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
-        assertThat(response, not(containsHeaderValue(HttpHeader.CONTENT_TYPE, "charset=")));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("text/plain"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), not(containsString("charset=")));
         assertThat(body, containsString("Extra Info"));
     }
 
@@ -1535,11 +1535,11 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "12"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
-        assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
-        assertThat(response, containsHeader(HttpHeader.ETAG));
-        assertThat(response, not(containsHeaderValue(HttpHeader.CONTENT_ENCODING, "gzip")));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("12"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("text/plain"));
+        assertThat(response.get(HttpHeader.VARY), containsString("Accept-Encoding"));
+        assertTrue(response.contains(HttpHeader.ETAG));
+        assertThat(response.get(HttpHeader.CONTENT_ENCODING), not(containsString("gzip")));
         body = response.getContent();
         assertThat(body, containsString("Hello Text 0"));
         String etag = response.get(HttpHeader.ETAG);
@@ -1548,35 +1548,35 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "9"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
-        assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "gzip"));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagGzip));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("9"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("text/plain"));
+        assertThat(response.get(HttpHeader.VARY), containsString("Accept-Encoding"));
+        assertThat(response.get(HttpHeader.CONTENT_ENCODING), containsString("gzip"));
+        assertThat(response.get(HttpHeader.ETAG), containsString(etagGzip));
         body = response.getContent();
         assertThat(body, containsString("fake gzip"));
 
         rawResponse = connector.getResponse("GET /context/data0.txt.gz HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "9"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "application/gzip"));
-        assertThat(response, not(containsHeader(HttpHeader.VARY)));
-        assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
-        assertThat("Should not contain gzip variant", response, not(containsHeaderValue(HttpHeader.ETAG, etagGzip)));
-        assertThat("Should have a different ETag", response, containsHeader(HttpHeader.ETAG));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("9"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("application/gzip"));
+        assertTrue(response.contains(HttpHeader.ETAG));
+        assertThat(response.get(HttpHeader.ETAG), not(containsString(etagGzip)));
+        assertFalse(response.contains(HttpHeader.VARY));
+        assertFalse(response.contains(HttpHeader.CONTENT_ENCODING));
         body = response.getContent();
         assertThat(body, containsString("fake gzip"));
 
         rawResponse = connector.getResponse("GET /context/data0.txt.gz HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"wobble\"\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "9"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "application/gzip"));
-        assertThat(response, not(containsHeader(HttpHeader.VARY)));
-        assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
-        assertThat("Should not contain gzip variant", response, not(containsHeaderValue(HttpHeader.ETAG, etagGzip)));
-        assertThat("Should have a different ETag", response, containsHeader(HttpHeader.ETAG));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("9"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("application/gzip"));
+        assertFalse(response.contains(HttpHeader.VARY));
+        assertFalse(response.contains(HttpHeader.CONTENT_ENCODING));
+        assertThat(response.get(HttpHeader.ETAG), not(containsString(etagGzip)));
+        assertTrue(response.contains(HttpHeader.ETAG));
         body = response.getContent();
         assertThat(body, containsString("fake gzip"));
 
@@ -1588,22 +1588,22 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: " + etagGzip + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagGzip));
+        assertThat(response.get(HttpHeader.ETAG), containsString(etagGzip));
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: " + etag + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag));
+        assertThat(response.get(HttpHeader.ETAG), containsString(etag));
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\"," + etagGzip + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagGzip));
+        assertThat(response.get(HttpHeader.ETAG), containsString(etagGzip));
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\"," + etag + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag));
+        assertThat(response.get(HttpHeader.ETAG), containsString(etag));
     }
 
     @Test
@@ -1633,11 +1633,11 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "12"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
-        assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
-        assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
-        assertThat(response, containsHeader(HttpHeader.ETAG));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("12"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("text/plain"));
+        assertThat(response.get(HttpHeader.VARY), containsString("Accept-Encoding"));
+        assertFalse(response.contains(HttpHeader.CONTENT_ENCODING));
+        assertTrue(response.contains(HttpHeader.ETAG));
         body = response.getContent();
         assertThat(body, containsString("Hello Text 0"));
 
@@ -1647,45 +1647,45 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "9"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
-        assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "gzip"));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagGzip));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("9"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("text/plain"));
+        assertThat(response.get(HttpHeader.VARY), containsString("Accept-Encoding"));
+        assertThat(response.get(HttpHeader.CONTENT_ENCODING), containsString("gzip"));
+        assertThat(response.get(HttpHeader.ETAG), containsString(etagGzip));
         body = response.getContent();
         assertThat(body, containsString("fake gzip"));
 
         rawResponse = connector.getResponse("GET /context/data0.txt.gz HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "9"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "application/gzip"));
-        assertThat(response, not(containsHeader(HttpHeader.VARY)));
-        assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
-        assertThat("Should not contain gzip variant", response, not(containsHeaderValue(HttpHeader.ETAG, etagGzip)));
-        assertThat("Should have a different ETag", response, containsHeader(HttpHeader.ETAG));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("9"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("application/gzip"));
+        assertFalse(response.contains(HttpHeader.VARY));
+        assertFalse(response.contains(HttpHeader.CONTENT_ENCODING));
+        assertTrue(response.contains(HttpHeader.ETAG));
+        assertThat(response.get(HttpHeader.ETAG), not(containsString(etagGzip)));
         body = response.getContent();
         assertThat(body, containsString("fake gzip"));
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: " + etagGzip + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagGzip));
+        assertThat(response.get(HttpHeader.ETAG), containsString(etagGzip));
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: " + etag + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag));
+        assertThat(response.get(HttpHeader.ETAG), containsString(etag));
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\"," + etagGzip + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagGzip));
+        assertThat(response.get(HttpHeader.ETAG), containsString(etagGzip));
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\"," + etag + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag));
+        assertThat(response.get(HttpHeader.ETAG), containsString(etag));
     }
 
     @Test
@@ -1708,11 +1708,11 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "12"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
-        assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
-        assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
-        assertThat(response, containsHeader(HttpHeader.ETAG));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("12"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("text/plain"));
+        assertThat(response.get(HttpHeader.VARY), containsString("Accept-Encoding"));
+        assertFalse(response.contains(HttpHeader.CONTENT_ENCODING));
+        assertTrue(response.contains(HttpHeader.ETAG));
         body = response.getContent();
         assertThat(body, containsString("Hello Text 0"));
 
@@ -1722,57 +1722,57 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip;q=0.9,br\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "11"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
-        assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "br"));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagBr));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("11"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("text/plain"));
+        assertThat(response.get(HttpHeader.VARY), containsString("Accept-Encoding"));
+        assertThat(response.get(HttpHeader.CONTENT_ENCODING), containsString("br"));
+        assertThat(response.get(HttpHeader.ETAG), containsString(etagBr));
         body = response.getContent();
         assertThat(body, containsString("fake br"));
 
         rawResponse = connector.getResponse("GET /context/data0.txt.br HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br,gzip\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "11"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "application/brotli"));
-        assertThat(response, not(containsHeader(HttpHeader.VARY)));
-        assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
-        assertThat("Should not contain br variant", response, not(containsHeaderValue(HttpHeader.ETAG, etagBr)));
-        assertThat("Should have a different ETag", response, containsHeader(HttpHeader.ETAG));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("11"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("application/brotli"));
+        assertFalse(response.contains(HttpHeader.VARY));
+        assertFalse(response.contains(HttpHeader.CONTENT_ENCODING));
+        assertTrue(response.contains(HttpHeader.ETAG));
+        assertThat(response.get(HttpHeader.ETAG), not(containsString(etagBr)));
         body = response.getContent();
         assertThat(body, containsString("fake br"));
 
         rawResponse = connector.getResponse("GET /context/data0.txt.br HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"wobble\"\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "11"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "application/brotli"));
-        assertThat(response, not(containsHeader(HttpHeader.VARY)));
-        assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
-        assertThat("Should not contain br variant", response, not(containsHeaderValue(HttpHeader.ETAG, etagBr)));
-        assertThat("Should have a different ETag", response, containsHeader(HttpHeader.ETAG));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("11"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("application/brotli"));
+        assertFalse(response.contains(HttpHeader.VARY));
+        assertFalse(response.contains(HttpHeader.CONTENT_ENCODING));
+        assertTrue(response.contains(HttpHeader.ETAG));
+        assertThat(response.get(HttpHeader.ETAG), not(containsString(etagBr)));
         body = response.getContent();
         assertThat(body, containsString("fake br"));
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: " + etagBr + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagBr));
+        assertThat(response.get(HttpHeader.ETAG), containsString(etagBr));
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: " + etag + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag));
+        assertThat(response.get(HttpHeader.ETAG), containsString(etag));
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\"," + etagBr + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagBr));
+        assertThat(response.get(HttpHeader.ETAG), containsString(etagBr));
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\"," + etag + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag));
+        assertThat(response.get(HttpHeader.ETAG), containsString(etag));
     }
 
     @Test
@@ -1799,11 +1799,11 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "12"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
-        assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
-        assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
-        assertThat(response, containsHeader(HttpHeader.ETAG));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("12"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("text/plain"));
+        assertThat(response.get(HttpHeader.VARY), containsString("Accept-Encoding"));
+        assertFalse(response.contains(HttpHeader.CONTENT_ENCODING));
+        assertTrue(response.contains(HttpHeader.ETAG));
         body = response.getContent();
         assertThat(body, containsString("Hello Text 0"));
 
@@ -1813,45 +1813,45 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "11"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
-        assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "br"));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagBr));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("11"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("text/plain"));
+        assertThat(response.get(HttpHeader.VARY), containsString("Accept-Encoding"));
+        assertThat(response.get(HttpHeader.CONTENT_ENCODING), containsString("br"));
+        assertThat(response.get(HttpHeader.ETAG), containsString(etagBr));
         body = response.getContent();
         assertThat(body, containsString("fake brotli"));
 
         rawResponse = connector.getResponse("GET /context/data0.txt.br HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "11"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "application/brotli"));
-        assertThat(response, not(containsHeader(HttpHeader.VARY)));
-        assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
-        assertThat("Should not contain br variant", response, not(containsHeaderValue(HttpHeader.ETAG, etagBr)));
-        assertThat("Should have a different ETag", response, containsHeader(HttpHeader.ETAG));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("11"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("application/brotli"));
+        assertFalse(response.contains(HttpHeader.VARY));
+        assertFalse(response.contains(HttpHeader.CONTENT_ENCODING));
+        assertTrue(response.contains(HttpHeader.ETAG));
+        assertThat(response.get(HttpHeader.ETAG), not(containsString(etagBr)));
         body = response.getContent();
         assertThat(body, containsString("fake brotli"));
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: " + etagBr + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagBr));
+        assertThat(response.get(HttpHeader.ETAG), containsString(etagBr));
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: " + etag + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag));
+        assertThat(response.get(HttpHeader.ETAG), containsString(etag));
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\"," + etagBr + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagBr));
+        assertThat(response.get(HttpHeader.ETAG), containsString(etagBr));
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\"," + etag + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag));
+        assertThat(response.get(HttpHeader.ETAG), containsString(etag));
     }
 
     @Test
@@ -1872,20 +1872,20 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip, compress, br\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "11"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
-        assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "br"));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("11"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("text/plain"));
+        assertThat(response.get(HttpHeader.VARY), containsString("Accept-Encoding"));
+        assertThat(response.get(HttpHeader.CONTENT_ENCODING), containsString("br"));
         body = response.getContent();
         assertThat(body, containsString("fake brotli"));
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip, compress, br;q=0.9\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "9"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
-        assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "gzip"));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("9"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("text/plain"));
+        assertThat(response.get(HttpHeader.VARY), containsString("Accept-Encoding"));
+        assertThat(response.get(HttpHeader.CONTENT_ENCODING), containsString("gzip"));
         body = response.getContent();
         assertThat(body, containsString("fake gzip"));
     }
@@ -1909,10 +1909,10 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:bzip2, br, gzip\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "10"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
-        assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "bzip2"));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("10"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("text/plain"));
+        assertThat(response.get(HttpHeader.VARY), containsString("Accept-Encoding"));
+        assertThat(response.get(HttpHeader.CONTENT_ENCODING), containsString("bzip2"));
         body = response.getContent();
         assertThat(body, containsString("fake bzip2"));
 
@@ -1921,10 +1921,10 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br, gzip\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "9"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
-        assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "gzip"));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("9"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("text/plain"));
+        assertThat(response.get(HttpHeader.VARY), containsString("Accept-Encoding"));
+        assertThat(response.get(HttpHeader.CONTENT_ENCODING), containsString("gzip"));
         body = response.getContent();
         assertThat(body, containsString("fake gzip"));
     }
@@ -1972,7 +1972,7 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response, containsHeader(HttpHeader.LAST_MODIFIED));
+        assertTrue(response.contains(HttpHeader.LAST_MODIFIED));
 
         String lastModified = response.get(HttpHeader.LAST_MODIFIED);
 
@@ -2019,7 +2019,7 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response, containsHeader(HttpHeader.ETAG));
+        assertTrue(response.contains(HttpHeader.ETAG));
 
         String etag = response.get(HttpHeader.ETAG);
 

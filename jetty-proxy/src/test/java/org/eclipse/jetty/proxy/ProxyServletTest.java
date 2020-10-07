@@ -101,7 +101,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeader;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -925,7 +924,7 @@ public class ProxyServletTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(200, response.getStatus());
-        assertThat(response.getHeaders(), containsHeader(PROXIED_HEADER));
+        assertTrue(response.getHeaders().contains(PROXIED_HEADER));
     }
 
     @ParameterizedTest
@@ -1026,7 +1025,7 @@ public class ProxyServletTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(200, response.getStatus());
-        assertThat(response.getHeaders(), containsHeader(PROXIED_HEADER));
+        assertTrue(response.getHeaders().contains(PROXIED_HEADER));
         assertArrayEquals(content, response.getContent());
 
         // Second request should be cached
@@ -1034,7 +1033,7 @@ public class ProxyServletTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(200, response.getStatus());
-        assertThat(response.getHeaders(), containsHeader(CachingProxyServlet.CACHE_HEADER));
+        assertTrue(response.getHeaders().contains(CachingProxyServlet.CACHE_HEADER));
         assertArrayEquals(content, response.getContent());
     }
 

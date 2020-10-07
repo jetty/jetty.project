@@ -35,8 +35,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeaderValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 
@@ -74,7 +74,7 @@ public class HeaderFilterTest
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        assertThat(response, containsHeaderValue("X-Frame-Options", "DENY"));
+        assertThat(response.get("X-Frame-Options"), containsString("DENY"));
     }
 
     @Test
@@ -91,7 +91,7 @@ public class HeaderFilterTest
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        assertThat(response, containsHeaderValue("X-Frame-Options", "DENY"));
+        assertThat(response.get("X-Frame-Options"), containsString("DENY"));
     }
 
     @Test

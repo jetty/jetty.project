@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.Iterator;
 
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.MetaData;
@@ -32,7 +33,6 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
-import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeaderValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -195,13 +195,14 @@ public class HpackDecoderTest
         MetaData.Response response = (MetaData.Response)decoder.decode(buffer);
 
         assertThat(response.getStatus(), is(200));
-        assertThat(response.getFields().size(), is(6));
-        assertThat(response.getFields(), containsHeaderValue(HttpHeader.DATE, "Fri, 15 Jul 2016 02:36:20 GMT"));
-        assertThat(response.getFields(), containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/html"));
-        assertThat(response.getFields(), containsHeaderValue(HttpHeader.CONTENT_ENCODING, ""));
-        assertThat(response.getFields(), containsHeaderValue(HttpHeader.CONTENT_LENGTH, "42"));
-        assertThat(response.getFields(), containsHeaderValue(HttpHeader.SERVER, "nghttpx nghttp2/1.12.0"));
-        assertThat(response.getFields(), containsHeaderValue(HttpHeader.VIA, "1.1 nghttpx"));
+        HttpFields httpFields = response.getFields();
+        assertThat(httpFields.size(), is(6));
+        assertThat(httpFields.get(HttpHeader.DATE), is("Fri, 15 Jul 2016 02:36:20 GMT"));
+        assertThat(httpFields.get(HttpHeader.CONTENT_TYPE), is("text/html"));
+        assertThat(httpFields.get(HttpHeader.CONTENT_ENCODING), is(""));
+        assertThat(httpFields.get(HttpHeader.CONTENT_LENGTH), is("42"));
+        assertThat(httpFields.get(HttpHeader.SERVER), is("nghttpx nghttp2/1.12.0"));
+        assertThat(httpFields.get(HttpHeader.VIA), is("1.1 nghttpx"));
     }
 
     @Test

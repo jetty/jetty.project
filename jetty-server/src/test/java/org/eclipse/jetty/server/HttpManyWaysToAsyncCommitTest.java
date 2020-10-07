@@ -39,7 +39,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeaderValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -156,7 +155,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
 
         assertThat(response.getStatus(), is(200));
         if (httpVersion.is("HTTP/1.1"))
-            assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "0"));
+            assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("0"));
         assertThat(handler.failure(), is(nullValue()));
     }
 
@@ -230,7 +229,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         HttpTester.Response response = executeRequest(httpVersion);
 
         assertThat(response.getStatus(), is(200));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "6"));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("6"));
         assertThat(handler.failure(), is(nullValue()));
     }
 
@@ -313,7 +312,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         assertThat(response.getStatus(), is(200));
         assertThat(handler.failure(), is(nullValue()));
         if (httpVersion.is("HTTP/1.1"))
-            assertThat(response, containsHeaderValue(HttpHeader.TRANSFER_ENCODING, "chunked"));
+            assertThat(response.get(HttpHeader.TRANSFER_ENCODING), containsString("chunked"));
     }
 
     @ParameterizedTest
@@ -336,7 +335,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
             // flush happens before throw
             assertThat(response.getStatus(), is(200));
             if (httpVersion.is("HTTP/1.1"))
-                assertThat(response, containsHeaderValue(HttpHeader.TRANSFER_ENCODING, "chunked"));
+                assertThat(response.get(HttpHeader.TRANSFER_ENCODING), containsString("chunked"));
         }
         assertThat(handler.failure(), is(nullValue()));
     }
@@ -396,7 +395,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         assertThat(response.getStatus(), is(200));
         assertThat(handler.failure(), is(nullValue()));
         if (httpVersion.is("HTTP/1.1"))
-            assertThat(response, containsHeaderValue(HttpHeader.TRANSFER_ENCODING, "chunked"));
+            assertThat(response.get(HttpHeader.TRANSFER_ENCODING), containsString("chunked"));
     }
 
     @ParameterizedTest
@@ -418,7 +417,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         {
             assertThat(response.getStatus(), is(200));
             if (httpVersion.is("HTTP/1.1"))
-                assertThat(response, containsHeaderValue(HttpHeader.TRANSFER_ENCODING, "chunked"));
+                assertThat(response.get(HttpHeader.TRANSFER_ENCODING), containsString("chunked"));
         }
 
         assertThat(handler.failure(), is(nullValue()));
@@ -479,7 +478,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
 
         // HTTP/1.0 does not do chunked.  it will just send content and close
         if (httpVersion.is("HTTP/1.1"))
-            assertThat(response, containsHeaderValue(HttpHeader.TRANSFER_ENCODING, "chunked"));
+            assertThat(response.get(HttpHeader.TRANSFER_ENCODING), containsString("chunked"));
     }
 
     @ParameterizedTest
@@ -502,7 +501,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         {
             assertThat(response.getStatus(), is(200));
             if (httpVersion.is("HTTP/1.1"))
-                assertThat(response, containsHeaderValue(HttpHeader.TRANSFER_ENCODING, "chunked"));
+                assertThat(response.get(HttpHeader.TRANSFER_ENCODING), containsString("chunked"));
         }
         assertThat(handler.failure(), is(nullValue()));
     }
@@ -563,7 +562,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContent(), is("foobar"));
         if (httpVersion.is("HTTP/1.1"))
-            assertThat(response, containsHeaderValue(HttpHeader.TRANSFER_ENCODING, "chunked"));
+            assertThat(response.get(HttpHeader.TRANSFER_ENCODING), containsString("chunked"));
         assertThat(handler.failure(), is(nullValue()));
     }
 
@@ -589,7 +588,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
             assertThat(response.getStatus(), is(200));
             assertThat(response.getContent(), is("foobar"));
             if (httpVersion.is("HTTP/1.1"))
-                assertThat(response, containsHeaderValue(HttpHeader.TRANSFER_ENCODING, "chunked"));
+                assertThat(response.get(HttpHeader.TRANSFER_ENCODING), containsString("chunked"));
             assertThat(handler.failure(), is(nullValue()));
         }
     }
@@ -648,7 +647,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContent(), is("foo"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "3"));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("3"));
         assertThat(handler.failure(), is(nullValue()));
     }
 
@@ -671,7 +670,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         {
             assertThat(response.getStatus(), is(200));
             assertThat(response.getContent(), is("foo"));
-            assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "3"));
+            assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("3"));
         }
         assertThat(handler.failure(), is(nullValue()));
     }
@@ -731,7 +730,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         assertThat(response.getStatus(), is(200));
         // jetty truncates the body when content-length is reached.! This is correct and desired behaviour?
         assertThat(response.getContent(), is("foo"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "3"));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("3"));
         assertThat(handler.failure(), is(nullValue()));
     }
 
@@ -754,7 +753,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         {
             assertThat(response.getStatus(), is(200));
             assertThat(response.getContent(), is("foo"));
-            assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "3"));
+            assertThat(response.get(HttpHeader.CONTENT_LENGTH), containsString("3"));
         }
         assertThat(handler.failure(), is(nullValue()));
     }

@@ -19,10 +19,6 @@
 module org.eclipse.jetty.http.tools
 {
     exports org.eclipse.jetty.http.tools;
-    exports org.eclipse.jetty.http.tools.matchers;
 
     requires transitive org.eclipse.jetty.http;
-
-    // Optional - only required if you use hamcrest too.
-    requires static org.hamcrest;
 }
