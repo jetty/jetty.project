@@ -55,11 +55,16 @@ jetty.quickstart.mode::
 
 jetty.quickstart.origin::
 Use this parameter to set the name of the attribute in the `quickstart-web.xml` file that contains the origin of each element.
+Knowing the descriptor or annotation from which each element derives can be useful for debugging.
+Note that the origin attribute does not conform to the web xml schema, so if you deploy with xml validation, you'll see errors.
+It is probably best to do a few trial runs with the attribute set, then turn it off for final generation.
 
 jetty.quickstart.xml::
 Use this parameter to change the name of the generated file.
 By default this is `quickstart-web.xml` in the webapp's `WEB-INF` directory.
 The file named by this parameter will always be interpreted relative to `WEB-INF`.
 
-
+In previous versions of Jetty, if a webapp was deployed as a war, the quickstart mechanism would automatically unpack it to a directory that was a sibling of the war file.
+From jetty-10.0.0, you will need to either first unpack the war file, or use a context xml file (or code equivalent) that calls `WebAppContext.setExtractWAR(true)`.
+If you allow Jetty to do the unpacking, it will use the usual mechanisms to find the location to which to unpack.
 
