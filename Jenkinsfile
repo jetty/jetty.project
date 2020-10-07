@@ -12,7 +12,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk8", "clean install ", "maven3",
+                mavenBuild( "jdk8", "clean install -U", "maven3",
                             [[parserName: 'Maven'], [parserName: 'Java']])
                 // Collect up the jacoco execution results (only on main build)
                 jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
