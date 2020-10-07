@@ -35,6 +35,7 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -200,11 +201,24 @@ public class FilterHolder extends Holder<Filter>
         return _filter;
     }
 
-    public void doFilter(ServletRequest request, ServletResponse response,
-                         FilterChain chain)
-        throws IOException, ServletException
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
     {
-        _filter.doFilter(request, response, chain);
+        if (isAsyncSupported() || !request.isAsyncSupported())
+            getFilter().doFilter(request, response, chain);
+        else
+        {
+            Request baseRequest = Request.getBaseRequest(request);
+            Objects.requireNonNull(baseRequest);
+            try
+            {
+                baseRequest.setAsyncSupported(false, this);
+                getFilter().doFilter(request, response, chain);
+            }
+            finally
+            {
+                baseRequest.setAsyncSupported(true, null);
+            }
+        }
     }
 
     @Override

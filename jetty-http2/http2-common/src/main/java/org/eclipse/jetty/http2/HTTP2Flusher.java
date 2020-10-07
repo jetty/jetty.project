@@ -118,7 +118,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     public boolean append(List<Entry> list)
     {
         Throwable closed;
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             closed = terminated;
             if (closed == null)

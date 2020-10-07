@@ -50,6 +50,7 @@ jetty.quickstart.mode::
  If jetty detects the file, then it will be used, otherwise the app is started normally.
  GENERATE:::
  In this mode, jetty will generate a `quickstart-web.xml` file and then terminate.
+ Use this mode first before changing to either `AUTO` or `QUICKSTART`.
  QUICKSTART:::
  In this mode, if jetty does not detect a `quickstart-web.xml` file then jetty will not start.
 
@@ -68,3 +69,5 @@ In previous versions of Jetty, if a webapp was deployed as a war, the quickstart
 From jetty-10.0.0, you will need to either first unpack the war file, or use a context xml file (or code equivalent) that calls `WebAppContext.setExtractWAR(true)`.
 If you allow Jetty to do the unpacking, it will use the usual mechanisms to find the location to which to unpack.
 
+Also in previous versions of Jetty, it was necessary to use a context xml file and change the type from `org.eclipse.jetty.webapp.WebAppContext` to `org.eclipse.jetty.quickstart.QuickStartWebApp`.
+This is will no longer work: just use the normal `org.eclipse.jetty.webapp.WebAppContext`.

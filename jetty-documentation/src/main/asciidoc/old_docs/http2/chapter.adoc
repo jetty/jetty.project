@@ -19,8 +19,5 @@
 [[http2]]
 == HTTP/2
 
-include::introduction.adoc[]
-include::enabling-http2.adoc[]
-include::configuring-http2.adoc[]
 include::configuring-push.adoc[]
 include::configuring-haproxy.adoc[]

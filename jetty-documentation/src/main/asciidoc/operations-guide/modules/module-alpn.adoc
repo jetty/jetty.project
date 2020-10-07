@@ -16,16 +16,15 @@
 // ========================================================================
 //
 
-[[og-module-test-keystore]]
-==== Module `test-keystore`
+[[og-module-alpn]]
+==== Module `alpn`
 
-The `test-keystore` module provides a KeyStore containing a self-signed certificate for domain `localhost`.
+The `alpn` module enables support for the ALPN negotiation mechanism of the TLS protocol.
 
-The module file is `$JETTY_HOME/modules/test-keystore.mod`:
+You can configure the list of application protocols negotiated by the ALPN mechanism, as well as the default protocol to use if the ALPN negotiation fails (for example, the client does not support ALPN).
+
+The module properties are:
 
 ----
-include::{JETTY_HOME}/modules/test-keystore.mod[]
+include::{JETTY_HOME}/modules/alpn.mod[tags=documentation]
 ----
-
-Note how properties `jetty.sslContext.keyStorePath` and `jetty.sslContext.keyStorePassword` are configured, only if not already set (via the `?=` operator), directly in the module file, rather than in a `+*.ini+` file.
-This is done to avoid that these properties accidentally overwrite a real KeyStore configuration.

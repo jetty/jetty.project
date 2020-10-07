@@ -407,7 +407,7 @@ public class Dump extends HttpServlet
         if (pi != null && pi.startsWith("/ex"))
         {
             OutputStream out = response.getOutputStream();
-            out.write("</H1>This text should be reset</H1>".getBytes());
+            out.write("</h1>This text should be reset</h1>".getBytes());
             if ("/ex0".equals(pi))
                 throw new ServletException("test ex0", new Throwable());
             else if ("/ex1".equals(pi))

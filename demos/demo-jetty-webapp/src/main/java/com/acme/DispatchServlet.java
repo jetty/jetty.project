@@ -94,18 +94,18 @@ public class DispatchServlet extends HttpServlet
 
             PrintWriter pout = null;
             pout = sres.getWriter();
-            pout.write("<H1>Include (writer): " + info + "</H1><HR>");
+            pout.write("<h1>Include (writer): " + info + "</h1><hR>");
 
             RequestDispatcher dispatch = getServletContext().getRequestDispatcher(info);
             if (dispatch == null)
             {
                 pout = sres.getWriter();
-                pout.write("<H1>Null dispatcher</H1>");
+                pout.write("<h1>Null dispatcher</h1>");
             }
             else
                 dispatch.include(sreq, sres);
 
-            pout.write("<HR><H1>-- Included (writer)</H1>");
+            pout.write("<hR><h1>-- Included (writer)</h1>");
         }
         else if (info.startsWith("/includeS/"))
         {
@@ -118,18 +118,18 @@ public class DispatchServlet extends HttpServlet
 
             OutputStream out = null;
             out = sres.getOutputStream();
-            out.write(("<H1>Include (outputstream): " + info + "</H1><HR>").getBytes());
+            out.write(("<h1>Include (outputstream): " + info + "</h1><hR>").getBytes());
 
             RequestDispatcher dispatch = getServletContext().getRequestDispatcher(info);
             if (dispatch == null)
             {
                 out = sres.getOutputStream();
-                out.write("<H1>Null dispatcher</H1>".getBytes());
+                out.write("<h1>Null dispatcher</h1>".getBytes());
             }
             else
                 dispatch.include(sreq, sres);
 
-            out.write("<HR><H1>-- Included (outputstream)</H1>".getBytes());
+            out.write("<hR><h1>-- Included (outputstream)</h1>".getBytes());
         }
         else if (info.startsWith("/forward/"))
         {
@@ -161,7 +161,7 @@ public class DispatchServlet extends HttpServlet
             {
                 sres.setContentType("text/html");
                 PrintWriter pout = sres.getWriter();
-                pout.write("<H1>No dispatcher for: " + info + "</H1><HR>");
+                pout.write("<h1>No dispatcher for: " + info + "</h1><hR>");
                 pout.flush();
             }
         }
@@ -187,7 +187,7 @@ public class DispatchServlet extends HttpServlet
             {
                 sres.setContentType("text/html");
                 PrintWriter pout = sres.getWriter();
-                pout.write("<H1>No dispatcher for: " + cpath + "/" + info + "</H1><HR>");
+                pout.write("<h1>No dispatcher for: " + cpath + "/" + info + "</h1><hR>");
                 pout.flush();
             }
         }
@@ -204,7 +204,7 @@ public class DispatchServlet extends HttpServlet
             else
             {
                 pout = sres.getWriter();
-                pout.write("<H1>Include named: " + info + "</H1><HR>");
+                pout.write("<h1>Include named: " + info + "</h1><hR>");
             }
 
             RequestDispatcher dispatch = getServletContext().getNamedDispatcher(info);
@@ -213,11 +213,11 @@ public class DispatchServlet extends HttpServlet
             else
             {
                 pout = sres.getWriter();
-                pout.write("<H1>No servlet named: " + info + "</H1>");
+                pout.write("<h1>No servlet named: " + info + "</h1>");
             }
 
             pout = sres.getWriter();
-            pout.write("<HR><H1>Included ");
+            pout.write("<hR><h1>Included ");
         }
         else if (info.startsWith("/forwardN/"))
         {
@@ -231,7 +231,7 @@ public class DispatchServlet extends HttpServlet
             {
                 sres.setContentType("text/html");
                 PrintWriter pout = sres.getWriter();
-                pout.write("<H1>No servlet named: " + info + "</H1>");
+                pout.write("<h1>No servlet named: " + info + "</h1>");
                 pout.flush();
             }
         }
@@ -240,7 +240,7 @@ public class DispatchServlet extends HttpServlet
             sres.setContentType("text/html");
             PrintWriter pout = sres.getWriter();
             pout.write(
-                "<H1>Dispatch URL must be of the form: </H1>" +
+                "<h1>Dispatch URL must be of the form: </h1>" +
                     "<PRE>" +
                     prefix + "/includeW/path\n" +
                     prefix + "/includeS/path\n" +

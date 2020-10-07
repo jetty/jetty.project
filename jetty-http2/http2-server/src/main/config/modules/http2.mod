@@ -1,8 +1,5 @@
-# DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
-
 [description]
-Enables HTTP2 protocol support on the TLS(SSL) Connector with ALPN.
-Uses the ALPN extension to select which protocol to use.
+Enables the support for the secure HTTP/2 protocol.
 
 [tags]
 connector
@@ -21,17 +18,20 @@ lib/http2/*.jar
 etc/jetty-http2.xml
 
 [ini-template]
-## Max number of concurrent streams per connection
+# tag::documentation[]
+## Specifies the maximum number of concurrent requests per session.
 # jetty.http2.maxConcurrentStreams=128
 
-## Initial stream receive window (client to server)
+## Specifies the initial stream receive window (client to server) in bytes.
 # jetty.http2.initialStreamRecvWindow=524288
 
-## Initial session receive window (client to server)
+## Specifies the initial session receive window (client to server) in bytes.
 # jetty.http2.initialSessionRecvWindow=1048576
 
-## The max number of keys in all SETTINGS frames
+## Specifies the maximum number of keys in all SETTINGS frames received by a session.
 # jetty.http2.maxSettingsKeys=64
 
-## Max number of bad frames and pings per second
+## Specifies the maximum number of bad frames and pings per second,
+## after which a session is closed to avoid denial of service attacks.
 # jetty.http2.rateControl.maxEventsPerSecond=20
+# end::documentation[]
