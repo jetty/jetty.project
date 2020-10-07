@@ -1644,38 +1644,179 @@ public class ServletContextHandlerTest
         }
     }
 
+    public static class TestPListener implements  ServletRequestListener
+    {
+        @Override
+        public void requestInitialized(ServletRequestEvent sre)
+        {
+            ServletRequest request = sre.getServletRequest();
+            Integer count = (Integer)request.getAttribute("testRequestListener");
+            request.setAttribute("testRequestListener", count == null ? 1 : count + 1);
+        }
+
+        @Override
+        public void requestDestroyed(ServletRequestEvent sre)
+        {
+        }
+    }
+
     @Test
-    public void testProgrammaticFilterServlet() throws Exception
+    public void testProgrammaticListener() throws Exception
     {
         ServletContextHandler context = new ServletContextHandler();
         ServletHandler handler = new ServletHandler();
         _server.setHandler(context);
         context.setHandler(handler);
-        handler.addServletWithMapping(new ServletHolder(new TestServlet()), "/");
 
+        // Add a servlet to report number of listeners
+        handler.addServletWithMapping(new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                resp.getOutputStream().print("Listeners=" + req.getAttribute("testRequestListener"));
+            }
+        }), "/");
+
+        // Add a listener in STOPPED, STARTING and STARTED states
+        handler.addListener(new ListenerHolder(TestPListener.class));
+        handler.addServlet(new ServletHolder(new HttpServlet()
+        {
+            @Override
+            public void init() throws ServletException
+            {
+                handler.addListener(new ListenerHolder(TestPListener.class));
+            }
+        })
+        {
+            {
+                setInitOrder(1);
+            }
+        });
         _server.start();
-
+        handler.addListener(new ListenerHolder(TestPListener.class));
 
         String request =
-            "GET /hello HTTP/1.0\n" +
-            "Host: localhost\n" +
-            "\n";
+            "GET /test HTTP/1.0\n" +
+                "Host: localhost\n" +
+                "\n";
         String response = _connector.getResponse(request);
         assertThat(response, containsString("200 OK"));
-        assertThat(response, containsString("Test"));
+        assertThat(response, containsString("Listeners=3"));
+    }
 
-        handler.addFilterWithMapping(new FilterHolder(new MyFilter()), "/*", EnumSet.of(DispatcherType.REQUEST));
-        handler.addServletWithMapping(new ServletHolder(new HelloServlet()), "/hello/*");
+    public static class TestPFilter implements Filter
+    {
+        @Override
+        public void init(FilterConfig filterConfig) throws ServletException
+        {
+        }
 
-        _server.dumpStdErr();
+        @Override
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        {
+            Integer count = (Integer)request.getAttribute("testFilter");
+            request.setAttribute("testFilter", count == null ? 1 : count + 1);
+            chain.doFilter(request, response);
+        }
 
-        request =
-            "GET /hello HTTP/1.0\n" +
-            "Host: localhost\n" +
-            "\n";
+        @Override
+        public void destroy()
+        {
+        }
+    }
+
+    @Test
+    public void testProgrammaticFilters() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        ServletHandler handler = new ServletHandler();
+        _server.setHandler(context);
+        context.setHandler(handler);
+
+        // Add a servlet to report number of filters
+        handler.addServletWithMapping(new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                resp.getOutputStream().print("Filters=" + req.getAttribute("testFilter"));
+            }
+        }), "/");
+
+        // Add a filter in STOPPED, STARTING and STARTED states
+        handler.addFilterWithMapping(new FilterHolder(TestPFilter.class), "/*", EnumSet.of(DispatcherType.REQUEST));
+        handler.addServlet(new ServletHolder(new HttpServlet()
+        {
+            @Override
+            public void init() throws ServletException
+            {
+                handler.addFilterWithMapping(new FilterHolder(TestPFilter.class), "/*", EnumSet.of(DispatcherType.REQUEST));
+            }
+        })
+        {
+            {
+                setInitOrder(1);
+            }
+        });
+        _server.start();
+        handler.addFilterWithMapping(new FilterHolder(TestPFilter.class), "/*", EnumSet.of(DispatcherType.REQUEST));
+
+        String request =
+            "GET /test HTTP/1.0\n" +
+                "Host: localhost\n" +
+                "\n";
+        String response = _connector.getResponse(request);
+        assertThat(response, containsString("200 OK"));
+        assertThat(response, containsString("Filters=3"));
+    }
+
+    public static class TestPServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            resp.getOutputStream().println(req.getRequestURI());
+        }
+    }
+
+    @Test
+    public void testProgrammaticServlets() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        ServletHandler handler = new ServletHandler();
+        _server.setHandler(context);
+        context.setHandler(handler);
+
+        // Add a filter in STOPPED, STARTING and STARTED states
+        handler.addServletWithMapping(new ServletHolder(TestPServlet.class), "/one");
+        handler.addServlet(new ServletHolder(new HttpServlet()
+        {
+            @Override
+            public void init() throws ServletException
+            {
+                handler.addServletWithMapping(new ServletHolder(TestPServlet.class), "/two");
+            }
+        })
+        {
+            {
+                setInitOrder(1);
+            }
+        });
+        _server.start();
+        handler.addServletWithMapping(new ServletHolder(TestPServlet.class), "/three");
+
+        String request = "GET /one HTTP/1.0\n" + "Host: localhost\n" + "\n";
+        String response = _connector.getResponse(request);
+        assertThat(response, containsString("200 OK"));
+        assertThat(response, containsString("/one"));
+        request = "GET /two HTTP/1.0\n" + "Host: localhost\n" + "\n";
         response = _connector.getResponse(request);
         assertThat(response, containsString("200 OK"));
-        assertThat(response, containsString("filter: filter"));
-        assertThat(response, containsString("Hello World"));
+        assertThat(response, containsString("/two"));
+        request = "GET /three HTTP/1.0\n" + "Host: localhost\n" + "\n";
+        response = _connector.getResponse(request);
+        assertThat(response, containsString("200 OK"));
+        assertThat(response, containsString("/three"));
     }
 }

@@ -19,7 +19,6 @@
 package org.eclipse.jetty.servlet;
 
 import java.util.EventListener;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -78,33 +77,30 @@ public class ListenerHolder extends BaseHolder<EventListener>
             throw new IllegalStateException(msg);
         }
 
-        ContextHandler contextHandler = ContextHandler.getCurrentContext().getContextHandler();
-        if (contextHandler != null)
+        ContextHandler contextHandler = null;
+        if (getServletHandler() != null)
+            contextHandler = getServletHandler().getServletContextHandler();
+        if (contextHandler == null && ContextHandler.getCurrentContext() != null)
+            contextHandler = ContextHandler.getCurrentContext().getContextHandler();
+        if (contextHandler == null)
+            throw new IllegalStateException("No Context");
+
+        _listener = getInstance();
+        if (_listener == null)
         {
-            _listener = getInstance();
-            if (_listener == null)
+            //create an instance of the listener and decorate it
+            try
             {
-                //create an instance of the listener and decorate it
-                try
-                {
-                    ServletContext context = contextHandler.getServletContext();
-                    _listener = (context != null)
-                        ? context.createListener(getHeldClass())
-                        : getHeldClass().getDeclaredConstructor().newInstance();
-                }
-                catch (ServletException ex)
-                {
-                    Throwable cause = ex.getRootCause();
-                    if (cause instanceof InstantiationException)
-                        throw (InstantiationException)cause;
-                    if (cause instanceof IllegalAccessException)
-                        throw (IllegalAccessException)cause;
-                    throw ex;
-                }
+                _listener = contextHandler.getServletContext().createListener(getHeldClass());
             }
+            catch (ServletException ex)
+            {
+                throw ex;
+            }
+
             _listener = wrap(_listener, WrapFunction.class, WrapFunction::wrapEventListener);
-            contextHandler.addEventListener(_listener);
         }
+        contextHandler.addEventListener(_listener);
     }
 
     @Override
