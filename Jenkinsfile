@@ -12,7 +12,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk8", "clean install -T3", "maven3",
+                mavenBuild( "jdk8", "clean install ", "maven3",
                             [[parserName: 'Maven'], [parserName: 'Java']])
                 // Collect up the jacoco execution results (only on main build)
                 jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
@@ -37,54 +37,54 @@ pipeline {
           }
         }
 
-        stage("Build / Test - JDK11") {
-          agent { node { label 'linux' } }
-          steps {
-            container( 'jetty-build' ) {
-              timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk11", "clean install -T3 -Djacoco.skip=true ", "maven3",
-                            [[parserName: 'Maven'], [parserName: 'Java']])
-              }
-            }
-          }
-        }
-
-        stage("Build / Test - JDK15") {
-          agent { node { label 'linux' } }
-          steps {
-            container( 'jetty-build' ) {
-              timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk15", "clean install -T3 -Djacoco.skip=true ", "maven3",
-                            [[parserName: 'Maven'], [parserName: 'Java']])
-              }
-            }
-          }
-        }
-
-        stage("Build Javadoc") {
-          agent { node { label 'linux' } }
-          steps {
-            container( 'jetty-build' ) {
-              timeout( time: 40, unit: 'MINUTES' ) {
-                mavenBuild( "jdk11",
-                            "install javadoc:javadoc javadoc:aggregate-jar -DskipTests -Dpmd.skip=true -Dcheckstyle.skip=true",
-                            "maven3", [[parserName: 'Maven'], [parserName: 'JavaDoc'], [parserName: 'Java']])
-              }
-            }
-          }
-        }
-
-        stage("Build Compact3") {
-          agent { node { label 'linux' } }
-          steps {
-            container( 'jetty-build' ) {
-              timeout( time: 30, unit: 'MINUTES' ) {
-                mavenBuild( "jdk8", "-T3 -Pcompact3 clean install -DskipTests", "maven3",
-                            [[parserName: 'Maven'], [parserName: 'Java']])
-              }
-            }
-          }
-        }
+//        stage("Build / Test - JDK11") {
+//          agent { node { label 'linux' } }
+//          steps {
+//            container( 'jetty-build' ) {
+//              timeout( time: 120, unit: 'MINUTES' ) {
+//                mavenBuild( "jdk11", "clean install -T3 -Djacoco.skip=true ", "maven3",
+//                            [[parserName: 'Maven'], [parserName: 'Java']])
+//              }
+//            }
+//          }
+//        }
+//
+//        stage("Build / Test - JDK15") {
+//          agent { node { label 'linux' } }
+//          steps {
+//            container( 'jetty-build' ) {
+//              timeout( time: 120, unit: 'MINUTES' ) {
+//                mavenBuild( "jdk15", "clean install -T3 -Djacoco.skip=true ", "maven3",
+//                            [[parserName: 'Maven'], [parserName: 'Java']])
+//              }
+//            }
+//          }
+//        }
+//
+//        stage("Build Javadoc") {
+//          agent { node { label 'linux' } }
+//          steps {
+//            container( 'jetty-build' ) {
+//              timeout( time: 40, unit: 'MINUTES' ) {
+//                mavenBuild( "jdk11",
+//                            "install javadoc:javadoc javadoc:aggregate-jar -DskipTests -Dpmd.skip=true -Dcheckstyle.skip=true",
+//                            "maven3", [[parserName: 'Maven'], [parserName: 'JavaDoc'], [parserName: 'Java']])
+//              }
+//            }
+//          }
+//        }
+//
+//        stage("Build Compact3") {
+//          agent { node { label 'linux' } }
+//          steps {
+//            container( 'jetty-build' ) {
+//              timeout( time: 30, unit: 'MINUTES' ) {
+//                mavenBuild( "jdk8", "-T3 -Pcompact3 clean install -DskipTests", "maven3",
+//                            [[parserName: 'Maven'], [parserName: 'Java']])
+//              }
+//            }
+//          }
+//        }
       }
     }
   }
