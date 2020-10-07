@@ -177,6 +177,22 @@ public class MessageInputStream extends InputStream implements MessageAppender
     @Override
     public int read() throws IOException
     {
+        byte[] bytes = new byte[1];
+        while (true)
+        {
+            int read = read(bytes, 0, 1);
+            if (read < 0)
+                return -1;
+            if (read == 0)
+                continue;
+
+            return bytes[0] & 0xFF;
+        }
+    }
+
+    @Override
+    public int read(byte[] b, int off, int len) throws IOException
+    {
         try
         {
             if (state == State.CLOSED)
@@ -215,7 +231,12 @@ public class MessageInputStream extends InputStream implements MessageAppender
                 }
             }
 
-            int result = activeBuffer.get() & 0xFF;
+            ByteBuffer buffer = BufferUtil.toBuffer(b, off, len);
+            BufferUtil.clearToFill(buffer);
+            int written = BufferUtil.put(activeBuffer, buffer);
+            BufferUtil.flipToFlush(buffer, 0);
+
+            // If we have no more content we may need to resume to get more data.
             if (!activeBuffer.hasRemaining())
             {
                 SuspendToken resume = null;
@@ -247,7 +268,7 @@ public class MessageInputStream extends InputStream implements MessageAppender
                     resume.resume();
             }
 
-            return result;
+            return written;
         }
         catch (InterruptedException x)
         {
