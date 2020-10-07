@@ -17,12 +17,12 @@
 //
 
 [[og-quickstart]]
-=== Quickstart
+=== Faster Web Application Deployment
 
 
 The auto discovery features of the Servlet Specification can make deployments slow and uncertain.
 Auto discovery of web application configuration can be useful during the development as it allows new features and frameworks to be enabled simply by dropping in a jar file.
-However, for deployment, the need to scan the contents of many jars can have a significant impact at startup time.
+However for production deployment, the need to scan the contents of many jars can have a significant impact at startup time.
 
 The `quickstart` module allows a webapp to be pre-scanned, making startup predictable and faster.
 During scanning all declarative configuration (ie from web.xml, web-fragment.xml and annotations) are encoded into an effective `web.xml`, called `WEB-INF/quickstart-web.xml`, which can be inspected to understand what will be deployed.
@@ -30,7 +30,7 @@ NOTE:: Programmatic configuration is _not_ encoded into the generated `quickstar
 
 With `quickstart`, webapps that took many seconds to scan and deploy can now be deployed in a few hundred milliseconds.
 
-==== Enabling Quickstart
+==== Enabling 
 
 Enable the `quickstart` module for your jetty base:
 

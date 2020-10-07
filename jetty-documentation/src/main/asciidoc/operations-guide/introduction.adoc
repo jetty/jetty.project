@@ -31,6 +31,7 @@ If you know Eclipse Jetty already, jump to a feature:
 
 * xref:og-sessions[HTTP Session Caching and Clustering]
 * xref:og-protocols-http2[HTTP/2 Support]
+* xref:og-quickstart[Faster Web Application Deployment]
 
 TODO
 
