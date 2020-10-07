@@ -99,6 +99,9 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
      */
     public static void configure(ServletContextHandler context, Configurator configurator)
     {
+        if (context.isStarted())
+            throw new IllegalStateException("configure should be called before starting");
+
         // In this embedded-jetty usage, allow ServletContext.addListener() to
         // add other ServletContextListeners (such as the ContextDestroyListener) after
         // the initialization phase is over. (important for this SCI to function)

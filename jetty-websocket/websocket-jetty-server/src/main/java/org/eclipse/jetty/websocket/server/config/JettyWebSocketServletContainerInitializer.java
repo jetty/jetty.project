@@ -53,6 +53,9 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
      */
     public static void configure(ServletContextHandler context, Configurator configurator)
     {
+        if (context.isStarted())
+            throw new IllegalStateException("configure should be called before starting");
+
         context.addEventListener(
             ContainerInitializer
                 .asContextListener(new JettyWebSocketServletContainerInitializer())
