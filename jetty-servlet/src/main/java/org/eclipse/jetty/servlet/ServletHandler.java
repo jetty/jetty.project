@@ -741,6 +741,29 @@ public class ServletHandler extends ScopedHandler
         return _initialized;
     }
 
+    protected void initializeHolders(BaseHolder<?>[] holders)
+    {
+        for (BaseHolder<?> holder : holders)
+        {
+            holder.setServletHandler(this);
+            if (isInitialized())
+            {
+                try
+                {
+                    if (!holder.isStarted())
+                    {
+                        holder.start();
+                        holder.initialize();
+                    }
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+    }
+
     /**
      * @return whether the filter chains are cached.
      */
@@ -768,10 +791,7 @@ public class ServletHandler extends ScopedHandler
     public void setListeners(ListenerHolder[] listeners)
     {
         if (listeners != null)
-            for (ListenerHolder holder : listeners)
-            {
-                holder.setServletHandler(this);
-            }
+            initializeHolders(listeners);
         updateBeans(_listeners,listeners);
         _listeners = listeners;
     }
@@ -833,9 +853,6 @@ public class ServletHandler extends ScopedHandler
     {
         Objects.requireNonNull(servlet);
         ServletHolder[] holders = getServlets();
-        if (holders != null)
-            holders = holders.clone();
-
         try
         {
             try (AutoLock l = lock())
@@ -947,8 +964,6 @@ public class ServletHandler extends ScopedHandler
     {
         Objects.requireNonNull(holder);
         FilterHolder[] holders = getFilters();
-        if (holders != null)
-            holders = holders.clone();
 
         try
         {
@@ -1391,16 +1406,6 @@ public class ServletHandler extends ScopedHandler
                 LOG.debug("filterNameMap={} pathFilters={} servletFilterMap={} servletPathMap={} servletNameMap={}",
                     _filterNameMap, _filterPathMappings, _filterNameMappings, _servletPathMap, _servletNameMap);
             }
-
-            try
-            {
-                if (_contextHandler != null && _contextHandler.isStarted() || _contextHandler == null && isStarted())
-                    initialize();
-            }
-            catch (Exception e)
-            {
-                throw new RuntimeException(e);
-            }
         }
     }
 
@@ -1459,7 +1464,7 @@ public class ServletHandler extends ScopedHandler
     {
         updateBeans(_filterMappings,filterMappings);
         _filterMappings = filterMappings;
-        if (isStarted())
+        if (isRunning())
             updateMappings();
         invalidateChainsCache();
     }
@@ -1469,12 +1474,8 @@ public class ServletHandler extends ScopedHandler
         try (AutoLock l = lock())
         {
             if (holders != null)
-            {
-                for (FilterHolder holder : holders)
-                {
-                    holder.setServletHandler(this);
-                }
-            }
+                initializeHolders(holders);
+
             updateBeans(_filters,holders);
             _filters = holders;
             updateNameMappings();
@@ -1489,7 +1490,7 @@ public class ServletHandler extends ScopedHandler
     {
         updateBeans(_servletMappings,servletMappings);
         _servletMappings = servletMappings;
-        if (isStarted())
+        if (isRunning())
             updateMappings();
         invalidateChainsCache();
     }
@@ -1504,12 +1505,7 @@ public class ServletHandler extends ScopedHandler
         try (AutoLock l = lock())
         {
             if (holders != null)
-            {
-                for (ServletHolder holder : holders)
-                {
-                    holder.setServletHandler(this);
-                }
-            }
+                initializeHolders(holders);
             updateBeans(_servlets,holders);
             _servlets = holders;
             updateNameMappings();
