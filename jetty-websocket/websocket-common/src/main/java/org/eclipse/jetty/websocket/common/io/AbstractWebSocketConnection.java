@@ -521,7 +521,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         ByteBuffer resume = readState.resume();
         if (resume != null)
-            onFillable(resume);
+            getExecutor().execute(() -> onFillable(resume));
     }
 
     @Override
