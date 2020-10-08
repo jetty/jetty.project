@@ -19,19 +19,20 @@ server
 etc/jetty-unixsocket.xml
 
 [files]
-maven://com.github.jnr/jnr-unixsocket/0.22|lib/jnr/jnr-unixsocket-0.22.jar
-maven://com.github.jnr/jnr-ffi/2.1.9|lib/jnr/jnr-ffi-2.1.9.jar
-maven://com.github.jnr/jffi/1.2.17|lib/jnr/jffi-1.2.17.jar
-maven://com.github.jnr/jffi/1.2.16/jar/native|lib/jnr/jffi-1.2.16-native.jar
-maven://org.ow2.asm/asm/7.0|lib/jnr/asm-7.0.jar
-maven://org.ow2.asm/asm-commons/7.0|lib/jnr/asm-commons-7.0.jar
-maven://org.ow2.asm/asm-analysis/7.0|lib/jnr/asm-analysis-7.0.jar
-maven://org.ow2.asm/asm-tree/7.0|lib/jnr/asm-tree-7.0.jar
-maven://org.ow2.asm/asm-util/7.0|lib/jnr/asm-util-7.0.jar
+maven://com.github.jnr/jnr-unixsocket/0.38.3|lib/jnr/jnr-unixsocket-0.38.3.jar
+maven://com.github.jnr/jnr-ffi/2.2.0|lib/jnr/jnr-ffi-2.2.0.jar
+maven://com.github.jnr/jffi/1.3.0|lib/jnr/jffi-1.3.0.jar
+maven://com.github.jnr/jffi/1.3.0/jar/native|lib/jnr/jffi-1.3.0-native.jar
+maven://org.ow2.asm/asm/7.3.1|lib/jnr/asm-7.3.1.jar
+maven://org.ow2.asm/asm-commons/7.3.1|lib/jnr/asm-commons-7.3.1.jar
+maven://org.ow2.asm/asm-analysis/7.3.1|lib/jnr/asm-analysis-7.3.1.jar
+maven://org.ow2.asm/asm-tree/7.3.1|lib/jnr/asm-tree-7.3.1.jar
+maven://org.ow2.asm/asm-util/7.3.1|lib/jnr/asm-util-7.3.1.jar
+maven://com.github.jnr/jnr-a64asm/1.0.2|lib/jnr/jnr-a64asm-1.0.2.jar
 maven://com.github.jnr/jnr-x86asm/1.0.2|lib/jnr/jnr-x86asm-1.0.2.jar
-maven://com.github.jnr/jnr-constants/0.9.11|lib/jnr/jnr-constants-0.9.11.jar
-maven://com.github.jnr/jnr-enxio/0.20|lib/jnr/jnr-enxio-0.20.jar
-maven://com.github.jnr/jnr-posix/3.0.47|lib/jnr/jnr-posix-3.0.47.jar
+maven://com.github.jnr/jnr-constants/0.10.0|lib/jnr/jnr-constants-0.10.0.jar
+maven://com.github.jnr/jnr-enxio/0.32.1|lib/jnr/jnr-enxio-0.32.1.jar
+maven://com.github.jnr/jnr-posix/3.1.2|lib/jnr/jnr-posix-3.1.2.jar
 
 [lib]
 lib/jetty-unixsocket-${jetty.version}.jar
