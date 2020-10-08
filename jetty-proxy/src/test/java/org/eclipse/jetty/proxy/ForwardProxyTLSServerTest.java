@@ -646,35 +646,21 @@ public class ForwardProxyTLSServerTest
     @Test
     public void testBothProxyAndServerNeedClientAuth() throws Exception
     {
-        // Keystore server_keystore.p12 contains:
-        // - alias "mykey": self-signed certificate with private key.
-        // - alias "client_root": certificate from client_keystore.p12 under the "server" alias.
-        // Keystore proxy_keystore.p12 contains:
-        // - alias "mykey": self-signed certificate with private key.
-        // - alias "client_root": certificate from client_keystore.p12 under the "proxy" alias.
-        // Keystore client_keystore.p12 contains:
-        // - alias "proxy": self-signed certificate with private key to send to the proxy.
-        // - alias "server": self-signed certificate with private key to send to the server.
-        // - alias "proxy_root": certificate from proxy_keystore under the "mykey" alias.
-        // - alias "server_root": certificate from server_keystore under the "mykey" alias.
-
-        // We want setEndpointIdentificationAlgorithm(null) for all 3 SslContextFactory
-        // because the certificate common names do not match the host names.
+        // See src/test/resources/readme_keystores.txt.
 
         SslContextFactory.Server serverTLS = newServerSslContextFactory();
-        serverTLS.setEndpointIdentificationAlgorithm(null);
         serverTLS.setNeedClientAuth(true);
         startTLSServer(serverTLS, new ServerHandler());
         int serverPort = serverConnector.getLocalPort();
-        String serverAlias = "server";
 
         SslContextFactory.Server proxyTLS = newProxySslContextFactory();
         proxyTLS.setEndpointIdentificationAlgorithm(null);
         proxyTLS.setNeedClientAuth(true);
         startProxy(proxyTLS);
         int proxyPort = proxyConnector.getLocalPort();
-        String proxyAlias = "proxy";
 
+        String proxyAlias = "client_to_proxy";
+        String serverAlias = "client_to_server";
         SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client()
         {
             @Override
