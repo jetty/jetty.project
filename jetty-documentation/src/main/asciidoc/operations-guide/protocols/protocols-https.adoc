@@ -40,7 +40,7 @@ INFO  : copy ${jetty.home}/modules/logging/jetty/resources/jetty-logging.propert
 INFO  : Base directory was modified
 ----
 
-The command above enables the `ssl` module, that provides the secure network connector, the keystore configuration and TLS configuration -- for more details see xref:og-protocols-ssl[this section].
+The command above enables the `ssl` module, that provides the secure network connector, the KeyStore configuration and TLS configuration -- for more details see xref:og-protocols-ssl[this section].
 Then, the xref:og-module-https[`https` module] adds HTTP/1.1 as the protocol secured by TLS.
 
 The `$JETTY_BASE` directory looks like this:
@@ -55,13 +55,13 @@ $JETTY_BASE
     └── ssl.ini
 ----
 
-Note that the keystore file is missing, because you have to provide one with the cryptographic material you want (read xref:og-keystore[this section] to create your own keystore).
+Note that the KeyStore file is missing, because you have to provide one with the cryptographic material you want (read xref:og-keystore[this section] to create your own KeyStore).
 You need to configure these two properties by editing `ssl.ini`:
 
 * `jetty.sslContext.keyStorePath`
 * `jetty.sslContext.keyStorePassword`
 
-As a quick example, you can enable the xref:og-module-test-keystore[`test-keystore` module], that provides a keystore containing a self-signed certificate:
+As a quick example, you can enable the xref:og-module-test-keystore[`test-keystore` module], that provides a KeyStore containing a self-signed certificate:
 
 ----
 $ java -jar $JETTY_HOME/start.jar --add-modules=test-keystore

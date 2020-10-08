@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.util.server;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.EnumSet;
+import java.util.Objects;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
@@ -74,10 +76,12 @@ import org.slf4j.LoggerFactory;
 public class WebSocketUpgradeFilter implements Filter, Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketUpgradeFilter.class);
+    private static final AutoLock LOCK = new AutoLock();
 
     private static FilterHolder getFilter(ServletContext servletContext)
     {
-        ServletHandler servletHandler = ContextHandler.getContextHandler(servletContext).getChildHandlerByClass(ServletHandler.class);
+        ContextHandler contextHandler = Objects.requireNonNull(ContextHandler.getContextHandler(servletContext));
+        ServletHandler servletHandler = contextHandler.getChildHandlerByClass(ServletHandler.class);
 
         for (FilterHolder holder : servletHandler.getFilters())
         {
@@ -105,22 +109,27 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
      */
     public static FilterHolder ensureFilter(ServletContext servletContext)
     {
-        FilterHolder existingFilter = WebSocketUpgradeFilter.getFilter(servletContext);
-        if (existingFilter != null)
-            return existingFilter;
+        // Lock in case two concurrent requests are initializing the filter lazily.
+        try (AutoLock l = LOCK.lock())
+        {
+            FilterHolder existingFilter = WebSocketUpgradeFilter.getFilter(servletContext);
+            if (existingFilter != null)
+                return existingFilter;
 
-        final String name = "WebSocketUpgradeFilter";
-        final String pathSpec = "/*";
-        FilterHolder holder = new FilterHolder(new WebSocketUpgradeFilter());
-        holder.setName(name);
-        holder.setInitParameter(MAPPING_ATTRIBUTE_INIT_PARAM, WebSocketMapping.DEFAULT_KEY);
+            final String name = "WebSocketUpgradeFilter";
+            final String pathSpec = "/*";
+            FilterHolder holder = new FilterHolder(new WebSocketUpgradeFilter());
+            holder.setName(name);
+            holder.setInitParameter(MAPPING_ATTRIBUTE_INIT_PARAM, WebSocketMapping.DEFAULT_KEY);
 
-        holder.setAsyncSupported(true);
-        ServletHandler servletHandler = ContextHandler.getContextHandler(servletContext).getChildHandlerByClass(ServletHandler.class);
-        servletHandler.addFilterWithMapping(holder, pathSpec, EnumSet.of(DispatcherType.REQUEST));
-        if (LOG.isDebugEnabled())
-            LOG.debug("Adding {} mapped to {} in {}", holder, pathSpec, servletContext);
-        return holder;
+            holder.setAsyncSupported(true);
+            ContextHandler contextHandler = Objects.requireNonNull(ContextHandler.getContextHandler(servletContext));
+            ServletHandler servletHandler = contextHandler.getChildHandlerByClass(ServletHandler.class);
+            servletHandler.addFilterWithMapping(holder, pathSpec, EnumSet.of(DispatcherType.REQUEST));
+            if (LOG.isDebugEnabled())
+                LOG.debug("Adding {} mapped to {} in {}", holder, pathSpec, servletContext);
+            return holder;
+        }
     }
 
     public static final String MAPPING_ATTRIBUTE_INIT_PARAM = "org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping.key";

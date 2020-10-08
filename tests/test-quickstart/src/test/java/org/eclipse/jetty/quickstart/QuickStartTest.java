@@ -139,14 +139,16 @@ public class QuickStartTest
         }
 
         server.setHandler(webapp);
-
         server.start();
 
-        URL url = new URL("http://127.0.0.1:" + server.getBean(NetworkConnector.class).getLocalPort() + "/");
+        URL url = new URL("http://127.0.0.1:" + server.getBean(NetworkConnector.class).getLocalPort() + "/test/");
         HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+        connection.setRequestMethod("POST");
+        
         assertEquals(200, connection.getResponseCode());
-        assertThat(IO.toString((InputStream)connection.getContent()), Matchers.containsString("Test Specification WebApp"));
-
+        String content = IO.toString((InputStream)connection.getContent());
+        assertThat(content, Matchers.containsString("Results"));
+        assertThat(content, Matchers.not(Matchers.containsString("FAIL")));
         server.stop();
     }
 
