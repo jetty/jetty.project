@@ -36,6 +36,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -219,6 +220,39 @@ public class FilterHolder extends Holder<Filter>
                 baseRequest.setAsyncSupported(true, null);
             }
         }
+    }
+
+    /**
+     * Work out the class of the held {@link Filter} even before the {@link FilterHolder} has been started.
+     * @return the class of the held {@link Filter}, or null if not available.
+     */
+    @SuppressWarnings("unchecked")
+    public Class<? extends Filter> getFilterClass()
+    {
+        if (_filter != null)
+            return _filter.getClass();
+
+        Filter filter = getInstance();
+        if (filter != null)
+            return filter.getClass();
+
+        Class<? extends Filter> heldClass = getHeldClass();
+        if (heldClass != null)
+            return heldClass;
+
+        String className = getClassName();
+        if (className != null)
+        {
+            try
+            {
+                return Loader.loadClass(className);
+            }
+            catch (ClassNotFoundException e)
+            {
+                LOG.warn("Could not load filter class", e);
+            }
+        }
+        return null;
     }
 
     @Override

@@ -40,7 +40,6 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.Configuration;
-import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,34 +77,40 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketUpgradeFilter.class);
     private static final AutoLock LOCK = new AutoLock();
 
+    /**
+     * The init parameter name used to define {@link ServletContext} attribute used to share the {@link WebSocketMapping}.
+     */
+    public static final String MAPPING_ATTRIBUTE_INIT_PARAM = "org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping.key";
+
+    /**
+     * Return any {@link WebSocketUpgradeFilter} already present on the {@link ServletContext}.
+     *
+     * @param servletContext the {@link ServletContext} to use.
+     * @return the configured default {@link WebSocketUpgradeFilter} instance.
+     */
     private static FilterHolder getFilter(ServletContext servletContext)
     {
         ContextHandler contextHandler = Objects.requireNonNull(ContextHandler.getContextHandler(servletContext));
         ServletHandler servletHandler = contextHandler.getChildHandlerByClass(ServletHandler.class);
-
         for (FilterHolder holder : servletHandler.getFilters())
         {
-            if (holder.getInitParameter(MAPPING_ATTRIBUTE_INIT_PARAM) != null)
+            if (WebSocketUpgradeFilter.class.isAssignableFrom(holder.getFilterClass()))
                 return holder;
         }
-
         return null;
     }
 
     /**
-     * Configure the default WebSocketUpgradeFilter.
-     *
-     * <p>
-     * This will return the default {@link WebSocketUpgradeFilter} on the
-     * provided {@link ServletContext}, creating the filter if necessary.
+     * Ensure a {@link WebSocketUpgradeFilter} is available on the provided {@link ServletContext},
+     * a new filter will added if one does not already exist.
      * </p>
      * <p>
      * The default {@link WebSocketUpgradeFilter} is also available via
      * the {@link ServletContext} attribute named {@code org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter}
      * </p>
      *
-     * @param servletContext the {@link ServletContext} to use
-     * @return the configured default {@link WebSocketUpgradeFilter} instance
+     * @param servletContext the {@link ServletContext} to use.
+     * @return the configured default {@link WebSocketUpgradeFilter} instance.
      */
     public static FilterHolder ensureFilter(ServletContext servletContext)
     {
@@ -131,8 +136,6 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
             return holder;
         }
     }
-
-    public static final String MAPPING_ATTRIBUTE_INIT_PARAM = "org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping.key";
 
     private final Configuration.ConfigurationCustomizer defaultCustomizer = new Configuration.ConfigurationCustomizer();
     private WebSocketMapping mapping;
@@ -174,10 +177,9 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         final ServletContext context = config.getServletContext();
 
         String mappingKey = config.getInitParameter(MAPPING_ATTRIBUTE_INIT_PARAM);
-        if (mappingKey != null)
-            mapping = WebSocketMapping.ensureMapping(context, mappingKey);
-        else
-            mapping = new WebSocketMapping(WebSocketServerComponents.ensureWebSocketComponents(context));
+        if (mappingKey == null)
+            mappingKey = WebSocketMapping.DEFAULT_KEY;
+        mapping = WebSocketMapping.ensureMapping(context, mappingKey);
 
         String max = config.getInitParameter("idleTimeout");
         if (max == null)

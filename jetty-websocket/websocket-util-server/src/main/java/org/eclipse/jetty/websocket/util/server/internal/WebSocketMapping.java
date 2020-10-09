@@ -63,7 +63,6 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
     public static WebSocketMapping getMapping(ServletContext servletContext, String mappingKey)
     {
         Object mappingObject = servletContext.getAttribute(mappingKey);
-
         if (mappingObject != null)
         {
             if (mappingObject instanceof WebSocketMapping)
@@ -86,7 +85,6 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
     public static WebSocketMapping ensureMapping(ServletContext servletContext, String mappingKey)
     {
         WebSocketMapping mapping = getMapping(servletContext, mappingKey);
-
         if (mapping == null)
         {
             mapping = new WebSocketMapping(WebSocketServerComponents.ensureWebSocketComponents(servletContext));
