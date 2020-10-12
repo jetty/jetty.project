@@ -195,8 +195,10 @@ The KeyStore contains two certificates, one for `one.com` and one for `two.net`.
 
 There are three `ssl` module properties that control the SNI behavior on the server: one that works at the TLS level, and two that works at the HTTP level.
 
+The property that works at the TLS level is:
+
 `jetty.sslContext.sniRequired`::
-This is the TLS level property, defaults to `false`.
+Whether SNI is required at the TLS level, defaults to `false`.
 
 Its behavior is explained by the following table:
 
@@ -222,54 +224,77 @@ Its behavior is explained by the following table:
 
 |===
 
-WARNING: The _default certificate_ is the certificate returned by the TLS implementation in case there is no SNI match, and you should not rely on this certificate to be the same across Java vendors and versions, or Jetty versions, or TLS provider vendors and versions.
+[WARNING]
+====
+The _default certificate_ is the certificate returned by the TLS implementation in case there is no SNI match, and you should not rely on this certificate to be the same across Java vendors and versions, or Jetty versions, or TLS provider vendors and versions.
+
+In the example above it could be either the `one.com` certificate or the `two.net` certificate.
+====
+
+When `jetty.sslContext.sniRequired=true`, clients that don't send a valid SNI receive a TLS failure, and their attempt to connect to the server fails.
+The details of this failure may not be reported and could be difficult to figure out that the failure is related to an invalid SNI.
+
+For this reason, other two properties are defined at the HTTP level, so that clients can received an HTTP 400 response with more details about what went wrong while trying to connect to the server:
 
 `jetty.ssl.sniRequired`::
 Whether SNI is required at the HTTP level, defaults to `false`.
-`jetty.ssl.sniHostCheck`::
-Whether the SNI domain must be verified at the HTTP level against the `Host` header, defaults to `true`.
 
-Their combined behavior is explained by the following table.
+Its behavior is similar to the `jetty.sslContext.sniRequired` property above, and is explained by the following table:
 
-.Behavior of the `jetty.ssl.[sniRequired|sniHostCheck]` properties
-[cols="5*a"]
+.Behavior of the `jetty.ssl.sniRequired` property
+[cols=3*a]
 |===
 
 |
-| `sniRequired=false` +
-  `sniHostCheck=false`
-
-| `sniRequired=false` +
-  `sniHostCheck=true`
-
-| `sniRequired=true` +
-  `sniHostCheck=false`
-
-| `sniRequired=true` +
-  `sniHostCheck=true`
+| `sniRequired=false`
+| `sniRequired=true`
 
 | SNI = `null`
-| 200 OK
-| 200 OK
-| 400 Bad Request
-| 400 Bad Request
+| Accept
+| Reject: 400 Bad Request
 
 | SNI = `wrong.org`
-| 200 OK
-| 400 Bad Request
-| 400 Bad Request
-| 400 Bad Request
+| Accept
+| Reject: 400 Bad Request
 
 | SNI = `one.com`
-| 200 OK
-| SNI matches `Host` header ? +
-200 OK : 400 Bad Request
-| 200 OK
-| SNI matches `Host` header ? +
-200 OK : 400 Bad Request
+| Accept
+| Accept
 
 |===
 
-In the normal case, with modern TLS clients and HTTP requests with a correct `Host` header, Jetty will pick the correct certificate from the KeyStore based on the SNI and respond with an HTTP 200 OK.
+When `jetty.ssl.sniRequired=true`, the SNI is matched against the certificate sent to the client, and only if there is a match the request is accepted.
+
+When the request is accepted, there could be an additional check controlled by the following property:
+
+`jetty.ssl.sniHostCheck`::
+Whether the certificate sent to the client matches the `Host` header, defaults to `true`.
+
+Its behavior is explained by the following table:
+
+.Behavior of the `jetty.ssl.sniHostCheck` property
+[cols="3*a"]
+|===
+
+|
+| `sniHostCheck=false`
+| `sniHostCheck=true`
+
+| certificate = `one.com` +
+`Host: wrong.org`
+| Accept
+| Reject: 400 Bad Request
+
+| certificate = `one.com` +
+`Host: one.com`
+| Accept
+| Accept
+
+|===
+
+In the normal case with the default server configuration, for a TLS clients that sends SNI, and then sends an HTTP request with the correct `Host` header, Jetty will pick the correct certificate from the KeyStore based on the SNI received from the client, and accept the request.
+
+Accepting the request does not mean that the request is responded with an HTTP 200 OK, but just that the request passed successfully the SNI checks and will be processed by the server.
+If the request URI is for a resource that does not exist, the response will likely be a 404 Not Found.
 
 You may modify the default values of the SNI properties if you want stricter control over old/broken TLS clients or bad HTTP requests.
