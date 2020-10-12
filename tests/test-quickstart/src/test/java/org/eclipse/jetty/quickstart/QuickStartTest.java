@@ -38,7 +38,6 @@ import org.eclipse.jetty.webapp.WebDescriptor;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.eclipse.jetty.xml.XmlParser.Node;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -99,7 +98,6 @@ public class QuickStartTest
     }
 
     @Test
-    @Disabled
     public void testSpecWar() throws Exception
     {
         //Generate the quickstart xml
