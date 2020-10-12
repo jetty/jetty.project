@@ -30,6 +30,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import javax.net.ssl.ExtendedSSLSession;
+import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SNIMatcher;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLHandshakeException;
@@ -47,7 +49,6 @@ import org.slf4j.LoggerFactory;
  */
 public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
 {
-    public static final String SNI_X509 = "org.eclipse.jetty.util.ssl.snix509";
     private static final Logger LOG = LoggerFactory.getLogger(SniX509ExtendedKeyManager.class);
 
     private final X509ExtendedKeyManager _delegate;
@@ -116,14 +117,29 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         Arrays.stream(mangledAliases)
             .forEach(alias -> aliasMap.put(getAliasMapper().apply(alias), alias));
 
-        // Find our SNIMatcher.  There should only be one and it always matches (always returns true
-        // from AliasSNIMatcher.matches), but it will capture the SNI Host if one was presented.
-        String host = matchers == null ? null :  matchers.stream()
-            .filter(SslContextFactory.AliasSNIMatcher.class::isInstance)
-            .map(SslContextFactory.AliasSNIMatcher.class::cast)
-            .findFirst()
-            .map(SslContextFactory.AliasSNIMatcher::getHost)
-            .orElse(null);
+        String host = null;
+        if (session instanceof ExtendedSSLSession)
+        {
+            host = ((ExtendedSSLSession)session).getRequestedServerNames().stream()
+                .findAny()
+                .filter(SNIHostName.class::isInstance)
+                .map(SNIHostName.class::cast)
+                .map(SNIHostName::getAsciiName)
+                .orElse(null);
+        }
+        if (host == null)
+        {
+            // Find our SNIMatcher.  There should only be one and it always matches (always returns true
+            // from AliasSNIMatcher.matches), but it will capture the SNI Host if one was presented.
+            host = matchers == null ? null : matchers.stream()
+                .filter(SslContextFactory.AliasSNIMatcher.class::isInstance)
+                .map(SslContextFactory.AliasSNIMatcher.class::cast)
+                .findFirst()
+                .map(SslContextFactory.AliasSNIMatcher::getHost)
+                .orElse(null);
+        }
+        if (session != null && host != null)
+            session.putValue(SslContextFactory.Server.SNI_HOST, host);
 
         try
         {
@@ -151,9 +167,6 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
                     LOG.debug("Invalid X509 match for SNI {}: {}", host, alias);
                 return null;
             }
-
-            if (session != null)
-                session.putValue(SNI_X509, x509);
 
             // Convert the selected alias back to the original
             // value before the alias mapping performed above.

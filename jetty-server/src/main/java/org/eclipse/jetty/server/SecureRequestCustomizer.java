@@ -40,7 +40,6 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.ssl.SniX509ExtendedKeyManager;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.ssl.X509;
 import org.slf4j.Logger;
@@ -63,7 +62,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 
     private boolean _sniRequired;
     private boolean _sniHostCheck;
-    private long _stsMaxAge = -1;
+    private long _stsMaxAge;
     private boolean _stsIncludeSubDomains;
     private HttpField _stsField;
 
@@ -247,26 +246,32 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     {
         SSLSession sslSession = sslEngine.getSession();
 
-        if (_sniHostCheck || _sniRequired)
+        if (isSniRequired() || isSniHostCheck())
         {
-            X509 x509 = (X509)sslSession.getValue(SniX509ExtendedKeyManager.SNI_X509);
+            String sniHost = (String)sslSession.getValue(SslContextFactory.Server.SNI_HOST);
+            X509 cert = new X509(null, (X509Certificate)sslSession.getLocalCertificates()[0]);
+            String serverName = request.getServerName();
             if (LOG.isDebugEnabled())
-                LOG.debug("Host {} with SNI {}", request.getServerName(), x509);
+                LOG.debug("Host={}, SNI={}, SNI Certificate={}", serverName, sniHost, cert);
 
-            if (x509 == null)
+            if (isSniRequired())
             {
-                if (_sniRequired)
-                    throw new BadMessageException(400, "SNI required");
+                if (sniHost == null)
+                    throw new BadMessageException(400, "Invalid SNI");
+                if (!cert.matches(sniHost))
+                    throw new BadMessageException(400, "Invalid SNI");
             }
-            else if (_sniHostCheck && !x509.matches(request.getServerName()))
+
+            if (isSniHostCheck())
             {
-                throw new BadMessageException(400, "Host does not match SNI");
+                if (!cert.matches(serverName))
+                    throw new BadMessageException(400, "Invalid SNI");
             }
         }
 
-        request.setAttributes(new SslAttributes(request, sslSession, request.getAttributes()));
+        request.setAttributes(new SslAttributes(request, sslSession));
     }
-    
+
     /**
      * Customizes the request attributes for general secure settings.
      * The default impl calls {@link Request#setSecure(boolean)} with true
@@ -325,9 +330,9 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         private String _sessionId;
         private String _sessionAttribute;
 
-        public SslAttributes(Request request, SSLSession sslSession, Attributes attributes)
+        private SslAttributes(Request request, SSLSession sslSession)
         {
-            super(attributes);
+            super(request.getAttributes());
             this._request = request;
             this._session = sslSession;
 

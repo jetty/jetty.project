@@ -1,9 +1,9 @@
-Since OpenJDK 13.0.2/11.0.6 it is required that CA certificates have the extension CA=true.
+Since OpenJDK 13.0.2/11.0.6 it is required that CA certificates have the extension "bc=ca:true".
 
 The keystores are generated in the following way:
 
 # Generates the server keystore. Note the BasicConstraint=CA:true extension.
-$ keytool -v -genkeypair -validity 36500 -keyalg RSA -keysize 2048 -keystore keystore.p12 -storetype pkcs12 -dname "CN=server, OU=Jetty, O=Webtide, L=Omaha, S=NE, C=US" -ext BC=CA:true
+$ keytool -v -genkeypair -validity 36500 -keyalg RSA -keysize 2048 -keystore keystore.p12 -storetype pkcs12 -dname "CN=localhost, OU=Jetty, O=Webtide, L=Omaha, S=NE, C=US" -ext bc=ca:true -ext san=ip:127.0.0.1,ip:[::1]
 
 # Export the server certificate.
 $ keytool -v -export -keystore keystore.p12 -rfc -file server.crt

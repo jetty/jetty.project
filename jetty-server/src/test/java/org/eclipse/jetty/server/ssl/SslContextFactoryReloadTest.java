@@ -75,7 +75,9 @@ public class SslContextFactoryReloadTest
         sslContextFactory.setKeyStorePassword("storepwd");
 
         HttpConfiguration httpsConfig = new HttpConfiguration();
-        httpsConfig.addCustomizer(new SecureRequestCustomizer());
+        SecureRequestCustomizer customizer = new SecureRequestCustomizer();
+        customizer.setSniHostCheck(false);
+        httpsConfig.addCustomizer(customizer);
         connector = new ServerConnector(server,
             new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
             new HttpConnectionFactory(httpsConfig));

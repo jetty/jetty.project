@@ -1864,7 +1864,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         sslParams.setEndpointIdentificationAlgorithm(getEndpointIdentificationAlgorithm());
         sslParams.setUseCipherSuitesOrder(isUseCipherSuitesOrder());
         if (!_certHosts.isEmpty() || !_certWilds.isEmpty())
-            sslParams.setSNIMatchers(Collections.singletonList(new AliasSNIMatcher()));
+            sslParams.setSNIMatchers(List.of(new AliasSNIMatcher()));
         if (_selectedCipherSuites != null)
             sslParams.setCipherSuites(_selectedCipherSuites);
         if (_selectedProtocols != null)
@@ -2032,7 +2032,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         }
     }
 
-    class AliasSNIMatcher extends SNIMatcher
+    static class AliasSNIMatcher extends SNIMatcher
     {
         private String _host;
 
@@ -2095,6 +2095,8 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     @ManagedObject
     public static class Server extends SslContextFactory implements SniX509ExtendedKeyManager.SniSelector
     {
+        public static final String SNI_HOST = "org.eclipse.jetty.util.ssl.sniHost";
+
         private boolean _needClientAuth;
         private boolean _wantClientAuth;
         private boolean _sniRequired;
