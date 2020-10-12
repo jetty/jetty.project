@@ -47,6 +47,7 @@ TODO
 * xref:og-protocols-https[Configure Secure HTTP/1.1 (https)]
 * xref:og-protocols-http2c[Configure Clear-Text HTTP/2]
 * xref:og-protocols-http2s[Configure Secure HTTP/2]
+* xref:og-protocols-proxy[Configure Jetty Behind a Load Balancer or Reverse Proxy]
 
 TODO
 

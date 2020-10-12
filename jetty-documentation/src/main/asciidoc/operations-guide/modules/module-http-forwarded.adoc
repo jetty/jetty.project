@@ -16,16 +16,13 @@
 // ========================================================================
 //
 
-include::modules.adoc[]
-include::module-bytebufferpool.adoc[]
-include::module-deploy.adoc[]
-include::module-http.adoc[]
-include::module-http2.adoc[]
-include::module-http2c.adoc[]
-include::module-http-forwarded.adoc[]
-include::module-https.adoc[]
-include::module-server.adoc[]
-include::module-ssl.adoc[]
-include::module-ssl-reload.adoc[]
-include::module-test-keystore.adoc[]
-include::module-threadpool.adoc[]
+[[og-module-http-forwarded]]
+==== Module `http-forwarded`
+
+The `http-forwarded` module provides support for processing the `Forwarded` HTTP header (defined in link:https://tools.ietf.org/html/rfc7239[RFC 7239]) and the now obsoleted `X-Forwarded-*` HTTP headers.
+
+The module properties are:
+
+----
+include::{JETTY_HOME}/modules/http-forwarded.mod[tags=documentation]
+----

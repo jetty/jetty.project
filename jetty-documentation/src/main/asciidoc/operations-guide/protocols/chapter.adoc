@@ -40,5 +40,6 @@ include::protocols-http.adoc[]
 include::protocols-https.adoc[]
 include::protocols-http2.adoc[]
 include::protocols-ssl.adoc[]
+include::protocols-proxy.adoc[]
 
 // TODO: old_docs/connectors/*.adoc
