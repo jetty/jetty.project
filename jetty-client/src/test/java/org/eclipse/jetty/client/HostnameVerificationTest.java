@@ -27,10 +27,14 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -49,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public class HostnameVerificationTest
 {
-    private SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client();
+    private final SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client();
     private Server server;
     private HttpClient client;
     private NetworkConnector connector;
@@ -64,7 +68,13 @@ public class HostnameVerificationTest
         SslContextFactory.Server serverSslContextFactory = new SslContextFactory.Server();
         serverSslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
         serverSslContextFactory.setKeyStorePassword("storepwd");
-        connector = new ServerConnector(server, serverSslContextFactory);
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        SecureRequestCustomizer customizer = new SecureRequestCustomizer();
+        customizer.setSniHostCheck(false);
+        httpConfig.addCustomizer(customizer);
+        HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
+        SslConnectionFactory ssl = new SslConnectionFactory(serverSslContextFactory, http.getProtocol());
+        connector = new ServerConnector(server, 1, 1, ssl, http);
         server.addConnector(connector);
         server.setHandler(new DefaultHandler()
         {
@@ -102,14 +112,17 @@ public class HostnameVerificationTest
 
     /**
      * This test is supposed to verify that hostname verification works as described in:
-     * http://www.ietf.org/rfc/rfc2818.txt section 3.1. It uses a certificate with a common name different to localhost
-     * and sends a request to localhost. This should fail with an SSLHandshakeException.
+     * http://www.ietf.org/rfc/rfc2818.txt section 3.1.
+     * It uses a certificate with a common name "localhost" and SAN=127.0.0.1,
+     * and sends a request to 127.0.0.2.
+     * This should fail with on the client an SSLHandshakeException, because SNI
+     * host checking on the server side is disabled.
      */
     @Test
     public void simpleGetWithHostnameVerificationEnabledTest()
     {
         clientSslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
-        String uri = "https://localhost:" + connector.getLocalPort() + "/";
+        String uri = "https://127.0.0.2:" + connector.getLocalPort() + "/";
 
         ExecutionException x = assertThrows(ExecutionException.class, () -> client.GET(uri));
         Throwable cause = x.getCause();

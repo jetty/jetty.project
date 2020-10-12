@@ -253,7 +253,11 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         {
             OutputStream os = client.getOutputStream();
 
-            os.write("GET / HTTP/1.0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
+            String request = "GET / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
+            os.write(request.getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
 
             // Read the response.
