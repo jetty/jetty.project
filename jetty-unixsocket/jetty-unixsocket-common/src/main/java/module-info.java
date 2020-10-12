@@ -20,7 +20,7 @@ module org.eclipse.jetty.unixsocket.common
 {
     exports org.eclipse.jetty.unixsocket.common;
 
-    requires jnr.unixsocket;
+    requires transitive org.jnrproject.unixsocket;
     requires transitive org.eclipse.jetty.io;
     requires org.slf4j;
 }
