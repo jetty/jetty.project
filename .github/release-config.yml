@@ -22,6 +22,7 @@ categories:
   - title: 🐛 Bug Fixes
     labels:
       - bug
+      - Bug
       - fix
       - bugfix
       - regression
@@ -37,10 +38,14 @@ categories:
     labels:
       - chore
       - internal
+      - Build
+      - build
   - title: 🚦 Tests
     labels:
       - test
       - tests
+      - Test
+      - Tests
 exclude-labels:
   - reverted
   - no-changelog
