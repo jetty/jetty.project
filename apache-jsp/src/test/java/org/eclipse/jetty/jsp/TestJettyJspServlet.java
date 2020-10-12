@@ -31,7 +31,7 @@ import javax.servlet.jsp.JspFactory;
 import org.apache.jasper.runtime.JspFactoryImpl;
 import org.apache.tomcat.InstanceManager;
 import org.apache.tomcat.SimpleInstanceManager;
-import org.eclipse.jetty.http.tools.HttpTester;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
