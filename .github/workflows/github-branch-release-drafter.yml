@@ -1,0 +1,19 @@
+name: Github branch Release Drafter
+on:
+  push:
+    branches:
+      - jetty-9.4.x
+      - jetty-10.0.x
+      - jetty-11.0.x
+jobs:
+  update_release_draft:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: joakime/github-branch-release-drafter@main
+        with:
+          name: "9.4.x"
+          version: "9.4.x"
+          tag: "9.4.x"
+          draft_config: ".github/release-config.yml"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
