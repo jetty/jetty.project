@@ -74,10 +74,6 @@ public class ForwardedRequestCustomizerTest
 
         // Default behavior Connector
         HttpConnectionFactory http = new HttpConnectionFactory();
-        http.setInputBufferSize(1024);
-        http.getHttpConfiguration().setRequestHeaderSize(512);
-        http.getHttpConfiguration().setResponseHeaderSize(512);
-        http.getHttpConfiguration().setOutputBufferSize(2048);
         http.getHttpConfiguration().setSecurePort(443);
         customizer = new ForwardedRequestCustomizer();
         http.getHttpConfiguration().addCustomizer(customizer);
@@ -86,7 +82,6 @@ public class ForwardedRequestCustomizerTest
 
         // Alternate behavior Connector
         HttpConnectionFactory httpAlt = new HttpConnectionFactory();
-        httpAlt.setInputBufferSize(1024);
         httpAlt.getHttpConfiguration().setSecurePort(8443);
         customizerAlt = new ForwardedRequestCustomizer();
         httpAlt.getHttpConfiguration().addCustomizer(customizerAlt);
@@ -95,10 +90,6 @@ public class ForwardedRequestCustomizerTest
 
         // Configured behavior Connector
         http = new HttpConnectionFactory();
-        http.setInputBufferSize(1024);
-        http.getHttpConfiguration().setRequestHeaderSize(512);
-        http.getHttpConfiguration().setResponseHeaderSize(512);
-        http.getHttpConfiguration().setOutputBufferSize(2048);
         customizerConfigured = new ForwardedRequestCustomizer();
         customizerConfigured.setForwardedHeader("Jetty-Forwarded");
         customizerConfigured.setForwardedHostHeader("Jetty-Forwarded-Host");
@@ -801,40 +792,38 @@ public class ForwardedRequestCustomizerTest
             Arguments.of(new Request("RFC7239 with https and h2")
                     .headers(
                         "GET /test/forwarded.jsp HTTP/1.1",
-                        "Host: web.euro.de",
-                        "Forwarded: for=192.168.2.6;host=web.euro.de;proto=https;proto-version=h2"
-                        // Client: https://web.euro.de/test/forwarded.jsp
+                        "Host: web.example.net",
+                        "Forwarded: for=192.168.2.6;host=web.example.net;proto=https;proto-version=h2"
                     ),
                 new Expectations()
-                    .scheme("https").serverName("web.euro.de").serverPort(443)
-                    .requestURL("https://web.euro.de/test/forwarded.jsp")
+                    .scheme("https").serverName("web.example.net").serverPort(443)
+                    .requestURL("https://web.example.net/test/forwarded.jsp")
                     .remoteAddr("192.168.2.6").remotePort(0)
             ),
             // RFC7239 Tests with https and proxy provided port
             Arguments.of(new Request("RFC7239 with proxy provided port on https and h2")
                     .headers(
                         "GET /test/forwarded.jsp HTTP/1.1",
-                        "Host: web.euro.de:9443",
-                        "Forwarded: for=192.168.2.6;host=web.euro.de:9443;proto=https;proto-version=h2"
-                        // Client: https://web.euro.de:9443/test/forwarded.jsp
+                        "Host: web.example.net:9443",
+                        "Forwarded: for=192.168.2.6;host=web.example.net:9443;proto=https;proto-version=h2"
                     ),
                 new Expectations()
-                    .scheme("https").serverName("web.euro.de").serverPort(9443)
-                    .requestURL("https://web.euro.de:9443/test/forwarded.jsp")
+                    .scheme("https").serverName("web.example.net").serverPort(9443)
+                    .requestURL("https://web.example.net:9443/test/forwarded.jsp")
                     .remoteAddr("192.168.2.6").remotePort(0)
             ),
             // RFC7239 Tests with https, no port in Host, but proxy provided port
             Arguments.of(new Request("RFC7239 with client provided host and different proxy provided port on https and h2")
                     .headers(
                         "GET /test/forwarded.jsp HTTP/1.1",
-                        "Host: web.euro.de",
-                        "Forwarded: for=192.168.2.6;host=new.euro.de:7443;proto=https;proto-version=h2"
-                        // Client: https://web.euro.de/test/forwarded.jsp
-                        // Proxy Requests: https://new.euro.de/test/forwarded.jsp
+                        "Host: web.example.net",
+                        "Forwarded: for=192.168.2.6;host=new.example.net:7443;proto=https;proto-version=h2"
+                        // Client: https://web.example.net/test/forwarded.jsp
+                        // Proxy Requests: https://new.example.net/test/forwarded.jsp
                     ),
                 new Expectations()
-                    .scheme("https").serverName("new.euro.de").serverPort(7443)
-                    .requestURL("https://new.euro.de:7443/test/forwarded.jsp")
+                    .scheme("https").serverName("new.example.net").serverPort(7443)
+                    .requestURL("https://new.example.net:7443/test/forwarded.jsp")
                     .remoteAddr("192.168.2.6").remotePort(0)
             )
         );
