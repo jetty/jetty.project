@@ -522,8 +522,9 @@ public class ForwardedRequestCustomizer implements Customizer
             // Don't change port if port == IMPLIED.
 
             // Update authority if different from metadata
-            if (!host.equalsIgnoreCase(requestURI.getHost()) ||
-                port != requestURI.getPort())
+            if (requestURI != null && host != null &&
+                (!host.equalsIgnoreCase(requestURI.getHost()) ||
+                    port != requestURI.getPort()))
             {
                 httpFields.put(new HostPortHttpField(host, port));
                 request.setAuthority(host, port);
