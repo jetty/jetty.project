@@ -34,6 +34,7 @@ If you know Eclipse Jetty already, jump to a feature:
 * xref:og-quickstart[Faster Web Application Deployment]
 * xref:og-annotations[Annotations]
 * xref:og-jsp[JSP]
+* xref:og-jndi[JNDI]
 
 TODO
 
