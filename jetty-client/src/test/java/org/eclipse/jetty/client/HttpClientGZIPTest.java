@@ -20,6 +20,7 @@ package org.eclipse.jetty.client;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -32,11 +33,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -264,6 +268,47 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         assertThat(directMemory, lessThan((long)content.length));
         long heapMemory = bufferPool.getMemory(false);
         assertThat(heapMemory, lessThan((long)content.length));
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testLargeGZIPContentAsync(Scenario scenario) throws Exception
+    {
+        String digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+        Random random = new Random();
+        byte[] content = new byte[32 * 1024 * 1024];
+        for (int i = 0; i < content.length; ++i)
+        {
+            content[i] = (byte)digits.charAt(random.nextInt(digits.length()));
+        }
+        start(scenario, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                response.setContentType("text/plain;charset=" + StandardCharsets.US_ASCII.name());
+                response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
+                GZIPOutputStream gzip = new GZIPOutputStream(response.getOutputStream());
+                gzip.write(content);
+                gzip.finish();
+            }
+        });
+
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .send(listener);
+
+        Response response = listener.get(5, TimeUnit.SECONDS);
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        try (InputStream input = listener.getInputStream())
+        {
+            IO.copy(input, output);
+        }
+        assertArrayEquals(content, output.toByteArray());
     }
 
     private static void sleep(long ms) throws IOException
