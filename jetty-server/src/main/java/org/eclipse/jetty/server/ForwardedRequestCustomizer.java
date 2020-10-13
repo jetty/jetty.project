@@ -498,36 +498,37 @@ public class ForwardedRequestCustomizer implements Customizer
                 request.setScheme(config.getSecureScheme());
             }
 
-            // Set authority
-            String host = null;
-            int port = -1;
-
             // Use authority from headers, if configured.
             if (forwarded._authority != null)
             {
-                host = forwarded._authority._host;
-                port = forwarded._authority._port;
-            }
+                String host = forwarded._authority._host;
+                int port = forwarded._authority._port;
 
-            // Fall back to request metadata if needed.
-            HttpURI requestURI = request.getMetaData().getURI();
-            if (host == null)
-            {
-                host = requestURI.getHost();
-            }
-            if (port == MutableHostPort.UNSET) // is unset by headers
-            {
-                port = requestURI.getPort();
-            }
-            // Don't change port if port == IMPLIED.
+                HttpURI requestURI = request.getMetaData().getURI();
 
-            // Update authority if different from metadata
-            if (requestURI != null && host != null &&
-                (!host.equalsIgnoreCase(requestURI.getHost()) ||
-                    port != requestURI.getPort()))
-            {
-                httpFields.put(new HostPortHttpField(host, port));
-                request.setAuthority(host, port);
+                if (requestURI != null)
+                {
+                    // Fall back to request metadata if needed.
+                    if (host == null)
+                    {
+                        host = requestURI.getHost();
+                    }
+
+                    if (port == MutableHostPort.UNSET) // is unset by headers
+                    {
+                        port = requestURI.getPort();
+                    }
+
+                    // Don't change port if port == IMPLIED.
+
+                    // Update authority if different from metadata
+                    if (!host.equalsIgnoreCase(requestURI.getHost()) ||
+                        port != requestURI.getPort())
+                    {
+                        httpFields.put(new HostPortHttpField(host, port));
+                        request.setAuthority(host, port);
+                    }
+                }
             }
 
             // Set Remote Address
