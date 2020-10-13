@@ -33,6 +33,7 @@ If you know Eclipse Jetty already, jump to a feature:
 * xref:og-protocols-http2[HTTP/2 Support]
 * xref:og-quickstart[Faster Web Application Deployment]
 * xref:og-annotations[Annotations]
+* xref:og-jsp[JSP]
 
 TODO
 
@@ -46,6 +47,7 @@ TODO
 * xref:og-protocols-https[Configure Secure HTTP/1.1 (https)]
 * xref:og-protocols-http2c[Configure Clear-Text HTTP/2]
 * xref:og-protocols-http2s[Configure Secure HTTP/2]
+* xref:og-protocols-proxy[Configure Jetty Behind a Load Balancer or Reverse Proxy]
 
 TODO
 

@@ -1,8 +1,6 @@
-# DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
-
 [description]
-Adds a forwarded request customizer to the HTTP Connector.
-Processes forwarded-for style headers from a proxy.
+Enables processing of the "Forwarded" HTTP header (and its predecessors "X-Forwarded-*" HTTP headers).
+The "Forwarded" HTTP header is added by intermediaries to provide information about the clients.
 
 [tags]
 connector
@@ -14,24 +12,45 @@ http
 etc/jetty-http-forwarded.xml
 
 [ini-template]
+# tag::documentation[]
 ### ForwardedRequestCustomizer Configuration
 
-## If true, only the RFC7239 Forwarded header is accepted
+## Whether to process only the RFC7239 "Forwarded" header.
+## "X-Forwarded-*" headers are not processed.
 # jetty.httpConfig.forwardedOnly=false
 
-## if true, the proxy address obtained from X-Forwarded-Server or RFC7239 is used as the request authority.
+## Whether the address obtained from "Forwarded: by=" or
+## "X-Forwarded-Server" is used in the request authority.
 # jetty.httpConfig.forwardedProxyAsAuthority=false
 
-## if true, the X-Forwarded-Port header applies to the authority, else it applies to the remote client address
+## Whether the "X-Forwarded-Port" header is used in the request authority,
+## or else it is the remote client port.
 # jetty.httpConfig.forwardedPortAsAuthority=true
 
+## The name of the RFC 7239 HTTP header.
 # jetty.httpConfig.forwardedHeader=Forwarded
-# jetty.httpConfig.forwardedHostHeader=X-Forwarded-Host
-# jetty.httpConfig.forwardedServerHeader=X-Forwarded-Server
-# jetty.httpConfig.forwardedProtoHeader=X-Forwarded-Proto
-# jetty.httpConfig.forwardedForHeader=X-Forwarded-For
-# jetty.httpConfig.forwardedPortHeader=X-Forwarded-Port
-# jetty.httpConfig.forwardedHttpsHeader=X-Proxied-Https
-# jetty.httpConfig.forwardedSslSessionIdHeader=Proxy-ssl-id
-# jetty.httpConfig.forwardedCipherSuiteHeader=Proxy-auth-cert
 
+## The name of the obsolete forwarded host HTTP header.
+# jetty.httpConfig.forwardedHostHeader=X-Forwarded-Host
+
+## The name of the obsolete forwarded server HTTP header.
+# jetty.httpConfig.forwardedServerHeader=X-Forwarded-Server
+
+## The name of the obsolete forwarded scheme HTTP header.
+# jetty.httpConfig.forwardedProtoHeader=X-Forwarded-Proto
+
+## The name of the obsolete forwarded for HTTP header.
+# jetty.httpConfig.forwardedForHeader=X-Forwarded-For
+
+## The name of the obsolete forwarded port HTTP header.
+# jetty.httpConfig.forwardedPortHeader=X-Forwarded-Port
+
+## The name of the obsolete forwarded https HTTP header.
+# jetty.httpConfig.forwardedHttpsHeader=X-Proxied-Https
+
+## The name of the obsolete forwarded SSL session ID HTTP header.
+# jetty.httpConfig.forwardedSslSessionIdHeader=Proxy-ssl-id
+
+## The name of the obsolete forwarded SSL cipher HTTP header.
+# jetty.httpConfig.forwardedCipherSuiteHeader=Proxy-auth-cert
+# end::documentation[]
