@@ -46,8 +46,10 @@ public class ForwardedRequestCustomizerTest
     private Server server;
     private RequestHandler handler;
     private LocalConnector connector;
+    private LocalConnector connectorAlt;
     private LocalConnector connectorConfigured;
     private ForwardedRequestCustomizer customizer;
+    private ForwardedRequestCustomizer customizerAlt;
     private ForwardedRequestCustomizer customizerConfigured;
 
     private static class Actual
@@ -72,22 +74,22 @@ public class ForwardedRequestCustomizerTest
 
         // Default behavior Connector
         HttpConnectionFactory http = new HttpConnectionFactory();
-        http.setInputBufferSize(1024);
-        http.getHttpConfiguration().setRequestHeaderSize(512);
-        http.getHttpConfiguration().setResponseHeaderSize(512);
-        http.getHttpConfiguration().setOutputBufferSize(2048);
         http.getHttpConfiguration().setSecurePort(443);
         customizer = new ForwardedRequestCustomizer();
         http.getHttpConfiguration().addCustomizer(customizer);
         connector = new LocalConnector(server, http);
         server.addConnector(connector);
 
+        // Alternate behavior Connector
+        HttpConnectionFactory httpAlt = new HttpConnectionFactory();
+        httpAlt.getHttpConfiguration().setSecurePort(8443);
+        customizerAlt = new ForwardedRequestCustomizer();
+        httpAlt.getHttpConfiguration().addCustomizer(customizerAlt);
+        connectorAlt = new LocalConnector(server, httpAlt);
+        server.addConnector(connectorAlt);
+
         // Configured behavior Connector
         http = new HttpConnectionFactory();
-        http.setInputBufferSize(1024);
-        http.getHttpConfiguration().setRequestHeaderSize(512);
-        http.getHttpConfiguration().setResponseHeaderSize(512);
-        http.getHttpConfiguration().setOutputBufferSize(2048);
         customizerConfigured = new ForwardedRequestCustomizer();
         customizerConfigured.setForwardedHeader("Jetty-Forwarded");
         customizerConfigured.setForwardedHostHeader("Jetty-Forwarded-Host");
@@ -778,6 +780,69 @@ public class ForwardedRequestCustomizerTest
         // System.out.println(rawRequest);
 
         HttpTester.Response response = HttpTester.parseResponse(connectorConfigured.getResponse(rawRequest));
+        assertThat("status", response.getStatus(), is(200));
+
+        expectations.accept(actual);
+    }
+
+    public static Stream<Arguments> nonStandardPortCases()
+    {
+        return Stream.of(
+            // RFC7239 Tests with https.
+            Arguments.of(new Request("RFC7239 with https and h2")
+                    .headers(
+                        "GET /test/forwarded.jsp HTTP/1.1",
+                        "Host: web.example.net",
+                        "Forwarded: for=192.168.2.6;host=web.example.net;proto=https;proto-version=h2"
+                    ),
+                new Expectations()
+                    .scheme("https").serverName("web.example.net").serverPort(443)
+                    .requestURL("https://web.example.net/test/forwarded.jsp")
+                    .remoteAddr("192.168.2.6").remotePort(0)
+            ),
+            // RFC7239 Tests with https and proxy provided port
+            Arguments.of(new Request("RFC7239 with proxy provided port on https and h2")
+                    .headers(
+                        "GET /test/forwarded.jsp HTTP/1.1",
+                        "Host: web.example.net:9443",
+                        "Forwarded: for=192.168.2.6;host=web.example.net:9443;proto=https;proto-version=h2"
+                    ),
+                new Expectations()
+                    .scheme("https").serverName("web.example.net").serverPort(9443)
+                    .requestURL("https://web.example.net:9443/test/forwarded.jsp")
+                    .remoteAddr("192.168.2.6").remotePort(0)
+            ),
+            // RFC7239 Tests with https, no port in Host, but proxy provided port
+            Arguments.of(new Request("RFC7239 with client provided host and different proxy provided port on https and h2")
+                    .headers(
+                        "GET /test/forwarded.jsp HTTP/1.1",
+                        "Host: web.example.net",
+                        "Forwarded: for=192.168.2.6;host=new.example.net:7443;proto=https;proto-version=h2"
+                        // Client: https://web.example.net/test/forwarded.jsp
+                        // Proxy Requests: https://new.example.net/test/forwarded.jsp
+                    ),
+                new Expectations()
+                    .scheme("https").serverName("new.example.net").serverPort(7443)
+                    .requestURL("https://new.example.net:7443/test/forwarded.jsp")
+                    .remoteAddr("192.168.2.6").remotePort(0)
+            )
+        );
+    }
+
+    /**
+     * Tests against a Connector with a HttpConfiguration on non-standard ports.
+     * HttpConfiguration is set to securePort of 8443
+     */
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("nonStandardPortCases")
+    public void testNonStandardPortBehavior(Request request, Expectations expectations) throws Exception
+    {
+        request.configure(customizerAlt);
+
+        String rawRequest = request.getRawRequest((header) -> header);
+        // System.out.println(rawRequest);
+
+        HttpTester.Response response = HttpTester.parseResponse(connectorAlt.getResponse(rawRequest));
         assertThat("status", response.getStatus(), is(200));
 
         expectations.accept(actual);

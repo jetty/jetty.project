@@ -512,12 +512,7 @@ public class ForwardedRequestCustomizer implements Customizer
         {
             port = requestURI.getPort();
         }
-        if (port == MutableHostPort.IMPLIED) // is implied
-        {
-            // get Implied port (from protocol / scheme) and HttpConfiguration
-            int defaultPort = 80;
-            port = proto.equalsIgnoreCase(config.getSecureScheme()) ? getSecurePort(config) : defaultPort;
-        }
+        // Don't change port if port == IMPLIED.
 
         // Update authority if different from metadata
         if (!host.equalsIgnoreCase(requestURI.getHost()) ||
