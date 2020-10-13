@@ -880,7 +880,7 @@ public class ForwardedRequestCustomizer implements Customizer
             {
                 _secure = false;
                 updateProto(HttpScheme.HTTP.asString(), Source.XPROXIED_HTTPS);
-                updatePort(80, Source.XPROXIED_HTTPS);
+                updatePort(MutableHostPort.IMPLIED, Source.XPROXIED_HTTPS);
             }
             else
             {
