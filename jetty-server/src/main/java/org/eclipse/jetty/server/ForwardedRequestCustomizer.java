@@ -819,20 +819,26 @@ public class ForwardedRequestCustomizer implements Customizer
             }
         }
 
-        @SuppressWarnings("unused")
+        /**
+         * Called if header is <code>X-Forwarded-Host</code>
+         */
         public void handleForwardedHost(HttpField field)
         {
             updateAuthority(getLeftMost(field.getValue()), Source.XFORWARDED_HOST);
         }
 
-        @SuppressWarnings("unused")
+        /**
+         * Called if header is <code>X-Forwarded-For</code>
+         */
         public void handleForwardedFor(HttpField field)
         {
             HostPort hostField = new HostPort(getLeftMost(field.getValue()));
             getFor().setHostPort(hostField, Source.XFORWARDED_FOR);
         }
 
-        @SuppressWarnings("unused")
+        /**
+         * Called if header is <code>X-Forwarded-Server</code>
+         */
         public void handleForwardedServer(HttpField field)
         {
             if (getProxyAsAuthority())
@@ -840,7 +846,9 @@ public class ForwardedRequestCustomizer implements Customizer
             updateAuthority(getLeftMost(field.getValue()), Source.XFORWARDED_SERVER);
         }
 
-        @SuppressWarnings("unused")
+        /**
+         * Called if header is <code>X-Forwarded-Port</code>
+         */
         public void handleForwardedPort(HttpField field)
         {
             int port = HostPort.parsePort(getLeftMost(field.getValue()));
@@ -848,13 +856,17 @@ public class ForwardedRequestCustomizer implements Customizer
             updatePort(port, Source.XFORWARDED_PORT);
         }
 
-        @SuppressWarnings("unused")
+        /**
+         * Called if header is <code>X-Forwarded-Proto</code>
+         */
         public void handleProto(HttpField field)
         {
             updateProto(getLeftMost(field.getValue()), Source.XFORWARDED_PROTO);
         }
 
-        @SuppressWarnings("unused")
+        /**
+         * Called if header is <code>X-Proxied-Https</code>
+         */
         public void handleHttps(HttpField field)
         {
             if ("on".equalsIgnoreCase(field.getValue()) || "true".equalsIgnoreCase(field.getValue()))
@@ -863,9 +875,21 @@ public class ForwardedRequestCustomizer implements Customizer
                 updateProto(HttpScheme.HTTPS.asString(), Source.XPROXIED_HTTPS);
                 updatePort(getSecurePort(_config), Source.XPROXIED_HTTPS);
             }
+            else if ("off".equalsIgnoreCase(field.getValue()) || "false".equalsIgnoreCase(field.getValue()))
+            {
+                _secure = false;
+                updateProto(HttpScheme.HTTP.asString(), Source.XPROXIED_HTTPS);
+                updatePort(80, Source.XPROXIED_HTTPS);
+            }
+            else
+            {
+                throw new BadMessageException("Invalid value for " + field.getName());
+            }
         }
 
-        @SuppressWarnings("unused")
+        /**
+         * Called if header is <code>Forwarded</code>
+         */
         public void handleRFC7239(HttpField field)
         {
             addValue(field.getValue());
