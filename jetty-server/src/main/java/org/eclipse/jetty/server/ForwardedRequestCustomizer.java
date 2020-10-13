@@ -481,13 +481,12 @@ public class ForwardedRequestCustomizer implements Customizer
 
         if (match)
         {
-            String proto = "http";
+            String proto;
 
             // Is secure status configured from headers?
             if (forwarded.isSecure())
             {
-                // set default to https
-                proto = config.getSecureScheme();
+                request.setSecure(true);
             }
 
             // Set Scheme from configured protocol
@@ -526,15 +525,6 @@ public class ForwardedRequestCustomizer implements Customizer
             {
                 httpFields.put(new HostPortHttpField(host, port));
                 request.setAuthority(host, port);
-            }
-
-            // Set secure status
-            if (forwarded.isSecure() ||
-                proto.equalsIgnoreCase(config.getSecureScheme()) ||
-                port == getSecurePort(config))
-            {
-                request.setSecure(true);
-                request.setScheme(proto);
             }
 
             // Set Remote Address
@@ -801,6 +791,7 @@ public class ForwardedRequestCustomizer implements Customizer
             if (isSslIsSecure())
             {
                 _secure = true;
+                _proto = "https";
             }
         }
 
@@ -811,6 +802,7 @@ public class ForwardedRequestCustomizer implements Customizer
             if (isSslIsSecure())
             {
                 _secure = true;
+                _proto = "https";
             }
         }
 
