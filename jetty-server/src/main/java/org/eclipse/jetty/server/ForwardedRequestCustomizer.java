@@ -481,8 +481,6 @@ public class ForwardedRequestCustomizer implements Customizer
 
         if (match)
         {
-            String proto;
-
             // Is secure status configured from headers?
             if (forwarded.isSecure())
             {
@@ -492,8 +490,12 @@ public class ForwardedRequestCustomizer implements Customizer
             // Set Scheme from configured protocol
             if (forwarded._proto != null)
             {
-                proto = forwarded._proto;
-                request.setScheme(proto);
+                request.setScheme(forwarded._proto);
+            }
+            // Set scheme if header implies secure scheme is to be used (see #isSslIsSecure())
+            else if (forwarded._secureScheme)
+            {
+                request.setScheme(config.getSecureScheme());
             }
 
             // Set authority
@@ -741,6 +743,7 @@ public class ForwardedRequestCustomizer implements Customizer
         String _proto;
         Source _protoSource = Source.UNSET;
         Boolean _secure;
+        boolean _secureScheme = false;
 
         public Forwarded(Request request, HttpConfiguration config)
         {
@@ -784,25 +787,35 @@ public class ForwardedRequestCustomizer implements Customizer
             return _for;
         }
 
-        @SuppressWarnings("unused")
+        /**
+         * Called if header is <code>Proxy-auth-cert</code>
+         */
         public void handleCipherSuite(HttpField field)
         {
             _request.setAttribute("javax.servlet.request.cipher_suite", field.getValue());
+
+            // Is ForwardingRequestCustomizer configured to trigger isSecure and scheme change on this header?
             if (isSslIsSecure())
             {
                 _secure = true;
-                _proto = "https";
+                // track desire for secure scheme, actual protocol will be resolved later.
+                _secureScheme = true;
             }
         }
 
-        @SuppressWarnings("unused")
+        /**
+         * Called if header is <code>Proxy-Ssl-Id</code>
+         */
         public void handleSslSessionId(HttpField field)
         {
             _request.setAttribute("javax.servlet.request.ssl_session_id", field.getValue());
+
+            // Is ForwardingRequestCustomizer configured to trigger isSecure and scheme change on this header?
             if (isSslIsSecure())
             {
                 _secure = true;
-                _proto = "https";
+                // track desire for secure scheme, actual protocol will be resolved later.
+                _secureScheme = true;
             }
         }
 
