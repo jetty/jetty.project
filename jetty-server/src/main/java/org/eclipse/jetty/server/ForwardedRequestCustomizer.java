@@ -461,13 +461,17 @@ public class ForwardedRequestCustomizer implements Customizer
 
         // Do a single pass through the header fields as it is a more efficient single iteration.
         Forwarded forwarded = new Forwarded(request, config);
+        boolean match = false;
         for (HttpField field : httpFields)
         {
             try
             {
                 MethodHandle handle = _handles.get(field.getName());
                 if (handle != null)
+                {
+                    match = true;
                     handle.invoke(forwarded, field);
+                }
             }
             catch (Throwable t)
             {
@@ -475,67 +479,70 @@ public class ForwardedRequestCustomizer implements Customizer
             }
         }
 
-        String proto = "http";
-
-        // Is secure status configured from headers?
-        if (forwarded.isSecure())
+        if (match)
         {
-            // set default to https
-            proto = config.getSecureScheme();
-        }
+            String proto = "http";
 
-        // Set Scheme from configured protocol
-        if (forwarded._proto != null)
-        {
-            proto = forwarded._proto;
-            request.setScheme(proto);
-        }
+            // Is secure status configured from headers?
+            if (forwarded.isSecure())
+            {
+                // set default to https
+                proto = config.getSecureScheme();
+            }
 
-        // Set authority
-        String host = null;
-        int port = -1;
+            // Set Scheme from configured protocol
+            if (forwarded._proto != null)
+            {
+                proto = forwarded._proto;
+                request.setScheme(proto);
+            }
 
-        // Use authority from headers, if configured.
-        if (forwarded._authority != null)
-        {
-            host = forwarded._authority._host;
-            port = forwarded._authority._port;
-        }
+            // Set authority
+            String host = null;
+            int port = -1;
 
-        // Fall back to request metadata if needed.
-        HttpURI requestURI = request.getMetaData().getURI();
-        if (host == null)
-        {
-            host = requestURI.getHost();
-        }
-        if (port == MutableHostPort.UNSET) // is unset by headers
-        {
-            port = requestURI.getPort();
-        }
-        // Don't change port if port == IMPLIED.
+            // Use authority from headers, if configured.
+            if (forwarded._authority != null)
+            {
+                host = forwarded._authority._host;
+                port = forwarded._authority._port;
+            }
 
-        // Update authority if different from metadata
-        if (!host.equalsIgnoreCase(requestURI.getHost()) ||
-            port != requestURI.getPort())
-        {
-            httpFields.put(new HostPortHttpField(host, port));
-            request.setAuthority(host, port);
-        }
+            // Fall back to request metadata if needed.
+            HttpURI requestURI = request.getMetaData().getURI();
+            if (host == null)
+            {
+                host = requestURI.getHost();
+            }
+            if (port == MutableHostPort.UNSET) // is unset by headers
+            {
+                port = requestURI.getPort();
+            }
+            // Don't change port if port == IMPLIED.
 
-        // Set secure status
-        if (forwarded.isSecure() ||
-            proto.equalsIgnoreCase(config.getSecureScheme()) ||
-            port == getSecurePort(config))
-        {
-            request.setSecure(true);
-            request.setScheme(proto);
-        }
+            // Update authority if different from metadata
+            if (!host.equalsIgnoreCase(requestURI.getHost()) ||
+                port != requestURI.getPort())
+            {
+                httpFields.put(new HostPortHttpField(host, port));
+                request.setAuthority(host, port);
+            }
 
-        // Set Remote Address
-        if (forwarded.hasFor())
-        {
-            int forPort = forwarded._for._port > 0 ? forwarded._for._port : request.getRemotePort();
-            request.setRemoteAddr(InetSocketAddress.createUnresolved(forwarded._for._host, forPort));
+            // Set secure status
+            if (forwarded.isSecure() ||
+                proto.equalsIgnoreCase(config.getSecureScheme()) ||
+                port == getSecurePort(config))
+            {
+                request.setSecure(true);
+                request.setScheme(proto);
+            }
+
+            // Set Remote Address
+            if (forwarded.hasFor())
+            {
+                int forPort = forwarded._for._port > 0 ? forwarded._for._port : request.getRemotePort();
+                request.setRemoteAddr(InetSocketAddress.createUnresolved(forwarded._for._host, forPort));
+            }
         }
     }
 

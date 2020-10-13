@@ -135,6 +135,26 @@ public class ForwardedRequestCustomizerTest
     public static Stream<Arguments> cases()
     {
         return Stream.of(
+            // HTTP 1.0
+            Arguments.of(
+                new Request("HTTP/1.0 - no Host header")
+                    .headers(
+                        "GET /example HTTP/1.0"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("0.0.0.0").serverPort(80)
+                    .requestURL("http://0.0.0.0/example")
+            ),
+            Arguments.of(
+                new Request("HTTP/1.0 - Empty Host header")
+                    .headers(
+                        "GET /example HTTP/1.0",
+                        "Host:"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("0.0.0.0").serverPort(80)
+                    .requestURL("http://0.0.0.0/example")
+            ),
             // Host IPv4
             Arguments.of(
                 new Request("IPv4 Host Only")
@@ -157,12 +177,12 @@ public class ForwardedRequestCustomizerTest
             ),
             Arguments.of(new Request("IPv4 in Request Line")
                     .headers(
-                        "GET http://1.2.3.4:2222/ HTTP/1.1",
+                        "GET https://1.2.3.4:2222/ HTTP/1.1",
                         "Host: wrong"
                     ),
                 new Expectations()
-                    .scheme("http").serverName("1.2.3.4").serverPort(2222)
-                    .requestURL("http://1.2.3.4:2222/")
+                    .scheme("https").serverName("1.2.3.4").serverPort(2222)
+                    .requestURL("https://1.2.3.4:2222/")
             ),
             Arguments.of(new Request("IPv6 in Request Line")
                     .headers(
@@ -931,7 +951,7 @@ public class ForwardedRequestCustomizerTest
         public void accept(Actual actual)
         {
             assertThat("scheme", actual.scheme.get(), is(expectedScheme));
-            if (actual.scheme.get().equals("https"))
+            if (expectedScheme.equals("https"))
             {
                 assertTrue(actual.wasSecure.get(), "wasSecure");
             }
