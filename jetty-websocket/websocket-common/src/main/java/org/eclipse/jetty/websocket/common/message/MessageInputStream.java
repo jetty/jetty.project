@@ -77,31 +77,42 @@ public class MessageInputStream extends InputStream implements MessageAppender
         if (LOG.isDebugEnabled())
             LOG.debug("Appending {} chunk: {}", fin ? "final" : "non-final", BufferUtil.toDetailString(framePayload));
 
+        // Avoid entering synchronized block if there is nothing to do.
+        boolean bufferIsEmpty = BufferUtil.isEmpty(framePayload);
+        if (bufferIsEmpty && !fin)
+            return;
+
         try
         {
-            if (BufferUtil.isEmpty(framePayload))
-                return;
-
             synchronized (this)
             {
-                switch (state)
+                if (!bufferIsEmpty)
                 {
-                    case CLOSED:
-                        return;
+                    switch (state)
+                    {
+                        case CLOSED:
+                            return;
 
-                    case RESUMED:
-                        suspendToken = session.suspend();
-                        state = State.SUSPENDED;
-                        break;
+                        case RESUMED:
+                            suspendToken = session.suspend();
+                            state = State.SUSPENDED;
+                            break;
 
-                    default:
-                        throw new IllegalStateException();
+                        default:
+                            throw new IllegalStateException();
+                    }
+
+                    // Put the payload into the queue, by copying it.
+                    // Copying is necessary because the payload will
+                    // be processed after this method returns.
+                    buffers.put(copy(framePayload));
                 }
 
-                // Put the payload into the queue, by copying it.
-                // Copying is necessary because the payload will
-                // be processed after this method returns.
-                buffers.put(copy(framePayload));
+                if (fin)
+                {
+                    buffers.add(EOF);
+                    state = State.COMPLETE;
+                }
             }
         }
         catch (InterruptedException e)
@@ -128,32 +139,6 @@ public class MessageInputStream extends InputStream implements MessageAppender
             state = State.CLOSED;
             buffers.clear();
             buffers.add(EOF);
-        }
-    }
-
-    @Override
-    public void messageComplete()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Message completed");
-
-        synchronized (this)
-        {
-            switch (state)
-            {
-                case CLOSED:
-                    return;
-
-                case SUSPENDED:
-                case RESUMED:
-                    state = State.COMPLETE;
-                    break;
-
-                default:
-                    throw new IllegalStateException();
-            }
-
-            buffers.offer(EOF);
         }
     }
 
@@ -202,6 +187,7 @@ public class MessageInputStream extends InputStream implements MessageAppender
                 return -1;
             }
 
+            // todo: what if we get a buffer with no content and we never resume
             // grab a fresh buffer
             while (activeBuffer == null || !activeBuffer.hasRemaining())
             {
@@ -277,6 +263,12 @@ public class MessageInputStream extends InputStream implements MessageAppender
             close();
             return -1;
         }
+    }
+
+    @Override
+    public void messageComplete()
+    {
+        // We handle this case in appendFrame with fin==true.
     }
 
     @Override
