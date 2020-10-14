@@ -241,7 +241,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
                 if (f != null && f.getSource() == Source.EMBEDDED)
                     continue;
                 
-                out.openTag("filter-mapping", origin(md, mapping.getFilterName() + ".filter.mapping." + mapping.hashCode()));
+                out.openTag("filter-mapping", origin(md, mapping.getFilterName() + ".filter.mapping." + Long.toHexString(mapping.hashCode())));
                 out.tag("filter-name", mapping.getFilterName());
                 if (mapping.getPathSpecs() != null)
                     for (String s : mapping.getPathSpecs())
@@ -289,7 +289,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
                 if (sh != null && sh.getSource() == Source.EMBEDDED)
                     continue;
                 
-                out.openTag("servlet-mapping", origin(md, mapping.getServletName() + ".servlet.mapping." + mapping.hashCode()));
+                out.openTag("servlet-mapping", origin(md, mapping.getServletName() + ".servlet.mapping." + Long.toHexString(mapping.hashCode())));
                 out.tag("servlet-name", mapping.getServletName());
                 if (mapping.getPathSpecs() != null)
                     for (String s : mapping.getPathSpecs())

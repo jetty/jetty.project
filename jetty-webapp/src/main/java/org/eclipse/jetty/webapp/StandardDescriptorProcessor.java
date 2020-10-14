@@ -1204,7 +1204,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         ServletMapping mapping = new ServletMapping(new Source(Source.Origin.DESCRIPTOR, descriptor.getResource().toString()));
         mapping.setServletName(servletName);
         mapping.setFromDefaultDescriptor(descriptor instanceof DefaultsDescriptor);
-        context.getMetaData().setOrigin(servletName + ".servlet.mapping." + mapping.hashCode(), descriptor);
+        context.getMetaData().setOrigin(servletName + ".servlet.mapping." + Long.toHexString(mapping.hashCode()), descriptor);
         
         List<String> paths = new ArrayList<String>();
         Iterator<XmlParser.Node> iter = node.iterator("url-pattern");
@@ -1273,7 +1273,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     {
         FilterMapping mapping = new FilterMapping();
         mapping.setFilterName(filterName);
-        context.getMetaData().setOrigin(filterName + ".filter.mapping." + mapping.hashCode(), descriptor);
+        context.getMetaData().setOrigin(filterName + ".filter.mapping." + Long.toHexString(mapping.hashCode()), descriptor);
         List<String> paths = new ArrayList<String>();
         Iterator<XmlParser.Node> iter = node.iterator("url-pattern");
         while (iter.hasNext())

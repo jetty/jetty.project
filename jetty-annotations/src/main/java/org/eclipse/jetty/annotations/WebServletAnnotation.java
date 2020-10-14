@@ -154,7 +154,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             mapping = new ServletMapping(source);
             mapping.setServletName(holder.getName());
             mapping.setPathSpecs(LazyList.toStringArray(urlPatternList));
-            _context.getMetaData().setOrigin(servletName + ".servlet.mapping." + mapping.hashCode(), annotation, clazz);
+            _context.getMetaData().setOrigin(servletName + ".servlet.mapping." + Long.toHexString(mapping.hashCode()), annotation, clazz);
         }
         else
         {
@@ -191,7 +191,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
                 mapping = new ServletMapping(new Source(Source.Origin.ANNOTATION, clazz.getName()));
                 mapping.setServletName(servletName);
                 mapping.setPathSpecs(LazyList.toStringArray(urlPatternList));
-                _context.getMetaData().setOrigin(servletName + ".servlet.mapping." + mapping.hashCode(), annotation, clazz);
+                _context.getMetaData().setOrigin(servletName + ".servlet.mapping." + Long.toHexString(mapping.hashCode()), annotation, clazz);
             }
         }
 
