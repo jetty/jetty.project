@@ -304,11 +304,11 @@ public class HttpExchange
     {
         try (AutoLock l = lock.lock())
         {
-            return String.format("%s@%x req=%s/%s@%h res=%s/%s@%h",
+            return String.format("%s@%x{req=%s[%s/%s] res=%s[%s/%s]}",
                 HttpExchange.class.getSimpleName(),
                 hashCode(),
-                requestState, requestFailure, requestFailure,
-                responseState, responseFailure, responseFailure);
+                request, requestState, requestFailure,
+                response, responseState, responseFailure);
         }
     }
 
