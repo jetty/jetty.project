@@ -309,8 +309,9 @@ public class DistributionTests extends AbstractDistributionTest
         }
     }
 
-    @Test
-    public void testWebsocketClientInWebapp() throws Exception
+    @ParameterizedTest
+    @ValueSource(strings = {"http", "https"})
+    public void testWebsocketClientInWebapp(String scheme) throws Exception
     {
         Path jettyBase = Files.createTempDirectory("jetty_base");
         String jettyVersion = System.getProperty("jettyVersion");
@@ -323,7 +324,7 @@ public class DistributionTests extends AbstractDistributionTest
         String[] args1 = {
             "--create-startd",
             "--approve-all-licenses",
-            "--add-to-start=resources,server,http,webapp,deploy,jsp,jmx,servlet,servlets,websocket"
+            "--add-to-start=resources,server,webapp,deploy,jsp,jmx,servlet,servlets,websocket," + scheme
         };
         try (DistributionTester.Run run1 = distribution.start(args1))
         {
@@ -336,6 +337,7 @@ public class DistributionTests extends AbstractDistributionTest
             int port = distribution.freePort();
             String[] args2 = {
                 "jetty.http.port=" + port,
+                "jetty.ssl.port=" + port,
                 // "jetty.server.dumpAfterStart=true",
                 // "jetty.webapp.addSystemClasses+=,org.eclipse.jetty.client.",
                 // "jetty.webapp.addServerClasses+=,-org.eclipse.jetty.client.",
@@ -350,13 +352,15 @@ public class DistributionTests extends AbstractDistributionTest
                 assertTrue(run2.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
 
                 // We should get the correct configuration from the jetty-websocket-httpclient.xml file.
-                startHttpClient();
-                URI serverUri = URI.create("ws://localhost:" + port + "/test");
+                startHttpClient(scheme.equals("https"));
+                URI serverUri = URI.create(scheme + "://localhost:" + port + "/test");
                 ContentResponse response = client.GET(serverUri);
                 assertEquals(HttpStatus.OK_200, response.getStatus());
                 String content = response.getContentAsString();
-                // assertThat(content, containsString("ConnectTimeout: 4999")); // TODO: how to test this?
                 assertThat(content, containsString("WebSocketEcho: success"));
+
+                // We cannot test the HttpClient timeout because it is a server class not exposed to the webapp.
+                // assertThat(content, containsString("ConnectTimeout: 4999"));
             }
         }
     }

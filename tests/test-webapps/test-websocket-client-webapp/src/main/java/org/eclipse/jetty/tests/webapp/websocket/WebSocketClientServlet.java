@@ -18,11 +18,12 @@
 
 package org.eclipse.jetty.tests.webapp.websocket;
 
-import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.URI;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -39,55 +40,57 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 @WebServlet("/")
 public class WebSocketClientServlet extends HttpServlet
 {
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
-    {
+    private WebSocketClient client;
 
-        WebSocketClient client = null;
+    @Override
+    public void init() throws ServletException
+    {
+        client = new WebSocketClient();
+
         try
         {
-            client = new WebSocketClient();
-            WebSocketClient finalClient = client;
-            runThrowExceptionsAsRuntime(() -> finalClient.start());
-            resp.setContentType("text/html");
-            //resp.getWriter().println("ConnectTimeout: " + client.getHttpClient().getConnectTimeout());
-
-            ClientSocket clientSocket = new ClientSocket();
-            URI wsUri = WSURI.toWebsocket(req.getRequestURL()).resolve("echo");
-            client.connect(clientSocket, wsUri);
-            clientSocket.openLatch.await(5, TimeUnit.SECONDS);
-            clientSocket.session.getRemote().sendString("test message");
-            String response = clientSocket.textMessages.poll(5, TimeUnit.SECONDS);
-            if (!"test message".equals(response))
-                throw new RuntimeException("incorrect response");
-            clientSocket.session.close();
-            clientSocket.closeLatch.await(5, TimeUnit.SECONDS);
-            resp.getWriter().println("WebSocketEcho: success");
+            client.start();
         }
         catch (Exception e)
         {
-            throw new RuntimeException(e);
-        }
-        finally
-        {
-            if (client != null)
-            {
-                WebSocketClient finalClient = client;
-                runThrowExceptionsAsRuntime(() -> finalClient.stop());
-            }
+            throw new ServletException(e);
         }
     }
 
-    public interface ThrowingRunnable
-    {
-        void run() throws Exception;
-    }
-
-    public void runThrowExceptionsAsRuntime(ThrowingRunnable runnable)
+    @Override
+    public void destroy()
     {
         try
         {
-            runnable.run();
+            client.stop();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+    {
+        try
+        {
+            resp.setContentType("text/html");
+
+            // Send and receive a websocket echo on the same server.
+            ClientSocket clientSocket = new ClientSocket();
+            URI wsUri = WSURI.toWebsocket(req.getRequestURL()).resolve("echo");
+            client.connect(clientSocket, wsUri).get(5, TimeUnit.SECONDS);
+            clientSocket.session.getRemote().sendString("test message");
+            String response = clientSocket.textMessages.poll(5, TimeUnit.SECONDS);
+            clientSocket.session.close();
+            clientSocket.closeLatch.await(5, TimeUnit.SECONDS);
+
+            PrintWriter writer = resp.getWriter();
+            writer.println("WebSocketEcho: " + ("test message".equals(response) ? "success" : "failure"));
+            writer.println("WebSocketEcho: success");
+            // We cannot test the HttpClient timeout because it is a server class not exposed to the webapp.
+            // writer.println("ConnectTimeout: " + client.getHttpClient().getConnectTimeout());
         }
         catch (Exception e)
         {
@@ -121,5 +124,11 @@ public class WebSocketClientServlet extends HttpServlet
         {
             closeLatch.countDown();
         }
+    }
+
+    private void assertTrue(boolean value)
+    {
+        if (!value)
+            throw new RuntimeException("expected expression to be true but was false");
     }
 }
