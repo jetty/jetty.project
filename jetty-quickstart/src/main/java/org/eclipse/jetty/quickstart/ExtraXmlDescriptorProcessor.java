@@ -60,7 +60,7 @@ public class ExtraXmlDescriptorProcessor extends IterativeDescriptorProcessor
     public void start(WebAppContext context, Descriptor descriptor)
     {
         LOG.debug("process {}", descriptor);
-        _origin = ("  <!-- " + descriptor + " -->\n");
+        _origin = (StringUtil.isBlank(_originAttribute) ? null : "  <!-- " + descriptor + " -->\n");
     }
 
     @Override
@@ -80,7 +80,7 @@ public class ExtraXmlDescriptorProcessor extends IterativeDescriptorProcessor
         //as an attribute like the other other elements because
         //we are copying these elements _verbatim_ from the descriptor
         LOG.debug("save {}", node.getTag());
-        if (!StringUtil.isBlank(_originAttribute))
+        if (_origin != null)
             _buffer.append(_origin);
         _buffer.append("  ").append(node.toString()).append("\n");
     }
