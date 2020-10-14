@@ -47,6 +47,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.Net;
@@ -349,6 +350,10 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         Assumptions.assumeTrue(scenario.transport.isTlsBased());
 
         scenario.startServer(new EmptyServerHandler());
+        // Disable validations on the server to be sure
+        // that the test failure happens during the
+        // validation of the certificate on the client.
+        scenario.httpConfig.getCustomizer(SecureRequestCustomizer.class).setSniHostCheck(false);
 
         // Use a default SslContextFactory, requests should fail because the server certificate is unknown.
         SslContextFactory.Client clientTLS = scenario.newClientSslContextFactory();
@@ -361,9 +366,9 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
 
         assertThrows(ExecutionException.class, () ->
         {
-            // Use IP address since the certificate contains a host name.
+            // Use an IP address not present in the certificate.
             int serverPort = ((ServerConnector)scenario.connector).getLocalPort();
-            scenario.client.newRequest("https://127.0.0.1:" + serverPort)
+            scenario.client.newRequest("https://127.0.0.2:" + serverPort)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
         });

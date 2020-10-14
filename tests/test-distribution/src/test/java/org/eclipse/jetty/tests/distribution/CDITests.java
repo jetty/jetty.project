@@ -58,11 +58,13 @@ public class CDITests extends AbstractJettyHomeTest
 
         return Stream.of(
             // -- Weld --
+            // Uses test-weld-cdi-webapp
             Arguments.of("weld", "cdi-spi", null), // Weld >= 3.1.2
             Arguments.of("weld", "decorate", null), // Weld >= 3.1.2
             Arguments.of("weld", "cdi-decorate", null), // Weld >= 3.1.3
 
             // -- Apache OpenWebBeans --
+            // Uses test-owb-cdi-webapp
             Arguments.of("owb", "cdi-spi", null)
             // Arguments.of("owb", "decorate", null), // Not supported
             // Arguments.of("owb", "cdi-decorate", null) // Not supported

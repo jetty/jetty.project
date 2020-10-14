@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http.tools;
+package org.eclipse.jetty.http;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -26,9 +26,6 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpVersion;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 

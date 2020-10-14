@@ -89,7 +89,7 @@ public class WebSocketTester
     protected static HttpFields.Mutable newUpgradeRequest(String extensions)
     {
         HttpFields.Mutable fields = HttpFields.build()
-            .add(HttpHeader.HOST, "127.0.0.1")
+            .add(HttpHeader.HOST, "localhost")
             .add(HttpHeader.UPGRADE, "websocket")
             .add(HttpHeader.CONNECTION, "Upgrade")
             .add(HttpHeader.SEC_WEBSOCKET_KEY, NON_RANDOM_KEY)
