@@ -20,7 +20,7 @@ package org.eclipse.jetty.util.compression;
 
 import java.util.zip.Deflater;
 
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 public class DeflaterPool extends CompressionPool<Deflater>
@@ -64,19 +64,19 @@ public class DeflaterPool extends CompressionPool<Deflater>
         deflater.reset();
     }
 
-    public static DeflaterPool ensurePool(ContainerLifeCycle containerLifeCycle)
+    public static DeflaterPool ensurePool(Container container)
     {
-        DeflaterPool pool = containerLifeCycle.getBean(DeflaterPool.class);
+        DeflaterPool pool = container.getBean(DeflaterPool.class);
         if (pool != null)
             return pool;
 
         int capacity = CompressionPool.DEFAULT_CAPACITY;
-        ThreadPool.SizedThreadPool threadPool = containerLifeCycle.getBean(ThreadPool.SizedThreadPool.class);
+        ThreadPool.SizedThreadPool threadPool = container.getBean(ThreadPool.SizedThreadPool.class);
         if (threadPool != null)
             capacity = threadPool.getMaxThreads();
 
         pool = new DeflaterPool(capacity, Deflater.DEFAULT_COMPRESSION, true);
-        containerLifeCycle.addBean(pool);
+        container.addBean(pool);
         return pool;
     }
 }

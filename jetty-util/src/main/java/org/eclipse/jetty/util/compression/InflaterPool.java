@@ -20,7 +20,7 @@ package org.eclipse.jetty.util.compression;
 
 import java.util.zip.Inflater;
 
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 public class InflaterPool extends CompressionPool<Inflater>
@@ -61,19 +61,19 @@ public class InflaterPool extends CompressionPool<Inflater>
         inflater.reset();
     }
 
-    public static InflaterPool ensurePool(ContainerLifeCycle containerLifeCycle)
+    public static InflaterPool ensurePool(Container container)
     {
-        InflaterPool pool = containerLifeCycle.getBean(InflaterPool.class);
+        InflaterPool pool = container.getBean(InflaterPool.class);
         if (pool != null)
             return pool;
 
         int capacity = CompressionPool.DEFAULT_CAPACITY;
-        ThreadPool.SizedThreadPool threadPool = containerLifeCycle.getBean(ThreadPool.SizedThreadPool.class);
+        ThreadPool.SizedThreadPool threadPool = container.getBean(ThreadPool.SizedThreadPool.class);
         if (threadPool != null)
             capacity = threadPool.getMaxThreads();
 
         pool = new InflaterPool(capacity, true);
-        containerLifeCycle.addBean(pool);
+        container.addBean(pool);
         return pool;
     }
 }

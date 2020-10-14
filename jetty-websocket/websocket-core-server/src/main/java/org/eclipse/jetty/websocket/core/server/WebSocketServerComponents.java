@@ -38,6 +38,8 @@ import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 public class WebSocketServerComponents extends WebSocketComponents
 {
     public static final String WEBSOCKET_COMPONENTS_ATTRIBUTE = WebSocketComponents.class.getName();
+    public static final String WEBSOCKET_INFLATER_POOL_ATTRIBUTE = "jetty.websocket.inflater";
+    public static final String WEBSOCKET_DEFLATER_POOL_ATTRIBUTE = "jetty.websocket.deflater";
 
     WebSocketServerComponents(InflaterPool inflaterPool, DeflaterPool deflaterPool)
     {
@@ -49,8 +51,14 @@ public class WebSocketServerComponents extends WebSocketComponents
         WebSocketComponents components = server.getBean(WebSocketComponents.class);
         if (components == null)
         {
-            InflaterPool inflaterPool = InflaterPool.ensurePool(server);
-            DeflaterPool deflaterPool = DeflaterPool.ensurePool(server);
+            InflaterPool inflaterPool = (InflaterPool)servletContext.getAttribute(WEBSOCKET_INFLATER_POOL_ATTRIBUTE);
+            if (inflaterPool == null)
+                inflaterPool = InflaterPool.ensurePool(server);
+
+            DeflaterPool deflaterPool = (DeflaterPool)servletContext.getAttribute(WEBSOCKET_DEFLATER_POOL_ATTRIBUTE);
+            if (deflaterPool == null)
+                deflaterPool = DeflaterPool.ensurePool(server);
+
             components = new WebSocketServerComponents(inflaterPool, deflaterPool);
             server.addBean(components);
         }
