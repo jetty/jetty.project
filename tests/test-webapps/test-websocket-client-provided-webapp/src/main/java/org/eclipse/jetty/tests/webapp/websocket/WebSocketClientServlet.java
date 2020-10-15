@@ -29,8 +29,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -47,15 +45,12 @@ public class WebSocketClientServlet extends HttpServlet
     @Override
     public void init() throws ServletException
     {
-        // We can't use the jetty-websocket-httpclient.xml if the websocket client jars are in WEB-INF/lib.
-        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client(true);
-        HttpClient httpClient = new HttpClient(sslContextFactory);
-        httpClient.setConnectTimeout(4999);
-        this.client = new WebSocketClient(httpClient);
+        // We must rely on jetty-websocket-httpclient.xml as we do not have access to server classes like HttpClient.
+        client = new WebSocketClient();
 
         try
         {
-            this.client.start();
+            client.start();
         }
         catch (Exception e)
         {
@@ -95,7 +90,8 @@ public class WebSocketClientServlet extends HttpServlet
             PrintWriter writer = resp.getWriter();
             writer.println("WebSocketEcho: " + ("test message".equals(response) ? "success" : "failure"));
             writer.println("WebSocketEcho: success");
-            writer.println("ConnectTimeout: " + client.getHttpClient().getConnectTimeout());
+            // We cannot test the HttpClient timeout because it is a server class not exposed to the webapp.
+            // writer.println("ConnectTimeout: " + client.getHttpClient().getConnectTimeout());
         }
         catch (Exception e)
         {

@@ -23,7 +23,6 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -33,12 +32,9 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.unixsocket.UnixSocketConnector;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
-import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
@@ -311,6 +307,56 @@ public class DistributionTests extends AbstractDistributionTest
 
     @ParameterizedTest
     @ValueSource(strings = {"http", "https"})
+    public void testWebsocketClientInWebappProvidedByServer(String scheme) throws Exception
+    {
+        Path jettyBase = Files.createTempDirectory("jetty_base");
+        String jettyVersion = System.getProperty("jettyVersion");
+        DistributionTester distribution = DistributionTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        String[] args1 = {
+            "--create-startd",
+            "--approve-all-licenses",
+            "--add-to-start=resources,server,webapp,deploy,jsp,jmx,servlet,servlets,websocket," + scheme
+        };
+        try (DistributionTester.Run run1 = distribution.start(args1))
+        {
+            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            File webApp = distribution.resolveArtifact("org.eclipse.jetty.tests:test-websocket-client-provided-webapp:war:" + jettyVersion);
+            distribution.installWarFile(webApp, "test");
+
+            int port = distribution.freePort();
+            String[] args2 = {
+                "jetty.http.port=" + port,
+                "jetty.ssl.port=" + port,
+                // "jetty.server.dumpAfterStart=true",
+            };
+
+            try (DistributionTester.Run run2 = distribution.start(args2))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
+
+                // We should get the correct configuration from the jetty-websocket-httpclient.xml file.
+                startHttpClient(scheme.equals("https"));
+                URI serverUri = URI.create(scheme + "://localhost:" + port + "/test");
+                ContentResponse response = client.GET(serverUri);
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                String content = response.getContentAsString();
+                assertThat(content, containsString("WebSocketEcho: success"));
+
+                // We cannot test the HttpClient timeout because it is a server class not exposed to the webapp.
+                // assertThat(content, containsString("ConnectTimeout: 4999"));
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"http", "https"})
     public void testWebsocketClientInWebapp(String scheme) throws Exception
     {
         Path jettyBase = Files.createTempDirectory("jetty_base");
@@ -338,14 +384,10 @@ public class DistributionTests extends AbstractDistributionTest
             String[] args2 = {
                 "jetty.http.port=" + port,
                 "jetty.ssl.port=" + port,
+                "jetty.webapp.addServerClasses+=,+org.eclipse.jetty.websocket.",
+                "jetty.webapp.addSystemClasses+=,-org.eclipse.jetty.websocket.",
                 // "jetty.server.dumpAfterStart=true",
-                // "jetty.webapp.addSystemClasses+=,org.eclipse.jetty.client.",
-                // "jetty.webapp.addServerClasses+=,-org.eclipse.jetty.client.",
-                // "jetty.webapp.addSystemClasses+=,org.eclipse.jetty.util.ssl.",
-                // "jetty.webapp.addServerClasses+=,-org.eclipse.jetty.util.ssl.",
-                // "jetty.webapp.addSystemClasses+=,org.eclipse.jetty.util.component.",
-                // "jetty.webapp.addServerClasses+=,-org.eclipse.jetty.util.component."
-            };
+                };
 
             try (DistributionTester.Run run2 = distribution.start(args2))
             {
@@ -358,45 +400,8 @@ public class DistributionTests extends AbstractDistributionTest
                 assertEquals(HttpStatus.OK_200, response.getStatus());
                 String content = response.getContentAsString();
                 assertThat(content, containsString("WebSocketEcho: success"));
-
-                // We cannot test the HttpClient timeout because it is a server class not exposed to the webapp.
-                // assertThat(content, containsString("ConnectTimeout: 4999"));
+                assertThat(content, containsString("ConnectTimeout: 4999"));
             }
-        }
-    }
-
-    public static class WsListener implements WebSocketListener
-    {
-        public BlockingArrayQueue<String> textMessages = new BlockingArrayQueue<>();
-        public final CountDownLatch closeLatch = new CountDownLatch(1);
-        public int closeCode;
-
-        @Override
-        public void onWebSocketClose(int statusCode, String reason)
-        {
-            this.closeCode = statusCode;
-            closeLatch.countDown();
-        }
-
-        @Override
-        public void onWebSocketConnect(Session session)
-        {
-        }
-
-        @Override
-        public void onWebSocketError(Throwable cause)
-        {
-        }
-
-        @Override
-        public void onWebSocketBinary(byte[] payload, int offset, int len)
-        {
-        }
-
-        @Override
-        public void onWebSocketText(String message)
-        {
-            textMessages.add(message);
         }
     }
 }

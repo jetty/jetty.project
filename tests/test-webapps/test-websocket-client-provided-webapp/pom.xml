@@ -7,7 +7,7 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>test-websocket-client-webapp</artifactId>
+  <artifactId>test-websocket-client-provided-webapp</artifactId>
   <packaging>war</packaging>
 
   <name>Test :: Jetty Websocket Simple Webapp with WebSocketClient</name>
@@ -27,6 +27,7 @@
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-client</artifactId>
       <version>${project.version}</version>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
 </project>
