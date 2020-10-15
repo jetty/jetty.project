@@ -24,7 +24,6 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
@@ -42,24 +41,18 @@ class XmlBasedHttpClientProvider
         if (resource == null)
             return null;
 
-        // Try to load a HttpClient from a jetty-websocket-httpclient.xml configuration file.
-        // If WebAppClassLoader run with server class access, otherwise run normally.
         try
         {
-            try
-            {
-                return WebAppClassLoader.runWithServerClassAccess(() -> newHttpClient(resource));
-            }
-            catch (NoClassDefFoundError | ClassNotFoundException e)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Could not use WebAppClassLoader to run with Server class access", e);
-                return newHttpClient(resource);
-            }
+            Thread.currentThread().setContextClassLoader(HttpClient.class.getClassLoader());
+            return newHttpClient(resource);
         }
         catch (Throwable t)
         {
             LOG.warn("Failure to load HttpClient from XML", t);
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(contextClassLoader);
         }
 
         return null;
