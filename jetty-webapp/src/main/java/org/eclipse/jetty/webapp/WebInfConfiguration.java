@@ -24,8 +24,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -59,10 +59,10 @@ public class WebInfConfiguration extends AbstractConfiguration
      * resource base as a resource collection.
      */
     public static final String RESOURCE_DIRS = "org.eclipse.jetty.resources";
-    
+
 
     protected Resource _preUnpackBaseResource;
-    
+
     /**
      * ContainerPathNameMatcher
      *
@@ -82,8 +82,8 @@ public class WebInfConfiguration extends AbstractConfiguration
             _context = context;
             _pattern = pattern;
         }
-        
-        
+
+
         public void match (List<URI> uris)
         throws Exception
         {
@@ -91,10 +91,10 @@ public class WebInfConfiguration extends AbstractConfiguration
                 return;
             match(_pattern, uris.toArray(new URI[uris.size()]), false);
         }
-        
-       
-        
-        /** 
+
+
+
+        /**
          * @see org.eclipse.jetty.util.PatternMatcher#matched(java.net.URI)
          */
         @Override
@@ -113,7 +113,7 @@ public class WebInfConfiguration extends AbstractConfiguration
      * will match.
      */
     public class WebAppPathNameMatcher extends PatternMatcher
-    {        
+    {
         protected final WebAppContext _context;
         protected final Pattern _pattern;
 
@@ -124,14 +124,14 @@ public class WebInfConfiguration extends AbstractConfiguration
             _context=context;
             _pattern=pattern;
         }
-        
+
         public void match (List<URI> uris)
         throws Exception
         {
             match(_pattern, uris.toArray(new URI[uris.size()]), true);
         }
-        
-        /** 
+
+        /**
          * @see org.eclipse.jetty.util.PatternMatcher#matched(java.net.URI)
          */
         @Override
@@ -139,7 +139,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         {
             _context.getMetaData().addWebInfJar(Resource.newResource(uri));
         }
-        
+
     }
 
 
@@ -160,21 +160,21 @@ public class WebInfConfiguration extends AbstractConfiguration
         context.getMetaData().setWebInfClassesDirs(findClassDirs(context));
     }
 
-    
-    
+
+
     /**
      * Find jars and directories that are on the container's classpath
      * and apply an optional filter. The filter is a pattern applied to the
      * full jar or directory names. If there is no pattern, then no jar
      * or dir is considered to match.
-     * 
-     * Those jars that do match will be later examined for META-INF 
+     *
+     * Those jars that do match will be later examined for META-INF
      * information and annotations.
-     * 
+     *
      * To find them, examine the classloaders in the hierarchy above the
      * webapp classloader that are URLClassLoaders. For jdk-9 we also
      * look at the java.class.path, and the jdk.module.path.
-     * 
+     *
      * @param context the WebAppContext being deployed
      * @throws Exception
      */
@@ -187,19 +187,19 @@ public class WebInfConfiguration extends AbstractConfiguration
         Object target = context.getAttribute(JavaVersion.JAVA_TARGET_PLATFORM);
         if (target!=null)
             targetPlatform = Integer.valueOf(target.toString()).intValue();
-        
+
         //Apply an initial name filter to the jars to select which will be eventually
         //scanned for META-INF info and annotations. The filter is based on inclusion patterns.
         String tmp = (String)context.getAttribute(CONTAINER_JAR_PATTERN);
         Pattern containerPattern = (tmp==null?null:Pattern.compile(tmp));
         ContainerPathNameMatcher containerPathNameMatcher = new ContainerPathNameMatcher(context, containerPattern);
-        
+
         ClassLoader loader = null;
         if (context.getClassLoader() != null)
             loader = context.getClassLoader().getParent();
 
         List<URI> containerUris = new ArrayList<>();
-        
+
         while (loader != null && (loader instanceof URLClassLoader))
         {
             URL[] urls = ((URLClassLoader)loader).getURLs();
@@ -219,7 +219,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             }
             loader = loader.getParent();
         }
-        
+
         if (LOG.isDebugEnabled()) LOG.debug("Matching container urls {}", containerUris);
         containerPathNameMatcher.match(containerUris);
 
@@ -241,8 +241,8 @@ public class WebInfConfiguration extends AbstractConfiguration
                 containerPathNameMatcher.match(cpUris);
             }
         }
-        
-        //if we're targetting jdk 9 or above, we also need to examine the 
+
+        //if we're targetting jdk 9 or above, we also need to examine the
         //module path
         if (targetPlatform >= 9)
         {
@@ -265,26 +265,26 @@ public class WebInfConfiguration extends AbstractConfiguration
                             moduleUris.add(f.toURI());
                         }
                     }
-                        
+
                 }
                 if (LOG.isDebugEnabled()) LOG.debug("Matching jdk.module.path {}", moduleUris);
                 containerPathNameMatcher.match(moduleUris);
             }
         }
-        
+
         if (LOG.isDebugEnabled()) LOG.debug("Container paths selected:{}", context.getMetaData().getContainerResources());
     }
-    
-    
+
+
     /**
      * Finds the jars that are either physically or virtually in
      * WEB-INF/lib, and applies an optional filter to their full
-     * pathnames. 
-     * 
+     * pathnames.
+     *
      * The filter selects which jars will later be examined for META-INF
      * information and annotations. If there is no pattern, then
      * all jars are considered selected.
-     * 
+     *
      * @param context the WebAppContext being deployed
      * @throws Exception
      */
@@ -295,7 +295,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         Pattern webInfPattern = (tmp==null?null:Pattern.compile(tmp));
         //Apply filter to WEB-INF/lib jars
         WebAppPathNameMatcher matcher = new WebAppPathNameMatcher(context, webInfPattern);
-        
+
         List<Resource> jars = findJars(context);
 
         //Convert to uris for matching
@@ -310,7 +310,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             matcher.match(uris);
         }
     }
-    
+
 
     @Override
     public void configure(WebAppContext context) throws Exception
@@ -361,10 +361,10 @@ public class WebInfConfiguration extends AbstractConfiguration
         {
            IO.delete(context.getTempDirectory());
         }
-        
+
         //if it wasn't explicitly configured by the user, then unset it
        Boolean tmpdirConfigured = (Boolean)context.getAttribute(TEMPDIR_CONFIGURED);
-        if (tmpdirConfigured != null && !tmpdirConfigured) 
+        if (tmpdirConfigured != null && !tmpdirConfigured)
             context.setTempDirectory(null);
 
         //reset the base resource back to what it was before we did any unpacking of resources
@@ -380,14 +380,10 @@ public class WebInfConfiguration extends AbstractConfiguration
     @Override
     public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
     {
-        File tmpDir=File.createTempFile(WebInfConfiguration.getCanonicalNameForWebAppTmpDir(context),"",template.getTempDirectory().getParentFile());
-        if (tmpDir.exists())
-        {
-            IO.delete(tmpDir);
-        }
-        tmpDir.mkdir();
-        tmpDir.deleteOnExit();
-        context.setTempDirectory(tmpDir);
+        Path tmpDir = Files.createTempDirectory(template.getTempDirectory().getParentFile().toPath(), WebInfConfiguration.getCanonicalNameForWebAppTmpDir(context));
+        File tmpDirAsFile = tmpDir.toFile();
+        tmpDirAsFile.deleteOnExit();
+        context.setTempDirectory(tmpDirAsFile);
     }
 
 
@@ -417,7 +413,7 @@ public class WebInfConfiguration extends AbstractConfiguration
      * If the user has specified the context attribute org.eclipse.jetty.webapp.basetempdir, the
      * directory specified by this attribute will be the parent of the temp dir created. Otherwise,
      * the parent dir is <code>${java.io.tmpdir}</code>. Set delete on exit depends on value of persistTempDirectory.
-     *  
+     *
      * @param context the context to resolve the temp directory from
      * @throws Exception if unable to resolve the temp directory
      */
@@ -518,11 +514,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         else
         {
             //ensure file will always be unique by appending random digits
-            tmpDir = File.createTempFile(temp, ".dir", parent);
-            //delete the file that was created
-            tmpDir.delete();
-            //and make a directory of the same name
-            tmpDir.mkdirs();
+            tmpDir = Files.createTempDirectory(parent.toPath(), temp).toFile();
         }
         configureTempDirectory(tmpDir, context);
 
@@ -551,7 +543,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             dir.deleteOnExit();
 
         //is it useable
-        if (!dir.canWrite() || !dir.isDirectory())   
+        if (!dir.canWrite() || !dir.isDirectory())
             throw new IllegalStateException("Temp dir "+dir+" not useable: writeable="+dir.canWrite()+", dir="+dir.isDirectory());
     }
 
@@ -568,7 +560,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 web_app = context.newResource(war);
             else
                 web_app=context.getBaseResource();
-            
+
             if (web_app == null)
                 throw new IllegalStateException("No resourceBase or war set for context");
 
@@ -721,14 +713,14 @@ public class WebInfConfiguration extends AbstractConfiguration
      * Create a canonical name for a webapp temp directory.
      * <p>
      * The form of the name is:
-     * 
+     *
      * <pre>"jetty-"+host+"-"+port+"-"+resourceBase+"-_"+context+"-"+virtualhost+"-"+randomdigits+".dir"</pre>
      *
      *  host and port uniquely identify the server
      *  context and virtual host uniquely identify the webapp
      *  randomdigits ensure every tmp directory is unique
-     *  
-     * @param context the context to get the canonical name from 
+     *
+     * @param context the context to get the canonical name from
      * @return the canonical name for the webapp temp directory
      */
     public static String getCanonicalNameForWebAppTmpDir (WebAppContext context)
@@ -825,13 +817,13 @@ public class WebInfConfiguration extends AbstractConfiguration
         return canonicalName.toString();
     }
 
-    
+
     protected List<Resource> findClassDirs (WebAppContext context)
     throws Exception
     {
         if (context == null)
             return null;
-        
+
         List<Resource> classDirs = new ArrayList<Resource>();
 
         Resource webInfClasses = findWebInfClassesDir(context);
@@ -840,14 +832,14 @@ public class WebInfConfiguration extends AbstractConfiguration
         List<Resource> extraClassDirs = findExtraClasspathDirs(context);
         if (extraClassDirs != null)
             classDirs.addAll(extraClassDirs);
-        
+
         return classDirs;
     }
-    
-    
+
+
     /**
      * Look for jars that should be treated as if they are in WEB-INF/lib
-     * 
+     *
      * @param context the context to find the jars in
      * @return the list of jar resources found within context
      * @throws Exception if unable to find the jars
@@ -864,10 +856,10 @@ public class WebInfConfiguration extends AbstractConfiguration
             jarResources.addAll(extraClasspathJars);
         return jarResources;
     }
-    
+
     /**
      * Look for jars in <code>WEB-INF/lib</code>
-     *  
+     *
      * @param context the context to find the lib jars in
      * @return the list of jars as {@link Resource}
      * @throws Exception if unable to scan for lib jars
@@ -905,22 +897,22 @@ public class WebInfConfiguration extends AbstractConfiguration
         }
         return jarResources;
     }
-    
-    
-    
+
+
+
     /**
      * Get jars from WebAppContext.getExtraClasspath as resources
-     * 
+     *
      * @param context the context to find extra classpath jars in
      * @return the list of Resources with the extra classpath, or null if not found
      * @throws Exception if unable to find the extra classpath jars
      */
     protected List<Resource>  findExtraClasspathJars(WebAppContext context)
     throws Exception
-    { 
+    {
         if (context == null || context.getExtraClasspath() == null)
             return null;
-        
+
         List<Resource> jarResources = new ArrayList<Resource>();
         StringTokenizer tokenizer = new StringTokenizer(context.getExtraClasspath(), ",;");
         while (tokenizer.hasMoreTokens())
@@ -934,13 +926,13 @@ public class WebInfConfiguration extends AbstractConfiguration
                 jarResources.add(resource);
             }
         }
-        
+
         return jarResources;
     }
-    
+
     /**
      * Get <code>WEB-INF/classes</code> dir
-     * 
+     *
      * @param context the context to look for the <code>WEB-INF/classes</code> directory
      * @return the Resource for the <code>WEB-INF/classes</code> directory
      * @throws Exception if unable to find the <code>WEB-INF/classes</code> directory
@@ -950,7 +942,7 @@ public class WebInfConfiguration extends AbstractConfiguration
     {
         if (context == null)
             return null;
-        
+
         Resource web_inf = context.getWebInf();
 
         // Find WEB-INF/classes
@@ -963,21 +955,21 @@ public class WebInfConfiguration extends AbstractConfiguration
         }
         return null;
     }
-    
-    
+
+
     /**
      * Get class dirs from WebAppContext.getExtraClasspath as resources
-     * 
+     *
      * @param context the context to look for extra classpaths in
-     * @return the list of Resources to the extra classpath 
+     * @return the list of Resources to the extra classpath
      * @throws Exception if unable to find the extra classpaths
      */
     protected List<Resource>  findExtraClasspathDirs(WebAppContext context)
     throws Exception
-    { 
+    {
         if (context == null || context.getExtraClasspath() == null)
             return null;
-        
+
         List<Resource> dirResources = new ArrayList<Resource>();
         StringTokenizer tokenizer = new StringTokenizer(context.getExtraClasspath(), ",;");
         while (tokenizer.hasMoreTokens())
@@ -986,9 +978,9 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (resource.exists() && resource.isDirectory())
                 dirResources.add(resource);
         }
-        
+
         return dirResources;
     }
-    
-    
+
+
 }
