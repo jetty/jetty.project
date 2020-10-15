@@ -105,12 +105,12 @@ public class OpenIdAuthenticationTest
         OpenIdLoginService loginService = new OpenIdLoginService(configuration);//, hashLoginService);
         securityHandler.setLoginService(loginService);
 
-        Authenticator authenticator = new OpenIdAuthenticator(configuration, "/error");
+        Authenticator authenticator = new OpenIdAuthenticator(configuration, "/redirect_path", "/error");
         securityHandler.setAuthenticator(authenticator);
         context.setSecurityHandler(securityHandler);
 
         server.start();
-        String redirectUri = "http://localhost:" + connector.getLocalPort() + "/j_security_check";
+        String redirectUri = "http://localhost:" + connector.getLocalPort() + "/redirect_path";
         openIdProvider.addRedirectUri(redirectUri);
 
         client = new HttpClient();
