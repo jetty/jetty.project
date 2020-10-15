@@ -226,7 +226,7 @@ public class FileResource extends Resource
             LOG.debug(e);
             try
             {
-                return new URI("http://eclipse.org/bad/canonical/alias");
+                return new URI("https://eclipse.org/bad/canonical/alias");
             }
             catch (Exception ex2)
             {

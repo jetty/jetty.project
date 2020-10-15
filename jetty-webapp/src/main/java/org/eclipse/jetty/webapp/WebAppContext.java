@@ -689,7 +689,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      *
      * @param classOrPackage A pattern.
      * @see #setServerClasses(String[])
-     * @see <a href="http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html">Jetty Documentation: Classloading</a>
+     * @see <a href="https://www.eclipse.org/jetty/documentation/current/jetty-classloading.html">Jetty Documentation: Classloading</a>
      * @deprecated Use {@link #getServerClasspathPattern()}.{@link ClasspathPattern#add(String)}
      */
     @Deprecated
@@ -743,7 +743,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      *
      * @param classOrPackage A pattern.
      * @see #setSystemClasses(String[])
-     * @see <a href="http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html">Jetty Documentation: Classloading</a>
+     * @see <a href="https://www.eclipse.org/jetty/documentation/current/jetty-classloading.html">Jetty Documentation: Classloading</a>
      * @deprecated Use {@link #getSystemClasspathPattern()}.{@link ClasspathPattern#add(String)}
      */
     @Deprecated

@@ -4,11 +4,10 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-sessions-parent</artifactId>
-    <version>9.4.32-SNAPSHOT</version>
+    <version>9.4.33-SNAPSHOT</version>
   </parent>
   <artifactId>test-gcloud-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: GCloud</name>
-  <url>http://www.eclipse.org/jetty</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.gcloud</bundle-symbolic-name>
   </properties>
@@ -56,12 +55,6 @@
       <groupId>org.eclipse.jetty.gcloud</groupId>
       <artifactId>jetty-gcloud-session-manager</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <!-- avoid depending on a range dependency from a transitive dependency -->
-    <dependency>
-      <groupId>io.grpc</groupId>
-      <artifactId>grpc-core</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>

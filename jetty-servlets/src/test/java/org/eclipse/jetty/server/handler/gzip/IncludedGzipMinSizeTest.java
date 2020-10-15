@@ -29,7 +29,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * Perform specific tests on the IncludableGzipHandler's ability to manage
  * minGzipSize initialization parameter.
  *
- * @see <a href="Eclipse Bug 366106">http://bugs.eclipse.org/366106</a>
+ * @see <a href="Eclipse Bug 366106">https://bugs.eclipse.org/366106</a>
  */
 @ExtendWith(WorkDirExtension.class)
 public class IncludedGzipMinSizeTest

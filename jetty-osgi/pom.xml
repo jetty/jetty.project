@@ -2,14 +2,13 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.32-SNAPSHOT</version>
+    <version>9.4.33-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.osgi</groupId>
   <artifactId>jetty-osgi-project</artifactId>
   <name>Jetty :: OSGi</name>
-  <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
 
   <properties>

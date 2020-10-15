@@ -3,12 +3,11 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.4.32-SNAPSHOT</version>
+    <version>9.4.33-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-jetty-osgi-webapp-resources</artifactId>
   <name>OSGi Test :: Webapp With Resources</name>
-  <url>http://www.eclipse.org/jetty</url>
   <packaging>war</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.webapp.resources</bundle-symbolic-name>

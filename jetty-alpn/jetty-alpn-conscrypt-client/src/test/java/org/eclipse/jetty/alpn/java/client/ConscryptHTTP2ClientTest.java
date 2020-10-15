@@ -60,7 +60,7 @@ public class ConscryptHTTP2ClientTest
         Security.insertProviderAt(new OpenSSLProvider(), 1);
         SslContextFactory sslContextFactory = new SslContextFactory.Client();
         sslContextFactory.setProvider("Conscrypt");
-        Conscrypt.setDefaultHostnameVerifier((hostname, session) -> true);
+        Conscrypt.setDefaultHostnameVerifier((certs, hostname, session) -> true);
 
         HTTP2Client client = new HTTP2Client();
         try

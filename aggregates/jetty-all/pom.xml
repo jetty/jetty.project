@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.32-SNAPSHOT</version>
+    <version>9.4.33-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -11,7 +11,6 @@
   <name>Jetty :: Aggregate :: All core Jetty</name>
   <description>UberJar for Core Jetty features</description>
   <packaging>pom</packaging>
-  <url>http://www.eclipse.org/jetty</url>
   <properties>
     <uber-jar>${project.build.directory}/${project.artifactId}-${project.version}-uber.jar</uber-jar>
     <gen-resources-dir>${project.build.directory}/gen-resources</gen-resources-dir>

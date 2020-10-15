@@ -223,7 +223,7 @@ public class FileSystemResourceTest
     public void testNotFileURI(Class resourceClass)
     {
         assertThrows(IllegalArgumentException.class,
-            () -> newResource(resourceClass, new URI("http://www.eclipse.org/jetty/")));
+            () -> newResource(resourceClass, new URI("https://www.eclipse.org/jetty/")));
     }
 
     @ParameterizedTest

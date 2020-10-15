@@ -3,13 +3,12 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-jmx-parent</artifactId>
-    <version>9.4.32-SNAPSHOT</version>
+    <version>9.4.33-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jmx-webapp-it</artifactId>
   <packaging>jar</packaging>
   <name>Jetty Tests :: JMX :: WebApp Integration Tests</name>
-  <url>http://www.eclipse.org/jetty</url>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>

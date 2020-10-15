@@ -230,28 +230,28 @@ These files will then be visible from http://download.eclipse.org/jetty/updates/
 [[releasing-documentation]]
 ==== Release Documentation
 
-There are two git repositories you need to be aware of for releasing jetty-documentation. The jetty-documentation is located in our github repository and the jetty-website is located at eclipse.
+There are two git repositories you need to be aware of for releasing jetty-documentation.The jetty-documentation is located in our github repository and the jetty-website is located at eclipse.
 
 jetty-documentation::
-  https://github.com/jetty-project/jetty-documentation
+https://github.com/jetty-project/jetty-documentation
 jetty-website::
-  http://git.eclipse.org/c/www.eclipse.org/jetty.git
+http://git.eclipse.org/c/www.eclipse.org/jetty.git
 
 Do the following steps to publish documentation for the release:
 
-1.  Checkout the jetty-documentation repository.
-2.  Edit the <version> of the jetty-documentation pom.xml and change it _locally_ to be the release number, eg 9.2.6.v20141205
-3.  Build the documentation with mvn clean install
-4.  Checkout the jetty-website
-5.  Inside the documentation/ directory, make a directory named the same as the release number, eg 9.2.6.v20141205/
-6.  Copy the built `documentation` from jetty-documentation/target/docbkx/html/jetty into the new directory
-7.  Edit the `index.html` file in the `documentation` directory and add the newly released documentation url.
+1. Checkout the jetty-documentation repository.
+2. Edit the <version> of the jetty-documentation pom.xml and change it _locally_ to be the release number, eg 9.2.6.v20141205
+3. Build the documentation with mvn clean install
+4. Checkout the jetty-website
+5. Inside the documentation/ directory, make a directory named the same as the release number, eg 9.2.6.v20141205/
+6. Copy the built `documentation` from jetty-documentation/target/docbkx/html/jetty into the new directory
+7. Edit the `index.html` file in the `documentation` directory and add the newly released documentation url.
 Make sure you follow the other examples and include the `rel="nofollow"` attribute on the link so that search engines do not crawl newly created documentation, otherwise we are subject to duplicate content penalties in SEO.
-8.  Commit the changes to the jetty-website project
+8. Commit the changes to the jetty-website project
 
 ____
 [NOTE]
-There is a separate Jenkins build job that publishes documentation to http://www.eclipse.org/jetty/documentation/current triggered by a push of changed files to the jetty-documentation project.
+There is a separate Jenkins build job that publishes documentation to https://www.eclipse.org/jetty/documentation/current triggered by a push of changed files to the jetty-documentation project.
 If you commit your change to the <version> number from step 2, then these builds will use the same release version number.
 It is preferable if you _don't_ commit that version number change, or better yet, ensure that it is set to the next -SNAPSHOT version number for your jetty major release number.
 ____

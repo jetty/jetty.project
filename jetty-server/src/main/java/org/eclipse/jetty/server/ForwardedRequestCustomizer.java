@@ -30,6 +30,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.QuotedCSVParser;
 import org.eclipse.jetty.server.HttpConfiguration.Customizer;
 import org.eclipse.jetty.util.ArrayTrie;
@@ -57,8 +58,91 @@ import static java.lang.invoke.MethodType.methodType;
  * the request came</p>
  * <p>Headers can also be defined so that forwarded SSL Session IDs and Cipher
  * suites may be customised</p>
+ * <p>
+ *     The Authority (host and port) is updated on the {@link Request} object based
+ *     on the host / port information in the following search order.
+ * </p>
+ * <table style="border: 1px solid black; border-collapse: separate; border-spacing: 0px;">
+ *     <caption style="font-weight: bold; font-size: 1.2em">Request Authority Search Order</caption>
+ *     <colgroup>
+ *         <col><col style="width: 15%"><col><col><col><col>
+ *     </colgroup>
+ *     <thead style="background-color: lightgray">
+ *         <tr>
+ *             <th>#</th>
+ *             <th>Value Origin</th>
+ *             <th>Host</th>
+ *             <th>Port</th>
+ *             <th>Protocol</th>
+ *             <th>Notes</th>
+ *         </tr>
+ *     </thead>
+ *     <tbody style="text-align: left; vertical-align: top;">
+ *         <tr>
+ *             <td>1</td>
+ *             <td><code>Forwarded</code> Header</td>
+ *             <td>"{@code host=<host>}" param (Required)</td>
+ *             <td>"{@code host=<host>:<port>} param (Implied)</td>
+ *             <td>"{@code proto=<value>}" param (Optional)</td>
+ *             <td>From left-most relevant parameter (see <a href="https://tools.ietf.org/html/rfc7239">rfc7239</a>)</td>
+ *         </tr>
+ *         <tr>
+ *             <td>2</td>
+ *             <td><code>X-Forwarded-Host</code> Header</td>
+ *             <td>Required</td>
+ *             <td>Implied</td>
+ *             <td>n/a</td>
+ *             <td>left-most value</td>
+ *         </tr>
+ *         <tr>
+ *             <td>3</td>
+ *             <td><code>X-Forwarded-Port</code> Header</td>
+ *             <td>n/a</td>
+ *             <td>Required</td>
+ *             <td>n/a</td>
+ *             <td>left-most value (only if {@link #getForwardedPortAsAuthority()} is true)</td>
+ *         </tr>
+ *         <tr>
+ *             <td>4</td>
+ *             <td><code>X-Forwarded-Server</code> Header</td>
+ *             <td>Required</td>
+ *             <td>Optional</td>
+ *             <td>n/a</td>
+ *             <td>left-most value</td>
+ *         </tr>
+ *         <tr>
+ *             <td>5</td>
+ *             <td><code>X-Forwarded-Proto</code> Header</td>
+ *             <td>n/a</td>
+ *             <td>Implied from value</td>
+ *             <td>Required</td>
+ *             <td>
+ *                 <p>left-most value becomes protocol.</p>
+ *                 <ul>
+ *                     <li>Value of "<code>http</code>" means port=80.</li>
+ *                     <li>Value of "{@link HttpConfiguration#getSecureScheme()}" means port={@link HttpConfiguration#getSecurePort()}.</li>
+ *                 </ul>
+ *             </td>
+ *         </tr>
+ *         <tr>
+ *             <td>6</td>
+ *             <td><code>X-Proxied-Https</code> Header</td>
+ *             <td>n/a</td>
+ *             <td>Implied from value</td>
+ *             <td>boolean</td>
+ *             <td>
+ *                 <p>left-most value determines protocol and port.</p>
+ *                 <ul>
+ *                     <li>Value of "<code>on</code>" means port={@link HttpConfiguration#getSecurePort()}, and protocol={@link HttpConfiguration#getSecureScheme()}).</li>
+ *                     <li>Value of "<code>off</code>" means port=80, and protocol=http.</li>
+ *                 </ul>
+ *             </td>
+ *         </tr>
+ *     </tbody>
+ * </table>
  *
  * @see <a href="http://en.wikipedia.org/wiki/X-Forwarded-For">Wikipedia: X-Forwarded-For</a>
+ * @see <a href="https://tools.ietf.org/html/rfc7239">RFC 7239: Forwarded HTTP Extension</a>
  */
 public class ForwardedRequestCustomizer implements Customizer
 {
@@ -151,7 +235,7 @@ public class ForwardedRequestCustomizer implements Customizer
      */
     public void setForcedHost(String hostAndPort)
     {
-        _forcedHost = new HostPortHttpField(new ForcedHostPort(hostAndPort));
+        _forcedHost = new HostPortHttpField(hostAndPort);
     }
 
     /**
@@ -377,13 +461,17 @@ public class ForwardedRequestCustomizer implements Customizer
 
         // Do a single pass through the header fields as it is a more efficient single iteration.
         Forwarded forwarded = new Forwarded(request, config);
+        boolean match = false;
         for (HttpField field : httpFields)
         {
             try
             {
                 MethodHandle handle = _handles.get(field.getName());
                 if (handle != null)
+                {
+                    match = true;
                     handle.invoke(forwarded, field);
+                }
             }
             catch (Throwable t)
             {
@@ -391,34 +479,70 @@ public class ForwardedRequestCustomizer implements Customizer
             }
         }
 
-        if (forwarded._proto != null)
+        if (match)
         {
-            request.setScheme(forwarded._proto);
-            if (forwarded._proto.equalsIgnoreCase(config.getSecureScheme()))
+            // Is secure status configured from headers?
+            if (forwarded.isSecure())
+            {
                 request.setSecure(true);
-        }
+            }
 
-        if (forwarded._server != null && forwarded._host instanceof PortSetHostPort)
-        {
-            httpFields.put(new HostPortHttpField(forwarded._server, forwarded._host.getPort()));
-            request.setAuthority(forwarded._server, forwarded._host.getPort());
-        }
-        else if (forwarded._host != null)
-        {
-            httpFields.put(new HostPortHttpField(forwarded._host));
-            request.setAuthority(forwarded._host.getHost(), forwarded._host.getPort());
-        }
-        else if (forwarded._server != null)
-        {
-            httpFields.put(new HostPortHttpField(forwarded._server));
-            request.setAuthority(forwarded._server, 0);
-        }
+            // Set Scheme from configured protocol
+            if (forwarded._proto != null)
+            {
+                request.setScheme(forwarded._proto);
+            }
+            // Set scheme if header implies secure scheme is to be used (see #isSslIsSecure())
+            else if (forwarded._secureScheme)
+            {
+                request.setScheme(config.getSecureScheme());
+            }
 
-        if (forwarded._for != null)
-        {
-            int port = forwarded._for.getPort() > 0 ? forwarded._for.getPort() : request.getRemotePort();
-            request.setRemoteAddr(InetSocketAddress.createUnresolved(forwarded._for.getHost(), port));
+            // Use authority from headers, if configured.
+            if (forwarded._authority != null)
+            {
+                String host = forwarded._authority._host;
+                int port = forwarded._authority._port;
+
+                HttpURI requestURI = request.getMetaData().getURI();
+
+                if (requestURI != null)
+                {
+                    // Fall back to request metadata if needed.
+                    if (host == null)
+                    {
+                        host = requestURI.getHost();
+                    }
+
+                    if (port == MutableHostPort.UNSET) // is unset by headers
+                    {
+                        port = requestURI.getPort();
+                    }
+
+                    // Don't change port if port == IMPLIED.
+
+                    // Update authority if different from metadata
+                    if (!host.equalsIgnoreCase(requestURI.getHost()) ||
+                        port != requestURI.getPort())
+                    {
+                        httpFields.put(new HostPortHttpField(host, port));
+                        request.setAuthority(host, port);
+                    }
+                }
+            }
+
+            // Set Remote Address
+            if (forwarded.hasFor())
+            {
+                int forPort = forwarded._for._port > 0 ? forwarded._for._port : request.getRemotePort();
+                request.setRemoteAddr(InetSocketAddress.createUnresolved(forwarded._for._host, forPort));
+            }
         }
+    }
+
+    protected static int getSecurePort(HttpConfiguration config)
+    {
+        return config.getSecurePort() > 0 ? config.getSecurePort() : 443;
     }
 
     protected void onError(HttpField field, Throwable t)
@@ -426,7 +550,7 @@ public class ForwardedRequestCustomizer implements Customizer
         throw new BadMessageException("Bad header value for " + field.getName(), t);
     }
 
-    protected String getLeftMost(String headerValue)
+    protected static String getLeftMost(String headerValue)
     {
         if (headerValue == null)
             return null;
@@ -479,23 +603,23 @@ public class ForwardedRequestCustomizer implements Customizer
                 size += 128; // experimented good baseline size
                 _handles = new ArrayTrie<>(size);
 
-                if (updateForwardedHandle(lookup, getForwardedCipherSuiteHeader(), "handleCipherSuite"))
-                    continue;
-                if (updateForwardedHandle(lookup, getForwardedSslSessionIdHeader(), "handleSslSessionId"))
-                    continue;
                 if (updateForwardedHandle(lookup, getForwardedHeader(), "handleRFC7239"))
                     continue;
-                if (updateForwardedHandle(lookup, getForwardedForHeader(), "handleFor"))
+                if (updateForwardedHandle(lookup, getForwardedHostHeader(), "handleForwardedHost"))
                     continue;
-                if (updateForwardedHandle(lookup, getForwardedPortHeader(), "handlePort"))
+                if (updateForwardedHandle(lookup, getForwardedForHeader(), "handleForwardedFor"))
                     continue;
-                if (updateForwardedHandle(lookup, getForwardedHostHeader(), "handleHost"))
+                if (updateForwardedHandle(lookup, getForwardedPortHeader(), "handleForwardedPort"))
                     continue;
                 if (updateForwardedHandle(lookup, getForwardedProtoHeader(), "handleProto"))
                     continue;
                 if (updateForwardedHandle(lookup, getForwardedHttpsHeader(), "handleHttps"))
                     continue;
-                if (updateForwardedHandle(lookup, getForwardedServerHeader(), "handleServer"))
+                if (updateForwardedHandle(lookup, getForwardedServerHeader(), "handleForwardedServer"))
+                    continue;
+                if (updateForwardedHandle(lookup, getForwardedCipherSuiteHeader(), "handleCipherSuite"))
+                    continue;
+                if (updateForwardedHandle(lookup, getForwardedSslSessionIdHeader(), "handleSslSessionId"))
                     continue;
                 break;
             }
@@ -516,40 +640,98 @@ public class ForwardedRequestCustomizer implements Customizer
         return !_handles.put(headerName, lookup.findVirtual(Forwarded.class, forwardedMethodName, type));
     }
 
-    private static class ForcedHostPort extends HostPort
+    private static class MutableHostPort
     {
-        ForcedHostPort(String authority)
+        public static final int UNSET = -1;
+        public static final int IMPLIED = 0;
+
+        String _host;
+        Source _hostSource = Source.UNSET;
+        int _port = UNSET;
+        Source _portSource = Source.UNSET;
+
+        public void setHostPort(String host, int port, Source source)
         {
-            super(authority);
+            setHost(host, source);
+            setPort(port, source);
+        }
+
+        public void setHost(String host, Source source)
+        {
+            if (source.priority() > _hostSource.priority())
+            {
+                _host = host;
+                _hostSource = source;
+            }
+        }
+
+        public void setPort(int port, Source source)
+        {
+            if (source.priority() > _portSource.priority())
+            {
+                _port = port;
+                _portSource = source;
+            }
+        }
+
+        public void setHostPort(HostPort hostPort, Source source)
+        {
+            if (source.priority() > _hostSource.priority())
+            {
+                _host = hostPort.getHost();
+                _hostSource = source;
+            }
+
+            int port = hostPort.getPort();
+            // Is port supplied?
+            if (port > 0 && source.priority() > _portSource.priority())
+            {
+                _port = hostPort.getPort();
+                _portSource = source;
+            }
+            // Since we are Host:Port pair, the port could be unspecified
+            // Meaning it's implied.
+            // Make sure that we switch the tracked port from unset to implied
+            else if (_port == UNSET)
+            {
+                // set port to implied (with no priority)
+                _port = IMPLIED;
+            }
+        }
+
+        @Override
+        public String toString()
+        {
+            final StringBuilder sb = new StringBuilder("MutableHostPort{");
+            sb.append("host='").append(_host).append("'/").append(_hostSource);
+            sb.append(", port=").append(_port);
+            sb.append("/").append(_portSource);
+            sb.append('}');
+            return sb.toString();
         }
     }
 
-    private static class PossiblyPartialHostPort extends HostPort
+    /**
+     * Ordered Source Enum.
+     * <p>
+     * Lowest first, Last/Highest priority wins
+     * </p>
+     */
+    public enum Source
     {
-        PossiblyPartialHostPort(String authority)
-        {
-            super(authority);
-        }
+        UNSET,
+        XPROXIED_HTTPS,
+        XFORWARDED_PROTO,
+        XFORWARDED_SERVER,
+        XFORWARDED_PORT,
+        XFORWARDED_FOR,
+        XFORWARDED_HOST,
+        FORWARDED,
+        FORCED;
 
-        protected PossiblyPartialHostPort(String host, int port)
+        int priority()
         {
-            super(host, port);
-        }
-    }
-
-    private static class PortSetHostPort extends PossiblyPartialHostPort
-    {
-        PortSetHostPort(String host, int port)
-        {
-            super(host, port);
-        }
-    }
-
-    private static class Rfc7239HostPort extends HostPort
-    {
-        Rfc7239HostPort(String authority)
-        {
-            super(authority);
+            return ordinal();
         }
     }
 
@@ -558,11 +740,12 @@ public class ForwardedRequestCustomizer implements Customizer
         HttpConfiguration _config;
         Request _request;
 
-        boolean _protoRfc7239;
+        MutableHostPort _authority;
+        MutableHostPort _for;
         String _proto;
-        HostPort _for;
-        HostPort _host;
-        String _server;
+        Source _protoSource = Source.UNSET;
+        Boolean _secure;
+        boolean _secureScheme = false;
 
         public Forwarded(Request request, HttpConfiguration config)
         {
@@ -570,109 +753,145 @@ public class ForwardedRequestCustomizer implements Customizer
             _request = request;
             _config = config;
             if (_forcedHost != null)
-                _host = _forcedHost.getHostPort();
+            {
+                getAuthority().setHostPort(
+                    _forcedHost.getHostPort().getHost(),
+                    _forcedHost.getHostPort().getPort(),
+                    Source.FORCED);
+            }
         }
 
-        @SuppressWarnings("unused")
+        public boolean isSecure()
+        {
+            return (_secure != null && _secure);
+        }
+
+        public boolean hasFor()
+        {
+            return _for != null && _for._host != null;
+        }
+
+        private MutableHostPort getAuthority()
+        {
+            if (_authority == null)
+            {
+                _authority = new MutableHostPort();
+            }
+            return _authority;
+        }
+
+        private MutableHostPort getFor()
+        {
+            if (_for == null)
+            {
+                _for = new MutableHostPort();
+            }
+            return _for;
+        }
+
+        /**
+         * Called if header is <code>Proxy-auth-cert</code>
+         */
         public void handleCipherSuite(HttpField field)
         {
             _request.setAttribute("javax.servlet.request.cipher_suite", field.getValue());
+
+            // Is ForwardingRequestCustomizer configured to trigger isSecure and scheme change on this header?
             if (isSslIsSecure())
             {
-                _request.setSecure(true);
-                _request.setScheme(_config.getSecureScheme());
+                _secure = true;
+                // track desire for secure scheme, actual protocol will be resolved later.
+                _secureScheme = true;
             }
         }
 
-        @SuppressWarnings("unused")
+        /**
+         * Called if header is <code>Proxy-Ssl-Id</code>
+         */
         public void handleSslSessionId(HttpField field)
         {
             _request.setAttribute("javax.servlet.request.ssl_session_id", field.getValue());
+
+            // Is ForwardingRequestCustomizer configured to trigger isSecure and scheme change on this header?
             if (isSslIsSecure())
             {
-                _request.setSecure(true);
-                _request.setScheme(_config.getSecureScheme());
+                _secure = true;
+                // track desire for secure scheme, actual protocol will be resolved later.
+                _secureScheme = true;
             }
         }
 
-        @SuppressWarnings("unused")
-        public void handleHost(HttpField field)
+        /**
+         * Called if header is <code>X-Forwarded-Host</code>
+         */
+        public void handleForwardedHost(HttpField field)
+        {
+            updateAuthority(getLeftMost(field.getValue()), Source.XFORWARDED_HOST);
+        }
+
+        /**
+         * Called if header is <code>X-Forwarded-For</code>
+         */
+        public void handleForwardedFor(HttpField field)
         {
             HostPort hostField = new HostPort(getLeftMost(field.getValue()));
-
-            if (getForwardedPortAsAuthority() && !StringUtil.isEmpty(getForwardedPortHeader()))
-            {
-                if (_host == null)
-                    _host = new PossiblyPartialHostPort(hostField.getHost(), hostField.getPort());
-                else if (_host instanceof PortSetHostPort)
-                    _host = new HostPort(hostField.getHost(), hostField.getPort() > 0 ? hostField.getPort() : _host.getPort());
-            }
-            else if (_host == null)
-            {
-                _host = hostField;
-            }
+            getFor().setHostPort(hostField, Source.XFORWARDED_FOR);
         }
 
-        @SuppressWarnings("unused")
-        public void handleServer(HttpField field)
+        /**
+         * Called if header is <code>X-Forwarded-Server</code>
+         */
+        public void handleForwardedServer(HttpField field)
         {
             if (getProxyAsAuthority())
                 return;
-            _server = getLeftMost(field.getValue());
+            updateAuthority(getLeftMost(field.getValue()), Source.XFORWARDED_SERVER);
         }
 
-        @SuppressWarnings("unused")
-        public void handleProto(HttpField field)
-        {
-            if (_proto == null)
-                _proto = getLeftMost(field.getValue());
-        }
-
-        @SuppressWarnings("unused")
-        public void handleFor(HttpField field)
-        {
-            String authority = getLeftMost(field.getValue());
-            if (!getForwardedPortAsAuthority() && !StringUtil.isEmpty(getForwardedPortHeader()))
-            {
-                if (_for == null)
-                    _for = new PossiblyPartialHostPort(authority);
-                else if (_for instanceof PortSetHostPort)
-                    _for = new HostPort(HostPort.normalizeHost(authority), _for.getPort());
-            }
-            else if (_for == null)
-            {
-                _for = new HostPort(authority);
-            }
-        }
-
-        @SuppressWarnings("unused")
-        public void handlePort(HttpField field)
+        /**
+         * Called if header is <code>X-Forwarded-Port</code>
+         */
+        public void handleForwardedPort(HttpField field)
         {
             int port = HostPort.parsePort(getLeftMost(field.getValue()));
-            if (!getForwardedPortAsAuthority())
+
+            updatePort(port, Source.XFORWARDED_PORT);
+        }
+
+        /**
+         * Called if header is <code>X-Forwarded-Proto</code>
+         */
+        public void handleProto(HttpField field)
+        {
+            updateProto(getLeftMost(field.getValue()), Source.XFORWARDED_PROTO);
+        }
+
+        /**
+         * Called if header is <code>X-Proxied-Https</code>
+         */
+        public void handleHttps(HttpField field)
+        {
+            if ("on".equalsIgnoreCase(field.getValue()) || "true".equalsIgnoreCase(field.getValue()))
             {
-                if (_for == null)
-                    _for = new PortSetHostPort(_request.getRemoteHost(), port);
-                else if (_for instanceof PossiblyPartialHostPort && _for.getPort() <= 0)
-                    _for = new HostPort(HostPort.normalizeHost(_for.getHost()), port);
+                _secure = true;
+                updateProto(HttpScheme.HTTPS.asString(), Source.XPROXIED_HTTPS);
+                updatePort(getSecurePort(_config), Source.XPROXIED_HTTPS);
+            }
+            else if ("off".equalsIgnoreCase(field.getValue()) || "false".equalsIgnoreCase(field.getValue()))
+            {
+                _secure = false;
+                updateProto(HttpScheme.HTTP.asString(), Source.XPROXIED_HTTPS);
+                updatePort(MutableHostPort.IMPLIED, Source.XPROXIED_HTTPS);
             }
             else
             {
-                if (_host == null)
-                    _host = new PortSetHostPort(_request.getServerName(), port);
-                else if (_host instanceof PossiblyPartialHostPort && _host.getPort() <= 0)
-                    _host = new HostPort(HostPort.normalizeHost(_host.getHost()), port);
+                throw new BadMessageException("Invalid value for " + field.getName());
             }
         }
 
-        @SuppressWarnings("unused")
-        public void handleHttps(HttpField field)
-        {
-            if (_proto == null && ("on".equalsIgnoreCase(field.getValue()) || "true".equalsIgnoreCase(field.getValue())))
-                _proto = HttpScheme.HTTPS.asString();
-        }
-
-        @SuppressWarnings("unused")
+        /**
+         * Called if header is <code>Forwarded</code>
+         */
         public void handleRFC7239(HttpField field)
         {
             addValue(field.getValue());
@@ -688,32 +907,66 @@ public class ForwardedRequestCustomizer implements Customizer
                 switch (name)
                 {
                     case "by":
+                    {
                         if (!getProxyAsAuthority())
                             break;
                         if (value.startsWith("_") || "unknown".equals(value))
                             break;
-                        if (_host == null || !(_host instanceof Rfc7239HostPort))
-                            _host = new Rfc7239HostPort(value);
+                        HostPort hostField = new HostPort(value);
+                        getAuthority().setHostPort(hostField.getHost(), hostField.getPort(), Source.FORWARDED);
                         break;
+                    }
                     case "for":
+                    {
                         if (value.startsWith("_") || "unknown".equals(value))
                             break;
-                        if (_for == null || !(_for instanceof Rfc7239HostPort))
-                            _for = new Rfc7239HostPort(value);
+                        HostPort hostField = new HostPort(value);
+                        getFor().setHostPort(hostField.getHost(), hostField.getPort(), Source.FORWARDED);
                         break;
+                    }
                     case "host":
+                    {
                         if (value.startsWith("_") || "unknown".equals(value))
                             break;
-                        if (_host == null || !(_host instanceof Rfc7239HostPort))
-                            _host = new Rfc7239HostPort(value);
+                        HostPort hostField = new HostPort(value);
+                        getAuthority().setHostPort(hostField.getHost(), hostField.getPort(), Source.FORWARDED);
                         break;
+                    }
                     case "proto":
-                        if (_proto == null || !_protoRfc7239)
-                        {
-                            _protoRfc7239 = true;
-                            _proto = value;
-                        }
+                        updateProto(value, Source.FORWARDED);
                         break;
+                }
+            }
+        }
+
+        private void updateAuthority(String value, Source source)
+        {
+            HostPort hostField = new HostPort(value);
+            getAuthority().setHostPort(hostField, source);
+        }
+
+        private void updatePort(int port, Source source)
+        {
+            if (getForwardedPortAsAuthority())
+            {
+                getAuthority().setPort(port, source);
+            }
+            else
+            {
+                getFor().setPort(port, source);
+            }
+        }
+
+        private void updateProto(String proto, Source source)
+        {
+            if (source.priority() > _protoSource.priority())
+            {
+                _proto = proto;
+                _protoSource = source;
+
+                if (_proto.equalsIgnoreCase(_config.getSecureScheme()))
+                {
+                    _secure = true;
                 }
             }
         }

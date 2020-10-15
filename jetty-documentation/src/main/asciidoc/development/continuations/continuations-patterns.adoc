@@ -104,7 +104,8 @@ If many responses are to be sent (e.g., a chat room), then writing one response 
 
 ==== Examples
 
-* The https://github.com/eclipse/jetty.project/blob/jetty-8/test-jetty-webapp/src/main/java/com/acme/ChatServlet.java[ChatServlet example] shows how the suspend/resume style can be used to directly code a chat room (See similar https://github.com/eclipse/jetty.project/blob/master/tests/test-webapps/test-jetty-webapp/src/main/java/com/acme/ChatServlet.java[example] using Async Servlets).
+* The https://github.com/eclipse/jetty.project/blob/jetty-9.4.x/tests/test-webapps/test-jetty-webapp/src/main/java/com/acme/ChatServlet.java[ChatServlet example]
+shows how to make a chat room using Async Servlets.
 The same principles are applied to frameworks like http://cometd.org/[cometd] which provide an richer environment for such applications, based on Continuations.
 
 * The link:{JDURL}/org/eclipse/jetty/servlets/QoSFilter.html[QoSFilter] uses suspend/resume style to limit the number of requests simultaneously within the filter.

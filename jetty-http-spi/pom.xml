@@ -2,12 +2,11 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.32-SNAPSHOT</version>
+    <version>9.4.33-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-http-spi</artifactId>
   <name>Jetty :: Http Service Provider Interface</name>
-  <url>http://www.eclipse.org/jetty</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.http.spi</bundle-symbolic-name>
   </properties>
@@ -90,7 +89,7 @@
         <dependency>
           <groupId>com.sun.xml.ws</groupId>
           <artifactId>jaxws-rt</artifactId>
-          <version>2.3.0.2</version>
+          <version>2.3.3</version>
           <scope>test</scope>
         </dependency>
         <dependency>

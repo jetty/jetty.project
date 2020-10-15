@@ -1,19 +1,16 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
-xmlns:jfetch="java:org.eclipse.jetty.xslt.tools.JavaSourceFetchExtension"
-xmlns:fetch="java:org.eclipse.jetty.xslt.tools.SourceFetchExtension"
-xmlns:d="http://docbook.org/ns/docbook"
-xmlns:l="http://docbook.sourceforge.net/xmlns/l10n/1.0"
-xmlns:xslthl="http://xslthl.sf.net"
-xmlns:gcse="http://www.google.com"
-xmlns:date="http://exslt.org/dates-and-times"
+  xmlns:d="http://docbook.org/ns/docbook"
+  xmlns:l="http://docbook.sourceforge.net/xmlns/l10n/1.0"
+  xmlns:xslthl="http://xslthl.sf.net"
+  xmlns:date="http://exslt.org/dates-and-times"
 >
 
   <!-- imports the original docbook stylesheet -->
-  <xsl:import href="urn:docbkx:stylesheet"/>
+  <xsl:import href="urn:docbkx:stylesheet" />
 
   <!-- set bellow all your custom xsl configuration -->
-  <xsl:import href="urn:docbkx:stylesheet/highlight.xsl"/>
-  <xsl:param name="highlight.source" select="1"/>
+  <xsl:import href="urn:docbkx:stylesheet/highlight.xsl" />
+  <xsl:param name="highlight.source" select="1" />
 
   <!-- use the xml:id on the chapter and sections when rendering chunked output" -->
   <xsl:param name="use.id.as.filename" select="1"/>
@@ -120,7 +117,9 @@ xmlns:date="http://exslt.org/dates-and-times"
     <table>
       <tr>
         <td style="width: 25%">
-          <a href="http://www.eclipse.org/jetty"><img src="images/jetty-header-logo.png" alt="Jetty Logo"></img></a>
+          <a href="https://www.eclipse.org/jetty/">
+            <img src="images/jetty-header-logo.png" alt="Jetty Logo"></img>
+          </a>
           <br/>
          
           <span style="font-size: small">

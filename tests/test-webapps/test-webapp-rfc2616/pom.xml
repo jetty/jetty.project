@@ -4,11 +4,10 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
-    <version>9.4.32-SNAPSHOT</version>
+    <version>9.4.33-SNAPSHOT</version>
   </parent>
   <artifactId>test-webapp-rfc2616</artifactId>
   <name>Jetty Tests :: WebApp :: RFC2616</name>
-  <url>http://www.eclipse.org/jetty</url>
   <packaging>war</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.rfc2616</bundle-symbolic-name>
