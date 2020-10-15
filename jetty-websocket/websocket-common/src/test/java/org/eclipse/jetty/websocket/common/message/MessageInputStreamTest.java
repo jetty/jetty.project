@@ -172,9 +172,10 @@ public class MessageInputStreamTest
                 {
                     // wait for a little bit before sending input closed
                     TimeUnit.MILLISECONDS.sleep(1000);
+                    stream.appendFrame(null, true);
                     stream.messageComplete();
                 }
-                catch (InterruptedException e)
+                catch (InterruptedException | IOException e)
                 {
                     hadError.set(true);
                     e.printStackTrace(System.err);

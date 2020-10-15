@@ -131,7 +131,7 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
                         session.close(e);
                     }
 
-                    stream.close();
+                    stream.handlerComplete();
                 });
             }
         }
