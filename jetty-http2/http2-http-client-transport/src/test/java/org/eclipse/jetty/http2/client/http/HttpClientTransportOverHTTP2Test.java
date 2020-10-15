@@ -69,7 +69,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -134,11 +133,9 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         });
 
         assertThrows(ExecutionException.class, () ->
-        {
             client.newRequest("localhost", connector.getLocalPort())
                 .onRequestCommit(request -> request.abort(new Exception("explicitly_aborted_by_test")))
-                .send();
-        });
+                .send());
         assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -174,23 +171,20 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         });
 
         assertThrows(ExecutionException.class, () ->
-        {
             client.newRequest("localhost", connector.getLocalPort())
                 .onResponseContent((response, buffer) -> response.abort(new Exception("explicitly_aborted_by_test")))
-                .send();
-        });
+                .send());
         assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
     public void testRequestHasHTTP2Version() throws Exception
     {
-        start(new AbstractHandler()
+        start(new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
                 HttpVersion version = HttpVersion.fromString(request.getProtocol());
                 response.setStatus(version == HttpVersion.HTTP_2 ? HttpStatus.OK_200 : HttpStatus.INTERNAL_SERVER_ERROR_500);
             }
@@ -311,12 +305,11 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     {
         String path = "/path";
         String query = "a=b";
-        start(new AbstractHandler()
+        start(new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
                 assertEquals(path, request.getRequestURI());
                 assertEquals(query, request.getQueryString());
             }
@@ -335,12 +328,11 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     {
         String path = "/path";
         String query = "a=b";
-        start(new AbstractHandler()
+        start(new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
                 assertEquals(path, request.getRequestURI());
                 assertEquals(query, request.getQueryString());
             }
@@ -384,12 +376,10 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         client.start();
 
         assertThrows(TimeoutException.class, () ->
-        {
             client.newRequest("localhost", connector.getLocalPort())
                 // Make sure the connection idle times out, not the stream.
                 .idleTimeout(2 * idleTimeout, TimeUnit.MILLISECONDS)
-                .send();
-        });
+                .send());
 
         assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
     }
