@@ -21,19 +21,23 @@ package org.eclipse.jetty.server.session;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
-import org.eclipse.jetty.util.IO;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -42,116 +46,54 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class FileTestHelper
 {
     static int __workers = 0;
-    static File _tmpDir;
 
-    public static void setup()
-        throws Exception
+    public static File getFile(WorkDir workDir, String sessionId) throws IOException
     {
-
-        _tmpDir = File.createTempFile("file", null);
-        _tmpDir.delete();
-        _tmpDir.mkdirs();
-        _tmpDir.deleteOnExit();
-    }
-
-    public static void teardown()
-    {
-        IO.delete(_tmpDir);
-        _tmpDir = null;
-    }
-
-    public static void assertStoreDirEmpty(boolean isEmpty)
-    {
-        assertNotNull(_tmpDir);
-        assertTrue(_tmpDir.exists());
-        String[] files = _tmpDir.list();
-        if (isEmpty)
-        {
-            if (files != null)
-                assertEquals(0, files.length);
-        }
-        else
-        {
-            assertNotNull(files);
-            assertFalse(files.length == 0);
-        }
-    }
-
-    public static File getFile(String sessionId)
-    {
-        assertNotNull(_tmpDir);
-        assertTrue(_tmpDir.exists());
-        String[] files = _tmpDir.list();
-        assertNotNull(files);
-        String fname = null;
-        for (String name : files)
-        {
-            if (name.contains(sessionId))
-            {
-                fname = name;
-                break;
-            }
-        }
-
-        if (fname != null)
-            return new File(_tmpDir, fname);
+        Optional<Path> sessionPath = Files.list(workDir.getPath())
+            .filter((path) -> path.getFileName().toString().contains(sessionId))
+            .findFirst();
+        if (sessionPath.isPresent())
+            return sessionPath.get().toFile();
         return null;
     }
 
-    public static void assertSessionExists(String sessionId, boolean exists)
+    public static void assertSessionExists(WorkDir workDir, String sessionId, boolean exists) throws IOException
     {
-        assertNotNull(_tmpDir);
-        assertTrue(_tmpDir.exists());
-        String[] files = _tmpDir.list();
-        assertNotNull(files);
+        Optional<Path> sessionPath = Files.list(workDir.getPath())
+            .filter((path) -> path.getFileName().toString().contains(sessionId))
+            .findFirst();
         if (exists)
-            assertFalse(files.length == 0);
-        boolean found = false;
-        for (String name : files)
-        {
-            if (name.contains(sessionId))
-            {
-                found = true;
-                break;
-            }
-        }
-        if (exists)
-            assertTrue(found);
+            assertTrue(sessionPath.isPresent());
         else
-            assertFalse(found);
+            assertFalse(sessionPath.isPresent());
     }
 
-    public static void assertFileExists(String filename, boolean exists)
+    public static void assertFileExists(WorkDir workDir, String filename, boolean exists)
     {
-        assertNotNull(_tmpDir);
-        assertTrue(_tmpDir.exists());
-        File file = new File(_tmpDir, filename);
+        Path path = workDir.getPath().resolve(filename);
         if (exists)
-            assertTrue(file.exists());
+            assertTrue(Files.exists(path), "File should exist: " + path);
         else
-            assertFalse(file.exists());
+            assertFalse(Files.exists(path), "File should NOT exist: " + path);
     }
 
-    public static void createFile(String filename)
+    public static void createFile(WorkDir workDir, String filename)
         throws IOException
     {
-        assertNotNull(_tmpDir);
-        assertTrue(_tmpDir.exists());
-
-        File file = new File(_tmpDir, filename);
-        Files.deleteIfExists(file.toPath());
-        file.createNewFile();
+        Path path = workDir.getPath().resolve(filename);
+        Files.deleteIfExists(path);
+        FS.touch(path);
     }
 
-    public static void createFile(String id, String contextPath, String vhost,
+    public static void createFile(WorkDir workDir, String id, String contextPath, String vhost,
                                   String lastNode, long created, long accessed,
                                   long lastAccessed, long maxIdle, long expiry,
                                   long cookieSet, Map<String, Object> attributes)
         throws Exception
     {
         String filename = "" + expiry + "_" + contextPath + "_" + vhost + "_" + id;
-        File file = new File(_tmpDir, filename);
-        try (FileOutputStream fos = new FileOutputStream(file, false);
+        Path path = workDir.getPath().resolve(filename);
+        try (OutputStream fos = Files.newOutputStream(path);
              DataOutputStream out = new DataOutputStream(fos))
         {
             out.writeUTF(id);
@@ -174,14 +116,15 @@ public class FileTestHelper
         }
     }
 
-    public static boolean checkSessionPersisted(SessionData data)
+    public static boolean checkSessionPersisted(WorkDir workDir, SessionData data)
         throws Exception
     {
         String filename = "" + data.getExpiry() + "_" + data.getContextPath() + "_" + data.getVhost() + "_" + data.getId();
-        File file = new File(_tmpDir, filename);
-        assertTrue(file.exists());
+        Path file = workDir.getPath().resolve(filename);
 
-        try (FileInputStream in = new FileInputStream(file);
+        assertTrue(Files.exists(file));
+
+        try (InputStream in = Files.newInputStream(file);
              DataInputStream di = new DataInputStream(in))
         {
             String id = di.readUTF();
@@ -213,44 +156,35 @@ public class FileTestHelper
             //same number of attributes
             assertEquals(data.getAllAttributes().size(), tmp.getAllAttributes().size());
             //same keys
-            assertTrue(data.getKeys().equals(tmp.getAllAttributes().keySet()));
+            assertEquals(tmp.getAllAttributes().keySet(), data.getKeys());
             //same values
             for (String name : data.getKeys())
             {
-                assertTrue(data.getAttribute(name).equals(tmp.getAttribute(name)));
+                assertEquals(tmp.getAttribute(name), data.getAttribute(name));
             }
         }
 
         return true;
     }
 
-    public static void deleteFile(String sessionId)
+    public static void deleteFile(WorkDir workDir, String sessionId) throws IOException
     {
-        assertNotNull(_tmpDir);
-        assertTrue(_tmpDir.exists());
-        String[] files = _tmpDir.list();
-        assertNotNull(files);
-        assertFalse(files.length == 0);
-        String filename = null;
-        for (String name : files)
+        // Collect
+        List<Path> matches = Files.list(workDir.getPath())
+            .filter((path) -> path.getFileName().toString().contains(sessionId))
+            .collect(Collectors.toList());
+
+        // Delete outside of lambda
+        for (Path path : matches)
         {
-            if (name.contains(sessionId))
-            {
-                filename = name;
-                break;
-            }
-        }
-        if (filename != null)
-        {
-            File f = new File(_tmpDir, filename);
-            assertTrue(f.delete());
+            FS.deleteFile(path);
         }
     }
 
-    public static FileSessionDataStoreFactory newSessionDataStoreFactory()
+    public static FileSessionDataStoreFactory newSessionDataStoreFactory(WorkDir workDir)
     {
         FileSessionDataStoreFactory storeFactory = new FileSessionDataStoreFactory();
-        storeFactory.setStoreDir(_tmpDir);
+        storeFactory.setStoreDir(workDir.getPath().toFile());
         return storeFactory;
     }
 }

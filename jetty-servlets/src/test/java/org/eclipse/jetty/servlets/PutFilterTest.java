@@ -18,12 +18,11 @@
 
 package org.eclipse.jetty.servlets;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Locale;
@@ -34,35 +33,39 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletTester;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class PutFilterTest
 {
-    private File _dir;
+    public WorkDir workDir;
+    private Path root;
     private ServletTester tester;
 
     @BeforeEach
     public void setUp() throws Exception
     {
-        _dir = File.createTempFile("testPutFilter", null);
-        assertTrue(_dir.delete());
-        assertTrue(_dir.mkdir());
-        _dir.deleteOnExit();
-        assertTrue(_dir.isDirectory());
+        root = workDir.getEmptyPathDir();
 
         tester = new ServletTester("/context");
-        tester.setResourceBase(_dir.getCanonicalPath());
+        tester.setBaseResource(new PathResource(root));
         tester.addServlet(org.eclipse.jetty.servlet.DefaultServlet.class, "/");
         FilterHolder holder = tester.addFilter(PutFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         holder.setInitParameter("delAllowed", "true");
@@ -76,7 +79,6 @@ public class PutFilterTest
     public void tearDown() throws Exception
     {
         tester.stop();
-        IO.delete(_dir);
     }
 
     @Test
@@ -103,9 +105,9 @@ public class PutFilterTest
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_CREATED, response.getStatus());
 
-        File file = new File(_dir, "file.txt");
-        assertTrue(file.exists());
-        assertEquals(data0, IO.toString(new FileInputStream(file)));
+        Path file = root.resolve("file.txt");
+        assertTrue(Files.exists(file));
+        assertEquals(data0, IO.toString(file, UTF_8));
 
         // test GET1
         request.setMethod("GET");
@@ -125,9 +127,9 @@ public class PutFilterTest
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
-        file = new File(_dir, "file.txt");
-        assertTrue(file.exists());
-        assertEquals(data1, IO.toString(new FileInputStream(file)));
+        file = root.resolve("file.txt");
+        assertTrue(Files.exists(file));
+        assertEquals(data1, IO.toString(file, UTF_8));
 
         // test PUT2
         request.setMethod("PUT");
@@ -193,19 +195,16 @@ public class PutFilterTest
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_CREATED, response.getStatus());
 
-        File file = new File(_dir, "file.txt");
-        assertTrue(file.exists());
-        try (InputStream fis = new FileInputStream(file))
-        {
-            assertEquals(data1, IO.toString(fis));
-        }
+        Path file = root.resolve("file.txt");
+        assertTrue(Files.exists(file));
+        assertEquals(data1, IO.toString(file, UTF_8));
 
         request.setMethod("DELETE");
         request.setURI("/context/file.txt");
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_NO_CONTENT, response.getStatus());
 
-        assertTrue(!file.exists());
+        assertFalse(Files.exists(file));
 
         request.setMethod("DELETE");
         request.setURI("/context/file.txt");
@@ -232,12 +231,9 @@ public class PutFilterTest
 
         assertEquals(HttpServletResponse.SC_CREATED, response.getStatus());
 
-        File file = new File(_dir, "file.txt");
-        assertTrue(file.exists());
-        try (InputStream fis = new FileInputStream(file))
-        {
-            assertEquals(data1, IO.toString(fis));
-        }
+        Path file = root.resolve("file.txt");
+        assertTrue(Files.exists(file));
+        assertEquals(data1, IO.toString(file, UTF_8));
 
         request.setMethod("MOVE");
         request.setURI("/context/file.txt");
@@ -245,10 +241,10 @@ public class PutFilterTest
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_NO_CONTENT, response.getStatus());
 
-        assertTrue(!file.exists());
+        assertFalse(Files.exists(file));
 
-        File nFile = new File(_dir, "blah.txt");
-        assertTrue(nFile.exists());
+        Path nFile = root.resolve("blah.txt");
+        assertTrue(Files.exists(nFile));
     }
 
     @Test

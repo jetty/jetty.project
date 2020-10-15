@@ -20,7 +20,6 @@ package org.eclipse.jetty.io;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -35,17 +34,21 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -54,10 +57,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
+@ExtendWith(WorkDirExtension.class)
 public class IOTest
 {
+    public WorkDir workDir;
+
     @Test
     public void testIO() throws Exception
     {
@@ -95,7 +100,6 @@ public class IOTest
 
             // but cannot write
             Assertions.assertThrows(SocketException.class, () -> client.getOutputStream().write(1));
-
 
             // but can still write in opposite direction.
             server.getOutputStream().write(1);
@@ -419,13 +423,9 @@ public class IOTest
     @Test
     public void testGatherWrite() throws Exception
     {
-        File dir = MavenTestingUtils.getTargetTestingDir();
-        if (!dir.exists())
-            dir.mkdir();
-
-        File file = File.createTempFile("test", ".txt", dir);
-        file.deleteOnExit();
-        FileChannel out = FileChannel.open(file.toPath(),
+        Path dir = workDir.getEmptyPathDir();
+        Path file = Files.createTempFile(dir, "test", ".txt");
+        FileChannel out = FileChannel.open(file,
             StandardOpenOption.CREATE,
             StandardOpenOption.READ,
             StandardOpenOption.WRITE,
