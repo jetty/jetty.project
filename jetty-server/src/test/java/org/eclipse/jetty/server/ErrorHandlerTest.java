@@ -32,6 +32,10 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.AfterAll;
@@ -565,5 +569,62 @@ public class ErrorHandlerTest
             assertThat("content", content, containsString("Euro is &amp;euro; and \u20AC and %E2%82%AC"));
             // @checkstyle-enable-check : AvoidEscapedUnicodeCharacters
         }
+    }
+
+    @Test
+    public void testErrorContextRecycle() throws Exception
+    {
+        server.stop();
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        server.setHandler(contexts);
+        ContextHandler context = new ContextHandler("/foo");
+        contexts.addHandler(context);
+        context.setErrorHandler(new ErrorHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.getOutputStream().println("Context Error");
+            }
+        });
+        context.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                response.sendError(444);
+            }
+        });
+
+        server.setErrorHandler(new ErrorHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.getOutputStream().println("Server Error");
+            }
+        });
+
+        server.start();
+
+        LocalConnector.LocalEndPoint connection = connector.connect();
+        connection.addInputAndExecute(BufferUtil.toBuffer(
+            "GET /foo/test HTTP/1.1\r\n" +
+                "Host: Localhost\r\n" +
+                "\r\n"));
+        String response = connection.getResponse();
+
+        assertThat(response, containsString("HTTP/1.1 444 444"));
+        assertThat(response, containsString("Context Error"));
+
+        connection.addInputAndExecute(BufferUtil.toBuffer(
+            "GET /test HTTP/1.1\r\n" +
+                "Host: Localhost\r\n" +
+                "\r\n"));
+        response = connection.getResponse();
+        assertThat(response, containsString("HTTP/1.1 404 Not Found"));
+        assertThat(response, containsString("Server Error"));
     }
 }
