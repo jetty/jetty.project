@@ -27,6 +27,8 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -54,6 +56,8 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
@@ -64,6 +68,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -81,9 +86,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
+@ExtendWith(WorkDirExtension.class)
 public class RequestTest
 {
     private static final Logger LOG = Log.getLogger(RequestTest.class);
+    public WorkDir workDir;
     private Server _server;
     private LocalConnector _connector;
     private RequestHandler _handler;
@@ -335,20 +342,14 @@ public class RequestTest
     @Test
     public void testMultiPart() throws Exception
     {
-        final File testTmpDir = File.createTempFile("reqtest", null);
-        if (testTmpDir.exists())
-            testTmpDir.delete();
-        testTmpDir.mkdir();
-        testTmpDir.deleteOnExit();
-        assertTrue(testTmpDir.list().length == 0);
+        Path testTmpDir = workDir.getEmptyPathDir();
 
         ContextHandler contextHandler = new ContextHandler();
         contextHandler.setContextPath("/foo");
         contextHandler.setResourceBase(".");
-        contextHandler.setHandler(new MultiPartRequestHandler(testTmpDir));
+        contextHandler.setHandler(new MultiPartRequestHandler(testTmpDir.toFile()));
         contextHandler.addEventListener(new MultiPartCleanerListener()
         {
-
             @Override
             public void requestDestroyed(ServletRequestEvent sre)
             {
@@ -356,12 +357,11 @@ public class RequestTest
                 assertNotNull(m);
                 ContextHandler.Context c = m.getContext();
                 assertNotNull(c);
-                assertTrue(c == sre.getServletContext());
-                assertTrue(!m.isEmpty());
-                assertTrue(testTmpDir.list().length == 2);
+                assertSame(c, sre.getServletContext());
+                assertFalse(m.isEmpty());
+                assertThat("File count in temp dir", getFileCount(testTmpDir), is(2L));
                 super.requestDestroyed(sre);
-                String[] files = testTmpDir.list();
-                assertTrue(files.length == 0);
+                assertThat("File count in temp dir", getFileCount(testTmpDir), is(0L));
             }
         });
         _server.stop();
@@ -395,20 +395,14 @@ public class RequestTest
     @Test
     public void testUtilMultiPart() throws Exception
     {
-        final File testTmpDir = File.createTempFile("reqtest", null);
-        if (testTmpDir.exists())
-            testTmpDir.delete();
-        testTmpDir.mkdir();
-        testTmpDir.deleteOnExit();
-        assertTrue(testTmpDir.list().length == 0);
+        Path testTmpDir = workDir.getEmptyPathDir();
 
         ContextHandler contextHandler = new ContextHandler();
         contextHandler.setContextPath("/foo");
         contextHandler.setResourceBase(".");
-        contextHandler.setHandler(new MultiPartRequestHandler(testTmpDir));
+        contextHandler.setHandler(new MultiPartRequestHandler(testTmpDir.toFile()));
         contextHandler.addEventListener(new MultiPartCleanerListener()
         {
-
             @Override
             public void requestDestroyed(ServletRequestEvent sre)
             {
@@ -416,12 +410,11 @@ public class RequestTest
                 assertNotNull(m);
                 ContextHandler.Context c = m.getContext();
                 assertNotNull(c);
-                assertTrue(c == sre.getServletContext());
-                assertTrue(!m.isEmpty());
-                assertTrue(testTmpDir.list().length == 2);
+                assertSame(c, sre.getServletContext());
+                assertFalse(m.isEmpty());
+                assertThat("File count in temp dir", getFileCount(testTmpDir), is(2L));
                 super.requestDestroyed(sre);
-                String[] files = testTmpDir.list();
-                assertTrue(files.length == 0);
+                assertThat("File count in temp dir", getFileCount(testTmpDir), is(0L));
             }
         });
         _server.stop();
@@ -458,17 +451,12 @@ public class RequestTest
     @Test
     public void testHttpMultiPart() throws Exception
     {
-        final File testTmpDir = File.createTempFile("reqtest", null);
-        if (testTmpDir.exists())
-            testTmpDir.delete();
-        testTmpDir.mkdir();
-        testTmpDir.deleteOnExit();
-        assertTrue(testTmpDir.list().length == 0);
+        Path testTmpDir = workDir.getEmptyPathDir();
 
         ContextHandler contextHandler = new ContextHandler();
         contextHandler.setContextPath("/foo");
         contextHandler.setResourceBase(".");
-        contextHandler.setHandler(new MultiPartRequestHandler(testTmpDir));
+        contextHandler.setHandler(new MultiPartRequestHandler(testTmpDir.toFile()));
 
         _server.stop();
         _server.setHandler(contextHandler);
@@ -503,17 +491,12 @@ public class RequestTest
     public void testBadMultiPart() throws Exception
     {
         //a bad multipart where one of the fields has no name
-        final File testTmpDir = File.createTempFile("badmptest", null);
-        if (testTmpDir.exists())
-            testTmpDir.delete();
-        testTmpDir.mkdir();
-        testTmpDir.deleteOnExit();
-        assertTrue(testTmpDir.list().length == 0);
+        Path testTmpDir = workDir.getEmptyPathDir();
 
         ContextHandler contextHandler = new ContextHandler();
         contextHandler.setContextPath("/foo");
         contextHandler.setResourceBase(".");
-        contextHandler.setHandler(new BadMultiPartRequestHandler(testTmpDir));
+        contextHandler.setHandler(new BadMultiPartRequestHandler(testTmpDir.toFile()));
         contextHandler.addEventListener(new MultiPartCleanerListener()
         {
 
@@ -524,10 +507,9 @@ public class RequestTest
                 assertNotNull(m);
                 ContextHandler.Context c = m.getContext();
                 assertNotNull(c);
-                assertTrue(c == sre.getServletContext());
+                assertSame(c, sre.getServletContext());
                 super.requestDestroyed(sre);
-                String[] files = testTmpDir.list();
-                assertTrue(files.length == 0);
+                assertThat("File count in temp dir", getFileCount(testTmpDir), is(0L));
             }
         });
         _server.stop();
@@ -1851,6 +1833,18 @@ public class RequestTest
         assertEquals(0, request.getQueryParameters().size());
         assertNotNull(request.getParameterMap());
         assertEquals(0, request.getParameterMap().size());
+    }
+
+    private static long getFileCount(Path path)
+    {
+        try
+        {
+            return Files.list(path).count();
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException("Unable to get file list count: " + path, e);
+        }
     }
 
     interface RequestTester

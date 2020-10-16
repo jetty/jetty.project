@@ -34,6 +34,16 @@ import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.charset.Charset;
+import java.nio.file.FileStore;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.DosFileAttributeView;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.HashSet;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -46,6 +56,24 @@ import org.eclipse.jetty.util.log.Logger;
 public class IO
 {
     private static final Logger LOG = Log.getLogger(IO.class);
+
+    private static final FileAttribute<?>[] NO_FILE_ATTRIBUTES = new FileAttribute[0];
+    private static final FileAttribute<?>[] USER_ONLY_POSIX_FILE_ATTRIBUTES =
+        new FileAttribute[]{
+            PosixFilePermissions.asFileAttribute(
+                new HashSet<PosixFilePermission>()
+                {
+                    {
+                        add(PosixFilePermission.OWNER_EXECUTE);
+                        add(PosixFilePermission.OWNER_READ);
+                        add(PosixFilePermission.OWNER_WRITE);
+                        // we don't add GROUP or OTHER write perms here.
+                        add(PosixFilePermission.GROUP_READ);
+                        add(PosixFilePermission.OTHERS_READ);
+                    }
+                }
+            )
+        };
 
     public static final String
         CRLF = "\r\n";
@@ -280,6 +308,21 @@ public class IO
     }
 
     /**
+     * Read Path to string.
+     *
+     * @param path the path to read from (until EOF)
+     * @param charset the charset to read with
+     * @return the String parsed from path (default Charset)
+     * @throws IOException if unable to read the path (or handle the charset)
+     */
+    public static String toString(Path path, Charset charset)
+        throws IOException
+    {
+        byte[] buf = Files.readAllBytes(path);
+        return new String(buf, charset);
+    }
+
+    /**
      * Read input stream to string.
      *
      * @param in the stream to read from (until EOF)
@@ -417,6 +460,58 @@ public class IO
     public static void close(Writer writer)
     {
         close((Closeable)writer);
+    }
+
+    /**
+     * Get the array of {@link FileAttribute} values for the provided path
+     * that will set the path to Full Read/Write for the user running Jetty,
+     * but Readonly for other users.
+     * <p>
+     * For Unix, that's means {@link java.nio.file.attribute.PosixFileAttributes}
+     * where the World and Other groups have their read / write flags removed.
+     * </p>
+     * <p>
+     * For Windows / Dos, that means {@link java.nio.file.attribute.DosFileAttributes}
+     * </p>
+     */
+    public static FileAttribute<?>[] getUserOnlyFileAttribute(Path path)
+    {
+        FileStore fileStore = null;
+        try
+        {
+            // Obtain a reference to the FileStore to know what kind of read-only we are capable of.
+            fileStore = Files.getFileStore(Objects.requireNonNull(path));
+
+            if (fileStore == null)
+            {
+                // Not on a properly implemented FileStore (seen with 3rd party FileStore implementations)
+                // We cannot do anything in this case, so just return.
+                return NO_FILE_ATTRIBUTES;
+            }
+
+            if (fileStore.supportsFileAttributeView(DosFileAttributeView.class))
+            {
+                // We are on a Windows / DOS filesystem.
+                // It might support ACL, but we don't attempt to support that here.
+                return NO_FILE_ATTRIBUTES;
+            }
+
+            if (fileStore.supportsFileAttributeView(PosixFileAttributeView.class))
+            {
+                // We are on a Unix / Linux / OSX system
+                return USER_ONLY_POSIX_FILE_ATTRIBUTES;
+            }
+
+            // If we reached this point, we have a Path on a FileSystem / FileStore that we cannot control.
+            // So skip the attempt to set readable.
+        }
+        catch (IOException e)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to determine attribute types on path: {}", path, e);
+        }
+
+        return NO_FILE_ATTRIBUTES;
     }
 
     public static byte[] readBytes(InputStream in)

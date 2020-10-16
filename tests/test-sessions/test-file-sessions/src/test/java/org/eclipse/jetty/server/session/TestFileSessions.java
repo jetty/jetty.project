@@ -21,11 +21,12 @@ package org.eclipse.jetty.server.session;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StacklessLogging;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -36,24 +37,15 @@ import static org.junit.jupiter.api.Assertions.fail;
 /**
  * TestFileSessions
  */
+@ExtendWith(WorkDirExtension.class)
 public class TestFileSessions extends AbstractTestBase
 {
-    @BeforeEach
-    public void before() throws Exception
-    {
-        FileTestHelper.setup();
-    }
-
-    @AfterEach
-    public void after()
-    {
-        FileTestHelper.teardown();
-    }
+    public WorkDir workDir;
 
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return FileTestHelper.newSessionDataStoreFactory();
+        return FileTestHelper.newSessionDataStoreFactory(workDir);
     }
 
     /**
@@ -74,7 +66,7 @@ public class TestFileSessions extends AbstractTestBase
         store.initialize(sessionContext);
 
         //make a file for foobar context
-        FileTestHelper.createFile((System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1)) + "__foobar_0.0.0.0_1234");
+        FileTestHelper.createFile(workDir, (System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1)) + "__foobar_0.0.0.0_1234");
 
         store.start();
 
@@ -208,7 +200,6 @@ public class TestFileSessions extends AbstractTestBase
     @Test
     public void testSweep() throws Exception
     {
-
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
@@ -221,41 +212,41 @@ public class TestFileSessions extends AbstractTestBase
         store.start();
 
         //create file not for our context that expired long ago and should be removed by sweep
-        FileTestHelper.createFile("101__foobar_0.0.0.0_sessiona");
-        FileTestHelper.assertSessionExists("sessiona", true);
+        FileTestHelper.createFile(workDir, "101__foobar_0.0.0.0_sessiona");
+        FileTestHelper.assertSessionExists(workDir, "sessiona", true);
 
         //create a file not for our context that is not expired and should be ignored
         String nonExpiredForeign = (System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1)) + "__foobar_0.0.0.0_sessionb";
-        FileTestHelper.createFile(nonExpiredForeign);
-        FileTestHelper.assertFileExists(nonExpiredForeign, true);
+        FileTestHelper.createFile(workDir, nonExpiredForeign);
+        FileTestHelper.assertFileExists(workDir, nonExpiredForeign, true);
 
         //create a file not for our context that is recently expired, a thus ignored by sweep
         String expiredForeign = (System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(1)) + "__foobar_0.0.0.0_sessionc";
-        FileTestHelper.createFile(expiredForeign);
-        FileTestHelper.assertFileExists(expiredForeign, true);
+        FileTestHelper.createFile(workDir, expiredForeign);
+        FileTestHelper.assertFileExists(workDir, expiredForeign, true);
 
         //create a file that is not a session file, it should be ignored
-        FileTestHelper.createFile("whatever.txt");
-        FileTestHelper.assertFileExists("whatever.txt", true);
+        FileTestHelper.createFile(workDir, "whatever.txt");
+        FileTestHelper.assertFileExists(workDir, "whatever.txt", true);
 
         //create a file that is not a valid session filename, should be ignored
-        FileTestHelper.createFile("nonNumber__0.0.0.0_spuriousFile");
-        FileTestHelper.assertFileExists("nonNumber__0.0.0.0_spuriousFile", true);
+        FileTestHelper.createFile(workDir, "nonNumber__0.0.0.0_spuriousFile");
+        FileTestHelper.assertFileExists(workDir, "nonNumber__0.0.0.0_spuriousFile", true);
 
         //create a file that is a non-expired session file for our context that should be ignored
         String nonExpired = (System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1)) + "__test_0.0.0.0_sessionb";
-        FileTestHelper.createFile(nonExpired);
-        FileTestHelper.assertFileExists(nonExpired, true);
+        FileTestHelper.createFile(workDir, nonExpired);
+        FileTestHelper.assertFileExists(workDir, nonExpired, true);
 
         //create a file that is a never-expire session file for our context that should be ignored
         String neverExpired = "0__test_0.0.0.0_sessionc";
-        FileTestHelper.createFile(neverExpired);
-        FileTestHelper.assertFileExists(neverExpired, true);
+        FileTestHelper.createFile(workDir, neverExpired);
+        FileTestHelper.assertFileExists(workDir, neverExpired, true);
 
         //create a file that is a never-expire session file for another context that should be ignored
         String foreignNeverExpired = "0__other_0.0.0.0_sessionc";
-        FileTestHelper.createFile(foreignNeverExpired);
-        FileTestHelper.assertFileExists(foreignNeverExpired, true);
+        FileTestHelper.createFile(workDir, foreignNeverExpired);
+        FileTestHelper.assertFileExists(workDir, foreignNeverExpired, true);
 
         //sweep - we're expecting a debug log with exception stacktrace due to file named 
         //nonNumber__0.0.0.0_spuriousFile so suppress it
@@ -265,14 +256,14 @@ public class TestFileSessions extends AbstractTestBase
         }
 
         //check results
-        FileTestHelper.assertSessionExists("sessiona", false);
-        FileTestHelper.assertFileExists("whatever.txt", true);
-        FileTestHelper.assertFileExists("nonNumber__0.0.0.0_spuriousFile", true);
-        FileTestHelper.assertFileExists(nonExpired, true);
-        FileTestHelper.assertFileExists(nonExpiredForeign, true);
-        FileTestHelper.assertFileExists(expiredForeign, true);
-        FileTestHelper.assertFileExists(neverExpired, true);
-        FileTestHelper.assertFileExists(foreignNeverExpired, true);
+        FileTestHelper.assertSessionExists(workDir, "sessiona", false);
+        FileTestHelper.assertFileExists(workDir, "whatever.txt", true);
+        FileTestHelper.assertFileExists(workDir, "nonNumber__0.0.0.0_spuriousFile", true);
+        FileTestHelper.assertFileExists(workDir, nonExpired, true);
+        FileTestHelper.assertFileExists(workDir, nonExpiredForeign, true);
+        FileTestHelper.assertFileExists(workDir, expiredForeign, true);
+        FileTestHelper.assertFileExists(workDir, neverExpired, true);
+        FileTestHelper.assertFileExists(workDir, foreignNeverExpired, true);
     }
 
     /**
@@ -292,54 +283,54 @@ public class TestFileSessions extends AbstractTestBase
         store.initialize(sessionContext);
 
         //create file not for our context that expired long ago and should be removed 
-        FileTestHelper.createFile("101_foobar_0.0.0.0_sessiona");
-        FileTestHelper.assertSessionExists("sessiona", true);
+        FileTestHelper.createFile(workDir, "101_foobar_0.0.0.0_sessiona");
+        FileTestHelper.assertSessionExists(workDir, "sessiona", true);
 
         //create a file not for our context that is not expired and should be ignored
         String nonExpiredForeign = (System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1)) + "_foobar_0.0.0.0_sessionb";
-        FileTestHelper.createFile(nonExpiredForeign);
-        FileTestHelper.assertFileExists(nonExpiredForeign, true);
+        FileTestHelper.createFile(workDir, nonExpiredForeign);
+        FileTestHelper.assertFileExists(workDir, nonExpiredForeign, true);
 
         //create a file not for our context that is recently expired, a thus ignored 
         String expiredForeign = (System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(1)) + "_foobar_0.0.0.0_sessionc";
-        FileTestHelper.createFile(expiredForeign);
-        FileTestHelper.assertFileExists(expiredForeign, true);
+        FileTestHelper.createFile(workDir, expiredForeign);
+        FileTestHelper.assertFileExists(workDir, expiredForeign, true);
 
         //create a file that is not a session file, it should be ignored
-        FileTestHelper.createFile("whatever.txt");
-        FileTestHelper.assertFileExists("whatever.txt", true);
+        FileTestHelper.createFile(workDir, "whatever.txt");
+        FileTestHelper.assertFileExists(workDir, "whatever.txt", true);
 
         //create a file that is not a valid session filename, should be ignored
-        FileTestHelper.createFile("nonNumber_0.0.0.0_spuriousFile");
-        FileTestHelper.assertFileExists("nonNumber_0.0.0.0_spuriousFile", true);
+        FileTestHelper.createFile(workDir, "nonNumber_0.0.0.0_spuriousFile");
+        FileTestHelper.assertFileExists(workDir, "nonNumber_0.0.0.0_spuriousFile", true);
 
         //create a file that is a non-expired session file for our context that should be ignored
         String nonExpired = (System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1)) + "_test_0.0.0.0_sessionb";
-        FileTestHelper.createFile(nonExpired);
-        FileTestHelper.assertFileExists(nonExpired, true);
+        FileTestHelper.createFile(workDir, nonExpired);
+        FileTestHelper.assertFileExists(workDir, nonExpired, true);
 
         //create a file that is a never-expire session file for our context that should be ignored
         String neverExpired = "0_test_0.0.0.0_sessionc";
-        FileTestHelper.createFile(neverExpired);
-        FileTestHelper.assertFileExists(neverExpired, true);
+        FileTestHelper.createFile(workDir, neverExpired);
+        FileTestHelper.assertFileExists(workDir, neverExpired, true);
 
         //create a file that is a never-expire session file for another context that should be ignored
         String foreignNeverExpired = "0_test_0.0.0.0_sessionc";
-        FileTestHelper.createFile(foreignNeverExpired);
-        FileTestHelper.assertFileExists(foreignNeverExpired, true);
+        FileTestHelper.createFile(workDir, foreignNeverExpired);
+        FileTestHelper.assertFileExists(workDir, foreignNeverExpired, true);
 
         //walk all files in the store
         ((FileSessionDataStore)store).initializeStore();
 
         //check results
-        FileTestHelper.assertSessionExists("sessiona", false);
-        FileTestHelper.assertFileExists("whatever.txt", true);
-        FileTestHelper.assertFileExists("nonNumber_0.0.0.0_spuriousFile", true);
-        FileTestHelper.assertFileExists(nonExpired, true);
-        FileTestHelper.assertFileExists(nonExpiredForeign, true);
-        FileTestHelper.assertFileExists(expiredForeign, true);
-        FileTestHelper.assertFileExists(neverExpired, true);
-        FileTestHelper.assertFileExists(foreignNeverExpired, true);
+        FileTestHelper.assertSessionExists(workDir, "sessiona", false);
+        FileTestHelper.assertFileExists(workDir, "whatever.txt", true);
+        FileTestHelper.assertFileExists(workDir, "nonNumber_0.0.0.0_spuriousFile", true);
+        FileTestHelper.assertFileExists(workDir, nonExpired, true);
+        FileTestHelper.assertFileExists(workDir, nonExpiredForeign, true);
+        FileTestHelper.assertFileExists(workDir, expiredForeign, true);
+        FileTestHelper.assertFileExists(workDir, neverExpired, true);
+        FileTestHelper.assertFileExists(workDir, foreignNeverExpired, true);
     }
 
     /**
@@ -361,8 +352,8 @@ public class TestFileSessions extends AbstractTestBase
         store.initialize(sessionContext);
 
         String expectedFilename = (System.currentTimeMillis() + 10000) + "__test_0.0.0.0_validFile123";
-        FileTestHelper.createFile(expectedFilename);
-        FileTestHelper.assertFileExists(expectedFilename, true);
+        FileTestHelper.createFile(workDir, expectedFilename);
+        FileTestHelper.assertFileExists(workDir, expectedFilename, true);
 
         store.start();
 
@@ -376,7 +367,7 @@ public class TestFileSessions extends AbstractTestBase
             //expected exception
         }
 
-        FileTestHelper.assertFileExists(expectedFilename, false);
+        FileTestHelper.assertFileExists(workDir, expectedFilename, false);
     }
 
     /**
@@ -403,22 +394,22 @@ public class TestFileSessions extends AbstractTestBase
         //create a file for session abc that expired 5sec ago
         long exp = now - 5000L;
         String name1 = Long.toString(exp) + "__test_0.0.0.0_abc";
-        FileTestHelper.createFile(name1);
+        FileTestHelper.createFile(workDir, name1);
 
         //create a file for same session that expired 4 sec ago
         exp = now - 4000L;
         String name2 = Long.toString(exp) + "__test_0.0.0.0_abc";
-        FileTestHelper.createFile(name2);
+        FileTestHelper.createFile(workDir, name2);
 
         //make a file for same session that expired 3 sec ago
         exp = now - 3000L;
         String name3 = Long.toString(exp) + "__test_0.0.0.0_abc";
-        FileTestHelper.createFile(name3);
+        FileTestHelper.createFile(workDir, name3);
 
         store.start();
 
-        FileTestHelper.assertFileExists(name1, false);
-        FileTestHelper.assertFileExists(name2, false);
-        FileTestHelper.assertFileExists(name3, true);
+        FileTestHelper.assertFileExists(workDir, name1, false);
+        FileTestHelper.assertFileExists(workDir, name2, false);
+        FileTestHelper.assertFileExists(workDir, name3, true);
     }
 }

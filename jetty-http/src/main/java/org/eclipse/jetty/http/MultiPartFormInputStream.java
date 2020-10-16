@@ -31,6 +31,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -41,6 +42,7 @@ import javax.servlet.http.Part;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
@@ -67,7 +69,6 @@ public class MultiPartFormInputStream
     private Throwable _err;
     private File _tmpDir;
     private File _contextTmpDir;
-    private boolean _deleteOnExit;
     private boolean _writeFilesWithFilenames;
     private boolean _parsed;
     private int _bufferSize = 16 * 1024;
@@ -151,19 +152,11 @@ public class MultiPartFormInputStream
 
         protected void createFile() throws IOException
         {
-            /*
-             * Some statics just to make the code below easier to understand This get optimized away during the compile anyway
-             */
-            final boolean USER = true;
-            final boolean WORLD = false;
+            Path parent = MultiPartFormInputStream.this._tmpDir.toPath();
+            Path tempFile = Files.createTempFile(parent, "MultiPart", "", IO.getUserOnlyFileAttribute(parent));
+            _file = tempFile.toFile();
 
-            _file = File.createTempFile("MultiPart", "", MultiPartFormInputStream.this._tmpDir);
-            _file.setReadable(false, WORLD); // (reset) disable it for everyone first
-            _file.setReadable(true, USER); // enable for user only
-
-            if (_deleteOnExit)
-                _file.deleteOnExit();
-            FileOutputStream fos = new FileOutputStream(_file);
+            OutputStream fos = Files.newOutputStream(tempFile, StandardOpenOption.WRITE);
             BufferedOutputStream bos = new BufferedOutputStream(fos);
 
             if (_size > 0 && _out != null)
@@ -757,9 +750,13 @@ public class MultiPartFormInputStream
         }
     }
 
+    /**
+     * @deprecated no replacement provided.
+     */
+    @Deprecated
     public void setDeleteOnExit(boolean deleteOnExit)
     {
-        _deleteOnExit = deleteOnExit;
+        // does nothing.
     }
 
     public void setWriteFilesWithFilenames(boolean writeFilesWithFilenames)
@@ -772,9 +769,13 @@ public class MultiPartFormInputStream
         return _writeFilesWithFilenames;
     }
 
+    /**
+     * @deprecated no replacement provided
+     */
+    @Deprecated
     public boolean isDeleteOnExit()
     {
-        return _deleteOnExit;
+        return false;
     }
 
     private static String value(String nameEqualsValue)

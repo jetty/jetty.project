@@ -33,6 +33,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
@@ -72,7 +73,6 @@ public class MultiPartInputStreamParser
     protected Exception _err;
     protected File _tmpDir;
     protected File _contextTmpDir;
-    protected boolean _deleteOnExit;
     protected boolean _writeFilesWithFilenames;
     protected boolean _parsed;
 
@@ -190,18 +190,11 @@ public class MultiPartInputStreamParser
         protected void createFile()
             throws IOException
         {
-            /* Some statics just to make the code below easier to understand
-             * This get optimized away during the compile anyway */
-            final boolean USER = true;
-            final boolean WORLD = false;
+            Path parent = MultiPartInputStreamParser.this._tmpDir.toPath();
+            Path tempFile = Files.createTempFile(parent, "MultiPart", "", IO.getUserOnlyFileAttribute(parent));
+            _file = tempFile.toFile();
 
-            _file = File.createTempFile("MultiPart", "", MultiPartInputStreamParser.this._tmpDir);
-            _file.setReadable(false, WORLD); // (reset) disable it for everyone first
-            _file.setReadable(true, USER); // enable for user only
-
-            if (_deleteOnExit)
-                _file.deleteOnExit();
-            FileOutputStream fos = new FileOutputStream(_file);
+            OutputStream fos = Files.newOutputStream(tempFile, StandardOpenOption.WRITE);
             BufferedOutputStream bos = new BufferedOutputStream(fos);
 
             if (_size > 0 && _out != null)
@@ -864,9 +857,13 @@ public class MultiPartInputStreamParser
         }
     }
 
+    /**
+     * @deprecated no replacement offered.
+     */
+    @Deprecated
     public void setDeleteOnExit(boolean deleteOnExit)
     {
-        _deleteOnExit = deleteOnExit;
+        // does nothing
     }
 
     public void setWriteFilesWithFilenames(boolean writeFilesWithFilenames)
@@ -879,9 +876,13 @@ public class MultiPartInputStreamParser
         return _writeFilesWithFilenames;
     }
 
+    /**
+     * @deprecated no replacement offered.
+     */
+    @Deprecated
     public boolean isDeleteOnExit()
     {
-        return _deleteOnExit;
+        return false;
     }
 
     private String value(String nameEqualsValue)

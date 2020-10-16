@@ -45,10 +45,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * InfinispanTestSupport
  */
-@ExtendWith(WorkDirExtension.class)
 public class InfinispanTestSupport
 {
-    public WorkDir workDir;
     public static final String DEFAULT_CACHE_NAME = "session_test_cache";
     public Cache _cache;
 
@@ -100,9 +98,8 @@ public class InfinispanTestSupport
         return _cache;
     }
 
-    public void setup() throws Exception
+    public void setup(Path root) throws Exception
     {
-        Path root = workDir.getEmptyPathDir();
         Path indexesDir = root.resolve("indexes");
         FS.ensureDirExists(indexesDir);
 
