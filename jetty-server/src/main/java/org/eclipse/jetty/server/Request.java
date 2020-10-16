@@ -1688,21 +1688,18 @@ public class Request implements HttpServletRequest
         final HttpURI uri = request.getURI();
 
         if (uri.isAbsolute() && uri.hasAuthority() && uri.getPath() != null)
+        {
             _uri = uri;
+        }
         else
         {
             HttpURI.Mutable builder = HttpURI.build(uri);
 
-            if (uri.isAbsolute())
-            {
-                if (uri.getPath() == null)
-                    builder.path("/");
-                setSecure(HttpScheme.HTTPS.is(uri.getScheme()));
-            }
-            else
-            {
+            if (!uri.isAbsolute())
                 builder.scheme(HttpScheme.HTTP.asString());
-            }
+
+            if (uri.getPath() == null)
+                builder.path("/");
 
             if (!uri.hasAuthority())
             {
@@ -1719,6 +1716,8 @@ public class Request implements HttpServletRequest
             }
             _uri = builder.asImmutable();
         }
+
+        setSecure(HttpScheme.HTTPS.is(_uri.getScheme()));
 
         String encoded = _uri.getPath();
         String path;
