@@ -69,6 +69,7 @@ public class PutFilterTest
         tester.addServlet(org.eclipse.jetty.servlet.DefaultServlet.class, "/");
         FilterHolder holder = tester.addFilter(PutFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         holder.setInitParameter("delAllowed", "true");
+        tester.setAttribute("javax.servlet.context.tempdir", workDir.getPath().toFile());
         // Bloody Windows does not allow file renaming
         if (!System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows"))
             holder.setInitParameter("putAtomic", "true");
