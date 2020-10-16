@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server.session;
 
+import java.nio.file.Files;
+
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -36,7 +38,7 @@ public class ClusteredSerializedSessionScavengingTest extends AbstractClusteredS
         __testSupport = new InfinispanTestSupport();
         __testSupport.setUseFileStore(true);
         __testSupport.setSerializeSessionData(true);
-        __testSupport.setup();
+        __testSupport.setup(Files.createTempDirectory(ClusteredSerializedSessionScavengingTest.class.getName()));
     }
 
     @AfterAll
