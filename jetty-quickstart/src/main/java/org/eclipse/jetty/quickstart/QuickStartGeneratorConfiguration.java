@@ -241,7 +241,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
                 if (f != null && f.getSource() == Source.EMBEDDED)
                     continue;
                 
-                out.openTag("filter-mapping");
+                out.openTag("filter-mapping", origin(md, mapping.getFilterName() + ".filter.mapping." + Long.toHexString(mapping.hashCode())));
                 out.tag("filter-name", mapping.getFilterName());
                 if (mapping.getPathSpecs() != null)
                     for (String s : mapping.getPathSpecs())
@@ -289,7 +289,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
                 if (sh != null && sh.getSource() == Source.EMBEDDED)
                     continue;
                 
-                out.openTag("servlet-mapping", origin(md, mapping.getServletName() + ".servlet.mappings"));
+                out.openTag("servlet-mapping", origin(md, mapping.getServletName() + ".servlet.mapping." + Long.toHexString(mapping.hashCode())));
                 out.tag("servlet-name", mapping.getServletName());
                 if (mapping.getPathSpecs() != null)
                     for (String s : mapping.getPathSpecs())
@@ -327,7 +327,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             ConstraintAware ca = (ConstraintAware)security;
             for (String r : ca.getRoles())
             {
-                out.openTag("security-role")
+                out.openTag("security-role", origin(md, "security-role." + r))
                     .tag("role-name", r)
                     .closeTag();
             }
@@ -398,7 +398,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             out.openTag("welcome-file-list");
             for (String welcomeFile : context.getWelcomeFiles())
             {
-                out.tag("welcome-file", welcomeFile);
+                out.tag("welcome-file", origin(md, "welcome-file." + welcomeFile), welcomeFile);
             }
             out.closeTag();
         }
@@ -429,6 +429,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             if (cookieConfig != null)
             {
                 out.openTag("cookie-config");
+                
                 if (cookieConfig.getName() != null)
                     out.tag("name", origin(md, "cookie-config.name"), cookieConfig.getName());
 
@@ -789,6 +790,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
     public void preConfigure(WebAppContext context) throws Exception
     {
         ExtraXmlDescriptorProcessor extraXmlProcessor = new ExtraXmlDescriptorProcessor();
+        extraXmlProcessor.setOriginAttribute(getOriginAttribute());
         context.getMetaData().addDescriptorProcessor(extraXmlProcessor);
         context.setAttribute(ExtraXmlDescriptorProcessor.class.getName(), extraXmlProcessor);
         super.preConfigure(context);

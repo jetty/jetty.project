@@ -663,6 +663,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             if (TimeUnit.MINUTES.toSeconds(mins) > Integer.MAX_VALUE)
                 throw new IllegalStateException("Max session-timeout in minutes is " + TimeUnit.SECONDS.toMinutes(Integer.MAX_VALUE));
             context.getServletContext().setSessionTimeout((int)mins);
+            context.getMetaData().setOrigin("session.timeout", descriptor);
         }
 
         //Servlet Spec 3.0
@@ -672,7 +673,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         if (iter.hasNext())
         {
             Set<SessionTrackingMode> modes = null;
-            Origin o = context.getMetaData().getOrigin("session.tracking-mode");
+            Origin o = context.getMetaData().getOrigin("session.tracking-modes");
             switch (o)
             {
                 case NotSet://not previously set, starting fresh
@@ -680,7 +681,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 {
 
                     modes = new HashSet<SessionTrackingMode>();
-                    context.getMetaData().setOrigin("session.tracking-mode", descriptor);
+                    context.getMetaData().setOrigin("session.tracking-modes", descriptor);
                     break;
                 }
                 case WebXml:
@@ -692,7 +693,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         modes = new HashSet<SessionTrackingMode>();
                     else
                         modes = new HashSet<SessionTrackingMode>(context.getSessionHandler().getEffectiveSessionTrackingModes());
-                    context.getMetaData().setOrigin("session.tracking-mode", descriptor);
+                    context.getMetaData().setOrigin("session.tracking-modes", descriptor);
                     break;
                 }
                 default:
@@ -703,7 +704,9 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             {
                 XmlParser.Node mNode = (XmlParser.Node)iter.next();
                 String trackMode = mNode.toString(false, true);
-                modes.add(SessionTrackingMode.valueOf(trackMode));
+                SessionTrackingMode mode = SessionTrackingMode.valueOf(trackMode);
+                modes.add(mode);
+                context.getMetaData().setOrigin("session.tracking-mode." + mode, descriptor);
             }
             context.getSessionHandler().setSessionTrackingModes(modes);
         }
@@ -1035,13 +1038,13 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             case NotSet:
             {
                 context.getMetaData().setOrigin("welcome-file-list", descriptor);
-                addWelcomeFiles(context, node);
+                addWelcomeFiles(context, node, descriptor);
                 break;
             }
             case WebXml:
             {
                 //web.xml set the welcome-file-list, all other descriptors then just merge in
-                addWelcomeFiles(context, node);
+                addWelcomeFiles(context, node, descriptor);
                 break;
             }
             case WebDefaults:
@@ -1052,19 +1055,19 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 {
                     context.setWelcomeFiles(new String[0]);
                 }
-                addWelcomeFiles(context, node);
+                addWelcomeFiles(context, node, descriptor);
                 break;
             }
             case WebOverride:
             {
                 //web-override set the list, all other descriptors just merge in
-                addWelcomeFiles(context, node);
+                addWelcomeFiles(context, node, descriptor);
                 break;
             }
             case WebFragment:
             {
                 //A web-fragment first set the welcome-file-list. Other descriptors just add.
-                addWelcomeFiles(context, node);
+                addWelcomeFiles(context, node, descriptor);
                 break;
             }
             default:
@@ -1182,14 +1185,14 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
 
-    public void addWelcomeFiles(WebAppContext context, XmlParser.Node node)
+    public void addWelcomeFiles(WebAppContext context, XmlParser.Node node, Descriptor descriptor)
     {
         Iterator<XmlParser.Node> iter = node.iterator("welcome-file");
         while (iter.hasNext())
         {
             XmlParser.Node indexNode = (XmlParser.Node)iter.next();
             String welcome = indexNode.toString(false, true);
-
+            context.getMetaData().setOrigin("welcome-file." + welcome, descriptor);
             //Servlet Spec 3.0 p. 74 welcome files are additive
             if (welcome != null && welcome.trim().length() > 0)
                 context.setWelcomeFiles((String[])ArrayUtil.addToArray(context.getWelcomeFiles(), welcome, String.class));
@@ -1201,7 +1204,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         ServletMapping mapping = new ServletMapping(new Source(Source.Origin.DESCRIPTOR, descriptor.getResource().toString()));
         mapping.setServletName(servletName);
         mapping.setFromDefaultDescriptor(descriptor instanceof DefaultsDescriptor);
-
+        context.getMetaData().setOrigin(servletName + ".servlet.mapping." + Long.toHexString(mapping.hashCode()), descriptor);
+        
         List<String> paths = new ArrayList<String>();
         Iterator<XmlParser.Node> iter = node.iterator("url-pattern");
         while (iter.hasNext())
@@ -1255,7 +1259,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             }
 
             paths.add(p);
-            context.getMetaData().setOrigin(servletName + ".servlet.mapping." + p, descriptor);
+            context.getMetaData().setOrigin(servletName + ".servlet.mapping.url" + p, descriptor);
         }
 
         mapping.setPathSpecs((String[])paths.toArray(new String[paths.size()]));
@@ -1269,7 +1273,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     {
         FilterMapping mapping = new FilterMapping();
         mapping.setFilterName(filterName);
-
+        context.getMetaData().setOrigin(filterName + ".filter.mapping." + Long.toHexString(mapping.hashCode()), descriptor);
         List<String> paths = new ArrayList<String>();
         Iterator<XmlParser.Node> iter = node.iterator("url-pattern");
         while (iter.hasNext())
@@ -1277,7 +1281,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             String p = iter.next().toString(false, true);
             p = ServletPathSpec.normalize(p);
             paths.add(p);
-            context.getMetaData().setOrigin(filterName + ".filter.mapping." + p, descriptor);
+            context.getMetaData().setOrigin(filterName + ".filter.mapping.url" + p, descriptor);
         }
         mapping.setPathSpecs((String[])paths.toArray(new String[paths.size()]));
 
@@ -1286,6 +1290,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         while (iter.hasNext())
         {
             String n = ((XmlParser.Node)iter.next()).toString(false, true);
+            context.getMetaData().setOrigin(filterName + ".filter.mapping.servlet" + n, descriptor);
             names.add(n);
         }
         mapping.setServletNames((String[])names.toArray(new String[names.size()]));
@@ -1741,6 +1746,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         XmlParser.Node roleNode = node.get("role-name");
         String role = roleNode.toString(false, true);
         ((ConstraintAware)context.getSecurityHandler()).addRole(role);
+        context.getMetaData().setOrigin("security-role." + role, descriptor);
     }
 
     public void visitFilter(WebAppContext context, Descriptor descriptor, XmlParser.Node node)

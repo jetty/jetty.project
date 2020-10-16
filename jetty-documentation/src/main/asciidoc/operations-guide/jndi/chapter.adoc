@@ -329,14 +329,13 @@ Server XML file::
 Naming resources defined in a server XML file are link:#og-jndi-scope[scoped] at either the JVM level or the `org.eclipse.jetty.server.Server` level.
 The classes for the resource _must_ be visible at the Jetty *container* level.
 If instead the classes for the resource only exist inside your webapp, you must declare it in a `WEB-INF/jetty-env.xml` file.
+Context XML file::
+Entries in a context XML file should be link:#og-jndi-scope[scoped] at the level of the webapp to which they apply (although it is possible to use a less strict scoping level of Server or JVM, but not recommended).
+As with resources declared in a server XML file, classes associated with the resource _must_ be visible on the *container's* classpath.
 WEB-INF/jetty-env.xml::
 Naming resources in a `WEB-INF/jetty-env.xml` file are link:#og-jndi-scope[scoped] to the webapp in which the file resides.
 While you can enter JVM or Server scopes if you choose, we do not recommend doing so.
 The resources defined here may use classes from inside your webapp.
-This is a Jetty-specific mechanism.
-Context XML file::
-Entries in a context XML file should be link:#og-jndi-scope[scoped] at the level of the webapp to which they apply (although it is possible to use a less strict scoping level of Server or JVM, but not recommended).
-As with resources declared in a server XML file, classes associated with the resource _must_ be visible on the *container's* classpath.
 
 [[og-jndi-scope]]
 ===== Resource scoping

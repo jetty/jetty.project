@@ -108,7 +108,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
 
             FilterMapping mapping = new FilterMapping();
             mapping.setFilterName(holder.getName());
-
+            metaData.setOrigin(name + ".filter.mapping." + Long.toHexString(mapping.hashCode()), filterAnnotation, clazz);
             if (urlPatterns.length > 0)
             {
                 ArrayList<String> paths = new ArrayList<String>();
@@ -179,7 +179,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
             {
                 FilterMapping mapping = new FilterMapping();
                 mapping.setFilterName(holder.getName());
-
+                metaData.setOrigin(holder.getName() + ".filter.mapping." + Long.toHexString(mapping.hashCode()), filterAnnotation, clazz);
                 if (urlPatterns.length > 0)
                 {
                     ArrayList<String> paths = new ArrayList<String>();
