@@ -21,6 +21,8 @@ package org.eclipse.jetty.webapp;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Locale;
 
 import org.eclipse.jetty.server.Connector;
@@ -102,14 +104,10 @@ public class WebInfConfiguration extends AbstractConfiguration
     @Override
     public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
     {
-        File tmpDir = File.createTempFile(WebInfConfiguration.getCanonicalNameForWebAppTmpDir(context), "", template.getTempDirectory().getParentFile());
-        if (tmpDir.exists())
-        {
-            IO.delete(tmpDir);
-        }
-        tmpDir.mkdir();
-        tmpDir.deleteOnExit();
-        context.setTempDirectory(tmpDir);
+        Path tmpDir = Files.createTempDirectory(template.getTempDirectory().getParentFile().toPath(), WebInfConfiguration.getCanonicalNameForWebAppTmpDir(context));
+        File tmpDirAsFile = tmpDir.toFile();
+        tmpDirAsFile.deleteOnExit();
+        context.setTempDirectory(tmpDirAsFile);
     }
 
     /**
@@ -237,11 +235,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         else
         {
             //ensure file will always be unique by appending random digits
-            tmpDir = File.createTempFile(temp, ".dir", parent);
-            //delete the file that was created
-            tmpDir.delete();
-            //and make a directory of the same name
-            tmpDir.mkdirs();
+            tmpDir = Files.createTempDirectory(parent.toPath(), temp).toFile();
         }
         configureTempDirectory(tmpDir, context);
 

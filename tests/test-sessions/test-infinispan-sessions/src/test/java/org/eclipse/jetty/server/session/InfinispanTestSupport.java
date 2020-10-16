@@ -20,9 +20,13 @@ package org.eclipse.jetty.server.session;
 
 import java.io.File;
 import java.lang.annotation.ElementType;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Properties;
 
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
 import org.hibernate.search.cfg.Environment;
 import org.hibernate.search.cfg.SearchMapping;
@@ -33,6 +37,7 @@ import org.infinispan.configuration.cache.Index;
 import org.infinispan.configuration.global.GlobalConfigurationBuilder;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -40,8 +45,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * InfinispanTestSupport
  */
+@ExtendWith(WorkDirExtension.class)
 public class InfinispanTestSupport
 {
+    public WorkDir workDir;
     public static final String DEFAULT_CACHE_NAME = "session_test_cache";
     public Cache _cache;
 
@@ -95,22 +102,20 @@ public class InfinispanTestSupport
 
     public void setup() throws Exception
     {
-        File testdir = MavenTestingUtils.getTargetTestingDir();
-        File tmp = new File(testdir, "indexes");
-        IO.delete(tmp);
-        tmp.mkdirs();
+        Path root = workDir.getEmptyPathDir();
+        Path indexesDir = root.resolve("indexes");
+        FS.ensureDirExists(indexesDir);
 
         SearchMapping mapping = new SearchMapping();
         mapping.entity(SessionData.class).indexed().providedId().property("expiry", ElementType.FIELD).field();
         Properties properties = new Properties();
         properties.put(Environment.MODEL_MAPPING, mapping);
-        properties.put("hibernate.search.default.indexBase", tmp.getAbsolutePath());
+        properties.put("hibernate.search.default.indexBase", indexesDir.toString());
 
         if (_useFileStore)
         {
-            _tmpdir = File.createTempFile("infini", "span");
-            _tmpdir.delete();
-            _tmpdir.mkdir();
+            Path tmpDir = Files.createTempDirectory("infinispan");
+            _tmpdir = tmpDir.toFile();
 
             ConfigurationChildBuilder b = _builder.indexing()
                 .index(Index.ALL)
