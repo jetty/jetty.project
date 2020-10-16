@@ -474,7 +474,7 @@ public class IO
      * For Windows / Dos, that means {@link java.nio.file.attribute.DosFileAttributes}
      * </p>
      */
-    public static FileAttribute<?>[] getUserOnlyFileAttribute(Path path)
+    public static FileAttribute<?>[] getUserPrivateFileAttribute(Path path)
     {
         FileStore fileStore = null;
         try

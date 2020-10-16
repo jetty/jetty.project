@@ -190,8 +190,8 @@ public class MultiPartInputStreamParser
         protected void createFile()
             throws IOException
         {
-            Path parent = MultiPartInputStreamParser.this._tmpDir.toPath();
-            Path tempFile = Files.createTempFile(parent, "MultiPart", "", IO.getUserOnlyFileAttribute(parent));
+            // Create temp file in Context tempDir (which is user private already)
+            Path tempFile = Files.createTempFile(MultiPartInputStreamParser.this._tmpDir.toPath(), "MultiPart", "");
             _file = tempFile.toFile();
 
             OutputStream fos = Files.newOutputStream(tempFile, StandardOpenOption.WRITE);

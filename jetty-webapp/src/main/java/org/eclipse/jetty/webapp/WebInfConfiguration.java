@@ -508,7 +508,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         else
         {
             //ensure file will always be unique by appending random digits
-            tmpDir = Files.createTempDirectory(parent.toPath(), temp, IO.getUserOnlyFileAttribute(parent.toPath())).toFile();
+            tmpDir = Files.createTempDirectory(parent.toPath(), temp, IO.getUserPrivateFileAttribute(parent.toPath())).toFile();
         }
         configureTempDirectory(tmpDir, context);
 
