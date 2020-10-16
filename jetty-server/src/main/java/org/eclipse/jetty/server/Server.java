@@ -81,6 +81,7 @@ public class Server extends HandlerWrapper implements Attributes
     private final List<Connector> _connectors = new CopyOnWriteArrayList<>();
     private SessionIdManager _sessionIdManager;
     private String _tmpDirPosixPerms = "rwx------";
+    private boolean _workDirPersistent = true;
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart = false;
     private boolean _dumpBeforeStop = false;
@@ -214,6 +215,11 @@ public class Server extends HandlerWrapper implements Attributes
     public String getTempDirectoryPosixPermissions()
     {
         return _tmpDirPosixPerms;
+    }
+
+    public boolean isWorkDirectoryPersistent()
+    {
+        return _workDirPersistent;
     }
 
     /**
@@ -598,6 +604,11 @@ public class Server extends HandlerWrapper implements Attributes
     public void setTempDirectoryPosixPermissions(String perms)
     {
         _tmpDirPosixPerms = perms;
+    }
+
+    public void setWorkDirectoryPersistent(boolean flag)
+    {
+        _workDirPersistent = flag;
     }
 
     /*

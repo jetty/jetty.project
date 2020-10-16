@@ -460,7 +460,10 @@ public class WebInfConfiguration extends AbstractConfiguration
             File work = new File(jettyBase, "work");
             if (work.exists() && work.isDirectory() && work.canWrite())
             {
-                context.setPersistTempDirectory(true);
+                if (context.getServer().isWorkDirectoryPersistent())
+                {
+                    context.setPersistTempDirectory(true);
+                }
                 makeTempDirectory(work, context);
                 return;
             }
