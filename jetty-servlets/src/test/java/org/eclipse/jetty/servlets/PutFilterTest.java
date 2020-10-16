@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 import javax.servlet.DispatcherType;
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpTester;
@@ -69,7 +70,7 @@ public class PutFilterTest
         tester.addServlet(org.eclipse.jetty.servlet.DefaultServlet.class, "/");
         FilterHolder holder = tester.addFilter(PutFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         holder.setInitParameter("delAllowed", "true");
-        tester.setAttribute("javax.servlet.context.tempdir", workDir.getPath().toFile());
+        tester.setAttribute(ServletContext.TEMPDIR, workDir.getPath().toFile());
         // Bloody Windows does not allow file renaming
         if (!System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows"))
             holder.setInitParameter("putAtomic", "true");
