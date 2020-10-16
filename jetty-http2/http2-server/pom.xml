@@ -87,9 +87,11 @@
       </build>
     </profile>
     <profile>
-      <id>run-docker-http2spec</id>
+      <id>run-h2spec-in-docker</id>
       <activation>
-        <file>/var/run/docker.sock</file>
+        <file>
+          <exists>/var/run/docker.sock</exists>
+        </file>
       </activation>
       <build>
         <plugins>
