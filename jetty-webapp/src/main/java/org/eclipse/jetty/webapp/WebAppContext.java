@@ -60,6 +60,7 @@ import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -177,6 +178,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     private File _tmpDir;
     private boolean _persistTmpDir = false;
+    private String _tmpDirPosixPerms;
 
     private String _war;
     private String _extraClasspath;
@@ -517,6 +519,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         try
         {
+            if (StringUtil.isBlank(_tmpDirPosixPerms))
+            {
+                _tmpDirPosixPerms = getServer().getTempDirectoryPosixPermissions();
+            }
+
             _metadata.setAllowDuplicateFragmentNames(isAllowDuplicateFragmentNames());
             Boolean validate = (Boolean)getAttribute(MetaData.VALIDATE_XML);
             _metadata.setValidateXml((validate != null && validate));
@@ -1298,10 +1305,27 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         setAttribute(TEMPDIR, _tmpDir);
     }
 
+    /**
+     * Set the POSIX permission string used for the Temp Directory for this specific webapp.
+     *
+     * @param perms the string for temp directory permissions
+     * @see java.nio.file.attribute.PosixFilePermissions#fromString(String)
+     */
+    public void setTempDirectoryPosixPermissions(String perms)
+    {
+        this._tmpDirPosixPerms = perms;
+    }
+
     @ManagedAttribute(value = "temporary directory location", readonly = true)
     public File getTempDirectory()
     {
         return _tmpDir;
+    }
+
+    @ManagedAttribute(value = "temporary directory perms", readonly = true)
+    public String getTempDirectoryPosixPermissions()
+    {
+        return _tmpDirPosixPerms;
     }
 
     /**

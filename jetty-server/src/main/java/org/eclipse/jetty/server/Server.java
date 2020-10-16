@@ -80,6 +80,7 @@ public class Server extends HandlerWrapper implements Attributes
     private final ThreadPool _threadPool;
     private final List<Connector> _connectors = new CopyOnWriteArrayList<>();
     private SessionIdManager _sessionIdManager;
+    private String _tmpDirPosixPerms = "rwx------";
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart = false;
     private boolean _dumpBeforeStop = false;
@@ -208,6 +209,11 @@ public class Server extends HandlerWrapper implements Attributes
             ShutdownThread.deregister(this);
 
         _stopAtShutdown = stop;
+    }
+
+    public String getTempDirectoryPosixPermissions()
+    {
+        return _tmpDirPosixPerms;
     }
 
     /**
@@ -581,6 +587,17 @@ public class Server extends HandlerWrapper implements Attributes
     {
         updateBean(_sessionIdManager, sessionIdManager);
         _sessionIdManager = sessionIdManager;
+    }
+
+    /**
+     * Set the POSIX permission string used for the Temp Directory creation for all webapps deployed on the server.
+     *
+     * @param perms the string for temp directory permissions
+     * @see java.nio.file.attribute.PosixFilePermissions#fromString(String)
+     */
+    public void setTempDirectoryPosixPermissions(String perms)
+    {
+        _tmpDirPosixPerms = perms;
     }
 
     /*

@@ -24,8 +24,12 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -507,8 +511,18 @@ public class WebInfConfiguration extends AbstractConfiguration
         }
         else
         {
-            //ensure file will always be unique by appending random digits
-            tmpDir = Files.createTempDirectory(parent.toPath(), temp, IO.getUserPrivateFileAttribute(parent.toPath())).toFile();
+            Path parentPath = parent.toPath();
+            FileStore fileStore = Files.getFileStore(parentPath);
+            if (fileStore.supportsFileAttributeView(PosixFileAttributeView.class))
+            {
+                String workDirPerms = context.getTempDirectoryPosixPermissions();
+                Set<PosixFilePermission> permSet = PosixFilePermissions.fromString(workDirPerms);
+                tmpDir = Files.createTempDirectory(parentPath, temp, PosixFilePermissions.asFileAttribute(permSet)).toFile();
+            }
+            else
+            {
+                tmpDir = Files.createTempDirectory(parentPath, temp).toFile();
+            }
         }
         configureTempDirectory(tmpDir, context);
 
