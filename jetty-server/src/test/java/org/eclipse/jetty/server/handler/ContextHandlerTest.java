@@ -38,9 +38,12 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -50,8 +53,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class ContextHandlerTest
 {
+    public WorkDir workDir;
+
     @Test
     public void testGetResourcePathsWhenSuppliedPathEndsInSlash() throws Exception
     {
@@ -796,24 +802,14 @@ public class ContextHandlerTest
 
     private File setupTestDirectory() throws IOException
     {
-        File tmpDir = new File(System.getProperty("basedir", ".") + "/target/tmp/ContextHandlerTest");
-        tmpDir = tmpDir.getCanonicalFile();
-        if (!tmpDir.exists())
-            assertTrue(tmpDir.mkdirs());
-        File tmp = File.createTempFile("cht", null, tmpDir);
-        assertTrue(tmp.delete());
-        assertTrue(tmp.mkdir());
-        tmp.deleteOnExit();
-        File root = new File(tmp, getClass().getName());
-        assertTrue(root.mkdir());
+        Path root = workDir.getEmptyPathDir();
 
-        File webInf = new File(root, "WEB-INF");
-        assertTrue(webInf.mkdir());
+        Path webInfDir = root.resolve("WEB-INF");
+        FS.ensureDirExists(webInfDir);
+        FS.ensureDirExists(webInfDir.resolve("jsp"));
+        FS.touch(webInfDir.resolve("web.xml"));
 
-        assertTrue(new File(webInf, "jsp").mkdir());
-        assertTrue(new File(webInf, "web.xml").createNewFile());
-
-        return root;
+        return root.toFile();
     }
 
     private void checkWildcardHost(boolean succeed, Server server, String[] contextHosts, String[] requestHosts) throws Exception

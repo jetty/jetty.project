@@ -24,12 +24,15 @@ import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStore;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.eclipse.jetty.session.infinispan.QueryManager;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.infinispan.query.Search;
 import org.infinispan.query.dsl.Query;
 import org.infinispan.query.dsl.QueryFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -37,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 /**
  * InfinispanSessionDataStoreTest
  */
+@ExtendWith(WorkDirExtension.class)
 public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
     static
@@ -46,11 +50,13 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
 
     public InfinispanTestSupport _testSupport;
 
+    public WorkDir workDir;
+
     @BeforeEach
     public void setup() throws Exception
     {
         _testSupport = new InfinispanTestSupport();
-        _testSupport.setup();
+        _testSupport.setup(workDir.getEmptyPathDir());
     }
 
     @AfterEach

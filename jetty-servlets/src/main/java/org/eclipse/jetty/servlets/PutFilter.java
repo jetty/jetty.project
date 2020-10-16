@@ -25,6 +25,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -212,8 +216,8 @@ public class PutFilter implements Filter
 
                 if (_putAtomic)
                 {
-                    File tmp = File.createTempFile(file.getName(), null, _tmpdir);
-                    try (OutputStream out = new FileOutputStream(tmp, false))
+                    Path tmp = Files.createTempFile(_tmpdir.toPath(), file.getName(), null);
+                    try (OutputStream out = Files.newOutputStream(tmp, StandardOpenOption.WRITE))
                     {
                         if (toRead >= 0)
                             IO.copy(in, out, toRead);
@@ -221,8 +225,7 @@ public class PutFilter implements Filter
                             IO.copy(in, out);
                     }
 
-                    if (!tmp.renameTo(file))
-                        throw new IOException("rename from " + tmp + " to " + file + " failed");
+                    Files.move(tmp, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 }
                 else
                 {

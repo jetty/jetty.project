@@ -18,27 +18,24 @@
 
 package org.eclipse.jetty.server.session;
 
-import org.junit.jupiter.api.AfterEach;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * FileSessionDataStoreTest
  */
+@ExtendWith(WorkDirExtension.class)
 public class FileSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
+    public WorkDir workDir;
     private FileTestHelper _helper;
-    
+
     @BeforeEach
     public void before() throws Exception
     {
-        _helper = new FileTestHelper();
-    }
-
-    @AfterEach
-    public void after()
-    {
-        _helper.teardown();
-        _helper = null;
+        _helper = new FileTestHelper(workDir.getEmptyPathDir());
     }
 
     @Override

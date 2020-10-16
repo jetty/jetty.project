@@ -38,7 +38,6 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -693,8 +692,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             setIdleTimeout(idleTO);
 
         _request.setMetaData(request);
-
-        _request.setSecure(HttpScheme.HTTPS.is(request.getURI().getScheme()));
 
         _combinedListener.onRequestBegin(_request);
 

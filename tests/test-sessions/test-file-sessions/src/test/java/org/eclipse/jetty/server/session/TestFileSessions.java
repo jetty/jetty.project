@@ -22,9 +22,11 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.junit.jupiter.api.AfterEach;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -35,21 +37,16 @@ import static org.junit.jupiter.api.Assertions.fail;
 /**
  * TestFileSessions
  */
+@ExtendWith(WorkDirExtension.class)
 public class TestFileSessions extends AbstractTestBase
 {
+    public WorkDir workDir;
     FileTestHelper _helper;
 
     @BeforeEach
     public void before() throws Exception
     {
-        _helper = new FileTestHelper();
-    }
-
-    @AfterEach
-    public void after()
-    {
-        _helper.teardown();
-        _helper = null;
+        _helper = new FileTestHelper(workDir.getEmptyPathDir());
     }
 
     @Override
