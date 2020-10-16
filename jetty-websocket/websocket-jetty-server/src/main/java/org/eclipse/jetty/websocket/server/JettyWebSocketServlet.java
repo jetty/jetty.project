@@ -132,7 +132,7 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         {
             ServletContext servletContext = getServletContext();
 
-            components = WebSocketServerComponents.ensureWebSocketComponents(servletContext);
+            components = WebSocketServerComponents.getWebSocketComponents(servletContext);
             mapping = new WebSocketMapping(components);
 
             String max = getInitParameter("idleTimeout");

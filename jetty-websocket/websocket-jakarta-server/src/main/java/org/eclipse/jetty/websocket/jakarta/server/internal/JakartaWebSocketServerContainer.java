@@ -100,7 +100,7 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
             // Create the Jetty ServerContainer implementation
             container = new JakartaWebSocketServerContainer(
                 WebSocketMapping.ensureMapping(servletContext, WebSocketMapping.DEFAULT_KEY),
-                WebSocketServerComponents.ensureWebSocketComponents(servletContext),
+                WebSocketServerComponents.getWebSocketComponents(servletContext),
                 coreClientSupplier);
             contextHandler.addManaged(container);
             contextHandler.addEventListener(container);

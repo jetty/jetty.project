@@ -53,6 +53,9 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
      */
     public static void configure(ServletContextHandler context, Configurator configurator)
     {
+        if (!context.isStopped())
+            throw new IllegalStateException("configure should be called before starting");
+
         context.addEventListener(
             ContainerInitializer
                 .asContextListener(new JettyWebSocketServletContainerInitializer())
@@ -88,7 +91,7 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
      */
     private static JettyWebSocketServerContainer initialize(ServletContextHandler context)
     {
-        WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(context.getServletContext());
+        WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(context.getServer(), context.getServletContext());
         WebSocketMapping mapping = WebSocketMapping.ensureMapping(context.getServletContext(), WebSocketMapping.DEFAULT_KEY);
         JettyWebSocketServerContainer container = JettyWebSocketServerContainer.ensureContainer(context.getServletContext());
 

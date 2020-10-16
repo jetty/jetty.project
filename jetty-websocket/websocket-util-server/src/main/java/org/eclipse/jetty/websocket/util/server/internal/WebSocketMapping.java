@@ -89,7 +89,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
 
         if (mapping == null)
         {
-            mapping = new WebSocketMapping(WebSocketServerComponents.ensureWebSocketComponents(servletContext));
+            mapping = new WebSocketMapping(WebSocketServerComponents.getWebSocketComponents(servletContext));
             servletContext.setAttribute(mappingKey, mapping);
         }
 

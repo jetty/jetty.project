@@ -177,7 +177,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         if (mappingKey != null)
             mapping = WebSocketMapping.ensureMapping(context, mappingKey);
         else
-            mapping = new WebSocketMapping(WebSocketServerComponents.ensureWebSocketComponents(context));
+            mapping = new WebSocketMapping(WebSocketServerComponents.getWebSocketComponents(context));
 
         String max = config.getInitParameter("idleTimeout");
         if (max == null)
