@@ -18,8 +18,9 @@
 
 package org.eclipse.jetty.demos;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -120,8 +121,8 @@ public class ManyHandlers
         gzipHandler.addIncludedMimeTypes("text/html");
 
         // configure request logging
-        File requestLogFile = File.createTempFile("demo", "log");
-        CustomRequestLog ncsaLog = new CustomRequestLog(requestLogFile.getAbsolutePath());
+        Path requestLogFile = Files.createTempFile("demo", "log");
+        CustomRequestLog ncsaLog = new CustomRequestLog(requestLogFile.toString());
         server.setRequestLog(ncsaLog);
 
         // create the handlers list

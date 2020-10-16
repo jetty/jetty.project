@@ -27,6 +27,8 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.Principal;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -72,6 +74,8 @@ import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
@@ -79,6 +83,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,9 +105,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
+@ExtendWith(WorkDirExtension.class)
 public class RequestTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(RequestTest.class);
+    public WorkDir workDir;
     private Server _server;
     private LocalConnector _connector;
     private RequestHandler _handler;
@@ -414,20 +421,15 @@ public class RequestTest
     @Test
     public void testMultiPart() throws Exception
     {
-        final File testTmpDir = File.createTempFile("reqtest", null);
-        if (testTmpDir.exists())
-            testTmpDir.delete();
-        testTmpDir.mkdir();
-        testTmpDir.deleteOnExit();
-        assertTrue(testTmpDir.list().length == 0);
+        Path testTmpDir = workDir.getEmptyPathDir();
 
         // We should have two tmp files after parsing the multipart form.
-        RequestTester tester = (request, response) -> testTmpDir.list().length == 2;
+        RequestTester tester = (request, response) -> Files.list(testTmpDir).count() == 2;
 
         ContextHandler contextHandler = new ContextHandler();
         contextHandler.setContextPath("/foo");
         contextHandler.setResourceBase(".");
-        contextHandler.setHandler(new MultiPartRequestHandler(testTmpDir, tester));
+        contextHandler.setHandler(new MultiPartRequestHandler(testTmpDir.toFile(), tester));
         _server.stop();
         _server.setHandler(contextHandler);
         _server.start();
@@ -462,19 +464,14 @@ public class RequestTest
 
         endPoint.addInput(cleanupRequest);
         assertTrue(endPoint.getResponse().startsWith("HTTP/1.1 200"));
-        assertThat(testTmpDir.list().length, is(0));
+        assertThat("File Count in dir: " + testTmpDir, getFileCount(testTmpDir), is(0L));
     }
 
     @Test
     public void testBadMultiPart() throws Exception
     {
         //a bad multipart where one of the fields has no name
-        final File testTmpDir = File.createTempFile("badmptest", null);
-        if (testTmpDir.exists())
-            testTmpDir.delete();
-        testTmpDir.mkdir();
-        testTmpDir.deleteOnExit();
-        assertTrue(testTmpDir.list().length == 0);
+        Path testTmpDir = workDir.getEmptyPathDir();
 
         ContextHandler contextHandler = new ContextHandler();
         contextHandler.setContextPath("/foo");
@@ -504,7 +501,7 @@ public class RequestTest
             multipart;
 
         LocalEndPoint endPoint = _connector.connect();
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class))
         {
             endPoint.addInput(request);
             assertTrue(endPoint.getResponse().startsWith("HTTP/1.1 500"));
@@ -513,7 +510,7 @@ public class RequestTest
         // Wait for the cleanup of the multipart files.
         assertTimeoutPreemptively(Duration.ofSeconds(5), () ->
         {
-            while (testTmpDir.list().length > 0)
+            while (getFileCount(testTmpDir)  > 0)
             {
                 Thread.yield();
             }
@@ -1811,7 +1808,7 @@ public class RequestTest
         assertNotNull(request.getParameterMap());
         assertEquals(0, request.getParameterMap().size());
     }
-    
+
     @Test
     public void testPushBuilder() throws Exception
     {
@@ -1978,18 +1975,30 @@ public class RequestTest
         assertThat(m.getPathInfo(), is(spec.getPathInfo(uri)));
     }
 
+    private static long getFileCount(Path path)
+    {
+        try
+        {
+            return Files.list(path).count();
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException("Unable to get file list count: " + path, e);
+        }
+    }
+
     interface RequestTester
     {
         boolean check(HttpServletRequest request, HttpServletResponse response) throws IOException;
     }
-    
+
     private class TestRequest extends Request
     {
         public static final String TEST_SESSION_ID = "abc123";
         Response _response = new Response(null, null);
         Cookie c1;
         Cookie c2;
-        
+
         public TestRequest(HttpChannel channel, HttpInput input)
         {
             super(channel, input);
@@ -2122,9 +2131,9 @@ public class RequestTest
 
     private class BadMultiPartRequestHandler extends AbstractHandler
     {
-        File tmpDir;
+        final Path tmpDir;
 
-        public BadMultiPartRequestHandler(File tmpDir)
+        public BadMultiPartRequestHandler(Path tmpDir)
         {
             this.tmpDir = tmpDir;
         }
@@ -2142,7 +2151,7 @@ public class RequestTest
             try
             {
 
-                MultipartConfigElement mpce = new MultipartConfigElement(tmpDir.getAbsolutePath(), -1, -1, 2);
+                MultipartConfigElement mpce = new MultipartConfigElement(tmpDir.toString(), -1, -1, 2);
                 request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
 
                 //We should get an error when we getParams if there was a problem parsing the multipart

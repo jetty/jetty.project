@@ -32,6 +32,8 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -42,6 +44,8 @@ import javax.servlet.http.Part;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -189,7 +193,7 @@ public class MultiPartFormInputStream
             Path p = Path.of(fileName);
             if (!p.isAbsolute())
                 p = _tmpDir.resolve(p);
-            
+
             if (_file == null)
             {
                 _temporary = false;
@@ -220,19 +224,11 @@ public class MultiPartFormInputStream
 
         protected void createFile() throws IOException
         {
-            /*
-             * Some statics just to make the code below easier to understand This get optimized away during the compile anyway
-             */
-            final boolean USER = true;
-            final boolean WORLD = false;
+            Path parent = MultiPartFormInputStream.this._tmpDir;
+            Path tempFile = Files.createTempFile(parent, "MultiPart", "", IO.getUserOnlyFileAttribute(parent));
+            _file = tempFile.toFile();
 
-            _file = Files.createTempFile(MultiPartFormInputStream.this._tmpDir, "MultiPart", "").toFile();
-            _file.setReadable(false, WORLD); // (reset) disable it for everyone first
-            _file.setReadable(true, USER); // enable for user only
-
-            if (_deleteOnExit)
-                _file.deleteOnExit();
-            FileOutputStream fos = new FileOutputStream(_file);
+            OutputStream fos = Files.newOutputStream(tempFile, StandardOpenOption.WRITE);
             BufferedOutputStream bos = new BufferedOutputStream(fos);
 
             if (_size > 0 && _out != null)
@@ -386,7 +382,7 @@ public class MultiPartFormInputStream
                 return;
             }
         }
-        
+
         _in = new BufferedInputStream(in);
     }
 
@@ -822,9 +818,13 @@ public class MultiPartFormInputStream
         }
     }
 
+    /**
+     * @deprecated no replacement provided.
+     */
+    @Deprecated
     public void setDeleteOnExit(boolean deleteOnExit)
     {
-        _deleteOnExit = deleteOnExit;
+        // does nothing.
     }
 
     public void setWriteFilesWithFilenames(boolean writeFilesWithFilenames)
@@ -837,9 +837,13 @@ public class MultiPartFormInputStream
         return _writeFilesWithFilenames;
     }
 
+    /**
+     * @deprecated no replacement provided
+     */
+    @Deprecated
     public boolean isDeleteOnExit()
     {
-        return _deleteOnExit;
+        return false;
     }
 
     private static String value(String nameEqualsValue)
