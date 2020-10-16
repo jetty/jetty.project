@@ -38,8 +38,8 @@ import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.StacklessLogging;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -57,12 +57,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ErrorHandlerTest
 {
-    static StacklessLogging stacklessLogging;
-    static Server server;
-    static LocalConnector connector;
+    StacklessLogging stacklessLogging;
+    Server server;
+    LocalConnector connector;
 
-    @BeforeAll
-    public static void before() throws Exception
+    @BeforeEach
+    public void before() throws Exception
     {
         stacklessLogging = new StacklessLogging(HttpChannel.class);
         server = new Server();
@@ -134,8 +134,8 @@ public class ErrorHandlerTest
         server.start();
     }
 
-    @AfterAll
-    public static void after() throws Exception
+    @AfterEach
+    public void after() throws Exception
     {
         server.stop();
         stacklessLogging.close();
@@ -183,9 +183,19 @@ public class ErrorHandlerTest
                 "\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
+        dump(response);
+
         assertThat("Response status code", response.getStatus(), is(404));
         assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), is(0));
         assertThat("Response Content-Type", response.getField(HttpHeader.CONTENT_TYPE), is(nullValue()));
+    }
+
+    private void dump(HttpTester.Response response)
+    {
+        System.out.println("-------------");
+        System.out.println(response);
+        System.out.println(response.getContent());
+        System.out.println();
     }
 
     @Test
@@ -290,6 +300,8 @@ public class ErrorHandlerTest
                 "\r\n");
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+//        System.out.println("response: " + response);
 
         assertThat("Response status code", response.getStatus(), is(404));
         assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
@@ -453,6 +465,8 @@ public class ErrorHandlerTest
                 "\r\n");
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        System.out.println("response: " + response);
 
         assertThat("Response status code", response.getStatus(), is(500));
         assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
