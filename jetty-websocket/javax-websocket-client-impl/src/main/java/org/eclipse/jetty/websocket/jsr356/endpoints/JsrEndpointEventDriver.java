@@ -100,9 +100,10 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
                     catch (Throwable t)
                     {
                         session.close(t);
+                        return;
                     }
 
-                    inputStream.close();
+                    inputStream.handlerComplete();
                 });
             }
             else
@@ -197,8 +198,7 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
             {
                 @SuppressWarnings("unchecked")
                 MessageHandler.Whole<Reader> handler = (Whole<Reader>)wrapper.getHandler();
-                MessageInputStream inputStream = new MessageInputStream(session);
-                MessageReader reader = new MessageReader(inputStream);
+                MessageReader reader = new MessageReader(session);
                 activeMessage = reader;
                 dispatch(() ->
                 {
@@ -209,9 +209,10 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
                     catch (Throwable t)
                     {
                         session.close(t);
+                        return;
                     }
 
-                    inputStream.close();
+                    reader.handlerComplete();
                 });
             }
             else
