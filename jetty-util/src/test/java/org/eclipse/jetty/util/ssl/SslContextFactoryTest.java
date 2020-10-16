@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.util.ssl;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -233,7 +234,7 @@ public class SslContextFactoryTest
                 cf.setTrustStorePath("/foo");
                 cf.start();
             });
-            assertThat(x.getMessage(), equalTo("/foo is not a valid keystore"));
+            assertThat(x.getMessage(), containsString(File.separator + "foo is not a valid keystore"));
         }
     }
 
