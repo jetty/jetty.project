@@ -18,15 +18,12 @@
 
 package org.eclipse.jetty.server.handler.gzip;
 
-import java.util.zip.Deflater;
-
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.compression.DeflaterPool;
 
 public interface GzipFactory
 {
-    Deflater getDeflater(Request request, long contentLength);
+    DeflaterPool.Entry getDeflaterEntry(Request request, long contentLength);
 
     boolean isMimeTypeGzipable(String mimetype);
-
-    void recycle(Deflater deflater);
 }

@@ -18,19 +18,17 @@
 
 package org.eclipse.jetty.util.compression;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.io.Closeable;
 
+import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
 public abstract class CompressionPool<T> extends AbstractLifeCycle
 {
-    public static final int INFINITE_CAPACITY = -1;
+    public static final int DEFAULT_CAPACITY = 1024;
 
-    private final Queue<T> _pool;
-    private final AtomicInteger _numObjects = new AtomicInteger(0);
     private int _capacity;
+    private Pool<Entry> _pool;
 
     /**
      * Create a Pool of {@link T} instances.
@@ -44,7 +42,6 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
     public CompressionPool(int capacity)
     {
         _capacity = capacity;
-        _pool = new ConcurrentLinkedQueue<>();
     }
 
     public int getCapacity()
@@ -54,10 +51,12 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
 
     public void setCapacity(int capacity)
     {
+        if (isStarted())
+            throw new IllegalStateException("Already Started");
         _capacity = capacity;
     }
 
-    protected abstract T newObject();
+    protected abstract T newPooled();
 
     protected abstract void end(T object);
 
@@ -66,73 +65,92 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
     /**
      * @return Object taken from the pool if it is not empty or a newly created Object
      */
-    public T acquire()
+    public Entry acquire()
     {
-        T object;
-
-        if (_capacity == 0)
-            object = newObject();
-        else
+        Entry entry = null;
+        if (_pool != null)
         {
-            object = _pool.poll();
-            if (object == null)
-                object = newObject();
-            else if (_capacity > 0)
-                _numObjects.decrementAndGet();
+            Pool<Entry>.Entry acquiredEntry = _pool.acquire(e -> new Entry(newPooled(), e));
+            if (acquiredEntry != null)
+                entry = acquiredEntry.getPooled();
         }
 
-        return object;
+        return (entry == null) ? new Entry(newPooled()) : entry;
     }
 
     /**
-     * @param object returns this Object to the pool or calls {@link #end(Object)} if the pool is full.
+     * @param entry returns this Object to the pool or calls {@link #end(Object)} if the pool is full.
      */
-    public void release(T object)
+    public void release(Entry entry)
     {
-        if (object == null)
-            return;
-
-        if (_capacity == 0 || !isRunning())
-        {
-            end(object);
-        }
-        else if (_capacity < 0)
-        {
-            reset(object);
-            _pool.add(object);
-        }
-        else
-        {
-            while (true)
-            {
-                int d = _numObjects.get();
-
-                if (d >= _capacity)
-                {
-                    end(object);
-                    break;
-                }
-
-                if (_numObjects.compareAndSet(d, d + 1))
-                {
-                    reset(object);
-                    _pool.add(object);
-                    break;
-                }
-            }
-        }
+        entry.release();
     }
 
     @Override
-    public void doStop()
+    protected void doStart() throws Exception
     {
-        T t = _pool.poll();
-        while (t != null)
+        if (_capacity > 0)
+            _pool = new Pool<>(Pool.StrategyType.RANDOM, _capacity, true);
+        super.doStart();
+    }
+
+    @Override
+    public void doStop() throws Exception
+    {
+        if (_pool != null)
         {
-            end(t);
-            t = _pool.poll();
+            _pool.close();
+            _pool = null;
         }
-        _numObjects.set(0);
+        super.doStop();
+    }
+
+    public class Entry implements Closeable
+    {
+        private final T _value;
+        private final Pool<Entry>.Entry _entry;
+
+        Entry(T value)
+        {
+            this(value, null);
+        }
+
+        Entry(T value, Pool<Entry>.Entry entry)
+        {
+            _value = value;
+            _entry = entry;
+        }
+
+        public T get()
+        {
+            return _value;
+        }
+
+        public void release()
+        {
+            // Reset the value for the next usage.
+            reset(_value);
+
+            if (_entry != null)
+            {
+                // If release return false, the entry should be removed and the object should be disposed.
+                if (!_pool.release(_entry))
+                {
+                    if (_pool.remove(_entry))
+                        close();
+                }
+            }
+            else
+            {
+                close();
+            }
+        }
+
+        @Override
+        public void close()
+        {
+            end(_value);
+        }
     }
 
     @Override
@@ -142,7 +160,7 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
             getClass().getSimpleName(),
             hashCode(),
             getState(),
-            _pool.size(),
-            _capacity < 0 ? "UNLIMITED" : _capacity);
+            (_pool == null) ? -1 : _pool.size(),
+            _capacity);
     }
 }

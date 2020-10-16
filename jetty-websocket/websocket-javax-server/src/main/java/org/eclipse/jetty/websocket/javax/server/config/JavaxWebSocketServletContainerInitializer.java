@@ -148,7 +148,7 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
         JavaxWebSocketServerContainer serverContainer = JavaxWebSocketServerContainer.getContainer(context.getServletContext());
         if (serverContainer == null)
         {
-            WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(context.getServletContext());
+            WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(context.getServer(), context.getServletContext());
             FilterHolder filterHolder = WebSocketUpgradeFilter.ensureFilter(context.getServletContext());
             WebSocketMapping mapping = WebSocketMapping.ensureMapping(context.getServletContext(), WebSocketMapping.DEFAULT_KEY);
             serverContainer = JavaxWebSocketServerContainer.ensureContainer(context.getServletContext());

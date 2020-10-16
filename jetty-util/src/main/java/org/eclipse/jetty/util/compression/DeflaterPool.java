@@ -20,6 +20,9 @@ package org.eclipse.jetty.util.compression;
 
 import java.util.zip.Deflater;
 
+import org.eclipse.jetty.util.component.Container;
+import org.eclipse.jetty.util.thread.ThreadPool;
+
 public class DeflaterPool extends CompressionPool<Deflater>
 {
     private final int compressionLevel;
@@ -44,7 +47,7 @@ public class DeflaterPool extends CompressionPool<Deflater>
     }
 
     @Override
-    protected Deflater newObject()
+    protected Deflater newPooled()
     {
         return new Deflater(compressionLevel, nowrap);
     }
@@ -59,5 +62,21 @@ public class DeflaterPool extends CompressionPool<Deflater>
     protected void reset(Deflater deflater)
     {
         deflater.reset();
+    }
+
+    public static DeflaterPool ensurePool(Container container)
+    {
+        DeflaterPool pool = container.getBean(DeflaterPool.class);
+        if (pool != null)
+            return pool;
+
+        int capacity = CompressionPool.DEFAULT_CAPACITY;
+        ThreadPool.SizedThreadPool threadPool = container.getBean(ThreadPool.SizedThreadPool.class);
+        if (threadPool != null)
+            capacity = threadPool.getMaxThreads();
+
+        pool = new DeflaterPool(capacity, Deflater.DEFAULT_COMPRESSION, true);
+        container.addBean(pool);
+        return pool;
     }
 }
