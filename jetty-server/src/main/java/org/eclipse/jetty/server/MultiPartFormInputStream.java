@@ -44,7 +44,6 @@ import javax.servlet.http.Part;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
@@ -225,7 +224,7 @@ public class MultiPartFormInputStream
         protected void createFile() throws IOException
         {
             Path parent = MultiPartFormInputStream.this._tmpDir;
-            Path tempFile = Files.createTempFile(parent, "MultiPart", "", IO.getUserOnlyFileAttribute(parent));
+            Path tempFile = Files.createTempFile(parent, "MultiPart", "");
             _file = tempFile.toFile();
 
             OutputStream fos = Files.newOutputStream(tempFile, StandardOpenOption.WRITE);
