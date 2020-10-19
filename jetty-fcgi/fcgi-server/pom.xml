@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.fcgi</groupId>
     <artifactId>fcgi-parent</artifactId>
-    <version>9.3.29-SNAPSHOT</version>
+    <version>9.3.29.v20201019</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
