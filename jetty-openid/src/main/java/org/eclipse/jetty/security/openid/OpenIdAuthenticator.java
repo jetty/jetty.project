@@ -87,6 +87,12 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
     public OpenIdAuthenticator()
     {
+        this(null, J_SECURITY_CHECK ,null);
+    }
+
+    public OpenIdAuthenticator(OpenIdConfiguration configuration)
+    {
+        this(configuration, J_SECURITY_CHECK, null);
     }
 
     public OpenIdAuthenticator(OpenIdConfiguration configuration, String errorPage)
@@ -96,8 +102,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
     public OpenIdAuthenticator(OpenIdConfiguration configuration, String redirectPath, String errorPage)
     {
-        _redirectPath = redirectPath;
         _configuration = configuration;
+        _redirectPath = redirectPath;
         if (errorPage != null)
             setErrorPage(errorPage);
     }
@@ -105,23 +111,23 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     @Override
     public void setConfiguration(AuthConfiguration configuration)
     {
-        super.setConfiguration(configuration);
+        if (_configuration == null)
+        {
+            LoginService loginService = configuration.getLoginService();
+            if (!(loginService instanceof OpenIdLoginService))
+                throw new IllegalArgumentException("invalid LoginService " + loginService);
+            this._configuration = ((OpenIdLoginService)loginService).getConfiguration();
+        }
+
+        String redirectPath = configuration.getInitParameter(REDIRECT_PATH);
+        if (redirectPath != null)
+            _redirectPath = redirectPath;
 
         String error = configuration.getInitParameter(ERROR_PAGE);
         if (error != null)
             setErrorPage(error);
 
-        String redirectPath = configuration.getInitParameter(REDIRECT_PATH);
-        if (redirectPath != null)
-            setErrorPage(error);
-
-        if (_configuration != null)
-            return;
-
-        LoginService loginService = configuration.getLoginService();
-        if (!(loginService instanceof OpenIdLoginService))
-            throw new IllegalArgumentException("invalid LoginService");
-        this._configuration = ((OpenIdLoginService)loginService).getConfiguration();
+        super.setConfiguration(new OpenIdAuthConfiguration(_configuration, configuration));
     }
 
     @Override

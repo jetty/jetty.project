@@ -33,7 +33,20 @@ public class OpenIdAuthenticatorFactory implements Authenticator.Factory
     {
         String auth = configuration.getAuthMethod();
         if (Constraint.__OPENID_AUTH.equalsIgnoreCase(auth))
-            return new OpenIdAuthenticator();
+        {
+            // If LoginService is an OpenIdLoginService it already contains the configuration and will be obtained in setConfiguration();
+            if (loginService instanceof OpenIdLoginService)
+                return new OpenIdAuthenticator();
+
+            // Otherwise we should find an OpenIdConfiguration for this realm on the Server.
+            String realmName = configuration.getRealmName();
+            OpenIdConfiguration openIdConfiguration = server.getBeans(OpenIdConfiguration.class).stream()
+                .filter(c -> c.getIssuer().equals(realmName))
+                .findAny()
+                .orElseThrow(() -> new IllegalStateException("No OpenIdConfiguration found for realm \"" + realmName + "\""));
+            return new OpenIdAuthenticator(openIdConfiguration);
+        }
+
         return null;
     }
 }

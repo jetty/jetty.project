@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.security.openid;
 
+import java.util.Objects;
 import javax.security.auth.Subject;
 import javax.servlet.ServletRequest;
 
@@ -58,7 +59,7 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
      */
     public OpenIdLoginService(OpenIdConfiguration configuration, LoginService loginService)
     {
-        this.configuration = configuration;
+        this.configuration = Objects.requireNonNull(configuration);
         this.loginService = loginService;
         addBean(this.configuration);
         addBean(this.loginService);

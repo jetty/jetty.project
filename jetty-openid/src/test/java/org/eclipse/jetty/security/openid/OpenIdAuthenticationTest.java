@@ -28,7 +28,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.server.Server;
@@ -93,20 +92,16 @@ public class OpenIdAuthenticationTest
 
         // security handler
         ConstraintSecurityHandler securityHandler = new ConstraintSecurityHandler();
-        securityHandler.setRealmName("OpenID Connect Authentication");
+        securityHandler.setAuthMethod(Constraint.__OPENID_AUTH);
+        securityHandler.setRealmName(openIdProvider.getProvider());
         securityHandler.addConstraintMapping(profileMapping);
         securityHandler.addConstraintMapping(loginMapping);
         securityHandler.addConstraintMapping(adminMapping);
 
         // Authentication using local OIDC Provider
-        OpenIdConfiguration configuration = new OpenIdConfiguration(openIdProvider.getProvider(), CLIENT_ID, CLIENT_SECRET);
-
-        // Configure OpenIdLoginService optionally providing a base LoginService to provide user roles
-        OpenIdLoginService loginService = new OpenIdLoginService(configuration);//, hashLoginService);
-        securityHandler.setLoginService(loginService);
-
-        Authenticator authenticator = new OpenIdAuthenticator(configuration, "/redirect_path", "/error");
-        securityHandler.setAuthenticator(authenticator);
+        server.addBean(new OpenIdConfiguration(openIdProvider.getProvider(), CLIENT_ID, CLIENT_SECRET));
+        securityHandler.setInitParameter(OpenIdAuthenticator.REDIRECT_PATH, "/redirect_path");
+        securityHandler.setInitParameter(OpenIdAuthenticator.ERROR_PAGE, "/error");
         context.setSecurityHandler(securityHandler);
 
         server.start();
