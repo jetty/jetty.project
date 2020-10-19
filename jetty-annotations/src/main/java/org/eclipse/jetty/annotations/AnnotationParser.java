@@ -70,15 +70,15 @@ import org.slf4j.LoggerFactory;
 public class AnnotationParser
 {
     private static final Logger LOG = LoggerFactory.getLogger(AnnotationParser.class);
-    protected static int ASM_OPCODE_VERSION = Opcodes.ASM8; //compatibility of api
-    protected static String ASM_OPCODE_VERSION_STR = "ASM8";
+    private static final int ASM_OPCODE_VERSION = Opcodes.ASM9; //compatibility of api
+    private static final String ASM_OPCODE_VERSION_STR = "ASM9";
 
     /**
      * Map of classnames scanned and the first location from which scan occurred
      */
     protected Map<String, Resource> _parsedClassNames = new ConcurrentHashMap<>();
     private final int _javaPlatform;
-    private int _asmVersion;
+    private final int _asmVersion;
 
     /**
      * Determine the runtime version of asm.
@@ -125,6 +125,11 @@ public class AnnotationParser
                     case 8:
                     {
                         asmVersion = Opcodes.ASM8;
+                        break;
+                    }
+                    case 9:
+                    {
+                        asmVersion = Opcodes.ASM9;
                         break;
                     }
                     default:
@@ -183,7 +188,7 @@ public class AnnotationParser
     /**
      * Immutable information gathered by parsing class header.
      */
-    public class ClassInfo
+    public static class ClassInfo
     {
         final Resource _containingResource;
         final String _className;
@@ -244,7 +249,7 @@ public class AnnotationParser
     /**
      * Immutable information gathered by parsing a method on a class.
      */
-    public class MethodInfo
+    public static class MethodInfo
     {
         final ClassInfo _classInfo;
         final String _methodName;
@@ -298,7 +303,7 @@ public class AnnotationParser
     /**
      * Immutable information gathered by parsing a field on a class.
      */
-    public class FieldInfo
+    public static class FieldInfo
     {
         final ClassInfo _classInfo;
         final String _fieldName;
@@ -406,7 +411,7 @@ public class AnnotationParser
     /**
      * ASM Visitor for parsing a method. We are only interested in the annotations on methods.
      */
-    public class MyMethodVisitor extends MethodVisitor
+    public static class MyMethodVisitor extends MethodVisitor
     {
         final MethodInfo _mi;
         final Set<? extends Handler> _handlers;
@@ -444,7 +449,7 @@ public class AnnotationParser
      * An ASM visitor for parsing Fields.
      * We are only interested in visiting annotations on Fields.
      */
-    public class MyFieldVisitor extends FieldVisitor
+    public static class MyFieldVisitor extends FieldVisitor
     {
         final FieldInfo _fieldInfo;
         final Set<? extends Handler> _handlers;
@@ -482,7 +487,7 @@ public class AnnotationParser
     /**
      * ASM visitor for a class.
      */
-    public class MyClassVisitor extends ClassVisitor
+    public static class MyClassVisitor extends ClassVisitor
     {
         int _asmVersion;
         final Resource _containingResource;
