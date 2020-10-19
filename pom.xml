@@ -29,7 +29,7 @@
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <conscrypt.version>2.5.1</conscrypt.version>
     <asm.version>9.0</asm.version>
-    <jmh.version>1.21</jmh.version>
+    <jmh.version>1.26</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <tycho-version>1.4.0</tycho-version>
     <junit.version>5.7.0</junit.version>
