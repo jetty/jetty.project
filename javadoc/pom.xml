@@ -64,10 +64,12 @@
               <rules>
                 <requireUpperBoundDeps>
                   <excludes>
-                    <exclude>com.google.guava:guava</exclude>
                     <exclude>com.google.code.findbugs:jsr305</exclude>
-                    <exclude>org.codehaus.plexus:plexus-utils</exclude>
+                    <exclude>com.google.code.gson:gson</exclude>
+                    <exclude>com.google.guava:guava</exclude>
+                    <exclude>com.google.protobuf:protobuf-java</exclude>
                     <exclude>org.codehaus.plexus:plexus-interpolation</exclude>
+                    <exclude>org.codehaus.plexus:plexus-utils</exclude>
                   </excludes>
                 </requireUpperBoundDeps>
               </rules>
