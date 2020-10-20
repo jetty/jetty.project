@@ -145,7 +145,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
         }
         catch (Exception e)
         {
-            throw new IllegalArgumentException("invalid identity provider", e);
+            throw new IllegalArgumentException("invalid identity provider " + provider, e);
         }
     }
 

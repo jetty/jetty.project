@@ -87,7 +87,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
     public OpenIdAuthenticator()
     {
-        this(null, J_SECURITY_CHECK ,null);
+        this(null, J_SECURITY_CHECK, null);
     }
 
     public OpenIdAuthenticator(OpenIdConfiguration configuration)

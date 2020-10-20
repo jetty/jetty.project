@@ -19,6 +19,7 @@
 package org.eclipse.jetty.security.openid;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,7 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
+import java.util.Objects;
 import java.util.UUID;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -53,17 +54,17 @@ public class OpenIdProvider extends ContainerLifeCycle
     protected final String clientId;
     protected final String clientSecret;
     protected final List<String> redirectUris = new ArrayList<>();
+    private final ServerConnector connector;
 
     private String provider;
-    private Server server;
-    private ServerConnector connector;
+    private User preAuthedUser;
 
     public OpenIdProvider(String clientId, String clientSecret)
     {
         this.clientId = clientId;
         this.clientSecret = clientSecret;
 
-        server = new Server();
+        Server server = new Server();
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
@@ -84,6 +85,11 @@ public class OpenIdProvider extends ContainerLifeCycle
         provider = "http://localhost:" + connector.getLocalPort();
     }
 
+    public void setUser(User user)
+    {
+        this.preAuthedUser = user;
+    }
+
     public String getProvider()
     {
         if (!isStarted())
@@ -99,7 +105,7 @@ public class OpenIdProvider extends ContainerLifeCycle
     public class OpenIdAuthEndpoint extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
         {
             if (!clientId.equals(req.getParameter("client_id")))
             {
@@ -135,16 +141,71 @@ public class OpenIdProvider extends ContainerLifeCycle
                 return;
             }
 
+            if (preAuthedUser == null)
+            {
+                PrintWriter writer = resp.getWriter();
+                resp.setContentType("text/html");
+                writer.println("<h2>Login to OpenID Connect Provider</h2>");
+                writer.println("<form action=\"" + AUTH_PATH + "\" method=\"post\">");
+                writer.println("<input type=\"text\" placeholder=\"Username\" name=\"username\" required>");
+                writer.println("<input type=\"hidden\" name=\"redirectUri\" value=\"" + redirectUri + "\">");
+                writer.println("<input type=\"hidden\" name=\"state\" value=\"" + state + "\">");
+                writer.println("<input type=\"submit\">");
+                writer.println("</form>");
+            }
+            else
+            {
+                redirectUser(req, preAuthedUser, redirectUri, state);
+            }
+        }
+
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException
+        {
+            String redirectUri = req.getParameter("redirectUri");
+            if (!redirectUris.contains(redirectUri))
+            {
+                resp.sendError(HttpServletResponse.SC_FORBIDDEN, "invalid redirect_uri");
+                return;
+            }
+
+            String state = req.getParameter("state");
+            if (state == null)
+            {
+                resp.sendError(HttpServletResponse.SC_FORBIDDEN, "no state param");
+                return;
+            }
+
+            String username = req.getParameter("username");
+            if (username == null)
+            {
+                resp.sendError(HttpServletResponse.SC_FORBIDDEN, "no username");
+                return;
+            }
+
+            User user = new User(username);
+            redirectUser(req, user, redirectUri, state);
+        }
+
+        public void redirectUser(HttpServletRequest request, User user, String redirectUri, String state) throws IOException
+        {
             String authCode = UUID.randomUUID().toString().replace("-", "");
-            User user = new User(123456789, "Alice");
             issuedAuthCodes.put(authCode, user);
 
-            final Request baseRequest = Request.getBaseRequest(req);
-            final Response baseResponse = baseRequest.getResponse();
-            redirectUri += "?code=" + authCode + "&state=" + state;
-            int redirectCode = (baseRequest.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
-                ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
-            baseResponse.sendRedirect(redirectCode, resp.encodeRedirectURL(redirectUri));
+            try
+            {
+                final Request baseRequest = Objects.requireNonNull(Request.getBaseRequest(request));
+                final Response baseResponse = baseRequest.getResponse();
+                redirectUri += "?code=" + authCode + "&state=" + state;
+                int redirectCode = (baseRequest.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
+                    ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
+                baseResponse.sendRedirect(redirectCode, baseResponse.encodeRedirectURL(redirectUri));
+            }
+            catch (Throwable t)
+            {
+                issuedAuthCodes.remove(authCode);
+                throw t;
+            }
         }
     }
 
@@ -176,7 +237,7 @@ public class OpenIdProvider extends ContainerLifeCycle
             long expiry = System.currentTimeMillis() + Duration.ofMinutes(10).toMillis();
             String response = "{" +
                 "\"access_token\": \"" + accessToken + "\"," +
-                "\"id_token\": \"" + JwtEncoder.encode(user.getIdToken()) + "\"," +
+                "\"id_token\": \"" + JwtEncoder.encode(user.getIdToken(provider, clientId)) + "\"," +
                 "\"expires_in\": " + expiry + "," +
                 "\"token_type\": \"Bearer\"" +
                 "}";
@@ -189,7 +250,7 @@ public class OpenIdProvider extends ContainerLifeCycle
     public class OpenIdConfigServlet extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
         {
             String discoveryDocument = "{" +
                 "\"issuer\": \"" + provider + "\"," +
@@ -201,14 +262,14 @@ public class OpenIdProvider extends ContainerLifeCycle
         }
     }
 
-    public class User
+    public static class User
     {
-        private long subject;
-        private String name;
+        private final long subject;
+        private final String name;
 
         public User(String name)
         {
-            this(new Random().nextLong(), name);
+            this(UUID.nameUUIDFromBytes(name.getBytes()).getMostSignificantBits(), name);
         }
 
         public User(long subject, String name)
@@ -222,7 +283,12 @@ public class OpenIdProvider extends ContainerLifeCycle
             return name;
         }
 
-        public String getIdToken()
+        public long getSubject()
+        {
+            return subject;
+        }
+
+        public String getIdToken(String provider, String clientId)
         {
             long expiry = System.currentTimeMillis() + Duration.ofMinutes(1).toMillis();
             return JwtEncoder.createIdToken(provider, clientId, Long.toString(subject), name, expiry);
