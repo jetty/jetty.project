@@ -382,6 +382,27 @@ public class IO
     }
 
     /**
+     * Test if directory is empty.
+     *
+     * @param dir the directory
+     * @return true if directory is null, doesn't exist, or has no content.
+     * false if not a directory, or has contents
+     */
+    public static boolean isEmptyDir(File dir)
+    {
+        if (dir == null)
+            return true;
+        if (!dir.exists())
+            return true;
+        if (!dir.isDirectory())
+            return false;
+        String[] list = dir.list();
+        if (list == null)
+            return true;
+        return list.length <= 0;
+    }
+
+    /**
      * Closes an arbitrary closable, and logs exceptions at ignore level
      *
      * @param closeable the closeable to close
