@@ -107,7 +107,10 @@ public class AnnotationParser
         int asmFieldId = asmVersion.get();
         try
         {
-            return (int)Opcodes.class.getField("ASM" + asmFieldId).get(null);
+            String fieldName = "ASM" + asmFieldId;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Using ASM API from {}.{}", Opcodes.class.getName(), fieldName);
+            return (int)Opcodes.class.getField(fieldName).get(null);
         }
         catch (Throwable e)
         {
