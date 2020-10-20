@@ -361,10 +361,13 @@ public class IO
      * This delete will recursively delete directories - BE CAREFUL
      *
      * @param file The file (or directory) to be deleted.
-     * @return true if anything was deleted. (note: this does not mean that all content in a directory was deleted)
+     * @return true if file was deleted, or directory referenced was deleted.
+     * false if file doesn't exist, or was null.
      */
     public static boolean delete(File file)
     {
+        if (file == null)
+            return false;
         if (!file.exists())
             return false;
         if (file.isDirectory())
