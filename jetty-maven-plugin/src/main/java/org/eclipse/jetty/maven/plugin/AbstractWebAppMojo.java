@@ -792,7 +792,13 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
             File target = new File(project.getBuild().getDirectory());
             File tmp = new File(target,"tmp");
             if (!tmp.exists())
-                tmp.mkdirs();            
+            {
+                if (!tmp.mkdirs())
+                {
+                    throw new MojoFailureException("Unable to create temp directory: " + tmp);
+                }
+            }
+
             webApp.setTempDirectory(tmp);
         }
 

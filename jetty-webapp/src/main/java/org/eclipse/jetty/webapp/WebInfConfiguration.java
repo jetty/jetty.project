@@ -84,10 +84,12 @@ public class WebInfConfiguration extends AbstractConfiguration
     @Override
     public void deconfigure(WebAppContext context) throws Exception
     {
-        //if we're not persisting the temp dir contents delete it
-        if (!context.isPersistTempDirectory())
+        File tempDirectory = context.getTempDirectory();
+
+        // if we're not persisting the temp dir contents delete it
+        if (!context.isPersistTempDirectory() && !IO.isEmptyDir(tempDirectory))
         {
-            IO.delete(context.getTempDirectory());
+            IO.delete(tempDirectory);
         }
 
         //if it wasn't explicitly configured by the user, then unset it
@@ -231,13 +233,15 @@ public class WebInfConfiguration extends AbstractConfiguration
             //if it is to be persisted, make sure it will be the same name
             //by not using File.createTempFile, which appends random digits
             tmpDir = new File(parent, temp);
+            configureTempDirectory(tmpDir, context);
         }
         else
         {
-            //ensure file will always be unique by appending random digits
+            // ensure dir will always be unique by having classlib generate random path name
             tmpDir = Files.createTempDirectory(parent.toPath(), temp).toFile();
+            tmpDir.deleteOnExit();
+            ensureTempDirUsable(tmpDir);
         }
-        configureTempDirectory(tmpDir, context);
 
         if (LOG.isDebugEnabled())
             LOG.debug("Set temp dir {}", tmpDir);
@@ -249,21 +253,30 @@ public class WebInfConfiguration extends AbstractConfiguration
         if (dir == null)
             throw new IllegalArgumentException("Null temp dir");
 
-        //if dir exists and we don't want it persisted, delete it
-        if (dir.exists() && !context.isPersistTempDirectory())
+        // if dir exists and we don't want it persisted, delete it
+        if (!context.isPersistTempDirectory() && dir.exists() && !IO.delete(dir))
         {
-            if (!IO.delete(dir))
-                throw new IllegalStateException("Failed to delete temp dir " + dir);
+            throw new IllegalStateException("Failed to delete temp dir " + dir);
         }
 
-        //if it doesn't exist make it
+        // if it doesn't exist make it
         if (!dir.exists())
-            dir.mkdirs();
+        {
+            if (!dir.mkdirs())
+            {
+                throw new IllegalStateException("Unable to create temp dir " + dir);
+            }
+        }
 
         if (!context.isPersistTempDirectory())
             dir.deleteOnExit();
 
-        //is it useable
+        ensureTempDirUsable(dir);
+    }
+
+    private void ensureTempDirUsable(File dir)
+    {
+        // is it useable
         if (!dir.canWrite() || !dir.isDirectory())
             throw new IllegalStateException("Temp dir " + dir + " not useable: writeable=" + dir.canWrite() + ", dir=" + dir.isDirectory());
     }
