@@ -355,7 +355,7 @@ public class WebInfConfiguration extends AbstractConfiguration
     public void deconfigure(WebAppContext context) throws Exception
     {
         //if we're not persisting the temp dir contents delete it
-        if (!context.isPersistTempDirectory())
+        if (!context.isPersistTempDirectory() && context.getTempDirectory() != null && context.getTempDirectory().exists())
         {
             IO.delete(context.getTempDirectory());
         }
@@ -522,21 +522,16 @@ public class WebInfConfiguration extends AbstractConfiguration
         if (dir == null)
             throw new IllegalArgumentException("Null temp dir");
 
-        //if dir exists and we don't want it persisted, delete it
-        if (dir.exists() && !context.isPersistTempDirectory())
+        // if it doesn't exist make it
+        if (!dir.exists())
         {
-            if (!IO.delete(dir))
-                throw new IllegalStateException("Failed to delete temp dir " + dir);
+            if (!dir.mkdirs())
+            {
+                throw new IllegalStateException("Unable to create temp dir " + dir);
+            }
         }
 
-        //if it doesn't exist make it
-        if (!dir.exists())
-            dir.mkdirs();
-
-        if (!context.isPersistTempDirectory())
-            dir.deleteOnExit();
-
-        //is it useable
+        // is it useable
         if (!dir.canWrite() || !dir.isDirectory())
             throw new IllegalStateException("Temp dir " + dir + " not useable: writeable=" + dir.canWrite() + ", dir=" + dir.isDirectory());
     }
