@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -47,6 +48,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 /**
  * AnnotationParser
@@ -81,31 +83,36 @@ public class AnnotationParser
     /**
      * Determine the runtime version of asm.
      *
-     * @return the org.objectweb.asm.Opcode matching the runtime version of asm.
+     * @return the {@link org.objectweb.asm.Opcodes} ASM value matching the runtime version of asm.
      */
     private static int asmVersion()
     {
-        // We need to search for the highest known ASM version.
-        // If we run with a lower than known ASM version, then if run on a JVM with new language features
-        // we will get UnsupportedOperationsExceptions, even if the version of ASM is updated to support them.
-        // If we run with a higher than known ASM version, then we will get a unknown version exception.
-        // So we need the Goldilocks version!
-        int asmVersion = 7;
-        while (true)
+        // Find the highest available ASM version on the runtime/classpath, because
+        // if we run with a lower than available ASM version, against a class with
+        // new language features we'll get an UnsupportedOperationException, even if
+        // the ASM version supports the new language features.
+        // Also, if we run with a higher than available ASM version, we'll get
+        // an IllegalArgumentException from org.objectweb.asm.ClassVisitor.
+        // So must find exactly the maximum ASM api version available.
+
+        Optional<Integer> asmVersion = Arrays.stream(Opcodes.class.getFields()).sequential()
+            .filter((f) -> f.getName().matches("ASM[0-9]+"))
+            .map((f) -> f.getName().substring(3))
+            .map(Integer::parseInt)
+            .max(Integer::compareTo);
+
+        if (!asmVersion.isPresent())
+            throw new IllegalStateException("Invalid " + Opcodes.class.getName());
+
+        int asmFieldId = asmVersion.get();
+        try
         {
-            try
-            {
-                int nextVersion = asmVersion + 1;
-                new ClassVisitor(nextVersion << 16, null)
-                {};
-                asmVersion = nextVersion;
-            }
-            catch (Throwable th)
-            {
-                break;
-            }
+            return (int)Opcodes.class.getField("ASM" + asmFieldId).get(null);
         }
-        return asmVersion << 16;
+        catch (Throwable e)
+        {
+            throw new IllegalStateException(e);
+        }
     }
 
     /**
