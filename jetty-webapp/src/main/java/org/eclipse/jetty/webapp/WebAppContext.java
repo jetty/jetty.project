@@ -85,7 +85,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 {
     static final Logger LOG = Log.getLogger(WebAppContext.class);
 
-    public static final String TEMPDIR = "javax.servlet.context.tempdir";
+    public static final String TEMPDIR = ServletContext.TEMPDIR;
     public static final String BASETEMPDIR = "org.eclipse.jetty.webapp.basetempdir";
     public static final String WEB_DEFAULTS_XML = "org/eclipse/jetty/webapp/webdefault.xml";
     public static final String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
