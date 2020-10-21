@@ -1,4 +1,25 @@
-jetty-10.0.0-SNAPSHOT
+jetty-10.0.0.beta3 - 21 October 2020
+ + 5022 Cleanup ServletHandler, specifically with respect to making filter
+   chains more extensible
+ + 5287 CompressionPools should use the new jetty-util Pool class
+ + 5360 demo-spec module incorrectly depends on demo-jndi
+ + 5368 WebSocket text event execute in same thread as running binary event and
+   destroy Threadlocal
+ + 5378 Filter/Servlet/Listener Holders are not started if added during
+   STARTING state.
+ + 5379 Better handling for wrong SNI
+ + 5394 Quickstart does not inject/decorate objects
+ + 5401 Move jetty-http-tools under the project root
+ + 5409 HttpClient fails intermittently with "Invalid response state TRANSIENT"
+ + 5417 Badly configured HttpConfiguration.securePort can lead to wrong port
+   produced by ForwardedHeader
+ + 5443 Request without Host header fails with NullPointerException in
+   ForwardedRequestCustomizer
+ + 5448 Request.isSecure() returns false for `https` schemes in Jetty 10
+ + 5451 Improve Working Directory creation
+ + 5454 Request error context is not reset
+ + 5475 Update to spifly 1.3.2 and asm 9
+ + 5480 NPE from WebInfConfiguration.deconfigure during WebAppContext shutdown 
 
 jetty-10.0.0.beta2 - 02 October 2020
  + 1337 MultiPart Part.write(String fileName) - Write method used unexpected
@@ -40,7 +61,7 @@ jetty-10.0.0.beta2 - 02 October 2020
    be empty string, but is `"/"`
  + 5064 NotSerializableException for OpenIdConfiguration
  + 5069 HttpClientTimeoutTests can occasionally fail due to unreachable network
- + 5079 :authority header for IPv6 address not having square brackets 
+ + 5079 authority header for IPv6 address not having square brackets
  + 5081 Review HouseKeeper locking
  + 5083 Convert synchronized usages to AutoLock
  + 5096 using JettyWebSocketServlet without having a WebSocketUpgradeFilter
