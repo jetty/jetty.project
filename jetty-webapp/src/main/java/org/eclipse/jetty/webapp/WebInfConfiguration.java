@@ -357,7 +357,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         File tempDirectory = context.getTempDirectory();
 
         // if we're not persisting the temp dir contents delete it
-        if (!context.isPersistTempDirectory() && !IO.isEmptyDir(tempDirectory))
+        if (!context.isPersistTempDirectory())
         {
             IO.delete(tempDirectory);
         }
