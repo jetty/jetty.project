@@ -17,8 +17,14 @@
         <!-- we'll build up shell scripts with execute in separate file-set -->
         <exclude>bin/*.sh</exclude>
       </excludes>
-      <fileMode>0400</fileMode>
-      <directoryMode>0700</directoryMode>
+      <!-- The archive is generated with the uid / gid of the user that
+           built the jetty release.  which is highly unlikely to
+           exist on the target machines that unpack this tarball.
+           We set the user / group / other to have read-only access
+           to files, and read-execute access to directories
+           in the unpacked contents. -->
+      <fileMode>0444</fileMode>
+      <directoryMode>0755</directoryMode>
     </fileSet>
     <fileSet>
       <directory>${assembly-directory}</directory>
@@ -26,7 +32,8 @@
       <includes>
         <include>bin/*.sh</include>
       </includes>
-      <fileMode>0500</fileMode>
+      <!-- Set read-execute for shell scripts -->
+      <fileMode>0555</fileMode>
     </fileSet>
   </fileSets>
 </assembly>
