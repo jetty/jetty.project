@@ -1505,6 +1505,12 @@ public class StartArgs
             {
                 JavaVersion ver = JavaVersion.parse(value);
                 properties.setProperty("java.version.platform", Integer.toString(ver.getPlatform()), source);
+
+                // features built into java.
+                properties.setProperty("java.feature.alpn", Boolean.toString(ver.getPlatform() >= 9), source);
+                properties.setProperty("java.feature.jpms", Boolean.toString(ver.getPlatform() >= 9), source);
+                properties.setProperty("java.feature.loom", Boolean.toString(ver.getPlatform() >= 16), source);
+
                 // @deprecated - below will be removed in Jetty 10.x
                 properties.setProperty("java.version.major", Integer.toString(ver.getMajor()), "Deprecated");
                 properties.setProperty("java.version.minor", Integer.toString(ver.getMinor()), "Deprecated");
