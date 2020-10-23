@@ -43,9 +43,13 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class OpenIdProvider extends ContainerLifeCycle
 {
+    private static final Logger LOG = Log.getLogger(OpenIdProvider.class);
+
     private static final String CONFIG_PATH = "/.well-known/openid-configuration";
     private static final String AUTH_PATH = "/auth";
     private static final String TOKEN_PATH = "/token";
@@ -55,16 +59,38 @@ public class OpenIdProvider extends ContainerLifeCycle
     protected final String clientSecret;
     protected final List<String> redirectUris = new ArrayList<>();
     private final ServerConnector connector;
-
+    private final Server server;
+    private int port = 0;
     private String provider;
     private User preAuthedUser;
+
+    public static void main(String[] args) throws Exception
+    {
+        String clientId = "CLIENT_ID123";
+        String clientSecret = "PASSWORD123";
+        int port = 5771;
+        String redirectUri = "http://localhost:8080/j_security_check";
+
+        OpenIdProvider openIdProvider = new OpenIdProvider(clientId, clientSecret);
+        openIdProvider.addRedirectUri(redirectUri);
+        openIdProvider.setPort(port);
+        openIdProvider.start();
+        try
+        {
+            openIdProvider.join();
+        }
+        finally
+        {
+            openIdProvider.stop();
+        }
+    }
 
     public OpenIdProvider(String clientId, String clientSecret)
     {
         this.clientId = clientId;
         this.clientSecret = clientSecret;
 
-        Server server = new Server();
+        server = new Server();
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
@@ -78,11 +104,32 @@ public class OpenIdProvider extends ContainerLifeCycle
         addBean(server);
     }
 
+    public void join() throws InterruptedException
+    {
+        server.join();
+    }
+
+    public OpenIdConfiguration getOpenIdConfiguration()
+    {
+        String provider = getProvider();
+        String authEndpoint = provider + AUTH_PATH;
+        String tokenEndpoint = provider + TOKEN_PATH;
+        return new OpenIdConfiguration(provider, authEndpoint, tokenEndpoint, clientId, clientSecret, null);
+    }
+
     @Override
     protected void doStart() throws Exception
     {
+        connector.setPort(port);
         super.doStart();
         provider = "http://localhost:" + connector.getLocalPort();
+    }
+
+    public void setPort(int port)
+    {
+        if (isStarted())
+            throw new IllegalStateException();
+        this.port = port;
     }
 
     public void setUser(User user)
@@ -92,8 +139,8 @@ public class OpenIdProvider extends ContainerLifeCycle
 
     public String getProvider()
     {
-        if (!isStarted())
-            throw new IllegalStateException();
+        if (!isStarted() && port == 0)
+            throw new IllegalStateException("Port of OpenIdProvider not configured");
         return provider;
     }
 
@@ -116,6 +163,7 @@ public class OpenIdProvider extends ContainerLifeCycle
             String redirectUri = req.getParameter("redirect_uri");
             if (!redirectUris.contains(redirectUri))
             {
+                LOG.warn("invalid redirectUri {}", redirectUri);
                 resp.sendError(HttpServletResponse.SC_FORBIDDEN, "invalid redirect_uri");
                 return;
             }
@@ -147,7 +195,7 @@ public class OpenIdProvider extends ContainerLifeCycle
                 resp.setContentType("text/html");
                 writer.println("<h2>Login to OpenID Connect Provider</h2>");
                 writer.println("<form action=\"" + AUTH_PATH + "\" method=\"post\">");
-                writer.println("<input type=\"text\" placeholder=\"Username\" name=\"username\" required>");
+                writer.println("<input type=\"text\" autocomplete=\"off\" placeholder=\"Username\" name=\"username\" required>");
                 writer.println("<input type=\"hidden\" name=\"redirectUri\" value=\"" + redirectUri + "\">");
                 writer.println("<input type=\"hidden\" name=\"state\" value=\"" + state + "\">");
                 writer.println("<input type=\"submit\">");
@@ -264,15 +312,15 @@ public class OpenIdProvider extends ContainerLifeCycle
 
     public static class User
     {
-        private final long subject;
+        private final String subject;
         private final String name;
 
         public User(String name)
         {
-            this(UUID.nameUUIDFromBytes(name.getBytes()).getMostSignificantBits(), name);
+            this(UUID.nameUUIDFromBytes(name.getBytes()).toString(), name);
         }
 
-        public User(long subject, String name)
+        public User(String subject, String name)
         {
             this.subject = subject;
             this.name = name;
@@ -283,7 +331,7 @@ public class OpenIdProvider extends ContainerLifeCycle
             return name;
         }
 
-        public long getSubject()
+        public String getSubject()
         {
             return subject;
         }
@@ -291,7 +339,7 @@ public class OpenIdProvider extends ContainerLifeCycle
         public String getIdToken(String provider, String clientId)
         {
             long expiry = System.currentTimeMillis() + Duration.ofMinutes(1).toMillis();
-            return JwtEncoder.createIdToken(provider, clientId, Long.toString(subject), name, expiry);
+            return JwtEncoder.createIdToken(provider, clientId, subject, name, expiry);
         }
     }
 }

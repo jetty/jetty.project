@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Get name="contextPath" id="contextPath"/>
+  <Get name="securityHandler">
+    <Set name="loginService">
+      <New class="org.eclipse.jetty.security.openid.OpenIdLoginService">
+        <Arg>
+          <New class="org.eclipse.jetty.security.openid.OpenIdConfiguration">
+            <Arg>http://localhost:5771</Arg>
+            <Arg>CLIENT_ID123</Arg>
+            <Arg>PASSWORD123</Arg>
+          </New>
+        </Arg>
+      </New>
+    </Set>
+  </Get>
+</Configure>

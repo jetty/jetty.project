@@ -124,7 +124,7 @@ public class OpenIdAuthenticationTest
     @Test
     public void testLoginLogout() throws Exception
     {
-        openIdProvider.setUser(new OpenIdProvider.User(123456789, "Alice"));
+        openIdProvider.setUser(new OpenIdProvider.User("123456789", "Alice"));
 
         String appUriString = "http://localhost:" + connector.getLocalPort();
 

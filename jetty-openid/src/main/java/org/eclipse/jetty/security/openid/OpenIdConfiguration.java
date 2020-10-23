@@ -50,6 +50,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     private final List<String> scopes = new ArrayList<>();
     private String authEndpoint;
     private String tokenEndpoint;
+    private boolean authenticateNewUsers = false;
 
     /**
      * Create an OpenID configuration for a specific OIDC provider.
@@ -188,5 +189,15 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     public List<String> getScopes()
     {
         return scopes;
+    }
+
+    public boolean isAuthenticateNewUsers()
+    {
+        return authenticateNewUsers;
+    }
+
+    public void setAuthenticateNewUsers(boolean authenticateNewUsers)
+    {
+        this.authenticateNewUsers = authenticateNewUsers;
     }
 }

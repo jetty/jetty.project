@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.eclipse.jetty.tests</groupId>
+    <artifactId>test-webapps-parent</artifactId>
+    <version>9.4.33-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>test-openid-webapp</artifactId>
+  <packaging>war</packaging>
+  <name>Test :: Jetty Test Simple Webapp</name>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-maven-plugin</artifactId>
+        <version>${project.version}</version>
+        <configuration>
+          <!-- Run with the mvn jetty:run-distro goal. The OpenID provider must be started before running. -->
+          <!-- Enabling the OpenID module forces us to use or override the XML files, so just include the jars we want. -->
+          <jvmArgs>
+            --lib=lib/jetty-openid-${project.version}.jar
+            --lib=lib/jetty-util-ajax-${project.version}.jar
+            --lib=lib/jetty-client-${project.version}.jar
+          </jvmArgs>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
+</project>
