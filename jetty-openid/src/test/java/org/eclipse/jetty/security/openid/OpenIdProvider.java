@@ -69,7 +69,7 @@ public class OpenIdProvider extends ContainerLifeCycle
         String clientId = "CLIENT_ID123";
         String clientSecret = "PASSWORD123";
         int port = 5771;
-        String redirectUri = "http://localhost:8080/j_security_check";
+        String redirectUri = "http://localhost:8080/openid/auth";
 
         OpenIdProvider openIdProvider = new OpenIdProvider(clientId, clientSecret);
         openIdProvider.addRedirectUri(redirectUri);

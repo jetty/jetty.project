@@ -1,17 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
-  <Get name="contextPath" id="contextPath"/>
+  <Call name="addBean">
+    <Arg>
+      <New class="org.eclipse.jetty.security.openid.OpenIdConfiguration" id="openIdConfiguration">
+        <Arg>http://localhost:5771</Arg>
+        <Arg>CLIENT_ID123</Arg>
+        <Arg>PASSWORD123</Arg>
+      </New>
+    </Arg>
+  </Call>
+  <Set name="contextPath">/</Set>
   <Get name="securityHandler">
-    <Set name="loginService">
-      <New class="org.eclipse.jetty.security.openid.OpenIdLoginService">
-        <Arg>
-          <New class="org.eclipse.jetty.security.openid.OpenIdConfiguration">
-            <Arg>http://localhost:5771</Arg>
-            <Arg>CLIENT_ID123</Arg>
-            <Arg>PASSWORD123</Arg>
-          </New>
-        </Arg>
+    <Set name="authenticator">
+      <New class="org.eclipse.jetty.security.DynamicAuthenticator">
+        <Call name="addMapping">
+          <Arg>/openid/*</Arg>
+          <Arg>
+            <New class="org.eclipse.jetty.security.openid.OpenIdAuthenticator">
+              <Arg><Ref refid="openIdConfiguration"/></Arg>
+              <Set name="redirectPath">/openid/auth</Set>
+            </New>
+          </Arg>
+        </Call>
+        <Call name="addMapping">
+          <Arg>/*</Arg>
+          <Arg>
+            <New class="org.eclipse.jetty.security.authentication.FormAuthenticator">
+              <Set name="loginPage">/login</Set>
+            </New>
+          </Arg>
+          <Arg>
+            <New class="org.eclipse.jetty.security.HashLoginService">
+              <Set name="config">etc/login.properties</Set>
+            </New>
+          </Arg>
+        </Call>
       </New>
     </Set>
   </Get>

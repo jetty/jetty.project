@@ -25,6 +25,7 @@
             --lib=lib/jetty-util-ajax-${project.version}.jar
             --lib=lib/jetty-client-${project.version}.jar
           </jvmArgs>
+          <jettyBase>jetty-base</jettyBase>
         </configuration>
       </plugin>
     </plugins>

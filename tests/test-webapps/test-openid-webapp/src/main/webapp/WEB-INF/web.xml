@@ -10,8 +10,8 @@
 
   <!-- Security -->
   <login-config>
-    <auth-method>OPENID</auth-method>
-    <realm-name>https://accounts.google.com</realm-name>
+    <auth-method>DYNAMIC</auth-method>
+    <realm-name>Authenticator and LoginService explicitly set so realm name does not matter.</realm-name>
   </login-config>
 
   <security-role>
@@ -21,6 +21,7 @@
   <security-constraint>
     <web-resource-collection>
       <web-resource-name>Authentication Required</web-resource-name>
+      <url-pattern>/openid/*</url-pattern>
       <url-pattern>/login</url-pattern>
     </web-resource-collection>
     <auth-constraint>

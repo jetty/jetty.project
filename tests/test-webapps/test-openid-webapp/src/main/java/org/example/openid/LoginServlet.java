@@ -19,6 +19,7 @@
 package org.example.openid;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -31,7 +32,11 @@ public class LoginServlet extends HttpServlet
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         response.setContentType("text/html");
-        response.getWriter().println("success");
-        response.getWriter().println("<br><a href=\"/\">Home</a>");
+        PrintWriter writer = response.getWriter();
+        writer.println("<form method=post action=\"j_security_check\" >");
+        writer.println("<input type=\"text\"  name= \"j_username\" >");
+        writer.println("<input type=\"password\"  name= \"j_password\" >");
+        writer.println("<input type=\"submit\" value=\"Submit\">");
+        writer.println("</form>");
     }
 }

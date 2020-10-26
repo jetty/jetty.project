@@ -19,6 +19,7 @@
 package org.example.openid;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.security.Principal;
 import java.util.Map;
 import javax.servlet.annotation.WebServlet;
@@ -33,20 +34,33 @@ public class HomeServlet extends HttpServlet
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         response.setContentType("text/html");
+        PrintWriter writer = response.getWriter();
         Principal userPrincipal = request.getUserPrincipal();
         if (userPrincipal != null)
         {
             @SuppressWarnings("unchecked")
-            Map<String, Object> userInfo = (Map<String, Object>)request.getSession().getAttribute("org.eclipse.jetty.security.openid.claims");
-            response.getWriter().println("userId: " + userInfo.get("sub") + "<br>");
-            response.getWriter().println("name: " + userInfo.get("name") + "<br>");
-            response.getWriter().println("email: " + userInfo.get("email") + "<br>");
-            response.getWriter().println("<br><a href=\"/logout\">Logout</a>");
+            Map<String, Object> openIdInfo = (Map<String, Object>)request.getSession().getAttribute("org.eclipse.jetty.security.openid.claims");
+            if (openIdInfo != null)
+            {
+                writer.println("<h3>OpenID Authenticated User</h3>");
+                writer.println("userId: " + openIdInfo.get("sub") + "<br>");
+                writer.println("name: " + openIdInfo.get("name") + "<br>");
+                writer.println("email: " + openIdInfo.get("email") + "<br>");
+            }
+            else
+            {
+                writer.println("<h3>Authenticated User</h3>");
+                writer.println("name: " + userPrincipal.getName() + "<br>");
+                writer.println("principal: " + userPrincipal.toString() + "<br>");
+            }
+
+            writer.println("<br><a href=\"/logout\">Logout</a>");
         }
         else
         {
-            response.getWriter().println("not authenticated");
-            response.getWriter().println("<br><a href=\"/login\">Login</a>");
+            writer.println("not authenticated");
+            writer.println("<br><a href=\"/login\">Form Login</a>");
+            writer.println("<br><a href=\"/openid/login\">OpenID Login</a>");
         }
     }
 }
