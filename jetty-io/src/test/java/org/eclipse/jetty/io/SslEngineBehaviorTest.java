@@ -61,6 +61,9 @@ public class SslEngineBehaviorTest
     @EnabledOnJre(JRE.JAVA_8)
     public void checkSslEngineBehaviour() throws Exception
     {
+        // Try to track down on what VM is causing the failures
+        System.err.printf("java.vm = %s %s%n", System.getProperty("java.vm.vendor"), System.getProperty("java.runtime.version"));
+
         SSLEngine server = sslCtxFactory.newSSLEngine();
         SSLEngine client = sslCtxFactory.newSSLEngine();
 
