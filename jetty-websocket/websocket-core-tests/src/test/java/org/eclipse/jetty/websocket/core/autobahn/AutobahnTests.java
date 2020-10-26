@@ -57,14 +57,14 @@ public class AutobahnTests
         workspace = System.getenv().get("WORKSPACE");
         LOG.info("Workspace: {}", workspace);
         LOG.info("User Dir: {}", USER_DIR);
-        baseDir = (workspace != null) ? Paths.get(workspace) : USER_DIR;
+        baseDir = USER_DIR;//(workspace != null) ? Paths.get(workspace) : USER_DIR;
         LOG.info("Base Dir: {}", baseDir);
 
         fuzzingServer = baseDir.resolve("fuzzingserver.json");
-        assertTrue(Files.exists(fuzzingServer));
+        assertTrue( Files.exists(fuzzingServer), fuzzingServer + " not exists");
 
         fuzzingClient = baseDir.resolve("fuzzingclient.json");
-        assertTrue(Files.exists(fuzzingClient));
+        assertTrue(Files.exists(fuzzingClient),  fuzzingClient + " not exists");
 
         reportDir = baseDir.resolve("target/reports");
         if (!Files.exists(reportDir))
