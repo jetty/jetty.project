@@ -34,6 +34,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.servlet.GenericServlet;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.Servlet;
@@ -556,10 +557,10 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     private synchronized void initServlet()
         throws ServletException
     {
+        Servlet servlet = _servlet;
         try
         {
-            Servlet servlet = _servlet;
-            if (servlet == null)
+            if (servlet == null || servlet instanceof UnavailableServlet)
                 servlet = getInstance();
             if (servlet == null)
                 servlet = newInstance();
@@ -610,6 +611,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
         catch (UnavailableException e)
         {
+            destroyInstance(servlet);
             makeUnavailable(e);
             if (getServletHandler().isStartWithUnavailable())
                 LOG.warn(e);
@@ -1217,7 +1219,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     {
         final UnavailableException _unavailableException;
         final Servlet _unavailableServlet;
-        final long _available;
+        final AtomicLong _available = new AtomicLong();
 
         public UnavailableServlet(UnavailableException unavailableException, Servlet servlet)
         {
@@ -1226,7 +1228,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             if (unavailableException.isPermanent())
             {
                 _unavailableServlet = null;
-                _available = -1;
+                _available.set(-1);
                 if (servlet != null)
                 {
                     try
@@ -1243,23 +1245,35 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             else
             {
                 _unavailableServlet = servlet;
-                _available = System.nanoTime() + TimeUnit.SECONDS.toNanos(unavailableException.getUnavailableSeconds());
+                _available.set(System.nanoTime() + TimeUnit.SECONDS.toNanos(unavailableException.getUnavailableSeconds()));
             }
         }
 
         @Override
         public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
         {
-            if (_available == -1)
-                ((HttpServletResponse)res).sendError(HttpServletResponse.SC_NOT_FOUND);
-            else if (System.nanoTime() < _available)
-                ((HttpServletResponse)res).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-            else
+            while (true)
             {
-                synchronized (ServletHolder.this)
+                long available = _available.get();
+                if (available < 0)
                 {
-                    ServletHolder.this._servlet = this._unavailableServlet;
-                    _unavailableServlet.service(req, res);
+                    ((HttpServletResponse)res).sendError(HttpServletResponse.SC_NOT_FOUND);
+                    return;
+                }
+
+                if (available == 0 || System.nanoTime() < available)
+                {
+                    ((HttpServletResponse)res).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                    return;
+                }
+
+                if (_available.compareAndSet(available, 0))
+                {
+                    initServlet();
+                    Request baseRequest = Request.getBaseRequest(req);
+                    ServletHolder.this.prepare(baseRequest, req, res);
+                    ServletHolder.this.handle(baseRequest, req, res);
+                    return;
                 }
             }
         }
