@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ajax.JSON;
@@ -123,26 +122,21 @@ public class OpenIdConfiguration extends ContainerLifeCycle
             if (provider.endsWith("/"))
                 provider = provider.substring(0, provider.length() - 1);
 
-            Map<String, Object> result;
-            String responseBody = httpClient.GET(provider + CONFIG_PATH)
-                    .getContentAsString();
+            String responseBody = httpClient.GET(provider + CONFIG_PATH).getContentAsString();
             Object parsedResult = JSON.parse(responseBody);
-
             if (parsedResult instanceof Map)
             {
-                Map<?, ?> rawResult = (Map)parsedResult;
-                result = rawResult.entrySet().stream()
-                        .collect(Collectors.toMap(it -> it.getKey().toString(), Map.Entry::getValue));
+                @SuppressWarnings("unchecked")
+                Map<String, Object> result = (Map<String, Object>)parsedResult;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("discovery document {}", result);
+                return result;
             }
             else
             {
                 LOG.warn("OpenID provider did not return a proper JSON object response. Result was '{}'", responseBody);
                 throw new IllegalStateException("Could not parse OpenID provider's malformed response");
             }
-
-            LOG.debug("discovery document {}", result);
-
-            return result;
         }
         catch (Exception e)
         {

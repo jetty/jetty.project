@@ -140,7 +140,7 @@ public class FormAuthenticator extends LoginAuthenticator
         return Constraint.__FORM_AUTH;
     }
 
-    private void setLoginPage(String path)
+    public void setLoginPage(String path)
     {
         if (!path.startsWith("/"))
         {
@@ -153,7 +153,7 @@ public class FormAuthenticator extends LoginAuthenticator
             _formLoginPath = _formLoginPath.substring(0, _formLoginPath.indexOf('?'));
     }
 
-    private void setErrorPage(String path)
+    public void setErrorPage(String path)
     {
         if (path == null || path.trim().length() == 0)
         {

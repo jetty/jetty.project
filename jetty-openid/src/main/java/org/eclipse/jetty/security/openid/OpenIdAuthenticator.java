@@ -69,6 +69,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
     public static final String CLAIMS = "org.eclipse.jetty.security.openid.claims";
     public static final String RESPONSE = "org.eclipse.jetty.security.openid.response";
+    public static final String ISSUER = "org.eclipse.jetty.security.openid.issuer";
     public static final String REDIRECT_PATH = "org.eclipse.jetty.security.openid.redirect_path";
     public static final String ERROR_PAGE = "org.eclipse.jetty.security.openid.error_page";
     public static final String J_URI = "org.eclipse.jetty.security.openid.URI";
@@ -153,7 +154,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         return _alwaysSaveUri;
     }
 
-    private void setRedirectPath(String redirectPath)
+    public void setRedirectPath(String redirectPath)
     {
         if (!redirectPath.startsWith("/"))
         {
@@ -164,7 +165,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         _redirectPath = redirectPath;
     }
 
-    private void setErrorPage(String path)
+    public void setErrorPage(String path)
     {
         if (path == null || path.trim().length() == 0)
         {
@@ -205,6 +206,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, cached);
             session.setAttribute(CLAIMS, ((OpenIdCredentials)credentials).getClaims());
             session.setAttribute(RESPONSE, ((OpenIdCredentials)credentials).getResponse());
+            session.setAttribute(ISSUER, _configuration.getIssuer());
         }
         return user;
     }
