@@ -94,7 +94,7 @@
     <dependency>
       <groupId>org.eclipse.platform</groupId>
       <artifactId>org.eclipse.osgi.services</artifactId>
-      <version>3.7.100</version>
+      <version>3.9.0</version>
       <scope>test</scope>
     </dependency>
 
