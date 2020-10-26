@@ -37,6 +37,7 @@ public class Constraint implements Cloneable, Serializable
     public static final String __SPNEGO_AUTH = "SPNEGO";
     public static final String __NEGOTIATE_AUTH = "NEGOTIATE";
     public static final String __OPENID_AUTH = "OPENID";
+    public static final String __DYNAMIC_AUTH = "DYNAMIC";
 
     public static boolean validateMethod(String method)
     {
