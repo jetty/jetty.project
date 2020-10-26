@@ -394,12 +394,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         checkInitOnStartup();
 
         _config = new Config();
-
-        synchronized (this)
-        {
-            if (getHeldClass() != null && javax.servlet.SingleThreadModel.class.isAssignableFrom(getHeldClass()))
-                _servlet = new SingleThreadedWrapper();
-        }
     }
 
     @Override
@@ -465,16 +459,21 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     public Servlet getServlet()
         throws ServletException
     {
-        synchronized (this)
+        Servlet servlet = _servlet;
+        if (servlet == null)
         {
-            if (_servlet == null && isRunning())
+            synchronized (this)
             {
-                if (getHeldClass() != null)
-                    initServlet();
+                if (_servlet == null && isRunning())
+                {
+                    if (getHeldClass() != null)
+                        initServlet();
+                }
             }
+            servlet = _servlet;
         }
 
-        return _servlet;
+        return servlet;
     }
 
     /**
@@ -559,10 +558,17 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     {
         try
         {
-            if (_servlet == null)
-                _servlet = getInstance();
-            if (_servlet == null)
-                _servlet = newInstance();
+            Servlet servlet = _servlet;
+            if (servlet == null)
+                servlet = getInstance();
+            if (servlet == null)
+                servlet = newInstance();
+            if (servlet instanceof javax.servlet.SingleThreadModel)
+            {
+                destroyInstance(servlet);
+                servlet = new SingleThreadedWrapper();
+            }
+
             if (_config == null)
                 _config = new Config();
 
@@ -578,12 +584,12 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 if (_identityService != null)
                 {
                     _runAsToken = _identityService.newRunAsToken(_runAsRole);
-                    _servlet = new RunAs(_servlet, _identityService, _runAsToken);
+                    servlet = new RunAs(servlet, _identityService, _runAsToken);
                 }
             }
 
             if (!isAsyncSupported())
-                _servlet = new NotAsync(_servlet);
+                servlet = new NotAsync(servlet);
 
             // Handle configuring servlets that implement org.apache.jasper.servlet.JspServlet
             if (isJspServlet())
@@ -595,11 +601,12 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 detectJspContainer();
 
             initMultiPart();
-            _servlet = wrap(_servlet, WrapFunction.class, WrapFunction::wrapServlet);
+            servlet = wrap(servlet, WrapFunction.class, WrapFunction::wrapServlet);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Servlet.init {} for {}", _servlet, getName());
-            _servlet.init(_config);
+            servlet.init(_config);
+            _servlet = servlet;
         }
         catch (UnavailableException e)
         {
@@ -725,10 +732,16 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     protected void prepare(Request baseRequest, ServletRequest request, ServletResponse response)
         throws ServletException, UnavailableException
     {
+        // Ensure the servlet is initialized prior to any filters being invoked
         getServlet();
-        MultipartConfigElement mpce = ((Registration)getRegistration()).getMultipartConfig();
-        if (mpce != null)
-            baseRequest.setAttribute(Request.MULTIPART_CONFIG_ELEMENT, mpce);
+
+        // Check for multipart config
+        if (_registration != null)
+        {
+            MultipartConfigElement mpce = ((Registration)_registration).getMultipartConfig();
+            if (mpce != null)
+                baseRequest.setAttribute(Request.MULTIPART_CONFIG_ELEMENT, mpce);
+        }
     }
 
     @Deprecated
@@ -757,7 +770,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     {
         try
         {
-            Servlet servlet = getServlet();
+            Servlet servlet = getServletInstance();
             if (servlet == null)
                 throw new UnavailableException("Servlet Not Initialized");
             servlet.service(request, response);
@@ -1203,7 +1216,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     private class UnavailableServlet extends GenericServlet
     {
         final UnavailableException _unavailableException;
-        final Servlet _servlet;
+        final Servlet _unavailableServlet;
         final long _available;
 
         public UnavailableServlet(UnavailableException unavailableException, Servlet servlet)
@@ -1212,7 +1225,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
             if (unavailableException.isPermanent())
             {
-                _servlet = null;
+                _unavailableServlet = null;
                 _available = -1;
                 if (servlet != null)
                 {
@@ -1229,7 +1242,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             }
             else
             {
-                _servlet = servlet;
+                _unavailableServlet = servlet;
                 _available = System.nanoTime() + TimeUnit.SECONDS.toNanos(unavailableException.getUnavailableSeconds());
             }
         }
@@ -1245,8 +1258,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             {
                 synchronized (ServletHolder.this)
                 {
-                    ServletHolder.this._servlet = this._servlet;
-                    _servlet.service(req, res);
+                    ServletHolder.this._servlet = this._unavailableServlet;
+                    _unavailableServlet.service(req, res);
                 }
             }
         }
@@ -1254,11 +1267,11 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         @Override
         public void destroy()
         {
-            if (_servlet != null)
+            if (_unavailableServlet != null)
             {
                 try
                 {
-                    destroyInstance(_servlet);
+                    destroyInstance(_unavailableServlet);
                 }
                 catch (Throwable th)
                 {
@@ -1294,53 +1307,53 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
     public static class Wrapper implements Servlet, Wrapped<Servlet>
     {
-        private final Servlet _servlet;
+        private final Servlet _wrappedServlet;
 
         public Wrapper(Servlet servlet)
         {
-            _servlet = Objects.requireNonNull(servlet, "Servlet cannot be null");
+            _wrappedServlet = Objects.requireNonNull(servlet, "Servlet cannot be null");
         }
 
         @Override
         public Servlet getWrapped()
         {
-            return _servlet;
+            return _wrappedServlet;
         }
 
         @Override
         public void init(ServletConfig config) throws ServletException
         {
-            _servlet.init(config);
+            _wrappedServlet.init(config);
         }
 
         @Override
         public ServletConfig getServletConfig()
         {
-            return _servlet.getServletConfig();
+            return _wrappedServlet.getServletConfig();
         }
 
         @Override
         public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
         {
-            _servlet.service(req, res);
+            _wrappedServlet.service(req, res);
         }
 
         @Override
         public String getServletInfo()
         {
-            return _servlet.getServletInfo();
+            return _wrappedServlet.getServletInfo();
         }
 
         @Override
         public void destroy()
         {
-            _servlet.destroy();
+            _wrappedServlet.destroy();
         }
 
         @Override
         public String toString()
         {
-            return String.format("%s:%s", this.getClass().getSimpleName(), _servlet.toString());
+            return String.format("%s:%s", this.getClass().getSimpleName(), _wrappedServlet.toString());
         }
     }
 

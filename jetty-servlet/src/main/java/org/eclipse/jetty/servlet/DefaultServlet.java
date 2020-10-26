@@ -149,7 +149,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     private boolean _useFileMappedBuffer = false;
     private String _relativeResourceBase;
     private ServletHandler _servletHandler;
-    private ServletHolder _defaultHolder;
 
     public DefaultServlet(ResourceService resourceService)
     {
@@ -303,11 +302,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         _resourceService.setGzipEquivalentFileExtensions(gzipEquivalentFileExtensions);
 
         _servletHandler = _contextHandler.getChildHandlerByClass(ServletHandler.class);
-        for (ServletHolder h : _servletHandler.getServlets())
-        {
-            if (h.getServletInstance() == this)
-                _defaultHolder = h;
-        }
 
         if (LOG.isDebugEnabled())
             LOG.debug("resource base = " + _resourceBase);
@@ -504,9 +498,9 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             return null;
 
         String welcomeServlet = null;
-        for (int i = 0; i < _welcomes.length; i++)
+        for (String s : _welcomes)
         {
-            String welcomeInContext = URIUtil.addPaths(pathInContext, _welcomes[i]);
+            String welcomeInContext = URIUtil.addPaths(pathInContext, s);
             Resource welcome = getResource(welcomeInContext);
             if (welcome != null && welcome.exists())
                 return welcomeInContext;
@@ -514,9 +508,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             if ((_welcomeServlets || _welcomeExactServlets) && welcomeServlet == null)
             {
                 MappedResource<ServletHolder> entry = _servletHandler.getMappedServlet(welcomeInContext);
-                @SuppressWarnings("ReferenceEquality")
-                boolean isDefaultHolder = (entry.getResource() != _defaultHolder);
-                if (entry != null && isDefaultHolder &&
+                if (entry != null && entry.getResource().getServletInstance() != this &&
                     (_welcomeServlets || (_welcomeExactServlets && entry.getPathSpec().getDeclaration().equals(welcomeInContext))))
                     welcomeServlet = welcomeInContext;
             }
