@@ -81,8 +81,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     private Map<String, String> _roleMap;
     private String _forcedPath;
     private String _runAsRole;
-    private RunAsToken _runAsToken;
-    private IdentityService _identityService;
     private ServletRegistration.Dynamic _registration;
     private JspContainer _jspContainer;
 
@@ -574,18 +572,13 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 _config = new Config();
 
             //check run-as rolename and convert to token from IdentityService
-            if (_runAsRole == null)
+            if (_runAsRole != null)
             {
-                _identityService = null;
-                _runAsToken = null;
-            }
-            else
-            {
-                _identityService = getServletHandler().getIdentityService();
-                if (_identityService != null)
+                IdentityService identityService = getServletHandler().getIdentityService();
+                if (identityService != null)
                 {
-                    _runAsToken = _identityService.newRunAsToken(_runAsRole);
-                    servlet = new RunAs(servlet, _identityService, _runAsToken);
+                    RunAsToken runAsToken = identityService.newRunAsToken(_runAsRole);
+                    servlet = new RunAs(servlet, identityService, runAsToken);
                 }
             }
 
@@ -660,8 +653,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
 
         scratch = new File(getInitParameter("scratchdir"));
-        if (!scratch.exists())
-            scratch.mkdir();
+        if (!scratch.exists() && !scratch.mkdir())
+            throw new IllegalStateException("Could not create JSP scratch directory");
     }
 
     /**
@@ -1219,7 +1212,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     {
         final UnavailableException _unavailableException;
         final Servlet _unavailableServlet;
-        final AtomicLong _available = new AtomicLong();
+        final AtomicLong _unavailableStart;
 
         public UnavailableServlet(UnavailableException unavailableException, Servlet servlet)
         {
@@ -1228,7 +1221,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             if (unavailableException.isPermanent())
             {
                 _unavailableServlet = null;
-                _available.set(-1);
+                _unavailableStart = null;
                 if (servlet != null)
                 {
                     try
@@ -1245,7 +1238,10 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             else
             {
                 _unavailableServlet = servlet;
-                _available.set(System.nanoTime() + TimeUnit.SECONDS.toNanos(unavailableException.getUnavailableSeconds()));
+                long start = System.nanoTime();
+                while (start == 0)
+                    start = System.nanoTime();
+                _unavailableStart = new AtomicLong(start);
             }
         }
 
@@ -1254,20 +1250,21 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             while (true)
             {
-                long available = _available.get();
-                if (available < 0)
+                if (_unavailableStart == null)
                 {
                     ((HttpServletResponse)res).sendError(HttpServletResponse.SC_NOT_FOUND);
                     return;
                 }
 
-                if (available == 0 || System.nanoTime() < available)
+                long start = _unavailableStart.get();
+
+                if (start == 0 || System.nanoTime() - start < TimeUnit.SECONDS.toNanos(_unavailableException.getUnavailableSeconds()))
                 {
                     ((HttpServletResponse)res).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                     return;
                 }
 
-                if (_available.compareAndSet(available, 0))
+                if (_unavailableStart.compareAndSet(start, 0))
                 {
                     initServlet();
                     Request baseRequest = Request.getBaseRequest(req);
