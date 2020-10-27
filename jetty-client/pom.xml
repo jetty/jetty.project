@@ -13,17 +13,6 @@
     <jetty.test.policy.loc>target/test-policy</jetty.test.policy.loc>
   </properties>
   <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <configuration>
-            <forkedProcessTimeoutInSeconds>1800</forkedProcessTimeoutInSeconds>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
