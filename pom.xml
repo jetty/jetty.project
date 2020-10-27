@@ -16,7 +16,7 @@
     <compiler.target>1.8</compiler.target>
     <jetty.url>https://eclipse.org/jetty</jetty.url>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <build-support.version>1.4</build-support.version>
+    <build-support.version>1.5</build-support.version>
     <checkstyle.version>8.36.2</checkstyle.version>
     <slf4j.version>1.7.30</slf4j.version>
     <log4j2.version>2.11.2</log4j2.version>
