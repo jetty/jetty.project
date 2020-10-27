@@ -1248,29 +1248,28 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         @Override
         public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
         {
-            while (true)
+            if (_unavailableStart == null)
             {
-                if (_unavailableStart == null)
-                {
-                    ((HttpServletResponse)res).sendError(HttpServletResponse.SC_NOT_FOUND);
-                    return;
-                }
-
+                ((HttpServletResponse)res).sendError(HttpServletResponse.SC_NOT_FOUND);
+            }
+            else
+            {
                 long start = _unavailableStart.get();
 
                 if (start == 0 || System.nanoTime() - start < TimeUnit.SECONDS.toNanos(_unavailableException.getUnavailableSeconds()))
                 {
                     ((HttpServletResponse)res).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-                    return;
                 }
-
-                if (_unavailableStart.compareAndSet(start, 0))
+                else if (_unavailableStart.compareAndSet(start, 0))
                 {
                     initServlet();
                     Request baseRequest = Request.getBaseRequest(req);
                     ServletHolder.this.prepare(baseRequest, req, res);
                     ServletHolder.this.handle(baseRequest, req, res);
-                    return;
+                }
+                else
+                {
+                    ((HttpServletResponse)res).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                 }
             }
         }
