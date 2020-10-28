@@ -440,7 +440,6 @@ public class ResourceCollection extends Resource
             String[] list = r.list();
             if (list != null)
                 Collections.addAll(set, list);
-            Collections.addAll(set, r.list());
         }
         String[] result = set.toArray(new String[0]);
         Arrays.sort(result);
