@@ -42,7 +42,7 @@
     <tycho-version>2.0.0</tycho-version>
     <junit.version>5.7.0</junit.version>
     <maven.version>3.6.3</maven.version>
-    <maven.resolver.version>1.3.1</maven.resolver.version>
+    <maven.resolver.version>1.6.1</maven.resolver.version>
     <weld.version>4.0.0.Beta5</weld.version>
     <jboss.logging.version>3.4.1.Final</jboss.logging.version>
     <jetty.perf-helper.version>1.0.6</jetty.perf-helper.version>
