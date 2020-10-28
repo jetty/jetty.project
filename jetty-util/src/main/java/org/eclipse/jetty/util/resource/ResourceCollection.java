@@ -63,7 +63,18 @@ public class ResourceCollection extends Resource
      */
     public ResourceCollection(Resource... resources)
     {
+        this(Arrays.asList(resources));
+    }
+
+    /**
+     * Instantiates a new resource collection.
+     *
+     * @param resources the resources to be added to collection
+     */
+    public ResourceCollection(Collection<Resource> resources)
+    {
         _resources = new ArrayList<>();
+
         for (Resource r : resources)
         {
             if (r == null)
@@ -80,17 +91,6 @@ public class ResourceCollection extends Resource
                 _resources.add(r);
             }
         }
-    }
-
-    /**
-     * Instantiates a new resource collection.
-     *
-     * @param resources the resources to be added to collection
-     */
-    public ResourceCollection(Collection<Resource> resources)
-    {
-        _resources = new ArrayList<>();
-        _resources.addAll(resources);
     }
 
     /**
@@ -247,27 +247,28 @@ public class ResourceCollection extends Resource
         ArrayList<Resource> resources = null;
 
         // Attempt a simple (single) Resource lookup that exists
+        Resource addedResource = null;
         for (Resource res : _resources)
         {
-            Resource r = res.addPath(path);
-            if (!r.isDirectory() && r.exists())
-            {
-                // Return simple (non-directory) Resource
-                return r;
-            }
-
+            addedResource = res.addPath(path);
+            if (!addedResource.exists())
+                continue;
+            if (!addedResource.isDirectory())
+                return addedResource; // Return simple (non-directory) Resource
             if (resources == null)
-            {
                 resources = new ArrayList<>();
-            }
+            resources.add(addedResource);
+        }
 
-            resources.add(r);
+        if (resources == null)
+        {
+            if (addedResource != null)
+                return addedResource; // This will not exist
+            return EmptyResource.INSTANCE;
         }
 
         if (resources.size() == 1)
-        {
             return resources.get(0);
-        }
 
         return new ResourceCollection(resources);
     }
