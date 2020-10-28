@@ -766,7 +766,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             return null;
 
         List<Resource> jarResources = new ArrayList<Resource>();
-        Resource webInfLib = webInf.addPath("/lib");
+        Resource webInfLib = webInf.addPath("lib");
         if (webInfLib.exists() && webInfLib.isDirectory())
         {
             String[] files = webInfLib.list();
@@ -834,7 +834,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (webInf != null && webInf.isDirectory())
         {
             // Look for classes directory
-            Resource classes = webInf.addPath("classes/");
+            Resource classes = webInf.addPath("classes");
             if (classes.exists())
                 return classes;
         }

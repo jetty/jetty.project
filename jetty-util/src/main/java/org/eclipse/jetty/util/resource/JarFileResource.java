@@ -144,7 +144,7 @@ public class JarFileResource extends JarResource
             String fileUrl = _urlString.substring(4, _urlString.length() - 2);
             try
             {
-                return newResource(fileUrl).exists();
+                return _directory = newResource(fileUrl).exists();
             }
             catch (Exception e)
             {
@@ -236,15 +236,10 @@ public class JarFileResource extends JarResource
         return _exists;
     }
 
-    /**
-     * Returns true if the represented resource is a container/directory.
-     * If the resource is not a file, resources ending with "/" are
-     * considered directories.
-     */
     @Override
     public boolean isDirectory()
     {
-        return _urlString.endsWith("/") || exists() && _directory;
+        return exists() && _directory;
     }
 
     /**

@@ -320,8 +320,6 @@ public abstract class Resource implements ResourceFactory, Closeable
 
     /**
      * @return true if the represented resource is a container/directory.
-     * if the resource is not a file, resources ending with "/" are
-     * considered directories.
      */
     public abstract boolean isDirectory();
 

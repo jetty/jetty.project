@@ -385,7 +385,6 @@ public class ResourceCollection extends Resource
     public boolean isDirectory()
     {
         assertResourcesSet();
-
         return true;
     }
 

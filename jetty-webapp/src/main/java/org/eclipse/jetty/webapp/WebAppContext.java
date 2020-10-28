@@ -31,7 +31,6 @@ import java.util.Collections;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -835,7 +834,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             return null;
 
         // Iw there a WEB-INF directory?
-        Resource webInf = super.getBaseResource().addPath("WEB-INF/");
+        Resource webInf = super.getBaseResource().addPath("WEB-INF");
         if (!webInf.exists() || !webInf.isDirectory())
             return null;
 
