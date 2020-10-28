@@ -48,7 +48,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
 {
     private static final Logger LOG = LoggerFactory.getLogger(StatisticsHandler.class);
     private final AtomicLong _statsStartedAt = new AtomicLong();
-    private volatile Shutdown _shutdown;
+    private final Shutdown _shutdown;
 
     private final CounterStatistic _requestStats = new CounterStatistic();
     private final SampleStatistic _requestTimeStats = new SampleStatistic();
@@ -92,26 +92,32 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         @Override
         public void onComplete(AsyncEvent event)
         {
-            HttpChannelState state = ((AsyncContextEvent)event).getHttpChannelState();
-
-            Request request = state.getBaseRequest();
-            final long elapsed = System.currentTimeMillis() - request.getTimeStamp();
-
-            long numRequests = _requestStats.decrement();
+            Request request = ((AsyncContextEvent)event).getHttpChannelState().getBaseRequest();
+            long elapsed = System.currentTimeMillis() - request.getTimeStamp();
+            _requestStats.decrement();
             _requestTimeStats.record(elapsed);
-
             updateResponse(request);
-
             _asyncWaitStats.decrement();
 
-            if (numRequests == 0 && _gracefulShutdownWaitsForRequests)
-            {
-                Shutdown shutdown = _shutdown;
-                if (shutdown != null)
-                    shutdown.check();
-            }
+            if (_shutdown.isShutdown())
+                _shutdown.check();
         }
     };
+
+    public StatisticsHandler()
+    {
+        _shutdown = new Shutdown(this)
+        {
+            @Override
+            public boolean isShutdownDone()
+            {
+                if (_gracefulShutdownWaitsForRequests)
+                    return _requestStats.getCurrent() == 0;
+                else
+                    return _dispatchedStats.getCurrent() == 0;
+            }
+        };
+    }
 
     /**
      * Resets the current request statistics.
@@ -174,8 +180,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             final long now = System.currentTimeMillis();
             final long dispatched = now - start;
 
-            long numRequests = -1;
-            long numDispatches = _dispatchedStats.decrement();
+            _dispatchedStats.decrement();
             _dispatchedTimeStats.record(dispatched);
 
             if (state.isInitial())
@@ -187,19 +192,14 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
                 }
                 else
                 {
-                    numRequests = _requestStats.decrement();
+                    _requestStats.decrement();
                     _requestTimeStats.record(dispatched);
                     updateResponse(baseRequest);
                 }
             }
 
-            Shutdown shutdown = _shutdown;
-            if (shutdown != null)
-            {
-                response.flushBuffer();
-                if (_gracefulShutdownWaitsForRequests ? (numRequests == 0) : (numDispatches == 0))
-                    shutdown.check();
-            }
+            if (_shutdown.isShutdown())
+                _shutdown.check();
         }
     }
 
@@ -230,8 +230,11 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             }
         }
         else
+        {
             // will fall through to not found handler
             _responses4xx.increment();
+        }
+
         _responsesTotalBytes.add(response.getContentCount());
     }
 
@@ -240,17 +243,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     {
         if (getHandler() == null)
             throw new IllegalStateException("StatisticsHandler has no Wrapped Handler");
-        _shutdown = new Shutdown(this)
-        {
-            @Override
-            public boolean isShutdownDone()
-            {
-                if (_gracefulShutdownWaitsForRequests)
-                    return _requestStats.getCurrent() == 0;
-                else
-                    return _dispatchedStats.getCurrent() == 0;
-            }
-        };
+        _shutdown.cancel();
         super.doStart();
         statsReset();
     }
@@ -258,8 +251,8 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     @Override
     protected void doStop() throws Exception
     {
+        _shutdown.cancel();
         super.doStop();
-        _shutdown = null;
     }
 
     /**
@@ -610,17 +603,13 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     @Override
     public CompletableFuture<Void> shutdown()
     {
-        Shutdown shutdown = _shutdown;
-        if (shutdown == null)
-            return CompletableFuture.completedFuture(null);
-        return shutdown.shutdown();
+        return _shutdown.shutdown();
     }
 
     @Override
     public boolean isShutdown()
     {
-        Shutdown shutdown = _shutdown;
-        return shutdown == null || shutdown.isShutdown();
+        return _shutdown.isShutdown();
     }
 
     @Override

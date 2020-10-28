@@ -78,7 +78,8 @@ public interface Graceful
         public CompletableFuture<Void> shutdown()
         {
             if (_done.get() == null)
-                _done.compareAndSet(null, new CompletableFuture<Void>()
+            {
+                _done.compareAndSet(null, new CompletableFuture<>()
                 {
                     @Override
                     public String toString()
@@ -86,6 +87,7 @@ public interface Graceful
                         return String.format("Shutdown<%s>@%x", _component, hashCode());
                     }
                 });
+            }
             CompletableFuture<Void> done = _done.get();
             check();
             return done;
@@ -108,6 +110,15 @@ public interface Graceful
             CompletableFuture<Void> done = _done.get();
             if (done != null && isShutdownDone())
                 done.complete(null);
+        }
+
+        public void cancel()
+        {
+            CompletableFuture<Void> done = _done.get();
+            if (done != null && !done.isDone())
+                done.cancel(true);
+
+            _done.set(null);
         }
 
         /**
