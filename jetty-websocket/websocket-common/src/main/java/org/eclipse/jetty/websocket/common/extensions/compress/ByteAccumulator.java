@@ -22,18 +22,48 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 
 public class ByteAccumulator
 {
-    private final List<byte[]> chunks = new ArrayList<>();
+    private final List<ByteBuffer> chunks = new ArrayList<>();
     private final int maxSize;
     private int length = 0;
+    private final ByteBufferPool bufferPool;
 
     public ByteAccumulator(int maxOverallBufferSize)
     {
+        this(maxOverallBufferSize, null);
+    }
+
+    public ByteAccumulator(int maxOverallBufferSize, ByteBufferPool bufferPool)
+    {
         this.maxSize = maxOverallBufferSize;
+        this.bufferPool = bufferPool;
+    }
+    
+    public void copyChunk(ByteBuffer buf)
+    {
+        int length = buf.remaining();
+        if (this.length + length > maxSize)
+        {
+            release(buf);
+            String err = String.format("Resulting message size [%,d] is too large for configured max of [%,d]", this.length + length, maxSize);
+            throw new MessageTooLargeException(err);
+        }
+        
+        if (buf.hasRemaining())
+        {
+            chunks.add(buf);
+            this.length += length;
+        }
+        else
+        {
+            // release 0 length buffer directly
+            release(buf);
+        }
     }
 
     public void copyChunk(byte[] buf, int offset, int length)
@@ -43,17 +73,27 @@ public class ByteAccumulator
             String err = String.format("Resulting message size [%,d] is too large for configured max of [%,d]", this.length + length, maxSize);
             throw new MessageTooLargeException(err);
         }
-
-        byte[] copy = new byte[length - offset];
-        System.arraycopy(buf, offset, copy, 0, length);
-
-        chunks.add(copy);
+        chunks.add(ByteBuffer.wrap(buf, offset, length));
         this.length += length;
     }
 
     public int getLength()
     {
         return length;
+    }
+
+    int getMaxSize() 
+    {
+        return maxSize;
+    }
+
+    ByteBuffer newByteBuffer(int size)
+    {
+        if (bufferPool == null) 
+        {
+            return ByteBuffer.allocate(size);
+        }
+        return (ByteBuffer)bufferPool.acquire(size, false).clear();
     }
 
     public void transferTo(ByteBuffer buffer)
@@ -65,10 +105,30 @@ public class ByteAccumulator
         }
 
         int position = buffer.position();
-        for (byte[] chunk : chunks)
+        for (ByteBuffer chunk : chunks)
         {
-            buffer.put(chunk, 0, chunk.length);
+            buffer.put(chunk);
         }
         BufferUtil.flipToFlush(buffer, position);
+    }
+    
+    void recycle() 
+    {
+        length = 0;
+        
+        for (ByteBuffer chunk : chunks)
+        { 
+            release(chunk);
+        }
+        
+        chunks.clear();
+    }
+    
+    void release(ByteBuffer buffer)
+    {
+        if (bufferPool != null)
+        {
+            bufferPool.release(buffer);
+        }
     }
 }

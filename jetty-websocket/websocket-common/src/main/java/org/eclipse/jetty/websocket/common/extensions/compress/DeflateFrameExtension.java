@@ -47,7 +47,7 @@ public class DeflateFrameExtension extends CompressExtension
     {
         return TAIL_DROP_ALWAYS;
     }
-
+    
     @Override
     public void incomingFrame(Frame frame)
     {
@@ -63,7 +63,7 @@ public class DeflateFrameExtension extends CompressExtension
 
         try
         {
-            ByteAccumulator accumulator = newByteAccumulator();
+            accumulator = newByteAccumulator();
             decompress(accumulator, frame.getPayload());
             decompress(accumulator, TAIL_BYTES_BUF.slice());
             forwardIncoming(frame, accumulator);
@@ -71,6 +71,11 @@ public class DeflateFrameExtension extends CompressExtension
         catch (DataFormatException e)
         {
             throw new BadPayloadException(e);
+        }
+        finally
+        {
+            if (accumulator != null)
+                accumulator.recycle();
         }
     }
 }
