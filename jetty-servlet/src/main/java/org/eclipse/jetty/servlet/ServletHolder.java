@@ -440,13 +440,22 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
         Servlet servlet = (Servlet)o;
 
-        // need to use the unwrapped servlet because lifecycle callbacks such as
+        // call any predestroy callbacks
+        predestroyServlet(servlet);
+
+        // Call the servlet destroy
+        servlet.destroy();
+    }
+
+    private void predestroyServlet(Servlet servlet)
+    {
+        // TODO We should only predestroy instnaces that we created
+        // TODO But this breaks tests in jetty-9, so review behaviour in jetty-10
+
+        // Need to use the unwrapped servlet because lifecycle callbacks such as
         // postconstruct and predestroy are based off the classname and the wrapper
         // classes are unknown outside the ServletHolder
         getServletHandler().destroyServlet(unwrap(servlet));
-
-        // destroy the wrapped servlet, in case there is special behaviour
-        servlet.destroy();
     }
 
     /**
@@ -468,10 +477,9 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                     if (getHeldClass() != null)
                         initServlet();
                 }
+                servlet = _servlet;
             }
-            servlet = _servlet;
         }
-
         return servlet;
     }
 
@@ -526,7 +534,16 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     {
         synchronized (this)
         {
-            _servlet = new UnavailableServlet(e, _servlet);
+            if (_servlet instanceof UnavailableServlet)
+            {
+                Throwable cause = ((UnavailableServlet)_servlet).getUnavailableException();
+                if (cause != e)
+                    cause.addSuppressed(e);
+            }
+            else
+            {
+                _servlet = new UnavailableServlet(e, _servlet);
+            }
             return _servlet;
         }
     }
@@ -552,19 +569,22 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
     }
 
-    private synchronized void initServlet()
+    private void initServlet()
         throws ServletException
     {
-        Servlet servlet = _servlet;
+        // must be called with lock held and _servlet==null
+        if (_servlet != null)
+            throw new IllegalStateException("Servlet already initialised: " + _servlet);
+
+        Servlet servlet = null;
         try
         {
-            if (servlet == null || servlet instanceof UnavailableServlet)
-                servlet = getInstance();
+            servlet = getInstance();
             if (servlet == null)
                 servlet = newInstance();
             if (servlet instanceof javax.servlet.SingleThreadModel)
             {
-                destroyInstance(servlet);
+                predestroyServlet(servlet);
                 servlet = new SingleThreadedWrapper();
             }
 
@@ -599,26 +619,26 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Servlet.init {} for {}", _servlet, getName());
-            servlet.init(_config);
-            _servlet = servlet;
-        }
-        catch (UnavailableException e)
-        {
-            destroyInstance(servlet);
-            makeUnavailable(e);
-            if (getServletHandler().isStartWithUnavailable())
-                LOG.warn(e);
-            else
-                throw e;
+            try
+            {
+                servlet.init(_config);
+                _servlet = servlet;
+            }
+            catch (UnavailableException e)
+            {
+                _servlet = new UnavailableServlet(e, servlet);
+            }
         }
         catch (ServletException e)
         {
             makeUnavailable(e.getCause() == null ? e : e.getCause());
+            predestroyServlet(servlet);
             throw e;
         }
         catch (Exception e)
         {
             makeUnavailable(e);
+            predestroyServlet(servlet);
             throw new ServletException(this.toString(), e);
         }
     }
@@ -1205,39 +1225,31 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     @Override
     public String toString()
     {
-        return String.format("%s@%x==%s,jsp=%s,order=%d,inst=%b,async=%b", getName(), hashCode(), getClassName(), _forcedPath, _initOrder, _servlet != null, isAsyncSupported());
+        return String.format("%s@%x==%s,jsp=%s,order=%d,inst=%b,async=%b,src=%s",
+            getName(), hashCode(), getClassName(), _forcedPath, _initOrder, _servlet != null, isAsyncSupported(), getSource());
     }
 
-    private class UnavailableServlet extends GenericServlet
+    private class UnavailableServlet extends Wrapper
     {
         final UnavailableException _unavailableException;
-        final Servlet _unavailableServlet;
         final AtomicLong _unavailableStart;
 
         public UnavailableServlet(UnavailableException unavailableException, Servlet servlet)
         {
+            super(servlet != null ? servlet : new GenericServlet()
+            {
+                @Override
+                public void service(ServletRequest req, ServletResponse res) throws IOException
+                {
+                    ((HttpServletResponse)res).sendError(HttpServletResponse.SC_NOT_FOUND);
+                }
+            });
             _unavailableException = unavailableException;
 
             if (unavailableException.isPermanent())
-            {
-                _unavailableServlet = null;
                 _unavailableStart = null;
-                if (servlet != null)
-                {
-                    try
-                    {
-                        destroyInstance(servlet);
-                    }
-                    catch (Throwable th)
-                    {
-                        if (th != unavailableException)
-                            unavailableException.addSuppressed(th);
-                    }
-                }
-            }
             else
             {
-                _unavailableServlet = servlet;
                 long start = System.nanoTime();
                 while (start == 0)
                     start = System.nanoTime();
@@ -1248,6 +1260,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         @Override
         public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
         {
+            if (LOG.isDebugEnabled())
+               LOG.debug("Unavailable {}", req, _unavailableException);
             if (_unavailableStart == null)
             {
                 ((HttpServletResponse)res).sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -1262,7 +1276,10 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 }
                 else if (_unavailableStart.compareAndSet(start, 0))
                 {
-                    initServlet();
+                    synchronized (this)
+                    {
+                        _servlet = getWrapped();
+                    }
                     Request baseRequest = Request.getBaseRequest(req);
                     ServletHolder.this.prepare(baseRequest, req, res);
                     ServletHolder.this.handle(baseRequest, req, res);
@@ -1270,22 +1287,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 else
                 {
                     ((HttpServletResponse)res).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-                }
-            }
-        }
-
-        @Override
-        public void destroy()
-        {
-            if (_unavailableServlet != null)
-            {
-                try
-                {
-                    destroyInstance(_unavailableServlet);
-                }
-                catch (Throwable th)
-                {
-                    LOG.warn(th);
                 }
             }
         }
