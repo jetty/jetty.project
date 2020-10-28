@@ -187,7 +187,7 @@ public class ResourceCollectionTest
 
         assertThat(Arrays.asList(rc1.list()), contains("1.txt", "2.txt", "3.txt", "dir/"));
         assertThat(Arrays.asList(rc1.addPath("dir").list()), contains("1.txt", "2.txt", "3.txt"));
-        assertThat(rc1.addPath("unknown"), nullValue());
+        assertThat(rc1.addPath("unknown").list(), nullValue());
         // TODO for jetty-10 assertThat(rc1.addPath("unknown").list(), nullValue());
     }
 
