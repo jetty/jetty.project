@@ -256,51 +256,40 @@ public class ResourceCollection extends Resource
             return this;
         }
 
-        Resource resource = null;
         ArrayList<Resource> resources = null;
-        int i = 0;
-        for (; i < _resources.length; i++)
+
+        // Attempt a simple (single) Resource lookup that exists
+        for (Resource res : _resources)
         {
-            resource = _resources[i].addPath(path);
-            if (resource.exists())
+            Resource r = res.addPath(path);
+            if (!r.exists())
+                continue;
+
+            if (!r.isDirectory())
+                return r;
+
+            if (resources == null)
+                resources = new ArrayList<>();
+            resources.add(r);
+        }
+
+        if (resources == null)
+        {
+            return null; /* TODO this is not allowed in 10.  Instead do:
+            for (Resource res : _r1esources)
             {
-                if (resource.isDirectory())
-                {
-                    break;
-                }
-                return resource;
+                Resource r = res.addPath(path);
+                if (r.exists())
+                    return r;
             }
+            return EmptyResource.INSTANCE;
+            */
         }
 
-        for (i++; i < _resources.length; i++)
-        {
-            Resource r = _resources[i].addPath(path);
-            if (r.exists() && r.isDirectory())
-            {
-                if (resources == null)
-                {
-                    resources = new ArrayList<>();
-                }
+        if (resources.size() == 1)
+            return resources.get(0);
 
-                if (resource != null)
-                {
-                    resources.add(resource);
-                    resource = null;
-                }
-
-                resources.add(r);
-            }
-        }
-
-        if (resource != null)
-        {
-            return resource;
-        }
-        if (resources != null)
-        {
-            return new ResourceCollection(resources.toArray(new Resource[0]));
-        }
-        return null;
+        return new ResourceCollection(resources.toArray(new Resource[0]));
     }
 
     @Override
