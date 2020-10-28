@@ -639,22 +639,23 @@ public class SessionHandler extends ScopedHandler
     {
         if (isUsingCookies())
         {
-            String sessionPath = (_cookieConfig.getPath() == null) ? contextPath : _cookieConfig.getPath();
+            SessionCookieConfig cookieConfig = getSessionCookieConfig();
+            String sessionPath = (cookieConfig.getPath() == null) ? contextPath : cookieConfig.getPath();
             sessionPath = (StringUtil.isEmpty(sessionPath)) ? "/" : sessionPath;
             String id = getExtendedId(session);
             HttpCookie cookie = null;
 
             cookie = new HttpCookie(
-                _cookieConfig.getName(),
+                cookieConfig.getName(),
                 id,
-                _cookieConfig.getDomain(),
+                cookieConfig.getDomain(),
                 sessionPath,
-                _cookieConfig.getMaxAge(),
-                _cookieConfig.isHttpOnly(),
-                _cookieConfig.isSecure() || (isSecureRequestOnly() && requestIsSecure),
-                HttpCookie.getCommentWithoutAttributes(_cookieConfig.getComment()),
+                cookieConfig.getMaxAge(),
+                cookieConfig.isHttpOnly(),
+                cookieConfig.isSecure() || (isSecureRequestOnly() && requestIsSecure),
+                HttpCookie.getCommentWithoutAttributes(cookieConfig.getComment()),
                 0,
-                HttpCookie.getSameSiteFromComment(_cookieConfig.getComment()));
+                HttpCookie.getSameSiteFromComment(cookieConfig.getComment()));
 
             return cookie;
         }
