@@ -658,8 +658,8 @@ public class HTTPServerDocs
 
         // For multiple directories, use ResourceCollection.
         ResourceCollection directories = new ResourceCollection();
-        directories.addPath("/path/to/static/resources");
-        directories.addPath("/another/path/to/static/resources");
+        directories.addPath("/path/to/static/resources/");
+        directories.addPath("/another/path/to/static/resources/");
 
         handler.setBaseResource(directories);
         // end::multipleResourcesHandler[]
