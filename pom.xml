@@ -31,7 +31,7 @@
     <jsp.api.version>5.0</jsp.api.version>
     <annotation-api.version>2.0.0-RC1</annotation-api.version>
     <transaction-api.version>2.0.0-RC1</transaction-api.version>
-    <mail-api.version>2.0.0-RC4</mail-api.version>
+    <mail-api.version>2.0.0-RC6</mail-api.version>
     <inject-api.version>2.0.0-RC4</inject-api.version>
     <infinispan.version>9.4.8.Final</infinispan.version>
     <hazelcast.version>4.0.1</hazelcast.version>
