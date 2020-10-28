@@ -1225,8 +1225,9 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     @Override
     public String toString()
     {
-        return String.format("%s@%x==%s,jsp=%s,order=%d,inst=%b,async=%b,src=%s",
-            getName(), hashCode(), getClassName(), _forcedPath, _initOrder, _servlet != null, isAsyncSupported(), getSource());
+        return String.format("%s==%s@%x{jsp=%s,order=%d,inst=%b,async=%b,src=%s}",
+            getName(), getClassName(), hashCode(),
+            _forcedPath, _initOrder, _servlet != null, isAsyncSupported(), getSource());
     }
 
     private class UnavailableServlet extends Wrapper
