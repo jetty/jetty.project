@@ -18,13 +18,25 @@
 
 package org.eclipse.jetty.websocket.core.autobahn;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
+import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.exception.NotFoundException;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -33,16 +45,24 @@ import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
+import org.testcontainers.containers.startupcheck.StartupCheckStrategy;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.TestcontainersConfiguration;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Testcontainers
 public class AutobahnTests
 {
+
+    static
+    {
+        TestcontainersConfiguration.getInstance().getProperties().setProperty("transport.type", "httpclient5");
+    }
+
     private static final Logger LOG = LoggerFactory.getLogger(AutobahnTests.class);
     private static final Path USER_DIR = Paths.get(System.getProperty("user.dir"));
-    private static final String CHOWN_REPORTS_CMD = "[ -d /target/reports ] && chown -R `stat -c '%u' /target/reports` /target/reports/*";
+    private static final String CHOWN_REPORTS_CMD = "[ -d /target/reports ] && chown -R `stat -c '%u' /target/reports` /target/reports/* && touch done.txt";
 
     private Path reportDir;
     private Path fuzzingServer;
@@ -61,7 +81,7 @@ public class AutobahnTests
         LOG.info("Base Dir: {}", baseDir);
 
         fuzzingServer = baseDir.resolve("fuzzingserver.json");
-        assertTrue( Files.exists(fuzzingServer), fuzzingServer + " not exists");
+        assertTrue(Files.exists(fuzzingServer), fuzzingServer + " not exists");
 
         fuzzingClient = baseDir.resolve("fuzzingclient.json");
         assertTrue(Files.exists(fuzzingClient),  fuzzingClient + " not exists");
@@ -82,6 +102,32 @@ public class AutobahnTests
         {
             container.addFileSystemBind(fuzzingServer.toString(), "/config/fuzzingserver.json", BindMode.READ_ONLY);
             container.addFileSystemBind(reportDir.toString(), "/target/reports", BindMode.READ_WRITE);
+            // we simply declare it as started once we get the file
+            File indexJson = new File(reportDir.toFile(), "index.json");
+            container.withStartupCheckStrategy(new StartupCheckStrategy()
+                                            {
+                                                @Override
+                                                public StartupStatus checkStartupState(DockerClient dockerClient, String containerId )
+                                                {
+                                                    try(InputStream done = dockerClient.copyArchiveFromContainerCmd( containerId, "done.txt" ).exec();
+                                                        InputStream inputStream =
+                                                            dockerClient.copyArchiveFromContainerCmd( containerId, "/target/reports/clients/index.json" ).exec();
+                                                        TarArchiveInputStream tarInputStream = new TarArchiveInputStream( inputStream))
+                                                    {
+                                                        tarInputStream.getNextEntry();
+                                                        Files.copy(tarInputStream, indexJson.toPath());
+                                                        return StartupStatus.SUCCESSFUL;
+                                                    } catch (NotFoundException e){
+                                                        // ignore as file not ready yet
+                                                    }
+                                                    catch ( Exception e )
+                                                    {
+                                                        throw new RuntimeException(e.getMessage(),e);
+                                                    }
+                                                    // still no file so we declare this not ready yet
+                                                    return StartupStatus.NOT_YET_KNOWN;
+                                                }
+                                            });
             container.start();
             Integer mappedPort = container.getMappedPort(9001);
             CoreAutobahnClient.main(new String[]{"localhost", mappedPort.toString()});
@@ -115,5 +161,117 @@ public class AutobahnTests
         }
 
         LOG.info("Test Result Overview {}", reportDir.resolve("servers/index.html").toUri());
+    }
+
+
+    private static List<AutobahnCaseResult> parseResults( String agentString, Path jsonPath) throws Exception {
+        List<AutobahnCaseResult> results = new ArrayList<>();
+        JSONParser parser = new JSONParser();
+
+        try (Reader reader = Files.newBufferedReader( jsonPath))
+        {
+            JSONObject object = (JSONObject) parser.parse( reader);
+            JSONObject agent = (JSONObject) object.get(agentString);
+
+            if (agent == null) {
+                return null;
+            }
+            for (Object cases : agent.keySet()) {
+                JSONObject c = (JSONObject) agent.get(cases);
+                String behavior = (String) c.get("behavior");
+                String behaviorClose = (String) c.get("behaviorClose");
+                Number duration = (Number) c.get("duration");
+                Number remoteCloseCode = (Number) c.get("remoteCloseCode");
+
+                Long code;
+                if (remoteCloseCode == null) {
+                    code = null;
+                } else {
+                    code = remoteCloseCode.longValue();
+                }
+                String reportfile = (String) c.get("reportfile");
+                AutobahnCaseResult result = new AutobahnCaseResult( cases.toString(),
+                                                                    AutobahnCaseResult.Behavior.parse(behavior),
+                                                                    AutobahnCaseResult.Behavior.parse(behaviorClose),
+                                                                    duration.longValue(), code,
+                                                                    jsonPath.toFile().getParent() + File.separator + reportfile);
+
+                results.add(result);
+            }
+        } catch (Exception e) {
+            throw new Exception("Could not parse results" ,e);
+        }
+        return results;
+    }
+
+    public static class AutobahnCaseResult
+    {
+
+        enum Behavior {
+            FAILED,
+            OK,
+            NON_STRICT,
+            WRONG_CODE,
+            UNCLEAN,
+            FAILED_BY_CLIENT,
+            INFORMATIONAL,
+            UNIMPLEMENTED;
+
+            static Behavior parse(String value) {
+                if (value.equals("NON-STRICT")) {
+                    return NON_STRICT;
+                } else if (value.equals("WRONG CODE")) {
+                    return WRONG_CODE;
+                } else if (value.equals("FAILED BY CLIENT")) {
+                    return FAILED_BY_CLIENT;
+                }
+                return valueOf(value);
+            }
+        }
+        private final String caseName;
+        private final Behavior behavior;
+        private final Behavior behaviorClose;
+        private final long duration;
+        private final Long remoteCloseCode;
+        private final String reportFile;
+
+        AutobahnCaseResult( String caseName, Behavior behavior, Behavior behaviorClose, long duration, Long remoteCloseCode, String reportFile) {
+            this.caseName = caseName;
+            this.behavior = behavior;
+            this.behaviorClose = behaviorClose;
+            this.duration = duration;
+            this.remoteCloseCode = remoteCloseCode;
+            this.reportFile = reportFile;
+        }
+
+        public String caseName() {
+            return caseName;
+        }
+
+        public Behavior behavior() {
+            return behavior;
+        }
+
+        public Behavior behaviorClose() {
+            return behaviorClose;
+        }
+
+        public long duration() {
+            return duration;
+        }
+
+        public Long remoteCloseCode() {
+            return remoteCloseCode;
+        }
+
+        public String reportFile() {
+            return reportFile;
+        }
+
+        @Override
+        public String toString() {
+            return "[" + caseName + "] behavior: " + behavior.name() + ", behaviorClose: " + behaviorClose.name() +
+                ", duration: " + duration + "ms, remoteCloseCode: " + remoteCloseCode + ", reportFile: " + reportFile;
+        }
     }
 }
