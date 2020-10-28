@@ -56,9 +56,11 @@ public class OverlayManager
             if (o.getConfig() != null && o.getConfig().isCurrentProject() && webApp.getBaseResource().exists())
             {
                 resourceBases.add(webApp.getBaseResource()); 
+                System.err.println("ADDED CURRENT PROJECT TO OVERLAY");
                 continue;
             }
             //add in the selectively unpacked overlay in the correct order to the webapp's resource base
+            System.err.println("ADDING OVERLAY " + o);
             resourceBases.add(unpackOverlay(o));
         }
 
@@ -90,6 +92,7 @@ public class OverlayManager
                 continue;
 
             //an empty overlay refers to the current project - important for ordering
+            System.err.println("CHECKING overlay: " + config.getArtifactId() + " with includes: " + config.getIncludes() + " with excludes: " + config.getExcludes());
             if (config.isCurrentProject())
             {
                 Overlay overlay = new Overlay(config, null);
@@ -101,6 +104,9 @@ public class OverlayManager
             Artifact a = warPlugin.getWarArtifact(config.getGroupId(), config.getArtifactId(), config.getClassifier());
             if (a != null)
             {
+                System.err.println("MATCHED a WAR DEPENDENCY: " + a.getGroupId()  + ":" + a.getArtifactId() + ":" + a.getClassifier() + " :: " + a.getFile().getAbsolutePath());
+                System.err.println("ARTIFACT = " + a);
+                
                 matchedWarArtifacts.add(a);
                 SelectiveJarResource r = new SelectiveJarResource(new URL("jar:" + Resource.toURL(a.getFile()).toString() + "!/"));
                 r.setIncludes(config.getIncludes());
@@ -131,7 +137,8 @@ public class OverlayManager
      */
     protected  Resource unpackOverlay(Overlay overlay)
         throws IOException
-    {        
+    {
+        System.err.println("UNPACKING OVERLAY RESOURCE: " + overlay.getResource());
         if (overlay.getResource() == null)
             return null; //nothing to unpack
 
@@ -147,12 +154,15 @@ public class OverlayManager
  
         File overlaysDir = new File(warPlugin.getProject().getBuild().getDirectory(), "jetty_overlays");
         File dir = new File(overlaysDir, name);
+        
+        System.err.println("OVERLAYS DIR = " + overlaysDir.getName() + " for " + name);
 
         //if specified targetPath, unpack to that subdir instead
         File unpackDir = dir;
         if (overlay.getConfig() != null && overlay.getConfig().getTargetPath() != null)
             unpackDir = new File(dir, overlay.getConfig().getTargetPath());
 
+        System.err.println("UNPACKING!");
         overlay.unpackTo(unpackDir);
         
         //use top level of unpacked content

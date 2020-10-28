@@ -164,6 +164,8 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             }).collect(Collectors.toList());
 
         webApp.setWebInfLib(webInfLibs);
+        
+        System.err.println("WEBINF LIB = " + webInfLibs);
 
         //if we have not already set web.xml location, need to set one up
         if (webApp.getDescriptor() == null)
@@ -182,6 +184,8 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             if (webApp.getDescriptor() == null && webApp.getBaseResource() != null)
             {
                 Resource r = webApp.getBaseResource().addPath("WEB-INF/web.xml");
+                
+                System.err.println("TRYING TO FIND WEB.XML as " + r);
                 if (r.exists() && !r.isDirectory())
                 {
                     webApp.setDescriptor(r.toString());
@@ -191,6 +195,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             //Still don't have a web.xml file: finally try the configured static resource directory if there is one
             if (webApp.getDescriptor() == null && (webAppSourceDirectory != null))
             {
+                System.err.println("TRYING TO FIND WEB.XML in src/main/webapp instead");
                 File f = new File(new File(webAppSourceDirectory, "WEB-INF"), "web.xml");
                 if (f.exists() && f.isFile())
                 {
@@ -199,6 +204,8 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             }
         }
 
+        System.err.println("DOING OVERLAYS");
+        
         //process any overlays and the war type artifacts, and
         //sets up the base resource collection for the webapp
         mavenProjectHelper.getOverlayManager().applyOverlays(webApp);
