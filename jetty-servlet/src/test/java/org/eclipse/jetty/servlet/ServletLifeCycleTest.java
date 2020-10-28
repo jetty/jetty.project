@@ -59,6 +59,10 @@ public class ServletLifeCycleTest
 
         context.getObjectFactory().addDecorator(new TestDecorator());
 
+        // TODO review this test in jetty-10.  Instances that are created externally and passed in should not be
+        // TODO decorated by the object factory unless: a) there is an explicit call to ServletContext.createXxx;
+        // TODO ; and b) the Servlet dyanmic API is used to register them.
+
         ServletHandler sh = context.getServletHandler();
         sh.addListener(new ListenerHolder(TestListener.class)); //added directly to ServletHandler
         context.addEventListener(context.getServletContext().createListener(TestListener2.class));//create,decorate and add listener to context - no holder!
