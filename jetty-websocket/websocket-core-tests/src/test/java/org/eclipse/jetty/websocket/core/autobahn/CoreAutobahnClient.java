@@ -74,7 +74,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class CoreAutobahnClient
 {
-    public static void main(String[] args)
+    public static void main(String[] args) throws Exception
     {
         String hostname = "localhost";
         int port = 9001;
@@ -131,6 +131,7 @@ public class CoreAutobahnClient
         catch (Throwable t)
         {
             LOG.warn("Test Failed", t);
+            throw t;
         }
         finally
         {
