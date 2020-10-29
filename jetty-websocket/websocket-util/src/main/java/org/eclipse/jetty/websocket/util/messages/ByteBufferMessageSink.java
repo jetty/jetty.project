@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.websocket.util.messages;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
+import org.eclipse.jetty.io.ByteBufferOutputStream2;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -35,7 +35,7 @@ import org.eclipse.jetty.websocket.util.InvalidSignatureException;
 public class ByteBufferMessageSink extends AbstractMessageSink
 {
     private static final int BUFFER_SIZE = 65535;
-    private ByteArrayOutputStream out;
+    private ByteBufferOutputStream2 out;
     private int size;
 
     public ByteBufferMessageSink(CoreSession session, MethodHandle methodHandle)
@@ -78,7 +78,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
 
             aggregatePayload(frame);
             if (frame.isFin())
-                methodHandle.invoke(ByteBuffer.wrap(out.toByteArray()));
+                methodHandle.invoke(out.toByteBuffer());
 
             callback.succeeded();
         }
@@ -91,6 +91,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
             if (frame.isFin())
             {
                 // reset
+                out.close();
                 out = null;
                 size = 0;
             }
@@ -104,7 +105,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
             ByteBuffer payload = frame.getPayload();
 
             if (out == null)
-                out = new ByteArrayOutputStream(BUFFER_SIZE);
+                out = new ByteBufferOutputStream2(session.getByteBufferPool(), true, BUFFER_SIZE);
 
             BufferUtil.writeTo(payload, out);
             payload.position(payload.limit()); // consume buffer

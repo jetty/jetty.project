@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.util.messages;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.ByteBufferOutputStream2;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -35,7 +35,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
 {
     private static final byte[] EMPTY_BUFFER = new byte[0];
     private static final int BUFFER_SIZE = 65535;
-    private ByteArrayOutputStream out;
+    private ByteBufferOutputStream2 out;
     private int size;
 
     public ByteArrayMessageSink(CoreSession session, MethodHandle methodHandle)
@@ -96,6 +96,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             if (frame.isFin())
             {
                 // reset
+                out.close();
                 out = null;
                 size = 0;
             }
@@ -108,7 +109,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
         {
             ByteBuffer payload = frame.getPayload();
             if (out == null)
-                out = new ByteArrayOutputStream(BUFFER_SIZE);
+                out = new ByteBufferOutputStream2(session.getByteBufferPool(), true, BUFFER_SIZE);
             BufferUtil.writeTo(payload, out);
         }
     }
