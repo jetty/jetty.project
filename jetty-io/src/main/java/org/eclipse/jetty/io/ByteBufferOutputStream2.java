@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
@@ -30,6 +31,8 @@ import org.eclipse.jetty.util.BufferUtil;
  * This class implements an output stream in which the data is written into a list of ByteBuffer,
  * the buffer list automatically grows as data is written to it, the buffers are taken from the
  * supplied {@link ByteBufferPool} or freshly allocated if one is not supplied.
+ *
+ * Designed to mimic {@link java.io.ByteArrayOutputStream} but with better memory usage, and less copying.
  */
 public class ByteBufferOutputStream2 extends OutputStream
 {
@@ -133,6 +136,14 @@ public class ByteBufferOutputStream2 extends OutputStream
             }
 
             _size += BufferUtil.put(buffer, lastBuffer);
+        }
+    }
+
+    public void writeTo(OutputStream out) throws IOException
+    {
+        for (ByteBuffer bb : _buffers)
+        {
+            BufferUtil.writeTo(bb, out);
         }
     }
 
