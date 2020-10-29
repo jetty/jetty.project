@@ -206,42 +206,50 @@ public class AutobahnTests
         }
     }
 
-    private static List<AutobahnCaseResult> parseResults( String agentString, Path jsonPath) throws Exception {
+    private static List<AutobahnCaseResult> parseResults(String agentString, Path jsonPath) throws Exception
+    {
         List<AutobahnCaseResult> results = new ArrayList<>();
         JSONParser parser = new JSONParser();
 
-        try (Reader reader = Files.newBufferedReader( jsonPath))
+        try (Reader reader = Files.newBufferedReader(jsonPath))
         {
-            JSONObject object = (JSONObject) parser.parse( reader);
-            JSONObject agent = (JSONObject) object.get(agentString);
+            JSONObject object = (JSONObject)parser.parse(reader);
+            JSONObject agent = (JSONObject)object.get(agentString);
 
-            if (agent == null) {
+            if (agent == null)
+            {
                 return null;
             }
-            for (Object cases : agent.keySet()) {
-                JSONObject c = (JSONObject) agent.get(cases);
-                String behavior = (String) c.get("behavior");
-                String behaviorClose = (String) c.get("behaviorClose");
-                Number duration = (Number) c.get("duration");
-                Number remoteCloseCode = (Number) c.get("remoteCloseCode");
+            for (Object cases : agent.keySet())
+            {
+                JSONObject c = (JSONObject)agent.get(cases);
+                String behavior = (String)c.get("behavior");
+                String behaviorClose = (String)c.get("behaviorClose");
+                Number duration = (Number)c.get("duration");
+                Number remoteCloseCode = (Number)c.get("remoteCloseCode");
 
                 Long code;
-                if (remoteCloseCode == null) {
+                if (remoteCloseCode == null)
+                {
                     code = null;
-                } else {
+                }
+                else
+                {
                     code = remoteCloseCode.longValue();
                 }
-                String reportfile = (String) c.get("reportfile");
-                AutobahnCaseResult result = new AutobahnCaseResult( cases.toString(),
-                                                                    AutobahnCaseResult.Behavior.parse(behavior),
-                                                                    AutobahnCaseResult.Behavior.parse(behaviorClose),
-                                                                    duration.longValue(), code,
-                                                                    jsonPath.toFile().getParent() + File.separator + reportfile);
+                String reportfile = (String)c.get("reportfile");
+                AutobahnCaseResult result = new AutobahnCaseResult(cases.toString(),
+                    AutobahnCaseResult.Behavior.parse(behavior),
+                    AutobahnCaseResult.Behavior.parse(behaviorClose),
+                    duration.longValue(), code,
+                    jsonPath.toFile().getParent() + File.separator + reportfile);
 
                 results.add(result);
             }
-        } catch (Exception e) {
-            throw new Exception("Could not parse results" ,e);
+        }
+        catch (Exception e)
+        {
+            throw new Exception("Could not parse results", e);
         }
         return results;
     }
@@ -249,7 +257,8 @@ public class AutobahnTests
     public static class AutobahnCaseResult
     {
 
-        enum Behavior {
+        enum Behavior
+        {
             FAILED,
             OK,
             NON_STRICT,
@@ -259,17 +268,24 @@ public class AutobahnTests
             INFORMATIONAL,
             UNIMPLEMENTED;
 
-            static Behavior parse(String value) {
-                if (value.equals("NON-STRICT")) {
+            static Behavior parse(String value)
+            {
+                if (value.equals("NON-STRICT"))
+                {
                     return NON_STRICT;
-                } else if (value.equals("WRONG CODE")) {
+                }
+                else if (value.equals("WRONG CODE"))
+                {
                     return WRONG_CODE;
-                } else if (value.equals("FAILED BY CLIENT")) {
+                }
+                else if (value.equals("FAILED BY CLIENT"))
+                {
                     return FAILED_BY_CLIENT;
                 }
                 return valueOf(value);
             }
         }
+
         private final String caseName;
         private final Behavior behavior;
         private final Behavior behaviorClose;
@@ -277,7 +293,8 @@ public class AutobahnTests
         private final Long remoteCloseCode;
         private final String reportFile;
 
-        AutobahnCaseResult( String caseName, Behavior behavior, Behavior behaviorClose, long duration, Long remoteCloseCode, String reportFile) {
+        AutobahnCaseResult(String caseName, Behavior behavior, Behavior behaviorClose, long duration, Long remoteCloseCode, String reportFile)
+        {
             this.caseName = caseName;
             this.behavior = behavior;
             this.behaviorClose = behaviorClose;
@@ -286,32 +303,39 @@ public class AutobahnTests
             this.reportFile = reportFile;
         }
 
-        public String caseName() {
+        public String caseName()
+        {
             return caseName;
         }
 
-        public Behavior behavior() {
+        public Behavior behavior()
+        {
             return behavior;
         }
 
-        public Behavior behaviorClose() {
+        public Behavior behaviorClose()
+        {
             return behaviorClose;
         }
 
-        public long duration() {
+        public long duration()
+        {
             return duration;
         }
 
-        public Long remoteCloseCode() {
+        public Long remoteCloseCode()
+        {
             return remoteCloseCode;
         }
 
-        public String reportFile() {
+        public String reportFile()
+        {
             return reportFile;
         }
 
         @Override
-        public String toString() {
+        public String toString()
+        {
             return "[" + caseName + "] behavior: " + behavior.name() + ", behaviorClose: " + behaviorClose.name() +
                 ", duration: " + duration + "ms, remoteCloseCode: " + remoteCloseCode + ", reportFile: " + reportFile;
         }
