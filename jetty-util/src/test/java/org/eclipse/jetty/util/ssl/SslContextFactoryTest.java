@@ -55,6 +55,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItemInArray;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.matchesRegex;
 import static org.hamcrest.Matchers.not;
@@ -93,6 +94,38 @@ public class SslContextFactoryTest
         {
             assertThat("Enabled Cipher Suite", enabledCipher, not(matchesRegex(".*_RSA_.*(SHA1|MD5|SHA)")));
         }
+    }
+
+    @Test
+    public void testDumpExcludedProtocols() throws Exception
+    {
+        SslContextFactory.Server cf = new SslContextFactory.Server();
+        cf.setExcludeProtocols("TLSv1\\.?[01]?");
+        cf.start();
+
+        // Confirm behavior in engine
+        assertThat(cf.newSSLEngine().getEnabledProtocols(), not(hasItemInArray("TLSv1.1")));
+        assertThat(cf.newSSLEngine().getEnabledProtocols(), not(hasItemInArray("TLSv1")));
+
+        // Confirm output in dump
+        List<SslSelectionDump> dumps = cf.selectionDump();
+
+        Optional<SslSelectionDump> protocolDumpOpt = dumps.stream()
+            .filter((dump) -> dump.type.contains("Protocol"))
+            .findFirst();
+
+        assertTrue(protocolDumpOpt.isPresent(), "Protocol dump section should exist");
+
+        SslSelectionDump protocolDump = protocolDumpOpt.get();
+
+        long countTls11Enabled = protocolDump.enabled.stream().filter((t) -> t.contains("TLSv1.1")).count();
+        long countTls11Disabled = protocolDump.disabled.stream().filter((t) -> t.contains("TLSv1.1")).count();
+
+        assertThat("Enabled Protocols TLSv1.1 count", countTls11Enabled, is(0L));
+        assertThat("Disabled Protocols TLSv1.1 count", countTls11Disabled, is(1L));
+
+        // Uncomment to show dump in console.
+        // cf.dump(System.out, "");
     }
 
     @Test
