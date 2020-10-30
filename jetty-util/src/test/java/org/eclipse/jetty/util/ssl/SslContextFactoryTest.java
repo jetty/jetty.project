@@ -102,11 +102,12 @@ public class SslContextFactoryTest
         SslContextFactory.Server cf = new SslContextFactory.Server();
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
-        cf.setExcludeProtocols("TLSv1", "TLSv1.1");
+        cf.setExcludeProtocols("TLSv1\\.?[01]?");
         cf.start();
 
         // Confirm behavior in engine
         assertThat(cf.newSSLEngine().getEnabledProtocols(), not(hasItemInArray("TLSv1.1")));
+        assertThat(cf.newSSLEngine().getEnabledProtocols(), not(hasItemInArray("TLSv1")));
 
         // Confirm output in dump
         List<SslSelectionDump> dumps = cf.selectionDump();
@@ -125,7 +126,7 @@ public class SslContextFactoryTest
         assertThat("Enabled Protocols TLSv1.1 count", countTls11Enabled, is(0L));
         assertThat("Disabled Protocols TLSv1.1 count", countTls11Disabled, is(1L));
 
-        // Uncomment to show in console.
+        // Uncomment to show dump in console.
         // cf.dump(System.out, "");
     }
 
