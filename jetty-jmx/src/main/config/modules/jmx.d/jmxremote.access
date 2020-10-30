@@ -1,0 +1,4 @@
+# The file format is: <username> <permission>
+# Permissions can be either of these 2 tokens: readonly | readwrite
+
+# username readonly
