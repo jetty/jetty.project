@@ -100,8 +100,6 @@ public class SslContextFactoryTest
     public void testDumpExcludedProtocols() throws Exception
     {
         SslContextFactory.Server cf = new SslContextFactory.Server();
-        cf.setKeyStorePassword("storepwd");
-        cf.setKeyManagerPassword("keypwd");
         cf.setExcludeProtocols("TLSv1\\.?[01]?");
         cf.start();
 
