@@ -262,6 +262,7 @@ public class ErrorCloseTest
         serverSocket.methodsToThrow.add(methodToThrow);
         EventSocket clientSocket = new EventSocket();
         client.connect(clientSocket, serverUri).get(5, TimeUnit.SECONDS);
+        assertTrue(serverSocket.openLatch.await(5, TimeUnit.SECONDS));
 
         try (StacklessLogging ignored = new StacklessLogging(WebSocketSession.class))
         {

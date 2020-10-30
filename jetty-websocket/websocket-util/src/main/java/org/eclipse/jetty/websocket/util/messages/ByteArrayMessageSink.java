@@ -95,10 +95,12 @@ public class ByteArrayMessageSink extends AbstractMessageSink
         {
             if (frame.isFin())
             {
-                // reset
-                out.close();
-                out = null;
                 size = 0;
+                if (out != null)
+                {
+                    out.close();
+                    out = null;
+                }
             }
         }
     }

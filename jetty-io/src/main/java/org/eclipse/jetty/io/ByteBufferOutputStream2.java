@@ -128,14 +128,16 @@ public class ByteBufferOutputStream2 extends OutputStream
     {
         while (buffer.hasRemaining())
         {
-            ByteBuffer lastBuffer = _buffers.get(_buffers.size() - 1);
+            ByteBuffer lastBuffer = _buffers.isEmpty() ? BufferUtil.EMPTY_BUFFER : _buffers.get(_buffers.size() - 1);
             if (BufferUtil.isFull(lastBuffer))
             {
                 lastBuffer = _bufferPool.newByteBuffer(_bufferSize, _direct);
                 _buffers.add(lastBuffer);
             }
 
+            int pos = BufferUtil.flipToFill(lastBuffer);
             _size += BufferUtil.put(buffer, lastBuffer);
+            BufferUtil.flipToFlush(lastBuffer, pos);
         }
     }
 
