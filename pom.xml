@@ -1159,7 +1159,7 @@
       <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-core</artifactId>
-        <version>1.0.1</version>
+        <version>1.33.0</version>
       </dependency>
       <dependency>
         <groupId>org.apache.ant</groupId>
