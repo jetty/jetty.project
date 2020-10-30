@@ -34,6 +34,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import jakarta.servlet.GenericServlet;
 import jakarta.servlet.MultipartConfigElement;
@@ -588,7 +589,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             servlet = getInstance();
             if (servlet == null)
                 servlet = newInstance();
-            if (servlet instanceof javax.servlet.SingleThreadModel)
+            if (servlet instanceof SingleThreadModel)
             {
                 predestroyServlet(servlet);
                 servlet = new SingleThreadedWrapper();
