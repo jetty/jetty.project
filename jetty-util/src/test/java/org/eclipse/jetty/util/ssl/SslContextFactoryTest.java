@@ -50,12 +50,12 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItemInArray;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.matchesRegex;
 import static org.hamcrest.Matchers.not;
@@ -102,11 +102,11 @@ public class SslContextFactoryTest
         SslContextFactory.Server cf = new SslContextFactory.Server();
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
-        cf.setExcludeProtocols("SSL.*", "TLSv1", "TLSv1\\.[01]");
+        cf.setExcludeProtocols("TLSv1", "TLSv1.1");
         cf.start();
 
         // Confirm behavior in engine
-        assertThat(cf.newSSLEngine().getEnabledProtocols(), not(arrayContaining("TLSv1.1")));
+        assertThat(cf.newSSLEngine().getEnabledProtocols(), not(hasItemInArray("TLSv1.1")));
 
         // Confirm output in dump
         List<SslSelectionDump> dumps = cf.selectionDump();
