@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
@@ -86,8 +85,6 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
 
     private final Queue<HttpChannelOverHTTP2> channels = new ArrayDeque<>();
     private final List<Frame> upgradeFrames = new ArrayList<>();
-    private final AtomicLong totalRequests = new AtomicLong();
-    private final AtomicLong totalResponses = new AtomicLong();
     private final ServerSessionListener listener;
     private final HttpConfiguration httpConfig;
     private boolean recycleHttpChannels = true;
@@ -97,18 +94,6 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         super(byteBufferPool, executor, endPoint, parser, session, inputBufferSize);
         this.listener = listener;
         this.httpConfig = httpConfig;
-    }
-
-    @Override
-    public long getMessagesIn()
-    {
-        return totalRequests.get();
-    }
-
-    @Override
-    public long getMessagesOut()
-    {
-        return totalResponses.get();
     }
 
     @Override
@@ -356,16 +341,8 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         }
 
         @Override
-        public Runnable onRequest(HeadersFrame frame)
-        {
-            totalRequests.incrementAndGet();
-            return super.onRequest(frame);
-        }
-
-        @Override
         public void onCompleted()
         {
-            totalResponses.incrementAndGet();
             super.onCompleted();
             if (!getStream().isReset())
                 recycle();

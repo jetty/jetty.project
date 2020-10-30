@@ -37,7 +37,9 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
+import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.JRE;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -207,6 +209,7 @@ public class DistributionTests extends AbstractDistributionTest
     }
 
     @Test
+    @DisabledOnOs(OS.WINDOWS)  // jnr not supported on windows
     public void testUnixSocket() throws Exception
     {
         Path tmpSockFile;

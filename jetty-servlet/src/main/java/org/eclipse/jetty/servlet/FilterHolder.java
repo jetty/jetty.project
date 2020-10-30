@@ -222,7 +222,8 @@ public class FilterHolder extends Holder<Filter>
     @Override
     public String toString()
     {
-        return String.format("%s@%x==%s,inst=%b,async=%b", getName(), hashCode(), getClassName(), _filter != null, isAsyncSupported());
+        return String.format("%s==%s@%x{inst=%b,async=%b,src=%s}",
+            getName(), getClassName(), hashCode(), _filter != null, isAsyncSupported(), getSource());
     }
 
     public FilterRegistration.Dynamic getRegistration()

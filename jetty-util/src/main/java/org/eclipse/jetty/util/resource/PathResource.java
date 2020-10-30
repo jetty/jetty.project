@@ -571,11 +571,7 @@ public class PathResource extends Resource
             int size = entries.size();
             return entries.toArray(new String[size]);
         }
-        catch (DirectoryIteratorException e)
-        {
-            LOG.debug(e);
-        }
-        catch (IOException e)
+        catch (DirectoryIteratorException | IOException e)
         {
             LOG.debug(e);
         }

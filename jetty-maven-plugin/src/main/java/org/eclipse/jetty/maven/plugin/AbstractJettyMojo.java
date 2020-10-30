@@ -49,7 +49,6 @@ import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -559,7 +558,12 @@ public abstract class AbstractJettyMojo extends AbstractMojo
             File target = new File(project.getBuild().getDirectory());
             File tmp = new File(target, "tmp");
             if (!tmp.exists())
-                tmp.mkdirs();
+            {
+                if (!tmp.mkdirs())
+                {
+                    throw new MojoFailureException("Unable to create temp directory: " + tmp);
+                }
+            }
             webApp.setTempDirectory(tmp);
         }
 

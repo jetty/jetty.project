@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -32,6 +33,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -111,9 +113,10 @@ public class MessageInputStreamTest
             startLatch.await();
 
             // Read it from the stream.
-            byte[] buf = new byte[32];
-            int len = stream.read(buf);
-            String message = new String(buf, 0, len, StandardCharsets.UTF_8);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            IO.copy(stream, out);
+            byte[] bytes = out.toByteArray();
+            String message = new String(bytes, 0, bytes.length, StandardCharsets.UTF_8);
 
             // Test it
             assertThat("Error when appending", hadError.get(), is(false));
@@ -169,9 +172,10 @@ public class MessageInputStreamTest
                 {
                     // wait for a little bit before sending input closed
                     TimeUnit.MILLISECONDS.sleep(1000);
+                    stream.appendFrame(null, true);
                     stream.messageComplete();
                 }
-                catch (InterruptedException e)
+                catch (InterruptedException | IOException e)
                 {
                     hadError.set(true);
                     e.printStackTrace(System.err);
@@ -206,9 +210,10 @@ public class MessageInputStreamTest
         session.provideContent();
 
         // Read entire message it from the stream.
-        byte[] buf = new byte[32];
-        int len = stream.read(buf);
-        String message = new String(buf, 0, len, StandardCharsets.UTF_8);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        IO.copy(stream, out);
+        byte[] bytes = out.toByteArray();
+        String message = new String(bytes, 0, bytes.length, StandardCharsets.UTF_8);
 
         // Test it
         assertThat("Message", message, is("Hello World!"));

@@ -53,8 +53,24 @@ public class MessageInputStream extends InputStream implements MessageAppender
 
     private enum State
     {
+        /**
+         * Open and waiting for a frame to be delivered in {@link #appendFrame(ByteBuffer, boolean)}.
+         */
         RESUMED,
+
+        /**
+         * We have suspended the session after reading a websocket frame but have not reached the end of the message.
+         */
         SUSPENDED,
+
+        /**
+         * We have received a frame with fin==true and have suspended until we are signaled that onMessage method exited.
+         */
+        COMPLETE,
+
+        /**
+         * We have read to EOF or someone has called InputStream.close(), any further reads will result in reading -1.
+         */
         CLOSED
     }
 
@@ -76,40 +92,46 @@ public class MessageInputStream extends InputStream implements MessageAppender
         if (LOG.isDebugEnabled())
             LOG.debug("Appending {} chunk: {}", fin ? "final" : "non-final", BufferUtil.toDetailString(framePayload));
 
-        // Early non atomic test that we aren't closed to avoid an unnecessary copy (will be checked again later).
-        if (state == State.CLOSED)
+        // Avoid entering synchronized block if there is nothing to do.
+        boolean bufferIsEmpty = BufferUtil.isEmpty(framePayload);
+        if (bufferIsEmpty && !fin)
             return;
 
-        // Put the payload into the queue, by copying it.
-        // Copying is necessary because the payload will
-        // be processed after this method returns.
         try
         {
-            if (framePayload == null || !framePayload.hasRemaining())
-                return;
-
-            ByteBuffer copy = acquire(framePayload.remaining(), framePayload.isDirect());
-            BufferUtil.clearToFill(copy);
-            copy.put(framePayload);
-            BufferUtil.flipToFlush(copy, 0);
-
             synchronized (this)
             {
-                switch (state)
+                if (!bufferIsEmpty)
                 {
-                    case CLOSED:
-                        return;
+                    switch (state)
+                    {
+                        case CLOSED:
+                            return;
 
-                    case RESUMED:
-                        suspendToken = session.suspend();
-                        state = State.SUSPENDED;
-                        break;
+                        case RESUMED:
+                            suspendToken = session.suspend();
+                            state = State.SUSPENDED;
+                            break;
 
-                    case SUSPENDED:
-                        throw new IllegalStateException();
+                        default:
+                            throw new IllegalStateException("Incorrect State: " + state.name());
+                    }
+
+                    // Put the payload into the queue, by copying it.
+                    // Copying is necessary because the payload will
+                    // be processed after this method returns.
+                    ByteBuffer copy = acquire(framePayload.remaining(), framePayload.isDirect());
+                    BufferUtil.clearToFill(copy);
+                    copy.put(framePayload);
+                    BufferUtil.flipToFlush(copy, 0);
+                    buffers.put(copy);
                 }
 
-                buffers.put(copy);
+                if (fin)
+                {
+                    buffers.add(EOF);
+                    state = State.COMPLETE;
+                }
             }
         }
         catch (InterruptedException e)
@@ -121,56 +143,59 @@ public class MessageInputStream extends InputStream implements MessageAppender
     @Override
     public void close()
     {
-        SuspendToken resume = null;
         synchronized (this)
         {
-            switch (state)
-            {
-                case CLOSED:
-                    return;
+            if (state == State.CLOSED)
+                return;
 
-                case SUSPENDED:
-                    resume = suspendToken;
-                    suspendToken = null;
-                    state = State.CLOSED;
-                    break;
+            boolean remainingContent = (state != State.COMPLETE) ||
+                (!buffers.isEmpty() && buffers.peek() != EOF) ||
+                (activeBuffer != null && activeBuffer.hasRemaining());
 
-                case RESUMED:
-                    state = State.CLOSED;
-                    break;
-            }
+            if (remainingContent)
+                LOG.warn("MessageInputStream closed without fully consuming content {}", session);
 
+            state = State.CLOSED;
             buffers.clear();
-            buffers.offer(EOF);
+            buffers.add(EOF);
+        }
+    }
+
+    public void handlerComplete()
+    {
+        // Close the InputStream.
+        close();
+
+        // May need to resume to resume and read to the next message.
+        SuspendToken resume;
+        synchronized (this)
+        {
+            resume = suspendToken;
+            suspendToken = null;
         }
 
-        // May need to resume to discard until we reach next message.
         if (resume != null)
             resume.resume();
     }
 
     @Override
-    public void mark(int readlimit)
-    {
-        // Not supported.
-    }
-
-    @Override
-    public boolean markSupported()
-    {
-        return false;
-    }
-
-    @Override
-    public void messageComplete()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Message completed");
-        buffers.offer(EOF);
-    }
-
-    @Override
     public int read() throws IOException
+    {
+        byte[] bytes = new byte[1];
+        while (true)
+        {
+            int read = read(bytes, 0, 1);
+            if (read < 0)
+                return -1;
+            if (read == 0)
+                continue;
+
+            return bytes[0] & 0xFF;
+        }
+    }
+
+    @Override
+    public int read(byte[] b, int off, int len) throws IOException
     {
         try
         {
@@ -186,6 +211,7 @@ public class MessageInputStream extends InputStream implements MessageAppender
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Waiting {} ms to read", timeoutMs);
+
                 if (timeoutMs < 0)
                 {
                     // Wait forever until a buffer is available.
@@ -209,10 +235,14 @@ public class MessageInputStream extends InputStream implements MessageAppender
                 }
             }
 
-            int result = activeBuffer.get() & 0xFF;
+            ByteBuffer buffer = BufferUtil.toBuffer(b, off, len);
+            BufferUtil.clearToFill(buffer);
+            int written = BufferUtil.put(activeBuffer, buffer);
+            BufferUtil.flipToFlush(buffer, 0);
+
+            // If we have no more content we may need to resume to get more data.
             if (!activeBuffer.hasRemaining())
             {
-
                 SuspendToken resume = null;
                 synchronized (this)
                 {
@@ -221,6 +251,11 @@ public class MessageInputStream extends InputStream implements MessageAppender
                         case CLOSED:
                             return -1;
 
+                        case COMPLETE:
+                            // If we are complete we have read the last frame but
+                            // don't want to resume reading until onMessage() exits.
+                            break;
+
                         case SUSPENDED:
                             resume = suspendToken;
                             suspendToken = null;
@@ -228,7 +263,7 @@ public class MessageInputStream extends InputStream implements MessageAppender
                             break;
 
                         case RESUMED:
-                            throw new IllegalStateException();
+                            throw new IllegalStateException("Incorrect State: " + state.name());
                     }
                 }
 
@@ -237,7 +272,7 @@ public class MessageInputStream extends InputStream implements MessageAppender
                     resume.resume();
             }
 
-            return result;
+            return written;
         }
         catch (InterruptedException x)
         {
@@ -249,9 +284,27 @@ public class MessageInputStream extends InputStream implements MessageAppender
     }
 
     @Override
+    public void messageComplete()
+    {
+        // We handle this case in appendFrame with fin==true.
+    }
+
+    @Override
     public void reset() throws IOException
     {
         throw new IOException("reset() not supported");
+    }
+
+    @Override
+    public void mark(int readlimit)
+    {
+        // Not supported.
+    }
+
+    @Override
+    public boolean markSupported()
+    {
+        return false;
     }
 
     private ByteBuffer acquire(int capacity, boolean direct)

@@ -1903,6 +1903,7 @@ public class Request implements HttpServletRequest
             _cookies.reset();
         _cookiesExtracted = false;
         _context = null;
+        _errorContext = null;
         _newContext = false;
         _pathInfo = null;
         _queryEncoding = null;

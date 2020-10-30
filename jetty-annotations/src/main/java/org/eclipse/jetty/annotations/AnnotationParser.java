@@ -30,12 +30,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.ManifestUtils;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiReleaseJarFile;
 import org.eclipse.jetty.util.StringUtil;
@@ -71,70 +71,51 @@ import org.objectweb.asm.Opcodes;
 public class AnnotationParser
 {
     private static final Logger LOG = Log.getLogger(AnnotationParser.class);
-    private static final int ASM_OPCODE_VERSION = Opcodes.ASM7; //compatibility of api
-    private static final String ASM_OPCODE_VERSION_STR = "ASM7";
+    private static final int ASM_VERSION = asmVersion();
 
     /**
      * Map of classnames scanned and the first location from which scan occurred
      */
     protected Map<String, Resource> _parsedClassNames = new ConcurrentHashMap<>();
     private final int _javaPlatform;
-    private int _asmVersion;
+    private final int _asmVersion;
 
     /**
      * Determine the runtime version of asm.
      *
-     * @return the org.objectweb.asm.Opcode matching the runtime version of asm.
+     * @return the {@link org.objectweb.asm.Opcodes} ASM value matching the runtime version of asm.
      */
-    public static int asmVersion()
+    private static int asmVersion()
     {
-        int asmVersion = ASM_OPCODE_VERSION;
-        String version = ManifestUtils.getVersion(Opcodes.class).orElse(null);
-        if (version == null)
+        // Find the highest available ASM version on the runtime/classpath, because
+        // if we run with a lower than available ASM version, against a class with
+        // new language features we'll get an UnsupportedOperationException, even if
+        // the ASM version supports the new language features.
+        // Also, if we run with a higher than available ASM version, we'll get
+        // an IllegalArgumentException from org.objectweb.asm.ClassVisitor.
+        // So must find exactly the maximum ASM api version available.
+
+        Optional<Integer> asmVersion = Arrays.stream(Opcodes.class.getFields()).sequential()
+            .filter((f) -> f.getName().matches("ASM[0-9]+"))
+            .map((f) -> f.getName().substring(3))
+            .map(Integer::parseInt)
+            .max(Integer::compareTo);
+
+        if (!asmVersion.isPresent())
+            throw new IllegalStateException("Invalid " + Opcodes.class.getName());
+
+        int asmFieldId = asmVersion.get();
+        try
         {
-            LOG.warn("Unknown ASM version, assuming {}", ASM_OPCODE_VERSION_STR);
+            String fieldName = "ASM" + asmFieldId;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Using ASM API from {}.{}", Opcodes.class.getName(), fieldName);
+            return (int)Opcodes.class.getField(fieldName).get(null);
         }
-        else
+        catch (Throwable e)
         {
-            int dot = version.indexOf('.');
-            version = version.substring(0, (dot < 0 ? version.length() : dot)).trim();
-            try
-            {
-                int v = Integer.parseInt(version);
-                switch (v)
-                {
-                    case 4:
-                    {
-                        asmVersion = Opcodes.ASM4;
-                        break;
-                    }
-                    case 5:
-                    {
-                        asmVersion = Opcodes.ASM5;
-                        break;
-                    }
-                    case 6:
-                    {
-                        asmVersion = Opcodes.ASM6;
-                        break;
-                    }
-                    case 7:
-                    {
-                        asmVersion = Opcodes.ASM7;
-                        break;
-                    }
-                    default:
-                    {
-                        LOG.warn("Unrecognized ASM version, assuming {}", ASM_OPCODE_VERSION_STR);
-                    }
-                }
-            }
-            catch (NumberFormatException e)
-            {
-                LOG.warn("Unable to parse ASM version, assuming {}", ASM_OPCODE_VERSION_STR);
-            }
+            throw new IllegalStateException(e);
         }
-        return asmVersion;
     }
 
     /**
@@ -480,7 +461,7 @@ public class AnnotationParser
      */
     public class MyClassVisitor extends ClassVisitor
     {
-        int _asmVersion;
+        final int _asmVersion;
         final Resource _containingResource;
         final Set<? extends Handler> _handlers;
         ClassInfo _ci;
@@ -559,7 +540,7 @@ public class AnnotationParser
      */
     public AnnotationParser(int javaPlatform)
     {
-        _asmVersion = asmVersion();
+        _asmVersion = ASM_VERSION;
         if (javaPlatform == 0)
             javaPlatform = JavaVersion.VERSION.getPlatform();
         _javaPlatform = javaPlatform;
@@ -571,7 +552,7 @@ public class AnnotationParser
             javaPlatform = JavaVersion.VERSION.getPlatform();
         _javaPlatform = javaPlatform;
         if (asmVersion == 0)
-            asmVersion = ASM_OPCODE_VERSION;
+            asmVersion = ASM_VERSION;
         _asmVersion = asmVersion;
     }
 
