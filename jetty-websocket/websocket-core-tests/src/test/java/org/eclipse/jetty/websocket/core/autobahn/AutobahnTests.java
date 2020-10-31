@@ -20,7 +20,9 @@ package org.eclipse.jetty.websocket.core.autobahn;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.Reader;
+import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -32,10 +34,13 @@ import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.exception.NotFoundException;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.codehaus.plexus.util.xml.Xpp3Dom;
+import org.codehaus.plexus.util.xml.Xpp3DomWriter;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -109,6 +114,10 @@ public class AutobahnTests
         }
 
         LOG.info("Test Result Overview {}", reportDir.resolve("clients/index.html").toUri());
+
+        List<AutobahnCaseResult> results = parseResults(Paths.get("target/reports/clients/index.json"));
+        String className = getClass().getName();
+        writeJUnitXmlReport(results, "autobahn-client", className + ".client");
     }
 
     @Test
@@ -134,6 +143,10 @@ public class AutobahnTests
         }
 
         LOG.info("Test Result Overview {}", reportDir.resolve("servers/index.html").toUri());
+
+        List<AutobahnCaseResult> results = parseResults(Paths.get("target/reports/servers/index.json"));
+        String className = getClass().getName();
+        writeJUnitXmlReport(results, "autobahn-server", className + ".server");
     }
 
     private static class FileSignalWaitStrategy extends StartupCheckStrategy
@@ -206,7 +219,89 @@ public class AutobahnTests
         }
     }
 
-    private static List<AutobahnCaseResult> parseResults(String agentString, Path jsonPath) throws Exception
+    private void writeJUnitXmlReport(List<AutobahnCaseResult> results, String surefireFileName, String testName)
+        throws Exception
+    {
+        int failures = 0;
+        long suiteDuration = 0;
+        Xpp3Dom root = new Xpp3Dom("testsuite");
+        root.setAttribute("name", testName);
+        root.setAttribute("tests", Integer.toString(results.size()));
+        root.setAttribute("errors", Integer.toString(0));
+        root.setAttribute("skipped", Integer.toString(0));
+
+        for (AutobahnCaseResult r: results)
+        {
+            Xpp3Dom testcase = new Xpp3Dom("testcase");
+            testcase.setAttribute("classname", "AutobahnTestCase");
+            testcase.setAttribute("name", r.caseName());
+
+            long duration = r.duration();
+            suiteDuration += duration;
+            testcase.setAttribute("time", Double.toString(duration / 1000.0));
+
+            AutobahnCaseResult.Behavior behavior = r.behavior();
+            // failOnNonStrict option ?
+            if (behavior == AutobahnCaseResult.Behavior.NON_STRICT)
+            {
+                addFailure(testcase,r);
+                failures++;
+            }
+            else if (behavior != AutobahnCaseResult.Behavior.OK &&
+                behavior != AutobahnCaseResult.Behavior.INFORMATIONAL &&
+                behavior != AutobahnCaseResult.Behavior.NON_STRICT)
+            {
+                addFailure(testcase, r);
+                failures++;
+            }
+
+            root.addChild(testcase);
+        }
+        root.setAttribute("failures", Integer.toString(failures));
+        root.setAttribute("time", Double.toString(suiteDuration / 1000.0));
+
+        String filename = "target/surefire-reports/TEST-" + surefireFileName + ".xml";
+        try (Writer writer = Files.newBufferedWriter(Paths.get(filename)))
+        {
+            Xpp3DomWriter.write(writer, root);
+        }
+
+    }
+
+    private void addFailure(Xpp3Dom testCase, AutobahnCaseResult result) throws IOException,
+        ParseException
+    {
+
+        JSONParser parser = new JSONParser();
+
+        try (Reader reader = Files.newBufferedReader(Paths.get(result.reportFile())))
+        {
+            JSONObject object = (JSONObject)parser.parse(reader);
+
+            Xpp3Dom sysout = new Xpp3Dom("system-out");
+            sysout.setValue(object.toJSONString());
+            testCase.addChild(sysout);
+
+            String description = object.get("description").toString();
+            String resultText = object.get("result").toString();
+            String expected = object.get("expected").toString();
+            String received = object.get("received").toString();
+
+            StringBuffer fail = new StringBuffer();
+            fail = fail.append(description).append("\n\n");
+            fail = fail.append("Case outcome").append("\n\n");
+            fail = fail.append(resultText).append("\n\n");
+            fail = fail.append("Expected").append("\n").append(expected).append("\n\n");
+            fail = fail.append("Received").append("\n").append(received).append("\n\n");
+
+            Xpp3Dom failure = new Xpp3Dom("failure");
+            failure.setAttribute("type", "behaviorMissmatch");
+            failure.setValue(fail.toString());
+            testCase.addChild(failure);
+        }
+    }
+
+    private static List<AutobahnCaseResult> parseResults(Path jsonPath) throws Exception
     {
         List<AutobahnCaseResult> results = new ArrayList<>();
         JSONParser parser = new JSONParser();
@@ -214,7 +309,7 @@ public class AutobahnTests
         try (Reader reader = Files.newBufferedReader(jsonPath))
         {
             JSONObject object = (JSONObject)parser.parse(reader);
-            JSONObject agent = (JSONObject)object.get(agentString);
+            JSONObject agent = (JSONObject)object.values().iterator().next();
 
             if (agent == null)
             {
@@ -270,17 +365,14 @@ public class AutobahnTests
 
             static Behavior parse(String value)
             {
-                if (value.equals("NON-STRICT"))
+                switch (value)
                 {
-                    return NON_STRICT;
-                }
-                else if (value.equals("WRONG CODE"))
-                {
-                    return WRONG_CODE;
-                }
-                else if (value.equals("FAILED BY CLIENT"))
-                {
-                    return FAILED_BY_CLIENT;
+                    case "NON-STRICT":
+                        return NON_STRICT;
+                    case "WRONG CODE":
+                        return WRONG_CODE;
+                    case "FAILED BY CLIENT":
+                        return FAILED_BY_CLIENT;
                 }
                 return valueOf(value);
             }
