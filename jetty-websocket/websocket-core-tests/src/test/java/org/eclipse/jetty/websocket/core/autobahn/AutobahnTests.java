@@ -45,12 +45,13 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.startupcheck.StartupCheckStrategy;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.DockerStatus;
+import org.testcontainers.utility.MountableFile;
 import org.testcontainers.utility.TestcontainersConfiguration;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -92,13 +93,12 @@ public class AutobahnTests
     @Test
     public void testClient() throws Exception
     {
-        GenericContainer<?> container = new GenericContainer<>("crossbario/autobahn-testsuite:latest")
+
+        try (GenericContainer<?> container = new GenericContainer<>(DockerImageName.parse("crossbario/autobahn-testsuite:latest"))
             .withCommand("/bin/bash", "-c", "wstest -m fuzzingserver -s /config/fuzzingserver.json")
             .withExposedPorts(9001)
-            .withLogConsumer(new Slf4jLogConsumer(LOG));
-        container.addFileSystemBind(fuzzingServer.toString(), "/config/fuzzingserver.json", BindMode.READ_ONLY);
-
-        try
+            .withCopyFileToContainer(MountableFile.forHostPath(fuzzingServer),"/config/fuzzingserver.json")
+            .withLogConsumer(new Slf4jLogConsumer(LOG)))
         {
             container.start();
             Integer mappedPort = container.getMappedPort(9001);
@@ -107,10 +107,6 @@ public class AutobahnTests
             DockerClient dockerClient = container.getDockerClient();
             String containerId = container.getContainerId();
             copyFromContainer(dockerClient, containerId, reportDir, Paths.get("/target/reports/clients"));
-        }
-        finally
-        {
-            container.stop();
         }
 
         LOG.info("Test Result Overview {}", reportDir.resolve("clients/index.html").toUri());
@@ -129,12 +125,12 @@ public class AutobahnTests
         Server server = CoreAutobahnServer.startAutobahnServer(port);
 
         FileSignalWaitStrategy strategy = new FileSignalWaitStrategy(reportDir, Paths.get("/target/reports/servers"));
-        try (GenericContainer<?> container = new GenericContainer<>("crossbario/autobahn-testsuite:latest")
+        try (GenericContainer<?> container = new GenericContainer<>(DockerImageName.parse("crossbario/autobahn-testsuite:latest"))
             .withCommand("/bin/bash", "-c", "wstest -m fuzzingclient -s /config/fuzzingclient.json" + FileSignalWaitStrategy.END_COMMAND)
             .withLogConsumer(new Slf4jLogConsumer(LOG))
+            .withCopyFileToContainer(MountableFile.forHostPath(fuzzingClient),"/config/fuzzingclient.json")
             .withStartupCheckStrategy(strategy))
         {
-            container.addFileSystemBind(fuzzingClient.toString(), "/config/fuzzingclient.json", BindMode.READ_ONLY);
             container.start();
         }
         finally
