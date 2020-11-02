@@ -39,5 +39,7 @@
     <module>test-owb-cdi-webapp</module>
     <module>test-websocket-webapp</module>
     <module>test-bad-websocket-webapp</module>
+    <module>test-websocket-client-webapp</module>
+    <module>test-websocket-client-provided-webapp</module>
   </modules>
 </project>

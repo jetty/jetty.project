@@ -24,8 +24,11 @@ import java.nio.file.Path;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 
 public class AbstractJettyHomeTest
@@ -34,7 +37,21 @@ public class AbstractJettyHomeTest
 
     protected void startHttpClient() throws Exception
     {
-        startHttpClient(HttpClient::new);
+        startHttpClient(false);
+    }
+
+    protected void startHttpClient(boolean secure) throws Exception
+    {
+        if (secure)
+        {
+            SslContextFactory.Client sslContextFactory = new SslContextFactory.Client(true);
+            ClientConnector clientConnector = new ClientConnector();
+            clientConnector.setSslContextFactory(sslContextFactory);
+            HttpClientTransportOverHTTP httpClientTransportOverHTTP = new HttpClientTransportOverHTTP(clientConnector);
+            startHttpClient(() -> new HttpClient(httpClientTransportOverHTTP));
+        }
+        else
+            startHttpClient(HttpClient::new);
     }
 
     protected void startHttpClient(Supplier<HttpClient> supplier) throws Exception
