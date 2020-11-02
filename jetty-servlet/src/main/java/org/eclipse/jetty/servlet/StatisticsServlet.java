@@ -118,6 +118,11 @@ public class StatisticsServlet extends HttpServlet
             return;
         }
 
+        if (request.getParameter("xml") != null)
+        {
+            LOG.warn("'xml' parameter is deprecated, use 'Accept' request header instead");
+        }
+
         List<String> acceptable = getOrderedAcceptableMimeTypes(request);
 
         for (String mimeType : acceptable)
@@ -134,21 +139,8 @@ public class StatisticsServlet extends HttpServlet
                     writeHtmlResponse(response);
                     return;
                 case "text/plain":
-                    writeTextResponse(response);
-                    return;
                 case "*/*":
-                    String wantXml = request.getParameter("xml");
-                    if (wantXml == null)
-                        wantXml = request.getParameter("XML");
-
-                    if (Boolean.parseBoolean(wantXml))
-                    {
-                        writeXmlResponse(response);
-                    }
-                    else
-                    {
-                        writeTextResponse(response);
-                    }
+                    writeTextResponse(response);
                     return;
                 default:
                     if (LOG.isDebugEnabled())
