@@ -40,6 +40,7 @@ import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -221,7 +222,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             }
             if (_stylesheet == null)
             {
-                _stylesheet = Resource.newResource(this.getClass().getResource("/jetty-dir.css"));
+                _stylesheet = ResourceHandler.getDefaultStylesheet();
             }
         }
         catch (Exception e)
