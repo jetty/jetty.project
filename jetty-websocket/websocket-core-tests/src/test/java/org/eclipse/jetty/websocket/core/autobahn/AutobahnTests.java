@@ -102,7 +102,7 @@ public class AutobahnTests
         {
             container.start();
             Integer mappedPort = container.getMappedPort(9001);
-            CoreAutobahnClient.main(new String[]{"localhost", mappedPort.toString()});
+            CoreAutobahnClient.main(new String[]{container.getContainerIpAddress(), mappedPort.toString()});
 
             DockerClient dockerClient = container.getDockerClient();
             String containerId = container.getContainerId();
