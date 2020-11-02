@@ -90,7 +90,7 @@ public class StatisticsServletTest
     }
 
     @Test
-    public void getStats()
+    public void testGetStats()
         throws Exception
     {
         addStatisticsHandler();
@@ -103,7 +103,7 @@ public class StatisticsServletTest
         assertEquals(response.getStatus(), 200);
 
         // Look for 200 response that was tracked
-        response = getResponse("/stats?xml=true");
+        response = getResponse("/stats");
         assertEquals(response.getStatus(), 200);
         Stats stats = parseStats(response.getContent());
 
@@ -114,7 +114,7 @@ public class StatisticsServletTest
         assertEquals(response.getStatus(), 200);
 
         // Request stats again
-        response = getResponse("/stats?xml=true");
+        response = getResponse("/stats");
         assertEquals(response.getStatus(), 200);
         stats = parseStats(response.getContent());
 
@@ -128,7 +128,7 @@ public class StatisticsServletTest
         assertEquals(response.getStatus(), 404);
 
         // Request stats again
-        response = getResponse("/stats?xml=true");
+        response = getResponse("/stats");
         assertEquals(response.getStatus(), 200);
         stats = parseStats(response.getContent());
 
@@ -142,7 +142,7 @@ public class StatisticsServletTest
     }
 
     @Test
-    public void getXmlResponse()
+    public void testGetXmlResponse()
         throws Exception
     {
         addStatisticsHandler();
@@ -166,6 +166,7 @@ public class StatisticsServletTest
 
         // Parse it, make sure it's well formed.
         DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
+        docBuilderFactory.setValidating(false);
         DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
         try (ByteArrayInputStream input = new ByteArrayInputStream(response.getContentBytes()))
         {
@@ -176,7 +177,7 @@ public class StatisticsServletTest
     }
 
     @Test
-    public void getJsonResponse()
+    public void testGetJsonResponse()
         throws Exception
     {
         addStatisticsHandler();
@@ -213,7 +214,7 @@ public class StatisticsServletTest
     }
 
     @Test
-    public void getTextResponse()
+    public void testGetTextResponse()
         throws Exception
     {
         addStatisticsHandler();
@@ -243,7 +244,7 @@ public class StatisticsServletTest
     }
 
     @Test
-    public void getHtmlResponse()
+    public void testGetHtmlResponse()
         throws Exception
     {
         addStatisticsHandler();
@@ -263,7 +264,7 @@ public class StatisticsServletTest
 
         assertThat("Response.contentType", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html"));
 
-        System.out.println(response.getContent());
+        // System.out.println(response.getContent());
 
         // Look for things that indicate it's a well formed HTML output
         assertThat(response.getContent(), containsString("<html>"));
@@ -281,6 +282,7 @@ public class StatisticsServletTest
     {
         HttpTester.Request request = new HttpTester.Request();
         request.setMethod("GET");
+        request.setHeader("Accept", "text/xml");
         request.setURI(path);
         request.setVersion(HttpVersion.HTTP_1_1);
         request.setHeader("Host", "test");

@@ -54,6 +54,19 @@ import org.eclipse.jetty.util.log.Logger;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+/**
+ * Collect and report statistics about requests / responses / connections and more.
+ * <p>
+ * You can use normal HTTP content negotiation to ask for the statistics.
+ * Specify a request <code>Accept</code> header for one of the following formats:
+ *     <ul>
+ *         <li><code>application/json</code></li>
+ *         <li><code>text/xml</code></li>
+ *         <li><code>text/html</code></li>
+ *         <li><code>text/plain</code> - default if no <code>Accept</code> header specified</li>
+ *     </ul>
+ * </p>
+ */
 public class StatisticsServlet extends HttpServlet
 {
     private static final Logger LOG = Log.getLogger(StatisticsServlet.class);
