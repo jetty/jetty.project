@@ -582,10 +582,14 @@ public class ServletHandler extends ScopedHandler
                 for (FilterMapping mapping : _wildFilterNameMappings)
                     chain = newFilterChain(mapping.getFilterHolder(), chain == null ? new ChainEnd(servletHolder) : chain);
 
-            for (FilterMapping mapping : _filterNameMappings.get(servletHolder.getName()))
+            List<FilterMapping> nameMappings = _filterNameMappings.get(servletHolder.getName());
+            if (nameMappings != null)
             {
-                if (mapping.appliesTo(dispatch))
-                    chain = newFilterChain(mapping.getFilterHolder(), chain == null ? new ChainEnd(servletHolder) : chain);
+                for (FilterMapping mapping : nameMappings)
+                {
+                    if (mapping.appliesTo(dispatch))
+                        chain = newFilterChain(mapping.getFilterHolder(), chain == null ? new ChainEnd(servletHolder) : chain);
+                }
             }
         }
 
