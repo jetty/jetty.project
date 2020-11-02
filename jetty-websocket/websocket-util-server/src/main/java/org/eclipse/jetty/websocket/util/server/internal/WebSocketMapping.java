@@ -133,7 +133,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
         throw new IllegalArgumentException("Unrecognized path spec syntax [" + rawSpec + "]");
     }
 
-    public static final String DEFAULT_KEY = "org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping";
+    public static final String DEFAULT_KEY = "jetty.websocket.defaultMapping";
 
     private final PathMappings<Negotiator> mappings = new PathMappings<>();
     private final WebSocketComponents components;

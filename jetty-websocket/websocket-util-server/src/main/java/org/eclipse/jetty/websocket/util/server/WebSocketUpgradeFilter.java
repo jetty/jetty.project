@@ -80,7 +80,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     /**
      * The init parameter name used to define {@link ServletContext} attribute used to share the {@link WebSocketMapping}.
      */
-    public static final String MAPPING_ATTRIBUTE_INIT_PARAM = "org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping.key";
+    public static final String MAPPING_ATTRIBUTE_INIT_PARAM = "jetty.websocket.WebSocketMapping";
 
     /**
      * Return any {@link WebSocketUpgradeFilter} already present on the {@link ServletContext}.
@@ -94,7 +94,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         ServletHandler servletHandler = contextHandler.getChildHandlerByClass(ServletHandler.class);
         for (FilterHolder holder : servletHandler.getFilters())
         {
-            if (WebSocketUpgradeFilter.class.isAssignableFrom(holder.getFilterClass()))
+            if (holder.getInitParameter(MAPPING_ATTRIBUTE_INIT_PARAM) != null)
                 return holder;
         }
         return null;
@@ -178,7 +178,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
 
         String mappingKey = config.getInitParameter(MAPPING_ATTRIBUTE_INIT_PARAM);
         if (mappingKey == null)
-            mappingKey = WebSocketMapping.DEFAULT_KEY;
+            throw new ServletException("the WebSocketMapping init param must be set");
         mapping = WebSocketMapping.ensureMapping(context, mappingKey);
 
         String max = config.getInitParameter("idleTimeout");
