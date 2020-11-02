@@ -19,6 +19,7 @@
 package org.eclipse.jetty.tests.webapp.websocket;
 
 import java.io.PrintWriter;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -45,7 +46,7 @@ public class WebSocketClientServlet extends HttpServlet
     @Override
     public void init() throws ServletException
     {
-        // We must rely on jetty-websocket-httpclient.xml as we do not have access to server classes like HttpClient.
+        // Cannot instantiate an HttpClient here because it's a server class, and therefore must rely on jetty-websocket-httpclient.xml
         client = new WebSocketClient();
 
         try
@@ -90,8 +91,11 @@ public class WebSocketClientServlet extends HttpServlet
             PrintWriter writer = resp.getWriter();
             writer.println("WebSocketEcho: " + ("test message".equals(response) ? "success" : "failure"));
             writer.println("WebSocketEcho: success");
-            // We cannot test the HttpClient timeout because it is a server class not exposed to the webapp.
-            // writer.println("ConnectTimeout: " + client.getHttpClient().getConnectTimeout());
+
+            // We need to test HttpClient timeout with reflection because it is a server class not exposed to the webapp.
+            Object httpClient = client.getHttpClient();
+            Method getConnectTimeout = httpClient.getClass().getMethod("getConnectTimeout");
+            writer.println("ConnectTimeout: " + getConnectTimeout.invoke(httpClient));
         }
         catch (Exception e)
         {

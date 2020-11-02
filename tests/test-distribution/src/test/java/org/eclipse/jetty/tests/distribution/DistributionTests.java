@@ -351,9 +351,7 @@ public class DistributionTests extends AbstractDistributionTest
                 assertEquals(HttpStatus.OK_200, response.getStatus());
                 String content = response.getContentAsString();
                 assertThat(content, containsString("WebSocketEcho: success"));
-
-                // We cannot test the HttpClient timeout because it is a server class not exposed to the webapp.
-                // assertThat(content, containsString("ConnectTimeout: 4999"));
+                assertThat(content, containsString("ConnectTimeout: 4999"));
             }
         }
     }
@@ -387,6 +385,7 @@ public class DistributionTests extends AbstractDistributionTest
             String[] args2 = {
                 "jetty.http.port=" + port,
                 "jetty.ssl.port=" + port,
+                // We must hide the websocket classes from the webapp if we are to include websocket client jars in WEB-INF/lib.
                 "jetty.webapp.addServerClasses+=,+org.eclipse.jetty.websocket.",
                 "jetty.webapp.addSystemClasses+=,-org.eclipse.jetty.websocket.",
                 // "jetty.server.dumpAfterStart=true",

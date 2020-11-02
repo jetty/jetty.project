@@ -46,16 +46,10 @@ class XmlBasedHttpClientProvider
             Thread.currentThread().setContextClassLoader(HttpClient.class.getClassLoader());
             return newHttpClient(resource);
         }
-        catch (Throwable t)
-        {
-            LOG.warn("Failure to load HttpClient from XML", t);
-        }
         finally
         {
             Thread.currentThread().setContextClassLoader(contextClassLoader);
         }
-
-        return null;
     }
 
     private static HttpClient newHttpClient(URL resource)
@@ -67,7 +61,7 @@ class XmlBasedHttpClientProvider
         }
         catch (Throwable t)
         {
-            LOG.warn("Unable to load: {}", resource, t);
+            LOG.warn("Failure to load HttpClient from XML {}", resource, t);
         }
 
         return null;
