@@ -235,7 +235,16 @@ public class StatisticsServlet extends HttpServlet
             return values.getValues();
         }
 
-        // No accept specified, return that we allow ALL mime types
+        // No accept header specified, try 'accept' parameter (for those clients that are
+        // so ancient that they cannot set the standard HTTP `Accept` header)
+        String acceptParameter = request.getParameter("accept");
+        if (acceptParameter != null)
+        {
+            // return that we support the one type specified in the 'accept' parameter
+            return Collections.singletonList(acceptParameter);
+        }
+
+        // return that we allow ALL mime types
         return Collections.singletonList("*/*");
     }
 

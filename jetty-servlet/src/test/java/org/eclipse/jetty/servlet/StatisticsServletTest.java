@@ -24,6 +24,8 @@ import java.io.PrintWriter;
 import java.io.StringReader;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -44,6 +46,9 @@ import org.eclipse.jetty.util.ajax.JSON;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 
@@ -141,8 +146,53 @@ public class StatisticsServletTest
         assertThat("4XX Response Count" + response, stats.responses4xx, is(1));
     }
 
-    @Test
-    public void testGetXmlResponse()
+    public static Stream<Arguments> typeVariations(String mimeType)
+    {
+        return Stream.of(
+            Arguments.of(
+                new Consumer<HttpTester.Request>()
+                {
+                    @Override
+                    public void accept(HttpTester.Request request)
+                    {
+                        request.setURI("/stats");
+                        request.setHeader("Accept", mimeType);
+                    }
+
+                    @Override
+                    public String toString()
+                    {
+                        return "Header[Accept: " + mimeType + "]";
+                    }
+                }
+            ),
+            Arguments.of(
+                new Consumer<HttpTester.Request>()
+                {
+                    @Override
+                    public void accept(HttpTester.Request request)
+                    {
+                        request.setURI("/stats?accept=" + mimeType);
+                    }
+
+                    @Override
+                    public String toString()
+                    {
+                        return "query[accept=" + mimeType + "]";
+                    }
+                }
+            )
+        );
+    }
+
+    public static Stream<Arguments> xmlVariations()
+    {
+        return typeVariations("text/xml");
+    }
+
+    @ParameterizedTest(name = "[{index}] {0}")
+    @MethodSource("xmlVariations")
+    public void testGetXmlResponse(Consumer<HttpTester.Request> requestCustomizer)
         throws Exception
     {
         addStatisticsHandler();
@@ -152,10 +202,9 @@ public class StatisticsServletTest
         HttpTester.Request request = new HttpTester.Request();
 
         request.setMethod("GET");
-        request.setURI("/stats");
-        request.setHeader("Accept", "text/xml");
         request.setVersion(HttpVersion.HTTP_1_1);
         request.setHeader("Host", "test");
+        requestCustomizer.accept(request);
 
         ByteBuffer responseBuffer = _connector.getResponse(request.generate());
         response = HttpTester.parseResponse(responseBuffer);
@@ -176,8 +225,14 @@ public class StatisticsServletTest
         }
     }
 
-    @Test
-    public void testGetJsonResponse()
+    public static Stream<Arguments> jsonVariations()
+    {
+        return typeVariations("application/json");
+    }
+
+    @ParameterizedTest(name = "[{index}] {0}")
+    @MethodSource("jsonVariations")
+    public void testGetJsonResponse(Consumer<HttpTester.Request> requestCustomizer)
         throws Exception
     {
         addStatisticsHandler();
@@ -187,8 +242,7 @@ public class StatisticsServletTest
         HttpTester.Request request = new HttpTester.Request();
 
         request.setMethod("GET");
-        request.setURI("/stats");
-        request.setHeader("Accept", "application/json");
+        requestCustomizer.accept(request);
         request.setVersion(HttpVersion.HTTP_1_1);
         request.setHeader("Host", "test");
 
@@ -213,8 +267,14 @@ public class StatisticsServletTest
         assertNotNull(docMap.get("memory"));
     }
 
-    @Test
-    public void testGetTextResponse()
+    public static Stream<Arguments> plaintextVariations()
+    {
+        return typeVariations("text/plain");
+    }
+
+    @ParameterizedTest(name = "[{index}] {0}")
+    @MethodSource("plaintextVariations")
+    public void testGetTextResponse(Consumer<HttpTester.Request> requestCustomizer)
         throws Exception
     {
         addStatisticsHandler();
@@ -224,8 +284,7 @@ public class StatisticsServletTest
         HttpTester.Request request = new HttpTester.Request();
 
         request.setMethod("GET");
-        request.setURI("/stats");
-        request.setHeader("Accept", "text/plain");
+        requestCustomizer.accept(request);
         request.setVersion(HttpVersion.HTTP_1_1);
         request.setHeader("Host", "test");
 
@@ -243,8 +302,14 @@ public class StatisticsServletTest
         assertThat(response.getContent(), containsString("memory: "));
     }
 
-    @Test
-    public void testGetHtmlResponse()
+    public static Stream<Arguments> htmlVariations()
+    {
+        return typeVariations("text/html");
+    }
+
+    @ParameterizedTest(name = "[{index}] {0}")
+    @MethodSource("htmlVariations")
+    public void testGetHtmlResponse(Consumer<HttpTester.Request> requestCustomizer)
         throws Exception
     {
         addStatisticsHandler();
@@ -254,8 +319,7 @@ public class StatisticsServletTest
         HttpTester.Request request = new HttpTester.Request();
 
         request.setMethod("GET");
-        request.setURI("/stats");
-        request.setHeader("Accept", "text/html");
+        requestCustomizer.accept(request);
         request.setVersion(HttpVersion.HTTP_1_1);
         request.setHeader("Host", "test");
 
