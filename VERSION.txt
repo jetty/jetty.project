@@ -1,3 +1,5 @@
+jetty-9.4.35-SNAPSHOT
+
 jetty-9.4.34.v20201102 - 02 November 2020
  + 5320 Using WebSocketClient with jetty-websocket-httpclient.xml in a Jetty
    web application causes ClassCastException
