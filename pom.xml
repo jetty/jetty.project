@@ -34,7 +34,7 @@
     <mail-api.version>2.0.0-RC6</mail-api.version>
     <inject-api.version>2.0.0-RC4</inject-api.version>
     <infinispan.version>9.4.8.Final</infinispan.version>
-    <hazelcast.version>4.0.1</hazelcast.version>
+    <hazelcast.version>4.0.3</hazelcast.version>
     <conscrypt.version>2.5.1</conscrypt.version>
     <asm.version>9.0</asm.version>
     <jmh.version>1.26</jmh.version>
