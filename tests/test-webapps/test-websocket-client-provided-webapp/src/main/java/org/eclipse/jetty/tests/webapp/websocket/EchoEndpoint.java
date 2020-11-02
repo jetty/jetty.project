@@ -16,19 +16,17 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client;
+package org.eclipse.jetty.tests.webapp.websocket;
 
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
+import javax.websocket.OnMessage;
+import javax.websocket.server.ServerEndpoint;
 
-public final class HttpClientProvider
+@ServerEndpoint(value = "/echo")
+public class EchoEndpoint
 {
-    public static HttpClient get(WebSocketContainerScope scope)
+    @OnMessage
+    public String echo(String message)
     {
-        HttpClient httpClient = XmlBasedHttpClientProvider.get(scope);
-        if (httpClient != null)
-            return httpClient;
-
-        return DefaultHttpClientProvider.newHttpClient(scope);
+        return message;
     }
 }
