@@ -9,6 +9,7 @@
   <name>Jetty :: Http Service Provider Interface</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.http.spi</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.http.spi.*</spotbugs.onlyAnalyze>
   </properties>
   <dependencies>
     <dependency>
@@ -37,13 +38,6 @@
   </dependencies>
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.http.spi.*</onlyAnalyze>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>

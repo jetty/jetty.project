@@ -11,6 +11,7 @@
   <description>Jetty Servlet Container</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.servlet</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.*</spotbugs.onlyAnalyze>
   </properties>
   <build>
     <plugins>
@@ -25,13 +26,6 @@
             </goals>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.servlet.*</onlyAnalyze>
-        </configuration>
       </plugin>
     </plugins>
   </build>

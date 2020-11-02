@@ -9,6 +9,7 @@
   <name>Jetty :: ALPN :: Server</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.alpn.server</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.alpn.*</spotbugs.onlyAnalyze>
   </properties>
   <build>
     <plugins>
@@ -17,13 +18,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.alpn.*</onlyAnalyze>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
