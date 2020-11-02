@@ -434,11 +434,12 @@ public class ResourceCollection extends Resource
     public String[] list()
     {
         assertResourcesSet();
-
         HashSet<String> set = new HashSet<>();
         for (Resource r : _resources)
         {
-            Collections.addAll(set, r.list());
+            String[] list = r.list();
+            if (list != null)
+                Collections.addAll(set, list);
         }
         String[] result = set.toArray(new String[0]);
         Arrays.sort(result);
