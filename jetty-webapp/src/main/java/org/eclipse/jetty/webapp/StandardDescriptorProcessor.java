@@ -806,7 +806,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case WebFragment:
                     {
                         //a web-fragment set the value, all web-fragments must have the same value
-                        if (!context.getSessionHandler().getSessionCookieConfig().getPath().equals(path))
+                        if (!path.equals(context.getSessionHandler().getSessionCookieConfig().getPath()))
                             throw new IllegalStateException("Conflicting cookie-config path " + path + " in " + descriptor.getResource());
                         break;
                     }
