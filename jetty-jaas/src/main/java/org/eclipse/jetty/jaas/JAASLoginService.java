@@ -277,47 +277,37 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
      */
     protected String[] getGroups(Subject subject)
     {
-        List<String> roleNameList = Arrays.asList(getRoleClassNames());
-        
         Collection<String> groups = new LinkedHashSet<>();
-        Set<Principal> principals = subject.getPrincipals();
-        for (Principal principal : principals)
+        for (Principal principal : subject.getPrincipals())
         {
-            Class<?> c = principal.getClass();
-            boolean added = false;
-            //check whether the type of this Principle is a role
-            while (c != null && !added)
-            {
-                if (roleClassNameMatches(c, roleNameList))
-                {
-                    groups.add(principal.getName());
-                    added = true;
-                }
-                else
-                    c = c.getSuperclass();
-            }
+            if (isRoleClass(principal.getClass(), Arrays.asList(getRoleClassNames())))
+                groups.add(principal.getName());
         }
 
         return groups.toArray(new String[groups.size()]);
     }
     
     /**
-     * Check if a given class, or any of the interfaces that it implements is one of the role classes.
-     * We do this comparison by classnames, without loading the role classes.
-     * @param clazz the class and its interfaces to check
-     * @param roleClassNames class names of the role classes
-     * @return true if the class or one of its interfaces is one of the configured role classes
+     * Check whether the class, its superclasses or any interfaces they implement
+     * is one of the classes that represents a role.
+     * 
+     * @param clazz the class to check
+     * @param roleClassNames the list of classnames that represent roles
+     * @return true if the class is a role class
      */
-    private static boolean roleClassNameMatches(Class<?> clazz, List<String> roleClassNames)
+    private static boolean isRoleClass(Class<?> clazz, List<String> roleClassNames)
     {
-        if (clazz == null || roleClassNames == null)
-            return false;
-        //collect the names of the class and any interfaces it implements
-        List<String> classnames = new ArrayList<>();
-        classnames.add(clazz.getName());
-        Arrays.stream(clazz.getInterfaces()).map(i -> i.getName()).forEach(i -> classnames.add(i));
+        Class<?> c = clazz;
         
-        return roleClassNames.stream().filter(classnames::contains).distinct().count() > 0;
-
+        //add the class, its interfaces and superclasses to the list to test
+        List<String> classnames = new ArrayList<>();
+        while (c != null)
+        {
+            classnames.add(c.getName());
+            Arrays.stream(c.getInterfaces()).map(Class::getName).forEach(classnames::add);
+            c = c.getSuperclass();
+        }
+        
+        return roleClassNames.stream().anyMatch(classnames::contains);
     }
 }

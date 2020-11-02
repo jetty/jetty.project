@@ -57,7 +57,6 @@ public class PropertyFileLoginModuleTest
             }
         };
 
-
         JAASLoginService ls = new JAASLoginService("foo");
         ls.setCallbackHandlerClass("org.eclipse.jetty.jaas.callback.DefaultCallbackHandler");
         ls.setIdentityService(new DefaultIdentityService());
