@@ -46,6 +46,7 @@ import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.Syntax;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionIdManager;
@@ -1466,7 +1467,11 @@ public class SessionHandler extends ScopedHandler
         {
             if (_context != null && _context.getContextHandler().isAvailable())
                 throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
-            _sessionCookie = name;
+            if ("".equals(name))
+                throw new IllegalArgumentException("Blank cookie name");
+            if (name != null)
+                Syntax.requireValidRFC2616Token(name, "Bad Session cookie name");
+            _sessionCookie = StringUtil.isBlank(name) ? __DefaultSessionCookie : name;
         }
 
         @Override
