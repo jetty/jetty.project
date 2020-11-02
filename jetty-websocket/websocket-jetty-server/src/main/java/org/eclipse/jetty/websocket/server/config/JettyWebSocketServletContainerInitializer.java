@@ -88,12 +88,9 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
      */
     private static JettyWebSocketServerContainer initialize(ServletContextHandler context)
     {
-        WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(context.getServletContext());
-        WebSocketMapping mapping = WebSocketMapping.ensureMapping(context.getServletContext(), WebSocketMapping.DEFAULT_KEY);
         JettyWebSocketServerContainer container = JettyWebSocketServerContainer.ensureContainer(context.getServletContext());
-
         if (LOG.isDebugEnabled())
-            LOG.debug("configureContext {} {} {}", container, mapping, components);
+            LOG.debug("initialize {}", container);
 
         return container;
     }
@@ -102,6 +99,8 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
     public void onStartup(Set<Class<?>> c, ServletContext context)
     {
         ServletContextHandler contextHandler = ServletContextHandler.getServletContextHandler(context, "Jetty WebSocket SCI");
-        JettyWebSocketServletContainerInitializer.initialize(contextHandler);
+        JettyWebSocketServerContainer container = JettyWebSocketServletContainerInitializer.initialize(contextHandler);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onStartup {}", container);
     }
 }
