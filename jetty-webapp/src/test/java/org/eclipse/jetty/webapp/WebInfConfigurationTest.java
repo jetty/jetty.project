@@ -67,7 +67,7 @@ public class WebInfConfigurationTest
     {
         WebInfConfiguration config = new WebInfConfiguration();
         WebAppContext context = new WebAppContext();
-        context.setAttribute(WebInfConfiguration.CONTAINER_JAR_PATTERN, ".*/jetty-util-[^/]*\\.jar$|.*/jetty-util/target/classes/");
+        context.setAttribute(WebInfConfiguration.CONTAINER_JAR_PATTERN, ".*/jetty-util-[0-9][^/]*\\.jar$|.*/jetty-util/target/classes/");
 
         WebAppClassLoader loader = new WebAppClassLoader(context);
         context.setClassLoader(loader);
@@ -89,7 +89,7 @@ public class WebInfConfigurationTest
     {
         WebInfConfiguration config = new WebInfConfiguration();
         WebAppContext context = new WebAppContext();
-        context.setAttribute(WebInfConfiguration.CONTAINER_JAR_PATTERN, ".*/jetty-util-[^/]*\\.jar$|.*/jetty-util/target/classes/$|.*/foo-bar-janb.jar");
+        context.setAttribute(WebInfConfiguration.CONTAINER_JAR_PATTERN, ".*/jetty-util-[0-9][^/]*\\.jar$|.*/jetty-util/target/classes/$|.*/foo-bar-janb.jar");
         WebAppClassLoader loader = new WebAppClassLoader(context);
         context.setClassLoader(loader);
         config.findAndFilterContainerPaths(context);
@@ -117,7 +117,7 @@ public class WebInfConfigurationTest
         WebInfConfiguration config = new WebInfConfiguration();
         WebAppContext context = new WebAppContext();
         context.setAttribute(JavaVersion.JAVA_TARGET_PLATFORM, "8");
-        context.setAttribute(WebInfConfiguration.CONTAINER_JAR_PATTERN, ".*/jetty-util-[^/]*\\.jar$|.*/jetty-util/target/classes/$|.*/foo-bar-janb.jar");
+        context.setAttribute(WebInfConfiguration.CONTAINER_JAR_PATTERN, ".*/jetty-util-[0-9][^/]*\\.jar$|.*/jetty-util/target/classes/$|.*/foo-bar-janb.jar");
         WebAppClassLoader loader = new WebAppClassLoader(context);
         context.setClassLoader(loader);
         config.findAndFilterContainerPaths(context);
