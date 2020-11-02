@@ -21,6 +21,7 @@ package org.eclipse.jetty.webapp;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
@@ -72,7 +73,7 @@ public class WebInfConfigurationTest
         context.setClassLoader(loader);
         config.findAndFilterContainerPaths(context);
         List<Resource> containerResources = context.getMetaData().getContainerResources();
-        assertEquals(1, containerResources.size());
+        assertEquals(1, containerResources.size(), () -> containerResources.stream().map(Resource::toString).collect(Collectors.joining(",", "[", "]")));
         assertThat(containerResources.get(0).toString(), containsString("jetty-util"));
     }
 
@@ -93,7 +94,7 @@ public class WebInfConfigurationTest
         context.setClassLoader(loader);
         config.findAndFilterContainerPaths(context);
         List<Resource> containerResources = context.getMetaData().getContainerResources();
-        assertEquals(2, containerResources.size());
+        assertEquals(2, containerResources.size(), () -> containerResources.stream().map(Resource::toString).collect(Collectors.joining(",", "[", "]")));
         for (Resource r : containerResources)
         {
             String s = r.toString();
@@ -121,7 +122,7 @@ public class WebInfConfigurationTest
         context.setClassLoader(loader);
         config.findAndFilterContainerPaths(context);
         List<Resource> containerResources = context.getMetaData().getContainerResources();
-        assertEquals(1, containerResources.size());
+        assertEquals(1, containerResources.size(), () -> containerResources.stream().map(Resource::toString).collect(Collectors.joining(",", "[", "]")));
         assertThat(containerResources.get(0).toString(), containsString("jetty-util"));
     }
 
