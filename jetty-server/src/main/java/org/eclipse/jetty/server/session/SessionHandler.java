@@ -654,7 +654,7 @@ public class SessionHandler extends ScopedHandler
      */
     public HttpCookie getSessionCookie(HttpSession session, String contextPath, boolean requestIsSecure)
     {
-        if (isUsingCookies())
+        if (isUsingCookies() && _cookieConfig.getName() != null)
         {
             String sessionPath = (_cookieConfig.getPath() == null) ? contextPath : _cookieConfig.getPath();
             sessionPath = (StringUtil.isEmpty(sessionPath)) ? "/" : sessionPath;
@@ -1640,23 +1640,23 @@ public class SessionHandler extends ScopedHandler
         HttpSession session = null;
 
         //first try getting id from a cookie
-        if (isUsingCookies())
+        if (isUsingCookies() && getSessionCookieConfig().getName() != null)
         {
             Cookie[] cookies = request.getCookies();
             if (cookies != null && cookies.length > 0)
             {
                 final String sessionCookie = getSessionCookieConfig().getName();
-                for (int i = 0; i < cookies.length; i++)
+                for (Cookie cookie : cookies)
                 {
-                    if (sessionCookie.equalsIgnoreCase(cookies[i].getName()))
+                    if (sessionCookie.equalsIgnoreCase(cookie.getName()))
                     {
-                        String id = cookies[i].getValue();
+                        String id = cookie.getValue();
                         requestedSessionIdFromCookie = true;
                         if (LOG.isDebugEnabled())
                             LOG.debug("Got Session ID {} from cookie {}", id, sessionCookie);
 
                         HttpSession s = getHttpSession(id);
-                        
+
                         if (requestedSessionId == null)
                         {
                             //no previous id, always accept this one
