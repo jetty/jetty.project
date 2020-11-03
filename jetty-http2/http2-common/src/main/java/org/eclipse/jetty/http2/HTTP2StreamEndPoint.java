@@ -216,6 +216,9 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
         else
         {
             entry.succeed();
+            // WebSocket does not have a backpressure API so you must always demand
+            // the next frame after succeeding the previous one.
+            stream.demand(1);
         }
         return length;
     }
