@@ -85,14 +85,14 @@
             <id>generate-xml-files</id>
             <phase>process-resources</phase>
             <configuration>
-              <tasks>
+              <target>
                 <concat destfile="${project.build.directory}/plugin-context.xml">
                   <filelist dir="src/main/templates/" files="plugin-context-header.xml,env-definitions.xml" />
                 </concat>
                 <concat destfile="${project.build.directory}/test-spec.xml">
                   <filelist dir="src/main/templates/" files="annotations-context-header.xml,env-definitions.xml" />
                 </concat>
-              </tasks>
+              </target>
             </configuration>
             <goals>
               <goal>run</goal>
