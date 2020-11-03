@@ -189,7 +189,7 @@ public class FileSystemResourceTest
                 final URI alias = ritem.getAlias();
                 if (alias == null)
                 {
-                    return false;
+                    return resource.getAlias() == null;
                 }
                 else
                 {

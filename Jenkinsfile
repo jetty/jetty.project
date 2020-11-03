@@ -102,12 +102,12 @@ def mavenBuild(jdk, cmdline, mvnName, junitPublishDisabled) {
   def mavenOpts = '-Xms1g -Xmx4g -Djava.awt.headless=true'
 
   withMaven(
-    maven: mvnName,
-    jdk: "$jdk",
-    publisherStrategy: 'EXPLICIT',
-    options: [junitPublisher(disabled: junitPublishDisabled), mavenLinkerPublisher(disabled: false), pipelineGraphPublisher(disabled: false)],
-    mavenOpts: mavenOpts,
-    mavenLocalRepo: localRepo) {
+          maven: mvnName,
+          jdk: "$jdk",
+          publisherStrategy: 'EXPLICIT',
+          options: [junitPublisher(disabled: junitPublishDisabled), mavenLinkerPublisher(disabled: false), pipelineGraphPublisher(disabled: false)],
+          mavenOpts: mavenOpts,
+          mavenLocalRepo: localRepo) {
     // Some common Maven command line + provided command line
     sh "mvn -Premote-session-tests -Pci -V -B -e -fae -Dmaven.test.failure.ignore=true -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" + env.JENKINS_HOME
   }

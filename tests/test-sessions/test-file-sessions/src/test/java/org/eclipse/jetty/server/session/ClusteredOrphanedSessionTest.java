@@ -18,27 +18,26 @@
 
 package org.eclipse.jetty.server.session;
 
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * ClusteredOrphanedSessionTest
  */
+@ExtendWith(WorkDirExtension.class)
 public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
 {
+    public WorkDir workDir;
     FileTestHelper _helper;
-    
+
     @BeforeEach
     public void before() throws Exception
     {
-        _helper = new FileTestHelper();
-    }
-
-    @AfterEach
-    public void after()
-    {
-        _helper.teardown();
+        _helper = new FileTestHelper(workDir.getEmptyPathDir());
     }
 
     @Override

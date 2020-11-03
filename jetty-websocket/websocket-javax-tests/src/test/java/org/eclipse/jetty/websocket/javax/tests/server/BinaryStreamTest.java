@@ -18,22 +18,31 @@
 
 package org.eclipse.jetty.websocket.javax.tests.server;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import javax.websocket.ClientEndpoint;
+import javax.websocket.CloseReason;
+import javax.websocket.OnClose;
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.javax.tests.DataUtils;
 import org.eclipse.jetty.websocket.javax.tests.Fuzzer;
 import org.eclipse.jetty.websocket.javax.tests.LocalServer;
@@ -43,11 +52,18 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class BinaryStreamTest
 {
     private static final String PATH = "/echo";
 
     private static LocalServer server;
+    private static JavaxWebSocketClientContainer wsClient;
 
     @BeforeAll
     public static void startServer() throws Exception
@@ -56,11 +72,15 @@ public class BinaryStreamTest
         server.start();
         ServerEndpointConfig config = ServerEndpointConfig.Builder.create(ServerBinaryStreamer.class, PATH).build();
         server.getServerContainer().addEndpoint(config);
+
+        wsClient = new JavaxWebSocketClientContainer();
+        wsClient.start();
     }
 
     @AfterAll
     public static void stopServer() throws Exception
     {
+        wsClient.stop();
         server.stop();
     }
 
@@ -122,6 +142,122 @@ public class BinaryStreamTest
             session.sendSegmented(send, 1);
             BlockingQueue<Frame> receivedFrames = session.getOutputFrames();
             session.expectMessage(receivedFrames, OpCode.BINARY, expectedMessage);
+        }
+    }
+
+    @Test
+    public void testNotReadingToEndOfStream() throws Exception
+    {
+        int size = 32;
+        byte[] data = newData(size);
+        URI uri = server.getWsUri().resolve(PATH);
+
+        CountDownLatch handlerComplete = new CountDownLatch(1);
+        BasicClientBinaryStreamer client = new BasicClientBinaryStreamer((session, inputStream) ->
+        {
+            byte[] recv = new byte[16];
+            int read = inputStream.read(recv);
+            assertThat(read, not(is(0)));
+            handlerComplete.countDown();
+        });
+
+        Session session = wsClient.connectToServer(client, uri);
+        session.getBasicRemote().sendBinary(BufferUtil.toBuffer(data));
+        assertTrue(handlerComplete.await(5, TimeUnit.SECONDS));
+
+        session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, "close from test"));
+        assertTrue(client.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(client.closeReason.getCloseCode(), is(CloseReason.CloseCodes.NORMAL_CLOSURE));
+        assertThat(client.closeReason.getReasonPhrase(), is("close from test"));
+    }
+
+    @Test
+    public void testClosingBeforeReadingToEndOfStream() throws Exception
+    {
+        int size = 32;
+        byte[] data = newData(size);
+        URI uri = server.getWsUri().resolve(PATH);
+
+        CountDownLatch handlerComplete = new CountDownLatch(1);
+        BasicClientBinaryStreamer client = new BasicClientBinaryStreamer((session, inputStream) ->
+        {
+            byte[] recv = new byte[16];
+            int read = inputStream.read(recv);
+            assertThat(read, not(is(0)));
+
+            inputStream.close();
+            assertThrows(IOException.class, inputStream::read);
+            handlerComplete.countDown();
+        });
+
+        Session session = wsClient.connectToServer(client, uri);
+        session.getBasicRemote().sendBinary(BufferUtil.toBuffer(data));
+        assertTrue(handlerComplete.await(5, TimeUnit.SECONDS));
+
+        session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, "close from test"));
+        assertTrue(client.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(client.closeReason.getCloseCode(), is(CloseReason.CloseCodes.NORMAL_CLOSURE));
+        assertThat(client.closeReason.getReasonPhrase(), is("close from test"));
+    }
+
+    @ClientEndpoint
+    public static class BasicClientBinaryStreamer
+    {
+        public interface MessageHandler
+        {
+            void accept(Session session, InputStream inputStream) throws Exception;
+        }
+
+        private final MessageHandler handler;
+        private final CountDownLatch closeLatch = new CountDownLatch(1);
+        private CloseReason closeReason;
+
+        public BasicClientBinaryStreamer(MessageHandler consumer)
+        {
+            this.handler = consumer;
+        }
+
+        @OnMessage
+        public void echoed(Session session, InputStream input) throws Exception
+        {
+            handler.accept(session, input);
+        }
+
+        @OnClose
+        public void onClosed(CloseReason closeReason)
+        {
+            this.closeReason = closeReason;
+            closeLatch.countDown();
+        }
+    }
+
+    @ClientEndpoint
+    public static class ClientBinaryStreamer
+    {
+        private final CountDownLatch latch = new CountDownLatch(1);
+        private final ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+        @OnMessage
+        public void echoed(InputStream input) throws IOException
+        {
+            while (true)
+            {
+                int read = input.read();
+                if (read < 0)
+                    break;
+                output.write(read);
+            }
+            latch.countDown();
+        }
+
+        public byte[] getEcho()
+        {
+            return output.toByteArray();
+        }
+
+        public boolean await(long timeout, TimeUnit unit) throws InterruptedException
+        {
+            return latch.await(timeout, unit);
         }
     }
 

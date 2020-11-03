@@ -84,6 +84,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2Session.class);
 
     private final ConcurrentMap<Integer, IStream> streams = new ConcurrentHashMap<>();
+    private final AtomicLong streamsOpened = new AtomicLong();
+    private final AtomicLong streamsClosed = new AtomicLong();
     private final StreamCreator streamCreator = new StreamCreator();
     private final AtomicBiInteger streamCount = new AtomicBiInteger(); // Hi = closed, Lo = stream count
     private final AtomicInteger localStreamIds = new AtomicInteger();
@@ -165,6 +167,19 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         return flowControl;
     }
 
+    @ManagedAttribute(value = "The total number of streams opened", readonly = true)
+    public long getStreamsOpened()
+    {
+        return streamsOpened.get();
+    }
+
+    @ManagedAttribute(value = "The total number of streams closed", readonly = true)
+    public long getStreamsClosed()
+    {
+        return streamsClosed.get();
+    }
+
+    @ManagedAttribute("The maximum number of concurrent local streams")
     public int getMaxLocalStreams()
     {
         return maxLocalStreams;
@@ -175,6 +190,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         this.maxLocalStreams = maxLocalStreams;
     }
 
+    @ManagedAttribute("The maximum number of concurrent remote streams")
     public int getMaxRemoteStreams()
     {
         return maxRemoteStreams;
@@ -207,6 +223,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         this.initialSessionRecvWindow = initialSessionRecvWindow;
     }
 
+    @ManagedAttribute("The number of bytes that trigger a TCP write")
     public int getWriteThreshold()
     {
         return writeThreshold;
@@ -1087,11 +1104,13 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     protected void onStreamOpened(IStream stream)
     {
+        streamsOpened.incrementAndGet();
         streamCount.addAndGetLo(1);
     }
 
     protected void onStreamClosed(IStream stream)
     {
+        streamsClosed.incrementAndGet();
         Callback callback = null;
         while (true)
         {

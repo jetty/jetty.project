@@ -49,7 +49,7 @@ public class DeflaterPoolBenchmark
     public static final String COMPRESSION_STRING = "hello world";
     DeflaterPool _pool;
 
-    @Param({"NO_POOL", "DEFLATER_POOL_10", "DEFLATER_POOL_20", "DEFLATER_POOL_50"})
+    @Param({"NO_POOL", "DEFLATER_POOL_10", "DEFLATER_POOL_20", "DEFLATER_POOL_50", "DEFLATER_POOL_DEFAULT"})
     public static String poolType;
 
     @Setup(Level.Trial)
@@ -75,30 +75,36 @@ public class DeflaterPoolBenchmark
                 capacity = 50;
                 break;
 
+            case "DEFLATER_POOL_DEFAULT":
+                capacity = DeflaterPool.DEFAULT_CAPACITY;
+                break;
+
             default:
                 throw new IllegalStateException("Unknown poolType Parameter");
         }
 
         _pool = new DeflaterPool(capacity, Deflater.DEFAULT_COMPRESSION, true);
+        _pool.start();
     }
 
     @TearDown(Level.Trial)
-    public static void stopTrial() throws Exception
+    public void stopTrial() throws Exception
     {
+        _pool.stop();
     }
 
     @Benchmark
     @BenchmarkMode({Mode.Throughput})
-    @SuppressWarnings("deprecation")
     public long testPool() throws Exception
     {
-        Deflater deflater = _pool.acquire();
+        DeflaterPool.Entry entry = _pool.acquire();
+        Deflater deflater = entry.get();
         deflater.setInput(COMPRESSION_STRING.getBytes());
         deflater.finish();
 
         byte[] output = new byte[COMPRESSION_STRING.length() + 1];
         int compressedDataLength = deflater.deflate(output);
-        _pool.release(deflater);
+        _pool.release(entry);
 
         return compressedDataLength;
     }

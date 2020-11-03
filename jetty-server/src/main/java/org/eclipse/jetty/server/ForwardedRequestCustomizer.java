@@ -481,70 +481,60 @@ public class ForwardedRequestCustomizer implements Customizer
 
         if (match)
         {
-            String proto = "http";
-
             HttpURI.Mutable builder = HttpURI.build(request.getHttpURI());
             boolean httpUriChanged = false;
 
             // Is secure status configured from headers?
             if (forwarded.isSecure())
             {
-                // set default to https
-                proto = config.getSecureScheme();
+                request.setSecure(true);
             }
 
             // Set Scheme from configured protocol
             if (forwarded._proto != null)
             {
-                proto = forwarded._proto;
-                builder.scheme(proto);
+                builder.scheme(forwarded._proto);
                 httpUriChanged = true;
             }
-
-            // Set authority
-            String host = null;
-            int port = -1;
+            // Set scheme if header implies secure scheme is to be used (see #isSslIsSecure())
+            else if (forwarded._secureScheme)
+            {
+                builder.scheme(config.getSecureScheme());
+                httpUriChanged = true;
+            }
 
             // Use authority from headers, if configured.
             if (forwarded._authority != null)
             {
-                host = forwarded._authority._host;
-                port = forwarded._authority._port;
+                String host = forwarded._authority._host;
+                int port = forwarded._authority._port;
+
+                // Fall back to request metadata if needed.
+                if (host == null)
+                {
+                    host = builder.getHost();
+                }
+
+                if (port == MutableHostPort.UNSET) // is unset by headers
+                {
+                    port = builder.getPort();
+                }
+
+                // Don't change port if port == IMPLIED.
+
+                // Update authority if different from metadata
+                if (!host.equalsIgnoreCase(builder.getHost()) ||
+                    port != builder.getPort())
+                {
+                    request.setHttpFields(HttpFields.build(httpFields, new HostPortHttpField(host, port)));
+                    builder.authority(host, port);
+                    httpUriChanged = true;
+                }
             }
 
-            // Fall back to request metadata if needed.
-            if (host == null)
+            if (httpUriChanged)
             {
-                host = builder.getHost();
-            }
-            if (port == MutableHostPort.UNSET) // is unset by headers
-            {
-                port = builder.getPort();
-            }
-            if (port == MutableHostPort.IMPLIED) // is implied
-            {
-                // get Implied port (from protocol / scheme) and HttpConfiguration
-                int defaultPort = 80;
-                port = proto.equalsIgnoreCase(config.getSecureScheme()) ? getSecurePort(config) : defaultPort;
-            }
-
-            // Update authority if different from metadata
-            if (!host.equalsIgnoreCase(builder.getHost()) ||
-                port != builder.getPort())
-            {
-                request.setHttpFields(HttpFields.build(httpFields, new HostPortHttpField(host, port)));
-                builder.authority(host, port);
-                httpUriChanged = true;
-            }
-
-            // Set secure status
-            if (forwarded.isSecure() ||
-                proto.equalsIgnoreCase(config.getSecureScheme()) ||
-                port == getSecurePort(config))
-            {
-                request.setSecure(true);
-                builder.scheme(proto);
-                httpUriChanged = true;
+                request.setHttpURI(builder);
             }
 
             // Set Remote Address
@@ -552,11 +542,6 @@ public class ForwardedRequestCustomizer implements Customizer
             {
                 int forPort = forwarded._for._port > 0 ? forwarded._for._port : request.getRemotePort();
                 request.setRemoteAddr(InetSocketAddress.createUnresolved(forwarded._for._host, forPort));
-            }
-
-            if (httpUriChanged)
-            {
-                request.setHttpURI(builder);
             }
         }
     }
@@ -764,6 +749,7 @@ public class ForwardedRequestCustomizer implements Customizer
         String _proto;
         Source _protoSource = Source.UNSET;
         Boolean _secure;
+        boolean _secureScheme = false;
 
         public Forwarded(Request request, HttpConfiguration config)
         {
@@ -807,40 +793,58 @@ public class ForwardedRequestCustomizer implements Customizer
             return _for;
         }
 
-        @SuppressWarnings("unused")
+        /**
+         * Called if header is <code>Proxy-auth-cert</code>
+         */
         public void handleCipherSuite(HttpField field)
         {
             _request.setAttribute("javax.servlet.request.cipher_suite", field.getValue());
+
+            // Is ForwardingRequestCustomizer configured to trigger isSecure and scheme change on this header?
             if (isSslIsSecure())
             {
                 _secure = true;
+                // track desire for secure scheme, actual protocol will be resolved later.
+                _secureScheme = true;
             }
         }
 
-        @SuppressWarnings("unused")
+        /**
+         * Called if header is <code>Proxy-Ssl-Id</code>
+         */
         public void handleSslSessionId(HttpField field)
         {
             _request.setAttribute("javax.servlet.request.ssl_session_id", field.getValue());
+
+            // Is ForwardingRequestCustomizer configured to trigger isSecure and scheme change on this header?
             if (isSslIsSecure())
             {
                 _secure = true;
+                // track desire for secure scheme, actual protocol will be resolved later.
+                _secureScheme = true;
             }
         }
 
-        @SuppressWarnings("unused")
+        /**
+         * Called if header is <code>X-Forwarded-Host</code>
+         */
         public void handleForwardedHost(HttpField field)
         {
             updateAuthority(getLeftMost(field.getValue()), Source.XFORWARDED_HOST);
         }
 
-        @SuppressWarnings("unused")
+        /**
+         * Called if header is <code>X-Forwarded-For</code>
+         */
         public void handleForwardedFor(HttpField field)
         {
             HostPort hostField = new HostPort(getLeftMost(field.getValue()));
             getFor().setHostPort(hostField, Source.XFORWARDED_FOR);
         }
 
-        @SuppressWarnings("unused")
+        /**
+         * Called if header is <code>X-Forwarded-Server</code>
+         */
         public void handleForwardedServer(HttpField field)
         {
             if (getProxyAsAuthority())
@@ -848,7 +852,9 @@ public class ForwardedRequestCustomizer implements Customizer
             updateAuthority(getLeftMost(field.getValue()), Source.XFORWARDED_SERVER);
         }
 
-        @SuppressWarnings("unused")
+        /**
+         * Called if header is <code>X-Forwarded-Port</code>
+         */
         public void handleForwardedPort(HttpField field)
         {
             int port = HostPort.parsePort(getLeftMost(field.getValue()));
@@ -856,13 +862,17 @@ public class ForwardedRequestCustomizer implements Customizer
             updatePort(port, Source.XFORWARDED_PORT);
         }
 
-        @SuppressWarnings("unused")
+        /**
+         * Called if header is <code>X-Forwarded-Proto</code>
+         */
         public void handleProto(HttpField field)
         {
             updateProto(getLeftMost(field.getValue()), Source.XFORWARDED_PROTO);
         }
 
-        @SuppressWarnings("unused")
+        /**
+         * Called if header is <code>X-Proxied-Https</code>
+         */
         public void handleHttps(HttpField field)
         {
             if ("on".equalsIgnoreCase(field.getValue()) || "true".equalsIgnoreCase(field.getValue()))
@@ -871,9 +881,21 @@ public class ForwardedRequestCustomizer implements Customizer
                 updateProto(HttpScheme.HTTPS.asString(), Source.XPROXIED_HTTPS);
                 updatePort(getSecurePort(_config), Source.XPROXIED_HTTPS);
             }
+            else if ("off".equalsIgnoreCase(field.getValue()) || "false".equalsIgnoreCase(field.getValue()))
+            {
+                _secure = false;
+                updateProto(HttpScheme.HTTP.asString(), Source.XPROXIED_HTTPS);
+                updatePort(MutableHostPort.IMPLIED, Source.XPROXIED_HTTPS);
+            }
+            else
+            {
+                throw new BadMessageException("Invalid value for " + field.getName());
+            }
         }
 
-        @SuppressWarnings("unused")
+        /**
+         * Called if header is <code>Forwarded</code>
+         */
         public void handleRFC7239(HttpField field)
         {
             addValue(field.getValue());

@@ -20,6 +20,9 @@ package org.eclipse.jetty.util.compression;
 
 import java.util.zip.Inflater;
 
+import org.eclipse.jetty.util.component.Container;
+import org.eclipse.jetty.util.thread.ThreadPool;
+
 public class InflaterPool extends CompressionPool<Inflater>
 {
     private final boolean nowrap;
@@ -41,7 +44,7 @@ public class InflaterPool extends CompressionPool<Inflater>
     }
 
     @Override
-    protected Inflater newObject()
+    protected Inflater newPooled()
     {
         return new Inflater(nowrap);
     }
@@ -56,5 +59,21 @@ public class InflaterPool extends CompressionPool<Inflater>
     protected void reset(Inflater inflater)
     {
         inflater.reset();
+    }
+
+    public static InflaterPool ensurePool(Container container)
+    {
+        InflaterPool pool = container.getBean(InflaterPool.class);
+        if (pool != null)
+            return pool;
+
+        int capacity = CompressionPool.DEFAULT_CAPACITY;
+        ThreadPool.SizedThreadPool threadPool = container.getBean(ThreadPool.SizedThreadPool.class);
+        if (threadPool != null)
+            capacity = threadPool.getMaxThreads();
+
+        pool = new InflaterPool(capacity, true);
+        container.addBean(pool);
+        return pool;
     }
 }

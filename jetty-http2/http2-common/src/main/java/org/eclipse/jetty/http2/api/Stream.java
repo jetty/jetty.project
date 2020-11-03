@@ -242,7 +242,10 @@ public interface Stream
          * @param callback the callback to complete when the bytes of the DATA frame have been consumed
          * @see #onDataDemanded(Stream, DataFrame, Callback)
          */
-        public void onData(Stream stream, DataFrame frame, Callback callback);
+        public default void onData(Stream stream, DataFrame frame, Callback callback)
+        {
+            callback.succeeded();
+        }
 
         /**
          * <p>Callback method invoked when a DATA frame has been demanded.</p>

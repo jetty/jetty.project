@@ -514,9 +514,9 @@
               <goal>run</goal>
             </goals>
             <configuration>
-              <tasks>
+              <target>
                 <chmod dir="${assembly-directory}/bin" perm="755" includes="**/*.sh" />
-              </tasks>
+              </target>
             </configuration>
           </execution>
         </executions>
@@ -536,6 +536,8 @@
               <goal>single</goal>
             </goals>
             <configuration>
+              <overrideUid>0</overrideUid>
+              <overrideGid>0</overrideGid>
               <descriptors>
                 <descriptor>src/main/assembly/jetty-assembly.xml</descriptor>
               </descriptors>

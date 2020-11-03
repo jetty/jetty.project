@@ -46,9 +46,8 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledOnJre;
-import org.junit.jupiter.api.condition.JRE;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -57,7 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 // This whole test is very specific to how TLS < 1.3 works.
 // Starting in Java 11, TLS/1.3 is now enabled by default.
-@EnabledOnJre({JRE.JAVA_8, JRE.JAVA_9, JRE.JAVA_10})
+@Disabled("Since 8u272 this is no longer valid")
 public class SslBytesClientTest extends SslBytesTest
 {
     private ExecutorService threadPool;

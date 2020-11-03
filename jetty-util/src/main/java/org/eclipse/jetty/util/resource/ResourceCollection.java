@@ -26,6 +26,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -416,14 +417,17 @@ public class ResourceCollection extends Resource
     public String[] list()
     {
         assertResourcesSet();
-
         HashSet<String> set = new HashSet<>();
         for (Resource r : _resources)
         {
-            Collections.addAll(set, r.list());
+            String[] list = r.list();
+            if (list != null)
+                Collections.addAll(set, list);
         }
 
-        return (String[])set.stream().sorted().toArray();
+        String[] result = set.toArray(new String[0]);
+        Arrays.sort(result);
+        return result;
     }
 
     @Override

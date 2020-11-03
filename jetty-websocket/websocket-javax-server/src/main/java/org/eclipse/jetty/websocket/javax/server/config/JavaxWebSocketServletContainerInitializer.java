@@ -99,6 +99,9 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
      */
     public static void configure(ServletContextHandler context, Configurator configurator)
     {
+        if (!context.isStopped())
+            throw new IllegalStateException("configure should be called before starting");
+
         // In this embedded-jetty usage, allow ServletContext.addListener() to
         // add other ServletContextListeners (such as the ContextDestroyListener) after
         // the initialization phase is over. (important for this SCI to function)
@@ -148,7 +151,7 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
         JavaxWebSocketServerContainer serverContainer = JavaxWebSocketServerContainer.getContainer(context.getServletContext());
         if (serverContainer == null)
         {
-            WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(context.getServletContext());
+            WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(context.getServer(), context.getServletContext());
             FilterHolder filterHolder = WebSocketUpgradeFilter.ensureFilter(context.getServletContext());
             WebSocketMapping mapping = WebSocketMapping.ensureMapping(context.getServletContext(), WebSocketMapping.DEFAULT_KEY);
             serverContainer = JavaxWebSocketServerContainer.ensureContainer(context.getServletContext());

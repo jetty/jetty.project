@@ -64,7 +64,7 @@ import org.slf4j.LoggerFactory;
  * HttpParser.RequestHandler callbacks.   The completion of the active phase is signalled by a call to
  * HttpTransport.completed().
  */
-public class HttpChannel implements Runnable, HttpOutput.Interceptor
+public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
 {
     public static Listener NOOP_LISTENER = new Listener() {};
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
@@ -119,10 +119,52 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return _state.isSendError();
     }
 
-    protected HttpInput newHttpInput(HttpChannelState state)
+    private HttpInput newHttpInput(HttpChannelState state)
     {
         return new HttpInput(state);
     }
+
+    /**
+     * Notify the channel that content is needed. If some content is immediately available, true is returned and
+     * {@link #produceContent()} has to be called and will return a non-null object.
+     * If no content is immediately available, {@link HttpInput#onContentProducible()} is called once some content arrives
+     * and {@link #produceContent()} can be called without returning null.
+     * If a failure happens, then {@link HttpInput#onContentProducible()} will be called and an error content will return the
+     * error on the next call to {@link #produceContent()}.
+     * @return true if content is immediately available.
+     */
+    public abstract boolean needContent();
+
+    /**
+     * Produce a {@link HttpInput.Content} object with data currently stored within the channel. The produced content
+     * can be special (meaning calling {@link HttpInput.Content#isSpecial()} returns true) if the channel reached a special
+     * state, like EOF or an error.
+     * Once a special content has been returned, all subsequent calls to this method will always return a special content
+     * of the same kind and {@link #needContent()} will always return true.
+     * The returned content is "raw", i.e.: not decoded.
+     * @return a {@link HttpInput.Content} object if one is immediately available without blocking, null otherwise.
+     */
+    public abstract HttpInput.Content produceContent();
+
+    /**
+     * Fail all content that is currently stored within the channel.
+     * @param failure the failure to fail the content with.
+     * @return true if EOF was reached while failing all content, false otherwise.
+     */
+    public abstract boolean failAllContent(Throwable failure);
+
+    /**
+     * Fail the channel's input.
+     * @param failure the failure.
+     * @return true if the channel needs to be rescheduled.
+     */
+    public abstract boolean failed(Throwable failure);
+
+    /**
+     * Mark the channel's input as EOF.
+     * @return true if the channel needs to be rescheduled.
+     */
+    protected abstract boolean eof();
 
     protected HttpOutput newHttpOutput()
     {
@@ -303,19 +345,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _transientListeners.clear();
     }
 
-    public void onAsyncWaitForContent()
-    {
-    }
-
-    public void onBlockWaitForContent()
-    {
-    }
-
-    public void onBlockWaitForContentFailure(Throwable failure)
-    {
-        getRequest().getHttpInput().failed(failure);
-    }
-
     @Override
     public void run()
     {
@@ -443,18 +472,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     case ASYNC_ERROR:
                     {
                         throw _state.getAsyncContextEvent().getThrowable();
-                    }
-
-                    case READ_REGISTER:
-                    {
-                        onAsyncWaitForContent();
-                        break;
-                    }
-
-                    case READ_PRODUCE:
-                    {
-                        _request.getHttpInput().asyncReadProduce();
-                        break;
                     }
 
                     case READ_CALLBACK:
@@ -706,7 +723,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (LOG.isDebugEnabled())
             LOG.debug("onContent {} {}", this, content);
         _combinedListener.onRequestContent(_request, content.getByteBuffer());
-        return _request.getHttpInput().addContent(content);
+        return false;
     }
 
     public boolean onContentComplete()
@@ -729,7 +746,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onRequestComplete {}", this);
-        boolean result = _request.getHttpInput().eof();
+        boolean result = eof();
         _combinedListener.onRequestEnd(_request);
         return result;
     }
@@ -763,11 +780,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _request.onCompleted();
         _combinedListener.onComplete(_request);
         _transport.onCompleted();
-    }
-
-    public boolean onEarlyEOF()
-    {
-        return _request.getHttpInput().earlyEOF();
     }
 
     public void onBadMessage(BadMessageException failure)

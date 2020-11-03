@@ -983,7 +983,7 @@ public class AsyncMiddleManServletTest
         startClient();
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-            .timeout(5, TimeUnit.SECONDS)
+            .timeout(15, TimeUnit.SECONDS)
             .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());

@@ -31,6 +31,12 @@ If you know Eclipse Jetty already, jump to a feature:
 
 * xref:og-sessions[HTTP Session Caching and Clustering]
 * xref:og-protocols-http2[HTTP/2 Support]
+* xref:og-annotations[Annotations]
+* xref:og-quickstart[Faster Web Application Deployment]
+* xref:og-jaas[JAAS]
+* xref:og-jndi[JNDI]
+* xref:og-jsp[JSP]
+* xref:og-jmx[Monitoring & Management]
 
 TODO
 
@@ -44,8 +50,5 @@ TODO
 * xref:og-protocols-https[Configure Secure HTTP/1.1 (https)]
 * xref:og-protocols-http2c[Configure Clear-Text HTTP/2]
 * xref:og-protocols-http2s[Configure Secure HTTP/2]
-
-TODO
-
-* Jetty Behind a Load Balancer
-** Forward Header Customizer
+* xref:og-protocols-proxy[Configure Jetty Behind a Load Balancer or Reverse Proxy]
+* xref:og-troubleshooting[Troubleshooting]

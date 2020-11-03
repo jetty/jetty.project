@@ -20,4 +20,3 @@
 == HTTP/2
 
 include::configuring-push.adoc[]
-include::configuring-haproxy.adoc[]

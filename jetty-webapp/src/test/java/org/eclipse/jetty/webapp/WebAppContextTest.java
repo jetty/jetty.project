@@ -34,7 +34,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.tools.HttpTester;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -387,13 +387,13 @@ public class WebAppContextTest
         extLibs = extLibs.toAbsolutePath();
 
         // Absolute reference with trailing slash and glob
-        references.add(Arguments.of(extLibs.toString() + File.separator + "*"));
+        references.add(Arguments.of("absolute extLibs with glob", extLibs.toString() + File.separator + "*"));
 
         // Establish a relative extraClassPath reference
         String relativeExtLibsDir = MavenTestingUtils.getBasePath().relativize(extLibs).toString();
 
         // This will be in the String form similar to "src/test/resources/ext/*" (with trailing slash and glob)
-        references.add(Arguments.of(relativeExtLibsDir + File.separator + "*"));
+        references.add(Arguments.of("relative extLibs with glob", relativeExtLibsDir + File.separator + "*"));
 
         return references.stream();
     }
@@ -401,9 +401,9 @@ public class WebAppContextTest
     /**
      * Test using WebAppContext.setExtraClassPath(String) with a reference to a glob
      */
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @MethodSource("extraClasspathGlob")
-    public void testExtraClasspathGlob(String extraClasspathGlobReference) throws Exception
+    public void testExtraClasspathGlob(String description, String extraClasspathGlobReference) throws Exception
     {
         Server server = newServer();
 
@@ -434,7 +434,7 @@ public class WebAppContextTest
         {
             actualPaths.add(Paths.get(url.toURI()));
         }
-        assertThat("WebAppClassLoader.urls.length", actualPaths.size(), is(expectedPaths.size()));
+        assertThat("[" + description + "] WebAppClassLoader.urls.length", actualPaths.size(), is(expectedPaths.size()));
         for (Path expectedPath : expectedPaths)
         {
             boolean found = false;
@@ -445,7 +445,7 @@ public class WebAppContextTest
                     found = true;
                 }
             }
-            assertTrue(found, "Not able to find expected jar in WebAppClassLoader: " + expectedPath);
+            assertTrue(found, "[" + description + "] Not able to find expected jar in WebAppClassLoader: " + expectedPath);
         }
     }
 

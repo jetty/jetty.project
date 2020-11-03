@@ -1377,9 +1377,12 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        assertThat(sslFills.get(), Matchers.lessThan(100));
+        // The new HttpInput impl tends to call fill and parse more often than the previous one
+        // b/c HttpChannel.needContent() does a fill and parse before doing a fill interested;
+        // this runs the parser an goes to the OS more often but requires less rescheduling.
+        assertThat(sslFills.get(), Matchers.lessThan(150));
         assertThat(sslFlushes.get(), Matchers.lessThan(50));
-        assertThat(httpParses.get(), Matchers.lessThan(100));
+        assertThat(httpParses.get(), Matchers.lessThan(150));
 
         assertNull(request.get(5, TimeUnit.SECONDS));
 
@@ -1399,9 +1402,12 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        assertThat(sslFills.get(), Matchers.lessThan(100));
+        // The new HttpInput impl tends to call fill and parse more often than the previous one
+        // b/c HttpChannel.needContent() does a fill and parse before doing a fill interested;
+        // this runs the parser an goes to the OS more often but requires less rescheduling.
+        assertThat(sslFills.get(), Matchers.lessThan(150));
         assertThat(sslFlushes.get(), Matchers.lessThan(50));
-        assertThat(httpParses.get(), Matchers.lessThan(100));
+        assertThat(httpParses.get(), Matchers.lessThan(150));
 
         closeClient(client);
     }
@@ -1596,9 +1602,12 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        assertThat(sslFills.get(), Matchers.lessThan(50));
+        // The new HttpInput impl tends to call fill and parse more often than the previous one
+        // b/c HttpChannel.needContent() does a fill and parse before doing a fill interested;
+        // this runs the parser and goes to the OS more often but requires less rescheduling.
+        assertThat(sslFills.get(), Matchers.lessThan(70));
         assertThat(sslFlushes.get(), Matchers.lessThan(20));
-        assertThat(httpParses.get(), Matchers.lessThan(50));
+        assertThat(httpParses.get(), Matchers.lessThan(70));
 
         closeClient(client);
     }
@@ -1743,9 +1752,12 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        assertThat(sslFills.get(), Matchers.lessThan(50));
+        // The new HttpInput impl tends to call fill and parse more often than the previous one
+        // b/c HttpChannel.needContent() does a fill and parse before doing a fill interested;
+        // this runs the parser and goes to the OS more often but requires less rescheduling.
+        assertThat(sslFills.get(), Matchers.lessThan(80));
         assertThat(sslFlushes.get(), Matchers.lessThan(20));
-        assertThat(httpParses.get(), Matchers.lessThan(100));
+        assertThat(httpParses.get(), Matchers.lessThan(120));
 
         closeClient(client);
     }

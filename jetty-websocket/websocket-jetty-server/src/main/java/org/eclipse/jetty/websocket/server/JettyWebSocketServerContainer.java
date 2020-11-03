@@ -78,7 +78,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
             container = new JettyWebSocketServerContainer(
                 contextHandler,
                 WebSocketMapping.ensureMapping(servletContext, WebSocketMapping.DEFAULT_KEY),
-                WebSocketServerComponents.ensureWebSocketComponents(servletContext), executor);
+                WebSocketServerComponents.getWebSocketComponents(servletContext), executor);
             servletContext.setAttribute(JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE, container);
             contextHandler.addManaged(container);
             contextHandler.addEventListener(container);

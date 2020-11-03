@@ -68,6 +68,11 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
         return _lock.lock();
     }
 
+    boolean lockIsHeldByCurrentThread()
+    {
+        return _lock.isHeldByCurrentThread();
+    }
+
     /**
      * Do any setup necessary after starting
      *
