@@ -88,9 +88,9 @@
               <goal>run</goal>
             </goals>
             <configuration>
-              <tasks>
+              <target>
                 <mkdir dir="${sources-directory}" />
-              </tasks>
+              </target>
             </configuration>
           </execution>
         </executions>
