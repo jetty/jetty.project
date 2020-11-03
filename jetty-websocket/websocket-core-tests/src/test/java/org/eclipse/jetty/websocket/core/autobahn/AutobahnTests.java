@@ -93,7 +93,6 @@ public class AutobahnTests
     @Test
     public void testClient() throws Exception
     {
-
         try (GenericContainer<?> container = new GenericContainer<>(DockerImageName.parse("crossbario/autobahn-testsuite:latest"))
             .withCommand("/bin/bash", "-c", "wstest -m fuzzingserver -s /config/fuzzingserver.json")
             .withExposedPorts(9001)
@@ -238,19 +237,19 @@ public class AutobahnTests
             suiteDuration += duration;
             testcase.setAttribute("time", Double.toString(duration / 1000.0));
 
-            AutobahnCaseResult.Behavior behavior = r.behavior();
             // failOnNonStrict option ?
-            if (behavior == AutobahnCaseResult.Behavior.NON_STRICT)
+            switch (r.behavior())
             {
-                addFailure(testcase,r);
-                failures++;
-            }
-            else if (behavior != AutobahnCaseResult.Behavior.OK &&
-                behavior != AutobahnCaseResult.Behavior.INFORMATIONAL &&
-                behavior != AutobahnCaseResult.Behavior.NON_STRICT)
-            {
-                addFailure(testcase, r);
-                failures++;
+                case OK:
+                case INFORMATIONAL:
+                case UNIMPLEMENTED:
+                    break;
+
+                case NON_STRICT:
+                default:
+                    addFailure(testcase,r);
+                    failures++;
+                    break;
             }
 
             root.addChild(testcase);
@@ -258,12 +257,15 @@ public class AutobahnTests
         root.setAttribute("failures", Integer.toString(failures));
         root.setAttribute("time", Double.toString(suiteDuration / 1000.0));
 
-        String filename = "target/surefire-reports/TEST-" + surefireFileName + ".xml";
-        try (Writer writer = Files.newBufferedWriter(Paths.get(filename)))
+        Path surefireReportsDir = Paths.get("target/surefire-reports");
+        if (!Files.exists(surefireReportsDir))
+            Files.createDirectories(surefireReportsDir);
+
+        String filename = "TEST-" + surefireFileName + ".xml";
+        try (Writer writer = Files.newBufferedWriter(surefireReportsDir.resolve(filename)))
         {
             Xpp3DomWriter.write(writer, root);
         }
-
     }
 
     private void addFailure(Xpp3Dom testCase, AutobahnCaseResult result) throws IOException,
@@ -285,12 +287,12 @@ public class AutobahnTests
             String expected = object.get("expected").toString();
             String received = object.get("received").toString();
 
-            StringBuffer fail = new StringBuffer();
-            fail = fail.append(description).append("\n\n");
-            fail = fail.append("Case outcome").append("\n\n");
-            fail = fail.append(resultText).append("\n\n");
-            fail = fail.append("Expected").append("\n").append(expected).append("\n\n");
-            fail = fail.append("Received").append("\n").append(received).append("\n\n");
+            StringBuilder fail = new StringBuilder();
+            fail.append(description).append("\n\n");
+            fail.append("Case outcome").append("\n\n");
+            fail.append(resultText).append("\n\n");
+            fail.append("Expected").append("\n").append(expected).append("\n\n");
+            fail.append("Received").append("\n").append(received).append("\n\n");
 
             Xpp3Dom failure = new Xpp3Dom("failure");
             failure.setAttribute("type", "behaviorMissmatch");
@@ -349,7 +351,6 @@ public class AutobahnTests
 
     public static class AutobahnCaseResult
     {
-
         enum Behavior
         {
             FAILED,
