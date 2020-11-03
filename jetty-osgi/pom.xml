@@ -12,7 +12,7 @@
   <packaging>pom</packaging>
 
   <properties>
-    <osgi-version>3.6.0.v20100517</osgi-version>
+    <osgi-version>3.7.1</osgi-version>
     <osgi-services-version>3.2.100.v20100503</osgi-services-version>
     <equinox-http-servlet-version>1.0.0-v20070606</equinox-http-servlet-version>
   </properties>
