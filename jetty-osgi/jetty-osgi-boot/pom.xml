@@ -46,14 +46,14 @@
           <execution>
             <phase>process-resources</phase>
             <configuration>
-              <tasks>
+              <target>
                 <!--delete file="target/classes/META-INF/MANIFEST.MF" /-->
                 <copy todir="target/classes/jettyhome">
                   <fileset dir="jettyhome">
                     <exclude name="**/*.log" />
                   </fileset>
                 </copy>
-              </tasks>
+              </target>
             </configuration>
             <goals>
               <goal>run</goal>
