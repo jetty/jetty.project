@@ -410,7 +410,7 @@ public abstract class Resource implements ResourceFactory, Closeable
 
     /**
      * Returns the resource contained inside the current resource with the
-     * given name.
+     * given name, which may or may not exist.
      *
      * @param path The path segment to add, which is not encoded
      * @return the Resource for the resolved path within this Resource, never null

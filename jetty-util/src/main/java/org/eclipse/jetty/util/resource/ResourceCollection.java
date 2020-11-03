@@ -226,8 +226,16 @@ public class ResourceCollection extends Resource
     }
 
     /**
+     * Add a path to the resource collection.
      * @param path The path segment to add
-     * @return The contained resource (found first) in the collection of resources
+     * @return The resulting resource(s) :
+     * <ul>
+     *   <li>is a file that exists in at least one of the collection, then the first one found is returned</li>
+     *   <li>is a directory that exists in at exactly one of the collection, then that directory resource is returned </li>
+     *   <li>is a directory that exists in several of the collection, then a ResourceCollection of those directories is returned</li>
+     *   <li>do not exist in any of the collection, then a new non existent resource relative to the first in the collection is returned.</li>
+     * </ul>
+     * @throws MalformedURLException if the resolution of the path fails because the input path parameter is malformed against any of the collection
      */
     @Override
     public Resource addPath(String path) throws IOException
