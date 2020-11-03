@@ -655,7 +655,7 @@ public class SessionHandler extends ScopedHandler
      */
     public HttpCookie getSessionCookie(HttpSession session, String contextPath, boolean requestIsSecure)
     {
-        if (isUsingCookies() && _cookieConfig.getName() != null)
+        if (isUsingCookies())
         {
             String sessionPath = (_cookieConfig.getPath() == null) ? contextPath : _cookieConfig.getPath();
             sessionPath = (StringUtil.isEmpty(sessionPath)) ? "/" : sessionPath;
@@ -663,7 +663,7 @@ public class SessionHandler extends ScopedHandler
             HttpCookie cookie = null;
 
             cookie = new HttpCookie(
-                _cookieConfig.getName(),
+                getSessionCookieName(_cookieConfig),
                 id,
                 _cookieConfig.getDomain(),
                 sessionPath,
@@ -1379,6 +1379,13 @@ public class SessionHandler extends ScopedHandler
         Session getSession();
     }
 
+    public static String getSessionCookieName(SessionCookieConfig config)
+    {
+        if (config == null || config.getName() == null)
+            return __DefaultSessionCookie;
+        return config.getName();
+    }
+
     /**
      * CookieConfig
      *
@@ -1471,7 +1478,7 @@ public class SessionHandler extends ScopedHandler
                 throw new IllegalArgumentException("Blank cookie name");
             if (name != null)
                 Syntax.requireValidRFC2616Token(name, "Bad Session cookie name");
-            _sessionCookie = StringUtil.isBlank(name) ? __DefaultSessionCookie : name;
+            _sessionCookie = name;
         }
 
         @Override
@@ -1645,12 +1652,12 @@ public class SessionHandler extends ScopedHandler
         HttpSession session = null;
 
         //first try getting id from a cookie
-        if (isUsingCookies() && getSessionCookieConfig().getName() != null)
+        if (isUsingCookies())
         {
             Cookie[] cookies = request.getCookies();
             if (cookies != null && cookies.length > 0)
             {
-                final String sessionCookie = getSessionCookieConfig().getName();
+                final String sessionCookie = getSessionCookieName(getSessionCookieConfig());
                 for (Cookie cookie : cookies)
                 {
                     if (sessionCookie.equalsIgnoreCase(cookie.getName()))
