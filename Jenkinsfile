@@ -138,7 +138,7 @@ def mavenBuild(jdk, cmdline, mvnName, consoleParsers) {
                "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
         configFileProvider(
                 [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
-          sh "mvn -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Premote-session-tests -Pci -fae -V -B -e -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" +
+          sh "mvn -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Premote-session-tests -Pgcloud -Pci -fae -V -B -e -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" +
                      env.JENKINS_HOME
         }
       }
