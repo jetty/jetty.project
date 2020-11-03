@@ -98,7 +98,8 @@ public class AutobahnTests
             .withCommand("/bin/bash", "-c", "wstest -m fuzzingserver -s /config/fuzzingserver.json")
             .withExposedPorts(9001)
             .withCopyFileToContainer(MountableFile.forHostPath(fuzzingServer),"/config/fuzzingserver.json")
-            .withLogConsumer(new Slf4jLogConsumer(LOG)))
+            .withLogConsumer(new Slf4jLogConsumer(LOG))
+            .withStartupTimeout(Duration.ofHours(2)))
         {
             container.start();
             Integer mappedPort = container.getMappedPort(9001);
@@ -129,7 +130,8 @@ public class AutobahnTests
             .withCommand("/bin/bash", "-c", "wstest -m fuzzingclient -s /config/fuzzingclient.json" + FileSignalWaitStrategy.END_COMMAND)
             .withLogConsumer(new Slf4jLogConsumer(LOG))
             .withCopyFileToContainer(MountableFile.forHostPath(fuzzingClient),"/config/fuzzingclient.json")
-            .withStartupCheckStrategy(strategy))
+            .withStartupCheckStrategy(strategy)
+            .withStartupTimeout(Duration.ofHours(2)))
         {
             container.start();
         }
