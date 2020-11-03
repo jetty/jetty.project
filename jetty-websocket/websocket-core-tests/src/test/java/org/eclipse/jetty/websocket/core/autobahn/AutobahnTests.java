@@ -229,7 +229,7 @@ public class AutobahnTests
         for (AutobahnCaseResult r: results)
         {
             Xpp3Dom testcase = new Xpp3Dom("testcase");
-            testcase.setAttribute("classname", "AutobahnTestCase");
+            testcase.setAttribute("classname", testName);
             testcase.setAttribute("name", r.caseName());
 
             long duration = r.duration();
