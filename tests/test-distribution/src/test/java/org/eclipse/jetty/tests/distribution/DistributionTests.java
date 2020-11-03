@@ -47,7 +47,6 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -376,7 +375,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         }
     }
 
-    @Disabled
     @ParameterizedTest
     @ValueSource(strings = {"http", "https"})
     public void testWebsocketClientInWebappProvidedByServer(String scheme) throws Exception
@@ -389,11 +387,12 @@ public class DistributionTests extends AbstractJettyHomeTest
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
+        String module = "https".equals(scheme) ? "test-keystore," + scheme : scheme;
         String[] args1 = {
             "--create-startd",
             "--approve-all-licenses",
-            "--add-to-start=resources,server,webapp,deploy,jsp,jmx,servlet,servlets,websocket,test-keystore," + scheme
-        };
+            "--add-to-start=resources,server,webapp,deploy,jsp,jmx,servlet,servlets,websocket," + module,
+            };
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
@@ -406,6 +405,9 @@ public class DistributionTests extends AbstractJettyHomeTest
             String[] args2 = {
                 "jetty.http.port=" + port,
                 "jetty.ssl.port=" + port,
+                // We need to expose the websocket client classes to the webapp for this to work.
+                "jetty.webapp.addServerClasses+=,-org.eclipse.jetty.websocket.client.",
+                "jetty.webapp.addSystemClasses+=,+org.eclipse.jetty.websocket.client.",
                 // "jetty.server.dumpAfterStart=true",
             };
 
@@ -425,7 +427,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         }
     }
 
-    @Disabled
     @ParameterizedTest
     @ValueSource(strings = {"http", "https"})
     public void testWebsocketClientInWebapp(String scheme) throws Exception
