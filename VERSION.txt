@@ -21,7 +21,7 @@ jetty-11.0.0.beta3 - 21 October 2020
  + 5451 Improve Working Directory creation
  + 5454 Request error context is not reset
  + 5475 Update to spifly 1.3.2 and asm 9
- + 5480 NPE from WebInfConfiguration.deconfigure during WebAppContext shutdown 
+ + 5480 NPE from WebInfConfiguration.deconfigure during WebAppContext shutdown
 
 jetty-11.0.0.beta2 - 02 October 2020
  + 1337 MultiPart Part.write(String fileName) - Write method used unexpected
@@ -132,7 +132,7 @@ jetty-11.0.0.beta1 - 10 July 2020
    SETTINGS Frame.
  + 4903 Give better errors for non public Websocket Endpoints
  + 4904 WebsocketClient creates more connections than needed
- + 4907 
+ + 4907
    org.eclipse.jetty.websocket.tests.SuspendResumeTest#testSuspendAfterClose
  + 4920 Restore ability to delete sessions on stop
  + 4921 Quickstart run improperly runs dynamically added context initializers
@@ -177,6 +177,15 @@ jetty-10.0.0.beta3 - 21 October 2020
  + 5454 Request error context is not reset
  + 5475 Update to spifly 1.3.2 and asm 9
  + 5480 NPE from WebInfConfiguration.deconfigure during WebAppContext shutdown
+
+jetty-9.4.34.v20201102 - 02 November 2020
+ + 5320 Using WebSocketClient with jetty-websocket-httpclient.xml in a Jetty
+   web application causes ClassCastException
+ + 5488 jetty-dir.css not found when using JPMS
+ + 5498 ServletHolder lifecycle correctness
+ + 5521 ResourceCollection NPE in list()
+ + 5535 Support regex in SslContextFactory include/exclude of protocols
+ + 5555 NPE for servlet with no mapping
 
 jetty-9.4.33.v20201020 - 20 October 2020
  + 5022 Cleanup ServletHandler, specifically with respect to making filter
