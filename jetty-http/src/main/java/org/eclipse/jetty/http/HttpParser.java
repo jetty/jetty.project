@@ -235,7 +235,7 @@ public class HttpParser
         // Add headers with null values so HttpParser can avoid looking up name again for unknown values
         for (HttpHeader h : HttpHeader.values())
         {
-            if (!h.asString().startsWith(":") && !CACHE.put(new HttpField(h, (String)null)))
+            if (!h.isPseudo() && !CACHE.put(new HttpField(h, (String)null)))
                 throw new IllegalStateException("CACHE FULL");
         }
     }
@@ -889,7 +889,7 @@ public class HttpParser
                             checkVersion();
 
                             // Should we cache header fields?
-                            getFieldCache();
+                            createFieldCacheIfNeeded();
 
                             setState(State.HEADER);
 
@@ -1081,8 +1081,10 @@ public class HttpParser
                     else if (_cacheableFields != NO_CACHE)
                     {
                         if (_handler.getHeaderCacheSize() <= 0 || (_version != null && _version.getVersion() != HttpVersion.HTTP_1_1.getVersion()))
+                        {
                             // Don't cache any fields
                             _cacheableFields = NO_CACHE;
+                        }
                         else
                         {
                             // This must be the first request seen by this parser, so just create a simple list of
@@ -1929,7 +1931,7 @@ public class HttpParser
         _fieldState = state;
     }
 
-    public Trie<HttpField> getFieldCache()
+    private void createFieldCacheIfNeeded()
     {
         // if we have cacheableFields from a previous request, we can make a cache
         if (_fieldCache == null && _cacheableFields != null && _cacheableFields != NO_CACHE)
@@ -1942,6 +1944,11 @@ public class HttpParser
             }
             _cacheableFields = null;
         }
+    }
+
+    public Trie<HttpField> getFieldCache()
+    {
+        createFieldCacheIfNeeded();
         return _fieldCache;
     }
 
