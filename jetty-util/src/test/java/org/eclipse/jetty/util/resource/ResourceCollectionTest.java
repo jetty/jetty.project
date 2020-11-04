@@ -35,7 +35,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -189,7 +188,7 @@ public class ResourceCollectionTest
 
         assertThat(Arrays.asList(rc1.list()), contains("1.txt", "2.txt", "3.txt", "dir/"));
         assertThat(Arrays.asList(rc1.addPath("dir").list()), contains("1.txt", "2.txt", "3.txt"));
-        assertThat(rc1.addPath("unknown").list(), emptyArray());
+        assertThat(rc1.addPath("unknown").list(), nullValue());
     }
 
     @Test

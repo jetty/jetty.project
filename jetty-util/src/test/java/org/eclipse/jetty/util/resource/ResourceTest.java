@@ -215,15 +215,15 @@ public class ResourceTest
         cases.addCase(new Scenario(tdata1, "alphabet.txt", EXISTS, !DIR, "ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
         cases.addCase(new Scenario(tdata2, "alphabet.txt", EXISTS, !DIR, "ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
 
-        cases.addCase(new Scenario("jar:file:/somejar.jar!/content/", !EXISTS, DIR));
-        cases.addCase(new Scenario("jar:file:/somejar.jar!/", !EXISTS, DIR));
+        cases.addCase(new Scenario("jar:file:/somejar.jar!/content/", !EXISTS, !DIR));
+        cases.addCase(new Scenario("jar:file:/somejar.jar!/", !EXISTS, !DIR));
 
         String urlRef = cases.uriRef.toASCIIString();
         Scenario zdata = new Scenario("jar:" + urlRef + "TestData/test.zip!/", EXISTS, DIR);
         cases.addCase(zdata);
 
         cases.addCase(new Scenario(zdata, "Unknown", !EXISTS, !DIR));
-        cases.addCase(new Scenario(zdata, "/Unknown/", !EXISTS, DIR));
+        cases.addCase(new Scenario(zdata, "/Unknown/", !EXISTS, !DIR));
 
         cases.addCase(new Scenario(zdata, "subdir", EXISTS, DIR));
         cases.addCase(new Scenario(zdata, "/subdir/", EXISTS, DIR));
