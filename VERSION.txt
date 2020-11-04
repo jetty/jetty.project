@@ -23,6 +23,15 @@ jetty-10.0.0.beta3 - 21 October 2020
  + 5475 Update to spifly 1.3.2 and asm 9
  + 5480 NPE from WebInfConfiguration.deconfigure during WebAppContext shutdown
 
+jetty-9.4.34.v20201102 - 02 November 2020
+ + 5320 Using WebSocketClient with jetty-websocket-httpclient.xml in a Jetty
+   web application causes ClassCastException
+ + 5488 jetty-dir.css not found when using JPMS
+ + 5498 ServletHolder lifecycle correctness
+ + 5521 ResourceCollection NPE in list()
+ + 5535 Support regex in SslContextFactory include/exclude of protocols
+ + 5555 NPE for servlet with no mapping
+
 jetty-9.4.33.v20201020 - 20 October 2020
  + 5022 Cleanup ServletHandler, specifically with respect to making filter
    chains more extensible
@@ -80,7 +89,7 @@ jetty-10.0.0.beta2 - 02 October 2020
    be empty string, but is `"/"`
  + 5064 NotSerializableException for OpenIdConfiguration
  + 5069 HttpClientTimeoutTests can occasionally fail due to unreachable network
- + 5079 :authority header for IPv6 address not having square brackets 
+ + 5079 :authority header for IPv6 address not having square brackets
  + 5081 Review HouseKeeper locking
  + 5083 Convert synchronized usages to AutoLock
  + 5096 using JettyWebSocketServlet without having a WebSocketUpgradeFilter
