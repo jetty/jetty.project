@@ -1,22 +1,22 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enable the Jetty WebSocket API for deployed web applications.
+Expose the Jetty WebSocket Client classes to deployed web applications.
 
 [tags]
 websocket
 
 [depend]
+client
 annotations
 
 [lib]
 lib/websocket/websocket-core-common-${jetty.version}.jar
-lib/websocket/websocket-core-server-${jetty.version}.jar
+lib/websocket/websocket-core-client-${jetty.version}.jar
 lib/websocket/websocket-util-${jetty.version}.jar
-lib/websocket/websocket-util-server-${jetty.version}.jar
 lib/websocket/websocket-jetty-api-${jetty.version}.jar
 lib/websocket/websocket-jetty-common-${jetty.version}.jar
-lib/websocket/websocket-jetty-server-${jetty.version}.jar
+lib/websocket/websocket-jetty-client-${jetty.version}.jar
 
 [jpms]
 # The implementation needs to access method handles in

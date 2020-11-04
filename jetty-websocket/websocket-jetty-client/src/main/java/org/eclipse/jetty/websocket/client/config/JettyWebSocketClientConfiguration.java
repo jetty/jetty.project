@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server.config;
+package org.eclipse.jetty.websocket.client.config;
 
 import java.util.ServiceLoader;
 
@@ -41,11 +41,11 @@ import org.slf4j.LoggerFactory;
  * loaded if the jetty-websocket jars are on the classpath.
  * </p>
  */
-public class JettyWebSocketConfiguration extends AbstractConfiguration
+public class JettyWebSocketClientConfiguration extends AbstractConfiguration
 {
-    private static final Logger LOG = LoggerFactory.getLogger(JettyWebSocketConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JettyWebSocketClientConfiguration.class);
 
-    public JettyWebSocketConfiguration()
+    public JettyWebSocketClientConfiguration()
     {
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
 
@@ -56,19 +56,16 @@ public class JettyWebSocketConfiguration extends AbstractConfiguration
         else
             throw new RuntimeException("Unable to add AnnotationConfiguration dependent (not present in classpath)");
 
-        protectAndExpose(
-            "org.eclipse.jetty.websocket.api.",
-            "org.eclipse.jetty.websocket.server.",
-            "org.eclipse.jetty.websocket.util.server."); // For WebSocketUpgradeFilter
-
-        hide("org.eclipse.jetty.server.internal.",
-            "org.eclipse.jetty.server.config.");
+        protectAndExpose("org.eclipse.jetty.websocket.api.");
+        protectAndExpose("org.eclipse.jetty.websocket.client.");
+        hide("org.eclipse.jetty.client.impl.");
+        hide("org.eclipse.jetty.client.config.");
     }
 
     @Override
     public boolean isAvailable()
     {
-        return isAvailable("org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer");
+        return isAvailable("org.eclipse.jetty.websocket.client.WebSocketClient");
     }
 
     private boolean isAvailable(String classname)

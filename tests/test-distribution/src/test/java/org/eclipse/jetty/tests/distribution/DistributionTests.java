@@ -391,7 +391,7 @@ public class DistributionTests extends AbstractJettyHomeTest
         String[] args1 = {
             "--create-startd",
             "--approve-all-licenses",
-            "--add-to-start=resources,server,webapp,deploy,jsp,jmx,servlet,servlets,websocket," + module,
+            "--add-to-start=resources,server,webapp,deploy,jsp,jmx,servlet,servlets,websocket,websocket-jetty-client," + module,
             };
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
@@ -405,9 +405,6 @@ public class DistributionTests extends AbstractJettyHomeTest
             String[] args2 = {
                 "jetty.http.port=" + port,
                 "jetty.ssl.port=" + port,
-                // We need to expose the websocket client classes to the webapp for this to work.
-                "jetty.webapp.addServerClasses+=,-org.eclipse.jetty.websocket.client.",
-                "jetty.webapp.addSystemClasses+=,+org.eclipse.jetty.websocket.client.",
                 // "jetty.server.dumpAfterStart=true",
             };
 
