@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.core.extensions;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -28,10 +29,13 @@ import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.TestFrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketServer;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
@@ -291,7 +295,8 @@ public class PerMessageDeflaterBufferSizeTest
 
         // We should now only be able to send this message in multiple frames as it exceeds deflate_buffer_size.
         String message = "0123456789";
-        clientHandler.sendText(message);
+        ByteBuffer payload = toBuffer(message, true);
+        clientHandler.getCoreSession().sendFrame(new Frame(OpCode.TEXT, payload), Callback.NOOP, false);
 
         // Verify the frame has been fragmented into multiple parts.
         int numFrames = 0;
@@ -314,5 +319,19 @@ public class PerMessageDeflaterBufferSizeTest
         assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));
         assertNull(serverHandler.getError());
         assertNull(clientHandler.getError());
+    }
+
+    public ByteBuffer toBuffer(String string, boolean direct)
+    {
+        ByteBuffer buffer = BufferUtil.allocate(string.length(), direct);
+        BufferUtil.clearToFill(buffer);
+        BufferUtil.put(BufferUtil.toBuffer(string), buffer);
+        BufferUtil.flipToFlush(buffer, 0);
+
+        // Sanity checks.
+        assertThat(buffer.hasArray(), is(!direct));
+        assertThat(BufferUtil.toString(buffer), is(string));
+
+        return buffer;
     }
 }
