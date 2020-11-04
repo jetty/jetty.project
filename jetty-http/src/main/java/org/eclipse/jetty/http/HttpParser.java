@@ -1080,7 +1080,7 @@ public class HttpParser
                     }
                     else if (_cacheableFields != NO_CACHE)
                     {
-                        if (_handler.getHeaderCacheSize() <= 0 || _version.getVersion() != HttpVersion.HTTP_1_1.getVersion())
+                        if (_handler.getHeaderCacheSize() <= 0 || (_version != null && _version.getVersion() != HttpVersion.HTTP_1_1.getVersion()))
                             // Don't cache any fields
                             _cacheableFields = NO_CACHE;
                         else
