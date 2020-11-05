@@ -40,7 +40,9 @@ public enum HttpMethod
     CONNECT,
     MOVE,
     PROXY,
-    PRI;
+    PRI,
+    PATCH,
+    SEARCH;
 
     /**
      * Optimized lookup to find a method name and trailing space in a byte array.
@@ -62,15 +64,30 @@ public enum HttpMethod
                     return GET;
                 break;
             case 'P':
-                if (bytes[position + 1] == 'O' && bytes[position + 2] == 'S' && bytes[position + 3] == 'T' && length >= 5 && bytes[position + 4] == ' ')
-                    return POST;
-                if (bytes[position + 1] == 'R' && bytes[position + 2] == 'O' && bytes[position + 3] == 'X' && length >= 6 && bytes[position + 4] == 'Y' && bytes[position + 5] == ' ')
-                    return PROXY;
-                if (bytes[position + 1] == 'U' && bytes[position + 2] == 'T' && bytes[position + 3] == ' ')
-                    return PUT;
-                if (bytes[position + 1] == 'R' && bytes[position + 2] == 'I' && bytes[position + 3] == ' ')
-                    return PRI;
-                break;
+                switch (bytes[position + 1])
+                {
+                    case 'O':
+                        if (bytes[position + 2] == 'S' && bytes[position + 3] == 'T' && length >= 5 && bytes[position + 4] == ' ')
+                            return POST;
+                        return null;
+                    case 'R':
+                        if (bytes[position + 2] == 'I' && bytes[position + 3] == ' ')
+                            return PRI;
+                        if (bytes[position + 2] == 'O' && bytes[position + 3] == 'X' && length >= 6 && bytes[position + 4] == 'Y' && bytes[position + 5] == ' ')
+                            return PROXY;
+                        return null;
+                    case 'U':
+                        if (bytes[position + 2] == 'T' && bytes[position + 3] == ' ')
+                            return PUT;
+                        return null;
+                    case 'A':
+                        if (bytes[position + 2] == 'T' && bytes[position + 3] == 'C' && length >= 6 && bytes[position + 4] == 'H' && bytes[position + 5] == ' ')
+                            return PATCH;
+                        return null;
+                    default:
+                        return null;
+                }
+
             case 'H':
                 if (bytes[position + 1] == 'E' && bytes[position + 2] == 'A' && bytes[position + 3] == 'D' && length >= 5 && bytes[position + 4] == ' ')
                     return HEAD;
@@ -99,7 +116,11 @@ public enum HttpMethod
                 if (bytes[position + 1] == 'O' && bytes[position + 2] == 'V' && bytes[position + 3] == 'E' && length >= 5 && bytes[position + 4] == ' ')
                     return MOVE;
                 break;
-
+            case 'S':
+                if (bytes[position + 1] == 'E' && bytes[position + 2] == 'A' && bytes[position + 3] == 'R' && length >= 7 &&
+                    bytes[position + 4] == 'C' && bytes[position + 5] == 'H' && bytes[position + 6] == ' ')
+                    return SEARCH;
+                break;
             default:
                 break;
         }

@@ -85,12 +85,14 @@ public class HttpParserTest
     @Test
     public void httpMethodTest()
     {
-        assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer("Wibble ")));
-        assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer("GET")));
-        assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer("MO")));
-
-        assertEquals(HttpMethod.GET, HttpMethod.lookAheadGet(BufferUtil.toBuffer("GET ")));
-        assertEquals(HttpMethod.MOVE, HttpMethod.lookAheadGet(BufferUtil.toBuffer("MOVE ")));
+        for (HttpMethod m : HttpMethod.values())
+        {
+            assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString().substring(0,2))));
+            assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString())));
+            assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString() + "FOO")));
+            assertEquals(m, HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString() + " ")));
+            assertEquals(m, HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString() + " /foo/bar")));
+        }
 
         ByteBuffer b = BufferUtil.allocateDirect(128);
         BufferUtil.append(b, BufferUtil.toBuffer("GET"));
