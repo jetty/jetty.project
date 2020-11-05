@@ -34,9 +34,14 @@ public class ByteBufferAccumulator implements AutoCloseable
     private final List<ByteBuffer> _buffers = new ArrayList<>();
     private final ByteBufferPool _bufferPool;
 
+    public ByteBufferAccumulator()
+    {
+        this(null);
+    }
+
     public ByteBufferAccumulator(ByteBufferPool bufferPool)
     {
-        this._bufferPool = bufferPool;
+        _bufferPool = (bufferPool == null) ? new NullByteBufferPool() : bufferPool;
     }
 
     public int getLength()

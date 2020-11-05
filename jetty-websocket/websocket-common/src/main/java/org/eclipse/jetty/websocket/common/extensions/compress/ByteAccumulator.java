@@ -19,36 +19,27 @@
 package org.eclipse.jetty.websocket.common.extensions.compress;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
+import org.eclipse.jetty.io.ByteBufferAccumulator;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 
-public class ByteAccumulator
+public class ByteAccumulator implements AutoCloseable
 {
-    private final List<byte[]> chunks = new ArrayList<>();
+    private final ByteBufferAccumulator accumulator;
     private final int maxSize;
     private int length = 0;
 
     public ByteAccumulator(int maxOverallBufferSize)
     {
-        this.maxSize = maxOverallBufferSize;
+        this(maxOverallBufferSize, null);
     }
 
-    public void copyChunk(byte[] buf, int offset, int length)
+    public ByteAccumulator(int maxOverallBufferSize, ByteBufferPool byteBufferPool)
     {
-        if (this.length + length > maxSize)
-        {
-            String err = String.format("Resulting message size [%,d] is too large for configured max of [%,d]", this.length + length, maxSize);
-            throw new MessageTooLargeException(err);
-        }
-
-        byte[] copy = new byte[length - offset];
-        System.arraycopy(buf, offset, copy, 0, length);
-
-        chunks.add(copy);
-        this.length += length;
+        this.maxSize = maxOverallBufferSize;
+        this.accumulator = new ByteBufferAccumulator(byteBufferPool);
     }
 
     public int getLength()
@@ -56,19 +47,44 @@ public class ByteAccumulator
         return length;
     }
 
-    public void transferTo(ByteBuffer buffer)
+    public void copyChunk(byte[] buf, int offset, int length)
     {
-        if (buffer.remaining() < length)
+        copyChunk(BufferUtil.toBuffer(buf, offset, length));
+    }
+
+    public void copyChunk(ByteBuffer buffer)
+    {
+        if (length + buffer.remaining() > maxSize)
         {
-            throw new IllegalArgumentException(String.format("Not enough space in ByteBuffer remaining [%d] for accumulated buffers length [%d]",
-                buffer.remaining(), length));
+            String err = String.format("Resulting message size [%d] is too large for configured max of [%d]", this.length + length, maxSize);
+            throw new MessageTooLargeException(err);
         }
 
-        int position = buffer.position();
-        for (byte[] chunk : chunks)
+        while (buffer.hasRemaining())
         {
-            buffer.put(chunk, 0, chunk.length);
+            ByteBuffer b = accumulator.getBuffer(buffer.remaining());
+            int pos = BufferUtil.flipToFill(b);
+            this.length += BufferUtil.put(buffer, b);
+            BufferUtil.flipToFlush(b, pos);
         }
-        BufferUtil.flipToFlush(buffer, position);
+    }
+
+    public void transferTo(ByteBuffer buffer)
+    {
+        if (BufferUtil.space(buffer) < length)
+        {
+            String err = String.format("Not enough space in ByteBuffer remaining [%d] for accumulated buffers length [%d]", BufferUtil.space(buffer), length);
+            throw new IllegalArgumentException(err);
+        }
+
+        accumulator.writeTo(buffer);
+        close();
+    }
+
+    @Override
+    public void close()
+    {
+        length = 0;
+        accumulator.close();
     }
 }

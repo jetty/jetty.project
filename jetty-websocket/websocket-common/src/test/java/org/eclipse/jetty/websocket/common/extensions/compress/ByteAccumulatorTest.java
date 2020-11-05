@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.common.extensions.compress;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 import org.junit.jupiter.api.Test;
@@ -93,6 +92,7 @@ public class ByteAccumulatorTest
         assertThat(e.getMessage(), containsString("too large for configured max"));
     }
 
+    /*
     @Test
     public void testRecycle()
     {
@@ -165,4 +165,5 @@ public class ByteAccumulatorTest
         String result1 = BufferUtil.toUTF8String(out1);
         assertThat("result", result1, is("olleH dlroW enoD"));
     }
+     */
 }

@@ -61,9 +61,8 @@ public class DeflateFrameExtension extends CompressExtension
             return;
         }
 
-        try
+        try (ByteAccumulator accumulator = newByteAccumulator())
         {
-            ByteAccumulator accumulator = newByteAccumulator();
             decompress(accumulator, frame.getPayload());
             decompress(accumulator, TAIL_BYTES_BUF.slice());
             forwardIncoming(frame, accumulator);

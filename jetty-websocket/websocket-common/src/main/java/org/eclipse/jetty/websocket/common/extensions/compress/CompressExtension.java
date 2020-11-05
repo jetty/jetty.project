@@ -162,7 +162,6 @@ public abstract class CompressExtension extends AbstractExtension
         ByteBuffer buffer = getBufferPool().acquire(accumulator.getLength(), false);
         try
         {
-            BufferUtil.flipToFill(buffer);
             accumulator.transferTo(buffer);
             newFrame.setPayload(buffer);
             nextIncomingFrame(newFrame);
@@ -176,7 +175,7 @@ public abstract class CompressExtension extends AbstractExtension
     protected ByteAccumulator newByteAccumulator()
     {
         int maxSize = Math.max(getPolicy().getMaxTextMessageSize(), getPolicy().getMaxBinaryMessageSize());
-        return new ByteAccumulator(maxSize);
+        return new ByteAccumulator(maxSize, getBufferPool());
     }
 
     protected void decompress(ByteAccumulator accumulator, ByteBuffer buf) throws DataFormatException
