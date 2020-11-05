@@ -78,9 +78,10 @@ public class PerMessageDeflateExtension extends CompressExtension
             throw new ProtocolException("Invalid RSV1 set on permessage-deflate CONTINUATION frame");
         }
 
+        ByteAccumulator accumulator = newByteAccumulator();
+
         try
         {
-            accumulator = newByteAccumulator();
             ByteBuffer payload = frame.getPayload();
             decompress(accumulator, payload);
             if (frame.isFin())
@@ -89,16 +90,10 @@ public class PerMessageDeflateExtension extends CompressExtension
             }
 
             forwardIncoming(frame, accumulator);
-            
         }
         catch (DataFormatException e)
         {
             throw new BadPayloadException(e);
-        }
-        finally
-        {
-            if (accumulator != null)
-                accumulator.recycle();
         }
 
         if (frame.isFin())
