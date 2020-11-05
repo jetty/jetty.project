@@ -69,6 +69,22 @@ public class ByteBufferAccumulator implements AutoCloseable
         return buffer;
     }
 
+    public void copyBytes(byte[] buf, int offset, int length)
+    {
+        copyBuffer(BufferUtil.toBuffer(buf, offset, length));
+    }
+
+    public void copyBuffer(ByteBuffer buffer)
+    {
+        while (buffer.hasRemaining())
+        {
+            ByteBuffer b = getBuffer(buffer.remaining());
+            int pos = BufferUtil.flipToFill(b);
+            BufferUtil.put(buffer, b);
+            BufferUtil.flipToFlush(b, pos);
+        }
+    }
+
     public void writeTo(ByteBuffer buffer)
     {
         int pos = BufferUtil.flipToFill(buffer);

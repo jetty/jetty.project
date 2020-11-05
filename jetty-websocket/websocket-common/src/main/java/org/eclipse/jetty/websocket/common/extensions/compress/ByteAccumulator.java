@@ -44,7 +44,12 @@ public class ByteAccumulator implements AutoCloseable
 
     public int getLength()
     {
-        return length;
+        return accumulator.getLength();
+    }
+
+    public ByteBuffer getBuffer(int minAllocationSize)
+    {
+        return accumulator.getBuffer(minAllocationSize);
     }
 
     public void copyChunk(byte[] buf, int offset, int length)
@@ -54,26 +59,23 @@ public class ByteAccumulator implements AutoCloseable
 
     public void copyChunk(ByteBuffer buffer)
     {
-        if (length + buffer.remaining() > maxSize)
+        int remaining = buffer.remaining();
+        if (getLength() + remaining > maxSize)
         {
-            String err = String.format("Resulting message size [%d] is too large for configured max of [%d]", this.length + length, maxSize);
+            String err = String.format("Resulting message size [%d] is too large for configured max of [%d]", length + remaining, maxSize);
             throw new MessageTooLargeException(err);
         }
 
-        while (buffer.hasRemaining())
-        {
-            ByteBuffer b = accumulator.getBuffer(buffer.remaining());
-            int pos = BufferUtil.flipToFill(b);
-            this.length += BufferUtil.put(buffer, b);
-            BufferUtil.flipToFlush(b, pos);
-        }
+        length += remaining;
+        accumulator.copyBuffer(buffer);
     }
 
     public void transferTo(ByteBuffer buffer)
     {
-        if (BufferUtil.space(buffer) < length)
+        int availableSpace = BufferUtil.space(buffer);
+        if (availableSpace < length)
         {
-            String err = String.format("Not enough space in ByteBuffer remaining [%d] for accumulated buffers length [%d]", BufferUtil.space(buffer), length);
+            String err = String.format("Not enough space in ByteBuffer remaining [%d] for accumulated buffers length [%d]", availableSpace, length);
             throw new IllegalArgumentException(err);
         }
 

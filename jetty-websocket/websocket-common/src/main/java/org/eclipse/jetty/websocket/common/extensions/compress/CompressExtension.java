@@ -180,14 +180,10 @@ public abstract class CompressExtension extends AbstractExtension
 
     protected void decompress(ByteAccumulator accumulator, ByteBuffer buf) throws DataFormatException
     {
-        if ((buf == null) || (!buf.hasRemaining()))
-        {
+        if (BufferUtil.isEmpty(buf))
             return;
-        }
-        byte[] output = new byte[DECOMPRESS_BUF_SIZE];
 
         Inflater inflater = getInflater();
-
         while (buf.hasRemaining() && inflater.needsInput())
         {
             if (!supplyInput(inflater, buf))
@@ -197,22 +193,16 @@ public abstract class CompressExtension extends AbstractExtension
                 return;
             }
 
-            int read;
-            while ((read = inflater.inflate(output)) >= 0)
+            while (true)
             {
-                if (read == 0)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Decompress: read 0 {}", toDetail(inflater));
+                ByteBuffer buffer = accumulator.getBuffer(DECOMPRESS_BUF_SIZE);
+                int read = inflater.inflate(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.capacity() - buffer.limit());
+                buffer.limit(buffer.limit() + read);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Decompressed {} bytes into buffer {} from {}", read, BufferUtil.toDetailString(buffer), toDetail(inflater));
+
+                if (read <= 0)
                     break;
-                }
-                else
-                {
-                    // do something with output
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Decompressed {} bytes: {}", read, toDetail(inflater));
-                    accumulator.copyChunk(output, 0, read);
-                }
             }
         }
 
