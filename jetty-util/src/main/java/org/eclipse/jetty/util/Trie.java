@@ -131,4 +131,99 @@ public interface Trie<V>
     boolean isCaseInsensitive();
 
     void clear();
+
+    static <T> Trie<T> empty(final boolean caseInsensitive)
+    {
+        return new Trie<T>()
+        {
+            @Override
+            public boolean put(String s, Object o)
+            {
+                return false;
+            }
+
+            @Override
+            public boolean put(Object o)
+            {
+                return false;
+            }
+
+            @Override
+            public T remove(String s)
+            {
+                return null;
+            }
+
+            @Override
+            public T get(String s)
+            {
+                return null;
+            }
+
+            @Override
+            public T get(String s, int offset, int len)
+            {
+                return null;
+            }
+
+            @Override
+            public T get(ByteBuffer b)
+            {
+                return null;
+            }
+
+            @Override
+            public T get(ByteBuffer b, int offset, int len)
+            {
+                return null;
+            }
+
+            @Override
+            public T getBest(String s)
+            {
+                return null;
+            }
+
+            @Override
+            public T getBest(String s, int offset, int len)
+            {
+                return null;
+            }
+
+            @Override
+            public T getBest(byte[] b, int offset, int len)
+            {
+                return null;
+            }
+
+            @Override
+            public T getBest(ByteBuffer b, int offset, int len)
+            {
+                return null;
+            }
+
+            @Override
+            public Set<String> keySet()
+            {
+                return null;
+            }
+
+            @Override
+            public boolean isFull()
+            {
+                return true;
+            }
+
+            @Override
+            public boolean isCaseInsensitive()
+            {
+                return caseInsensitive;
+            }
+
+            @Override
+            public void clear()
+            {
+            }
+        };
+    }
 }

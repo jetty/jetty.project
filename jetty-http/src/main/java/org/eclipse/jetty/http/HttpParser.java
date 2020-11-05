@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Locale;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
-import org.eclipse.jetty.util.AbstractTrie;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
@@ -104,7 +103,7 @@ public class HttpParser
      * </ul>
      */
     public static final Trie<HttpField> CACHE = new ArrayTrie<>(2048);
-    private static final Trie<HttpField> NO_CACHE = AbstractTrie.emptyTrie(true);
+    private static final Trie<HttpField> NO_CACHE = Trie.empty(true);
 
     // States
     public enum FieldState
@@ -1037,7 +1036,9 @@ public class HttpParser
 
                     case CONNECTION:
                         // Don't cache headers if not persistent
-                        if (_handler.getHeaderCacheSize() > 0 && (HttpHeaderValue.CLOSE.is(_valueString) || _valueString.contains(HttpHeaderValue.CLOSE.asString())))
+                        if (_field == null)
+                            _field = new HttpField(_header, caseInsensitiveHeader(_headerString, _header.asString()), _valueString);
+                        if (_handler.getHeaderCacheSize() > 0 && _field.contains(HttpHeaderValue.CLOSE.asString()))
                             _fieldCache = NO_CACHE;
                         break;
 
@@ -1061,7 +1062,7 @@ public class HttpParser
                 {
                     if (_fieldCache == null)
                     {
-                        _fieldCache = (_handler.getHeaderCacheSize() > 0 && (_version != null && _version.getVersion() == HttpVersion.HTTP_1_1.getVersion()))
+                        _fieldCache = (_handler.getHeaderCacheSize() > 0 && (_version != null && _version == HttpVersion.HTTP_1_1))
                             ? new ArrayTernaryTrie<>(_handler.getHeaderCacheSize())
                             : NO_CACHE;
                     }

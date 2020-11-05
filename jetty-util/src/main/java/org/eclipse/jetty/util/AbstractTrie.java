@@ -20,7 +20,6 @@ package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Set;
 
 /**
  * Abstract Trie implementation.
@@ -81,58 +80,5 @@ public abstract class AbstractTrie<V> implements Trie<V>
     public boolean isCaseInsensitive()
     {
         return _caseInsensitive;
-    }
-
-    public static <T> Trie<T> emptyTrie(boolean caseInsensitive)
-    {
-        return new AbstractTrie<T>(caseInsensitive)
-        {
-            @Override
-            public boolean put(String s, T t)
-            {
-                return false;
-            }
-
-            @Override
-            public T get(String s, int offset, int len)
-            {
-                return null;
-            }
-
-            @Override
-            public T get(ByteBuffer b, int offset, int len)
-            {
-                return null;
-            }
-
-            @Override
-            public T getBest(String s, int offset, int len)
-            {
-                return null;
-            }
-
-            @Override
-            public T getBest(ByteBuffer b, int offset, int len)
-            {
-                return null;
-            }
-
-            @Override
-            public Set<String> keySet()
-            {
-                return null;
-            }
-
-            @Override
-            public boolean isFull()
-            {
-                return true;
-            }
-
-            @Override
-            public void clear()
-            {
-            }
-        };
     }
 }
