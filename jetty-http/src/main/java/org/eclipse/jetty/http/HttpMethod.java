@@ -42,7 +42,8 @@ public enum HttpMethod
     PROXY,
     PRI,
     PATCH,
-    SEARCH;
+    SEARCH,
+    REPORT;
 
     /**
      * Optimized lookup to find a method name and trailing space in a byte array.
@@ -120,6 +121,11 @@ public enum HttpMethod
                 if (bytes[position + 1] == 'E' && bytes[position + 2] == 'A' && bytes[position + 3] == 'R' && length >= 7 &&
                     bytes[position + 4] == 'C' && bytes[position + 5] == 'H' && bytes[position + 6] == ' ')
                     return SEARCH;
+                break;
+            case 'R':
+                if (bytes[position + 1] == 'E' && bytes[position + 2] == 'P' && bytes[position + 3] == 'O' && length >= 7 &&
+                    bytes[position + 4] == 'R' && bytes[position + 5] == 'T' && bytes[position + 6] == ' ')
+                    return REPORT;
                 break;
             default:
                 break;
