@@ -202,8 +202,11 @@ public class DemoBaseTests extends AbstractDistributionTest
             assertTrue(run.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
 
             startHttpClient();
-            ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/hello");
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            ContentResponse helloResponse = client.GET("http://localhost:" + httpPort + "/test/hello");
+            assertEquals(HttpStatus.OK_200, helloResponse.getStatus());
+
+            ContentResponse cssResponse = client.GET("http://localhost:" + httpPort + "/jetty-dir.css");
+            assertEquals(HttpStatus.OK_200, cssResponse.getStatus());
         }
     }
 

@@ -126,7 +126,7 @@ public class ListenerHolder extends BaseHolder<EventListener>
     @Override
     public String toString()
     {
-        return super.toString() + ": " + getClassName();
+        return String.format("%s@%x{src=%s}", getClassName(), hashCode(), getSource());
     }
 
     /**

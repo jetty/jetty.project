@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.34-SNAPSHOT</version>
+    <version>9.4.35-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-unixsocket</artifactId>
@@ -80,7 +80,7 @@
               <goal>run</goal>
             </goals>
             <configuration>
-              <tasks>
+              <target>
                 <copy file="${project.build.directory}/deps.txt" tofile="${project.build.directory}/deps-orig.txt" />
                 <!-- regex the deps with classifiers first -->
                 <replaceregexp file="${project.build.directory}/deps.txt" match=" *(.*):(.*):jar:(.*):(.*):.*$" replace="maven://\1/\2/\4/jar/\3|lib/jnr/\2-\4-\3.jar" byline="true" />
@@ -92,7 +92,7 @@
                   <fileset file="${project.build.directory}/deps.txt" />
                   <fileset file="src/main/config-template/modules/unixsocket-suffix.mod" />
                 </concat>
-              </tasks>
+              </target>
             </configuration>
           </execution>
         </executions>

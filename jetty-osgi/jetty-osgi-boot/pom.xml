@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.4.34-SNAPSHOT</version>
+    <version>9.4.35-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-osgi-boot</artifactId>
@@ -46,14 +46,14 @@
           <execution>
             <phase>process-resources</phase>
             <configuration>
-              <tasks>
+              <target>
                 <!--delete file="target/classes/META-INF/MANIFEST.MF" /-->
                 <copy todir="target/classes/jettyhome">
                   <fileset dir="jettyhome">
                     <exclude name="**/*.log" />
                   </fileset>
                 </copy>
-              </tasks>
+              </target>
             </configuration>
             <goals>
               <goal>run</goal>

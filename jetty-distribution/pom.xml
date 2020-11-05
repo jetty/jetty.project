@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.34-SNAPSHOT</version>
+    <version>9.4.35-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-distribution</artifactId>
@@ -264,11 +264,11 @@
               <goal>run</goal>
             </goals>
             <configuration>
-              <tasks>
+              <target>
                 <copy todir="${assembly-directory}">
                   <fileset dir="${home-directory}/jetty-home-${project.version}/" />
                 </copy>
-              </tasks>
+              </target>
             </configuration>
           </execution>
           <execution>
@@ -278,9 +278,9 @@
               <goal>run</goal>
             </goals>
             <configuration>
-              <tasks>
+              <target>
                 <chmod dir="${assembly-directory}/bin" perm="755" includes="**/*.sh" />
-              </tasks>
+              </target>
             </configuration>
           </execution>
           <execution>
@@ -290,9 +290,9 @@
               <goal>run</goal>
             </goals>
             <configuration>
-              <tasks>
+              <target>
                 <delete file="${assembly-directory}/etc/keystore" />
-              </tasks>
+              </target>
             </configuration>
           </execution>
         </executions>

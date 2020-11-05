@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-servlet-spec-parent</artifactId>
-    <version>9.4.34-SNAPSHOT</version>
+    <version>9.4.35-SNAPSHOT</version>
   </parent>
   <name>Jetty Tests :: Webapps :: Spec Webapp</name>
   <artifactId>test-spec-webapp</artifactId>
@@ -92,14 +92,14 @@
             <id>generate-xml-files</id>
             <phase>process-resources</phase>
             <configuration>
-              <tasks>
+              <target>
                 <concat destfile="${project.build.directory}/plugin-context.xml">
                   <filelist dir="src/main/templates/" files="plugin-context-header.xml,env-definitions.xml" />
                 </concat>
                 <concat destfile="${project.build.directory}/test-spec.xml">
                   <filelist dir="src/main/templates/" files="annotations-context-header.xml,env-definitions.xml" />
                 </concat>
-              </tasks>
+              </target>
             </configuration>
             <goals>
               <goal>run</goal>

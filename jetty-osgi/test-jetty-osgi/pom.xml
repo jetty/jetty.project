@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.4.34-SNAPSHOT</version>
+    <version>9.4.35-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -71,7 +71,7 @@
     <dependency>
       <groupId>org.ops4j.pax.url</groupId>
       <artifactId>pax-url-wrap</artifactId>
-      <version>2.5.2</version>
+      <version>2.6.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -88,13 +88,13 @@
     <dependency>
       <groupId>org.eclipse.platform</groupId>
       <artifactId>org.eclipse.osgi</artifactId>
-      <version>3.13.100</version>
+      <version>3.16.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.platform</groupId>
       <artifactId>org.eclipse.osgi.services</artifactId>
-      <version>3.7.100</version>
+      <version>3.9.0</version>
       <scope>test</scope>
     </dependency>
 

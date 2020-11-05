@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.4.34-SNAPSHOT</version>
+    <version>9.4.35-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-httpservice</artifactId>
@@ -43,11 +43,11 @@
           <execution>
             <phase>process-resources</phase>
             <configuration>
-              <tasks>
+              <target>
                 <copy todir="target/classes/contexts">
                   <fileset dir="contexts" />
                 </copy>
-              </tasks>
+              </target>
             </configuration>
             <goals>
               <goal>run</goal>

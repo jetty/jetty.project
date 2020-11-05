@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.gcloud</groupId>
     <artifactId>gcloud-parent</artifactId>
-    <version>9.4.34-SNAPSHOT</version>
+    <version>9.4.35-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -113,10 +113,10 @@
               <goal>run</goal>
             </goals>
             <configuration>
-              <tasks>
+              <target>
                 <replaceregexp file="${project.build.directory}/deps.txt" match=" *(.*):(.*):jar:(.*):.*$" replace="maven://\1/\2/\3|lib/gcloud/\2-\3.jar" byline="true" />
                 <replaceregexp file="${project.build.directory}/deps.txt" match="The following files have been resolved:" replace="[files]" />
-              </tasks>
+              </target>
             </configuration>
           </execution>
           <execution>
@@ -126,12 +126,12 @@
               <goal>run</goal>
             </goals>
             <configuration>
-              <tasks>
+              <target>
                 <concat destfile="${project.build.directory}/gcloud-datastore.mod">
                   <fileset file="src/main/config-template/modules/gcloud-datastore.mod" />
                   <fileset file="${project.build.directory}/deps.txt" />
                 </concat>
-              </tasks>
+              </target>
             </configuration>
           </execution>
         </executions>

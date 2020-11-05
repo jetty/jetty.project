@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>infinispan-parent</artifactId>
-    <version>9.4.34-SNAPSHOT</version>
+    <version>9.4.35-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>infinispan-remote-query</artifactId>
@@ -45,11 +45,11 @@
               <goal>run</goal>
             </goals>
             <configuration>
-              <tasks>
+              <target>
                 <replaceregexp file="${project.build.directory}/deps.txt" match=" *(.*):(.*):jar:(.*):(.*):.*$" replace="maven://\1/\2/\4/jar/\3|lib/infinispan/\2-\3-\4.jar" byline="true" />
                 <replaceregexp file="${project.build.directory}/deps.txt" match=" *(.*):(.*):jar:(.*):.*$" replace="maven://\1/\2/\3|lib/infinispan/\2-\3.jar" byline="true" />
                 <replaceregexp file="${project.build.directory}/deps.txt" match="The following files have been resolved:" replace="[files]" />
-              </tasks>
+              </target>
             </configuration>
           </execution>
           <execution>
@@ -59,12 +59,12 @@
               <goal>run</goal>
             </goals>
             <configuration>
-              <tasks>
+              <target>
                 <concat destfile="${project.build.directory}/infinispan-remote-query-libs.mod">
                   <fileset file="src/main/config-template/modules/sessions/infinispan/remote/infinispan-remote-query-libs.mod" />
                   <fileset file="${project.build.directory}/deps.txt" />
                 </concat>
-              </tasks>
+              </target>
             </configuration>
           </execution>
         </executions>

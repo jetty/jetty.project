@@ -38,6 +38,7 @@ import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
+import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
@@ -732,7 +733,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case WebFragment:
                     {
                         //a web-fragment set the value, all web-fragments must have the same value
-                        if (!context.getSessionHandler().getSessionCookieConfig().getName().equals(name))
+                        if (!name.equals(SessionHandler.getSessionCookieName(context.getSessionHandler().getSessionCookieConfig())))
                             throw new IllegalStateException("Conflicting cookie-config name " + name + " in " + descriptor.getResource());
                         break;
                     }
@@ -806,7 +807,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case WebFragment:
                     {
                         //a web-fragment set the value, all web-fragments must have the same value
-                        if (!context.getSessionHandler().getSessionCookieConfig().getPath().equals(path))
+                        if (!path.equals(context.getSessionHandler().getSessionCookieConfig().getPath()))
                             throw new IllegalStateException("Conflicting cookie-config path " + path + " in " + descriptor.getResource());
                         break;
                     }

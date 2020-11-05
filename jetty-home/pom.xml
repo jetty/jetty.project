@@ -3,7 +3,7 @@
   <parent>
     <artifactId>jetty-project</artifactId>
     <groupId>org.eclipse.jetty</groupId>
-    <version>9.4.34-SNAPSHOT</version>
+    <version>9.4.35-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-home</artifactId>
@@ -488,9 +488,9 @@
               <goal>run</goal>
             </goals>
             <configuration>
-              <tasks>
+              <target>
                 <chmod dir="${assembly-directory}/bin" perm="755" includes="**/*.sh" />
-              </tasks>
+              </target>
             </configuration>
           </execution>
         </executions>
