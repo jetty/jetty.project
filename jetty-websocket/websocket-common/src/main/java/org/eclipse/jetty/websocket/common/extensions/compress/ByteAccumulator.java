@@ -72,6 +72,9 @@ public class ByteAccumulator implements AutoCloseable
 
     public void transferTo(ByteBuffer buffer)
     {
+        // For some reason this method expects the buffer in fill mode but returns a buffer in flush mode.
+        BufferUtil.flipToFlush(buffer, 0);
+
         int availableSpace = BufferUtil.space(buffer);
         if (availableSpace < length)
         {

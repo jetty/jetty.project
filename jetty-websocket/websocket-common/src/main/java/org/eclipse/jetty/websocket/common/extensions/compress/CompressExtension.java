@@ -162,6 +162,7 @@ public abstract class CompressExtension extends AbstractExtension
         ByteBuffer buffer = getBufferPool().acquire(accumulator.getLength(), false);
         try
         {
+            BufferUtil.clearToFill(buffer);
             accumulator.transferTo(buffer);
             newFrame.setPayload(buffer);
             nextIncomingFrame(newFrame);
