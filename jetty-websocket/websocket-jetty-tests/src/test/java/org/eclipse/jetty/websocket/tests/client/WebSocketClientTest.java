@@ -25,12 +25,10 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.DispatcherType;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -50,7 +48,6 @@ import org.eclipse.jetty.websocket.tests.ConnectMessageEndpoint;
 import org.eclipse.jetty.websocket.tests.EchoSocket;
 import org.eclipse.jetty.websocket.tests.ParamsEndpoint;
 import org.eclipse.jetty.websocket.tests.util.FutureWriteCallback;
-import org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -104,10 +101,7 @@ public class WebSocketClientTest
                 configuration.addMapping("/get-params", (req, resp) -> new ParamsEndpoint());
             });
 
-        context.addFilter(WebSocketUpgradeFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
-
         server.setHandler(context);
-
         server.start();
     }
 
