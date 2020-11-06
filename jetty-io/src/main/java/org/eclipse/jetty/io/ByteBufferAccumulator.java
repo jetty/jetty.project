@@ -52,17 +52,17 @@ public class ByteBufferAccumulator implements AutoCloseable
         return length;
     }
 
-    public ByteBuffer getBuffer()
+    public ByteBuffer ensureBuffer()
     {
-        return getBuffer(DEFAULT_BUFFER_SIZE);
+        return ensureBuffer(DEFAULT_BUFFER_SIZE);
     }
 
-    public ByteBuffer getBuffer(int minAllocationSize)
+    public ByteBuffer ensureBuffer(int minAllocationSize)
     {
         ByteBuffer buffer = _buffers.isEmpty() ? BufferUtil.EMPTY_BUFFER : _buffers.get(_buffers.size() - 1);
         if (BufferUtil.space(buffer) <= MIN_SPACE)
         {
-            buffer = _bufferPool.acquire(minAllocationSize, false);
+            buffer = _bufferPool.acquire(Math.max(DEFAULT_BUFFER_SIZE, minAllocationSize), false);
             _buffers.add(buffer);
         }
 
@@ -78,7 +78,7 @@ public class ByteBufferAccumulator implements AutoCloseable
     {
         while (buffer.hasRemaining())
         {
-            ByteBuffer b = getBuffer(buffer.remaining());
+            ByteBuffer b = ensureBuffer(buffer.remaining());
             int pos = BufferUtil.flipToFill(b);
             BufferUtil.put(buffer, b);
             BufferUtil.flipToFlush(b, pos);

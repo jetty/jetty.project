@@ -25,6 +25,10 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 
+/**
+ * @deprecated use {@link ByteBufferAccumulator} instead.
+ */
+@Deprecated
 public class ByteAccumulator implements AutoCloseable
 {
     private final ByteBufferAccumulator accumulator;
@@ -47,9 +51,19 @@ public class ByteAccumulator implements AutoCloseable
         return accumulator.getLength();
     }
 
-    public ByteBuffer getBuffer(int minAllocationSize)
+    public ByteBuffer ensureBuffer(int minAllocationSize)
     {
-        return accumulator.getBuffer(minAllocationSize);
+        return accumulator.ensureBuffer(minAllocationSize);
+    }
+
+    public void readBytes(int read)
+    {
+        length += read;
+        if (length > maxSize)
+        {
+            String err = String.format("Resulting message size [%d] is too large for configured max of [%d]", length, maxSize);
+            throw new MessageTooLargeException(err);
+        }
     }
 
     public void copyChunk(byte[] buf, int offset, int length)
@@ -60,13 +74,12 @@ public class ByteAccumulator implements AutoCloseable
     public void copyChunk(ByteBuffer buffer)
     {
         int remaining = buffer.remaining();
-        if (getLength() + remaining > maxSize)
+        int length = getLength();
+        if (length + remaining > maxSize)
         {
             String err = String.format("Resulting message size [%d] is too large for configured max of [%d]", length + remaining, maxSize);
             throw new MessageTooLargeException(err);
         }
-
-        length += remaining;
         accumulator.copyBuffer(buffer);
     }
 
@@ -76,6 +89,7 @@ public class ByteAccumulator implements AutoCloseable
         BufferUtil.flipToFlush(buffer, 0);
 
         int availableSpace = BufferUtil.space(buffer);
+        int length = getLength();
         if (availableSpace < length)
         {
             String err = String.format("Not enough space in ByteBuffer remaining [%d] for accumulated buffers length [%d]", availableSpace, length);
@@ -89,7 +103,6 @@ public class ByteAccumulator implements AutoCloseable
     @Override
     public void close()
     {
-        length = 0;
         accumulator.close();
     }
 }

@@ -196,9 +196,10 @@ public abstract class CompressExtension extends AbstractExtension
 
             while (true)
             {
-                ByteBuffer buffer = accumulator.getBuffer(DECOMPRESS_BUF_SIZE);
+                ByteBuffer buffer = accumulator.ensureBuffer(DECOMPRESS_BUF_SIZE);
                 int read = inflater.inflate(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.capacity() - buffer.limit());
                 buffer.limit(buffer.limit() + read);
+                accumulator.readBytes(read);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Decompressed {} bytes into buffer {} from {}", read, BufferUtil.toDetailString(buffer), toDetail(inflater));
 

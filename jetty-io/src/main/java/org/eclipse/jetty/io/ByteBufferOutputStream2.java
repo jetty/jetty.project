@@ -91,7 +91,7 @@ public class ByteBufferOutputStream2 extends OutputStream
 
     public int size()
     {
-        return _accumulator.getLength();
+        return _size;
     }
 
     @Override
@@ -103,18 +103,19 @@ public class ByteBufferOutputStream2 extends OutputStream
     @Override
     public void write(byte[] b, int off, int len)
     {
-        write(BufferUtil.toBuffer(b, off, len));
+        releaseAggregateBuffer();
+        _accumulator.copyBytes(b, off, len);
     }
 
     public void write(ByteBuffer buffer)
     {
-        while (buffer.hasRemaining())
-        {
-            ByteBuffer lastBuffer = _accumulator.getBuffer(buffer.remaining());
-            int pos = BufferUtil.flipToFill(lastBuffer);
-            _size += BufferUtil.put(buffer, lastBuffer);
-            BufferUtil.flipToFlush(lastBuffer, pos);
-        }
+        releaseAggregateBuffer();
+        _accumulator.copyBuffer(buffer);
+    }
+
+    public void writeTo(ByteBuffer buffer)
+    {
+        _accumulator.writeTo(buffer);
     }
 
     public void writeTo(OutputStream out) throws IOException
@@ -122,15 +123,19 @@ public class ByteBufferOutputStream2 extends OutputStream
         _accumulator.writeTo(out);
     }
 
-    @Override
-    public void close()
+    private void releaseAggregateBuffer()
     {
         if (_combinedByteBuffer != null)
         {
             _bufferPool.release(_combinedByteBuffer);
             _combinedByteBuffer = null;
         }
+    }
 
+    @Override
+    public void close()
+    {
+        releaseAggregateBuffer();
         _accumulator.close();
         _size = 0;
     }
