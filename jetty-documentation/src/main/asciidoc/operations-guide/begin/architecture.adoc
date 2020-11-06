@@ -21,10 +21,10 @@
 
 There are two main concepts on which the Eclipse Jetty standalone server is based:
 
-* the xref:og-begin-arch-modules[Jetty _module_ system], that provides the Jetty features
-* the xref:og-begin-arch-jetty-base[`$JETTY_BASE` directory], that provides a place where you configure the modules, and therefore the features, you need for your web applications
+* The xref:og-begin-arch-modules[Jetty _module_ system], that provides the Jetty features
+* The xref:og-begin-arch-jetty-base[`$JETTY_BASE` directory], that provides a place where you configure the modules, and therefore the features you need for your web applications
 
-After installing Jetty, you want to setup a xref:og-begin-arch-jetty-base[`$JETTY_BASE` directory] where you configure xref:og-begin-arch-modules[Jetty modules].
+After installing Jetty, you will want to set up a xref:og-begin-arch-jetty-base[`$JETTY_BASE` directory] where you configure xref:og-begin-arch-modules[Jetty modules].
 
 [[og-begin-arch-modules]]
 ===== Eclipse Jetty Architecture: Modules
@@ -33,19 +33,19 @@ The Jetty standalone server is made of components that are assembled together, c
 
 A Jetty _module_ is made of one or more components that work together to provide typically one feature, although they may provide more than one feature.
 
-A Jetty module is nothing more than Jetty components assembled together like you would do using Java APIs, just done in a declarative way using configuration files rather than using Java APIs.
-What you can do in Java code to assemble Jetty components, it can be done using Jetty modules.
+A Jetty module is nothing more than Jetty components assembled together like you would do using Java APIs, just done in a declarative way using configuration files.
+What you can do in Java code to assemble Jetty components can be done using Jetty modules.
 
-A Jetty module may be dependent on other Jetty modules: for example, the `http` Jetty module depends on the `server` Jetty module, that in turn depends on the `threadpool` and `logging` Jetty modules.
+A Jetty module may be dependent on other Jetty modules: for example, the `http` Jetty module depends on the `server` Jetty module which in turn depends on the `threadpool` and `logging` Jetty modules.
 
-Every feature in a Jetty server is enabled by enabling correspondent Jetty modules.
+Every feature in a Jetty server is enabled by enabling the corresponding Jetty module(s).
 
 For example, if you enable only the `http` Jetty module, then your Jetty standalone server will only be able to listen to a network port for clear-text HTTP requests.
 It will not be able to process secure HTTP (i.e. `https`) requests, it will not be able to process WebSocket, or HTTP/2 or any other protocol because the correspondent modules have not been enabled.
 
 You can even start a Jetty server _without_ listening on a network port -- for example because you have enabled a custom module you wrote that provides the features you need.
 
-This allows the Jetty standalone server to be as small as necessary: modules that are not enabled are not loaded, don't waste memory, and you don't risk that client use a module that you did not know was even there.
+This allows the Jetty standalone server to be as small as necessary: modules that are not enabled are not loaded, don't waste memory, and you don't risk a client using a module that you did not know was even there.
 
 For more detailed information about the Jetty module system, see xref:og-modules[this section].
 
@@ -60,7 +60,7 @@ This separation between `$JETTY_HOME` and `$JETTY_BASE` allows upgrades without 
 `$JETTY_HOME` contains the Jetty runtime and libraries and the default configuration, while a `$JETTY_BASE` contains your web applications and any override of the default configuration.
 
 For example, with the `$JETTY_HOME` installation the default value for the network port for clear-text HTTP is `8080`.
-However, you want that port to be `6060`, for example because you are behind a load balancer that is configured to forward to the backend on port `6060`.
+However, you want that port to be `6060`, because you are behind a load balancer that is configured to forward to the backend on port `6060`.
 
 Instead, you want to configure the clear-text HTTP port in your `$JETTY_BASE`.
 When you upgrade Jetty, you will upgrade only files in `$JETTY_HOME`, and all the configuration in `$JETTY_BASE` will remain unchanged.
