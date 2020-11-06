@@ -31,48 +31,48 @@ import org.eclipse.jetty.util.Trie;
 public enum HttpMethod
 {
     // From https://www.iana.org/assignments/http-methods/http-methods.xhtml
-    ACL(Type.IDEMPOTENT),
-    BASELINE_CONTROL(Type.IDEMPOTENT),
-    BIND(Type.IDEMPOTENT),
-    CHECKIN(Type.IDEMPOTENT),
-    CHECKOUT(Type.IDEMPOTENT),
-    CONNECT(Type.NORMAL),
-    COPY(Type.IDEMPOTENT),
-    DELETE(Type.IDEMPOTENT),
-    GET(Type.SAFE),
-    HEAD(Type.SAFE),
-    LABEL(Type.IDEMPOTENT),
-    LINK(Type.IDEMPOTENT),
-    LOCK(Type.NORMAL),
-    MERGE(Type.IDEMPOTENT),
-    MKACTIVITY(Type.IDEMPOTENT),
-    MKCALENDAR(Type.IDEMPOTENT),
-    MKCOL(Type.IDEMPOTENT),
-    MKREDIRECTREF(Type.IDEMPOTENT),
-    MKWORKSPACE(Type.IDEMPOTENT),
-    MOVE(Type.IDEMPOTENT),
-    OPTIONS(Type.SAFE),
-    ORDERPATCH(Type.IDEMPOTENT),
-    PATCH(Type.NORMAL),
-    POST(Type.NORMAL),
-    PRI(Type.SAFE),
-    PROPFIND(Type.SAFE),
-    PROPPATCH(Type.IDEMPOTENT),
-    PUT(Type.IDEMPOTENT),
-    REBIND(Type.IDEMPOTENT),
-    REPORT(Type.SAFE),
-    SEARCH(Type.SAFE),
-    TRACE(Type.SAFE),
-    UNBIND(Type.IDEMPOTENT),
-    UNCHECKOUT(Type.IDEMPOTENT),
-    UNLINK(Type.IDEMPOTENT),
-    UNLOCK(Type.IDEMPOTENT),
-    UPDATE(Type.IDEMPOTENT),
-    UPDATEREDIRECTREF(Type.IDEMPOTENT),
-    VERSION_CONTROL(Type.IDEMPOTENT),
+    ACL("ACL", Type.IDEMPOTENT),
+    BASELINE_CONTROL("BASELINE-CONTROL", Type.IDEMPOTENT),
+    BIND("BIND", Type.IDEMPOTENT),
+    CHECKIN("CHECKIN", Type.IDEMPOTENT),
+    CHECKOUT("CHECKOUT", Type.IDEMPOTENT),
+    CONNECT("CONNECT", Type.NORMAL),
+    COPY("COPY", Type.IDEMPOTENT),
+    DELETE("DELETE", Type.IDEMPOTENT),
+    GET("GET", Type.SAFE),
+    HEAD("HEAD", Type.SAFE),
+    LABEL("LABEL", Type.IDEMPOTENT),
+    LINK("LINK", Type.IDEMPOTENT),
+    LOCK("LOCK", Type.NORMAL),
+    MERGE("MERGE", Type.IDEMPOTENT),
+    MKACTIVITY("MKACTIVITY", Type.IDEMPOTENT),
+    MKCALENDAR("MKCALENDAR", Type.IDEMPOTENT),
+    MKCOL("MKCOL", Type.IDEMPOTENT),
+    MKREDIRECTREF("MKREDIRECTREF", Type.IDEMPOTENT),
+    MKWORKSPACE("MKWORKSPACE", Type.IDEMPOTENT),
+    MOVE("MOVE", Type.IDEMPOTENT),
+    OPTIONS("OPTIONS", Type.SAFE),
+    ORDERPATCH("ORDERPATCH", Type.IDEMPOTENT),
+    PATCH("PATCH", Type.NORMAL),
+    POST("POST", Type.NORMAL),
+    PRI("PRI", Type.SAFE),
+    PROPFIND("PROPFIND", Type.SAFE),
+    PROPPATCH("PROPPATCH", Type.IDEMPOTENT),
+    PUT("PUT", Type.IDEMPOTENT),
+    REBIND("REBIND", Type.IDEMPOTENT),
+    REPORT("REPORT", Type.SAFE),
+    SEARCH("SEARCH", Type.SAFE),
+    TRACE("TRACE", Type.SAFE),
+    UNBIND("UNBIND", Type.IDEMPOTENT),
+    UNCHECKOUT("UNCHECKOUT", Type.IDEMPOTENT),
+    UNLINK("UNLINK", Type.IDEMPOTENT),
+    UNLOCK("UNLOCK", Type.IDEMPOTENT),
+    UPDATE("UPDATE", Type.IDEMPOTENT),
+    UPDATEREDIRECTREF("UPDATEREDIRECTREF", Type.IDEMPOTENT),
+    VERSION_CONTROL("VERSION-CONTROL", Type.IDEMPOTENT),
 
     // Other methods
-    PROXY(Type.NORMAL);
+    PROXY("PROXY", Type.NORMAL);
 
     // The type of the method
     private enum Type
@@ -87,9 +87,9 @@ public enum HttpMethod
     private final ByteBuffer _buffer;
     private final Type _type;
 
-    HttpMethod(Type type)
+    HttpMethod(String method, Type type)
     {
-        _method = toString().replace('_', '-');
+        _method = method;
         _type = type;
         _bytes = StringUtil.getBytes(_method);
         _buffer = ByteBuffer.wrap(_bytes);
