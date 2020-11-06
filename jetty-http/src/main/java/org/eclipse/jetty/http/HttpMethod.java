@@ -145,6 +145,10 @@ public enum HttpMethod
     public static final Trie<HttpMethod> INSENSITIVE_CACHE = new ArrayTrie<>(252);
     public static final Trie<HttpMethod> CACHE = new ArrayTernaryTrie<>(false, 300);
     public static final Trie<HttpMethod> LOOK_AHEAD = new ArrayTernaryTrie<>(false, 330);
+    private static final int ACL_AS_INT = ('A' & 0xff) << 24 | ('C' & 0xFF) << 16 | ('L' & 0xFF) << 8 | (' ' & 0xFF);
+    private static final int GET_AS_INT = ('G' & 0xff) << 24 | ('E' & 0xFF) << 16 | ('T' & 0xFF) << 8 | (' ' & 0xFF);
+    private static final int PRI_AS_INT = ('P' & 0xff) << 24 | ('R' & 0xFF) << 16 | ('I' & 0xFF) << 8 | (' ' & 0xFF);
+    private static final int PUT_AS_INT = ('P' & 0xff) << 24 | ('U' & 0xFF) << 16 | ('T' & 0xFF) << 8 | (' ' & 0xFF);
     static
     {
         for (HttpMethod method : HttpMethod.values())
@@ -167,19 +171,12 @@ public enum HttpMethod
      * @param position The first valid index
      * @param limit The first non valid index
      * @return An HttpMethod if a match or null if no easy match.
+     * @deprecated Not used
      */
+    @Deprecated
     public static HttpMethod lookAheadGet(byte[] bytes, final int position, int limit)
     {
-        int len = limit - position;
-        if (limit > 3)
-        {
-            // Short cut for GET
-            if (bytes[position] == 'G' && bytes[position + 1] == 'E' && bytes[position + 2] == 'T' && bytes[position + 3] == ' ')
-                return GET;
-            // Otherwise lookup in the Trie
-            return LOOK_AHEAD.getBest(bytes, position, len);
-        }
-        return null;
+        return LOOK_AHEAD.getBest(bytes, position, limit - position);
     }
 
     /**
@@ -187,12 +184,28 @@ public enum HttpMethod
      *
      * @param buffer buffer containing ISO-8859-1 characters, it is not modified.
      * @return An HttpMethod if a match or null if no easy match.
-     * @deprecated Not used
      */
-    @Deprecated
     public static HttpMethod lookAheadGet(ByteBuffer buffer)
     {
-        return LOOK_AHEAD.getBest(buffer, 0, buffer.remaining());
+        int len = buffer.remaining();
+        // Short cut for 3 char methods, mostly for GET optimisation
+        if (len > 3)
+        {
+            switch (buffer.getInt(buffer.position()))
+            {
+                case ACL_AS_INT:
+                    return ACL;
+                case GET_AS_INT:
+                    return GET;
+                case PRI_AS_INT:
+                    return PRI;
+                case PUT_AS_INT:
+                    return PUT;
+                default:
+                    break;
+            }
+        }
+        return LOOK_AHEAD.getBest(buffer, 0, len);
     }
 
     /**
