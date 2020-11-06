@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.BufferUtil;
 
 public class ByteBufferAccumulator implements AutoCloseable
 {
-    private static final int MIN_SPACE = 3;
+    private static final int MIN_SPACE = 8;
     private static final int DEFAULT_BUFFER_SIZE = 1024;
 
     private final List<ByteBuffer> _buffers = new ArrayList<>();
