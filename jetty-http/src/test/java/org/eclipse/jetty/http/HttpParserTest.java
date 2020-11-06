@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 import org.eclipse.jetty.http.HttpParser.State;
 import org.eclipse.jetty.toolchain.test.Net;
@@ -32,6 +33,8 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.eclipse.jetty.http.HttpComplianceSection.NO_FIELD_FOLDING;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -106,6 +109,15 @@ public class HttpParserTest
 
         BufferUtil.append(b, BufferUtil.toBuffer(" "));
         assertEquals(HttpMethod.GET, HttpMethod.lookAheadGet(b));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"GET", "POST", "VERSION-CONTROL"})
+    public void httpMethodNameTest(String methodName)
+    {
+        HttpMethod method = HttpMethod.fromString(methodName);
+        assertNotNull(method, "Method should have been found: " + methodName);
+        assertEquals(methodName.toUpperCase(Locale.US), method.toString());
     }
 
     @Test
