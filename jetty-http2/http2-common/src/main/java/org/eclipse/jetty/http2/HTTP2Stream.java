@@ -328,9 +328,6 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             dataLength = length >= 0 ? length : Long.MIN_VALUE;
         }
 
-        if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
-            session.removeStream(this);
-
         callback.succeeded();
     }
 
@@ -371,10 +368,10 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             }
         }
 
-        if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
-            session.removeStream(this);
-
+        boolean closed = updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
         notifyData(this, frame, callback);
+        if (closed)
+            session.removeStream(this);
     }
 
     private void onReset(ResetFrame frame, Callback callback)

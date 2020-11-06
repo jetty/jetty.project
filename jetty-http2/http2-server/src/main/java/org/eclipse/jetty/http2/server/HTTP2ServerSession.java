@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.CloseState;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Session;
@@ -109,8 +110,11 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
                     {
                         onStreamOpened(stream);
                         stream.process(frame, Callback.NOOP);
+                        boolean closed = stream.updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
                         Stream.Listener listener = notifyNewStream(stream, frame);
                         stream.setListener(listener);
+                        if (closed)
+                            removeStream(stream);
                     }
                 }
             }
@@ -129,7 +133,10 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
             if (stream != null)
             {
                 stream.process(frame, Callback.NOOP);
+                boolean closed = stream.updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
                 notifyHeaders(stream, frame);
+                if (closed)
+                    removeStream(stream);
             }
             else
             {
