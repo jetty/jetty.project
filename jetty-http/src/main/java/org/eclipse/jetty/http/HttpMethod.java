@@ -99,11 +99,23 @@ public enum HttpMethod
         return toString().equalsIgnoreCase(s);
     }
 
+    /**
+     * An HTTP method is safe if it doesn't alter the state of the server.
+     * In other words, a method is safe if it leads to a read-only operation.
+     * Several common HTTP methods are safe: GET , HEAD , or OPTIONS .
+     * All safe methods are also idempotent, but not all idempotent methods are safe
+     * @return if the method is safe.
+     */
     public boolean isSafe()
     {
         return _safe;
     }
 
+    /**
+     * An idempotent HTTP method is an HTTP method that can be called many times without different outcomes.
+     * It would not matter if the method is called only once, or ten times over. The result should be the same.
+     * @return true if the method is idempotent.
+     */
     public boolean isIdempotent()
     {
         return _idempotent;
