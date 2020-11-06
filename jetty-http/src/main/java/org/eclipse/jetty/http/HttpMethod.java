@@ -31,60 +31,66 @@ import org.eclipse.jetty.util.Trie;
 public enum HttpMethod
 {
     // From https://www.iana.org/assignments/http-methods/http-methods.xhtml
-    ACL(false, true),
-    BASELINE_CONTROL(false, true),
-    BIND(false, true),
-    CHECKIN(false, true),
-    CHECKOUT(false, true),
-    CONNECT(false, false),
-    COPY(false, true),
-    DELETE(false, true),
-    GET(true, true),
-    HEAD(true, true),
-    LABEL(false, true),
-    LINK(false, true),
-    LOCK(false, false),
-    MERGE(false, true),
-    MKACTIVITY(false, true),
-    MKCALENDAR(false, true),
-    MKCOL(false, true),
-    MKREDIRECTREF(false, true),
-    MKWORKSPACE(false, true),
-    MOVE(false, true),
-    OPTIONS(true, true),
-    ORDERPATCH(false, true),
-    PATCH(false, false),
-    POST(false, false),
-    PRI(true, true),
-    PROPFIND(true, true),
-    PROPPATCH(false, true),
-    PUT(false, true),
-    REBIND(false, true),
-    REPORT(true, true),
-    SEARCH(true, true),
-    TRACE(true, true),
-    UNBIND(false, true),
-    UNCHECKOUT(false, true),
-    UNLINK(false, true),
-    UNLOCK(false, true),
-    UPDATE(false, true),
-    UPDATEREDIRECTREF(false, true),
-    VERSION_CONTROL(false, true),
+    ACL(Type.IDEMPOTENT),
+    BASELINE_CONTROL(Type.IDEMPOTENT),
+    BIND(Type.IDEMPOTENT),
+    CHECKIN(Type.IDEMPOTENT),
+    CHECKOUT(Type.IDEMPOTENT),
+    CONNECT(Type.NORMAL),
+    COPY(Type.IDEMPOTENT),
+    DELETE(Type.IDEMPOTENT),
+    GET(Type.SAFE),
+    HEAD(Type.SAFE),
+    LABEL(Type.IDEMPOTENT),
+    LINK(Type.IDEMPOTENT),
+    LOCK(Type.NORMAL),
+    MERGE(Type.IDEMPOTENT),
+    MKACTIVITY(Type.IDEMPOTENT),
+    MKCALENDAR(Type.IDEMPOTENT),
+    MKCOL(Type.IDEMPOTENT),
+    MKREDIRECTREF(Type.IDEMPOTENT),
+    MKWORKSPACE(Type.IDEMPOTENT),
+    MOVE(Type.IDEMPOTENT),
+    OPTIONS(Type.SAFE),
+    ORDERPATCH(Type.IDEMPOTENT),
+    PATCH(Type.NORMAL),
+    POST(Type.NORMAL),
+    PRI(Type.SAFE),
+    PROPFIND(Type.SAFE),
+    PROPPATCH(Type.IDEMPOTENT),
+    PUT(Type.IDEMPOTENT),
+    REBIND(Type.IDEMPOTENT),
+    REPORT(Type.SAFE),
+    SEARCH(Type.SAFE),
+    TRACE(Type.SAFE),
+    UNBIND(Type.IDEMPOTENT),
+    UNCHECKOUT(Type.IDEMPOTENT),
+    UNLINK(Type.IDEMPOTENT),
+    UNLOCK(Type.IDEMPOTENT),
+    UPDATE(Type.IDEMPOTENT),
+    UPDATEREDIRECTREF(Type.IDEMPOTENT),
+    VERSION_CONTROL(Type.IDEMPOTENT),
 
     // Other methods
-    PROXY(false, false);
+    PROXY(Type.NORMAL);
 
+    // The type of the method
+    private enum Type
+    {
+        NORMAL,
+        IDEMPOTENT,
+        SAFE
+    }
+    
     private final String _method;
     private final byte[] _bytes;
     private final ByteBuffer _buffer;
-    private final boolean _safe;
-    private final boolean _idempotent;
+    private final Type _type;
 
-    HttpMethod(boolean safe, boolean idempotent)
+    HttpMethod(Type type)
     {
         _method = toString().replace('_', '-');
-        _safe = safe;
-        _idempotent = idempotent;
+        _type = type;
         _bytes = StringUtil.getBytes(_method);
         _buffer = ByteBuffer.wrap(_bytes);
     }
@@ -108,7 +114,7 @@ public enum HttpMethod
      */
     public boolean isSafe()
     {
-        return _safe;
+        return _type == Type.SAFE;
     }
 
     /**
@@ -118,7 +124,7 @@ public enum HttpMethod
      */
     public boolean isIdempotent()
     {
-        return _idempotent;
+        return _type.ordinal() >= Type.IDEMPOTENT.ordinal();
     }
 
     public ByteBuffer asBuffer()
