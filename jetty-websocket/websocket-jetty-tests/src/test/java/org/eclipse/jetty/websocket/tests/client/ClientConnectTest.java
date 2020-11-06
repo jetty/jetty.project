@@ -25,7 +25,6 @@ import java.net.ServerSocket;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.time.Duration;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -49,7 +48,6 @@ import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.EchoSocket;
 import org.eclipse.jetty.websocket.tests.GetAuthHeaderEndpoint;
 import org.eclipse.jetty.websocket.tests.SimpleStatusServlet;
-import org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,7 +71,7 @@ public class ClientConnectTest
 {
     private Server server;
     private WebSocketClient client;
-    private CountDownLatch serverLatch = new CountDownLatch(1);
+    private final CountDownLatch serverLatch = new CountDownLatch(1);
 
     @SuppressWarnings("unchecked")
     private <E extends Throwable> E assertExpectedError(ExecutionException e, CloseTrackingEndpoint wsocket, Matcher<Throwable> errorMatcher)
@@ -142,8 +140,6 @@ public class ClientConnectTest
                     return null;
                 });
             });
-
-        context.addFilter(WebSocketUpgradeFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         context.addServlet(new ServletHolder(new SimpleStatusServlet(404)), "/bogus");
         context.addServlet(new ServletHolder(new SimpleStatusServlet(200)), "/a-okay");
