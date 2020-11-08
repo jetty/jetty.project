@@ -624,7 +624,17 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     @Override
     public void push(IStream stream, Promise<Stream> promise, PushPromiseFrame frame, Stream.Listener listener)
     {
-        streamCreator.push(frame, promise, listener);
+        streamCreator.push(frame, new Promise.Wrapper<Stream>(promise)
+        {
+            @Override
+            public void succeeded(Stream pushedStream)
+            {
+                // Pushed streams are implicitly remotely closed.
+                // They are closed when sending an end-stream DATA frame.
+                ((IStream)pushedStream).updateClose(true, CloseState.Event.RECEIVED);
+                super.succeeded(pushedStream);
+            }
+        }, listener);
     }
 
     @Override
@@ -1336,13 +1346,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                     HeadersFrame headersFrame = (HeadersFrame)frame;
                     if (stream.updateClose(headersFrame.isEndStream(), CloseState.Event.AFTER_SEND))
                         removeStream(stream);
-                    break;
-                }
-                case PUSH_PROMISE:
-                {
-                    // Pushed streams are implicitly remotely closed.
-                    // They are closed when sending an end-stream DATA frame.
-                    stream.updateClose(true, CloseState.Event.RECEIVED);
                     break;
                 }
                 case GO_AWAY:
