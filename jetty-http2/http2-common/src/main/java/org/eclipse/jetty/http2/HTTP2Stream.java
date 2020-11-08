@@ -21,7 +21,6 @@ package org.eclipse.jetty.http2;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.channels.WritePendingException;
-import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -144,7 +143,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             localReset = true;
             failure = new EOFException("reset");
         }
-        session.frames(this, Collections.singletonList(frame), callback);
+        ((HTTP2Session)session).reset(this, frame, callback);
     }
 
     private boolean startWrite(Callback callback)

@@ -278,7 +278,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             // otherwise other requests will be stalled.
             flowControl.onDataConsumed(this, null, flowControlLength);
             if (isStreamClosed(streamId))
-                reset(new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR.code), callback);
+                reset(null, new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR.code), callback);
             else
                 onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_data_frame", callback);
         }
@@ -505,7 +505,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 int streamSendWindow = stream.updateSendWindow(0);
                 if (MathUtils.sumOverflows(streamSendWindow, windowDelta))
                 {
-                    reset(new ResetFrame(streamId, ErrorCode.FLOW_CONTROL_ERROR.code), Callback.NOOP);
+                    reset(stream, new ResetFrame(streamId, ErrorCode.FLOW_CONTROL_ERROR.code), Callback.NOOP);
                 }
                 else
                 {
@@ -642,9 +642,16 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             control(null, callback, frame);
     }
 
-    protected void reset(ResetFrame frame, Callback callback)
+    void reset(IStream stream, ResetFrame frame, Callback callback)
     {
-        control(getStream(frame.getStreamId()), callback, frame);
+        control(stream, Callback.from(() ->
+        {
+            if (stream != null)
+            {
+                stream.close();
+                removeStream(stream);
+            }
+        }, callback), frame);
     }
 
     /**
@@ -810,7 +817,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             if (maxCount >= 0 && remoteCount - remoteClosing >= maxCount)
             {
                 updateLastRemoteStreamId(streamId);
-                reset(new ResetFrame(streamId, ErrorCode.REFUSED_STREAM_ERROR.code), Callback.NOOP);
+                reset(null, new ResetFrame(streamId, ErrorCode.REFUSED_STREAM_ERROR.code), Callback.NOOP);
                 return null;
             }
             if (remoteStreamCount.compareAndSet(encoded, remoteCount + 1, remoteClosing))
@@ -1331,15 +1338,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                         removeStream(stream);
                     break;
                 }
-                case RST_STREAM:
-                {
-                    if (stream != null)
-                    {
-                        stream.close();
-                        removeStream(stream);
-                    }
-                    break;
-                }
                 case PUSH_PROMISE:
                 {
                     // Pushed streams are implicitly remotely closed.
@@ -1568,7 +1566,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
         private void complete()
         {
-            reset(new ResetFrame(streamId, error), getCallback());
+            reset(getStream(streamId), new ResetFrame(streamId, error), getCallback());
         }
     }
 
