@@ -2,14 +2,14 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
-    <New id="databaseAdaptor" class="org.eclipse.jetty.server.session.DatabaseAdaptor">
-         <Call name="setDriverInfo">
-             <Arg><Property name="jetty.session.jdbc.driverClass"/></Arg>
-             <Arg><Property name="jetty.session.jdbc.driverUrl"/></Arg>
-         </Call>
-         <Set name="blobType"><Property name="jetty.session.jdbc.blobType"/></Set>
-         <Set name="longType"><Property name="jetty.session.jdbc.longType"/></Set>
-         <Set name="stringType"><Property name="jetty.session.jdbc.stringType"/></Set>
-    </New>
+  <New id="databaseAdaptor" class="org.eclipse.jetty.server.session.DatabaseAdaptor">
+    <Call name="setDriverInfo">
+      <Arg><Property name="jetty.session.jdbc.driverClass"/></Arg>
+      <Arg><Property name="jetty.session.jdbc.driverUrl"/></Arg>
+    </Call>
+    <Set name="blobType"><Property name="jetty.session.jdbc.blobType"/></Set>
+    <Set name="longType"><Property name="jetty.session.jdbc.longType"/></Set>
+    <Set name="stringType"><Property name="jetty.session.jdbc.stringType"/></Set>
+  </New>
 
 </Configure>

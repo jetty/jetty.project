@@ -7,36 +7,28 @@
         <Call name="include">
           <Arg>
             <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
-              <Arg>
-                <Property name="jetty.inetaccess.include" default="" />
-              </Arg>
+              <Arg><Property name="jetty.inetaccess.include" default="" /></Arg>
             </Call>
           </Arg>
         </Call>
         <Call name="exclude">
           <Arg>
             <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
-              <Arg>
-                <Property name="jetty.inetaccess.exclude" default="" />
-              </Arg>
+              <Arg><Property name="jetty.inetaccess.exclude" default="" /></Arg>
             </Call>
           </Arg>
         </Call>
         <Call name="includeConnectors">
           <Arg>
             <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
-              <Arg>
-                <Property name="jetty.inetaccess.includeConnectors" default="" />
-              </Arg>
+              <Arg><Property name="jetty.inetaccess.includeConnectors" default="" /></Arg>
             </Call>
           </Arg>
         </Call>
         <Call name="excludeConnectors">
           <Arg>
             <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
-              <Arg>
-                <Property name="jetty.inetaccess.excludeConnectors" default="" />
-              </Arg>
+              <Arg><Property name="jetty.inetaccess.excludeConnectors" default="" /></Arg>
             </Call>
           </Arg>
         </Call>

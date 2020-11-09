@@ -53,12 +53,12 @@
       <Set name="mapColumn">
         <Property name="jetty.session.jdbc.schema.mapColumn" default="map" />
       </Set>
-            <Set name="schemaName">
-                <Property name="jetty.session.jdbc.schema.schemaName" />
-            </Set>
-            <Set name="catalogName">
-                <Property name="jetty.session.jdbc.schema.catalogName" />
-            </Set>
+      <Set name="schemaName">
+        <Property name="jetty.session.jdbc.schema.schemaName" />
+      </Set>
+      <Set name="catalogName">
+        <Property name="jetty.session.jdbc.schema.catalogName" />
+      </Set>
       <Set name="tableName">
         <Property name="jetty.session.jdbc.schema.table" default="JettySessions" />
       </Set>
