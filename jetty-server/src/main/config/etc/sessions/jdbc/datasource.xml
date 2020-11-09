@@ -2,7 +2,6 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
-
     <New id="databaseAdaptor" class="org.eclipse.jetty.server.session.DatabaseAdaptor">
          <Set name="DatasourceName"><Property name="jetty.session.jdbc.datasourceName" default="/jdbc/sessions" /></Set>
          <Set name="blobType"><Property name="jetty.session.jdbc.blobType"/></Set>
