@@ -38,6 +38,11 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
 
+/**
+ * Used as a mapping of {@link org.eclipse.jetty.http.pathmap.PathSpec} to {@link Authenticator}.
+ *
+ * This allows you to register different authentication mechanisms for different paths.
+ */
 public class DynamicAuthenticator extends ContainerLifeCycle implements Authenticator
 {
     private static final Logger LOG = Log.getLogger(DynamicAuthenticator.class);
@@ -139,6 +144,13 @@ public class DynamicAuthenticator extends ContainerLifeCycle implements Authenti
         return match.getResource().getAuthenticator();
     }
 
+    /**
+     * An entry containing an {@link Authenticator}.
+     *
+     * A specific {@link LoginService} and {@link IdentityService} may be set per {@link AuthenticatorEntry}.
+     * If these values are not set then the values from the {@link AuthConfiguration} will be used, however if they
+     * are specifically set, then that value will always be used, even if it is a null value.
+     */
     private static class AuthenticatorEntry extends ContainerLifeCycle
     {
         private final Authenticator authenticator;
