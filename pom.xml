@@ -37,7 +37,7 @@
     <junit.version>5.7.0</junit.version>
     <maven.version>3.6.3</maven.version>
     <maven.resolver.version>1.6.1</maven.resolver.version>
-    <javax.servlet.api.version>3.1.0</javax.servlet.api.version>
+    <javax.servlet.api.version>4.0.1</javax.servlet.api.version>
     <weld.version>3.1.5.Final</weld.version>
     <jboss.logging.version>3.4.1.Final</jboss.logging.version>
     <jetty.perf-helper.version>1.0.6</jetty.perf-helper.version>
