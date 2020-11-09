@@ -67,7 +67,7 @@
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <settingsPath>src/it/settings.xml</settingsPath>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
-    <testcontainers.version>1.15.0-rc2</testcontainers.version>
+    <testcontainers.version>1.15.0</testcontainers.version>
   </properties>
 
   <licenses>
