@@ -47,28 +47,11 @@ public class JettyWebSocketClientConfiguration extends AbstractConfiguration
     public JettyWebSocketClientConfiguration()
     {
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
-        addDependents("org.eclipse.jetty.osgi.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
         addDependents("org.eclipse.jetty.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
 
         protectAndExpose("org.eclipse.jetty.websocket.api.");
         protectAndExpose("org.eclipse.jetty.websocket.client.");
         hide("org.eclipse.jetty.client.impl.");
         hide("org.eclipse.jetty.client.config.");
-    }
-
-    @Override
-    public boolean isAvailable()
-    {
-        try
-        {
-            ClassLoader classLoader = JettyWebSocketClientConfiguration.class.getClassLoader();
-            return classLoader.loadClass("org.eclipse.jetty.websocket.client.WebSocketClient") != null;
-        }
-        catch (Throwable e)
-        {
-            LOG.trace("IGNORED", e);
-        }
-
-        return false;
     }
 }
