@@ -30,6 +30,6 @@ The rest of the instructions in this documentation will refer to this location a
 IMPORTANT: It is important that *only* stable release versions are used in production environments.
 Versions that have been deprecated or are released as Milestones (M), Alpha, Beta or Release Candidates (RC) are *not* suitable for production as they may contain security flaws or incomplete/non-functioning feature sets.
 
-If you are new to Jetty, read the xref:og-begin-arch[Jetty architecture short section] to become familiar with the terms used in this document.
-Otherwise, you can jump to the xref:og-begin-start[start Jetty section].
+If you are new to Jetty, you should read the xref:og-begin-arch[Jetty architecture section below] to become familiar with the terms used in this documentation.
+Otherwise, you can jump to the xref:og-begin-start[section on starting Jetty].
 

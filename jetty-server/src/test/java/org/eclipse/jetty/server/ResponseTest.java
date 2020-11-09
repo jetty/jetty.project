@@ -175,7 +175,38 @@ public class ResponseTest
             {
                 _channelError = failure;
             }
-        });
+        })
+        {
+            @Override
+            public boolean needContent()
+            {
+                return false;
+            }
+
+            @Override
+            public HttpInput.Content produceContent()
+            {
+                return null;
+            }
+
+            @Override
+            public boolean failAllContent(Throwable failure)
+            {
+                return false;
+            }
+
+            @Override
+            public boolean failed(Throwable x)
+            {
+                return false;
+            }
+
+            @Override
+            protected boolean eof()
+            {
+                return false;
+            }
+        };
     }
 
     @AfterEach

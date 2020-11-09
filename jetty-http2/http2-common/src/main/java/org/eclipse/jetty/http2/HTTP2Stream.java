@@ -22,6 +22,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.channels.WritePendingException;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -233,6 +234,21 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     {
         CloseState state = closeState.get();
         return state == CloseState.REMOTELY_CLOSED || state == CloseState.CLOSING || state == CloseState.CLOSED;
+    }
+
+    @Override
+    public boolean failAllData(Throwable x)
+    {
+        List<DataEntry> copy;
+        try (AutoLock l = lock.lock())
+        {
+            dataDemand = 0;
+            copy = new ArrayList<>(dataQueue);
+            dataQueue.clear();
+        }
+        copy.forEach(dataEntry -> dataEntry.callback.failed(x));
+        DataEntry lastDataEntry = copy.isEmpty() ? null : copy.get(copy.size() - 1);
+        return lastDataEntry != null && lastDataEntry.frame.isEndStream();
     }
 
     public boolean isLocallyClosed()

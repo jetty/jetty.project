@@ -514,9 +514,9 @@
               <goal>run</goal>
             </goals>
             <configuration>
-              <tasks>
+              <target>
                 <chmod dir="${assembly-directory}/bin" perm="755" includes="**/*.sh" />
-              </tasks>
+              </target>
             </configuration>
           </execution>
         </executions>

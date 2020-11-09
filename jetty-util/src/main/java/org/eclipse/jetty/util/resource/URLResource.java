@@ -128,11 +128,6 @@ public class URLResource extends Resource
         return _in != null;
     }
 
-    /**
-     * Returns true if the represented resource is a container/directory.
-     * If the resource is not a file, resources ending with "/" are
-     * considered directories.
-     */
     @Override
     public boolean isDirectory()
     {

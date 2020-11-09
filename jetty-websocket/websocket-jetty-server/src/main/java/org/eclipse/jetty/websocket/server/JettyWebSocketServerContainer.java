@@ -91,6 +91,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
 
     private final ServletContextHandler contextHandler;
     private final WebSocketMapping webSocketMapping;
+    private final WebSocketComponents components;
     private final FrameHandlerFactory frameHandlerFactory;
     private final Executor executor;
     private final Configuration.ConfigurationCustomizer customizer = new Configuration.ConfigurationCustomizer();
@@ -102,14 +103,15 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
      * Main entry point for {@link JettyWebSocketServletContainerInitializer}.
      *
      * @param webSocketMapping the {@link WebSocketMapping} that this container belongs to
-     * @param webSocketComponents the {@link WebSocketComponents} instance to use
+     * @param components the {@link WebSocketComponents} instance to use
      * @param executor the {@link Executor} to use
      */
-    JettyWebSocketServerContainer(ServletContextHandler contextHandler, WebSocketMapping webSocketMapping, WebSocketComponents webSocketComponents, Executor executor)
+    JettyWebSocketServerContainer(ServletContextHandler contextHandler, WebSocketMapping webSocketMapping, WebSocketComponents components, Executor executor)
     {
         this.contextHandler = contextHandler;
         this.webSocketMapping = webSocketMapping;
         this.executor = executor;
+        this.components = components;
 
         // Ensure there is a FrameHandlerFactory
         JettyServerFrameHandlerFactory factory = contextHandler.getBean(JettyServerFrameHandlerFactory.class);
@@ -153,6 +155,11 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
                 throw new org.eclipse.jetty.websocket.api.exceptions.WebSocketException("Unable to create instance of " + endpointClass.getName(), e);
             }
         });
+    }
+
+    public WebSocketComponents getWebSocketComponents()
+    {
+        return components;
     }
 
     @Override
