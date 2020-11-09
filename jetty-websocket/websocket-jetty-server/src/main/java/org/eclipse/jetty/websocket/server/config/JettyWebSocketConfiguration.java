@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.server.config;
 
 import java.util.ServiceLoader;
 
-import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.FragmentConfiguration;
@@ -49,39 +48,29 @@ public class JettyWebSocketConfiguration extends AbstractConfiguration
     public JettyWebSocketConfiguration()
     {
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
+        addDependents("org.eclipse.jetty.osgi.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
+        addDependents("org.eclipse.jetty.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
 
-        if (isAvailable("org.eclipse.jetty.osgi.annotations.AnnotationConfiguration"))
-            addDependents("org.eclipse.jetty.osgi.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
-        else if (isAvailable("org.eclipse.jetty.annotations.AnnotationConfiguration"))
-            addDependents("org.eclipse.jetty.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
-        else
-            throw new RuntimeException("Unable to add AnnotationConfiguration dependent (not present in classpath)");
-
-        protectAndExpose(
-            "org.eclipse.jetty.websocket.api.",
-            "org.eclipse.jetty.websocket.server.",
-            "org.eclipse.jetty.websocket.util.server."); // For WebSocketUpgradeFilter
-
-        hide("org.eclipse.jetty.server.internal.",
-            "org.eclipse.jetty.server.config.");
+        protectAndExpose("org.eclipse.jetty.websocket.api.");
+        protectAndExpose("org.eclipse.jetty.websocket.server.");
+        protectAndExpose("org.eclipse.jetty.websocket.util.server."); // For WebSocketUpgradeFilter
+        hide("org.eclipse.jetty.server.internal.");
+        hide("org.eclipse.jetty.server.config.");
     }
 
     @Override
     public boolean isAvailable()
     {
-        return isAvailable("org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer");
-    }
-
-    private boolean isAvailable(String classname)
-    {
         try
         {
-            return Loader.loadClass(classname) != null;
+            ClassLoader classLoader = JettyWebSocketConfiguration.class.getClassLoader();
+            return classLoader.loadClass("org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer") != null;
         }
         catch (Throwable e)
         {
             LOG.trace("IGNORED", e);
-            return false;
         }
+
+        return false;
     }
 }

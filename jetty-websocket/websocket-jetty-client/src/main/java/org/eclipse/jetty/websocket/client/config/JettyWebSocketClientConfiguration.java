@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.client.config;
 
 import java.util.ServiceLoader;
 
-import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.FragmentConfiguration;
@@ -48,13 +47,8 @@ public class JettyWebSocketClientConfiguration extends AbstractConfiguration
     public JettyWebSocketClientConfiguration()
     {
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
-
-        if (isAvailable("org.eclipse.jetty.osgi.annotations.AnnotationConfiguration"))
-            addDependents("org.eclipse.jetty.osgi.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
-        else if (isAvailable("org.eclipse.jetty.annotations.AnnotationConfiguration"))
-            addDependents("org.eclipse.jetty.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
-        else
-            throw new RuntimeException("Unable to add AnnotationConfiguration dependent (not present in classpath)");
+        addDependents("org.eclipse.jetty.osgi.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
+        addDependents("org.eclipse.jetty.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
 
         protectAndExpose("org.eclipse.jetty.websocket.api.");
         protectAndExpose("org.eclipse.jetty.websocket.client.");
@@ -65,19 +59,16 @@ public class JettyWebSocketClientConfiguration extends AbstractConfiguration
     @Override
     public boolean isAvailable()
     {
-        return isAvailable("org.eclipse.jetty.websocket.client.WebSocketClient");
-    }
-
-    private boolean isAvailable(String classname)
-    {
         try
         {
-            return Loader.loadClass(classname) != null;
+            ClassLoader classLoader = JettyWebSocketClientConfiguration.class.getClassLoader();
+            return classLoader.loadClass("org.eclipse.jetty.websocket.client.WebSocketClient") != null;
         }
         catch (Throwable e)
         {
             LOG.trace("IGNORED", e);
-            return false;
         }
+
+        return false;
     }
 }
