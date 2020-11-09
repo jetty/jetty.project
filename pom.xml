@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>9.4.33-SNAPSHOT</version>
+  <version>9.4.35-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
@@ -16,7 +16,7 @@
     <compiler.target>1.8</compiler.target>
     <jetty.url>https://eclipse.org/jetty</jetty.url>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <build-support.version>1.4</build-support.version>
+    <build-support.version>1.5</build-support.version>
     <checkstyle.version>8.36.2</checkstyle.version>
     <slf4j.version>1.7.30</slf4j.version>
     <log4j2.version>2.11.2</log4j2.version>
@@ -26,15 +26,17 @@
     <alpn.api.version>1.1.3.v20160715</alpn.api.version>
     <jsp.version>8.5.54</jsp.version>
     <infinispan.version>9.4.8.Final</infinispan.version>
+    <infinispan.protostream.version>4.3.4.Final</infinispan.protostream.version>
+    <gson.version>2.8.6</gson.version>
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <conscrypt.version>2.5.1</conscrypt.version>
     <asm.version>9.0</asm.version>
-    <jmh.version>1.21</jmh.version>
+    <jmh.version>1.26</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <tycho-version>1.4.0</tycho-version>
     <junit.version>5.7.0</junit.version>
     <maven.version>3.6.3</maven.version>
-    <maven.resolver.version>1.3.1</maven.resolver.version>
+    <maven.resolver.version>1.6.1</maven.resolver.version>
     <javax.servlet.api.version>3.1.0</javax.servlet.api.version>
     <weld.version>3.1.5.Final</weld.version>
     <jboss.logging.version>3.4.1.Final</jboss.logging.version>
@@ -463,7 +465,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-antrun-plugin</artifactId>
-          <version>1.8</version>
+          <version>3.0.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -575,7 +577,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.2.0</version>
           <configuration>
             <source>8</source>
             <charset>UTF-8</charset>
@@ -617,7 +619,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-remote-resources-plugin</artifactId>
-          <version>1.5</version>
+          <version>1.7.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -726,12 +728,12 @@
         <plugin>
           <groupId>org.asciidoctor</groupId>
           <artifactId>asciidoctor-maven-plugin</artifactId>
-          <version>1.5.6</version>
+          <version>2.1.0</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>appassembler-maven-plugin</artifactId>
-          <version>2.0.0</version>
+          <version>2.1.0</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
@@ -936,7 +938,7 @@
         <plugin>
           <groupId>org.mortbay.jetty</groupId>
           <artifactId>h2spec-maven-plugin</artifactId>
-          <version>1.0.0</version>
+          <version>1.0.2</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -1154,7 +1156,7 @@
       <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-core</artifactId>
-        <version>1.0.1</version>
+        <version>1.33.0</version>
       </dependency>
       <dependency>
         <groupId>org.apache.ant</groupId>

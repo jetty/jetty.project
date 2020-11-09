@@ -65,6 +65,7 @@ import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
@@ -261,8 +262,8 @@ public class HttpClientTLSTest
 
     // In JDK 11+, a mismatch on the client does not generate any bytes towards
     // the server, while in previous JDKs the client sends to the server the close_notify.
-    @EnabledOnJre({JRE.JAVA_8, JRE.JAVA_9, JRE.JAVA_10})
-    @Test
+    // @EnabledOnJre({JRE.JAVA_8, JRE.JAVA_9, JRE.JAVA_10})
+    @Disabled("No longer viable, TLS protocol behavior changed in 8u272")
     public void testMismatchBetweenTLSProtocolAndTLSCiphersOnClient() throws Exception
     {
         SslContextFactory serverTLSFactory = createServerSslContextFactory();

@@ -128,7 +128,7 @@ def slackNotif() {
  *
  * @param jdk the jdk tool name (in jenkins) to use for this build
  * @param cmdline the command line in "<profiles> <goals> <properties>"`format.
- * @return the Jenkinsfile step representing a maven build
+ * @param consoleParsers array of console parsers to run
  */
 def mavenBuild(jdk, cmdline, mvnName, consoleParsers) {
   script {
@@ -138,7 +138,7 @@ def mavenBuild(jdk, cmdline, mvnName, consoleParsers) {
                "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
         configFileProvider(
                 [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
-          sh "mvn -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Premote-session-tests -Pci -V -B -e -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" +
+          sh "mvn -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Premote-session-tests -Pci -fae -V -B -e -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" +
                      env.JENKINS_HOME
         }
       }
@@ -146,7 +146,6 @@ def mavenBuild(jdk, cmdline, mvnName, consoleParsers) {
     finally
     {
       junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
-      //archiveArtifacts artifacts: '**/jetty-webapp/target/**'
       if(consoleParsers!=null){
         warnings consoleParsers: consoleParsers
       }

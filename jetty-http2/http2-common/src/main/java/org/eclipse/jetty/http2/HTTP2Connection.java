@@ -72,6 +72,20 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     }
 
     @Override
+    public long getMessagesIn()
+    {
+        HTTP2Session session = (HTTP2Session)getSession();
+        return session.getStreamsOpened();
+    }
+
+    @Override
+    public long getMessagesOut()
+    {
+        HTTP2Session session = (HTTP2Session)getSession();
+        return session.getStreamsClosed();
+    }
+
+    @Override
     public long getBytesIn()
     {
         return bytesIn.get();

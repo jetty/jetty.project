@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.nio.file.FileSystems;
@@ -116,8 +115,8 @@ public class TestServer
         login.setConfig(jettyRoot.resolve("tests/test-webapps/test-jetty-webapp/src/main/config/demo-base/etc/realm.properties").toString());
         server.addBean(login);
 
-        File log = File.createTempFile("jetty-yyyy_mm_dd", "log");
-        CustomRequestLog requestLog = new CustomRequestLog(log.toString());
+        Path logPath = Files.createTempFile("jetty-yyyy_mm_dd", "log");
+        CustomRequestLog requestLog = new CustomRequestLog(logPath.toString());
         server.setRequestLog(requestLog);
 
         server.setStopAtShutdown(true);
@@ -127,15 +126,11 @@ public class TestServer
         webapp.setParentLoaderPriority(true);
         webapp.setResourceBase(jettyRoot.resolve("tests/test-webapps/test-jetty-webapp/src/main/webapp").toString());
         webapp.setAttribute("testAttribute", "testValue");
-        File sessiondir = File.createTempFile("sessions", null);
-        if (sessiondir.exists())
-            sessiondir.delete();
-        sessiondir.mkdir();
-        sessiondir.deleteOnExit();
+        Path sessionDir = Files.createTempDirectory("sessions");
         DefaultSessionCache ss = new DefaultSessionCache(webapp.getSessionHandler());
         FileSessionDataStore sds = new FileSessionDataStore();
         ss.setSessionDataStore(sds);
-        sds.setStoreDir(sessiondir);
+        sds.setStoreDir(sessionDir.toFile());
         webapp.getSessionHandler().setSessionCache(ss);
 
         contexts.addHandler(webapp);

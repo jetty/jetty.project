@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.EnumSet;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
@@ -45,12 +46,16 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletTester;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ReadLineInputStream;
 import org.eclipse.jetty.util.log.StacklessLogging;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -61,9 +66,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
+@ExtendWith(WorkDirExtension.class)
 public class MultipartFilterTest
 {
-    private File _dir;
+    public WorkDir workDir;
     private ServletTester tester;
     FilterHolder multipartFilter;
 
@@ -157,16 +163,12 @@ public class MultipartFilterTest
     @BeforeEach
     public void setUp() throws Exception
     {
-        _dir = File.createTempFile("testmultupart", null);
-        assertTrue(_dir.delete());
-        assertTrue(_dir.mkdir());
-        _dir.deleteOnExit();
-        assertTrue(_dir.isDirectory());
+        Path root = workDir.getEmptyPathDir();
 
         tester = new ServletTester("/context");
-        tester.getContext().setResourceBase(_dir.getCanonicalPath());
+        tester.getContext().setBaseResource(new PathResource(root));
         tester.getContext().addServlet(TestServlet.class, "/");
-        tester.getContext().setAttribute("javax.servlet.context.tempdir", _dir);
+        tester.getContext().setAttribute("javax.servlet.context.tempdir", root.toFile());
         multipartFilter = tester.getContext().addFilter(MultiPartFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         multipartFilter.setInitParameter("deleteFiles", "true");
         multipartFilter.setInitParameter("fileOutputBuffer", "1"); //write a file if  there's more than 1 byte content

@@ -46,6 +46,7 @@ import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.Syntax;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionIdManager;
@@ -662,7 +663,7 @@ public class SessionHandler extends ScopedHandler
             HttpCookie cookie = null;
 
             cookie = new HttpCookie(
-                _cookieConfig.getName(),
+                getSessionCookieName(_cookieConfig),
                 id,
                 _cookieConfig.getDomain(),
                 sessionPath,
@@ -1378,6 +1379,13 @@ public class SessionHandler extends ScopedHandler
         Session getSession();
     }
 
+    public static String getSessionCookieName(SessionCookieConfig config)
+    {
+        if (config == null || config.getName() == null)
+            return __DefaultSessionCookie;
+        return config.getName();
+    }
+
     /**
      * CookieConfig
      *
@@ -1466,6 +1474,10 @@ public class SessionHandler extends ScopedHandler
         {
             if (_context != null && _context.getContextHandler().isAvailable())
                 throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
+            if ("".equals(name))
+                throw new IllegalArgumentException("Blank cookie name");
+            if (name != null)
+                Syntax.requireValidRFC2616Token(name, "Bad Session cookie name");
             _sessionCookie = name;
         }
 
@@ -1645,18 +1657,18 @@ public class SessionHandler extends ScopedHandler
             Cookie[] cookies = request.getCookies();
             if (cookies != null && cookies.length > 0)
             {
-                final String sessionCookie = getSessionCookieConfig().getName();
-                for (int i = 0; i < cookies.length; i++)
+                final String sessionCookie = getSessionCookieName(getSessionCookieConfig());
+                for (Cookie cookie : cookies)
                 {
-                    if (sessionCookie.equalsIgnoreCase(cookies[i].getName()))
+                    if (sessionCookie.equalsIgnoreCase(cookie.getName()))
                     {
-                        String id = cookies[i].getValue();
+                        String id = cookie.getValue();
                         requestedSessionIdFromCookie = true;
                         if (LOG.isDebugEnabled())
                             LOG.debug("Got Session ID {} from cookie {}", id, sessionCookie);
 
                         HttpSession s = getHttpSession(id);
-                        
+
                         if (requestedSessionId == null)
                         {
                             //no previous id, always accept this one

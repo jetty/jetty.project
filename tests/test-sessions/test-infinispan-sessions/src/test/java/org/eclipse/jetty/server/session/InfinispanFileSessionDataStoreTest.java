@@ -18,20 +18,26 @@
 
 package org.eclipse.jetty.server.session;
 
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * HotInitInfinispanSessionDataStoreTest
  */
+@ExtendWith(WorkDirExtension.class)
 public class InfinispanFileSessionDataStoreTest extends InfinispanSessionDataStoreTest
 {
+
+    public WorkDir workDir;
 
     @BeforeEach
     public void setup() throws Exception
     {
         _testSupport = new InfinispanTestSupport();
         _testSupport.setUseFileStore(true);
-        _testSupport.setup();
+        _testSupport.setup(workDir.getEmptyPathDir());
     }
 
 }

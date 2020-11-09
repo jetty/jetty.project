@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.http2</groupId>
     <artifactId>http2-parent</artifactId>
-    <version>9.4.33-SNAPSHOT</version>
+    <version>9.4.35-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -24,6 +24,7 @@
           <mainClass>org.eclipse.jetty.http2.server.H2SpecServer</mainClass>
           <skip>${skipTests}</skip>
           <junitPackage>org.eclipse.jetty.h2spec</junitPackage>
+          <skipNoDockerAvailable>true</skipNoDockerAvailable>
           <excludeSpecs>
             <excludeSpec>3.5 - Sends invalid connection preface</excludeSpec>
           </excludeSpecs>
@@ -112,5 +113,4 @@
       </build>
     </profile>
   </profiles>
-
 </project>

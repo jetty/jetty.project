@@ -19,27 +19,32 @@
 package org.eclipse.jetty.server.session;
 
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * ClusteredOrphanedSessionTest
  */
+@ExtendWith(WorkDirExtension.class)
 public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
 {
-    public static InfinispanTestSupport __testSupport;
+    public WorkDir workDir;
+    public InfinispanTestSupport testSupport;
 
-    @BeforeAll
-    public static void setup() throws Exception
+    @BeforeEach
+    public void setup() throws Exception
     {
-        __testSupport = new InfinispanTestSupport();
-        __testSupport.setup();
+        testSupport = new InfinispanTestSupport();
+        testSupport.setup(workDir.getEmptyPathDir());
     }
 
-    @AfterAll
-    public static void teardown() throws Exception
+    @AfterEach
+    public void teardown() throws Exception
     {
-        __testSupport.teardown();
+        testSupport.teardown();
     }
 
     /**
@@ -49,7 +54,7 @@ public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessi
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         InfinispanSessionDataStoreFactory factory = new InfinispanSessionDataStoreFactory();
-        factory.setCache(__testSupport.getCache());
+        factory.setCache(testSupport.getCache());
         return factory;
     }
 }
