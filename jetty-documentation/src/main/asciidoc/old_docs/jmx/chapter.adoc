@@ -30,6 +30,5 @@ Typical uses of the JMX technology include:
 
 The JMX API includes remote access, so a remote management program can interact with a running application for these purposes.
 
-include::using-jmx.adoc[]
 include::jetty-jmx-annotations.adoc[]
 include::jetty-jconsole.adoc[]

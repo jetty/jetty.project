@@ -47,6 +47,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -372,6 +373,105 @@ public class DistributionTests extends AbstractJettyHomeTest
         finally
         {
             IO.delete(jettyBase.toFile());
+        }
+    }
+
+    @Disabled
+    @ParameterizedTest
+    @ValueSource(strings = {"http", "https"})
+    public void testWebsocketClientInWebappProvidedByServer(String scheme) throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        String[] args1 = {
+            "--create-startd",
+            "--approve-all-licenses",
+            "--add-to-start=resources,server,webapp,deploy,jsp,jmx,servlet,servlets,websocket,test-keystore," + scheme
+        };
+        try (JettyHomeTester.Run run1 = distribution.start(args1))
+        {
+            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            File webApp = distribution.resolveArtifact("org.eclipse.jetty.tests:test-websocket-client-provided-webapp:war:" + jettyVersion);
+            distribution.installWarFile(webApp, "test");
+
+            int port = distribution.freePort();
+            String[] args2 = {
+                "jetty.http.port=" + port,
+                "jetty.ssl.port=" + port,
+                // "jetty.server.dumpAfterStart=true",
+            };
+
+            try (JettyHomeTester.Run run2 = distribution.start(args2))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+
+                // We should get the correct configuration from the jetty-websocket-httpclient.xml file.
+                startHttpClient(scheme.equals("https"));
+                URI serverUri = URI.create(scheme + "://localhost:" + port + "/test");
+                ContentResponse response = client.GET(serverUri);
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                String content = response.getContentAsString();
+                assertThat(content, containsString("WebSocketEcho: success"));
+                assertThat(content, containsString("ConnectTimeout: 4999"));
+            }
+        }
+    }
+
+    @Disabled
+    @ParameterizedTest
+    @ValueSource(strings = {"http", "https"})
+    public void testWebsocketClientInWebapp(String scheme) throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        String module = "https".equals(scheme) ? "test-keystore," + scheme : scheme;
+        String[] args1 = {
+            "--create-startd",
+            "--approve-all-licenses",
+            "--add-to-start=resources,server,webapp,deploy,jsp,jmx,servlet,servlets,websocket," + module
+        };
+        try (JettyHomeTester.Run run1 = distribution.start(args1))
+        {
+            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            File webApp = distribution.resolveArtifact("org.eclipse.jetty.tests:test-websocket-client-webapp:war:" + jettyVersion);
+            distribution.installWarFile(webApp, "test");
+
+            int port = distribution.freePort();
+            String[] args2 = {
+                "jetty.http.port=" + port,
+                "jetty.ssl.port=" + port,
+                // "jetty.server.dumpAfterStart=true",
+                };
+
+            try (JettyHomeTester.Run run2 = distribution.start(args2))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+
+                // We should get the correct configuration from the jetty-websocket-httpclient.xml file.
+                startHttpClient(scheme.equals("https"));
+                URI serverUri = URI.create(scheme + "://localhost:" + port + "/test");
+                ContentResponse response = client.GET(serverUri);
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                String content = response.getContentAsString();
+                assertThat(content, containsString("WebSocketEcho: success"));
+                assertThat(content, containsString("ConnectTimeout: 4999"));
+            }
         }
     }
 

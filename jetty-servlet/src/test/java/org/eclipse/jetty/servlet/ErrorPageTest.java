@@ -459,6 +459,7 @@ public class ErrorPageTest
                 __destroyed = new AtomicBoolean(false);
                 String response = _connector.getResponse("GET /unavailable/info HTTP/1.0\r\n\r\n");
                 assertThat(response, Matchers.containsString("HTTP/1.1 404 "));
+                _server.stop();
                 assertTrue(__destroyed.get());
             }
         }

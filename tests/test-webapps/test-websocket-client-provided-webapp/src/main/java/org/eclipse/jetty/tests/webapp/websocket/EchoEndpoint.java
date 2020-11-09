@@ -16,20 +16,17 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server;
+package org.eclipse.jetty.tests.webapp.websocket;
 
-import java.io.IOException;
+import javax.websocket.OnMessage;
+import javax.websocket.server.ServerEndpoint;
 
-public class HttpInputOverHTTP extends HttpInput
+@ServerEndpoint(value = "/echo")
+public class EchoEndpoint
 {
-    public HttpInputOverHTTP(HttpChannelState state)
+    @OnMessage
+    public String echo(String message)
     {
-        super(state);
-    }
-
-    @Override
-    protected void produceContent() throws IOException
-    {
-        ((HttpConnection)getHttpChannelState().getHttpChannel().getEndPoint().getConnection()).fillAndParseForContent();
+        return message;
     }
 }

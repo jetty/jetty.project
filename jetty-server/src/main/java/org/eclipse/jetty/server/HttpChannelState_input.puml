@@ -1,0 +1,84 @@
+@startuml
+title HttpChannelState
+
+note top of onReadReady_inputState: onReadReady
+
+state "input state" as onReadReady_inputState {
+    state "IDLE" as onReadReady_IDLE
+    state "UNREADY" as onReadReady_UNREADY
+    state "READY" as onReadReady_READY
+
+    state "channel state" as onReadReady_channelState {
+        state "WAITING" as onReadReady_WAITING
+        state "WOKEN" as onReadReady_WOKEN
+        onReadReady_WAITING --> onReadReady_WOKEN
+    }
+
+    onReadReady_IDLE --> onReadReady_channelState
+    onReadReady_UNREADY --> onReadReady_channelState
+
+    onReadReady_channelState --> onReadReady_READY
+    onReadReady_READY --> onReadReady_READY
+}
+
+
+note top of onReadEof_inputState: onReadEof
+
+state "input state" as onReadEof_inputState {
+    state "IDLE" as onReadEof_IDLE
+    state "UNREADY" as onReadEof_UNREADY
+    state "READY" as onReadEof_READY
+
+    state "channel state" as onReadEof_channelState {
+        state "WAITING" as onReadEof_WAITING
+        state "WOKEN" as onReadEof_WOKEN
+        onReadEof_WAITING --> onReadEof_WOKEN
+    }
+
+    onReadEof_IDLE --> onReadEof_channelState
+    onReadEof_UNREADY --> onReadEof_channelState
+    onReadEof_READY --> onReadEof_channelState
+
+    onReadEof_channelState --> onReadEof_READY
+}
+
+
+note top of onReadIdle_inputState: onReadIdle
+
+state "input state" as onReadIdle_inputState {
+    state "IDLE" as onReadIdle_IDLE
+    state "UNREADY" as onReadIdle_UNREADY
+    state "READY" as onReadIdle_READY
+
+    onReadIdle_IDLE --> onReadIdle_IDLE
+    onReadIdle_UNREADY --> onReadIdle_IDLE
+    onReadIdle_READY --> onReadIdle_IDLE
+}
+
+
+note top of onReadUnready_inputState: onReadUnready
+
+state "input state" as onReadUnready_inputState {
+    state "IDLE" as onReadUnready_IDLE
+    state "UNREADY" as onReadUnready_UNREADY
+    state "READY" as onReadUnready_READY
+
+    onReadUnready_IDLE --> onReadUnready_UNREADY
+    onReadUnready_UNREADY --> onReadUnready_UNREADY
+    onReadUnready_READY --> onReadUnready_UNREADY
+}
+
+
+note top of onContentAdded_inputState: onContentAdded
+
+state "input state" as onContentAdded_inputState {
+    state "IDLE" as onContentAdded_IDLE
+    state "UNREADY" as onContentAdded_UNREADY
+    state "READY" as onContentAdded_READY
+
+    onContentAdded_IDLE --> onContentAdded_READY
+    onContentAdded_UNREADY --> onContentAdded_READY
+    onContentAdded_READY --> onContentAdded_READY
+}
+
+@enduml

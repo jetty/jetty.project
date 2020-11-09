@@ -202,7 +202,7 @@ public class StatisticsServlet extends HttpServlet
                 sb.append("      <connectionsDurationMax>").append(connectionStats.getConnectionDurationMax()).append("</connectionsDurationMax>\n");
                 sb.append("      <connectionsDurationStdDev>").append(connectionStats.getConnectionDurationStdDev()).append("</connectionsDurationStdDev>\n");
                 sb.append("      <bytesIn>").append(connectionStats.getReceivedBytes()).append("</bytesIn>\n");
-                sb.append("      <bytesOut>").append(connectionStats.getSentBytes()).append("</connectorStats>\n");
+                sb.append("      <bytesOut>").append(connectionStats.getSentBytes()).append("</bytesOut>\n");
                 sb.append("      <messagesIn>").append(connectionStats.getReceivedMessages()).append("</messagesIn>\n");
                 sb.append("      <messagesOut>").append(connectionStats.getSentMessages()).append("</messagesOut>\n");
             }
