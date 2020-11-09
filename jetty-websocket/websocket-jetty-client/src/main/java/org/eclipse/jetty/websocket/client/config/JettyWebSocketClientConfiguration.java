@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.client.config;
 
 import java.util.ServiceLoader;
 
+import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.FragmentConfiguration;
@@ -71,7 +72,7 @@ public class JettyWebSocketClientConfiguration extends AbstractConfiguration
     {
         try
         {
-            return JettyWebSocketClientConfiguration.class.getClassLoader().loadClass(classname) != null;
+            return Loader.loadClass(classname) != null;
         }
         catch (Throwable e)
         {
