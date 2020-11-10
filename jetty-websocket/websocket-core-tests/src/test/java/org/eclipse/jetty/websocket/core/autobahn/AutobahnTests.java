@@ -74,11 +74,6 @@ public class AutobahnTests
     @BeforeAll
     public static void before() throws Exception
     {
-        String workspace;
-        workspace = System.getenv().get("WORKSPACE");
-        LOG.info("Workspace: {}", workspace);
-        LOG.info("User Dir: {}", USER_DIR);
-
         fuzzingServer = USER_DIR.resolve("fuzzingserver.json");
         assertTrue(Files.exists(fuzzingServer), fuzzingServer + " not exists");
 
@@ -310,11 +305,9 @@ public class AutobahnTests
         {
             JSONObject object = (JSONObject)parser.parse(reader);
             JSONObject agent = (JSONObject)object.values().iterator().next();
-
             if (agent == null)
-            {
-                return null;
-            }
+                throw new Exception("no agent");
+
             for (Object cases : agent.keySet())
             {
                 JSONObject c = (JSONObject)agent.get(cases);
@@ -323,15 +316,7 @@ public class AutobahnTests
                 Number duration = (Number)c.get("duration");
                 Number remoteCloseCode = (Number)c.get("remoteCloseCode");
 
-                Long code;
-                if (remoteCloseCode == null)
-                {
-                    code = null;
-                }
-                else
-                {
-                    code = remoteCloseCode.longValue();
-                }
+                Long code = (remoteCloseCode == null) ? null : remoteCloseCode.longValue();
                 String reportfile = (String)c.get("reportfile");
                 AutobahnCaseResult result = new AutobahnCaseResult(cases.toString(),
                     AutobahnCaseResult.Behavior.parse(behavior),
@@ -372,8 +357,9 @@ public class AutobahnTests
                         return WRONG_CODE;
                     case "FAILED BY CLIENT":
                         return FAILED_BY_CLIENT;
+                    default:
+                        return valueOf(value);
                 }
-                return valueOf(value);
             }
         }
 
