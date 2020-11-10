@@ -31,14 +31,18 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -406,7 +410,33 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             // the following is needed as you cannot trust the response code and reason
                             // as those could have been modified after calling sendError
                             Integer code = (Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
-                            _response.setStatus(code != null ? code : HttpStatus.INTERNAL_SERVER_ERROR_500);
+                            if (code == null)
+                                code = HttpStatus.INTERNAL_SERVER_ERROR_500;
+                            _response.setStatus(code);
+
+                            // Close the connection if we can't consume the input
+                            if (!_request.getHttpInput().consumeAll())
+                            {
+                                _response.getHttpFields().computeField(HttpHeader.CONNECTION, (h, fields) ->
+                                {
+                                    if (fields == null || fields.isEmpty())
+                                        return HttpConnection.CONNECTION_CLOSE;
+
+                                    if (fields.stream().anyMatch(f -> f.contains(HttpHeaderValue.CLOSE.asString())))
+                                    {
+                                        if (fields.size() == 1)
+                                            return fields.get(0);
+
+                                        return new HttpField(HttpHeader.CONNECTION, fields.stream()
+                                            .flatMap(field -> Stream.of(field.getValues()))
+                                            .collect(Collectors.joining(", ")));
+                                    }
+
+                                    return new HttpField(HttpHeader.CONNECTION, fields.stream()
+                                        .flatMap(field -> Stream.of(field.getValues()))
+                                        .collect(Collectors.joining(", ")) + ",close");
+                                });
+                            }
 
                             ContextHandler.Context context = (ContextHandler.Context)_request.getAttribute(ErrorHandler.ERROR_CONTEXT);
                             ErrorHandler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
