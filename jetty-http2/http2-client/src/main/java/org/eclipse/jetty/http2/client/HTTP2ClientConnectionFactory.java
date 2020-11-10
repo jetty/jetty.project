@@ -93,20 +93,6 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         }
 
         @Override
-        public long getMessagesIn()
-        {
-            HTTP2ClientSession session = (HTTP2ClientSession)getSession();
-            return session.getStreamsOpened();
-        }
-
-        @Override
-        public long getMessagesOut()
-        {
-            HTTP2ClientSession session = (HTTP2ClientSession)getSession();
-            return session.getStreamsClosed();
-        }
-
-        @Override
         public void onOpen()
         {
             Map<Integer, Integer> settings = listener.onPreface(getSession());

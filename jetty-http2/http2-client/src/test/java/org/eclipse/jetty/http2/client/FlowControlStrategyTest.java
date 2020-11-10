@@ -731,6 +731,7 @@ public abstract class FlowControlStrategyTest
     public void testClientExceedingSessionWindow() throws Exception
     {
         // On server, we don't consume the data.
+        CountDownLatch serverCloseLatch = new CountDownLatch(1);
         start(new ServerSessionListener.Adapter()
         {
             @Override
@@ -745,16 +746,29 @@ public abstract class FlowControlStrategyTest
                     }
                 };
             }
-        });
 
-        CountDownLatch closeLatch = new CountDownLatch(1);
-        Session session = newClient(new Session.Listener.Adapter()
-        {
             @Override
             public void onClose(Session session, GoAwayFrame frame)
             {
+                serverCloseLatch.countDown();
+            }
+        });
+
+        CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
+        CountDownLatch clientCloseLatch = new CountDownLatch(1);
+        Session session = newClient(new Session.Listener.Adapter()
+        {
+            @Override
+            public void onGoAway(Session session, GoAwayFrame frame)
+            {
                 if (frame.getError() == ErrorCode.FLOW_CONTROL_ERROR.code)
-                    closeLatch.countDown();
+                    clientGoAwayLatch.countDown();
+            }
+
+            @Override
+            public void onClose(Session session, GoAwayFrame frame)
+            {
+                clientCloseLatch.countDown();
             }
         });
 
@@ -800,13 +814,16 @@ public abstract class FlowControlStrategyTest
         http2Session.getEndPoint().write(Callback.NOOP, buffers.toArray(new ByteBuffer[0]));
 
         // Expect the connection to be closed.
-        assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientCloseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverCloseLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
     public void testClientExceedingStreamWindow() throws Exception
     {
         // On server, we don't consume the data.
+        CountDownLatch serverCloseLatch = new CountDownLatch(1);
         start(new ServerSessionListener.Adapter()
         {
             @Override
@@ -829,16 +846,29 @@ public abstract class FlowControlStrategyTest
                     }
                 };
             }
-        });
 
-        CountDownLatch closeLatch = new CountDownLatch(1);
-        Session session = newClient(new Session.Listener.Adapter()
-        {
             @Override
             public void onClose(Session session, GoAwayFrame frame)
             {
+                serverCloseLatch.countDown();
+            }
+        });
+
+        CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
+        CountDownLatch clientCloseLatch = new CountDownLatch(1);
+        Session session = newClient(new Session.Listener.Adapter()
+        {
+            @Override
+            public void onGoAway(Session session, GoAwayFrame frame)
+            {
                 if (frame.getError() == ErrorCode.FLOW_CONTROL_ERROR.code)
-                    closeLatch.countDown();
+                    clientGoAwayLatch.countDown();
+            }
+
+            @Override
+            public void onClose(Session session, GoAwayFrame frame)
+            {
+                clientCloseLatch.countDown();
             }
         });
 
@@ -880,7 +910,9 @@ public abstract class FlowControlStrategyTest
         http2Session.getEndPoint().write(Callback.NOOP, buffers.toArray(new ByteBuffer[0]));
 
         // Expect the connection to be closed.
-        assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientCloseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverCloseLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test

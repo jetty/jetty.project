@@ -326,21 +326,11 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
                 length = fields.getLongField(HttpHeader.CONTENT_LENGTH.asString());
             dataLength = length >= 0 ? length : Long.MIN_VALUE;
         }
-
         callback.succeeded();
     }
 
     private void onData(DataFrame frame, Callback callback)
     {
-        if (getRecvWindow() < 0)
-        {
-            // It's a bad client, it does not deserve to be
-            // treated gently by just resetting the stream.
-            session.close(ErrorCode.FLOW_CONTROL_ERROR.code, "stream_window_exceeded", Callback.NOOP);
-            callback.failed(new IOException("stream_window_exceeded"));
-            return;
-        }
-
         // SPEC: remotely closed streams must be replied with a reset.
         if (isRemotelyClosed())
         {
@@ -381,8 +371,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             failure = new EofException("reset");
         }
         close();
-        session.removeStream(this);
-        notifyReset(this, frame, callback);
+        if (session.removeStream(this))
+            notifyReset(this, frame, callback);
     }
 
     private void onPush(PushPromiseFrame frame, Callback callback)
@@ -405,8 +395,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             failure = frame.getFailure();
         }
         close();
-        session.removeStream(this);
-        notifyFailure(this, frame, callback);
+        if (session.removeStream(this))
+            notifyFailure(this, frame, callback);
     }
 
     @Override
