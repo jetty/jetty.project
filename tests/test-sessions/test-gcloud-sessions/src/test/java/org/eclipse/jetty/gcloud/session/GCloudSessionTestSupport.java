@@ -26,6 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.cloud.NoCredentials;
+import com.google.cloud.ServiceOptions;
+import com.google.cloud.datastore.Batch;
 import com.google.cloud.datastore.Blob;
 import com.google.cloud.datastore.BlobValue;
 import com.google.cloud.datastore.Datastore;
@@ -38,13 +41,16 @@ import com.google.cloud.datastore.Query;
 import com.google.cloud.datastore.Query.ResultType;
 import com.google.cloud.datastore.QueryResults;
 import com.google.cloud.datastore.StructuredQuery.PropertyFilter;
-import com.google.cloud.datastore.testing.LocalDatastoreHelper;
 import org.eclipse.jetty.gcloud.session.GCloudSessionDataStore.EntityDataModel;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataStore;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
-import org.threeten.bp.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.DatastoreEmulatorContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.utility.DockerImageName;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -55,9 +61,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class GCloudSessionTestSupport
 {
-    LocalDatastoreHelper _helper = LocalDatastoreHelper.create(1.0);
     Datastore _ds;
     KeyFactory _keyFactory;
+
+    private static final Logger GCLOUD_LOG = LoggerFactory.getLogger("org.eclipse.jetty.gcloud.session.gcloudLogs");
+
+    public DatastoreEmulatorContainer emulator = new DatastoreEmulatorContainer(
+        DockerImageName.parse("gcr.io/google.com/cloudsdktool/cloud-sdk:316.0.0-emulators")
+    ).withLogConsumer(new Slf4jLogConsumer(GCLOUD_LOG));
 
     public static class TestGCloudSessionDataStoreFactory extends GCloudSessionDataStoreFactory
     {
@@ -88,15 +99,21 @@ public class GCloudSessionTestSupport
 
     public GCloudSessionTestSupport()
     {
-        DatastoreOptions options = _helper.getOptions();
-        _ds = options.getService();
-        _keyFactory = _ds.newKeyFactory().setKind(EntityDataModel.KIND);
+        // no op
     }
 
     public void setUp()
         throws Exception
     {
-        _helper.start();
+        emulator.start();
+        DatastoreOptions options = DatastoreOptions.newBuilder()
+            .setHost(emulator.getEmulatorEndpoint())
+            .setCredentials(NoCredentials.getInstance())
+            .setRetrySettings(ServiceOptions.getNoRetrySettings())
+            .setProjectId("jetty9-work")
+            .build();
+        _ds = options.getService();
+        _keyFactory = _ds.newKeyFactory().setKind(EntityDataModel.KIND);
     }
 
     public Datastore getDatastore()
@@ -107,12 +124,13 @@ public class GCloudSessionTestSupport
     public void tearDown()
         throws Exception
     {
-        _helper.stop(Duration.ofMinutes(1)); //wait up to 1min for shutdown
+        emulator.stop();
     }
 
     public void reset() throws Exception
     {
-        _helper.reset();
+        emulator.stop();
+        this.setUp();
     }
 
     public void createSession(String id, String contextPath, String vhost,
@@ -260,12 +278,14 @@ public class GCloudSessionTestSupport
         QueryResults<Key> results = _ds.run(query);
         assertNotNull(results);
         int actual = 0;
+        List<Key> keys = new ArrayList<>();
         while (results.hasNext())
         {
-            results.next();
+            Key key = results.next();
+            keys.add(key);
             ++actual;
         }
-        assertEquals(count, actual);
+        assertEquals(count, actual, "keys found: " + keys);
     }
 
     public void deleteSessions() throws Exception
@@ -273,18 +293,21 @@ public class GCloudSessionTestSupport
         Query<Key> query = Query.newKeyQueryBuilder().setKind(GCloudSessionDataStore.EntityDataModel.KIND).build();
         QueryResults<Key> results = _ds.run(query);
 
+        Batch batch = _ds.newBatch();
+
         if (results != null)
         {
-            List<Key> keys = new ArrayList<Key>();
+            List<Key> keys = new ArrayList<>();
 
             while (results.hasNext())
             {
                 keys.add(results.next());
             }
 
-            _ds.delete(keys.toArray(new Key[keys.size()]));
+            batch.delete(keys.toArray(new Key[keys.size()]));
         }
 
+        batch.submit();
         assertSessions(0);
     }
 }
