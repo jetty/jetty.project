@@ -116,6 +116,7 @@ public class ServletContextTmpAttributeTest
      * ServletContext.TEMPDIR has invalid <code>String</code> directory value
      * IllegalStateException
      */
+    @Disabled
     @Test
     public void attributeWithInvalidStringValue() throws Exception
     {
