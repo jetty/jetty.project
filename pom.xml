@@ -1672,6 +1672,14 @@
       <organizationUrl>https://webtide.com</organizationUrl>
       <timezone>Australia/Brisbane</timezone>
     </developer>
+    <developer>
+      <id>lorban</id>
+      <name>Ludovic Orban</name>
+      <email>lorban@bitronix.be</email>
+      <organization>Webtide, LLC</organization>
+      <organizationUrl>https://webtide.com</organizationUrl>
+      <timezone>1</timezone>
+    </developer>
   </developers>
 
   <organization>
