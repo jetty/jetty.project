@@ -301,7 +301,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (webApp.isAlias())
             {
                 if (LOG.isDebugEnabled())
-                LOG.debug("{} anti-aliased to {}", webApp, webApp.getAlias());
+                    LOG.debug("{} anti-aliased to {}", webApp, webApp.getAlias());
                 webApp = context.newResource(webApp.getAlias());
             }
 
@@ -431,7 +431,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 webInfLibDir.mkdir();
 
                 if (LOG.isDebugEnabled())
-                LOG.debug("Copying WEB-INF/lib {} to {}", webInfLib, webInfLibDir);
+                    LOG.debug("Copying WEB-INF/lib {} to {}", webInfLib, webInfLibDir);
                 webInfLib.copyTo(webInfLibDir);
             }
 

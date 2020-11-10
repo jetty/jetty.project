@@ -18,7 +18,7 @@
     <jetty.url>https://www.eclipse.org/jetty/</jetty.url>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build-support.version>1.5</build-support.version>
-    <checkstyle.version>8.36.2</checkstyle.version>
+    <checkstyle.version>8.37</checkstyle.version>
     <slf4j.version>2.0.0-alpha1</slf4j.version>
     <log4j2.version>2.13.0</log4j2.version>
     <logback.version>1.3.0-alpha5</logback.version>
@@ -80,7 +80,7 @@
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
     <testcontainers.version>1.15.0</testcontainers.version>
-    <derby.version>10.15.2.0</derby.version>
+    <derby.version>10.14.2.0</derby.version>
   </properties>
 
   <licenses>
