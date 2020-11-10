@@ -109,6 +109,7 @@ public class AutobahnTests
         List<AutobahnCaseResult> results = parseResults(Paths.get("target/reports/clients/index.json"));
         String className = getClass().getName();
         writeJUnitXmlReport(results, "autobahn-client", className + ".client");
+        throwIfFailed(results);
     }
 
     @Test
@@ -139,6 +140,20 @@ public class AutobahnTests
         List<AutobahnCaseResult> results = parseResults(Paths.get("target/reports/servers/index.json"));
         String className = getClass().getName();
         writeJUnitXmlReport(results, "autobahn-server", className + ".server");
+        throwIfFailed(results);
+    }
+
+    private void throwIfFailed(List<AutobahnCaseResult> results) throws Exception
+    {
+        StringBuilder message = new StringBuilder();
+        for (AutobahnCaseResult result : results)
+        {
+            if (result.failed())
+                message.append(result.caseName).append(", ");
+        }
+
+        if (message.length() > 0)
+            throw new Exception("Failed Test Cases: " + message);
     }
 
     private static class FileSignalWaitStrategy extends StartupCheckStrategy
@@ -232,21 +247,11 @@ public class AutobahnTests
             suiteDuration += duration;
             testcase.setAttribute("time", Double.toString(duration / 1000.0));
 
-            // failOnNonStrict option ?
-            switch (r.behavior())
+            if (r.failed())
             {
-                case OK:
-                case INFORMATIONAL:
-                case UNIMPLEMENTED:
-                    break;
-
-                case NON_STRICT:
-                default:
-                    addFailure(testcase,r);
-                    failures++;
-                    break;
+                addFailure(testcase,r);
+                failures++;
             }
-
             root.addChild(testcase);
         }
         root.setAttribute("failures", Integer.toString(failures));
@@ -388,6 +393,21 @@ public class AutobahnTests
         public Behavior behavior()
         {
             return behavior;
+        }
+
+        public boolean failed()
+        {
+            switch (behavior)
+            {
+                case OK:
+                case INFORMATIONAL:
+                case UNIMPLEMENTED:
+                    return false;
+
+                case NON_STRICT:
+                default:
+                    return true;
+            }
         }
 
         public Behavior behaviorClose()
