@@ -88,7 +88,7 @@ public class AutobahnTests
     @Test
     public void testClient() throws Exception
     {
-        try (GenericContainer<?> container = new GenericContainer<>(DockerImageName.parse("crossbario/autobahn-testsuite:latest"))
+        try (GenericContainer<?> container = new GenericContainer<>(DockerImageName.parse("jettyproject/autobahn-testsuite:latest"))
             .withCommand("/bin/bash", "-c", "wstest -m fuzzingserver -s /config/fuzzingserver.json")
             .withExposedPorts(9001)
             .withCopyFileToContainer(MountableFile.forHostPath(fuzzingServer),"/config/fuzzingserver.json")
@@ -120,7 +120,7 @@ public class AutobahnTests
         Server server = CoreAutobahnServer.startAutobahnServer(port);
 
         FileSignalWaitStrategy strategy = new FileSignalWaitStrategy(reportDir, Paths.get("/target/reports/servers"));
-        try (GenericContainer<?> container = new GenericContainer<>(DockerImageName.parse("crossbario/autobahn-testsuite:latest"))
+        try (GenericContainer<?> container = new GenericContainer<>(DockerImageName.parse("jettyproject/autobahn-testsuite:latest"))
             .withCommand("/bin/bash", "-c", "wstest -m fuzzingclient -s /config/fuzzingclient.json" + FileSignalWaitStrategy.END_COMMAND)
             .withLogConsumer(new Slf4jLogConsumer(LOG))
             .withCopyFileToContainer(MountableFile.forHostPath(fuzzingClient),"/config/fuzzingclient.json")
