@@ -1744,16 +1744,12 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                         if (LOG.isDebugEnabled())
                             LOG.debug("Unexpected ISHUT for {}", HTTP2Session.this);
                         closed = CloseState.CLOSING;
-                        // Don't record the GOAWAY received because there is no lastStreamId.
-                        GoAwayFrame frame = new GoAwayFrame(0, ErrorCode.NO_ERROR.code, reason.getBytes(StandardCharsets.UTF_8));
-                        closingAction = () -> terminate(frame);
                         failure = new ClosedChannelException();
                         break;
                     }
                     case REMOTELY_CLOSED:
                     {
                         closed = CloseState.CLOSING;
-                        // Don't record the GOAWAY received because there is no lastStreamId.
                         GoAwayFrame frame = new GoAwayFrame(0, ErrorCode.NO_ERROR.code, reason.getBytes(StandardCharsets.UTF_8));
                         closingAction = () -> terminate(frame);
                         failure = new ClosedChannelException();
@@ -1786,7 +1782,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             }
             else
             {
-                abort(reason, failure, Callback.from(this::tryRunClosingAction));
+                GoAwayFrame frame = new GoAwayFrame(0, ErrorCode.NO_ERROR.code, reason.getBytes(StandardCharsets.UTF_8));
+                abort(reason, failure, Callback.from(() -> terminate(frame)));
             }
         }
 
@@ -1905,7 +1902,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                     case REMOTELY_CLOSED:
                     {
                         closed = CloseState.CLOSING;
-                        closingAction = () -> terminate(newGoAwayFrame(ErrorCode.NO_ERROR.code, reason));
+                        closingAction = () -> terminate(new GoAwayFrame(0, ErrorCode.NO_ERROR.code, reason.getBytes(StandardCharsets.UTF_8)));
                         failure = x;
                         break;
                     }
