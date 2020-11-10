@@ -943,7 +943,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     @Override
     public void onShutdown()
     {
-        streamsState.onShutdown(this);
+        streamsState.onShutdown();
     }
 
     /**
@@ -970,7 +970,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     @Override
     public boolean onIdleTimeout()
     {
-        return streamsState.onIdleTimeout(this);
+        return streamsState.onIdleTimeout();
     }
 
     private void notIdle()
@@ -984,28 +984,28 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "upgrade");
     }
 
-    protected void onStreamCreated(int streamId)
+    private void onStreamCreated(int streamId)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Created stream #{} for {}", streamId, this);
         streamsState.onStreamCreated();
     }
 
-    protected void onStreamOpened(IStream stream)
+    protected final void onStreamOpened(IStream stream)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Opened stream {} for {}", stream, this);
         streamsOpened.incrementAndGet();
     }
 
-    protected void onStreamClosed(IStream stream)
+    private void onStreamClosed(IStream stream)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Closed stream {} for {}", stream, this);
         streamsClosed.incrementAndGet();
     }
 
-    protected void onStreamDestroyed(int streamId)
+    private void onStreamDestroyed(int streamId)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Destroyed stream #{} for {}", streamId, this);
@@ -1522,7 +1522,10 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                         }
                         else
                         {
-                            if (goAwaySent.isGraceful())
+                            // SPEC: see section 6.8.
+                            if (goAwaySent.isGraceful() ||
+                                frame.getLastStreamId() < goAwaySent.getLastStreamId() ||
+                                frame.getError() != ErrorCode.NO_ERROR.code)
                             {
                                 goAwaySent = frame;
                                 sendGoAway = true;
@@ -1613,7 +1616,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                         }
                         frame = goAwaySent;
                         closed = CloseState.CLOSED;
-                        failure = toFailure(ErrorCode.NO_ERROR.code, reason);
+                        if (failure != null)
+                            failure = toFailure(ErrorCode.NO_ERROR.code, reason);
                         break;
                     }
                     default:
@@ -1726,10 +1730,10 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 tryRunClosingAction();
         }
 
-        private void onShutdown(HTTP2Session session)
+        private void onShutdown()
         {
             String reason = "input_shutdown";
-            boolean resetStreams = false;
+            boolean failStreams = false;
             try (Locker.Lock l = lock.lock())
             {
                 switch (closed)
@@ -1738,8 +1742,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                     case LOCALLY_CLOSED:
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Unexpected ISHUT for {}", session);
+                            LOG.debug("Unexpected ISHUT for {}", HTTP2Session.this);
                         closed = CloseState.CLOSING;
+                        // Don't record the GOAWAY received because there is no lastStreamId.
                         GoAwayFrame frame = new GoAwayFrame(0, ErrorCode.NO_ERROR.code, reason.getBytes(StandardCharsets.UTF_8));
                         closingAction = () -> terminate(frame);
                         failure = new ClosedChannelException();
@@ -1748,29 +1753,30 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                     case REMOTELY_CLOSED:
                     {
                         closed = CloseState.CLOSING;
+                        // Don't record the GOAWAY received because there is no lastStreamId.
                         GoAwayFrame frame = new GoAwayFrame(0, ErrorCode.NO_ERROR.code, reason.getBytes(StandardCharsets.UTF_8));
                         closingAction = () -> terminate(frame);
                         failure = new ClosedChannelException();
-                        resetStreams = true;
+                        failStreams = true;
                         break;
                     }
                     case CLOSING:
                     {
                         if (failure == null)
                             failure = new ClosedChannelException();
-                        resetStreams = true;
+                        failStreams = true;
                         break;
                     }
                     default:
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Already closed, ignoring ISHUT for {}", session);
+                            LOG.debug("Already closed, ignoring ISHUT for {}", HTTP2Session.this);
                         return;
                     }
                 }
             }
 
-            if (resetStreams)
+            if (failStreams)
             {
                 // Since nothing else will arrive from the other peer, reset
                 // the streams for which the other peer did not send all frames.
@@ -1784,7 +1790,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             }
         }
 
-        private boolean onIdleTimeout(HTTP2Session session)
+        private boolean onIdleTimeout()
         {
             String reason = "idle_timeout";
             boolean notify = false;
@@ -1801,7 +1807,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                         notify = true;
                         break;
                     }
-                    // Timed out while waiting for closing events.
+                    // Timed out while waiting for closing events, abort all the streams.
                     case LOCALLY_CLOSED:
                     {
                         boolean shouldSend = goAwaySent.isGraceful();
@@ -1822,7 +1828,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                     default:
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Already closed, ignored idle timeout for {}", session);
+                            LOG.debug("Already closed, ignored idle timeout for {}", HTTP2Session.this);
                         return false;
                     }
                 }
@@ -1830,9 +1836,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
             if (notify)
             {
-                boolean close = notifyIdleTimeout(session);
+                boolean close = notifyIdleTimeout(HTTP2Session.this);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Idle timeout {} for {}", close ? "confirmed" : "ignored", session);
+                    LOG.debug("Idle timeout {} for {}", close ? "confirmed" : "ignored", HTTP2Session.this);
                 if (close)
                     halt(reason);
                 return false;
@@ -1930,25 +1936,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         private void onStreamDestroyed()
         {
             long count = streamCount.decrementAndGet();
+            // I've seen zero here, but it may increase again.
+            // That's why tryRunClosingAction() must check
+            // the count with the lock held.
             if (count == 0)
-                runClosingAction();
+                tryRunClosingAction();
         }
 
         private void tryRunClosingAction()
-        {
-            long count = streamCount.get();
-            if (count == 0)
-            {
-                runClosingAction();
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Deferred closing action, {} pending streams on {}", count, HTTP2Session.this);
-            }
-        }
-
-        private void runClosingAction()
         {
             // Threads from onStreamClosed() and other events
             // such as onGoAway() may be in a race to finish,
@@ -1956,6 +1951,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             Runnable action = null;
             try (Locker.Lock l = lock.lock())
             {
+                long count = streamCount.get();
+                if (count > 0)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Deferred closing action, {} pending streams on {}", count, HTTP2Session.this);
+                    return;
+                }
+
                 switch (closed)
                 {
                     case LOCALLY_CLOSED:
@@ -2115,14 +2118,16 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
         private int reserveSlot(Slot slot, int streamId, Consumer<Throwable> fail)
         {
-            int newStreamId = streamId;
             Throwable failure = null;
             try (Locker.Lock l = lock.lock())
             {
                 if (closed == CloseState.NOT_CLOSED)
                 {
-                    if (newStreamId <= 0)
-                        newStreamId = localStreamIds.getAndAdd(2);
+                    if (streamId <= 0)
+                    {
+                        streamId = localStreamIds.getAndAdd(2);
+                        HTTP2Session.this.onStreamCreated(streamId);
+                    }
                     slots.offer(slot);
                 }
                 else
@@ -2133,16 +2138,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 }
             }
             if (failure == null)
-            {
-                if (streamId <= 0)
-                    HTTP2Session.this.onStreamCreated(newStreamId);
-                return newStreamId;
-            }
-            else
-            {
-                fail.accept(failure);
-                return 0;
-            }
+                return streamId;
+            fail.accept(failure);
+            return 0;
         }
 
         private void freeSlot(Slot slot, int streamId)
