@@ -429,22 +429,12 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     }
 
     /**
-     * This method is called when receiving a GO_AWAY from the other peer.
-     * We check the close state to act appropriately:
-     * <ul>
-     * <li>NOT_CLOSED: we move to REMOTELY_CLOSED and queue a disconnect, so
-     * that the content of the queue is written, and then the connection
-     * closed. We notify the application after being terminated.
-     * See {@code HTTP2Session.ControlEntry#succeeded()}</li>
-     * <li>In all other cases, we do nothing since other methods are already
-     * performing their actions.</li>
-     * </ul>
+     * <p>This method is called when receiving a GO_AWAY from the other peer.</p>
      *
      * @param frame the GO_AWAY frame that has been received.
      * @see #close(int, String, Callback)
      * @see #onShutdown()
      * @see #onIdleTimeout()
-     * TODO: Review javadocs
      */
     @Override
     public void onGoAway(GoAwayFrame frame)
@@ -636,20 +626,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     }
 
     /**
-     * Invoked internally and by applications to send a GO_AWAY frame to the
-     * other peer. We check the close state to act appropriately:
-     * <ul>
-     * <li>NOT_CLOSED: we move to LOCALLY_CLOSED and queue a GO_AWAY. When the
-     * GO_AWAY has been written, it will only cause the output to be shut
-     * down (not the connection closed), so that the application can still
-     * read frames arriving from the other peer.
-     * Ideally the other peer will notice the GO_AWAY and close the connection.
-     * When that happen, we close the connection from {@link #onShutdown()}.
-     * Otherwise, the idle timeout mechanism will close the connection, see
-     * {@link #onIdleTimeout()}.</li>
-     * <li>In all other cases, we do nothing since other methods are already
-     * performing their actions.</li>
-     * </ul>
+     * <p>Invoked internally and by applications to send a GO_AWAY frame to the other peer.</p>
      *
      * @param error the error code
      * @param reason the reason
@@ -657,7 +634,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
      * @see #onGoAway(GoAwayFrame)
      * @see #onShutdown()
      * @see #onIdleTimeout()
-     * // TODO: review javadocs
      */
     @Override
     public boolean close(int error, String reason, Callback callback)
@@ -919,26 +895,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     }
 
     /**
-     * A typical close by a remote peer involves a GO_AWAY frame followed by TCP FIN.
-     * This method is invoked when the TCP FIN is received, or when an exception is
-     * thrown while reading, and we check the close state to act appropriately:
-     * <ul>
-     * <li>NOT_CLOSED: means that the remote peer did not send a GO_AWAY (abrupt close)
-     * or there was an exception while reading, and therefore we terminate.</li>
-     * <li>LOCALLY_CLOSED: we have sent the GO_AWAY to the remote peer, which received
-     * it and closed the connection; we queue a disconnect to close the connection
-     * on the local side.
-     * The GO_AWAY just shutdown the output, so we need this step to make sure the
-     * connection is closed. See {@link #close(int, String, Callback)}.</li>
-     * <li>REMOTELY_CLOSED: we received the GO_AWAY, and the TCP FIN afterwards, so we
-     * do nothing since the handling of the GO_AWAY will take care of closing the
-     * connection. See {@link #onGoAway(GoAwayFrame)}.</li>
-     * </ul>
+     * <p>This method is called when the TCP FIN is received from the remote peer.</p>
      *
      * @see #onGoAway(GoAwayFrame)
      * @see #close(int, String, Callback)
      * @see #onIdleTimeout()
-     * TODO: review javadocs
      */
     @Override
     public void onShutdown()
@@ -947,25 +908,12 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     }
 
     /**
-     * This method is invoked when the idle timeout triggers. We check the close state
-     * to act appropriately:
-     * <ul>
-     * <li>NOT_CLOSED: it's a real idle timeout, we just initiate a close, see
-     * {@link #close(int, String, Callback)}.</li>
-     * <li>LOCALLY_CLOSED: we have sent a GO_AWAY and only shutdown the output, but the
-     * other peer did not close the connection so we never received the TCP FIN, and
-     * therefore we terminate.</li>
-     * <li>REMOTELY_CLOSED: the other peer sent us a GO_AWAY, we should have queued a
-     * disconnect, but for some reason it was not processed (for example, queue was
-     * stuck because of TCP congestion), therefore we terminate.
-     * See {@link #onGoAway(GoAwayFrame)}.</li>
-     * </ul>
+     * <p>This method is invoked when the idle timeout expires.</p>
      *
      * @return true if the session should be closed, false otherwise
      * @see #onGoAway(GoAwayFrame)
      * @see #close(int, String, Callback)
      * @see #onShutdown()
-     * TODO: review javadocs
      */
     @Override
     public boolean onIdleTimeout()
@@ -1457,13 +1405,15 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     }
 
     /**
-     * SPEC: It is required that stream ids are monotonically increasing.
-     * Here we use a queue to atomically create the stream id and
-     * claim the slot in the queue. Concurrent threads will only
-     * flush up to the slot with a non-null entry to make sure
-     * frames are sent strictly in their stream id order.
-     * See https://tools.ietf.org/html/rfc7540#section-5.1.1.
-     * TODO: javadocs
+     * <p>The HTTP/2 specification requires that stream ids are monotonically increasing,
+     * see https://tools.ietf.org/html/rfc7540#section-5.1.1.</p>
+     * <p>This implementation uses a queue to atomically reserve a stream id and claim
+     * a slot in the queue; the slot is then assigned the entries to write.</p>
+     * <p>Concurrent threads push slots in the queue but only one thread flushes
+     * the slots, up to the slot that has a non-null entries to write, therefore
+     * guaranteeing that frames are sent strictly in their stream id order.</p>
+     * <p>This class also coordinates the creation of streams with the close of
+     * the session, see https://tools.ietf.org/html/rfc7540#section-6.8.</p>
      */
     private class StreamsState
     {
@@ -1475,7 +1425,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         private Runnable closingAction;
         private GoAwayFrame goAwayRecv;
         private GoAwayFrame goAwaySent;
-        private Throwable failure;
+        private volatile Throwable failure;
         private Thread flushing;
 
         private CloseState getCloseState()
@@ -1505,9 +1455,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                             // when the last stream is destroyed.
                             closingAction = action = () ->
                             {
-                                // TODO: verify this
                                 GoAwayFrame goAwayFrame = newGoAwayFrame(ErrorCode.NO_ERROR.code, "close");
-                                goAway(goAwayFrame, Callback.from(Callback.NOOP::succeeded, HTTP2Session.this::terminate));
+                                goAway(goAwayFrame, Callback.NOOP);
                             };
                         }
                         break;
@@ -1549,9 +1498,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                             // when the last stream is destroyed.
                             closingAction = action = () ->
                             {
-                                // TODO: verify this
                                 GoAwayFrame goAwayFrame = newGoAwayFrame(ErrorCode.NO_ERROR.code, "close");
-                                goAway(goAwayFrame, Callback.from(Callback.NOOP::succeeded, HTTP2Session.this::terminate));
+                                goAway(goAwayFrame, Callback.NOOP);
                             };
                         }
                         else
