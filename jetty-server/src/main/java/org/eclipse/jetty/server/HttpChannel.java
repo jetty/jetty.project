@@ -510,7 +510,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 _response.sendError(HttpStatus.NOT_FOUND_404);
                                 break;
                             }
-                            // If content has not been consumed and we can't consume it now without blocking, then
+                            // If content has not been consumed and we can't consume it now without blocking
                             // then ensure we signal that the connection will be closed.
                             if (!_request.getHttpInput().consumeAll())
                                 ensureConnectionClose();
@@ -577,7 +577,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
             return new HttpField(HttpHeader.CONNECTION, fields.stream()
                 .flatMap(field -> Stream.of(field.getValues()))
-                .collect(Collectors.joining(", ")) + ",close");
+                .collect(Collectors.joining(", ")) + ", " + HttpHeaderValue.CLOSE.asString());
         });
     }
 
