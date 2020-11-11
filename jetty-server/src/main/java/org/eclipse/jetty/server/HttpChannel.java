@@ -414,29 +414,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 code = HttpStatus.INTERNAL_SERVER_ERROR_500;
                             _response.setStatus(code);
 
-                            // Close the connection if we can't consume the input
+                            // Add Connection:close if we can't consume the input
                             if (!_request.getHttpInput().consumeAll())
-                            {
-                                _response.getHttpFields().computeField(HttpHeader.CONNECTION, (h, fields) ->
-                                {
-                                    if (fields == null || fields.isEmpty())
-                                        return HttpConnection.CONNECTION_CLOSE;
-
-                                    if (fields.stream().anyMatch(f -> f.contains(HttpHeaderValue.CLOSE.asString())))
-                                    {
-                                        if (fields.size() == 1)
-                                            return fields.get(0);
-
-                                        return new HttpField(HttpHeader.CONNECTION, fields.stream()
-                                            .flatMap(field -> Stream.of(field.getValues()))
-                                            .collect(Collectors.joining(", ")));
-                                    }
-
-                                    return new HttpField(HttpHeader.CONNECTION, fields.stream()
-                                        .flatMap(field -> Stream.of(field.getValues()))
-                                        .collect(Collectors.joining(", ")) + ",close");
-                                });
-                            }
+                                ensureConnectionClose();
 
                             ContextHandler.Context context = (ContextHandler.Context)_request.getAttribute(ErrorHandler.ERROR_CONTEXT);
                             ErrorHandler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
@@ -522,10 +502,18 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     case COMPLETE:
                     {
-                        if (!_response.isCommitted() && !_request.isHandled() && !_response.getHttpOutput().isClosed())
+                        if (!_response.isCommitted())
                         {
-                            _response.sendError(HttpStatus.NOT_FOUND_404);
-                            break;
+                            if (!_request.isHandled() && !_response.getHttpOutput().isClosed())
+                            {
+                                // The request was not actually handled
+                                _response.sendError(HttpStatus.NOT_FOUND_404);
+                                break;
+                            }
+                            // If content has not been consumed and we can't consume it now without blocking, then
+                            // then ensure we signal that the connection will be closed.
+                            if (!_request.getHttpInput().consumeAll())
+                                ensureConnectionClose();
                         }
 
                         // RFC 7230, section 3.3.
@@ -541,12 +529,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 break;
                             }
                         }
-
-                        // TODO Currently a blocking/aborting consumeAll is done in the handling of the TERMINATED
-                        // TODO Action triggered by the completed callback below.  It would be possible to modify the
-                        // TODO callback to do a non-blocking consumeAll at this point and only call completed when
-                        // TODO that is done.
-
+                        
                         // Set a close callback on the HttpOutput to make it an async callback
                         _response.completeOutput(Callback.from(() -> _state.completed(null), _state::completed));
 
@@ -573,6 +556,29 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
         boolean suspended = action == Action.WAIT;
         return !suspended;
+    }
+
+    private void ensureConnectionClose()
+    {
+        _response.getHttpFields().computeField(HttpHeader.CONNECTION, (h, fields) ->
+        {
+            if (fields == null || fields.isEmpty())
+                return HttpConnection.CONNECTION_CLOSE;
+
+            if (fields.stream().anyMatch(f -> f.contains(HttpHeaderValue.CLOSE.asString())))
+            {
+                if (fields.size() == 1)
+                    return fields.get(0);
+
+                return new HttpField(HttpHeader.CONNECTION, fields.stream()
+                    .flatMap(field -> Stream.of(field.getValues()))
+                    .collect(Collectors.joining(", ")));
+            }
+
+            return new HttpField(HttpHeader.CONNECTION, fields.stream()
+                .flatMap(field -> Stream.of(field.getValues()))
+                .collect(Collectors.joining(", ")) + ",close");
+        });
     }
 
     private void dispatch(DispatcherType type, Dispatchable dispatchable) throws IOException, ServletException
