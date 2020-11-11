@@ -512,7 +512,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             }
                             // If content has not been consumed and we can't consume it now without blocking
                             // then ensure we signal that the connection will be closed.
-                            if (!_request.getHttpInput().consumeAll())
+                            if (_response.getStatus() >= 200 && !_request.getHttpInput().consumeAll())
                                 ensureConnectionClose();
                         }
 
