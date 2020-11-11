@@ -47,7 +47,6 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -129,7 +128,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 Path quickstartWebXml = webInf.resolve("quickstart-web.xml");
                 assertTrue(Files.exists(quickstartWebXml));
                 assertNotEquals(0, Files.size(quickstartWebXml));
-                
+
                 int port = distribution.freePort();
 
                 try (JettyHomeTester.Run run3 = distribution.start("jetty.http.port=" + port, "jetty.quickstart.mode=QUICKSTART"))
@@ -145,7 +144,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             }
         }
     }
-    
+
     @Test
     public void testSimpleWebAppWithJSP() throws Exception
     {
@@ -376,7 +375,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         }
     }
 
-    @Disabled
     @ParameterizedTest
     @ValueSource(strings = {"http", "https"})
     public void testWebsocketClientInWebappProvidedByServer(String scheme) throws Exception
@@ -389,11 +387,12 @@ public class DistributionTests extends AbstractJettyHomeTest
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
+        String module = "https".equals(scheme) ? "test-keystore," + scheme : scheme;
         String[] args1 = {
             "--create-startd",
             "--approve-all-licenses",
-            "--add-to-start=resources,server,webapp,deploy,jsp,jmx,servlet,servlets,websocket,test-keystore," + scheme
-        };
+            "--add-to-start=resources,server,webapp,deploy,jsp,jmx,servlet,servlets,websocket,websocket-jetty-client," + module,
+            };
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
@@ -425,7 +424,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         }
     }
 
-    @Disabled
     @ParameterizedTest
     @ValueSource(strings = {"http", "https"})
     public void testWebsocketClientInWebapp(String scheme) throws Exception
@@ -457,7 +455,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 "jetty.http.port=" + port,
                 "jetty.ssl.port=" + port,
                 // "jetty.server.dumpAfterStart=true",
-                };
+            };
 
             try (JettyHomeTester.Run run2 = distribution.start(args2))
             {
@@ -515,8 +513,8 @@ public class DistributionTests extends AbstractJettyHomeTest
 
     /**
      * This reproduces some classloading issue with MethodHandles in JDK14-15, this has been fixed in JDK16.
-     * @see <a href="https://bugs.openjdk.java.net/browse/JDK-8244090">JDK-8244090</a>
      * @throws Exception if there is an error during the test.
+     * @see <a href="https://bugs.openjdk.java.net/browse/JDK-8244090">JDK-8244090</a>
      */
     @ParameterizedTest
     @ValueSource(strings = {"", "--jpms"})
@@ -641,5 +639,4 @@ public class DistributionTests extends AbstractJettyHomeTest
             }
         }
     }
-
 }
