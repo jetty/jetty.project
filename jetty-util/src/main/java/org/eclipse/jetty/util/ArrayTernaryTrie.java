@@ -368,6 +368,12 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         return getBest(0, b, offset, len);
     }
 
+    @Override
+    public V getBest(byte[] b, int offset, int len)
+    {
+        return getBest(0, b, offset, len);
+    }
+
     private V getBest(int t, byte[] b, int offset, int len)
     {
         int node = t;
