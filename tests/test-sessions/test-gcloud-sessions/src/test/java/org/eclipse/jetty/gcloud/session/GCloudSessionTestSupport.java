@@ -93,7 +93,7 @@ public class GCloudSessionTestSupport
     {
         try (ServerSocket server = new ServerSocket())
         {
-            server.setReuseAddress(true);
+            //server.setReuseAddress(true);
             server.bind(new InetSocketAddress("localhost", 0));
             _helper =  LocalDatastoreHelper.create(1.0, server.getLocalPort());
         }
