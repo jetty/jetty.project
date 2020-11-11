@@ -92,7 +92,7 @@ public class DeploymentTempDirTest
     public void testTmpDirectory() throws Exception
     {
         String deploymentXml = "<Configure class=\"org.eclipse.jetty.webapp.WebAppContext\">\n" +
-            "<Set name=\"war\">" + webapps.resolve("foo-webapp-1.war") +"</Set>\n" +
+            "<Set name=\"war\">" + webapps.resolve("foo-webapp-1.war") + "</Set>\n" +
             "<Set name=\"tempDirectory\">" + tmpDir + "</Set>\n" +
             "<Set name=\"persistTempDirectory\">false</Set>\n" +
             "</Configure>";
@@ -128,7 +128,7 @@ public class DeploymentTempDirTest
     public void testPersistentTmpDirectory() throws Exception
     {
         String deploymentXml = "<Configure class=\"org.eclipse.jetty.webapp.WebAppContext\">\n" +
-            "<Set name=\"war\">" + webapps.resolve("foo-webapp-1.war") +"</Set>\n" +
+            "<Set name=\"war\">" + webapps.resolve("foo-webapp-1.war") + "</Set>\n" +
             "<Set name=\"tempDirectory\">" + tmpDir + "</Set>\n" +
             "<Set name=\"persistTempDirectory\">true</Set>\n" +
             "</Configure>";
