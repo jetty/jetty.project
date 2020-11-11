@@ -13,8 +13,6 @@
     </Arg>
   </Call>
 
-  
-  
   <Call name="addBean">
    <Arg>
     <New class="org.eclipse.jetty.server.session.CachingSessionDataStoreFactory">

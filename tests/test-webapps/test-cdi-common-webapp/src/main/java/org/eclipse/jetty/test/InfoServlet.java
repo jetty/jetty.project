@@ -51,7 +51,9 @@ public class InfoServlet extends HttpServlet
         {
             out.printf("%16s => %s%n", bean.getName(), bean);
             for (InjectionPoint ij : bean.getInjectionPoints())
-            out.printf("%16s -> %s%n", "", ij);
+            {
+                out.printf("%16s -> %s%n", "", ij);
+            }
         }
     }
 }

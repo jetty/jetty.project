@@ -18,7 +18,7 @@
     <jetty.url>https://www.eclipse.org/jetty/</jetty.url>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build-support.version>1.5</build-support.version>
-    <checkstyle.version>8.36.2</checkstyle.version>
+    <checkstyle.version>8.37</checkstyle.version>
     <slf4j.version>2.0.0-alpha1</slf4j.version>
     <log4j2.version>2.13.0</log4j2.version>
     <logback.version>1.3.0-alpha5</logback.version>
@@ -31,12 +31,12 @@
     <infinispan.protostream.version>4.3.4.Final</infinispan.protostream.version>
     <gson.version>2.8.6</gson.version>
     <alpn.agent.version>2.0.10</alpn.agent.version>
-    <hazelcast.version>4.0.1</hazelcast.version>
+    <hazelcast.version>4.1</hazelcast.version>
     <conscrypt.version>2.5.1</conscrypt.version>
     <asm.version>9.0</asm.version>
     <jmh.version>1.26</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
-    <tycho-version>2.0.0</tycho-version>
+    <tycho-version>2.1.0</tycho-version>
     <junit.version>5.7.0</junit.version>
     <maven.version>3.6.3</maven.version>
     <maven.resolver.version>1.6.1</maven.resolver.version>
@@ -56,7 +56,7 @@
     <maven.resources.plugin.version>3.2.0</maven.resources.plugin.version>
     <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
     <maven.war.plugin.version>3.3.1</maven.war.plugin.version>
-    <maven.plugin-tools.version>3.5.2</maven.plugin-tools.version>
+    <maven.plugin-tools.version>3.6.0</maven.plugin-tools.version>
     <maven.install.plugin.version>3.0.0-M1</maven.install.plugin.version>
     <maven.deploy.plugin.version>3.0.0-M1</maven.deploy.plugin.version>
 
@@ -74,7 +74,8 @@
     <settingsPath>src/it/settings.xml</settingsPath>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
-    <testcontainers.version>1.15.0-rc2</testcontainers.version>
+    <testcontainers.version>1.15.0</testcontainers.version>
+    <derby.version>10.14.2.0</derby.version>
   </properties>
 
   <licenses>
@@ -506,7 +507,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>3.0.0-M2</version>
+          <version>3.0.0-M3</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -600,7 +601,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-project-info-reports-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>3.1.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -625,7 +626,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-site-plugin</artifactId>
-          <version>3.7.1</version>
+          <version>3.9.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -702,7 +703,7 @@
         <plugin>
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
-          <version>3.5.1</version>
+          <version>5.1.1</version>
           <extensions>true</extensions>
           <configuration>
             <supportedProjectTypes>
@@ -1081,6 +1082,7 @@
         <artifactId>junit-jupiter</artifactId>
         <version>${junit.version}</version>
       </dependency>
+      <!-- Test Container Deps -->
       <dependency>
         <groupId>org.hamcrest</groupId>
         <artifactId>hamcrest</artifactId>
@@ -1099,7 +1101,7 @@
       <dependency>
         <groupId>net.java.dev.jna</groupId>
         <artifactId>jna</artifactId>
-        <version>5.5.0</version>
+        <version>5.6.0</version>
       </dependency>
       <!-- Old Deps -->
       <dependency>
@@ -1151,12 +1153,12 @@
       <dependency>
         <groupId>org.apache.derby</groupId>
         <artifactId>derby</artifactId>
-        <version>10.15.2.0</version>
+        <version>${derby.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.derby</groupId>
         <artifactId>derbytools</artifactId>
-        <version>10.15.2.0</version>
+        <version>${derby.version}</version>
       </dependency>
       <!-- avoid depending on a range dependency from a transitive dependency -->
       <dependency>
@@ -1221,7 +1223,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-project-info-reports-plugin</artifactId>
-            <version>3.0.0</version>
+            <version>3.1.1</version>
           </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
@@ -1241,7 +1243,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-site-plugin</artifactId>
-            <version>3.7.1</version>
+            <version>3.9.1</version>
             <executions>
               <execution>
                 <id>build-site</id>
@@ -1598,6 +1600,14 @@
       <organization>Webtide, LLC</organization>
       <organizationUrl>https://webtide.com</organizationUrl>
       <timezone>Australia/Brisbane</timezone>
+    </developer>
+    <developer>
+      <id>lorban</id>
+      <name>Ludovic Orban</name>
+      <email>lorban@bitronix.be</email>
+      <organization>Webtide, LLC</organization>
+      <organizationUrl>https://webtide.com</organizationUrl>
+      <timezone>1</timezone>
     </developer>
   </developers>
 

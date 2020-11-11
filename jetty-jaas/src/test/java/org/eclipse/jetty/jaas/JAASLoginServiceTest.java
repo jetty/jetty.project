@@ -19,6 +19,7 @@
 package org.eclipse.jetty.jaas;
 
 import java.security.Principal;
+import java.util.Arrays;
 import java.util.Collections;
 import javax.security.auth.Subject;
 import javax.security.auth.login.AppConfigurationEntry;
@@ -29,25 +30,17 @@ import org.eclipse.jetty.security.DefaultIdentityService;
 import org.eclipse.jetty.server.Request;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * JAASLoginServiceTest
  */
 public class JAASLoginServiceTest
 {
-    public static class TestConfiguration extends Configuration
-    {
-        AppConfigurationEntry _entry = new AppConfigurationEntry(TestLoginModule.class.getCanonicalName(), LoginModuleControlFlag.REQUIRED, Collections.emptyMap());
-
-        @Override
-        public AppConfigurationEntry[] getAppConfigurationEntry(String name)
-        {
-            return new AppConfigurationEntry[]{_entry};
-        }
-    }
-
     interface SomeRole
     {
 
@@ -94,18 +87,31 @@ public class JAASLoginServiceTest
     @Test
     public void testServletRequestCallback() throws Exception
     {
+        Configuration config = new Configuration()
+            {
+                @Override
+                public AppConfigurationEntry[] getAppConfigurationEntry(String name)
+                {
+                    return new AppConfigurationEntry[] {
+                        new AppConfigurationEntry(TestLoginModule.class.getCanonicalName(), 
+                            LoginModuleControlFlag.REQUIRED, 
+                            Collections.emptyMap())
+                    };
+                }
+            };
+        
         //Test with the DefaultCallbackHandler
         JAASLoginService ls = new JAASLoginService("foo");
         ls.setCallbackHandlerClass("org.eclipse.jetty.jaas.callback.DefaultCallbackHandler");
         ls.setIdentityService(new DefaultIdentityService());
-        ls.setConfiguration(new TestConfiguration());
+        ls.setConfiguration(config);
         Request request = new Request(null, null);
         ls.login("aaardvaark", "aaa", request);
 
         //Test with the fallback CallbackHandler
         ls = new JAASLoginService("foo");
         ls.setIdentityService(new DefaultIdentityService());
-        ls.setConfiguration(new TestConfiguration());
+        ls.setConfiguration(config);
         ls.login("aaardvaark", "aaa", request);
     }
 
@@ -137,12 +143,8 @@ public class JAASLoginServiceTest
         subject.getPrincipals().add(new AnotherTestRole("z"));
 
         String[] groups = ls.getGroups(subject);
-        assertEquals(3, groups.length);
-        for (String g : groups)
-        {
-            assertTrue(g.equals("x") || g.equals("y") || g.equals("z"));
-        }
-
+        assertThat(Arrays.asList(groups), containsInAnyOrder("x", "y", "z"));
+        
         //test a custom role class
         ls.setRoleClassNames(new String[]{AnotherTestRole.class.getName()});
         Subject subject2 = new Subject();
@@ -150,8 +152,9 @@ public class JAASLoginServiceTest
         subject2.getPrincipals().add(new TestRole("x"));
         subject2.getPrincipals().add(new TestRole("y"));
         subject2.getPrincipals().add(new AnotherTestRole("z"));
-        assertEquals(1, ls.getGroups(subject2).length);
-        assertEquals("z", ls.getGroups(subject2)[0]);
+        String[] s2groups = ls.getGroups(subject2);
+        assertThat(s2groups, is(notNullValue()));
+        assertThat(Arrays.asList(s2groups), containsInAnyOrder("z"));
 
         //test a custom role class that implements an interface
         ls.setRoleClassNames(new String[]{SomeRole.class.getName()});
@@ -160,11 +163,9 @@ public class JAASLoginServiceTest
         subject3.getPrincipals().add(new TestRole("x"));
         subject3.getPrincipals().add(new TestRole("y"));
         subject3.getPrincipals().add(new AnotherTestRole("z"));
-        assertEquals(3, ls.getGroups(subject3).length);
-        for (String g : groups)
-        {
-            assertTrue(g.equals("x") || g.equals("y") || g.equals("z"));
-        }
+        String[] s3groups = ls.getGroups(subject3);
+        assertThat(s3groups, is(notNullValue()));
+        assertThat(Arrays.asList(s3groups), containsInAnyOrder("x", "y", "z"));
 
         //test a class that doesn't match
         ls.setRoleClassNames(new String[]{NotTestRole.class.getName()});
