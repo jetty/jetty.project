@@ -36,7 +36,7 @@ pipeline {
             }
           }
         }
-        
+
         stage("Build / Test - JDK15") {
           agent { node { label 'linux' } }
           steps {
