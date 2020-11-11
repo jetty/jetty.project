@@ -37,6 +37,7 @@ import javax.security.auth.spi.LoginModule;
 import org.eclipse.jetty.jaas.JAASPrincipal;
 import org.eclipse.jetty.jaas.JAASRole;
 import org.eclipse.jetty.jaas.callback.ObjectCallback;
+import org.eclipse.jetty.security.UserPrincipal;
 
 /**
  * AbstractLoginModule
@@ -50,35 +51,22 @@ public abstract class AbstractLoginModule implements LoginModule
 
     private boolean authState = false;
     private boolean commitState = false;
-    private JAASUserInfo currentUser;
+    private JAASUser currentUser;
     private Subject subject;
 
-    /**
-     * JAASUserInfo
-     *
-     * This class unites the UserInfo data with jaas concepts
-     * such as Subject and Principals
-     */
-    public class JAASUserInfo
+    public class JAASUser
     {
-        private UserInfo user;
-        private Principal principal;
-        private List<JAASRole> roles;
+        private User _user;
+        private List<JAASRole> _roles;
 
-        public JAASUserInfo(UserInfo u)
+        public JAASUser(User u)
         {
-            this.user = u;
-            this.principal = new JAASPrincipal(u.getUserName());
+            _user = u;
         }
 
         public String getUserName()
         {
-            return this.user.getUserName();
-        }
-
-        public Principal getPrincipal()
-        {
-            return this.principal;
+            return _user.getUserName();
         }
 
         /**
@@ -86,12 +74,13 @@ public abstract class AbstractLoginModule implements LoginModule
          */
         public void setJAASInfo(Subject subject)
         {
-            subject.getPrincipals().add(this.principal);
-            if (this.user.getCredential() != null)
-            {
-                subject.getPrivateCredentials().add(this.user.getCredential());
-            }
-            subject.getPrincipals().addAll(roles);
+            UserPrincipal principal = _user.getUserPrincipal();
+            if (principal == null)
+                return;
+
+            principal.configureSubject(subject);
+            if (_roles != null)
+                subject.getPrincipals().addAll(_roles);
         }
 
         /**
@@ -99,35 +88,35 @@ public abstract class AbstractLoginModule implements LoginModule
          */
         public void unsetJAASInfo(Subject subject)
         {
-            subject.getPrincipals().remove(this.principal);
-            if (this.user.getCredential() != null)
-            {
-                subject.getPrivateCredentials().remove(this.user.getCredential());
-            }
-            subject.getPrincipals().removeAll(this.roles);
+            UserPrincipal principal = _user.getUserPrincipal();
+            if (principal == null)
+                return;
+            principal.deconfigureSubject(subject);
+            if (_roles != null)
+                subject.getPrincipals().removeAll(_roles);
         }
 
         public boolean checkCredential(Object suppliedCredential)
         {
-            return this.user.checkCredential(suppliedCredential);
+            return _user.checkCredential(suppliedCredential);
         }
 
         public void fetchRoles() throws Exception
         {
-            this.user.fetchRoles();
-            this.roles = new ArrayList<JAASRole>();
-            if (this.user.getRoleNames() != null)
+            _user.fetchRoles();
+            _roles = new ArrayList<JAASRole>();
+            if (_user.getRoleNames() != null)
             {
-                Iterator<String> itor = this.user.getRoleNames().iterator();
+                Iterator<String> itor = _user.getRoleNames().iterator();
                 while (itor.hasNext())
                 {
-                    this.roles.add(new JAASRole((String)itor.next()));
+                    _roles.add(new JAASRole(itor.next()));
                 }
             }
         }
     }
 
-    public abstract UserInfo getUserInfo(String username) throws Exception;
+    public abstract JAASUser getUser(String username) throws Exception;
 
     public Subject getSubject()
     {
@@ -139,12 +128,12 @@ public abstract class AbstractLoginModule implements LoginModule
         this.subject = s;
     }
 
-    public JAASUserInfo getCurrentUser()
+    public JAASUser getCurrentUser()
     {
         return this.currentUser;
     }
 
-    public void setCurrentUser(JAASUserInfo u)
+    public void setCurrentUser(JAASUser u)
     {
         this.currentUser = u;
     }
@@ -252,15 +241,15 @@ public abstract class AbstractLoginModule implements LoginModule
                 throw new FailedLoginException();
             }
 
-            UserInfo userInfo = getUserInfo(webUserName);
+            JAASUser user = getUser(webUserName);
 
-            if (userInfo == null)
+            if (user == null)
             {
                 setAuthenticated(false);
                 throw new FailedLoginException();
             }
 
-            currentUser = new JAASUserInfo(userInfo);
+            currentUser = user;
             setAuthenticated(currentUser.checkCredential(webCredential));
 
             if (isAuthenticated())

@@ -45,6 +45,7 @@ import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
 
 import org.eclipse.jetty.jaas.callback.ObjectCallback;
+import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.security.Credential;
 import org.slf4j.Logger;
@@ -179,18 +180,19 @@ public class LdapLoginModule extends AbstractLoginModule
 
     private DirContext _rootContext;
 
-    public class LDAPUserInfo extends UserInfo
+    public class LDAPUser extends User
     {
         Attributes attributes;
 
-        /**
-         * @param userName the user name
-         * @param credential the credential
-         * @param attributes the user {@link Attributes}
-         */
-        public LDAPUserInfo(String userName, Credential credential, Attributes attributes)
+        public LDAPUser(UserPrincipal user, List<String> rolenames, Attributes attributes)
         {
-            super(userName, credential);
+            super(user, rolenames);
+            this.attributes = attributes;
+        }
+        
+        public LDAPUser(UserPrincipal user, Attributes attributes)
+        {
+            super(user);
             this.attributes = attributes;
         }
 
@@ -198,6 +200,25 @@ public class LdapLoginModule extends AbstractLoginModule
         public List<String> doFetchRoles() throws Exception
         {
             return getUserRoles(_rootContext, getUserName(), attributes);
+        }
+    }
+
+    public class LDAPBindingUser extends User
+    {   
+        DirContext _context;
+        String _userDn;
+
+        public LDAPBindingUser(UserPrincipal user, DirContext context, String userDn)
+        {
+            super(user);
+            _context = context;
+            _userDn = userDn;
+        }
+
+        @Override
+        public List<String> doFetchRoles() throws Exception
+        {
+            return getUserRolesByDn(_context, _userDn);
         }
     }
 
@@ -214,19 +235,18 @@ public class LdapLoginModule extends AbstractLoginModule
      * @throws Exception if unable to get the user info
      */
     @Override
-    public UserInfo getUserInfo(String username) throws Exception
+    public JAASUser getUser(String username) throws Exception
     {
         Attributes attributes = getUserAttributes(username);
         String pwdCredential = getUserCredentials(attributes);
 
         if (pwdCredential == null)
-        {
             return null;
-        }
 
         pwdCredential = convertCredentialLdapToJetty(pwdCredential);
         Credential credential = Credential.getCredential(pwdCredential);
-        return new LDAPUserInfo(username, credential, attributes);
+        LDAPUser ldapUser = new LDAPUser(new UserPrincipal(username, credential), attributes);
+        return new JAASUser(ldapUser);
     }
 
     protected String doRFC2254Encoding(String inputString)
@@ -421,7 +441,7 @@ public class LdapLoginModule extends AbstractLoginModule
             else
             {
                 // This sets read and the credential
-                UserInfo userInfo = getUserInfo(webUserName);
+                JAASUser userInfo = getUser(webUserName);
 
                 if (userInfo == null)
                 {
@@ -429,7 +449,7 @@ public class LdapLoginModule extends AbstractLoginModule
                     return false;
                 }
 
-                setCurrentUser(new JAASUserInfo(userInfo));
+                setCurrentUser(userInfo);
 
                 if (webCredential instanceof String)
                     authed = credentialLogin(Credential.getCredential((String)webCredential));
@@ -520,12 +540,9 @@ public class LdapLoginModule extends AbstractLoginModule
         try
         {
             DirContext dirContext = new InitialDirContext(environment);
-            List<String> roles = getUserRolesByDn(dirContext, userDn);
-
-            UserInfo userInfo = new UserInfo(username, null, roles);
-            setCurrentUser(new JAASUserInfo(userInfo));
+            LDAPBindingUser userInfo = new LDAPBindingUser(new UserPrincipal(username, null), dirContext, userDn);
+            setCurrentUser(new JAASUser(userInfo));
             setAuthenticated(true);
-
             return true;
         }
         catch (javax.naming.AuthenticationException e)

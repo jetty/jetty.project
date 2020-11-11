@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.jaas.spi;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,8 +28,9 @@ import javax.security.auth.callback.CallbackHandler;
 
 import org.eclipse.jetty.jaas.JAASLoginService;
 import org.eclipse.jetty.jaas.PropertyUserStoreManager;
-import org.eclipse.jetty.security.AbstractLoginService;
 import org.eclipse.jetty.security.PropertyUserStore;
+import org.eclipse.jetty.security.RolePrincipal;
+import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.security.Credential;
 import org.slf4j.Logger;
@@ -122,22 +124,15 @@ public class PropertyFileLoginModule extends AbstractLoginModule
      * @throws Exception if unable to get the user information
      */
     @Override
-    public UserInfo getUserInfo(String userName) throws Exception
+    public JAASUser getUser(String userName) throws Exception
     {
         LOG.debug("Checking PropertyUserStore {} for {}", _store.getConfig(), userName);
-        UserIdentity userIdentity = _store.getUserIdentity(userName);
-        if (userIdentity == null)
+        UserPrincipal up = _store.getUserPrincipal(userName);
+        if (up == null)
             return null;
 
-        //TODO in future versions change the impl of PropertyUserStore so its not
-        //storing Subjects etc, just UserInfo
-        Set<AbstractLoginService.RolePrincipal> principals = userIdentity.getSubject().getPrincipals(AbstractLoginService.RolePrincipal.class);
-
-        List<String> roles = principals.stream()
-            .map(AbstractLoginService.RolePrincipal::getName)
-            .collect(Collectors.toList());
-
-        Credential credential = (Credential)userIdentity.getSubject().getPrivateCredentials().iterator().next();
-        return new UserInfo(userName, credential, roles);
+        List<RolePrincipal> rps = _store.getRolePrincipals(userName);
+        List<String> roles = rps == null ? Collections.emptyList() : rps.stream().map(RolePrincipal::getName).collect(Collectors.toList());
+        return new JAASUser(new User(up, roles));
     }
 }

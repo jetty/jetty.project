@@ -27,6 +27,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
@@ -35,6 +36,8 @@ import javax.sql.DataSource;
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.security.AbstractLoginService;
 import org.eclipse.jetty.security.IdentityService;
+import org.eclipse.jetty.security.RolePrincipal;
+import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.security.Credential;
 import org.slf4j.Logger;
@@ -264,7 +267,7 @@ public class DataSourceLoginService extends AbstractLoginService
     }
 
     @Override
-    public String[] loadRoleInfo(UserPrincipal user)
+    public List<RolePrincipal> loadRoleInfo(UserPrincipal user)
     {
         DBUserPrincipal dbuser = (DBUserPrincipal)user;
 
@@ -284,7 +287,7 @@ public class DataSourceLoginService extends AbstractLoginService
                         roles.add(rs2.getString(_roleTableRoleField));
                     }
 
-                    return roles.toArray(new String[roles.size()]);
+                    return roles.stream().map(RolePrincipal::new).collect(Collectors.toList());
                 }
             }
         }

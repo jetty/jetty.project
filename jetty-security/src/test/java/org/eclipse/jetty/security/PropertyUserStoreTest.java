@@ -191,9 +191,9 @@ public class PropertyUserStoreTest
 
         store.start();
 
-        assertThat("Failed to retrieve UserIdentity directly from PropertyUserStore", store.getUserIdentity("tom"), notNullValue());
-        assertThat("Failed to retrieve UserIdentity directly from PropertyUserStore", store.getUserIdentity("dick"), notNullValue());
-        assertThat("Failed to retrieve UserIdentity directly from PropertyUserStore", store.getUserIdentity("harry"), notNullValue());
+        assertThat("Failed to retrieve user directly from PropertyUserStore", store.getUserPrincipal("tom"), notNullValue());
+        assertThat("Failed to retrieve user directly from PropertyUserStore", store.getUserPrincipal("dick"), notNullValue());
+        assertThat("Failed to retrieve user directly from PropertyUserStore", store.getUserPrincipal("harry"), notNullValue());
         userCount.assertThatCount(is(3));
         userCount.awaitCount(3);
     }
@@ -224,12 +224,12 @@ public class PropertyUserStoreTest
 
         store.start();
 
-        assertThat("Failed to retrieve UserIdentity directly from PropertyUserStore", //
-            store.getUserIdentity("tom"), notNullValue());
-        assertThat("Failed to retrieve UserIdentity directly from PropertyUserStore", //
-            store.getUserIdentity("dick"), notNullValue());
-        assertThat("Failed to retrieve UserIdentity directly from PropertyUserStore", //
-            store.getUserIdentity("harry"), notNullValue());
+        assertThat("Failed to retrieve user directly from PropertyUserStore", //
+            store.getUserPrincipal("tom"), notNullValue());
+        assertThat("Failed to retrieve user directly from PropertyUserStore", //
+            store.getUserPrincipal("dick"), notNullValue());
+        assertThat("Failed to retrieve user directly from PropertyUserStore", //
+            store.getUserPrincipal("harry"), notNullValue());
         userCount.assertThatCount(is(3));
         userCount.awaitCount(3);
     }
@@ -264,7 +264,7 @@ public class PropertyUserStoreTest
         addAdditionalUser(usersFile, "skip: skip, roleA\n");
         userCount.awaitCount(4);
         assertThat(loadCount.get(), is(2));
-        assertThat(store.getUserIdentity("skip"), notNullValue());
+        assertThat(store.getUserPrincipal("skip"), notNullValue());
         userCount.assertThatCount(is(4));
         userCount.assertThatUsers(hasItem("skip"));
 

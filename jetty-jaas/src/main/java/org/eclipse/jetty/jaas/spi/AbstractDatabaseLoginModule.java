@@ -27,6 +27,7 @@ import java.util.Map;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
 
+import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.util.security.Credential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,11 +58,11 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
      */
     public abstract Connection getConnection() throws Exception;
 
-    public class JDBCUserInfo extends UserInfo
+    public class JDBCUser extends User
     {
-        public JDBCUserInfo(String userName, Credential credential)
+        public JDBCUser(UserPrincipal user)
         {
-            super(userName, credential);
+            super(user);
         }
 
         @Override
@@ -79,7 +80,7 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
      * @throws Exception if unable to get the user info
      */
     @Override
-    public UserInfo getUserInfo(String userName)
+    public JAASUser getUser(String userName)
         throws Exception
     {
         try (Connection connection = getConnection())
@@ -100,11 +101,9 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
             }
 
             if (dbCredential == null)
-            {
                 return null;
-            }
 
-            return new JDBCUserInfo(userName, Credential.getCredential(dbCredential));
+            return new JAASUser(new JDBCUser(new UserPrincipal(userName, Credential.getCredential(dbCredential))));
         }
     }
 

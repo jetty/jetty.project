@@ -18,40 +18,35 @@
 
 package org.eclipse.jetty.security;
 
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.Set;
+import java.util.stream.Collectors;
 
-import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.security.Credential;
 
-/**
- * TestLoginService
- */
-public class TestLoginService extends AbstractLoginService
+class User
 {
-
-    UserStore userStore = new UserStore();
-
-    public TestLoginService(String name)
+    protected UserPrincipal _userPrincipal;
+    protected List<RolePrincipal> _rolePrincipals = Collections.emptyList();
+    
+    protected User(String username, Credential credential, String[] roles)
     {
-        setName(name);
+        _userPrincipal = new UserPrincipal(username, credential);
+
+        _rolePrincipals = Collections.emptyList();
+        
+        if (roles != null)
+            _rolePrincipals = Arrays.stream(roles).map(RolePrincipal::new).collect(Collectors.toList());
     }
-
-    public void putUser(String username, Credential credential, String[] roles)
+    
+    protected UserPrincipal getUserPrincipal()
     {
-        userStore.addUser(username, credential, roles);
+        return _userPrincipal;
     }
-
-    @Override
-    protected List<RolePrincipal> loadRoleInfo(UserPrincipal user)
+    
+    protected List<RolePrincipal> getRolePrincipals()
     {
-        return userStore.getRolePrincipals(user.getName());
-    }
-
-    @Override
-    protected UserPrincipal loadUserInfo(String username)
-    {
-        return userStore.getUserPrincipal(username);
+        return _rolePrincipals;
     }
 }

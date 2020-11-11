@@ -22,34 +22,31 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
- * UserInfo
+ * User
  *
- * This is the information read from the external source
- * about a user.
+ * Authentication information about a user. Also allows for
+ * lazy loading of authorization (role) information for the user.
  *
- * Can be cached.
  */
-public class UserInfo
+public class User
 {
     private final AutoLock _lock = new AutoLock();
-    private String _userName;
-    private Credential _credential;
+    protected UserPrincipal _userPrincipal;
     protected List<String> _roleNames = new ArrayList<>();
     protected boolean _rolesLoaded = false;
 
     /**
-     * @param userName the user name
-     * @param credential the credential
-     * @param roleNames a {@link List} of role name
+     * @param userPrincipal
+     * @param roleNames
      */
-    public UserInfo(String userName, Credential credential, List<String> roleNames)
+    public User(UserPrincipal userPrincipal, List<String> roleNames)
     {
-        _userName = userName;
-        _credential = credential;
+        _userPrincipal = userPrincipal;
         if (roleNames != null)
         {
             _roleNames.addAll(roleNames);
@@ -58,12 +55,11 @@ public class UserInfo
     }
 
     /**
-     * @param userName the user name
-     * @param credential the credential
+     * @param userPrincipal
      */
-    public UserInfo(String userName, Credential credential)
+    public User(UserPrincipal userPrincipal)
     {
-        this(userName, credential, null);
+        this(userPrincipal, null);
     }
 
     /**
@@ -93,7 +89,12 @@ public class UserInfo
 
     public String getUserName()
     {
-        return this._userName;
+        return (_userPrincipal == null ? null : _userPrincipal.getName());
+    }
+    
+    public UserPrincipal getUserPrincipal()
+    {
+        return _userPrincipal;
     }
 
     public List<String> getRoleNames()
@@ -103,11 +104,6 @@ public class UserInfo
 
     public boolean checkCredential(Object suppliedCredential)
     {
-        return _credential.check(suppliedCredential);
-    }
-
-    protected Credential getCredential()
-    {
-        return _credential;
+        return _userPrincipal.authenticate(suppliedCredential);
     }
 }
