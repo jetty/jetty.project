@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.eclipse.jetty.http.HttpParser.State;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -31,6 +32,8 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.eclipse.jetty.http.HttpCompliance.Violation.CASE_INSENSITIVE_METHOD;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.CASE_SENSITIVE_FIELD_NAME;
@@ -81,12 +84,20 @@ public class HttpParserTest
     @Test
     public void testHttpMethod()
     {
-        assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer("Wibble ")));
-        assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer("GET")));
-        assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer("MO")));
+        for (HttpMethod m : HttpMethod.values())
+        {
+            assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString().substring(0,2))));
+            assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString())));
+            assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString() + "FOO")));
+            assertEquals(m, HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString() + " ")));
+            assertEquals(m, HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString() + " /foo/bar")));
 
-        assertEquals(HttpMethod.GET, HttpMethod.lookAheadGet(BufferUtil.toBuffer("GET ")));
-        assertEquals(HttpMethod.MOVE, HttpMethod.lookAheadGet(BufferUtil.toBuffer("MOVE ")));
+            assertNull(HttpMethod.lookAheadGet(m.asString().substring(0,2).getBytes(), 0,2));
+            assertNull(HttpMethod.lookAheadGet(m.asString().getBytes(), 0, m.asString().length()));
+            assertNull(HttpMethod.lookAheadGet((m.asString() + "FOO").getBytes(), 0, m.asString().length() + 3));
+            assertEquals(m, HttpMethod.lookAheadGet(("\n" + m.asString() + " ").getBytes(), 1, m.asString().length() + 2));
+            assertEquals(m, HttpMethod.lookAheadGet(("\n" + m.asString() + " /foo").getBytes(), 1, m.asString().length() + 6));
+        }
 
         ByteBuffer b = BufferUtil.allocateDirect(128);
         BufferUtil.append(b, BufferUtil.toBuffer("GET"));
@@ -94,6 +105,15 @@ public class HttpParserTest
 
         BufferUtil.append(b, BufferUtil.toBuffer(" "));
         assertEquals(HttpMethod.GET, HttpMethod.lookAheadGet(b));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"GET", "POST", "VERSION-CONTROL"})
+    public void httpMethodNameTest(String methodName)
+    {
+        HttpMethod method = HttpMethod.fromString(methodName);
+        assertNotNull(method, "Method should have been found: " + methodName);
+        assertEquals(methodName.toUpperCase(Locale.US), method.toString());
     }
 
     @Test
