@@ -59,11 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Testcontainers
 public class AutobahnTests
 {
-    static
-    {
-        TestcontainersConfiguration.getInstance().getProperties().setProperty("transport.type", "httpclient5");
-    }
-
+    
     private static final Logger LOG = LoggerFactory.getLogger(AutobahnTests.class);
     private static final Path USER_DIR = Paths.get(System.getProperty("user.dir"));
 
