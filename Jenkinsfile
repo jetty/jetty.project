@@ -145,7 +145,7 @@ def mavenBuild(jdk, cmdline, mvnName, consoleParsers) {
     }
     finally
     {
-      junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
+      junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
       if(consoleParsers!=null){
         warnings consoleParsers: consoleParsers
       }
