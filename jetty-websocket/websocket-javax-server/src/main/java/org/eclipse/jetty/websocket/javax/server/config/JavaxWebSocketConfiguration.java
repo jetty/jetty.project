@@ -28,8 +28,7 @@ import org.eclipse.jetty.webapp.WebXmlConfiguration;
 /**
  * <p>Websocket Configuration</p>
  * <p>This configuration configures the WebAppContext server/system classes to
- * be able to see the org.eclipse.jetty.websocket package.
- * </p>
+ * be able to see the {@code org.eclipse.jetty.websocket.javax} packages.</p>
  */
 public class JavaxWebSocketConfiguration extends AbstractConfiguration
 {
@@ -37,6 +36,7 @@ public class JavaxWebSocketConfiguration extends AbstractConfiguration
     {
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
         addDependents("org.eclipse.jetty.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
+
         protectAndExpose("org.eclipse.jetty.websocket.util.server."); // For WebSocketUpgradeFilter
         protectAndExpose("org.eclipse.jetty.websocket.javax.server.config.");
         protectAndExpose("org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainerProvider");
