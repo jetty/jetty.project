@@ -74,7 +74,7 @@
             <configuration>
               <instructions>
                 <Export-Package>
-                  org.eclipse.jetty.gcloud.session.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}";
+                  org.eclipse.jetty.gcloud.session.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
                 </Export-Package>
               </instructions>
             </configuration>
