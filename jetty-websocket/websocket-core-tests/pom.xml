@@ -60,6 +60,19 @@
   </dependencies>
 
   <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+            <excludes>
+              <exclude>**/AutobahnTests.java</exclude>
+            </excludes>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -95,9 +108,9 @@
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-surefire-plugin</artifactId>
               <configuration>
-                <systemPropertyVariables>
-                  <autobahn.tests>true</autobahn.tests>
-                </systemPropertyVariables>
+                <excludes>
+                  <exclude>none</exclude>
+                </excludes>
               </configuration>
             </plugin>
           </plugins>

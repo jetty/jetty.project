@@ -88,9 +88,6 @@ public class AutobahnTests
     @Test
     public void testClient() throws Exception
     {
-        if(!Boolean.getBoolean("autobahn.tests")){
-            return;
-        }
         try (GenericContainer<?> container = new GenericContainer<>(DockerImageName.parse("jettyproject/autobahn-testsuite:latest"))
             .withCommand("/bin/bash", "-c", "wstest -m fuzzingserver -s /config/fuzzingserver.json")
             .withExposedPorts(9001)
@@ -118,9 +115,6 @@ public class AutobahnTests
     @Test
     public void testServer() throws Exception
     {
-        if(!Boolean.getBoolean("autobahn.tests")){
-            return;
-        }
         // We need to expose the host port of the server to the Autobahn Client in docker container.
         final int port = 9001;
         org.testcontainers.Testcontainers.exposeHostPorts(port);
