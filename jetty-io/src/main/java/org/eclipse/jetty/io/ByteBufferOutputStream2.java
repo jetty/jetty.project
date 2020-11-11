@@ -32,7 +32,6 @@ import java.nio.ByteBuffer;
 public class ByteBufferOutputStream2 extends OutputStream
 {
     private final ByteBufferAccumulator _accumulator;
-    private final ByteBufferPool _bufferPool;
     private int _size = 0;
 
     public ByteBufferOutputStream2()
@@ -42,8 +41,12 @@ public class ByteBufferOutputStream2 extends OutputStream
 
     public ByteBufferOutputStream2(ByteBufferPool bufferPool)
     {
-        _bufferPool = (bufferPool == null) ? new NullByteBufferPool() : bufferPool;
-        _accumulator = new ByteBufferAccumulator(bufferPool);
+        _accumulator = new ByteBufferAccumulator((bufferPool == null) ? new NullByteBufferPool() : bufferPool);
+    }
+
+    public ByteBuffer takeByteBuffer()
+    {
+        return _accumulator.takeByteBuffer();
     }
 
     /**
@@ -108,7 +111,7 @@ public class ByteBufferOutputStream2 extends OutputStream
     @Override
     public synchronized String toString()
     {
-        return String.format("%s@%x{size=%d, bufferPool=%s, byteAccumulator=%s}", getClass().getSimpleName(),
-            hashCode(), _size, _bufferPool, _accumulator);
+        return String.format("%s@%x{size=%d, byteAccumulator=%s}", getClass().getSimpleName(),
+            hashCode(), _size, _accumulator);
     }
 }
