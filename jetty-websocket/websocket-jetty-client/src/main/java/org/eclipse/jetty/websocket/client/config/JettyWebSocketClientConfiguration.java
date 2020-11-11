@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server.config;
+package org.eclipse.jetty.websocket.client.config;
 
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.FragmentConfiguration;
@@ -30,22 +30,20 @@ import org.slf4j.LoggerFactory;
 /**
  * <p>Websocket Configuration</p>
  * <p>This configuration configures the WebAppContext server/system classes to
- * be able to see the {@code org.eclipse.jetty.websocket.api}, {@code org.eclipse.jetty.websocket.server} and
- * {@code org.eclipse.jetty.websocket.util.server} packages.</p>
+ * be able to see the {@code org.eclipse.jetty.websocket.client} package.</p>
  */
-public class JettyWebSocketConfiguration extends AbstractConfiguration
+public class JettyWebSocketClientConfiguration extends AbstractConfiguration
 {
-    private static final Logger LOG = LoggerFactory.getLogger(JettyWebSocketConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JettyWebSocketClientConfiguration.class);
 
-    public JettyWebSocketConfiguration()
+    public JettyWebSocketClientConfiguration()
     {
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
         addDependents("org.eclipse.jetty.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
 
         protectAndExpose("org.eclipse.jetty.websocket.api.");
-        protectAndExpose("org.eclipse.jetty.websocket.server.");
-        protectAndExpose("org.eclipse.jetty.websocket.util.server."); // For WebSocketUpgradeFilter
-        hide("org.eclipse.jetty.server.internal.");
-        hide("org.eclipse.jetty.server.config.");
+        protectAndExpose("org.eclipse.jetty.websocket.client.");
+        hide("org.eclipse.jetty.client.impl.");
+        hide("org.eclipse.jetty.client.config.");
     }
 }
