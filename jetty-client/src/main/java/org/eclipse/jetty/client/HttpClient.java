@@ -562,7 +562,13 @@ public class HttpClient extends ContainerLifeCycle
         return new Origin(scheme, host, port, tag);
     }
 
-    protected HttpDestination resolveDestination(Origin origin)
+    /**
+     * <p>Returns, creating it if absent, the destination with the given origin.</p>
+     *
+     * @param origin the origin that identifies the destination
+     * @return the destination for the given origin
+     */
+    public HttpDestination resolveDestination(Origin origin)
     {
         return destinations.computeIfAbsent(origin, o ->
         {
