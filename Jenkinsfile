@@ -12,7 +12,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk8", "clean install -T3", "maven3",
+                mavenBuild( "jdk8", "clean install -T3 -Premote-session-tests", "maven3",
                             [[parserName: 'Maven'], [parserName: 'Java']])
                 // Collect up the jacoco execution results (only on main build)
                 jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
@@ -42,7 +42,7 @@ pipeline {
           steps {
             container( 'jetty-build' ) {
               timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk11", "clean install -T3 -Djacoco.skip=true ", "maven3",
+                mavenBuild( "jdk11", "clean install -T3 -Djacoco.skip=true -Premote-session-tests", "maven3",
                             [[parserName: 'Maven'], [parserName: 'Java']])
               }
             }
@@ -54,7 +54,7 @@ pipeline {
           steps {
             container( 'jetty-build' ) {
               timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk15", "clean install -T3 -Djacoco.skip=true ", "maven3",
+                mavenBuild( "jdk15", "clean install -T3 -Djacoco.skip=true -Premote-session-tests", "maven3",
                             [[parserName: 'Maven'], [parserName: 'Java']])
               }
             }
@@ -138,14 +138,14 @@ def mavenBuild(jdk, cmdline, mvnName, consoleParsers) {
                "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
         configFileProvider(
                 [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
-          sh "mvn -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Premote-session-tests -Pci -fae -V -B -e -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" +
+          sh "mvn -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -fae -V -B -e -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" +
                      env.JENKINS_HOME
         }
       }
     }
     finally
     {
-      junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
+      junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
       if(consoleParsers!=null){
         warnings consoleParsers: consoleParsers
       }

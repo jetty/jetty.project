@@ -13,7 +13,7 @@ session-store
 sessions
 
 [files]
-maven://com.hazelcast/hazelcast/3.12.6|lib/hazelcast/hazelcast-3.12.6.jar
+maven://com.hazelcast/hazelcast/3.12.10|lib/hazelcast/hazelcast-3.12.10.jar
 
 [xml]
 etc/sessions/hazelcast/default.xml
