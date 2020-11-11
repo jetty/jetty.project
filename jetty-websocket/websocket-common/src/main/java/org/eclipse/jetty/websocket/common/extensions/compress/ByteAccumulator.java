@@ -31,6 +31,8 @@ import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 @Deprecated
 public class ByteAccumulator implements AutoCloseable
 {
+    private static final int MIN_SPACE = 8;
+
     private final ByteBufferAccumulator accumulator;
     private final int maxSize;
     private int length = 0;
@@ -53,7 +55,7 @@ public class ByteAccumulator implements AutoCloseable
 
     public ByteBuffer ensureBuffer(int minAllocationSize)
     {
-        return accumulator.ensureBuffer(minAllocationSize);
+        return accumulator.ensureBuffer(MIN_SPACE, minAllocationSize);
     }
 
     public void readBytes(int read)

@@ -22,8 +22,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.BufferUtil;
-
 /**
  * This class implements an output stream in which the data is written into a list of ByteBuffer,
  * the buffer list automatically grows as data is written to it, the buffers are taken from the
@@ -35,7 +33,6 @@ public class ByteBufferOutputStream2 extends OutputStream
 {
     private final ByteBufferAccumulator _accumulator;
     private final ByteBufferPool _bufferPool;
-    private ByteBuffer _combinedByteBuffer;
     private int _size = 0;
 
     public ByteBufferOutputStream2()
@@ -55,22 +52,7 @@ public class ByteBufferOutputStream2 extends OutputStream
      */
     public ByteBuffer toByteBuffer()
     {
-        int length = _accumulator.getLength();
-        if (length == 0)
-            return BufferUtil.EMPTY_BUFFER;
-
-        if (_combinedByteBuffer != null && length == _combinedByteBuffer.remaining())
-            return _combinedByteBuffer;
-
-        ByteBuffer buffer = _bufferPool.acquire(_size, false);
-        _accumulator.writeTo(buffer);
-        if (_combinedByteBuffer != null)
-        {
-            _bufferPool.release(_combinedByteBuffer);
-            _combinedByteBuffer = buffer;
-        }
-
-        return buffer;
+        return _accumulator.toByteBuffer();
     }
 
     /**
@@ -79,14 +61,7 @@ public class ByteBufferOutputStream2 extends OutputStream
      */
     public byte[] toByteArray()
     {
-        int length = _accumulator.getLength();
-        if (length == 0)
-            return new byte[0];
-
-        byte[] bytes = new byte[_size];
-        ByteBuffer buffer = BufferUtil.toBuffer(bytes);
-        _accumulator.writeTo(buffer);
-        return bytes;
+        return _accumulator.toByteArray();
     }
 
     public int size()
@@ -103,13 +78,13 @@ public class ByteBufferOutputStream2 extends OutputStream
     @Override
     public void write(byte[] b, int off, int len)
     {
-        releaseAggregateBuffer();
+        _size += len;
         _accumulator.copyBytes(b, off, len);
     }
 
     public void write(ByteBuffer buffer)
     {
-        releaseAggregateBuffer();
+        _size += buffer.remaining();
         _accumulator.copyBuffer(buffer);
     }
 
@@ -123,19 +98,9 @@ public class ByteBufferOutputStream2 extends OutputStream
         _accumulator.writeTo(out);
     }
 
-    private void releaseAggregateBuffer()
-    {
-        if (_combinedByteBuffer != null)
-        {
-            _bufferPool.release(_combinedByteBuffer);
-            _combinedByteBuffer = null;
-        }
-    }
-
     @Override
     public void close()
     {
-        releaseAggregateBuffer();
         _accumulator.close();
         _size = 0;
     }

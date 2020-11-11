@@ -28,9 +28,6 @@ import org.eclipse.jetty.util.BufferUtil;
 
 public class ByteBufferAccumulator implements AutoCloseable
 {
-    private static final int MIN_SPACE = 8;
-    private static final int DEFAULT_BUFFER_SIZE = 1024;
-
     private final List<ByteBuffer> _buffers = new ArrayList<>();
     private final ByteBufferPool _bufferPool;
 
@@ -52,17 +49,12 @@ public class ByteBufferAccumulator implements AutoCloseable
         return length;
     }
 
-    public ByteBuffer ensureBuffer()
-    {
-        return ensureBuffer(DEFAULT_BUFFER_SIZE);
-    }
-
-    public ByteBuffer ensureBuffer(int minAllocationSize)
+    public ByteBuffer ensureBuffer(int minSize, int minAllocationSize)
     {
         ByteBuffer buffer = _buffers.isEmpty() ? BufferUtil.EMPTY_BUFFER : _buffers.get(_buffers.size() - 1);
-        if (BufferUtil.space(buffer) <= MIN_SPACE)
+        if (BufferUtil.space(buffer) <= minSize)
         {
-            buffer = _bufferPool.acquire(Math.max(DEFAULT_BUFFER_SIZE, minAllocationSize), false);
+            buffer = _bufferPool.acquire(minAllocationSize, false);
             _buffers.add(buffer);
         }
 
@@ -78,11 +70,45 @@ public class ByteBufferAccumulator implements AutoCloseable
     {
         while (buffer.hasRemaining())
         {
-            ByteBuffer b = ensureBuffer(buffer.remaining());
+            ByteBuffer b = ensureBuffer(0, buffer.remaining());
             int pos = BufferUtil.flipToFill(b);
             BufferUtil.put(buffer, b);
             BufferUtil.flipToFlush(b, pos);
         }
+    }
+
+    public ByteBuffer takeByteBuffer()
+    {
+        int length = getLength();
+        ByteBuffer combinedBuffer = _bufferPool.acquire(length, false);
+        for (ByteBuffer buffer : _buffers)
+        {
+            combinedBuffer.put(buffer);
+        }
+        return combinedBuffer;
+    }
+
+    public ByteBuffer toByteBuffer()
+    {
+        if (_buffers.size() == 1)
+            return _buffers.get(0);
+
+        ByteBuffer combinedBuffer = takeByteBuffer();
+        _buffers.forEach(_bufferPool::release);
+        _buffers.clear();
+        _buffers.add(combinedBuffer);
+        return combinedBuffer;
+    }
+
+    public byte[] toByteArray()
+    {
+        int length = getLength();
+        if (length == 0)
+            return new byte[0];
+
+        byte[] bytes = new byte[length];
+        writeTo(BufferUtil.toBuffer(bytes));
+        return bytes;
     }
 
     public void writeTo(ByteBuffer buffer)
@@ -106,10 +132,7 @@ public class ByteBufferAccumulator implements AutoCloseable
     @Override
     public void close()
     {
-        for (ByteBuffer buffer : _buffers)
-        {
-            _bufferPool.release(buffer);
-        }
+        _buffers.forEach(_bufferPool::release);
         _buffers.clear();
     }
 }
