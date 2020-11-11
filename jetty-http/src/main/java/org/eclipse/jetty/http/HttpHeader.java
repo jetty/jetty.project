@@ -195,6 +195,9 @@ public enum HttpHeader
         return _string.equalsIgnoreCase(s);
     }
 
+    /**
+     * @return True if the header is a HTTP2 Pseudo header (eg ':path')
+     */
     public boolean isPseudo()
     {
         return _pseudo;

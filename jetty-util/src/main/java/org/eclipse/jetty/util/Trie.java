@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -205,7 +206,7 @@ public interface Trie<V>
             @Override
             public Set<String> keySet()
             {
-                return null;
+                return Collections.emptySet();
             }
 
             @Override
