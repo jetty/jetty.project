@@ -31,7 +31,7 @@
    <Arg><Ref refid='wac'/></Arg>
    <Arg>svr</Arg>
    <Arg type="java.lang.String">
-     <Ref id="Server">
+     <Ref refid="Server">
        <Get name="class">
          <Get name="name"/>
        </Get>

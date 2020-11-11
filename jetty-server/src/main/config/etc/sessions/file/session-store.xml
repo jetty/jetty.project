@@ -3,7 +3,6 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
-
   <!-- ===================================================================== -->
   <!-- Configure a factory for FileSessionStores                             -->
   <!-- ===================================================================== -->
