@@ -2,7 +2,6 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
-
   <!-- ===================================================================== -->
   <!-- Configure a SessionIdManager                                          -->
   <!-- ===================================================================== -->
@@ -27,7 +26,7 @@
       <!-- ===================================================================== -->
       <!-- Configure a session housekeeper to help with scavenging               -->
       <!-- ===================================================================== -->
-      <Set name="sessionHouseKeeper"> 
+      <Set name="sessionHouseKeeper">
        <New class="org.eclipse.jetty.server.session.HouseKeeper">
            <Set name="intervalSec"><Property name="jetty.sessionScavengeInterval.seconds" default="600"/></Set>
        </New>
