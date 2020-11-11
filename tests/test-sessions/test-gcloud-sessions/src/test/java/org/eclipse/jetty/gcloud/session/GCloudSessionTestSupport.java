@@ -19,7 +19,10 @@
 package org.eclipse.jetty.gcloud.session;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -55,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class GCloudSessionTestSupport
 {
-    LocalDatastoreHelper _helper = LocalDatastoreHelper.create(1.0);
+    final LocalDatastoreHelper _helper;
     Datastore _ds;
     KeyFactory _keyFactory;
 
@@ -86,8 +89,14 @@ public class GCloudSessionTestSupport
         return new TestGCloudSessionDataStoreFactory(d);
     }
 
-    public GCloudSessionTestSupport()
+    public GCloudSessionTestSupport() throws IOException
     {
+        try (ServerSocket server = new ServerSocket())
+        {
+            server.setReuseAddress(true);
+            server.bind(new InetSocketAddress("localhost", 0));
+            _helper =  LocalDatastoreHelper.create(1.0, server.getLocalPort());
+        }
         DatastoreOptions options = _helper.getOptions();
         _ds = options.getService();
         _keyFactory = _ds.newKeyFactory().setKind(EntityDataModel.KIND);
