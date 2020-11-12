@@ -79,23 +79,28 @@ public class ByteBufferAccumulator implements AutoCloseable
 
     public ByteBuffer takeByteBuffer()
     {
+        ByteBuffer combinedBuffer;
+        if (_buffers.size() == 1)
+        {
+            combinedBuffer = _buffers.get(0);
+            _buffers.clear();
+            return combinedBuffer;
+        }
+
         int length = getLength();
-        ByteBuffer combinedBuffer = _bufferPool.acquire(length, false);
+        combinedBuffer = _bufferPool.acquire(length, false);
         for (ByteBuffer buffer : _buffers)
         {
             combinedBuffer.put(buffer);
+            _bufferPool.release(buffer);
         }
+        _buffers.clear();
         return combinedBuffer;
     }
 
     public ByteBuffer toByteBuffer()
     {
-        if (_buffers.size() == 1)
-            return _buffers.get(0);
-
         ByteBuffer combinedBuffer = takeByteBuffer();
-        _buffers.forEach(_bufferPool::release);
-        _buffers.clear();
         _buffers.add(combinedBuffer);
         return combinedBuffer;
     }
