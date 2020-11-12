@@ -95,6 +95,7 @@ public class GCloudSessionTestSupport
     public GCloudSessionTestSupport() throws IOException
     {
         int localPort;
+        String localHost = InetAddress.getLocalHost().getHostAddress();
         //The google code finds a port based on the wildcard interface,
         //so we need to do the same here
         InetSocketAddress address = new InetSocketAddress(0);
@@ -111,6 +112,7 @@ public class GCloudSessionTestSupport
                 .build();
         }
         System.out.println("Using datastore emulator port:" + localPort);
+        System.out.println("Using datastore client port:" + localHost + ":" + localPort);
 
         //DatastoreOptions options = _helper.getOptions();
         
@@ -119,7 +121,6 @@ public class GCloudSessionTestSupport
         //an ip address instead of "localhost" (even though the forked
         //processes themselves are hardcoded to use "localhost")
         //String localHost = InetAddress.getLocalHost().getHostAddress();
-        String localHost = InetAddress.getLocalHost().getHostName();
         DatastoreOptions options = DatastoreOptions.newBuilder()
             .setProjectId(_helper.getProjectId())
             .setHost("http://" + localHost + ":" + Integer.toString(localPort))
