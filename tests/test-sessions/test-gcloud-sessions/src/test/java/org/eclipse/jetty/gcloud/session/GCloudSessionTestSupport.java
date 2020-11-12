@@ -107,7 +107,10 @@ public class GCloudSessionTestSupport
         }
         System.out.println("Using datastore emulator host:" + host);
         // _helper.getOptions();//
-        DatastoreOptions options = DatastoreOptions.newBuilder().setHost(host + ":" + localPort).build();
+        DatastoreOptions options = DatastoreOptions.newBuilder()
+            .setProjectId("jetty-project")
+            .setHost(host + ":" + localPort)
+            .build();
 
         _ds = options.getService();
         _keyFactory = _ds.newKeyFactory().setKind(EntityDataModel.KIND);
