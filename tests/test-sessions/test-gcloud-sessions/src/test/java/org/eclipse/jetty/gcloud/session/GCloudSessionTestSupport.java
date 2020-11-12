@@ -122,7 +122,7 @@ public class GCloudSessionTestSupport
         String localHost = InetAddress.getLocalHost().getHostName();
         DatastoreOptions options = DatastoreOptions.newBuilder()
             .setProjectId(_helper.getProjectId())
-            .setHost("https://" + localHost + ":" + Integer.toString(localPort))
+            .setHost("http://" + localHost + ":" + Integer.toString(localPort))
             .setCredentials(NoCredentials.getInstance())
             .setRetrySettings(ServiceOptions.getNoRetrySettings()).build();
         
