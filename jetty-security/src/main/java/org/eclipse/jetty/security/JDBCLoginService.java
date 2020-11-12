@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
-import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.resource.Resource;
@@ -38,17 +37,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * HashMapped User Realm with JDBC as data source.
- * The {@link #login(String, Object, ServletRequest)} method checks the inherited Map for the user. If the user is not
- * found, it will fetch details from the database and populate the inherited
- * Map. It then calls the superclass {@link #login(String, Object, ServletRequest)} method to perform the actual
- * authentication. Periodically (controlled by configuration parameter),
- * internal hashes are cleared. Caching can be disabled by setting cache refresh
- * interval to zero. Uses one database connection that is initialized at
- * startup. Reconnect on failures.
- * <p>
- * An example properties file for configuration is in
- * <code>${jetty.home}/etc/jdbcRealm.properties</code>
+ * JDBC as a source of user authentication and authorization information.
+ * Uses one database connection that is lazily initialized. Reconnect on failures.
  */
 public class JDBCLoginService extends AbstractLoginService
 {

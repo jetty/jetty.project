@@ -44,10 +44,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * DataSourceUserRealm
+ * DataSourceLoginService
  * <p>
- * Obtain user/password/role information from a database
- * via jndi DataSource.
+ * Obtain user/password/role information from a database via jndi DataSource.
  */
 public class DataSourceLoginService extends AbstractLoginService
 {
@@ -283,9 +282,7 @@ public class DataSourceLoginService extends AbstractLoginService
                 try (ResultSet rs2 = statement2.executeQuery())
                 {
                     while (rs2.next())
-                    {
                         roles.add(rs2.getString(_roleTableRoleField));
-                    }
 
                     return roles.stream().map(RolePrincipal::new).collect(Collectors.toList());
                 }

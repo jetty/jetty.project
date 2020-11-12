@@ -24,6 +24,10 @@ import javax.security.auth.Subject;
 
 /**
  * RolePrincipal
+ * 
+ * Represents a role. This class can be added to a Subject to represent a role that the
+ * Subject has.
+ * 
  */
 public class RolePrincipal implements Principal, Serializable
 {

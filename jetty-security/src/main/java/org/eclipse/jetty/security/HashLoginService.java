@@ -20,7 +20,6 @@ package org.eclipse.jetty.security;
 
 import java.util.List;
 
-import org.eclipse.jetty.server.UserIdentity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

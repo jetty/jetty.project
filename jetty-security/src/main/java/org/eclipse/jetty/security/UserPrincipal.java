@@ -26,6 +26,11 @@ import org.eclipse.jetty.util.security.Credential;
 
 /**
  * UserPrincipal
+ * 
+ * Represents a user with a credential.
+ * Instances of this class can be added to a Subject to
+ * present the user, while the credentials can be added 
+ * directly to the Subject.
  */
 public class UserPrincipal implements Principal, Serializable
 {
