@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.cloud.NoCredentials;
+import com.google.cloud.ServiceOptions;
 import com.google.cloud.datastore.Blob;
 import com.google.cloud.datastore.BlobValue;
 import com.google.cloud.datastore.Datastore;
@@ -108,9 +110,21 @@ public class GCloudSessionTestSupport
                 //.setStoreOnDisk(false)
                 .build();
         }
-        System.out.println("Using datastore emulator host:" + address);
+        System.out.println("Using datastore emulator port:" + localPort);
 
-        DatastoreOptions options = _helper.getOptions();
+        //DatastoreOptions options = _helper.getOptions();
+        
+        //Try forcing the local end of connections to the port opened by 
+        //the forked processes run by the LocalDatastoreHelper to use
+        //an ip address instead of "localhost" (even though the forked
+        //processes themselves are hardcoded to use "localhost")
+        String localHost = InetAddress.getLocalHost().getHostAddress();
+        DatastoreOptions options = DatastoreOptions.newBuilder()
+            .setProjectId(_helper.getProjectId())
+            .setHost(localHost + ":" + Integer.toString(localPort))
+            .setCredentials(NoCredentials.getInstance())
+            .setRetrySettings(ServiceOptions.getNoRetrySettings()).build();
+        
         _ds = options.getService();
         _keyFactory = _ds.newKeyFactory().setKind(EntityDataModel.KIND);
     }
