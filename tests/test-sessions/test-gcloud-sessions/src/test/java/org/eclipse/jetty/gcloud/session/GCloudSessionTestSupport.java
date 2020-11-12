@@ -99,14 +99,14 @@ public class GCloudSessionTestSupport
             server.setReuseAddress(true);
             server.bind(new InetSocketAddress(host, 0));
             localPort = server.getLocalPort();
-            _helper =  LocalDatastoreHelper.newBuilder()
+            _helper = LocalDatastoreHelper.newBuilder()
                 .setConsistency(1.0)
                 .setPort(localPort)
                 .setStoreOnDisk(false)
                 .build();
         }
         System.out.println("Using datastore emulator host:" + host);
-        // _helper.getOptions();//
+        
         DatastoreOptions options = DatastoreOptions.newBuilder()
             .setProjectId("jetty-project")
             .setHost(host + ":" + localPort)
