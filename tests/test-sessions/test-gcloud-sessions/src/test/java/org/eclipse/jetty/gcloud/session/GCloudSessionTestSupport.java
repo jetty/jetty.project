@@ -93,25 +93,24 @@ public class GCloudSessionTestSupport
     public GCloudSessionTestSupport() throws IOException
     {
         int localPort;
-        String host = InetAddress.getLocalHost().getHostAddress();
+        //The google code finds a port based on the wildcard interface,
+        //so we need to do the same here
+        InetSocketAddress address = new InetSocketAddress(0);
         try (ServerSocket server = new ServerSocket())
         {
+            //ensure that a socket in TIME_WAIT can be reused
             server.setReuseAddress(true);
-            server.bind(new InetSocketAddress(host, 0));
+            server.bind(address);
             localPort = server.getLocalPort();
             _helper = LocalDatastoreHelper.newBuilder()
                 .setConsistency(1.0)
                 .setPort(localPort)
-                .setStoreOnDisk(false)
+                //.setStoreOnDisk(false)
                 .build();
         }
-        System.out.println("Using datastore emulator host:" + host);
+        System.out.println("Using datastore emulator host:" + address);
 
-        DatastoreOptions options = DatastoreOptions.newBuilder()
-            .setProjectId(_helper.getProjectId())
-            .setHost(host + ":" + localPort)
-            .build();
-
+        DatastoreOptions options = _helper.getOptions();
         _ds = options.getService();
         _keyFactory = _ds.newKeyFactory().setKind(EntityDataModel.KIND);
     }
