@@ -757,15 +757,18 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     protected IStream createRemoteStream(int streamId)
     {
+        // This stream has been seen the server.
+        // Even if the stream cannot be created because this peer is closing,
+        // updating the lastRemoteStreamId ensures that in-flight HEADERS and
+        // DATA frames can be read (and discarded) without causing an error.
+        updateLastRemoteStreamId(streamId);
+
         if (!streamsState.newRemoteStream(streamId))
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Could not create remote stream #{} for {}", streamId, this);
             return null;
         }
-
-        // This stream has been seen the server.
-        updateLastRemoteStreamId(streamId);
 
         // SPEC: exceeding max concurrent streams is treated as stream error.
         while (true)
@@ -1423,8 +1426,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         private long idleTime = System.nanoTime();
         private CloseState closed = CloseState.NOT_CLOSED;
         private Runnable closingAction;
-        private GoAwayFrame goAwayRecv;
-        private GoAwayFrame goAwaySent;
+        private volatile GoAwayFrame goAwayRecv;
+        private volatile GoAwayFrame goAwaySent;
         private volatile Throwable failure;
         private Thread flushing;
 
@@ -1739,7 +1742,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         {
             String reason = "idle_timeout";
             boolean notify = false;
-            Throwable cause = null;
+            boolean sendGoAway = false;
             try (Locker.Lock l = lock.lock())
             {
                 switch (closed)
@@ -1752,22 +1755,24 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                         notify = true;
                         break;
                     }
-                    // Timed out while waiting for closing events, abort all the streams.
+                    // Timed out while waiting for closing events, fail all the streams.
                     case LOCALLY_CLOSED:
                     {
-                        boolean shouldSend = goAwaySent.isGraceful();
-                        goAwaySent = newGoAwayFrame(ErrorCode.NO_ERROR.code, reason);
+                        if (goAwaySent.isGraceful())
+                        {
+                            goAwaySent = newGoAwayFrame(ErrorCode.NO_ERROR.code, reason);
+                            sendGoAway = true;
+                        }
                         closed = CloseState.CLOSING;
-                        closingAction = shouldSend ? () -> sendGoAwayAndTerminate(goAwaySent) : () -> terminate(goAwaySent);
-                        failure = cause = new TimeoutException("Session idle timeout expired");
+                        failure = new TimeoutException("Session idle timeout expired");
                         break;
                     }
                     case REMOTELY_CLOSED:
                     {
                         goAwaySent = newGoAwayFrame(ErrorCode.NO_ERROR.code, reason);
                         closed = CloseState.CLOSING;
-                        closingAction = () -> sendGoAwayAndTerminate(goAwaySent);
-                        failure = cause = new TimeoutException("Session idle timeout expired");
+                        failure = new TimeoutException("Session idle timeout expired");
+                        sendGoAway = true;
                         break;
                     }
                     default:
@@ -1789,7 +1794,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 return false;
             }
 
-            abort(reason, cause, Callback.from(this::tryRunClosingAction));
+            failStreams(stream -> true, reason, true);
+            if (sendGoAway)
+                sendGoAway(goAwaySent, Callback.NOOP);
+            notifyFailure(HTTP2Session.this, failure, Callback.NOOP);
+            terminate(goAwaySent);
             return false;
         }
 
