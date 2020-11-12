@@ -58,7 +58,7 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
      */
     public abstract Connection getConnection() throws Exception;
 
-    public class JDBCUser extends User
+    public class JDBCUser extends JAASUser
     {
         public JDBCUser(UserPrincipal user)
         {
@@ -103,7 +103,7 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
             if (dbCredential == null)
                 return null;
 
-            return new JAASUser(new JDBCUser(new UserPrincipal(userName, Credential.getCredential(dbCredential))));
+            return new JDBCUser(new UserPrincipal(userName, Credential.getCredential(dbCredential)));
         }
     }
 

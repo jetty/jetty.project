@@ -19,11 +19,11 @@
 package org.eclipse.jetty.jaas.spi;
 
 import java.io.IOException;
-import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -34,10 +34,10 @@ import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
 import javax.security.auth.spi.LoginModule;
 
-import org.eclipse.jetty.jaas.JAASPrincipal;
 import org.eclipse.jetty.jaas.JAASRole;
 import org.eclipse.jetty.jaas.callback.ObjectCallback;
 import org.eclipse.jetty.security.UserPrincipal;
+import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
  * AbstractLoginModule
@@ -54,19 +54,19 @@ public abstract class AbstractLoginModule implements LoginModule
     private JAASUser currentUser;
     private Subject subject;
 
-    public class JAASUser
+    public abstract class JAASUser
     {
-        private User _user;
+        private UserPrincipal _user;
         private List<JAASRole> _roles;
-
-        public JAASUser(User u)
+        
+        public JAASUser(UserPrincipal u)
         {
             _user = u;
         }
 
         public String getUserName()
         {
-            return _user.getUserName();
+            return _user.getName();
         }
 
         /**
@@ -74,11 +74,10 @@ public abstract class AbstractLoginModule implements LoginModule
          */
         public void setJAASInfo(Subject subject)
         {
-            UserPrincipal principal = _user.getUserPrincipal();
-            if (principal == null)
+            if (_user == null)
                 return;
 
-            principal.configureSubject(subject);
+            _user.configureSubject(subject);
             if (_roles != null)
                 subject.getPrincipals().addAll(_roles);
         }
@@ -88,32 +87,26 @@ public abstract class AbstractLoginModule implements LoginModule
          */
         public void unsetJAASInfo(Subject subject)
         {
-            UserPrincipal principal = _user.getUserPrincipal();
-            if (principal == null)
+            if (_user == null)
                 return;
-            principal.deconfigureSubject(subject);
+            _user.deconfigureSubject(subject);
             if (_roles != null)
                 subject.getPrincipals().removeAll(_roles);
         }
 
         public boolean checkCredential(Object suppliedCredential)
         {
-            return _user.checkCredential(suppliedCredential);
+            return _user.authenticate(suppliedCredential);
         }
 
         public void fetchRoles() throws Exception
         {
-            _user.fetchRoles();
-            _roles = new ArrayList<JAASRole>();
-            if (_user.getRoleNames() != null)
-            {
-                Iterator<String> itor = _user.getRoleNames().iterator();
-                while (itor.hasNext())
-                {
-                    _roles.add(new JAASRole(itor.next()));
-                }
-            }
+            List<String> rolenames = doFetchRoles();
+            if (rolenames != null)
+                _roles = rolenames.stream().map(JAASRole::new).collect(Collectors.toList());
         }
+        
+        public abstract List<String> doFetchRoles() throws Exception;
     }
 
     public abstract JAASUser getUser(String username) throws Exception;

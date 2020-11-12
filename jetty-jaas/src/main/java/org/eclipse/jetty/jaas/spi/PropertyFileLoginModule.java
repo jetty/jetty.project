@@ -133,6 +133,13 @@ public class PropertyFileLoginModule extends AbstractLoginModule
 
         List<RolePrincipal> rps = _store.getRolePrincipals(userName);
         List<String> roles = rps == null ? Collections.emptyList() : rps.stream().map(RolePrincipal::getName).collect(Collectors.toList());
-        return new JAASUser(new User(up, roles));
+        return new JAASUser(up)
+        {
+            @Override
+            public List<String> doFetchRoles()
+            {
+                return roles;
+            }
+        };
     }
 }

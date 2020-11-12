@@ -18,12 +18,13 @@
 
 package org.eclipse.jetty.jaas;
 
+import java.util.Collections;
+import java.util.List;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.login.LoginException;
 
 import org.eclipse.jetty.jaas.callback.ServletRequestCallback;
 import org.eclipse.jetty.jaas.spi.AbstractLoginModule;
-import org.eclipse.jetty.jaas.spi.User;
 import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.security.Password;
@@ -37,7 +38,14 @@ public class TestLoginModule extends AbstractLoginModule
     @Override
     public JAASUser getUser(String username) throws Exception
     {        
-        return new JAASUser(new User(new UserPrincipal(username, new Password("aaa"))));
+        return new JAASUser(new UserPrincipal(username, new Password("aaa")))
+        {
+            @Override
+            public List<String> doFetchRoles() throws Exception
+            {
+                return Collections.emptyList();
+            }
+        };
     }
 
     @Override

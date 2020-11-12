@@ -180,16 +180,10 @@ public class LdapLoginModule extends AbstractLoginModule
 
     private DirContext _rootContext;
 
-    public class LDAPUser extends User
+    public class LDAPUser extends JAASUser
     {
         Attributes attributes;
 
-        public LDAPUser(UserPrincipal user, List<String> rolenames, Attributes attributes)
-        {
-            super(user, rolenames);
-            this.attributes = attributes;
-        }
-        
         public LDAPUser(UserPrincipal user, Attributes attributes)
         {
             super(user);
@@ -203,7 +197,7 @@ public class LdapLoginModule extends AbstractLoginModule
         }
     }
 
-    public class LDAPBindingUser extends User
+    public class LDAPBindingUser extends JAASUser
     {   
         DirContext _context;
         String _userDn;
@@ -245,8 +239,7 @@ public class LdapLoginModule extends AbstractLoginModule
 
         pwdCredential = convertCredentialLdapToJetty(pwdCredential);
         Credential credential = Credential.getCredential(pwdCredential);
-        LDAPUser ldapUser = new LDAPUser(new UserPrincipal(username, credential), attributes);
-        return new JAASUser(ldapUser);
+        return new LDAPUser(new UserPrincipal(username, credential), attributes);
     }
 
     protected String doRFC2254Encoding(String inputString)
@@ -540,8 +533,7 @@ public class LdapLoginModule extends AbstractLoginModule
         try
         {
             DirContext dirContext = new InitialDirContext(environment);
-            LDAPBindingUser userInfo = new LDAPBindingUser(new UserPrincipal(username, null), dirContext, userDn);
-            setCurrentUser(new JAASUser(userInfo));
+            setCurrentUser(new LDAPBindingUser(new UserPrincipal(username, null), dirContext, userDn));
             setAuthenticated(true);
             return true;
         }
