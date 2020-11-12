@@ -35,6 +35,7 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.security.authentication.LoginCallbackImpl;
 import org.eclipse.jetty.security.authentication.SessionAuthentication;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -132,7 +133,6 @@ public class FormAuthModule extends BaseAuthModule
     @Override
     public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject, Subject serviceSubject) throws AuthException
     {
-
         HttpServletRequest request = (HttpServletRequest)messageInfo.getRequestMessage();
         HttpServletResponse response = (HttpServletResponse)messageInfo.getResponseMessage();
         String uri = request.getRequestURI();
@@ -173,6 +173,7 @@ public class FormAuthModule extends BaseAuthModule
                     }
 
                     response.setContentLength(0);
+                    Request.getBaseRequest(request).getHttpChannel().ensureContentConsumedOrConnectionClose();
                     response.sendRedirect(response.encodeRedirectURL(nuri));
                     return AuthStatus.SEND_CONTINUE;
                 }
@@ -187,6 +188,7 @@ public class FormAuthModule extends BaseAuthModule
                 else
                 {
                     response.setContentLength(0);
+                    Request.getBaseRequest(request).getHttpChannel().ensureContentConsumedOrConnectionClose();
                     response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(), _formErrorPage)));
                 }
                 // TODO is this correct response if isMandatory false??? Can
@@ -229,6 +231,7 @@ public class FormAuthModule extends BaseAuthModule
             }
 
             response.setContentLength(0);
+            Request.getBaseRequest(request).getHttpChannel().ensureContentConsumedOrConnectionClose();
             response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(), _formLoginPage)));
             return AuthStatus.SEND_CONTINUE;
         }

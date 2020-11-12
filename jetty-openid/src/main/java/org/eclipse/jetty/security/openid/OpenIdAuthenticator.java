@@ -300,6 +300,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                             LOG.debug("authenticated {}->{}", openIdAuth, nuri);
 
                         response.setContentLength(0);
+                        baseRequest.getHttpChannel().ensureContentConsumedOrConnectionClose();
                         baseResponse.sendRedirect(getRedirectCode(baseRequest.getHttpVersion()), nuri);
                         return openIdAuth;
                     }
@@ -392,6 +393,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             String challengeUri = getChallengeUri(request);
             if (LOG.isDebugEnabled())
                 LOG.debug("challenge {}->{}", session.getId(), challengeUri);
+            baseRequest.getHttpChannel().ensureContentConsumedOrConnectionClose();
             baseResponse.sendRedirect(getRedirectCode(baseRequest.getHttpVersion()), challengeUri);
 
             return Authentication.SEND_CONTINUE;
@@ -436,9 +438,11 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             {
                 String query = URIUtil.addQueries(ERROR_PARAMETER + "=" + UrlEncoded.encodeString(message), _errorQuery);
                 redirectUri = URIUtil.addPathQuery(URIUtil.addPaths(request.getContextPath(), _errorPath), query);
+                baseRequest.getHttpChannel().ensureContentConsumedOrConnectionClose();
                 baseResponse.sendRedirect(getRedirectCode(baseRequest.getHttpVersion()), redirectUri);
             }
 
+            baseRequest.getHttpChannel().ensureContentConsumedOrConnectionClose();
             baseResponse.sendRedirect(getRedirectCode(baseRequest.getHttpVersion()), redirectUri);
         }
     }

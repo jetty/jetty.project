@@ -415,8 +415,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             _response.setStatus(code);
 
                             // Add Connection:close if we can't consume the input
-                            if (!_request.getHttpInput().consumeAll())
-                                ensureConnectionClose();
+                            ensureContentConsumedOrConnectionClose();
 
                             ContextHandler.Context context = (ContextHandler.Context)_request.getAttribute(ErrorHandler.ERROR_CONTEXT);
                             ErrorHandler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
@@ -502,18 +501,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     case COMPLETE:
                     {
-                        if (!_response.isCommitted())
+                        if (!_response.isCommitted() && !_request.isHandled() && !_response.getHttpOutput().isClosed())
                         {
-                            if (!_request.isHandled() && !_response.getHttpOutput().isClosed())
-                            {
-                                // The request was not actually handled
-                                _response.sendError(HttpStatus.NOT_FOUND_404);
-                                break;
-                            }
-                            // If content has not been consumed and we can't consume it now without blocking
-                            // then ensure we signal that the connection will be closed.
-                            if (_response.getStatus() >= 200 && !_request.getHttpInput().consumeAll())
-                                ensureConnectionClose();
+                            // The request was not actually handled
+                            _response.sendError(HttpStatus.NOT_FOUND_404);
+                            break;
                         }
 
                         // RFC 7230, section 3.3.
@@ -558,8 +550,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return !suspended;
     }
 
-    private void ensureConnectionClose()
+    public void ensureContentConsumedOrConnectionClose()
     {
+        if (_request.getHttpInput().consumeAll())
+            return;
         _response.getHttpFields().computeField(HttpHeader.CONNECTION, (h, fields) ->
         {
             if (fields == null || fields.isEmpty())

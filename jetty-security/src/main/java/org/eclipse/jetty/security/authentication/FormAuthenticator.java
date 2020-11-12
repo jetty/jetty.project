@@ -292,6 +292,7 @@ public class FormAuthenticator extends LoginAuthenticator
 
                     response.setContentLength(0);
                     int redirectCode = (baseRequest.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
+                    baseRequest.getHttpChannel().ensureContentConsumedOrConnectionClose();
                     baseResponse.sendRedirect(redirectCode, response.encodeRedirectURL(nuri));
                     return formAuth;
                 }
@@ -317,6 +318,7 @@ public class FormAuthenticator extends LoginAuthenticator
                 {
                     LOG.debug("auth failed {}->{}", username, _formErrorPage);
                     int redirectCode = (baseRequest.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
+                    baseRequest.getHttpChannel().ensureContentConsumedOrConnectionClose();
                     baseResponse.sendRedirect(redirectCode, response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(), _formErrorPage)));
                 }
 
@@ -411,6 +413,7 @@ public class FormAuthenticator extends LoginAuthenticator
             {
                 LOG.debug("challenge {}->{}", session.getId(), _formLoginPage);
                 int redirectCode = (baseRequest.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
+                baseRequest.getHttpChannel().ensureContentConsumedOrConnectionClose();
                 baseResponse.sendRedirect(redirectCode, response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(), _formLoginPage)));
             }
             return Authentication.SEND_CONTINUE;
