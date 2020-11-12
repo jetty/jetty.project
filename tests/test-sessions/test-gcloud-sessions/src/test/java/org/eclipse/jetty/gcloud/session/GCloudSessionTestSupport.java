@@ -21,6 +21,7 @@ package org.eclipse.jetty.gcloud.session;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.ArrayList;
@@ -91,13 +92,23 @@ public class GCloudSessionTestSupport
 
     public GCloudSessionTestSupport() throws IOException
     {
+        int localPort;
+        String host = InetAddress.getLocalHost().getHostAddress();
         try (ServerSocket server = new ServerSocket())
         {
             server.setReuseAddress(true);
-            server.bind(new InetSocketAddress("localhost", 0));
-            _helper =  LocalDatastoreHelper.create(1.0, server.getLocalPort());
+            server.bind(new InetSocketAddress(host, 0));
+            localPort = server.getLocalPort();
+            _helper =  LocalDatastoreHelper.newBuilder()
+                .setConsistency(1.0)
+                .setPort(localPort)
+                .setStoreOnDisk(false)
+                .build();
         }
-        DatastoreOptions options = _helper.getOptions();
+        System.out.println("Using datastore emulator host:" + host);
+        // _helper.getOptions();//
+        DatastoreOptions options = DatastoreOptions.newBuilder().setHost(host + ":" + localPort).build();
+
         _ds = options.getService();
         _keyFactory = _ds.newKeyFactory().setKind(EntityDataModel.KIND);
     }
