@@ -20,6 +20,7 @@ module org.eclipse.jetty.websocket.jetty.client
 {
     exports org.eclipse.jetty.websocket.client;
 
+    requires static org.eclipse.jetty.webapp;
     requires org.eclipse.jetty.websocket.core.client;
     requires org.eclipse.jetty.websocket.jetty.common;
     requires org.slf4j;
