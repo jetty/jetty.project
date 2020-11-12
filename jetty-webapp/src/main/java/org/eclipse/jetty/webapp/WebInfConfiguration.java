@@ -478,17 +478,14 @@ public class WebInfConfiguration extends AbstractConfiguration
     private File asFile(Object fileattr)
     {
         if (fileattr == null)
-        {
             return null;
-        }
         if (fileattr instanceof File)
-        {
             return (File)fileattr;
-        }
         if (fileattr instanceof String)
-        {
             return new File((String)fileattr);
-        }
+        if (fileattr instanceof Path)
+            return ((Path)fileattr).toFile();
+
         return null;
     }
 
