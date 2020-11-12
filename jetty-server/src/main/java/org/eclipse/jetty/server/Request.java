@@ -1857,6 +1857,24 @@ public class Request implements HttpServletRequest
 
     protected void recycle()
     {
+        if (_context != null)
+            throw new IllegalStateException("Request in context!");
+        if (_reader != null && _inputState == INPUT_READER)
+        {
+            try
+            {
+                int r = _reader.read();
+                while (r != -1)
+                    r = _reader.read();
+            }
+            catch (Exception e)
+            {
+                LOG.ignore(e);
+                _reader = null;
+                _readerEncoding = null;
+            }
+        }
+
         getHttpChannelState().recycle();
         _requestAttributeListeners.clear();
         _input.recycle();
@@ -1884,29 +1902,13 @@ public class Request implements HttpServletRequest
         setAuthentication(Authentication.NOT_CHECKED);
         _contentType = null;
         _characterEncoding = null;
-        if (_context != null)
-            throw new IllegalStateException("Request in context!");
         _context = null;
         _errorContext = null;
         if (_cookies != null)
             _cookies.reset();
         _dispatcherType = null;
-        if (_reader != null)
-        {
-            try
-            {
-                int r = _reader.read();
-                while (r != -1)
-                    r = _reader.read();
-            }
-            catch (Exception e)
-            {
-                LOG.ignore(e);
-                _reader = null;
-                _readerEncoding = null;
-            }
-        }
         _inputState = INPUT_NONE;
+        // _reader can be reused
         _queryParameters = null;
         _contentParameters = null;
         _parameters = null;
