@@ -78,10 +78,8 @@ pipeline {
 
 def slackNotif() {
   script {
-    try
-    {
-      if ( env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-9.4.x' || env.BRANCH_NAME == 'jetty-11.0.x')
-      {
+    try {
+      if ( env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-9.4.x' || env.BRANCH_NAME == 'jetty-11.0.x') {
         //BUILD_USER = currentBuild.rawBuild.getCause(Cause.UserIdCause).getUserId()
         // by ${BUILD_USER}
         COLOR_MAP = ['SUCCESS': 'good', 'FAILURE': 'danger', 'UNSTABLE': 'danger', 'ABORTED': 'danger']
@@ -117,12 +115,10 @@ def mavenBuild(jdk, cmdline, mvnName, consoleParsers) {
                      env.JENKINS_HOME
         }
       }
-    }
-    finally
-    {
+    } finally {
       archiveArtifacts artifacts: '**/demos/embedded/target/**',allowEmptyArchive: true
       junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml,**/h2spec-reports/*.xml', allowEmptyResults: true
-      if(consoleParsers!=null){
+      if(consoleParsers!=null) {
         warnings consoleParsers: consoleParsers
       }
     }
