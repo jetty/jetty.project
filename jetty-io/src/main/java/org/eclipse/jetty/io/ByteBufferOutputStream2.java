@@ -44,14 +44,26 @@ public class ByteBufferOutputStream2 extends OutputStream
         _accumulator = new ByteBufferAccumulator((bufferPool == null) ? new NullByteBufferPool() : bufferPool);
     }
 
+    public ByteBufferPool getByteBufferPool()
+    {
+        return _accumulator.getByteBufferPool();
+    }
+
+    /**
+     * Take the combined buffer containing all content written to the OutputStream.
+     * The caller is responsible for releasing this {@link ByteBuffer} back into the {@link ByteBufferPool}.
+     * @return a buffer containing all content written to the OutputStream.
+     */
     public ByteBuffer takeByteBuffer()
     {
         return _accumulator.takeByteBuffer();
     }
 
     /**
-     * Get an aggregated content written to the OutputStream in a ByteBuffer.
-     * @return the content in a ByteBuffer.
+     * Take the combined buffer containing all content written to the OutputStream.
+     * The returned buffer is still contained within the OutputStream and will be released back to the {@link ByteBufferPool}
+     * when the OutputStream is closed.
+     * @return a buffer containing all content written to the OutputStream.
      */
     public ByteBuffer toByteBuffer()
     {
@@ -59,8 +71,7 @@ public class ByteBufferOutputStream2 extends OutputStream
     }
 
     /**
-     * Get an aggregated content written to the OutputStream in a byte array.
-     * @return the content in a byte array.
+     * @return a newly allocated byte array containing all content written into the OutputStream.
      */
     public byte[] toByteArray()
     {
