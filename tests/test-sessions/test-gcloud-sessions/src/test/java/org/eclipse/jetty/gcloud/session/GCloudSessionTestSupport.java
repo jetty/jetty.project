@@ -118,7 +118,8 @@ public class GCloudSessionTestSupport
         //the forked processes run by the LocalDatastoreHelper to use
         //an ip address instead of "localhost" (even though the forked
         //processes themselves are hardcoded to use "localhost")
-        String localHost = InetAddress.getLocalHost().getHostAddress();
+        //String localHost = InetAddress.getLocalHost().getHostAddress();
+        String localHost = InetAddress.getLocalHost().getHostName();
         DatastoreOptions options = DatastoreOptions.newBuilder()
             .setProjectId(_helper.getProjectId())
             .setHost(localHost + ":" + Integer.toString(localPort))
