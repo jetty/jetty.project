@@ -94,6 +94,19 @@ public class TempDirTest
     }
 
     /**
+     * ServletContext.TEMPDIR has value which is not a known type.
+     * IllegalStateException
+     */
+    @Test
+    public void attributeWithInvalidValue() throws Exception
+    {
+        WebInfConfiguration webInfConfiguration = new WebInfConfiguration();
+        WebAppContext webAppContext = new WebAppContext();
+        webAppContext.setAttribute(ServletContext.TEMPDIR, new Object());
+        assertThrows(IllegalStateException.class, () -> webInfConfiguration.resolveTempDirectory(webAppContext));
+    }
+
+    /**
      * Test ServletContext.TEMPDIR as valid directory with types File, String and Path.
      */
     @ParameterizedTest
@@ -158,25 +171,11 @@ public class TempDirTest
     }
 
     /**
-     * ServletContext.TEMPDIR has invalid <code>String</code> directory value
-     * IllegalStateException
-     */
-    @Disabled
-    @Test
-    public void attributeWithInvalidStringValue() throws Exception
-    {
-        WebInfConfiguration webInfConfiguration = new WebInfConfiguration();
-        WebAppContext webAppContext = new WebAppContext();
-        webAppContext.setAttribute(ServletContext.TEMPDIR, "/French/Cheese/Rocks");
-        assertThrows(IllegalStateException.class, () -> webInfConfiguration.resolveTempDirectory(webAppContext));
-    }
-
-    /**
      * ServletContext.TEMPDIR has invalid <code>String</code> directory value (wrong permission to write into it)
      * IllegalStateException
      */
-    @Disabled("will fail if executed as root or super power user so Disabled it")
-    public void attributeWithInvalidPermissionStringValue() throws Exception
+    @Disabled("Jenkins will run as root so we do have permission to write to this directory.")
+    public void attributeWithInvalidPermissions() throws Exception
     {
         WebInfConfiguration webInfConfiguration = new WebInfConfiguration();
         WebAppContext webAppContext = new WebAppContext();

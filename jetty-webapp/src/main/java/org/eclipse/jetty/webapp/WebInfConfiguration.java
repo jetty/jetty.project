@@ -486,7 +486,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         if (fileattr instanceof Path)
             return ((Path)fileattr).toFile();
 
-        return null;
+        throw new IllegalStateException("Could not convert attribute to file " + fileattr);
     }
 
     public void makeTempDirectory(File parent, WebAppContext context)
