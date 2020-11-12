@@ -65,18 +65,12 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
             settings = Collections.emptyMap();
         SettingsFrame settingsFrame = new SettingsFrame(settings, false);
 
-        WindowUpdateFrame windowFrame = null;
         int sessionWindow = getInitialSessionRecvWindow() - FlowControlStrategy.DEFAULT_WINDOW_SIZE;
+        updateRecvWindow(sessionWindow);
         if (sessionWindow > 0)
-        {
-            updateRecvWindow(sessionWindow);
-            windowFrame = new WindowUpdateFrame(0, sessionWindow);
-        }
-
-        if (windowFrame == null)
-            frames(null, Collections.singletonList(settingsFrame), Callback.NOOP);
+            frames(null, Arrays.asList(settingsFrame, new WindowUpdateFrame(0, sessionWindow)), Callback.NOOP);
         else
-            frames(null, Arrays.asList(settingsFrame, windowFrame), Callback.NOOP);
+            frames(null, Collections.singletonList(settingsFrame), Callback.NOOP);
     }
 
     @Override

@@ -376,7 +376,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 case SettingsFrame.INITIAL_WINDOW_SIZE:
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Updating initial window size to {} for {}", value, this);
+                        LOG.debug("Updating initial stream window size to {} for {}", value, this);
                     flowControl.updateInitialStreamWindow(this, value, false);
                     break;
                 }
