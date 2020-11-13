@@ -260,7 +260,9 @@ public class FileSessionDataStore extends AbstractSessionDataStore
             //files with 0 expiry never expire
             if (expiry > 0 && expiry <= time)
             {
-                Files.deleteIfExists(p);
+                if (!Files.deleteIfExists(p))
+                    LOG.warn("Failed to delete {}", p.getFileName());
+                
                 if (LOG.isDebugEnabled())
                     LOG.debug("Sweep deleted {}", p.getFileName());
             }
