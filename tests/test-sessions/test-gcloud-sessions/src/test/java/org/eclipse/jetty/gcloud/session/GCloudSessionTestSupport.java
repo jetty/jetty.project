@@ -110,7 +110,7 @@ public class GCloudSessionTestSupport
             .setHost(emulator.getEmulatorEndpoint())
             .setCredentials(NoCredentials.getInstance())
             .setRetrySettings(ServiceOptions.getNoRetrySettings())
-            .setProjectId("jetty9-work")
+            .setProjectId("test-project")
             .build();
         _ds = options.getService();
         _keyFactory = _ds.newKeyFactory().setKind(EntityDataModel.KIND);
