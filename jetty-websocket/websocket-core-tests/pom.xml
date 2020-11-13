@@ -94,7 +94,7 @@
   </build>
   <profiles>
     <profile>
-      <id>ci</id>
+      <id>autobahn</id>
       <activation>
         <property>
           <name>autobahn</name>
