@@ -98,7 +98,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
 
             // Create the Jetty ServerContainer implementation
             container = new JavaxWebSocketServerContainer(
-                WebSocketMapping.ensureMapping(servletContext, WebSocketMapping.DEFAULT_KEY),
+                WebSocketMapping.ensureMapping(servletContext),
                 WebSocketServerComponents.getWebSocketComponents(servletContext),
                 coreClientSupplier);
             contextHandler.addManaged(container);

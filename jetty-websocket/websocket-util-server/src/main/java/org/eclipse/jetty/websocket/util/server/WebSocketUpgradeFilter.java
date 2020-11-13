@@ -78,11 +78,6 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     private static final AutoLock LOCK = new AutoLock();
 
     /**
-     * The init parameter name used to define {@link ServletContext} attribute used to share the {@link WebSocketMapping}.
-     */
-    public static final String MAPPING_ATTRIBUTE_INIT_PARAM = "jetty.websocket.WebSocketMapping";
-
-    /**
      * Return any {@link WebSocketUpgradeFilter} already present on the {@link ServletContext}.
      *
      * @param servletContext the {@link ServletContext} to use.
@@ -92,12 +87,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     {
         ContextHandler contextHandler = Objects.requireNonNull(ContextHandler.getContextHandler(servletContext));
         ServletHandler servletHandler = contextHandler.getChildHandlerByClass(ServletHandler.class);
-        for (FilterHolder holder : servletHandler.getFilters())
-        {
-            if (holder.getInitParameter(MAPPING_ATTRIBUTE_INIT_PARAM) != null)
-                return holder;
-        }
-        return null;
+        return servletHandler.getFilter(WebSocketUpgradeFilter.class.getName());
     }
 
     /**
@@ -121,11 +111,9 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
             if (existingFilter != null)
                 return existingFilter;
 
-            final String name = "WebSocketUpgradeFilter";
             final String pathSpec = "/*";
             FilterHolder holder = new FilterHolder(new WebSocketUpgradeFilter());
-            holder.setName(name);
-            holder.setInitParameter(MAPPING_ATTRIBUTE_INIT_PARAM, WebSocketMapping.DEFAULT_KEY);
+            holder.setName(WebSocketUpgradeFilter.class.getName());
 
             holder.setAsyncSupported(true);
             ContextHandler contextHandler = Objects.requireNonNull(ContextHandler.getContextHandler(servletContext));
@@ -174,12 +162,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     @Override
     public void init(FilterConfig config) throws ServletException
     {
-        final ServletContext context = config.getServletContext();
-
-        String mappingKey = config.getInitParameter(MAPPING_ATTRIBUTE_INIT_PARAM);
-        if (mappingKey == null)
-            throw new ServletException("the WebSocketMapping init param must be set");
-        mapping = WebSocketMapping.ensureMapping(context, mappingKey);
+        mapping = WebSocketMapping.ensureMapping(config.getServletContext());
 
         String max = config.getInitParameter("idleTimeout");
         if (max == null)

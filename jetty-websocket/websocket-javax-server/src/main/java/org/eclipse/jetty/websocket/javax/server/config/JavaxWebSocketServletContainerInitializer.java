@@ -153,7 +153,7 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
         {
             WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(context.getServer(), context.getServletContext());
             FilterHolder filterHolder = WebSocketUpgradeFilter.ensureFilter(context.getServletContext());
-            WebSocketMapping mapping = WebSocketMapping.ensureMapping(context.getServletContext(), WebSocketMapping.DEFAULT_KEY);
+            WebSocketMapping mapping = WebSocketMapping.ensureMapping(context.getServletContext());
             serverContainer = JavaxWebSocketServerContainer.ensureContainer(context.getServletContext());
 
             if (LOG.isDebugEnabled())

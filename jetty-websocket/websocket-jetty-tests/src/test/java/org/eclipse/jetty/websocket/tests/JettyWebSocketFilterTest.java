@@ -93,7 +93,7 @@ public class JettyWebSocketFilterTest
 
         // After mapping is added we have an UpgradeFilter.
         assertThat(contextHandler.getServletHandler().getFilters().length, is(1));
-        FilterHolder filterHolder = contextHandler.getServletHandler().getFilter("WebSocketUpgradeFilter");
+        FilterHolder filterHolder = contextHandler.getServletHandler().getFilter(WebSocketUpgradeFilter.class.getName());
         assertNotNull(filterHolder);
         assertThat(filterHolder.getState(), is(AbstractLifeCycle.STARTED));
         assertThat(filterHolder.getFilter(), instanceOf(WebSocketUpgradeFilter.class));
@@ -127,7 +127,7 @@ public class JettyWebSocketFilterTest
         // After mapping is added we have an UpgradeFilter.
         container.addMapping("/", EchoSocket.class);
         assertThat(contextHandler.getServletHandler().getFilters().length, is(1));
-        FilterHolder filterHolder = contextHandler.getServletHandler().getFilter("WebSocketUpgradeFilter");
+        FilterHolder filterHolder = contextHandler.getServletHandler().getFilter(WebSocketUpgradeFilter.class.getName());
         assertNotNull(filterHolder);
         assertThat(filterHolder.getState(), is(AbstractLifeCycle.STARTED));
         assertThat(filterHolder.getFilter(), instanceOf(WebSocketUpgradeFilter.class));
@@ -164,7 +164,7 @@ public class JettyWebSocketFilterTest
 
         // After mapping is added we have an UpgradeFilter.
         assertThat(contextHandler.getServletHandler().getFilters().length, is(1));
-        FilterHolder filterHolder = contextHandler.getServletHandler().getFilter("WebSocketUpgradeFilter");
+        FilterHolder filterHolder = contextHandler.getServletHandler().getFilter(WebSocketUpgradeFilter.class.getName());
         assertNotNull(filterHolder);
         assertThat(filterHolder.getState(), is(AbstractLifeCycle.STARTED));
         assertThat(filterHolder.getFilter(), instanceOf(WebSocketUpgradeFilter.class));

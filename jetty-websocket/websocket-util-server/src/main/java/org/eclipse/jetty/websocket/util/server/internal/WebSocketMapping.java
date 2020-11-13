@@ -59,21 +59,11 @@ import org.slf4j.LoggerFactory;
 public class WebSocketMapping implements Dumpable, LifeCycle.Listener
 {
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketMapping.class);
+    public static final String WEBSOCKET_MAPPING_ATTRIBUTE = WebSocketMapping.class.getName();
 
-    public static WebSocketMapping getMapping(ServletContext servletContext, String mappingKey)
+    public static WebSocketMapping getMapping(ServletContext servletContext)
     {
-        Object mappingObject = servletContext.getAttribute(mappingKey);
-        if (mappingObject != null)
-        {
-            if (mappingObject instanceof WebSocketMapping)
-                return (WebSocketMapping)mappingObject;
-            else
-                throw new IllegalStateException(
-                    String.format("ContextHandler attribute %s is not of type WebSocketMapping: {%s}",
-                        mappingKey, mappingObject.toString()));
-        }
-
-        return null;
+        return (WebSocketMapping)servletContext.getAttribute(WEBSOCKET_MAPPING_ATTRIBUTE);
     }
 
     public WebSocketCreator getMapping(PathSpec pathSpec)
@@ -82,13 +72,13 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
         return cn == null ? null : cn.getWebSocketCreator();
     }
 
-    public static WebSocketMapping ensureMapping(ServletContext servletContext, String mappingKey)
+    public static WebSocketMapping ensureMapping(ServletContext servletContext)
     {
-        WebSocketMapping mapping = getMapping(servletContext, mappingKey);
+        WebSocketMapping mapping = getMapping(servletContext);
         if (mapping == null)
         {
             mapping = new WebSocketMapping(WebSocketServerComponents.getWebSocketComponents(servletContext));
-            servletContext.setAttribute(mappingKey, mapping);
+            servletContext.setAttribute(WEBSOCKET_MAPPING_ATTRIBUTE, mapping);
         }
 
         return mapping;
@@ -132,8 +122,6 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
 
         throw new IllegalArgumentException("Unrecognized path spec syntax [" + rawSpec + "]");
     }
-
-    public static final String DEFAULT_KEY = "jetty.websocket.defaultMapping";
 
     private final PathMappings<Negotiator> mappings = new PathMappings<>();
     private final WebSocketComponents components;
