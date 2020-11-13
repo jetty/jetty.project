@@ -20,6 +20,8 @@ package org.eclipse.jetty.gcloud.session;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
+import java.net.InetAddress;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -126,8 +128,17 @@ public class GCloudSessionTestSupport
         throws Exception
     {
         emulator.start();
+        String host;
+        //work out if we're running locally or not: if not local, then the host passed to
+        //DatastoreOptions must be prefixed with a scheme
+        InetAddress hostAddr = InetAddress.getByName(new URL("http://" + emulator.getEmulatorEndpoint()).getHost());
+        if (hostAddr.isAnyLocalAddress() || hostAddr.isLoopbackAddress())
+            host = emulator.getEmulatorEndpoint();
+        else
+            host = "http://" + emulator.getEmulatorEndpoint();
+        
         DatastoreOptions options = DatastoreOptions.newBuilder()
-            .setHost(emulator.getEmulatorEndpoint())
+            .setHost(host)
             .setCredentials(NoCredentials.getInstance())
             .setRetrySettings(ServiceOptions.getNoRetrySettings())
             .setProjectId("test-project")
