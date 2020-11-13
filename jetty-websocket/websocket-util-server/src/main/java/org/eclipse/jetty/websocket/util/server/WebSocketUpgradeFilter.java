@@ -40,7 +40,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.Configuration;
-import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
+import org.eclipse.jetty.websocket.util.server.internal.WebSocketMappings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * <p>
  * The configuration applied to this filter via init params will be used as the the default
  * configuration of any websocket upgraded by this filter, prior to the configuration of the
- * websocket applied by the {@link WebSocketMapping}.
+ * websocket applied by the {@link WebSocketMappings}.
  * </p>
  * <p>
  * <b>Configuration / Init-Parameters:</b>
@@ -126,7 +126,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     }
 
     private final Configuration.ConfigurationCustomizer defaultCustomizer = new Configuration.ConfigurationCustomizer();
-    private WebSocketMapping mapping;
+    private WebSocketMappings mapping;
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
@@ -162,7 +162,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     @Override
     public void init(FilterConfig config) throws ServletException
     {
-        mapping = WebSocketMapping.ensureMapping(config.getServletContext());
+        mapping = WebSocketMappings.ensureMapping(config.getServletContext());
 
         String max = config.getInitParameter("idleTimeout");
         if (max == null)

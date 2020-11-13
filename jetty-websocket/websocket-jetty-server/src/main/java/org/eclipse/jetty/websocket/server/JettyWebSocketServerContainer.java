@@ -47,7 +47,7 @@ import org.eclipse.jetty.websocket.server.internal.JettyServerFrameHandlerFactor
 import org.eclipse.jetty.websocket.util.ReflectUtils;
 import org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter;
 import org.eclipse.jetty.websocket.util.server.internal.FrameHandlerFactory;
-import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
+import org.eclipse.jetty.websocket.util.server.internal.WebSocketMappings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,7 +77,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
             // Create the Jetty ServerContainer implementation
             container = new JettyWebSocketServerContainer(
                 contextHandler,
-                WebSocketMapping.ensureMapping(servletContext),
+                WebSocketMappings.ensureMapping(servletContext),
                 WebSocketServerComponents.getWebSocketComponents(servletContext), executor);
             servletContext.setAttribute(JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE, container);
             contextHandler.addManaged(container);
@@ -90,7 +90,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
     private static final Logger LOG = LoggerFactory.getLogger(JettyWebSocketServerContainer.class);
 
     private final ServletContextHandler contextHandler;
-    private final WebSocketMapping webSocketMapping;
+    private final WebSocketMappings webSocketMappings;
     private final WebSocketComponents components;
     private final FrameHandlerFactory frameHandlerFactory;
     private final Executor executor;
@@ -102,14 +102,14 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
     /**
      * Main entry point for {@link JettyWebSocketServletContainerInitializer}.
      *
-     * @param webSocketMapping the {@link WebSocketMapping} that this container belongs to
+     * @param webSocketMappings the {@link WebSocketMappings} that this container belongs to
      * @param components the {@link WebSocketComponents} instance to use
      * @param executor the {@link Executor} to use
      */
-    JettyWebSocketServerContainer(ServletContextHandler contextHandler, WebSocketMapping webSocketMapping, WebSocketComponents components, Executor executor)
+    JettyWebSocketServerContainer(ServletContextHandler contextHandler, WebSocketMappings webSocketMappings, WebSocketComponents components, Executor executor)
     {
         this.contextHandler = contextHandler;
-        this.webSocketMapping = webSocketMapping;
+        this.webSocketMappings = webSocketMappings;
         this.executor = executor;
         this.components = components;
 
@@ -129,12 +129,12 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
 
     public void addMapping(String pathSpec, JettyWebSocketCreator creator)
     {
-        PathSpec ps = WebSocketMapping.parsePathSpec(pathSpec);
-        if (webSocketMapping.getMapping(ps) != null)
+        PathSpec ps = WebSocketMappings.parsePathSpec(pathSpec);
+        if (webSocketMappings.getMapping(ps) != null)
             throw new WebSocketException("Duplicate WebSocket Mapping for PathSpec");
 
         WebSocketUpgradeFilter.ensureFilter(contextHandler.getServletContext());
-        webSocketMapping.addMapping(ps,
+        webSocketMappings.addMapping(ps,
             (req, resp) -> creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp)),
             frameHandlerFactory, customizer);
     }
