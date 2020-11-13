@@ -18,9 +18,17 @@
 
 package org.eclipse.jetty.websocket.tests;
 
+import java.io.IOException;
 import java.net.URI;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import javax.servlet.DispatcherType;
 import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.server.Server;
@@ -30,6 +38,8 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
@@ -38,9 +48,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JettyWebSocketFilterTest
@@ -181,5 +193,102 @@ public class JettyWebSocketFilterTest
 
         String msg = socket.textMessages.poll();
         assertThat(msg, is("hello world"));
+    }
+
+    @Test
+    public void testMultipleWebSocketUpgradeFilter() throws Exception
+    {
+        String idleTimeoutFilter1 = "4999";
+        String idleTimeoutFilter2 = "3999";
+        start((context, container) ->
+        {
+            ServletContextHandler contextHandler = Objects.requireNonNull(ServletContextHandler.getServletContextHandler(context));
+
+            // This filter replaces the default filter as we use the pre-defined name.
+            FilterHolder filterHolder = new FilterHolder(WebSocketUpgradeFilter.class);
+            filterHolder.setName(WebSocketUpgradeFilter.class.getName());
+            filterHolder.setInitParameter("idleTimeout", idleTimeoutFilter1);
+            contextHandler.addFilter(filterHolder, "/primaryFilter/*", EnumSet.of(DispatcherType.REQUEST));
+
+            // This is an additional filter.
+            filterHolder = new FilterHolder(WebSocketUpgradeFilter.class);
+            filterHolder.setName("Secondary Upgrade Filter");
+            filterHolder.setInitParameter("idleTimeout", idleTimeoutFilter2);
+            contextHandler.addFilter(filterHolder, "/secondaryFilter/*", EnumSet.of(DispatcherType.REQUEST));
+
+            // Add mappings to the server container (same WebSocketMappings is referenced by both upgrade filters).
+            container.addMapping("/echo", EchoSocket.class);
+            container.addMapping("/primaryFilter/echo", LowerCaseEchoSocket.class);
+            container.addMapping("/secondaryFilter/echo", UpperCaseEchoSocket.class);
+        });
+
+        // Verify we have manually added 2 WebSocketUpgrade Filters.
+        List<FilterHolder> upgradeFilters = Arrays.stream(contextHandler.getServletHandler().getFilters())
+            .filter(holder -> holder.getFilter() instanceof WebSocketUpgradeFilter)
+            .collect(Collectors.toList());
+        assertThat(contextHandler.getServletHandler().getFilters().length, is(2));
+        assertThat(upgradeFilters.size(), is(2));
+        for (FilterHolder filterHolder : upgradeFilters)
+        {
+            assertThat(filterHolder.getState(), is(AbstractLifeCycle.STARTED));
+            assertThat(filterHolder.getFilter(), instanceOf(WebSocketUpgradeFilter.class));
+        }
+
+        // The /echo path should not match either of the upgrade filters even though it has a valid mapping, we get 404 response.
+        URI firstUri = URI.create("ws://localhost:" + connector.getLocalPort() + "/echo");
+        ExecutionException error = assertThrows(ExecutionException.class, () -> client.connect(new EventSocket(), firstUri).get(5, TimeUnit.SECONDS));
+        assertThat(error.getMessage(), containsString("404 Not Found"));
+
+        // The /primaryFilter/echo path should convert to lower case and have idleTimeout configured on the first upgradeFilter.
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/primaryFilter/echo");
+        EventSocket socket = new EventSocket();
+        CompletableFuture<Session> connect = client.connect(socket, uri);
+        try (Session session = connect.get(5, TimeUnit.SECONDS))
+        {
+            session.getRemote().sendString("hElLo wOrLd");
+            session.getRemote().sendString("getIdleTimeout");
+        }
+        assertTrue(socket.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(socket.textMessages.poll(), is("hello world"));
+        assertThat(socket.textMessages.poll(), is(idleTimeoutFilter1));
+
+        // The /secondaryFilter/echo path should convert to upper case and have idleTimeout configured on the second upgradeFilter.
+        uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/secondaryFilter/echo");
+        socket = new EventSocket();
+        connect = client.connect(socket, uri);
+        try (Session session = connect.get(5, TimeUnit.SECONDS))
+        {
+            session.getRemote().sendString("hElLo wOrLd");
+            session.getRemote().sendString("getIdleTimeout");
+        }
+        assertTrue(socket.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(socket.textMessages.poll(), is("HELLO WORLD"));
+        assertThat(socket.textMessages.poll(), is(idleTimeoutFilter2));
+    }
+
+    @WebSocket
+    public static class LowerCaseEchoSocket
+    {
+        @OnWebSocketMessage
+        public void onMessage(Session session, String message) throws IOException
+        {
+            if ("getIdleTimeout".equals(message))
+                session.getRemote().sendString(Long.toString(session.getIdleTimeout().toMillis()));
+            else
+                session.getRemote().sendString(message.toLowerCase());
+        }
+    }
+
+    @WebSocket
+    public static class UpperCaseEchoSocket
+    {
+        @OnWebSocketMessage
+        public void onMessage(Session session, String message) throws IOException
+        {
+            if ("getIdleTimeout".equals(message))
+                session.getRemote().sendString(Long.toString(session.getIdleTimeout().toMillis()));
+            else
+                session.getRemote().sendString(message.toUpperCase());
+        }
     }
 }
