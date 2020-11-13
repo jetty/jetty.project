@@ -94,6 +94,7 @@
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
               <skipTests>false</skipTests>
+              <trimStackTrace>false</trimStackTrace>
               <systemPropertyVariables>
                 <DATASTORE_DATASET>jetty9-work</DATASTORE_DATASET>
                 <DATASTORE_HOST>http://localhost:8088</DATASTORE_HOST>
