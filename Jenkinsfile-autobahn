@@ -3,7 +3,7 @@
 pipeline {
   agent any
   triggers {
-    cron '@daily'
+    pollSCM('@daily')
   }
   options {
     buildDiscarder logRotator( numToKeepStr: '50' )
