@@ -67,6 +67,7 @@ public class GCloudSessionTestSupport
     Datastore _ds;
     KeyFactory _keyFactory;
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(GCloudSessionTestSupport.class);
     private static final Logger GCLOUD_LOG = LoggerFactory.getLogger("org.eclipse.jetty.gcloud.session.gcloudLogs");
 
     public DatastoreEmulatorContainer emulator = new CustomDatastoreEmulatorContainer(
@@ -131,11 +132,16 @@ public class GCloudSessionTestSupport
         String host;
         //work out if we're running locally or not: if not local, then the host passed to
         //DatastoreOptions must be prefixed with a scheme
-        InetAddress hostAddr = InetAddress.getByName(new URL("http://" + emulator.getEmulatorEndpoint()).getHost());
+        String endPoint = emulator.getEmulatorEndpoint();
+        InetAddress hostAddr = InetAddress.getByName(new URL("http://" + endPoint).getHost());
+        LOGGER.info("endPoint: {} ,hostAddr.isAnyLocalAddress(): {},hostAddr.isLoopbackAddress(): {}",
+                    endPoint,
+                    hostAddr.isAnyLocalAddress(),
+                    hostAddr.isLoopbackAddress());
         if (hostAddr.isAnyLocalAddress() || hostAddr.isLoopbackAddress())
-            host = emulator.getEmulatorEndpoint();
+            host = endPoint;
         else
-            host = "http://" + emulator.getEmulatorEndpoint();
+            host = "http://" + endPoint;
         
         DatastoreOptions options = DatastoreOptions.newBuilder()
             .setHost(host)
