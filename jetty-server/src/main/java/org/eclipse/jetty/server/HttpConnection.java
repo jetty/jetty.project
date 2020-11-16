@@ -408,7 +408,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             // close to seek EOF
             _parser.close();
         }
-        else if (!_input.consumeAll())
+        // else abort if we can't consume all
+        else if (_generator.isPersistent() && !_input.consumeAll())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{}unconsumed input {}", _parser.isChunking() ? "Possible " : "", this);

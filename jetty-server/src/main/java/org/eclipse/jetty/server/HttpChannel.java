@@ -501,11 +501,18 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     case COMPLETE:
                     {
-                        if (!_response.isCommitted() && !_request.isHandled() && !_response.getHttpOutput().isClosed())
+                        if (!_response.isCommitted())
                         {
-                            // The request was not actually handled
-                            _response.sendError(HttpStatus.NOT_FOUND_404);
-                            break;
+                            if (!_request.isHandled() && !_response.getHttpOutput().isClosed())
+                            {
+                                // The request was not actually handled
+                                _response.sendError(HttpStatus.NOT_FOUND_404);
+                                break;
+                            }
+
+                            // Indicate Connection:close if we can't consume all.
+                            if (_response.getStatus() >= 200)
+                                ensureContentConsumedOrConnectionClose();
                         }
 
                         // RFC 7230, section 3.3.
