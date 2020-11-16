@@ -65,6 +65,16 @@ public class ByteBufferAccumulator implements AutoCloseable
 
     /**
      * Get the last buffer of the accumulator, this can be written to directly to avoid copying into the accumulator.
+     * @param minAllocationSize new buffers will be allocated to have at least this size.
+     * @return a buffer with at least {@code minSize} space to write into.
+     */
+    public ByteBuffer ensureBuffer(int minAllocationSize)
+    {
+        return ensureBuffer(1, minAllocationSize);
+    }
+
+    /**
+     * Get the last buffer of the accumulator, this can be written to directly to avoid copying into the accumulator.
      * @param minSize the smallest amount of remaining space before a new buffer is allocated.
      * @param minAllocationSize new buffers will be allocated to have at least this size.
      * @return a buffer with at least {@code minSize} space to write into.
@@ -72,7 +82,7 @@ public class ByteBufferAccumulator implements AutoCloseable
     public ByteBuffer ensureBuffer(int minSize, int minAllocationSize)
     {
         ByteBuffer buffer = _buffers.isEmpty() ? BufferUtil.EMPTY_BUFFER : _buffers.get(_buffers.size() - 1);
-        if (BufferUtil.space(buffer) <= minSize)
+        if (BufferUtil.space(buffer) < minSize)
         {
             buffer = _bufferPool.acquire(minAllocationSize, false);
             _buffers.add(buffer);
@@ -90,7 +100,7 @@ public class ByteBufferAccumulator implements AutoCloseable
     {
         while (buffer.hasRemaining())
         {
-            ByteBuffer b = ensureBuffer(0, buffer.remaining());
+            ByteBuffer b = ensureBuffer(buffer.remaining());
             int pos = BufferUtil.flipToFill(b);
             BufferUtil.put(buffer, b);
             BufferUtil.flipToFlush(b, pos);
