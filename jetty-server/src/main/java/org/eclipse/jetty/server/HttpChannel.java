@@ -414,7 +414,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 code = HttpStatus.INTERNAL_SERVER_ERROR_500;
                             _response.setStatus(code);
 
-                            // Add Connection:close if we can't consume the input
+                            // The handling of the original dispatch failed and we are now going to either generate
+                            // and error page ourselves or dispatch for an error page.  If there is content left over
+                            // from the failed dispatch, then we try to consume it here and if we fail we add a
+                            // Connection:close.  This can't be deferred to COMPLETE as the response will committed by
+                            // then by this sendError handling.
                             ensureContentConsumedOrConnectionClose();
 
                             ContextHandler.Context context = (ContextHandler.Context)_request.getAttribute(ErrorHandler.ERROR_CONTEXT);
