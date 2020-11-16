@@ -58,6 +58,7 @@ import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -415,11 +416,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             _response.setStatus(code);
 
                             // The handling of the original dispatch failed and we are now going to either generate
-                            // and error page ourselves or dispatch for an error page.  If there is content left over
+                            // and error response ourselves or dispatch for an error page.  If there is content left over
                             // from the failed dispatch, then we try to consume it here and if we fail we add a
-                            // Connection:close.  This can't be deferred to COMPLETE as the response will committed by
-                            // then by this sendError handling.
-                            ensureContentConsumedOrConnectionClose();
+                            // Connection:close.  This can't be deferred to COMPLETE as the response will be committed
+                            // by then.
+                            ensureConsumeAllOrNotPersistent();
 
                             ContextHandler.Context context = (ContextHandler.Context)_request.getAttribute(ErrorHandler.ERROR_CONTEXT);
                             ErrorHandler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
@@ -516,7 +517,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                             // Indicate Connection:close if we can't consume all.
                             if (_response.getStatus() >= 200)
-                                ensureContentConsumedOrConnectionClose();
+                                ensureConsumeAllOrNotPersistent();
                         }
 
                         // RFC 7230, section 3.3.
@@ -561,29 +562,58 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return !suspended;
     }
 
-    public void ensureContentConsumedOrConnectionClose()
+    public void ensureConsumeAllOrNotPersistent()
     {
-        if (_request.getHttpInput().consumeAll())
-            return;
-        _response.getHttpFields().computeField(HttpHeader.CONNECTION, (h, fields) ->
+        switch (_request.getHttpVersion())
         {
-            if (fields == null || fields.isEmpty())
-                return HttpConnection.CONNECTION_CLOSE;
+            case HTTP_1_0:
+                if (_request.getHttpInput().consumeAll())
+                    return;
 
-            if (fields.stream().anyMatch(f -> f.contains(HttpHeaderValue.CLOSE.asString())))
-            {
-                if (fields.size() == 1)
-                    return fields.get(0);
+                // Remove any keep-alive value in Connection headers
+                _response.getHttpFields().computeField(HttpHeader.CONNECTION, (h, fields) ->
+                {
+                    if (fields == null || fields.isEmpty())
+                        return null;
+                    String v = fields.stream()
+                        .flatMap(field -> Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s)))
+                        .collect(Collectors.joining(", "));
+                    if (StringUtil.isEmpty(v))
+                        return null;
 
-                return new HttpField(HttpHeader.CONNECTION, fields.stream()
-                    .flatMap(field -> Stream.of(field.getValues()))
-                    .collect(Collectors.joining(", ")));
-            }
+                    return new HttpField(HttpHeader.CONNECTION, v);
+                });
+                break;
 
-            return new HttpField(HttpHeader.CONNECTION, fields.stream()
-                .flatMap(field -> Stream.of(field.getValues()))
-                .collect(Collectors.joining(", ")) + ", " + HttpHeaderValue.CLOSE.asString());
-        });
+            case HTTP_1_1:
+                if (_request.getHttpInput().consumeAll())
+                    return;
+
+                // Add close value to Connection headers
+                _response.getHttpFields().computeField(HttpHeader.CONNECTION, (h, fields) ->
+                {
+                    if (fields == null || fields.isEmpty())
+                        return HttpConnection.CONNECTION_CLOSE;
+
+                    if (fields.stream().anyMatch(f -> f.contains(HttpHeaderValue.CLOSE.asString())))
+                    {
+                        if (fields.size() == 1)
+                            return fields.get(0);
+
+                        return new HttpField(HttpHeader.CONNECTION, fields.stream()
+                            .flatMap(field -> Stream.of(field.getValues()))
+                            .collect(Collectors.joining(", ")));
+                    }
+
+                    return new HttpField(HttpHeader.CONNECTION, fields.stream()
+                        .flatMap(field -> Stream.of(field.getValues()))
+                        .collect(Collectors.joining(", ")) + ", " + HttpHeaderValue.CLOSE.asString());
+                });
+                break;
+
+            default:
+                break;
+        }
     }
 
     private void dispatch(DispatcherType type, Dispatchable dispatchable) throws IOException, ServletException

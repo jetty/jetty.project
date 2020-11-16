@@ -656,8 +656,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
 
                 String url = URIUtil.newURI(scheme, request.getServerName(), port, request.getRequestURI(), request.getQueryString());
                 response.setContentLength(0);
-                baseRequest.getHttpChannel().ensureContentConsumedOrConnectionClose();
-                response.sendRedirect(url);
+                response.sendRedirect(url, true);
             }
             else
                 response.sendError(HttpStatus.FORBIDDEN_403, "!Secure");

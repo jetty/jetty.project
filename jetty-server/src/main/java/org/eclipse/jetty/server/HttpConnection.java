@@ -412,7 +412,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         else if (_generator.isPersistent() && !_input.consumeAll())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{}unconsumed input {}", _parser.isChunking() ? "Possible " : "", this);
+                LOG.debug("unconsumed input {} {}", this, _parser);
             _channel.abort(new IOException("unconsumed input"));
         }
 

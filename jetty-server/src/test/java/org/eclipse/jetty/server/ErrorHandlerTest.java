@@ -234,7 +234,28 @@ public class ErrorHandlerTest
     }
 
     @Test
-    public void test404Post() throws Exception
+    public void test404PostHttp10() throws Exception
+    {
+        String rawResponse = connector.getResponse(
+            "POST / HTTP/1.0\r\n" +
+                "Host: Localhost\r\n" +
+                "Accept: text/html\r\n" +
+                "Content-Length: 10\r\n" +
+                "Connection: keep-alive\r\n" +
+                "\r\n" +
+                "0123456789");
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(404));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=ISO-8859-1"));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONNECTION), is("keep-alive"));
+        assertContent(response);
+    }
+
+    @Test
+    public void test404PostHttp11() throws Exception
     {
         String rawResponse = connector.getResponse(
             "POST / HTTP/1.1\r\n" +
@@ -254,7 +275,28 @@ public class ErrorHandlerTest
     }
 
     @Test
-    public void test404PostCantConsume() throws Exception
+    public void test404PostCantConsumeHttp10() throws Exception
+    {
+        String rawResponse = connector.getResponse(
+            "POST / HTTP/1.0\r\n" +
+                "Host: Localhost\r\n" +
+                "Accept: text/html\r\n" +
+                "Content-Length: 100\r\n" +
+                "Connection: keep-alive\r\n" +
+                "\r\n" +
+                "0123456789");
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(404));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=ISO-8859-1"));
+        assertThat(response.getField(HttpHeader.CONNECTION).getValue(), nullValue());
+        assertContent(response);
+    }
+
+    @Test
+    public void test404PostCantConsumeHttp11() throws Exception
     {
         String rawResponse = connector.getResponse(
             "POST / HTTP/1.1\r\n" +
