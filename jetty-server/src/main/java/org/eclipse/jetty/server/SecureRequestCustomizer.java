@@ -207,8 +207,24 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             SslConnection.DecryptedEndPoint sslEndp = (DecryptedEndPoint)endp;
             SslConnection sslConnection = sslEndp.getSslConnection();
             SSLEngine sslEngine = sslConnection.getSSLEngine();
-            customize(sslEngine, request);
 
+            // do nothing if not a valid SSL connection
+            if (sslEngine == null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("No SslEngine in {}", sslEndp);
+                return;
+            }
+            SSLSession sslSession = sslEngine.getSession();
+            if (sslSession == null || !sslSession.isValid() || sslSession.getId() == null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Missing or invalid SslSession in {} for {}", sslEngine, sslEndp);
+                return;
+            }
+
+            // It is valid, so customize
+            customize(sslEngine, request);
             if (request.getHttpURI().getScheme() == null)
                 request.setScheme(HttpScheme.HTTPS.asString());
         }
@@ -333,10 +349,11 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 
             try
             {
-                _certs = getSslSessionData().getCerts();
+                SslSessionData sslSessionData = getSslSessionData();
+                _certs = sslSessionData.getCerts();
                 _cipherSuite = _session.getCipherSuite();
-                _keySize = getSslSessionData().getKeySize();
-                _sessionId = getSslSessionData().getIdStr();
+                _keySize = sslSessionData.getKeySize();
+                _sessionId = sslSessionData.getIdStr();
                 _sessionAttribute = getSslSessionAttribute();
             }
             catch (Exception e)
