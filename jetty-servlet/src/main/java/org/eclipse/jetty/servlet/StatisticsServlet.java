@@ -319,7 +319,7 @@ public class StatisticsServlet extends HttpServlet
             {
                 connectorDetail.put("statsOn", true);
                 connectorDetail.put("connections", connectionStats.getConnectionsTotal());
-                connectorDetail.put("connectionsOpen>", connectionStats.getConnections());
+                connectorDetail.put("connectionsOpen", connectionStats.getConnections());
                 connectorDetail.put("connectionsOpenMax", connectionStats.getConnectionsMax());
                 connectorDetail.put("connectionsDurationMean", connectionStats.getConnectionDurationMean());
                 connectorDetail.put("connectionsDurationMax", connectionStats.getConnectionDurationMax());
