@@ -14,7 +14,10 @@
     <jetty-orbit-url>https://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
     <exam.version>4.13.1</exam.version>
-    <url.version>2.6.1</url.version>
+    <url.version>2.6.2</url.version>
+    <bnd.version>5.2.0</bnd.version>
+    <swissbox.version>1.8.3</swissbox.version>
+    <tinybundles.version>3.0.0</tinybundles.version>
     <injection.bundle.version>1.0</injection.bundle.version>
   </properties>
   <dependencies>
@@ -37,17 +40,38 @@
       <artifactId>pax-exam-container-forked</artifactId>
       <version>${exam.version}</version>
       <scope>test</scope>
+      <exclusions>
+          <exclusion>
+              <groupId>biz.aQute.bnd</groupId>
+              <artifactId>bndlib</artifactId>
+          </exclusion>
+          <exclusion>
+              <groupId>org.ops4j.pax.tinybundles</groupId>
+              <artifactId>tinybundles</artifactId>
+          </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+        <groupId>org.ops4j.pax.tinybundles</groupId>
+        <artifactId>tinybundles</artifactId>
+        <version>${tinybundles.version}</version>
     </dependency>
     <dependency>
       <groupId>org.ops4j.pax.swissbox</groupId>
       <artifactId>pax-swissbox-framework</artifactId>
-      <version>1.8.3</version>
+      <version>${swissbox.version}</version>
       <scope>test</scope>
+      <exclusions>
+          <exclusion>
+              <groupId>org.ops4j.base</groupId>
+              <artifactId>ops4j-base-monitors</artifactId>
+          </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.ops4j.pax.swissbox</groupId>
       <artifactId>pax-swissbox-tracker</artifactId>
-      <version>1.8.3</version>
+      <version>${swissbox.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -71,13 +95,19 @@
     <dependency>
       <groupId>org.ops4j.pax.url</groupId>
       <artifactId>pax-url-wrap</artifactId>
-      <version>2.6.1</version>
+      <version>${url.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>biz.aQute.bnd</groupId>
+          <artifactId>bndlib</artifactId>
+        </exclusion>
+     </exclusions>
     </dependency>
     <dependency>
       <groupId>biz.aQute.bnd</groupId>
-      <artifactId>bndlib</artifactId>
-      <version>2.4.0</version>
+      <artifactId>biz.aQute.bndlib</artifactId>
+      <version>${bnd.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.osgi</groupId>
@@ -431,6 +461,24 @@
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-commons</artifactId>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-tree</artifactId>
+      <scope>test</scope>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-analysis</artifactId>
+      <scope>test</scope>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-util</artifactId>
+      <scope>test</scope>
+      <version>${asm.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
