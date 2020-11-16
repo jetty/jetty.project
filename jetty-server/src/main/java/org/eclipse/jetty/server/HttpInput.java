@@ -672,29 +672,44 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     public boolean consumeAll()
     {
-        synchronized (_inputQ)
+        while (true)
         {
-            try
+            synchronized (_inputQ)
             {
-                while (true)
+                if (_intercepted != null)
                 {
-                    Content item = nextContent();
-                    if (item == null)
-                        break; // Let's not bother blocking
-
-                    skip(item, item.remaining());
+                    _intercepted.skip(_intercepted.remaining());
+                    consume(_intercepted);
                 }
-                if (isFinished())
-                    return !isError();
 
-                _state = EARLY_EOF;
-                return false;
-            }
-            catch (Throwable e)
-            {
-                LOG.debug(e);
-                _state = new ErrorState(e);
-                return false;
+                if (_content != null)
+                {
+                    _content.skip(_content.remaining());
+                    consume(_content);
+                }
+
+                Content content = _inputQ.poll();
+                while (content != null)
+                {
+                    consume(content);
+                    content = _inputQ.poll();
+                }
+
+                if (_state instanceof EOFState)
+                    return !(_state instanceof ErrorState);
+
+                try
+                {
+                    produceContent();
+                    if (_content == null && _intercepted == null && _inputQ.isEmpty())
+                        return false;
+                }
+                catch (Throwable e)
+                {
+                    LOG.debug(e);
+                    _state = new ErrorState(e);
+                    return false;
+                }
             }
         }
     }

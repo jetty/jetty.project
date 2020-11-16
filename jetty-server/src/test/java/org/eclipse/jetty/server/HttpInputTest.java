@@ -498,7 +498,8 @@ public class HttpInputTest
         assertThat(_in.read(), equalTo((int)'A'));
 
         assertFalse(_in.consumeAll());
-        assertThat(_in.getContentConsumed(), equalTo(8L));
+        assertThat(_in.getContentConsumed(), equalTo(1L));
+        assertThat(_in.getContentReceived(), equalTo(8L));
 
         assertThat(_history.poll(), equalTo("Content succeeded AB"));
         assertThat(_history.poll(), equalTo("Content succeeded CD"));
@@ -520,7 +521,8 @@ public class HttpInputTest
         assertThat(_in.read(), equalTo((int)'A'));
 
         assertTrue(_in.consumeAll());
-        assertThat(_in.getContentConsumed(), equalTo(8L));
+        assertThat(_in.getContentConsumed(), equalTo(1L));
+        assertThat(_in.getContentReceived(), equalTo(8L));
 
         assertThat(_history.poll(), equalTo("Content succeeded AB"));
         assertThat(_history.poll(), equalTo("Content succeeded CD"));
