@@ -65,6 +65,12 @@ public class CoreAutobahnServer
         if (args != null && args.length > 0)
             port = Integer.parseInt(args[0]);
 
+        Server server = startAutobahnServer(port);
+        server.join();
+    }
+
+    public static Server startAutobahnServer(int port) throws Exception
+    {
         Server server = new Server(port);
         ServerConnector connector = new ServerConnector(server);
         connector.setIdleTimeout(10000);
@@ -76,6 +82,6 @@ public class CoreAutobahnServer
         context.setHandler(handler);
 
         server.start();
-        server.join();
+        return server;
     }
 }
