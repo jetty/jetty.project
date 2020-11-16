@@ -253,15 +253,13 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         abort(x);
     }
 
+    public void send(Request request, Response.CompleteListener listener)
+    {
+        ((HttpRequest)request).sendAsync(this, listener);
+    }
+
     protected void send(HttpRequest request, List<Response.ResponseListener> listeners)
     {
-        if (!getScheme().equalsIgnoreCase(request.getScheme()))
-            throw new IllegalArgumentException("Invalid request scheme " + request.getScheme() + " for destination " + this);
-        if (!getHost().equalsIgnoreCase(request.getHost()))
-            throw new IllegalArgumentException("Invalid request host " + request.getHost() + " for destination " + this);
-        int port = request.getPort();
-        if (port >= 0 && getPort() != port)
-            throw new IllegalArgumentException("Invalid request port " + port + " for destination " + this);
         send(new HttpExchange(this, request, listeners));
     }
 

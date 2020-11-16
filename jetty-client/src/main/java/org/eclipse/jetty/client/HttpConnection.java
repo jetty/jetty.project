@@ -120,7 +120,13 @@ public abstract class HttpConnection implements Connection, Attachable
         if (version.getVersion() <= 11)
         {
             if (!headers.containsKey(HttpHeader.HOST.asString()))
-                headers.put(getHttpDestination().getHostField());
+            {
+                URI uri = request.getURI();
+                if (uri != null)
+                    headers.put(HttpHeader.HOST, uri.getAuthority());
+                else
+                    headers.put(getHttpDestination().getHostField());
+            }
         }
 
         // Add content headers
