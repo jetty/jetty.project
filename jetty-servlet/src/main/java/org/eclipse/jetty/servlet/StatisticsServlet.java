@@ -39,6 +39,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.server.AbstractConnector;
@@ -212,8 +213,17 @@ public class StatisticsServlet extends HttpServlet
 
     private List<String> getOrderedAcceptableMimeTypes(HttpServletRequest request)
     {
-        QuotedQualityCSV values = null;
-        Enumeration<String> enumAccept = request.getHeaders("Accept");
+        QuotedQualityCSV values = new QuotedQualityCSV(QuotedQualityCSV.MOST_SPECIFIC_MIME_ORDERING);
+
+        // No accept header specified, try 'accept' parameter (for those clients that are
+        // so ancient that they cannot set the standard HTTP `Accept` header)
+        String acceptParameter = request.getParameter("accept");
+        if (acceptParameter != null)
+        {
+            values.addValue(acceptParameter);
+        }
+
+        Enumeration<String> enumAccept = request.getHeaders(HttpHeader.ACCEPT.toString());
         if (enumAccept != null)
         {
             while (enumAccept.hasMoreElements())
@@ -221,31 +231,18 @@ public class StatisticsServlet extends HttpServlet
                 String value = enumAccept.nextElement();
                 if (StringUtil.isNotBlank(value))
                 {
-                    if (values == null)
-                    {
-                        values = new QuotedQualityCSV(QuotedQualityCSV.MOST_SPECIFIC_MIME_ORDERING);
-                    }
                     values.addValue(value);
                 }
             }
         }
 
-        if (values != null)
+        if (values.isEmpty())
         {
-            return values.getValues();
+            // return that we allow ALL mime types
+            return Collections.singletonList("*/*");
         }
 
-        // No accept header specified, try 'accept' parameter (for those clients that are
-        // so ancient that they cannot set the standard HTTP `Accept` header)
-        String acceptParameter = request.getParameter("accept");
-        if (acceptParameter != null)
-        {
-            // return that we support the one type specified in the 'accept' parameter
-            return Collections.singletonList(acceptParameter);
-        }
-
-        // return that we allow ALL mime types
-        return Collections.singletonList("*/*");
+        return values.getValues();
     }
 
     private boolean isLoopbackAddress(String address)
