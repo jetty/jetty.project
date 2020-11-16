@@ -68,7 +68,7 @@
     <settingsPath>src/it/settings.xml</settingsPath>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
     <testcontainers.version>1.15.0</testcontainers.version>
-    <derby.version>10.14.2.0</derby.version>
+    <derby.version>10.15.2.0</derby.version>
   </properties>
 
   <licenses>
