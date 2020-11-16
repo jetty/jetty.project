@@ -115,11 +115,13 @@ public class ByteBufferAccumulator implements AutoCloseable
 
         int length = getLength();
         combinedBuffer = _bufferPool.acquire(length, false);
+        BufferUtil.clearToFill(combinedBuffer);
         for (ByteBuffer buffer : _buffers)
         {
             combinedBuffer.put(buffer);
             _bufferPool.release(buffer);
         }
+        BufferUtil.flipToFlush(combinedBuffer, 0);
         _buffers.clear();
         return combinedBuffer;
     }
