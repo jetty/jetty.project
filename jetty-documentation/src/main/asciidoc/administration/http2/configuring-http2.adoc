@@ -24,7 +24,7 @@ existing connector.
 Thus configuring HTTP/2 is a combination of configuring common properties on the connector and HTTP/2 specific properties on the connection factory.
 The modules and XML files involved can be seen with the following commands:
 
-[source,screen, subs="{sub-order}"]
+[source,screen, ]
 ....
 $ java -jar $JETTY_HOME/start.jar --list-modules
     ...

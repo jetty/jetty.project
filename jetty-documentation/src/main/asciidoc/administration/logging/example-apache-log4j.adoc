@@ -23,7 +23,7 @@ This is accomplished by configuring Jetty for logging to http://logging.apache.o
 
 A convenient replacement `logging` module has been created to bootstrap your `${jetty.base}` directory for logging with log4j.
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 [mybase]$ mkdir modules
 [mybase]$ cd modules

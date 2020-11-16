@@ -30,19 +30,19 @@ This can be accomplished either by enabling one of the startup link:#startup-mod
 
  * the `cdi-decorate` module is the preferred Weld integration.
    The activation of this module by Weld can be confirmed by the following Weld log:
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 INFO: WELD-ENV-001212: Jetty CdiDecoratingListener support detected, CDI injection will be available in Listeners, Servlets and Filters.
 ....
  * the `cdi-spi` module works with Weld, but may restrict some non standard features.
    The activation of this module by Weld can be confirmed by the following Weld log:
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 INFO: WELD-ENV-001213: Jetty CDI SPI support detected, CDI injection will be available in Listeners, Servlets and Filters.
 ....
  * the deprecated `cdi2` module works with Weld prior to 3.1.2.Final.
    The activation of this module by Weld can be confirmed by the following Weld log:
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 INFO: WELD-ENV-001201: Jetty 7.2+ detected, CDI injection will be available in Servlets and Filters. Injection into Listeners is not supported.
 ....

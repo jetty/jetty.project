@@ -25,7 +25,7 @@ Jetty has no GUI (Graphical User Interface), so running the server and performin
 Once you have access to your system's command line, navigate to the directory where you unpacked your copy of the Jetty distribution.
 To start Jetty on the default port of 8080, run the following command:
 
-[source,screen,subs="{sub-order}"]
+[source,screen,]
 ----
 $ java -jar start.jar
 2017-09-20 15:45:11.986:INFO::main: Logging initialized @683ms to org.eclipse.jetty.util.log.StdErrLog
@@ -58,7 +58,7 @@ Within the standard Jetty distribution there is the `demo-base` directory.
 This is a fully-functioning Jetty Base (more on that later) complete with numerous web applications demonstrating different Jetty functionality.
 Additionally, the `demo-base` demonstrates the recommended way to run a Jetty base in a directory separate from `$JETTY_HOME`:
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ----
 $ cd demo-base/
 $ java -jar ../start.jar
@@ -110,7 +110,7 @@ ____
 
 You can see the configuration of the `demo-base` by using the following commands:
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ----
 > cd $JETTY_HOME/demo-base/
 > java -jar $JETTY_HOME/start.jar --list-modules

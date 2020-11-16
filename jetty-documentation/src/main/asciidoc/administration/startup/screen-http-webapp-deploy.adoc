@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 [mybase]$ java -jar $JETTY_HOME/start.jar --add-to-start=http,webapp,deploy
 INFO  : webapp          initialized in ${jetty.base}/start.ini

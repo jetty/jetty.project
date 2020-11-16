@@ -33,7 +33,7 @@ With Jetty 7 the project moved to the Eclipse foundation and to a new `groupId` 
 
 The top level Project Object Model (POM) for the Jetty project is located under the following coordinates.
 
-[source, xml, subs="{sub-order}"]
+[source, xml, ]
 ----
 <dependency>
   <groupId>org.eclipse.jetty</groupId>
@@ -49,7 +49,7 @@ Those generated files are also uploaded into Maven Central during the release of
 
 https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-project/
 
-[source, xml, subs="{sub-order}"]
+[source, xml, ]
 ----
 <dependency>
   <groupId>org.eclipse.jetty</groupId>

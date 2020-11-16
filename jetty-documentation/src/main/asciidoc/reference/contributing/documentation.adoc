@@ -52,7 +52,7 @@ First you need to obtain the source of the documentation project.
 
 Clone the repository:
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 $ git clone https://github.com/eclipse/jetty.project.git
 ....
@@ -60,7 +60,7 @@ $ git clone https://github.com/eclipse/jetty.project.git
 You will now have a local directory with all of jetty, including the jetty-documentation.
 Now we move on to building it.
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 $ cd jetty.project/jetty-documentation
 $ mvn install
@@ -72,7 +72,7 @@ This build will first produce docbook xml and then through the docbkx-maven-plug
 The downloads are all of the java dependencies that are required to make this build work.
 After a while the downloading will stop and you should see the execution of the asciidoctor-maven-plugin followed by the docbkx-maven-plugin.
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 [INFO] --- asciidoctor-maven-plugin:1.5.3:process-asciidoc (output-html) @ jetty-documentation ---
 [INFO] Rendered /Users/jesse/src/projects/jetty/jetty-docs/src/main/asciidoc/index.adoc
@@ -86,7 +86,7 @@ After a while the downloading will stop and you should see the execution of the 
 
 The build is finished once you see a message akin to this:
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
@@ -126,7 +126,7 @@ Now follow the process to push that change back into Jetty proper.
 Do make sure the change works and the build isn't broken though so make sure you run maven and check the output.
 Then commit the change.
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 $ git commit -s -m "Tweaked the introduction to fix a horrid misspelled word." src/main/asciidoc/quickstart/introduction/topic.xml
 ....
@@ -140,7 +140,7 @@ ____
 This will commit the change in your local repository.
 You can then push the change up to your repository on github.
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 $ git push
 ....

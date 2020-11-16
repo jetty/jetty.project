@@ -27,7 +27,7 @@ The techniques outlined here are based on Windows 7 (64-bit), using JDK 8 (64-bi
 
 Prepare some empty directories to work with.
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 C:\> mkdir opt
 C:\> cd opt
@@ -69,7 +69,7 @@ This is intentionally kept separate from the standard temp directories of Window
 
 Or download Java 8 from: http://www.oracle.com/technetwork/java/javase/downloads/index.html
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 C:\opt>java -version
 java version "1.7.0_45"
@@ -83,7 +83,7 @@ Extract the contents of the `jetty-distribution-{VERSION}` directory to `C:\opt\
 
 Once complete, the contents of the `C:\opt\jetty` directory should look like this:
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 C:\opt\jetty>dir
  Volume in drive C has no label.
@@ -122,7 +122,7 @@ The ZIP file has both 32 bit and 64 bit versions of this file.
 
 Once you are complete, the contents of `C:\opt` directory should look like this:
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 C:\opt> dir
  Volume in drive C has no label.
@@ -145,7 +145,7 @@ Now it's time to setup your new `${jetty.base}` directory to have all of your We
 
 We'll start by specifying which modules we want to use (this will create a start.ini file and also create a few empty directories for you)
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 C:\opt\myappbase>java -jar ..\jetty\start.jar --add-to-start=deploy,http,console-capture
 
@@ -192,7 +192,7 @@ See the section on xref:start-jar[] for more details and options on setting up a
 
 At this point you merely have to copy your WAR files into the `{$jetty.base}/webapps` directory.
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 C:\opt\myappbase> copy C:\projects\mywebsite.war webapps\
 ....

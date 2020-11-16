@@ -30,7 +30,7 @@ For a more in-depth look at the syntax, see xref:jetty-xml-syntax[].
 
 `jetty-web.xml` applies on a per-webapp basis, and configures an instance of `org.eclipse.jetty.webapp.WebAppContext`.
 
-[source, xml, subs="{sub-order}"]
+[source, xml, ]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">

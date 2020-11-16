@@ -38,7 +38,7 @@ See https://github.com/jetty-project/jetty-webapp-logging/blob/master/jetty-weba
 
 A convenient replacement `logging` module has been created to bootstrap your `${jetty.base}` directory for capturing all Jetty server logging from multiple logging frameworks into a single logging output file managed by Logback.
 
-[source,screen,subs="{sub-order}"]
+[source,screen,]
 ....
 [mybase]$ curl -O https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-webapp-logging/9.4.27/jetty-webapp-logging-9.4.27-config.jar
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current

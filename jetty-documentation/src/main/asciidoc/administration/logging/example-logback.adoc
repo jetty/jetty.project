@@ -23,7 +23,7 @@ This is accomplished by configuring Jetty for logging to `Logback`, which uses h
 
 A convenient replacement `logging` module has been created to bootstrap the `${jetty.base}` directory for logging with logback.
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 [mybase]$ mkdir modules
 [mybase]$ cd modules

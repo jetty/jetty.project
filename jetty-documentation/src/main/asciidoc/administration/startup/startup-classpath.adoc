@@ -55,7 +55,7 @@ The `--list-classpath` command line option is used as such.
 
 (Demonstrated with the link:#demo-base[demo-base from the Jetty Distribution])
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 [demo-base]$ java -jar $JETTY_HOME/start.jar --list-classpath
 

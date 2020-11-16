@@ -65,7 +65,7 @@ The Infinispan module will have installed file called `$\{jetty.home}/etc/jetty-
 This file configures an instance of the `InfinispanSessionIdManager` that will be shared across all webapps deployed on that server.
 It looks like this:
 
-[source, xml, subs="{sub-order}"]
+[source, xml, ]
 ----
 include::{SRCDIR}/jetty-infinispan/src/main/config/etc/jetty-infinispan.xml[]
 ----
@@ -91,7 +91,7 @@ The basic difference is how you get a reference to the Jetty `org.eclipse.jetty.
 
 From a context xml file, you reference the Server instance as a Ref:
 
-[source, xml, subs="{sub-order}"]
+[source, xml, ]
 ----
   <!-- Expose the jetty infinispan classes for session serialization -->
   <Get name="serverClasspathPattern">
@@ -132,7 +132,7 @@ From a context xml file, you reference the Server instance as a Ref:
 
 From a `WEB-INF/jetty-web.xml` file, you can reference the Server instance directly:
 
-[source, xml, subs="{sub-order}"]
+[source, xml, ]
 ----
 <!-- Expose the jetty infinispan classes for session serialization -->
 <Get name="serverClasspathPattern">

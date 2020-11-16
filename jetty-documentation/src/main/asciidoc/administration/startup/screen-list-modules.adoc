@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 [mybase]$ java -jar ../start.jar --list-modules
 

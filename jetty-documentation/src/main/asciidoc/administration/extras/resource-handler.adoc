@@ -51,7 +51,7 @@ The default css is called `jetty-dir.css` and is located in the `jetty-util` pac
 The following is an example of a split fileserver, able to serve static content from multiple directory locations.
 Since this handler does not return 404's on content you are able to iteratively try multiple resource handlers to resolve content.
 
-[source, java, subs="{sub-order}"]
+[source, java, ]
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/SplitFileServer.java[]
 ----

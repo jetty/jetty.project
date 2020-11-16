@@ -33,7 +33,7 @@ ____
 
 A convenient replacement `logging` module has been created to bootstrap your `${jetty.base}` directory for logging with `java.util.logging`.
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 [mybase]$ mkdir modules
 [mybase]$ cd modules

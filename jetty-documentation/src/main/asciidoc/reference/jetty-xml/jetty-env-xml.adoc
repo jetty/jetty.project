@@ -30,7 +30,7 @@ You define global naming resources on the server via `jetty.xml`.
 
 Jetty applies `jetty-env.xml` on a per-webapp basis, and configures an instance of `org.eclipse.jetty.webapp.WebAppContext.`
 
-[source, xml, subs="{sub-order}"]
+[source, xml, ]
 ----
 
 <?xml version="1.0" encoding="UTF-8"?>
@@ -53,7 +53,7 @@ ____
 
 Place the `jetty-env.xml` file in your web application's WEB-INF folder.
 
-[source, xml, subs="{sub-order}"]
+[source, xml, ]
 ----
 
  <?xml version="1.0"?>

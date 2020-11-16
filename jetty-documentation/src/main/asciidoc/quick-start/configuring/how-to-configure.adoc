@@ -105,7 +105,7 @@ We will work backwards from an ini file to the associated module and then the XM
 First up, the `http.ini` file.
 If we take a look at it's contents, we will see the following:
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ----
 $ cat start.d/http.ini
 # ---------------------------------------
@@ -156,7 +156,7 @@ When a module is enabled and an `ini` file is created, all of the properties you
 If you wanted to change one of the properties though, say `jetty.http.port`, you'd simply uncomment the line and change the value.
 For example:
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ----
 $ cat start.d/http.ini
 # ---------------------------------------
@@ -181,7 +181,7 @@ As seen before, these properties were populated in this ini file based on a rela
 Standard Jetty modules live in the Home of the Jetty Distribution in the aptly named `modules` directory.
 So let's take a quick look at the associated `$JETTY_HOME/modules/http.mod` file:
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ----
 $ cat $JETTY_HOME/modules/http.mod
 [description]
@@ -221,7 +221,7 @@ It is important to note that not every module file will have the same sections, 
 
 Now that we know what XML file these properties relate to, we can navigate to it and have a look.
 
-[source, xml, subs="{sub-order}"]
+[source, xml, ]
 ----
 $ cat $JETTY_HOME/etc/jetty-http.xml
 <?xml version="1.0"?>
@@ -316,14 +316,14 @@ Property Files::
 
 To understand the link:#jetty-xml-syntax[Jetty IoC XML format], consider the following example of an embedded Jetty server instantiated and configured in Java:
 
-[source, java, subs="{sub-order}"]
+[source, java, ]
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/ExampleServer.java[]
 ----
 
 link:#jetty-xml-syntax[Jetty IoC XML format] allows you to instantiate and configure the exact same server in XML without writing any java code:
 
-[source, xml, subs="{sub-order}"]
+[source, xml, ]
 ----
 include::{SRCDIR}/examples/embedded/src/main/resources/exampleserver.xml[]
 ----

@@ -21,7 +21,7 @@
 
 The most basic way of starting the Jetty standalone server is to execute the `start.jar`, which is a bootstrap for starting Jetty with the configuration you want.
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 [jetty-distribution-{VERSION}]$ java -jar start.jar
 2013-09-23 11:27:06.654:INFO:oejs.Server:main: jetty-{VERSION}
@@ -163,7 +163,7 @@ Note: Transitive modules are also appended.
 If a module contains an .ini template with properties, you can also edit these properties when activating the module.
 To do this, simply list the property and its value after the `-add-to-start` command, such as in the following example:
 +
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 $ java -jar start.jar --add-to-start=http jetty.http.port=8379 jetty.http.host=1.2.3.4
 ....
@@ -173,7 +173,7 @@ Doing this will uncomment the property in the associated .ini file and set it to
 Used to update a specified property or properties that exist in an existing .ini file.
 Jetty scans the command line, `${jetty.base}` and `${jetty.home}` for .ini files that have the specified property and update it accordingly.
 +
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 $ java -jar ../start.jar --update-ini jetty.http.port=8417
 ConfigSource <command-line>
@@ -197,7 +197,7 @@ Please see link:#start-vs-startd[Start.ini vs. Start.d] for more information.
 --write-module-graph=<filename>::
 Advanced feature: Creates a graphviz http://graphviz.org/content/dot-language[dot file] of the module graph as it exists for the active `${jetty.base}`.
 +
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 # generate module.dot
 $ java -jar start.jar --module=websocket --write-module-graph=modules.dot
@@ -252,7 +252,7 @@ You can configure a port number for Jetty to listen on for a stop command, so yo
 This requires the use of a "secret" key, to prevent malicious or accidental termination.
 Use the `STOP.PORT` and `STOP.KEY` (or `-DSTOP.PORT=` and `-DSTOP.KEY=`, respectively, which will set these as system parameters) parameters as arguments to the `start.jar`:
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 > java -jar ${JETTY_HOME}/start.jar STOP.PORT=1234 STOP.KEY=secretpassword
 ....
@@ -261,7 +261,7 @@ Then, to stop Jetty from a different terminal, you need to supply this port and 
 You can either use a copy of the Jetty distribution, the link:#jetty-maven-plugin[jetty-maven-plugin], the link:#jetty-ant[jetty-ant plugin], or a custom class to accomplish this.
 Here's how to use the Jetty distribution, leveraging `start.jar`, to perform a stop:
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 > java -jar start.jar STOP.PORT=8181 STOP.KEY=abc123 --stop
 ....
@@ -293,7 +293,7 @@ Default is https://repo1.maven.org/maven2/.
 ==== Shaded Start.jar
 
 If you have a need for a shaded version of `start.jar` (such as for Gradle), you can achieve this via a Maven dependency.
-[source, xml, subs="{sub-order}"]
+[source, xml, ]
 ....
 <dependency>
     <groupId>org.eclipse.jetty</groupId>

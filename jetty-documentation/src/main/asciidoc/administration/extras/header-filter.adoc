@@ -55,7 +55,7 @@ ____
 Each action must be separated by a comma.
 ____
 
-[source, xml, subs="{sub-order}"]
+[source, xml, ]
 ----
 <filter>
    <filter-name>HeaderFilter</filter-name>

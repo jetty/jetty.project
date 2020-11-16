@@ -51,7 +51,7 @@ As usual with Jetty, you can either set this attribute in a context xml file, or
 
 Here's an example of setting it in an xml file:
 
-[source, xml, subs="{sub-order}"]
+[source, xml, ]
 ----
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
 
@@ -67,7 +67,7 @@ Here's an example of setting it in an xml file:
 
 The equivalent in code is:
 
-[source, java, subs="{sub-order}"]
+[source, java, ]
 ----
 WebAppContext context = new WebAppContext();
 context.setContextPath("/test");
@@ -83,7 +83,7 @@ There are several ways to use a particular directory as the temporary directory:
 As before this can be accomplished with an XML file or directly in code.
 Here is an example of setting the temp directory in XML:
 
-[source, xml, subs="{sub-order}"]
+[source, xml, ]
 ----
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
 
@@ -96,7 +96,7 @@ Here is an example of setting the temp directory in XML:
 
 And here is an example of doing it with java code:
 
-[source, java, subs="{sub-order}"]
+[source, java, ]
 ----
 WebAppContext context = new WebAppContext();
 context.setContextPath("/test");
@@ -108,7 +108,7 @@ context.setTempDirectory(new File("/some/dir/foo"));
 You should set this context attribute with the name of directory you want to use as the temp directory.
 Again, you can do this in XML:
 
-[source, xml, subs="{sub-order}"]
+[source, xml, ]
 ----
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
 
@@ -125,7 +125,7 @@ Again, you can do this in XML:
 
 Or in java:
 
-[source, java, subs="{sub-order}"]
+[source, java, ]
 ----
 WebAppContext context = new WebAppContext();
 context.setContextPath("/test");
@@ -145,7 +145,7 @@ ____
 You can set the location of the temp directory on the command line when Jetty starts up in two ways.
 First is the most straightforward, simply add it to your command line when starting Jetty.
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ----
 java -jar ../start.jar -Djava.io.tmpdir=/path/to/desired/directory
 ----
@@ -156,7 +156,7 @@ After enabling the module (using the `--add-to-start=jvm` command), edit the `jv
 You will also need verify the line including the `--exec` command is not commented out, as this is required for Jetty to start a new, forked JVM.
 Below is an example of the standard `jvm.ini` file altered to include a reference to a temp directory.
 
-[source, screen, subs="{sub-order}"]
+[source, screen, ]
 ....
 # ---------------------------------------
 # Module: jvm
