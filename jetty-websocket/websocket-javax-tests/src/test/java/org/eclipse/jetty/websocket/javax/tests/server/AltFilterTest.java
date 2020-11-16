@@ -61,7 +61,7 @@ public class AltFilterTest
         {
             wsb.start();
 
-            FilterHolder filterWebXml = app.getWebAppContext().getServletHandler().getFilter("wsuf-test");
+            FilterHolder filterWebXml = app.getWebAppContext().getServletHandler().getFilter(WebSocketUpgradeFilter.class.getName());
             assertThat("Filter[wsuf-test]", filterWebXml, notNullValue());
 
             FilterHolder filterSCI = app.getWebAppContext().getServletHandler().getFilter("Jetty_WebSocketUpgradeFilter");
