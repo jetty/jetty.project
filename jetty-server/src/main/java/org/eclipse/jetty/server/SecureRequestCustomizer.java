@@ -207,24 +207,8 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             SslConnection.DecryptedEndPoint sslEndp = (DecryptedEndPoint)endp;
             SslConnection sslConnection = sslEndp.getSslConnection();
             SSLEngine sslEngine = sslConnection.getSSLEngine();
-
-            // do nothing if not a valid SSL connection
-            if (sslEngine == null)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("No SslEngine in {}", sslEndp);
-                return;
-            }
-            SSLSession sslSession = sslEngine.getSession();
-            if (sslSession == null || !sslSession.isValid() || sslSession.getId() == null)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Missing or invalid SslSession in {} for {}", sslEngine, sslEndp);
-                return;
-            }
-
-            // It is valid, so customize
             customize(sslEngine, request);
+
             if (request.getHttpURI().getScheme() == null)
                 request.setScheme(HttpScheme.HTTPS.asString());
         }
