@@ -1865,7 +1865,9 @@ public class Request implements HttpServletRequest
             {
                 int r = _reader.read();
                 while (r != -1)
+                {
                     r = _reader.read();
+                }
             }
             catch (Exception e)
             {
@@ -1878,7 +1880,6 @@ public class Request implements HttpServletRequest
         getHttpChannelState().recycle();
         _requestAttributeListeners.clear();
         _input.recycle();
-
         _metaData = null;
         _originalURI = null;
         _contextPath = null;
