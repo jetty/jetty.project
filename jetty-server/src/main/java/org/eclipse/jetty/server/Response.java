@@ -122,17 +122,20 @@ public class Response implements HttpServletResponse
 
     protected void recycle()
     {
+        // _channel need not be recycled
+        _fields.clear();
+        _errorSentAndIncludes.set(0);
+        _out.recycle();
         _status = HttpStatus.OK_200;
         _reason = null;
         _locale = null;
         _mimeType = null;
         _characterEncoding = null;
+        _encodingFrom = EncodingFrom.NOT_SET;
         _contentType = null;
         _outputType = OutputType.NONE;
+        // _writer does not need to be recycled
         _contentLength = -1;
-        _out.recycle();
-        _fields.clear();
-        _encodingFrom = EncodingFrom.NOT_SET;
         _trailers = null;
     }
 
