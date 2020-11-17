@@ -135,7 +135,7 @@ It will match all `ServletContainerInitializer` classed not explicitly named in 
 
 Here is an example, setting the context attribute in code (although you can also do the link:#intro-jetty-configuration-webapps[same in xml]):
 
-[source, java, ]
+[source, java]
 ----
 WebAppContext context = new WebAppContext();
 context.setAttribute("org.eclipse.jetty.containerInitializerOrder",
@@ -154,7 +154,7 @@ In this case, you can define the `org.eclipse.jetty.containerInitializerExclusio
 This is a regular expression that defines http://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.html[patterns] of classnames that you want to exclude.
 Here's an example, setting the context attribute in code, although you may do exactly the link:#intro-jetty-configuration-webapps[same in xml]:
 
-[source, java, ]
+[source, java]
 ----
 WebAppContext context = new WebAppContext();
 context.setAttribute("org.eclipse.jetty.containerInitializerExclusionPattern",

@@ -92,7 +92,7 @@ The core API of a handler is the handle method:
 
 image:reference/architecture/images/basic-architecture-handlers.png[image,width=576]
 
-[source, java, ]
+[source, java]
 ----
 public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
 ----

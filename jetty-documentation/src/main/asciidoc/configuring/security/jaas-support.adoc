@@ -54,7 +54,7 @@ Let's look at an example.
 
 Configure a Jetty `org.eclipse.jetty.jaas.JAASLoginService` to match the `<realm-name>` in your `web.xml` file. For example, if the `web.xml` contains a realm called "Test JAAS Realm" like so:
 
-[source, xml, ]
+[source, xml]
 ----
 <login-config>
   <auth-method>FORM</auth-method>
@@ -68,7 +68,7 @@ Configure a Jetty `org.eclipse.jetty.jaas.JAASLoginService` to match the `<realm
 
 then you need to create a `JAASLoginService` with the matching realm name of "Test JAAS Realm":
 
-[source, xml, ]
+[source, xml]
 ----
 <New class="org.eclipse.jetty.jaas.JAASLoginService">
   <Set name="Name">Test JAAS Realm</Set>
@@ -87,7 +87,7 @@ You can declare your `JAASLoginService` in a couple of different ways:
 1.  If you have more than one webapp that you would like to use the same security infrastructure, then you can declare your `JAASLoginService` in a top-level Jetty xml file as a bean that is added to the `org.eclipse.jetty.server.Server`.
 An example:
 +
-[source, xml, ]
+[source, xml]
 ----
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
@@ -104,7 +104,7 @@ An example:
 ----
 2.  Alternatively, you can use a `JAASLoginService` with just a specific webapp by creating a link:#deployable-descriptor-file[context xml] file for the webapp, and specifying the `JAASLoginService` in it:
 +
-[source, xml, ]
+[source, xml]
 ----
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
 
@@ -151,7 +151,7 @@ There are 2 aspects to this:
 
 To accomplish the above, use the Jetty link:#startup-overview[startup] link:#startup-modules[modules mechanism] to add the JAAS link:#startup-modules[module]:
 
-[source, screen, ]
+[source, screen]
 ....
 java -jar start.jar --add-to-start=jaas
 ....
@@ -185,7 +185,7 @@ However, should you need to, you can configure:
 
 Here's an example of setting each of these (to their default values):
 
-[source, xml, ]
+[source, xml]
 ----
 <New class="org.eclipse.jetty.jaas.JAASLoginService">
   <Set name="Name">Test JAAS Realm</Set>
@@ -376,7 +376,7 @@ This callback gives you access to all parameters that were passed in the form su
 To use it, in the `login()` method of your custom login module, add the `RequestParameterCallback` to the list of callback handlers the login module uses, tell it which params you are interested in, and then get the value of the parameter back.
 Here is an example:
 
-[source, java, ]
+[source, java]
 ----
 
 public class FooLoginModule extends AbstractLoginModule

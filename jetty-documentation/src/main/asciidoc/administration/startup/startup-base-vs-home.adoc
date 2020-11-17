@@ -55,7 +55,7 @@ For more details on how startup with start.jar works, see link:#executing-startj
 
 The Jetty Distribution comes with an example `${jetty.base}` which enables the various demonstration webapps and server configurations.
 
-[source, screen, ]
+[source, screen]
 ....
 [jetty-distribution-{VERSION}]$ ls -la
 
@@ -90,7 +90,7 @@ drwxrwxr-x  2 user group   4096 Oct  8 06:54 webapps/
 
 If you want to see what the Jetty base looks like without executing Jetty, you can simply list the configuration by using the `--list-config` command.
 
-[source, screen, ]
+[source, screen]
 ....
 [demo-base]$ java -jar $JETTY_HOME/start.jar --list-config
 
@@ -222,7 +222,7 @@ Of note, is that the output will make it known where the configuration elements 
 
 If you look at the `${jetty.base}/start.ini` you will see a layout similar to below.
 
-[source, screen, ]
+[source, screen]
 ....
 [my-base]$ cat start.ini
 
@@ -274,7 +274,7 @@ The Jetty `start.jar` and XML files always assume that both `${jetty.home}` and 
 
 You can opt to manually define the `${jetty.home}` and `${jetty.base}` directories, such as this:
 
-[source, screen, ]
+[source, screen]
 ....
 [jetty-distribution-{VERSION}]$ pwd
 /home/user/jetty-distribution-{VERSION}
@@ -292,7 +292,7 @@ Alternately, you can declare one directory and let the other one be discovered.
 
 The following example uses default discovery of `${jetty.home}` by using the parent directory of wherever `start.jar` itself is, and a manual declaration of `${jetty.base}`.
 
-[source, screen, ]
+[source, screen]
 ....
 [jetty-distribution-{VERSION}]$ pwd
 /home/user/jetty-distribution-{VERSION}
@@ -309,7 +309,7 @@ the `start.jar` in your `{$jetty.home}` remotely.
 
 The following demonstrates this by allowing default discovery of `${jetty.home}` via locating the `start.jar`, and using the `user.dir` System Property for `${jetty.base}`.
 
-[source, screen, ]
+[source, screen]
 ....
 [jetty-distribution-{VERSION}]$ pwd
 /home/user/jetty-distribution-{VERSION}

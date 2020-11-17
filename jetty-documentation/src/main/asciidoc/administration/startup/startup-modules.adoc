@@ -70,7 +70,7 @@ As an alternative to a single `start.ini` file you can opt to house modules in a
 Modules activated when a `start.d` directory exists will be stored as a single file per module.
 Below is an example of a fresh `${jetty.base}` that will create a `start.d` directory and activate several modules.
 
-[source, screen, ]
+[source, screen]
 ....
 [jetty.home]$ mkdir mybase
 [jetty.home]$ cd mybase/
@@ -106,7 +106,7 @@ If you have an existing `start.ini` file but would like to use the `start.d` str
 Doing this will create the `start.d` directory and copy your existing `start.ini` file in to it.
 Any new modules added to the server will have their own `<module name>.ini` file created in the `start.d` directory.
 
-[source, screen, ]
+[source, screen]
 ....
 [mybase]$ java -jar ../start.jar --add-to-start=server,client,webapp,websocket
 INFO : webapp          initialised in ${jetty.base}/start.ini
@@ -162,7 +162,7 @@ Listed in the ini file is the associated module file and any properties that can
 
 Below is an example of the `requestlog.ini` file:
 
-[source, screen, ]
+[source, screen]
 ....
 # ---------------------------------------
 # Module: requestlog

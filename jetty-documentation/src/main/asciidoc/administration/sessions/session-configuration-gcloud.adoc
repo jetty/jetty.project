@@ -66,7 +66,7 @@ To enable communication using the GCloud Emulator:
 When using the Jetty distribution, you will first need to enable the `session-store-gcloud` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 
 
-[source, screen, ]
+[source, screen]
 ----
 $ java -jar ../start.jar --create-startd
 INFO : Base directory was modified
@@ -191,7 +191,7 @@ It does *not*, however, configure a SLF4J implementation for the users.
 As such, you will also need to enable one of the SLF4J implementation modules listed.
 In this example, we will enable the `slf4j-simple-impl` module to provide a SLF4J implementation.
 
-[source, screen, ]
+[source, screen]
 ----
 $ java -jar ../start.jar --add-to-start=slf4j-simple-impl
 INFO  : slf4j-simple-impl initialized in ${jetty.base}/start.d/slf4j-simple-impl.ini
@@ -215,7 +215,7 @@ ____
 
 Opening the `start.d/session-store-gcloud.ini` will display a list of all the configurable properties for the Google Cloud DataStore module:
 
-[source, screen, ]
+[source, screen]
 ----
 # ---------------------------------------
 # Module: session-store-gcloud

@@ -49,7 +49,7 @@ If neither of these options meets your needs, you can implement a custom request
 
 To enable the Request Log module for the entire server via the Jetty distribution, it first needs to be enabled on the command line:
 
-[source, screen, ]
+[source, screen]
 ----
 $ java -jar ../start.jar --add-to-start=requestlog
 
@@ -68,7 +68,7 @@ ____
 
 The equivalent code for embedded usages of Jetty is:
 
-[source, java, ]
+[source, java]
 ----
 NCSARequestLog requestLog = new NCSARequestLog("/var/logs/jetty/jetty-yyyy_mm_dd.request.log");
 requestLog.setAppend(true);
@@ -120,7 +120,7 @@ Both timezones are set to GMT by default.
 
 To configure a separate request log for specific a web application, add the following to the context XML file.
 
-[source, xml, ]
+[source, xml]
 ----
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   ...

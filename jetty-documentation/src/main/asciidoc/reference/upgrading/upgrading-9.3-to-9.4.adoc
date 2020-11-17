@@ -61,7 +61,7 @@ You need to open your Jetty 9.3 `start.ini` and replace the references to the `l
 
 For example, in an existing Jetty 9.3 `start.ini` file the module declaration for logging would look like this:
 
-[source, screen, ]
+[source, screen]
 ----
 --module=logging
 jetty.logging.retainDays=7
@@ -69,7 +69,7 @@ jetty.logging.retainDays=7
 
 In 9.4, it should be replaced by:
 
-[source, screen, ]
+[source, screen]
 ----
 --module=console-capture
 jetty.console-capture.retainDays=7

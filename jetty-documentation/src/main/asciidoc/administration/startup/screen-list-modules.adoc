@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-[source, screen, ]
+[source, screen]
 ....
 [mybase]$ java -jar ../start.jar --list-modules
 

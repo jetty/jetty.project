@@ -46,7 +46,7 @@ For the time being I'll leave this buildpack under my personal github account an
 To show how incredibly easy it is to use the Jetty buildpack with cloudfoundry, this is all the more you need to do to deploy your application.
 Refer to the CloudFoundry http://docs.cloudfoundry.com/[documentation] to get started, get the `cf` utilities installed and an environment configured.
 
-[source, screen, ]
+[source, screen]
 ....
 $ cf push snifftest --buildpack=git://github.com/jmcc0nn3ll/jetty-buildpack.git
 
@@ -62,7 +62,7 @@ ____
 
 You will be prompted to answer a series of questions describing the execution environment and any additional services you need enabled (databases, etc).
 
-[source, plain, ]
+[source, plain]
 ----
 
 Instances> 1
@@ -97,7 +97,7 @@ Save configuration?> n
 
 Once answered you will see the installation process of your application.
 
-[source, plain, ]
+[source, plain]
 ----
 
 Uploading snifftest... OK

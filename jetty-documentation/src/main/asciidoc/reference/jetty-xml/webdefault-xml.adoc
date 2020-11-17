@@ -59,7 +59,7 @@ Maximum number of files to cache.
 
 You can specify a custom `webdefault.xml` for an individual web application in that webapp's xref:jetty-xml-config[] as follows:
 
-[source, xml, ]
+[source, xml]
 ----
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
@@ -74,7 +74,7 @@ You can specify a custom `webdefault.xml` for an individual web application in t
 
 The equivalent in code is:
 
-[source, java, ]
+[source, java]
 ----
 
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -95,7 +95,7 @@ Alternatively, you can use a xref:jetty-classloading[] to find the resource repr
 
 If you want to apply the same custom `webdefault.xml` to a number of webapps, provide the path to the file in xref:jetty-xml-config[] in the `$JETTY_HOME/etc/jetty-deploy.xml` file:
 
-[source, xml, ]
+[source, xml]
 ----
    <Set name="defaultsDescriptor"><Property name="jetty.home" default="." />/other/path/to/another/webdefault.xml</Set>
 ----
@@ -105,7 +105,7 @@ If you want to apply the same custom `webdefault.xml` to a number of webapps, pr
 
 Similarly, when using the link:#jetty-maven-plugin[Jetty Maven Plugin] you provide a customized `webdefault.xml` file for your webapp as follows:
 
-[source, xml, ]
+[source, xml]
 ----
 <project>
     ...

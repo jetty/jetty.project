@@ -80,7 +80,7 @@ ____
 An application is free to implement its own Alias checking.
 Alias Checkers can be installed in a context via the following XML used in a context deployer file or `WEB-INF/jetty-web.xml`:
 
-[source, xml, ]
+[source, xml]
 ----
   <!-- Allow symbolic links  -->
   <Call name="addAliasCheck">

@@ -25,7 +25,7 @@
 When using the Jetty distribution, you will first need to enable the `session-store-infinispan-remote` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 
 
-[source, screen, ]
+[source, screen]
 ----
 $ java -jar ../start.jar --create-startd
 INFO : Base directory was modified
@@ -72,7 +72,7 @@ ____
 
 Opening the `start.d/session-store-infinispan-remote.ini` will show a list of all the configurable options for the JDBC module:
 
-[source, screen, ]
+[source, screen]
 ----
 # ---------------------------------------
 # Module: session-store-infinispan-remote
@@ -113,7 +113,7 @@ ____
 Enabling this module allows jetty to search infinispan for expired sessions that are no longer being referenced by any jetty node.
 Note that this is an *additional* module, to be used in conjuction with the `session-store-infinispan-remote` module.
 
-[source, screen, ]
+[source, screen]
 ----
 java -jar ../start.jar --add-to-start=infinispan-remote-query
 ----
@@ -131,7 +131,7 @@ ____
 If you are running Jetty with JDK 9 or greater, enable `session-store-infinispan-embedded-910.mod` instead.
 ____
 
-[source, screen, ]
+[source, screen]
 ----
 java -jar ../start.jar --add-to-start=session-store-infinispan-embedded
 
@@ -167,7 +167,7 @@ In addition to adding these modules to the classpath of the server it also added
 
 Opening the `start.d/session-store-infinispan-remote.ini` will show a list of all the configurable options for the JDBC module:
 
-[source, screen, ]
+[source, screen]
 ----
 # ---------------------------------------
 # Module: session-store-infinispan-embedded
@@ -198,7 +198,7 @@ ____
 
 Similarly to the `session-store-infinispan-remote` module, the `session-store-infinispan-embedded` module has an adjunct module `infinispan-embedded-query`, which when enabled, will allow jetty to detect and properly scavenge defunct sessions stranded in infinispan.
 
-[source, screen, ]
+[source, screen]
 ----
 java -jar ../start.jar --add-to-start=infinispan-embedded-query
 ----
@@ -220,7 +220,7 @@ ____
 
 How to use the converter:
 
-[source, screen, ]
+[source, screen]
 ----
 java -cp servlet-api-3.1.jar:jetty-util-9.4.13.jar:jetty-server-9.4.13.jar:infinispan-remote-9.1.0.Final.jar:jetty-infinispan-9.4.13.jar:[other classpath]  org.eclipse.jetty.session.infinispan.InfinispanSessionLegacyConverter
 
@@ -240,7 +240,7 @@ When used with no arguments the usage message is printed. When used with the `ca
 To perform the conversion, run the InfinispanSessionLegacyConverter with just the `cache-name`, and optionally the `host` system property.
 The following command will attempt to convert all sessions in the cached named `my-remote-cache` on the machine `myhost`, ensuring that application classes in the `/my/custom/classes` directory are on the classpath:
 
-[source, screen, ]
+[source, screen]
 ----
 java -cp servlet-api-3.1.jar:jetty-util-9.4.13.jar:jetty-server-9.4.13.jar:infinispan-remote-9.1.0.Final.jar:jetty-infinispan-9.4.13.jar:/my/custom/classes  org.eclipse.jetty.session.infinispan.InfinispanSessionLegacyConverter -Dhost=myhost my-remote-cache
 ----

@@ -53,7 +53,7 @@ It also assumes you are using `start.ini` to configure your server features.
 
 1.  Create a base directory anywhere.
 +
-[source, screen, ]
+[source, screen]
 ....
 [/home/user]$ mkdir my-base
 [/home/user]$ cd my-base
@@ -61,7 +61,7 @@ It also assumes you are using `start.ini` to configure your server features.
 2.  Add the modules for SSL, HTTP, and webapp deployment.
 Adding modules in this way will append the associated module properties to the `${jetty.base}/start.ini` file.
 +
-[source, screen, ]
+[source, screen]
 ....
 [my-base]$ java -jar /home/user/jetty-distribution-{VERSION}/start.jar --add-to-start=http,https,deploy
 
@@ -82,7 +82,7 @@ INFO  : Base directory was modified
 ....
 3.  Look at your directory.
 +
-[source, screen, ]
+[source, screen]
 ....
 [my-base]$ ls -la
 total 20
@@ -94,20 +94,20 @@ drwxrwxr-x   2 user group 4096 Oct  8 06:55 webapps/
 ....
 4.  Copy your WAR files into webapps.
 +
-[source, screen, ]
+[source, screen]
 ....
 [my-base]$ ls -la
 [my-base]$ cp ~/code/project/target/gadget.war webapps/
 ....
 5.  Copy your keystore into place.
 +
-[source, screen, ]
+[source, screen]
 ....
 [my-base]$ cp ~/code/project/keystore etc/keystore
 ....
 6.  Edit the `start.ini` to configure your SSL settings.
 +
-[source, screen, ]
+[source, screen]
 ....
 [my-base]$ cat start.ini
 ....
@@ -160,7 +160,7 @@ http.timeout=30000
 
 Look at the configuration you have at this point.
 
-[source, screen, ]
+[source, screen]
 ....
 [my-base]$ java -jar /home/user/jetty-distribution-{VERSION}/start.jar --list-config
 
@@ -233,7 +233,7 @@ Jetty Active XMLs:
 
 Now start Jetty.
 
-[source, screen, ]
+[source, screen]
 ....
 [my-base]$ java -jar /home/user/jetty-distribution-{VERSION}/start.jar
 2013-10-08 07:06:55.837:INFO:oejs.Server:main: jetty-{VERSION}
@@ -261,7 +261,7 @@ Notice that you have `--module=<name>` here and there; you have wrapped up the g
 
 You can see the list of modules:
 
-[source, screen, ]
+[source, screen]
 ....
 [my-base]$ java -jar /home/user/jetty-distribution-{VERSION}/start.jar --list-modules
 
@@ -448,7 +448,7 @@ While you can manage the list of active modules yourself, it is much easier to e
 
 If you want to start using a new module:
 
-[source, screen, ]
+[source, screen]
 ....
 [my-base] $ java -jar ../jetty-distribution-{VERSION}/start.jar --add-to-start=https
 ....
@@ -482,7 +482,7 @@ For more information on the `start.jar` in 9.1, see xref:start-jar[].
 1.  Download and unpack Jetty into `/home/user/jetty-distribution-{VERSION}`.
 2.  Go to your base directory and just use the distribution, no editing.
 +
-[source, screen, ]
+[source, screen]
 ....
 [my-base]$ java -jar /home/user/jetty-distribution-{VERSION}/start.jar
 ....
@@ -506,7 +506,7 @@ By default, the module system keeps things sane, and transitively includes all d
 
 You can see what the configuration looks like, after all of the modules are resolved, without starting Jetty via:
 
-[source, screen, ]
+[source, screen]
 ....
 [my-base] $ java -jar ../jetty-distribution-{VERSION}/start.jar --list-config
 ....
@@ -518,7 +518,7 @@ Use the `--list-config` to see the configuration.
 Notice that only a subset of the JARs from the distribution are in use.
 The modules you have enabled determine that subset.
 
-[source, screen, ]
+[source, screen]
 ....
 [my-base]$ java -jar ~/jetty-distribution-{VERSION}/start.jar --list-config
 ....

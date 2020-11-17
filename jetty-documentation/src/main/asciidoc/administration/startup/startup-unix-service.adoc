@@ -27,7 +27,7 @@ This script is suitable for setting up Jetty as a service in Unix.
 
 The minimum steps to get Jetty to run as a Service include:
 
-[source, screen, ]
+[source, screen]
 ....
 [/opt/jetty]# tar -zxf /home/user/downloads/jetty-distribution-{VERSION}.tar.gz
 [/opt/jetty]# cd jetty-distribution-{VERSION}/
@@ -57,7 +57,7 @@ The techniques outlined here assume an installation on Linux (demonstrated on Ub
 
 Prepare some empty directories to work with.
 
-[source, screen, ]
+[source, screen]
 ....
 # mkdir -p /opt/jetty
 # mkdir -p /opt/web/mybase
@@ -79,14 +79,14 @@ It is our experience that the standard temp directory is often managed by variou
 Jetty 9.3 requires Java 8 (or greater) to run.
 Make sure you have it installed.
 
-[source, screen, ]
+[source, screen]
 ....
 # apt-get install openjdk-8-jdk
 ....
 
 Or download Java 8 from: http://www.oracle.com/technetwork/java/javase/downloads/index.html
 
-[source, screen, ]
+[source, screen]
 ....
 # java -version
 java version "1.6.0_27"
@@ -118,7 +118,7 @@ OpenJDK 64-Bit Server VM (build 23.7-b01, mixed mode)
 It is recommended that you create a user to specifically run Jetty.
 This user should have the minimum set of privileges needed to run Jetty.
 
-[source, screen, ]
+[source, screen]
 ....
 # useradd --user-group --shell /bin/false --home-dir /opt/jetty/temp jetty
 ....
@@ -129,7 +129,7 @@ Download a copy of the Jetty distribution from the link:#jetty-downloading[Offic
 
 Unpack it into place.
 
-[source, screen, ]
+[source, screen]
 ....
 [/opt/jetty]# tar -zxf /home/user/Downloads/jetty-distribution-{VERSION}.tar.gz
 [/opt/jetty]# ls -F
@@ -153,7 +153,7 @@ In past versions of Jetty, you would configure / modify / add to the `jetty-dist
 While this is still supported, we encourage you to setup a proper `${jetty.base}` directory, as it will benefit you with easier `jetty-distribution` upgrades in the future.
 --
 
-[source, screen, ]
+[source, screen]
 ....
 # cd /opt/web/mybase/
 [/opt/web/mybase]# ls
@@ -191,7 +191,7 @@ See xref:start-jar[] for more details and options on setting up and configuring 
 
 Copy your war file into place.
 
-[source, screen, ]
+[source, screen]
 ....
 # cp /home/user/projects/mywebsite.war /opt/web/mybase/webapps/
 ....
@@ -200,7 +200,7 @@ Most service installations will want Jetty to run on port 80, now is the opportu
 
 Edit the `/opt/web/mybase/start.ini` and change the `jetty.http.port` value.
 
-[source, screen, ]
+[source, screen]
 ....
 # grep jetty.http.port /opt/web/mybase/start.ini
 jetty.port=80
@@ -208,7 +208,7 @@ jetty.port=80
 
 Change the permissions on the Jetty distribution and webapp directories so that the user you created can access it.
 
-[source, screen, ]
+[source, screen]
 ....
 # chown --recursive jetty /opt/jetty
 # chown --recursive jetty /opt/web/mybase
@@ -216,7 +216,7 @@ Change the permissions on the Jetty distribution and webapp directories so that 
 
 Next we need to make the Unix System aware that we have a new Jetty Service that can be managed by the standard `service` calls.
 
-[source, screen, ]
+[source, screen]
 ....
 # cp /opt/jetty/jetty-distribution-{VERSION}/bin/jetty.sh /etc/init.d/jetty
 # echo "JETTY_HOME=/opt/jetty/jetty-distribution-{VERSION}" > /etc/default/jetty
@@ -227,7 +227,7 @@ Next we need to make the Unix System aware that we have a new Jetty Service that
 
 Test out the configuration:
 
-[source, screen, ]
+[source, screen]
 ....
 # service jetty status
 Checking arguments to Jetty:
@@ -260,7 +260,7 @@ You now have a configured `${jetty.base}` in `/opt/web/mybase` and a `${jetty.ho
 
 Test the service to make sure it starts up and runs successfully.
 
-[source, screen, ]
+[source, screen]
 ....
 # service jetty start
 Starting Jetty: OK Wed Nov 20 12:35:28 MST 2013

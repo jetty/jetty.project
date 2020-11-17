@@ -26,7 +26,7 @@ Note: Persisting sessions to the local file system should *not* be used in a clu
 
 When using the Jetty distribution, you will first need to enable the `session-store-file` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 
-[source, screen, ]
+[source, screen]
 ----
 $ java -jar ../start.jar --create-startd
 INFO : Base directory was modified
@@ -58,7 +58,7 @@ ____
 
 Opening `start.d/session-store-file.ini` will show a list of all the configurable options for the file system session module:
 
-[source, screen, ]
+[source, screen]
 ----
 # ---------------------------------------
 # Module: session-store-file

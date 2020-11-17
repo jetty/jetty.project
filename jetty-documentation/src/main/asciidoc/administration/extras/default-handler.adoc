@@ -39,7 +39,7 @@ _____
 The `DefaultHandler` will also handle serving out the `flav.ico` file should a request make it through all of the other handlers without being resolved.
 _____
 
-[source, java, ]
+[source, java]
 ----
     Server server = new Server(8080);
     HandlerList handlers = new HandlerList();

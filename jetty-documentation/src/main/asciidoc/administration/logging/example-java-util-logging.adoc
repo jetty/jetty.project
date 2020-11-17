@@ -25,7 +25,7 @@ If you want to use the built-in native `JavaUtilLog` implementation, see #exampl
 
 A convenient replacement `logging` module has been created to bootstrap your `${jetty.base}` directory for logging with `java.util.logging`.
 
-[source, screen, ]
+[source, screen]
 ....
 [mybase]$ mkdir modules
 [mybase]$ cd modules

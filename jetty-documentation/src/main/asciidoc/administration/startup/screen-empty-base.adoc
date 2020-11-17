@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-[source, screen, ]
+[source, screen]
 ....
 [jetty]$ mkdir mybase
 [jetty]$ cd mybase

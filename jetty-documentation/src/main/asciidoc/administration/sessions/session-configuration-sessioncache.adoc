@@ -26,7 +26,7 @@ If you wish to change any of the default values, you need to enable the `session
 
 Once the `session-cache-hash` module has been enabled, you can view a list of all the configurable values by opening `start.d/session-cache-hash.ini`:
 
-[source, screen, ]
+[source, screen]
 ----
 --module=session-cache-hash
 

@@ -93,7 +93,7 @@ Either this property _or_ the *jetty.home.bundle* _must_ be specified.
 This property should point to a file system location that has an `etc/` directory containing xml files to configure the Jetty container on startup.
 For example:
 +
-[source, plain, ]
+[source, plain]
 ----
 jetty.home=/opt/custom/jetty
 
@@ -102,7 +102,7 @@ jetty.home=/opt/custom/jetty
 +
 Where `/opt/custom/jetty` contains:
 +
-[source, plain, ]
+[source, plain]
 ----
 
 etc/jetty.xml
@@ -118,7 +118,7 @@ The `jettyhome/` directory should have a subdirectory called `etc/` that contain
 The jetty-osgi-boot.jar contains a `jettyhome/` directory with a default set of xml configuration files.
 Here's how you would specify it:
 +
-[source, plain, ]
+[source, plain]
 ----
 jetty.home.bundle=org.eclipse.jetty.osgi.boot
 ----
@@ -126,7 +126,7 @@ jetty.home.bundle=org.eclipse.jetty.osgi.boot
 +
 Here's a partial listing of that jar that shows you the names of the xml files contained within it:
 +
-[source, plain, ]
+[source, plain]
 ----
 META-INF/MANIFEST.MF
 jettyhome/etc/jetty.xml
@@ -138,7 +138,7 @@ jetty.etc.config.urls::
 This specifies the paths of the xml files that are to be used.
 If not specified, they default to:
 +
-[source, plain, ]
+[source, plain]
 ----
 etc/jetty.xml,etc/jetty-http.xml,etc/jetty-deploy.xml
 ----
@@ -163,7 +163,7 @@ You can now go ahead and deploy the jetty-osgi-boot.jar into your OSGi container
 A Jetty server instance will be created, the xml config files applied to it, and then published as an OSGi service.
 Normally, you will not need to interact with this service instance, however you can retrieve a reference to it using the usual OSGi API:
 
-[source, java, ]
+[source, java]
 ----
 org.osgi.framework.BundleContext bc;
 org.osgi.framework.ServiceReference ref = bc.getServiceReference("org.eclipse.jetty.server.Server");
@@ -187,7 +187,7 @@ the Server's name.
 
 Here's an example of how to create a new Server instance and register it with OSGi so that the jetty-osgi-boot code will find it and configure it so it can be a deployment target:
 
-[source, java, ]
+[source, java]
 ----
 public class Activator implements BundleActivator
 {
@@ -213,7 +213,7 @@ public class Activator implements BundleActivator
 
 Now that we have created a new Server called "fooServer", we can deploy webapps and `ContextHandlers` as Bundles or Services to it (see below for more information on this). Here's an example of deploying a webapp as a Service and targeting it to the "fooServer" Server we created above:
 
-[source, java, ]
+[source, java]
 ----
 public class Activator implements BundleActivator
 {
@@ -248,7 +248,7 @@ Here's an example of a bundle where the resources of the webapp are not located 
 +
 `MANIFEST`:
 +
-[source, plain, ]
+[source, plain]
 ----
 Bundle-Name: Web
 Jetty-WarResourcePath: web
@@ -260,7 +260,7 @@ Bundle-SymbolicName: com.acme.sample.web
 +
 Bundle contents:
 +
-[source, plain, ]
+[source, plain]
 ----
 META-INF/MANIFEST.MF
 web/index.html
@@ -277,7 +277,7 @@ Here's an example based on the previous one where we use the `Web-ContextPath` h
 +
 `MANIFEST`:
 +
-[source, plain, ]
+[source, plain]
 ----
 Bundle-Name: Web
 Jetty-WarResourcePath: web
@@ -324,14 +324,14 @@ If the `MANIFEST` does not contain that header, then Jetty will concoct a contex
 
 For example, suppose we have a bundle whose location is:
 
-[source, plain, ]
+[source, plain]
 ----
 file://some/where/over/the/rainbow/oz.war
 ----
 
 The corresponding synthesized context path would be:
 
-[source, plain, ]
+[source, plain]
 ----
 /oz
 ----
@@ -343,7 +343,7 @@ This xml file must be placed in `META-INF` of the bundle, and must be called `je
 
 Here's an example of a webapp bundle listing containing such a file:
 
-[source, plain, ]
+[source, plain]
 ----
 META-INF/MANIFEST.MF
 META-INF/jetty-webapp-context.xml
@@ -356,7 +356,7 @@ com/acme/sample/web/MyOtherStuff.class
 
 Here's an example of the contents of a `META-INF/jetty-webapp-context.xml` file:
 
-[source, xml, ]
+[source, xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 
@@ -388,28 +388,28 @@ The context files can be inside the bundle, external to the bundle somewhere on 
 +
 A context file that is inside the bundle:
 +
-[source, plain, ]
+[source, plain]
 ----
 Jetty-ContextFilePath: ./a/b/c/d/foo.xml
 ----
 +
 A context file that is on the file system:
 +
-[source, plain, ]
+[source, plain]
 ----
 Jetty-ContextFilePath: /opt/app/contexts/foo.xml
 ----
 +
 A context file that is relative to jetty.home:
 +
-[source, plain, ]
+[source, plain]
 ----
 Jetty-ContextFilePath: contexts/foo.xml
 ----
 +
 A number of different context files:
 +
-[source, plain, ]
+[source, plain]
 ----
 Jetty-ContextFilePath: ./a/b/c/d/foo.xml,/opt/app/contexts/foo.xml,contexts/foo.xml
 ----
@@ -437,7 +437,7 @@ Note that this could be either a directory in the file system if the OSGi contai
 
 Here's an example of a context xml file that makes use of these properties:
 
-[source, xml, ]
+[source, xml]
 ----
 include::{SRCDIR}/jetty-osgi/test-jetty-osgi-context/src/main/context/acme.xml[]
 ----
@@ -452,7 +452,7 @@ Here's an example of doing that with a simple bundle that serves static content,
 
 The bundle contents:
 
-[source, plain, ]
+[source, plain]
 ----
 META-INF/MANIFEST.MF
 index.html
@@ -461,7 +461,7 @@ com/acme/osgi/Activator.class
 
 The `MANIFEST.MF`:
 
-[source, plain, ]
+[source, plain]
 ----
 Bundle-Classpath: .
 Bundle-Name: Jetty OSGi Test WebApp
@@ -481,7 +481,7 @@ Bundle-SymbolicName: com.acme.testwebapp
 
 The Activator code:
 
-[source, java, ]
+[source, java]
 ----
 public void start(BundleContext context) throws Exception
 {
@@ -532,7 +532,7 @@ Here's an example of doing that with a simple bundle that serves static content 
 
 The bundle contents:
 
-[source, plain, ]
+[source, plain]
 ----
 META-INF/MANIFEST.MF
 static/index.html
@@ -543,7 +543,7 @@ com/acme/osgi/Activator$1.class
 
 The `MANIFEST`:
 
-[source, plain, ]
+[source, plain]
 ----
 Bundle-Classpath: .
 Bundle-Name: Jetty OSGi Test Context
@@ -564,7 +564,7 @@ Bundle-SymbolicName: com.acme.testcontext
 
 The Activator code:
 
-[source, java, ]
+[source, java]
 ----
 public void start(final BundleContext context) throws Exception
 {
@@ -593,7 +593,7 @@ public void start(final BundleContext context) throws Exception
 
 The contents of the `acme.xml` context file:
 
-[source, xml, ]
+[source, xml]
 ----
 include::{SRCDIR}/jetty-osgi/test-jetty-osgi-context/src/main/context/acme.xml[]
 ----
@@ -751,7 +751,7 @@ This is necessary because the classloading regime used by the OSGi container is 
 Firstly, lets look at an example of a web bundle's modified `MANIFEST` file so you get an idea of what is required.
 This example is a web bundle that uses the Spring servlet framework:
 
-[source, plain, ]
+[source, plain]
 ----
 Bundle-SymbolicName: com.acme.sample
 Bundle-Name: WebSample
@@ -782,7 +782,7 @@ org.eclipse.jetty.osgi.tldbundles::
 System property defined on the OSGi environment that is a comma separated list of symbolic names of bundles containing taglibs that will be treated as if they are on the container's classpath for web bundles.
 For example:
 +
-[source, plain, ]
+[source, plain]
 ----
 org.eclipse.jetty.osgi.tldbundles=com.acme.special.tags,com.foo.web,org.bar.web.framework
 ----
@@ -798,7 +798,7 @@ In that case, it can be specified on the `org.eclipse.jetty.deploy.DeploymentMan
 The `jetty-osgi-boot.jar` contains the default `jettyhome/etc/jetty-deploy.xml` file where the `DeploymentManager` is defined.
 To set the pattern, you will need to provide your own etc files - see the section on link:#customize-jetty-container[customizing the jetty container] for how to do this. Here's how the `jetty-deploy.xml` file would look if we defined a pattern that matched all bundle symbolic names ending in "tag" and "web":
 +
-[source, xml, ]
+[source, xml]
 ----
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">

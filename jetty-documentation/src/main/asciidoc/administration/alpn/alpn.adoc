@@ -90,7 +90,7 @@ or alternatively you need the link:#alpn-openjdk8-agent[Jetty ALPN agent].
 
 In the case of the Jetty ALPN boot library, start the JVM as follows:
 
-[source, plain, ]
+[source, plain]
 ----
 java -Xbootclasspath/p:<path_to_alpn_boot_jar> ...
 ----
@@ -121,7 +121,7 @@ transforms, if necessary, the relevant OpenJDK classes to provide the ALPN suppo
 
 To use the Jetty ALPN agent, start the JVM as follows:
 
-[source, plain, ]
+[source, plain]
 ----
 java -javaagent:<path_to_alpn_agent_jar> ...
 ----
@@ -178,7 +178,7 @@ ____
 
 When starting the Jetty server, especially when using Jetty embedded, it may be possible that you see an error similar to this:
 
-[source, plain, ]
+[source, plain]
 ----
 IllegalStateException: no ALPN processor
 ----
@@ -217,7 +217,7 @@ Refer to `ALPN` Javadocs and to the examples below for further details about cli
 [[alpn-openjdk8-client-example]]
 ==== Client Example
 
-[source, java, ]
+[source, java]
 ----
 SSLContext sslContext = ...;
 SSLSocket sslSocket = (SSLSocket)context.getSocketFactory().createSocket("localhost", server.getLocalPort());
@@ -257,7 +257,7 @@ The ALPN implementation calls `ALPN.ClientProvider` methods `protocols()`, `unsu
 
 The example for `SSLEngine` is identical, and you just need to replace the `SSLSocket` instance with an `SSLEngine` instance.
 
-[source, java, ]
+[source, java]
 ----
 SSLEngine sslEngine = ...;
 ALPN.put(sslEngine, new ALPN.ServerProvider()
@@ -294,7 +294,7 @@ Failing to do so will cause a memory leak.
 You can write and run unit tests that use the ALPN implementation.
 The solution that we use with Maven is to specify an additional command line argument to the Surefire plugin:
 
-[source, xml, ]
+[source, xml]
 ----
 <project>
 
@@ -427,7 +427,7 @@ This section is for Jetty developers that need to update the ALPN implementation
 
 Clone the OpenJDK repository with the following command:
 
-[source, screen, ]
+[source, screen]
 ....
 $ hg clone https://hg.openjdk.java.net/jdk8u/jdk8u jdk8u
 $ cd !$
@@ -436,7 +436,7 @@ $ ./get_source.sh
 
 To update the source to a specific tag, use the following command:
 
-[source, screen, ]
+[source, screen]
 ....
 $ ./make/scripts/hgforest.sh update <tag-name>
 

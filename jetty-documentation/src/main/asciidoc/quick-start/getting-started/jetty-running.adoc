@@ -58,7 +58,7 @@ Within the standard Jetty distribution there is the `demo-base` directory.
 This is a fully-functioning Jetty Base (more on that later) complete with numerous web applications demonstrating different Jetty functionality.
 Additionally, the `demo-base` demonstrates the recommended way to run a Jetty base in a directory separate from `$JETTY_HOME`:
 
-[source, screen, ]
+[source, screen]
 ----
 $ cd demo-base/
 $ java -jar ../start.jar
@@ -110,7 +110,7 @@ ____
 
 You can see the configuration of the `demo-base` by using the following commands:
 
-[source, screen, ]
+[source, screen]
 ----
 > cd $JETTY_HOME/demo-base/
 > java -jar $JETTY_HOME/start.jar --list-modules

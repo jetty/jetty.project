@@ -68,7 +68,7 @@ That said, if a user wishes to configure sessions this way, it is possible using
 
 Below is an example of how you could configure a the link:#configuring-sessions-file-system[`FileSessionDataStore`], but the same concept would apply to any of the *SessionDataStores discussed in this chapter:
 
-[source, xml, ]
+[source, xml]
 ----
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Call id="sh" name="getSessionHandler">

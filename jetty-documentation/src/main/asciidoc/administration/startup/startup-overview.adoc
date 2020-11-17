@@ -71,7 +71,7 @@ XML Files::
 
 The simplest way to start Jetty is via the `start.jar` mechanism using the following Java command line:
 
-[source, screen, ]
+[source, screen]
 ....
 [user]$ cd jetty-distribution-{VERSION}
 [jetty-distribution-{VERSION}]$ java -jar start.jar --module=http jetty.http.port=8080
@@ -80,7 +80,7 @@ The simplest way to start Jetty is via the `start.jar` mechanism using the follo
 This command uses the `start.jar` mechanism to bootstrap the classpath, properties, and XML files with the metadata obtained from the `http` module.
 Specifically the `http` module is defined in the `${jetty.home}/modules/http.mod` file, and includes the following:
 
-[source, screen, ]
+[source, screen]
 ....
 [jetty-distribution-{VERSION}]$ cat modules/http.mod
 [depend]
@@ -99,7 +99,7 @@ The INI-template section is not actually used by the command above, so the `jett
 
 Following the server dependency, the `${jetty.home}/modules/server.mod` file includes:
 
-[source, screen, ]
+[source, screen]
 ....
 [jetty-distribution-{VERSION}]$ cat modules/server.mod
 [lib]
@@ -123,7 +123,7 @@ The combined metadata of the `http` and `server` modules results in `start.jar` 
 
 Another way to see this is by asking Jetty what its configuration looks like by appending --list-config to the command line:
 
-[source, screen, ]
+[source, screen]
 ....
 [jetty-distribution-{VERSION}]$ java -jar start.jar --module=http jetty.http.port=9099 --list-config
 
@@ -182,7 +182,7 @@ If you don't want to use the `start.jar` bootstrap, you can start Jetty using a 
 
 The following is the equivalent Java command line for what the `start.jar` bootstrap above performs.
 
-[source, screen, ]
+[source, screen]
 ....
 [user]$ cd jetty-distribution-{VERSION}
 [jetty-distribution-{VERSION}]$ echo jetty.http.port=8080 > /tmp/jetty.properties
@@ -209,7 +209,7 @@ The Java command line sets up the classpath with the core Jetty jars and the ser
 
 You can further simplify the startup of this server by using the INI template defined by the modules to create a `start.ini` file with the command:
 
-[source, screen, ]
+[source, screen]
 ....
 [user]$ cd jetty-distribution-{VERSION}
 [jetty-distribution-{VERSION}]$ mkdir example-base
@@ -235,7 +235,7 @@ drwxrwxr-x 12 user webgroup 4096 Oct  4 11:49 ../
 
 Once complete, you can edit the `start.ini` file to modify any parameters and you can run the server with the simple command:
 
-[source, screen, ]
+[source, screen]
 ....
 [example-base]$ java -jar $JETTY_HOME/start.jar
 ....

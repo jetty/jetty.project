@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-[source, screen, ]
+[source, screen]
 ....
 [mybase]$ java -jar $JETTY_HOME/start.jar --list-modules=logging,-internal
 

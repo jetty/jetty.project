@@ -40,7 +40,7 @@ Tag Name                       : jetty-9.9.0.v20130322
 
 2.  We use the 'release-9' branch to avoid problems with other developers actively working on the master branch.
 +
-[source, screen, ]
+[source, screen]
 ....
 // Get all of the remotes
 $ git pull origin
@@ -55,21 +55,21 @@ $ git merge --no-ff master
 
 3.  Update the VERSION.txt with changes from the git logs, this populates the resolves issues since the last release.
 +
-[source, screen, ]
+[source, screen]
 ....
 $ mvn -N -Pupdate-version
 ....
 
 4.  Edit the VERSION.txt file to set the 'Release Version' at the top alongside the Date of this release.
 +
-[source, screen, ]
+[source, screen]
 ....
 $ vi VERSION.txt
 ....
 
 5.  Make sure everything is commit'd and pushed to github.com/eclipse/jetty.project
 +
-[source, screen, ]
+[source, screen]
 ....
 $ git commit -m "Updating VERSION.txt top section" VERSION.txt
 $ git push origin release-9
@@ -84,7 +84,7 @@ The `eclipse-release` profile is required on the prepare in order to bring in th
 ____
 
 +
-[source, screen, ]
+[source, screen]
 ....
 $ mvn release:prepare -DreleaseVersion=9.0.0.v20130322 \
                       -DdevelopmentVersion=9.0.1-SNAPSHOT \
@@ -99,7 +99,7 @@ This step performs the release and deploys it to a oss.sonatype.org staging repo
 ____
 
 +
-[source, screen, ]
+[source, screen]
 ....
 $ mvn release:perform
 ....
@@ -110,7 +110,7 @@ Do not date this line.
 +
 Make sure everything is commit'd and pushed to github.com/eclipse/jetty.project
 +
-[source, screen, ]
+[source, screen]
 ....
 $ vi VERSION.txt
 $ git commit -m "Updating VERSION.txt top section" VERSION.txt
@@ -126,7 +126,7 @@ $ git push origin release-9
 * Release the staging repository to maven central on oss.sonatype.org
 * Merge back the changes in release-9 to master
 +
-[source, screen, ]
+[source, screen]
 ....
 $ git checkout master
 $ git merge --no-ff release-9
@@ -142,7 +142,7 @@ If you don't know if you have access to this then you probably don't and will ne
 
 To build and deploy the aggregate javadoc and jxr bits:
 
-[source, screen, ]
+[source, screen]
 ....
 $ cd target/checkout
 $ mvn -Paggregate-site javadoc:aggregate jxr:jxr
@@ -167,7 +167,7 @@ To localize the scripts to your environment:
 
 Once these are setup you can deploy a release to eclipse with the following incantation:
 
-[source, screen, ]
+[source, screen]
 ....
 $ ./promote-to-eclipse.sh 9.0.0.v20130322
 ....
@@ -181,7 +181,7 @@ On the eclipse side of it they will also adjust the xref and javadoc documentati
 Since we are not allowed to have symbolic links on the download site we have to log into the machine manually and remove the previous stable directory and update it with a new release.
 Maintaining the conventions we use on the site will allow all 'stable' links to be stable and not needed to update to the latest major Jetty build version:
 
-[source, screen, ]
+[source, screen]
 ....
 $ ssh <user>@build.eclipse.org
 $ cd ~downloads/jetty/
@@ -192,7 +192,7 @@ $ ./index.sh
 
 This needs to be done for all Eclipse Jetty releases (regardless of version). In addition we have to work to reduce the footprint of jetty on the primary eclipse download resources so we want to move older releases to the eclipse archive site.
 
-[source, screen, ]
+[source, screen]
 ....
 $ cd ~/downloads/jetty
 $ mv <old release> /home/data/httpd/archive.eclipse.org/jetty/

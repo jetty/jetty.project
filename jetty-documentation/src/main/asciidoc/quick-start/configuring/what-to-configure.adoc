@@ -132,7 +132,7 @@ resourceBase::
 
 In an embedded server, you configure contexts by directly calling the link:{JDURL}/org/eclipse/jetty/server/handler/ContextHandler.html[ContextHandler] API as in the following example:
 
-[source, java, ]
+[source, java]
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/OneContext.java[]
 ----
@@ -142,7 +142,7 @@ include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/One
 You can create and configure a context entirely by IoC XML (either Jetty's or Spring). 
 The deployer discovers and hot deploys context IoC descriptors like the following which creates a context to serve the Javadoc from the Jetty distribution:
 
-[source, xml, ]
+[source, xml]
 ----
 <?xml version="1.0"  encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC
@@ -203,7 +203,7 @@ Jetty allows the context Path of a WAR file to be set internally (by the WAR its
 
 To set the contextPath from within the WAR file, you can include a `WEB-INF/jetty-web.xml` file which contains IoC XML to set the context path:
 
-[source, xml, ]
+[source, xml]
 ----
 <?xml version="1.0"  encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC
@@ -218,7 +218,7 @@ To set the contextPath from within the WAR file, you can include a `WEB-INF/jett
 Alternately, you can configure the classpath externally without the need to modify the WAR file itself.
 Instead of allowing the WAR file to be discovered by the deployer, an IoC XML file may be deployed that both sets the context path and declares the WAR file that it applies to:
 
-[source, xml, ]
+[source, xml]
 ----
 <?xml version="1.0"  encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC
@@ -267,7 +267,7 @@ ____
 
 The authentication method and realm name for a standard web application may be set in the `web.xml` deployment descriptor with elements like:
 
-[source, xml, ]
+[source, xml]
 ----
 ...
 <login-config>
@@ -283,7 +283,7 @@ In Jetty, there are several realm implementations (called LoginServices) and the
 
 To configure an instance of HashLoginService that matches the "Test Realm" configured above, the following `$JETTY_BASE/etc/test-realm.xml` IoC XML file should be passed on the command line or set in `start.ini` or `start.d/server.ini`.
 
-[source, xml, ]
+[source, xml]
 ----
 include::{SRCDIR}/tests/test-webapps/test-jetty-webapp/src/main/config/demo-base/etc/test-realm.xml[]
 ----

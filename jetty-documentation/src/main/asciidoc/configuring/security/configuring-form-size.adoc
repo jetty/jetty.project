@@ -65,7 +65,7 @@ ContextHandler.setMaxFormKeys(int formKeys);
 
 These methods may be called directly when embedding Jetty, but more commonly are configured from a context XML file or WEB-INF/jetty-web.xml file:
 
-[source, xml, ]
+[source, xml]
 ----
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
 

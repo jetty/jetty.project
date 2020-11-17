@@ -24,7 +24,7 @@
 
 When using the Jetty distribution, you will first need to enable the `session-store-hazelcast-remote` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 
-[source, screen, ]
+[source, screen]
 ----
 $ java -jar ../start.jar --create-startd
 MKDIR : ${jetty.base}/start.d
@@ -73,7 +73,7 @@ ____
 
 Opening the `start.d/session-store-hazelcast-remote.ini` will show a list of all the configurable options for the Hazelcast module:
 
-[source, screen, ]
+[source, screen]
 ----
 # ---------------------------------------
 # Module: session-store-hazelcast-remote
@@ -118,7 +118,7 @@ ____
 During testing, it can be helpful to run an in-process instance of Hazelcast.
 To enable this you will first need to enable the `session-store-hazelcast-embedded` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 
-[source, screen, ]
+[source, screen]
 ----
 $ java -jar ../start.jar --create-startd
 MKDIR : ${jetty.base}/start.d
@@ -160,7 +160,7 @@ In addition to adding these modules to the classpath of the server it also added
 
 Opening the `start.d/start.d/session-store-hazelcast-embedded.ini` will show a list of all the configurable options for the Hazelcast module:
 
-[source, screen, ]
+[source, screen]
 ----
 # ---------------------------------------
 # Module: session-store-hazelcast-embedded

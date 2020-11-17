@@ -39,7 +39,7 @@ Note that this jar also requires the `javax.activation` classes, which is availa
 Here is an example class that sets up some JNDI entries and deploys a webapp that references these JNDI entries in code.
 We'll use some mocked up classes for the transaction manager and the DataSource in this example for simplicity:
 
-[source, java, ]
+[source, java]
 ----
 import java.util.Properties;
 import org.eclipse.jetty.server.Server;
