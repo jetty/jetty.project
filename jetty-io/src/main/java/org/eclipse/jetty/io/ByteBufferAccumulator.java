@@ -50,6 +50,11 @@ public class ByteBufferAccumulator implements AutoCloseable
         _bufferPool = (bufferPool == null) ? new NullByteBufferPool() : bufferPool;
     }
 
+    /**
+     * Get the amount of bytes which have been accumulated.
+     * This will add up the remaining of each buffer in the accumulator.
+     * @return the total length of the content in the accumulator.
+     */
     public int getLength()
     {
         int length = 0;

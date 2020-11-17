@@ -50,7 +50,7 @@ public class ByteAccumulator implements AutoCloseable
 
     public int getLength()
     {
-        return accumulator.getLength();
+        return length;
     }
 
     public ByteBuffer ensureBuffer(int minAllocationSize)
@@ -58,7 +58,7 @@ public class ByteAccumulator implements AutoCloseable
         return accumulator.ensureBuffer(MIN_SPACE, minAllocationSize);
     }
 
-    public void readBytes(int read)
+    public void addLength(int read)
     {
         length += read;
         if (length > maxSize)
