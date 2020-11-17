@@ -598,16 +598,22 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     if (fields.stream().anyMatch(f -> f.contains(HttpHeaderValue.CLOSE.asString())))
                     {
                         if (fields.size() == 1)
-                            return fields.get(0);
+                        {
+                            HttpField f = fields.get(0);
+                            if (HttpConnection.CONNECTION_CLOSE.equals(f))
+                                return f;
+                        }
 
                         return new HttpField(HttpHeader.CONNECTION, fields.stream()
-                            .flatMap(field -> Stream.of(field.getValues()))
+                            .flatMap(field -> Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s)))
                             .collect(Collectors.joining(", ")));
                     }
 
-                    return new HttpField(HttpHeader.CONNECTION, fields.stream()
-                        .flatMap(field -> Stream.of(field.getValues()))
-                        .collect(Collectors.joining(", ")) + ", " + HttpHeaderValue.CLOSE.asString());
+                    return new HttpField(HttpHeader.CONNECTION,
+                        Stream.concat(fields.stream()
+                        .flatMap(field -> Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s))),
+                        Stream.of(HttpHeaderValue.CLOSE.asString()))
+                        .collect(Collectors.joining(", ")));
                 });
                 break;
 

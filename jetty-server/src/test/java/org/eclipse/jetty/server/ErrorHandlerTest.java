@@ -262,6 +262,7 @@ public class ErrorHandlerTest
                 "Host: Localhost\r\n" +
                 "Accept: text/html\r\n" +
                 "Content-Length: 10\r\n" +
+                "Connection: keep-alive\r\n" + // This is not need by HTTP/1.1 but sometimes sent anyway
                 "\r\n" +
                 "0123456789");
 
@@ -303,6 +304,7 @@ public class ErrorHandlerTest
                 "Host: Localhost\r\n" +
                 "Accept: text/html\r\n" +
                 "Content-Length: 100\r\n" +
+                "Connection: keep-alive\r\n" + // This is not need by HTTP/1.1 but sometimes sent anyway
                 "\r\n" +
                 "0123456789");
 

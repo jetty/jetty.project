@@ -1240,9 +1240,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             // context request must end with /
             baseRequest.setHandled(true);
+            String queryString = baseRequest.getQueryString();
             baseRequest.getResponse().sendRedirect(
                 HttpServletResponse.SC_MOVED_TEMPORARILY,
-                baseRequest.getRequestURI() + (baseRequest.getQueryString() == null ? "/" : ("/?" + baseRequest.getQueryString())),
+                baseRequest.getRequestURI() + (queryString == null ? "/" : ("/?" + queryString)),
                 true);
             return false;
         }

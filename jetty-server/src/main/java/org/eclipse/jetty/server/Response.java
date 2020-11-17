@@ -501,7 +501,7 @@ public class Response implements HttpServletResponse
     }
 
     /**
-     * Sends a response with one of the 300 series redirection codes.
+     * Sends a response with a HTTP version appropriate 30x redirection.
      *
      * @param location the location to send in {@code Location} headers
      * @param consumeAll if True, consume any HTTP/1 request input before doing the redirection. If the input cannot
@@ -515,7 +515,7 @@ public class Response implements HttpServletResponse
     }
 
     /**
-     * Sends a response with one of the 300 series redirection codes.
+     * Sends a response with a given redirection code.
      *
      * @param code the redirect status code
      * @param location the location to send in {@code Location} headers

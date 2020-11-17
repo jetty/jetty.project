@@ -659,15 +659,14 @@ public class HttpGenerator
                         case CONNECTION:
                         {
                             putTo(field, header);
+                            if (info.getHttpVersion() == HttpVersion.HTTP_1_0 && _persistent == null && field.contains(HttpHeaderValue.KEEP_ALIVE.asString()))
+                            {
+                                _persistent = true;
+                            }
                             if (field.contains(HttpHeaderValue.CLOSE.asString()))
                             {
                                 close = true;
                                 _persistent = false;
-                            }
-
-                            if (info.getHttpVersion() == HttpVersion.HTTP_1_0 && _persistent == null && field.contains(HttpHeaderValue.KEEP_ALIVE.asString()))
-                            {
-                                _persistent = true;
                             }
                             break;
                         }
