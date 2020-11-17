@@ -23,10 +23,12 @@ import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * ClusteredOrphanedSessionTest
  */
+@Testcontainers(disabledWithoutDocker = true)
 public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
 {
 
