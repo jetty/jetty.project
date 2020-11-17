@@ -25,7 +25,6 @@ import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.security.Credential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,7 +106,7 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
             userPrincipal.configureSubject(subject);
             if (roles != null)
             {
-                roles.stream().forEach(p -> 
+                roles.forEach(p -> 
                 {
                     p.configureForSubject(subject);
                     roleNames.add(p.getName());

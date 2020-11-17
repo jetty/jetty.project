@@ -54,9 +54,9 @@ public abstract class AbstractLoginModule implements LoginModule
     private JAASUser currentUser;
     private Subject subject;
 
-    public abstract class JAASUser
+    public abstract static class JAASUser
     {
-        private UserPrincipal _user;
+        private final UserPrincipal _user;
         private List<JAASRole> _roles;
         
         public JAASUser(UserPrincipal u)

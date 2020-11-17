@@ -126,7 +126,8 @@ public class PropertyFileLoginModule extends AbstractLoginModule
     @Override
     public JAASUser getUser(String userName) throws Exception
     {
-        LOG.debug("Checking PropertyUserStore {} for {}", _store.getConfig(), userName);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Checking PropertyUserStore {} for {}", _store.getConfig(), userName);
         UserPrincipal up = _store.getUserPrincipal(userName);
         if (up == null)
             return null;

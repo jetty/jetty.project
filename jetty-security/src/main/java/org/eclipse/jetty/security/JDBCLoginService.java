@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.security;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -57,11 +56,13 @@ public class JDBCLoginService extends AbstractLoginService
     protected Connection _con;
 
     /**
-     * JDBCKnownUser
+     * JDBCUserPrincipal
+     * 
+     * A UserPrincipal with extra jdbc key info.
      */
     public class JDBCUserPrincipal extends UserPrincipal
     {
-        int _userKey;
+        final int _userKey;
 
         public JDBCUserPrincipal(String name, Credential credential, int key)
         {
@@ -76,25 +77,21 @@ public class JDBCLoginService extends AbstractLoginService
     }
 
     public JDBCLoginService()
-        throws IOException
     {
     }
 
     public JDBCLoginService(String name)
-        throws IOException
     {
         setName(name);
     }
 
     public JDBCLoginService(String name, String config)
-        throws IOException
     {
         setName(name);
         setConfig(config);
     }
 
     public JDBCLoginService(String name, IdentityService identityService, String config)
-        throws IOException
     {
         setName(name);
         setIdentityService(identityService);
