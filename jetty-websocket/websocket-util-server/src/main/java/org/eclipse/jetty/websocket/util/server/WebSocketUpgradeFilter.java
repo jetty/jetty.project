@@ -103,7 +103,6 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     /**
      * Ensure a {@link WebSocketUpgradeFilter} is available on the provided {@link ServletContext},
      * a new filter will added if one does not already exist.
-     * </p>
      * <p>
      * The default {@link WebSocketUpgradeFilter} is also available via
      * the {@link ServletContext} attribute named {@code org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter}
