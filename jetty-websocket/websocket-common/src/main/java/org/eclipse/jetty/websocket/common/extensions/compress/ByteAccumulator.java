@@ -76,12 +76,13 @@ public class ByteAccumulator implements AutoCloseable
     public void copyChunk(ByteBuffer buffer)
     {
         int remaining = buffer.remaining();
-        int length = getLength();
         if (length + remaining > maxSize)
         {
             String err = String.format("Resulting message size [%d] is too large for configured max of [%d]", length + remaining, maxSize);
             throw new MessageTooLargeException(err);
         }
+
+        length += remaining;
         accumulator.copyBuffer(buffer);
     }
 
@@ -91,7 +92,6 @@ public class ByteAccumulator implements AutoCloseable
         BufferUtil.flipToFlush(buffer, 0);
 
         int availableSpace = BufferUtil.space(buffer);
-        int length = getLength();
         if (availableSpace < length)
         {
             String err = String.format("Not enough space in ByteBuffer remaining [%d] for accumulated buffers length [%d]", availableSpace, length);
