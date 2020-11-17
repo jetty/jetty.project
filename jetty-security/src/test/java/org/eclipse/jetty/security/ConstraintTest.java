@@ -1029,26 +1029,58 @@ public class ConstraintTest
     }
 
     @Test
-    public void testNonFormPostRedirect() throws Exception
+    public void testNonFormPostRedirectHttp10() throws Exception
     {
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage", "/testErrorPage", false));
         _server.start();
 
         String response = _connector.getResponse("POST /ctx/auth/info HTTP/1.0\r\n" +
             "Content-Type: text/plain\r\n" +
+            "Connection: keep-alive\r\n" +
             "Content-Length: 10\r\n" +
             "\r\n" +
             "0123456789\r\n");
         assertThat(response, containsString(" 302 Found"));
         assertThat(response, containsString("/ctx/testLoginPage"));
         assertThat(response, not(containsString("Connection: close")));
+        assertThat(response, containsString("Connection: keep-alive"));
 
         response = _connector.getResponse("POST /ctx/auth/info HTTP/1.0\r\n" +
+            "Host: localhost\r\n" +
             "Content-Type: text/plain\r\n" +
+            "Connection: keep-alive\r\n" +
             "Content-Length: 10\r\n" +
             "\r\n" +
             "012345\r\n");
         assertThat(response, containsString(" 302 Found"));
+        assertThat(response, containsString("/ctx/testLoginPage"));
+        assertThat(response, not(containsString("Connection: keep-alive")));
+    }
+
+    @Test
+    public void testNonFormPostRedirectHttp11() throws Exception
+    {
+        _security.setAuthenticator(new FormAuthenticator("/testLoginPage", "/testErrorPage", false));
+        _server.start();
+
+        String response = _connector.getResponse("POST /ctx/auth/info HTTP/1.1\r\n" +
+            "Host: test\r\n" +
+            "Content-Type: text/plain\r\n" +
+            "Content-Length: 10\r\n" +
+            "\r\n" +
+            "0123456789\r\n");
+        assertThat(response, containsString(" 303 See Other"));
+        assertThat(response, containsString("/ctx/testLoginPage"));
+        assertThat(response, not(containsString("Connection: close")));
+
+        response = _connector.getResponse("POST /ctx/auth/info HTTP/1.1\r\n" +
+            "Host: test\r\n" +
+            "Host: localhost\r\n" +
+            "Content-Type: text/plain\r\n" +
+            "Content-Length: 10\r\n" +
+            "\r\n" +
+            "012345\r\n");
+        assertThat(response, containsString(" 303 See Other"));
         assertThat(response, containsString("/ctx/testLoginPage"));
         assertThat(response, containsString("Connection: close"));
     }
