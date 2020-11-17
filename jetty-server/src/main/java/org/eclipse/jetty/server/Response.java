@@ -527,7 +527,7 @@ public class Response implements HttpServletResponse
     {
         if (consumeAll)
             getHttpChannel().ensureConsumeAllOrNotPersistent();
-        if ((code < HttpServletResponse.SC_MULTIPLE_CHOICES) || (code >= HttpServletResponse.SC_BAD_REQUEST))
+        if (!HttpStatus.isRedirection(code))
             throw new IllegalArgumentException("Not a 3xx redirect code");
 
         if (!isMutable())
