@@ -29,6 +29,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.servlet.DispatcherType;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.server.Server;
@@ -264,6 +266,46 @@ public class JettyWebSocketFilterTest
         assertTrue(socket.closeLatch.await(5, TimeUnit.SECONDS));
         assertThat(socket.textMessages.poll(), is("HELLO WORLD"));
         assertThat(socket.textMessages.poll(), is(idleTimeoutFilter2));
+    }
+
+    @Test
+    public void testCustomUpgradeFilter() throws Exception
+    {
+        start((context, container) ->
+        {
+            ServletContextHandler contextHandler = Objects.requireNonNull(ServletContextHandler.getServletContextHandler(context));
+
+            // This custom filter replaces the default filter as we use the pre-defined name, and adds mapping in init().
+            FilterHolder filterHolder = new FilterHolder(MyUpgradeFilter.class);
+            filterHolder.setName(WebSocketUpgradeFilter.class.getName());
+            contextHandler.addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        });
+
+        FilterHolder[] holders = contextHandler.getServletHandler().getFilters();
+        assertThat(holders.length, is(1));
+        assertThat(holders[0].getFilter(), instanceOf(MyUpgradeFilter.class));
+
+        // We can reach the echo endpoint and get correct response.
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/echo");
+        EventSocket socket = new EventSocket();
+        CompletableFuture<Session> connect = client.connect(socket, uri);
+        try (Session session = connect.get(5, TimeUnit.SECONDS))
+        {
+            session.getRemote().sendString("hElLo wOrLd");
+        }
+        assertTrue(socket.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(socket.textMessages.poll(), is("hElLo wOrLd"));
+    }
+
+    public static class MyUpgradeFilter extends WebSocketUpgradeFilter
+    {
+        @Override
+        public void init(FilterConfig config) throws ServletException
+        {
+            JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(config.getServletContext());
+            container.addMapping("/echo", EchoSocket.class);
+            super.init(config);
+        }
     }
 
     @WebSocket
