@@ -161,7 +161,9 @@ public class ByteBufferAccumulator implements AutoCloseable
             return new byte[0];
 
         byte[] bytes = new byte[length];
-        writeTo(BufferUtil.toBuffer(bytes));
+        ByteBuffer buffer = BufferUtil.toBuffer(bytes);
+        BufferUtil.clear(buffer);
+        writeTo(buffer);
         return bytes;
     }
 
@@ -170,7 +172,7 @@ public class ByteBufferAccumulator implements AutoCloseable
         int pos = BufferUtil.flipToFill(buffer);
         for (ByteBuffer bb : _buffers)
         {
-            buffer.put(bb);
+            buffer.put(bb.slice());
         }
         BufferUtil.flipToFlush(buffer, pos);
     }
@@ -179,7 +181,7 @@ public class ByteBufferAccumulator implements AutoCloseable
     {
         for (ByteBuffer bb : _buffers)
         {
-            BufferUtil.writeTo(bb, out);
+            BufferUtil.writeTo(bb.slice(), out);
         }
     }
 
