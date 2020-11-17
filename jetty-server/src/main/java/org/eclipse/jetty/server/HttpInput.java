@@ -670,6 +670,12 @@ public class HttpInput extends ServletInputStream implements Runnable
         return addContent(EOF_CONTENT);
     }
 
+    /**
+     * Consume all available content without blocking.
+     * Raw content is counted in the {@link #getContentReceived()} statistics, but
+     * is not intercepted nor counted in the {@link #getContentConsumed()} statistics
+     * @return True if EOF was reached, false otherwise.
+     */
     public boolean consumeAll()
     {
         while (true)
