@@ -19,12 +19,15 @@ Command Line Options:
   --list-config    List the resolved configuration that will be used to
                    start Jetty.
                    Output includes:
+                     o  Enabled jetty modules
                      o  Java Environment
                      o  Jetty Environment
+                     o  Config file search order
                      o  JVM Arguments
+                     o  System Properties
                      o  Properties
-                     o  Server Classpath
-                     o  Server XML Configuration
+                     o  Java Classpath
+                     o  XML Configuration files
 
   --dry-run        Print the command line that the start.jar generates,
                    then exit. This may be used to generate command lines

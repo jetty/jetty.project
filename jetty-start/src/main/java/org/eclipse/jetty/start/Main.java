@@ -266,6 +266,10 @@ public class Main
         System.out.printf("%nModules %s:%n", t);
         System.out.printf("=========%s%n", "=".repeat(t.length()));
         args.getAllModules().listModules(tags);
+
+        // for default module listings, also show enabled modules
+        if ("[-internal]".equals(t) || "[*]".equals(t))
+            args.getAllModules().listEnabled();
     }
 
     public void showModules(StartArgs args)
