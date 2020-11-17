@@ -24,10 +24,12 @@ import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * GCloudSessionDataStoreTest
  */
+@Testcontainers(disabledWithoutDocker = true)
 public class GCloudSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
 
