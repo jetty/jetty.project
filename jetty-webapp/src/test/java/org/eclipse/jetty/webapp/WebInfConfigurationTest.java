@@ -21,6 +21,7 @@ package org.eclipse.jetty.webapp;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
@@ -66,13 +67,13 @@ public class WebInfConfigurationTest
     {
         WebInfConfiguration config = new WebInfConfiguration();
         WebAppContext context = new WebAppContext();
-        context.setAttribute(WebInfConfiguration.CONTAINER_JAR_PATTERN, ".*/jetty-util-[^/]*\\.jar$|.*/jetty-util/target/classes/");
+        context.setAttribute(WebInfConfiguration.CONTAINER_JAR_PATTERN, ".*/jetty-util-[0-9][^/]*\\.jar$|.*/jetty-util/target/classes/");
 
         WebAppClassLoader loader = new WebAppClassLoader(context);
         context.setClassLoader(loader);
         config.findAndFilterContainerPaths(context);
         List<Resource> containerResources = context.getMetaData().getContainerResources();
-        assertEquals(1, containerResources.size());
+        assertEquals(1, containerResources.size(), () -> containerResources.stream().map(Resource::toString).collect(Collectors.joining(",", "[", "]")));
         assertThat(containerResources.get(0).toString(), containsString("jetty-util"));
     }
 
@@ -88,12 +89,12 @@ public class WebInfConfigurationTest
     {
         WebInfConfiguration config = new WebInfConfiguration();
         WebAppContext context = new WebAppContext();
-        context.setAttribute(WebInfConfiguration.CONTAINER_JAR_PATTERN, ".*/jetty-util-[^/]*\\.jar$|.*/jetty-util/target/classes/$|.*/foo-bar-janb.jar");
+        context.setAttribute(WebInfConfiguration.CONTAINER_JAR_PATTERN, ".*/jetty-util-[0-9][^/]*\\.jar$|.*/jetty-util/target/classes/$|.*/foo-bar-janb.jar");
         WebAppClassLoader loader = new WebAppClassLoader(context);
         context.setClassLoader(loader);
         config.findAndFilterContainerPaths(context);
         List<Resource> containerResources = context.getMetaData().getContainerResources();
-        assertEquals(2, containerResources.size());
+        assertEquals(2, containerResources.size(), () -> containerResources.stream().map(Resource::toString).collect(Collectors.joining(",", "[", "]")));
         for (Resource r : containerResources)
         {
             String s = r.toString();
@@ -116,12 +117,12 @@ public class WebInfConfigurationTest
         WebInfConfiguration config = new WebInfConfiguration();
         WebAppContext context = new WebAppContext();
         context.setAttribute(JavaVersion.JAVA_TARGET_PLATFORM, "8");
-        context.setAttribute(WebInfConfiguration.CONTAINER_JAR_PATTERN, ".*/jetty-util-[^/]*\\.jar$|.*/jetty-util/target/classes/$|.*/foo-bar-janb.jar");
+        context.setAttribute(WebInfConfiguration.CONTAINER_JAR_PATTERN, ".*/jetty-util-[0-9][^/]*\\.jar$|.*/jetty-util/target/classes/$|.*/foo-bar-janb.jar");
         WebAppClassLoader loader = new WebAppClassLoader(context);
         context.setClassLoader(loader);
         config.findAndFilterContainerPaths(context);
         List<Resource> containerResources = context.getMetaData().getContainerResources();
-        assertEquals(1, containerResources.size());
+        assertEquals(1, containerResources.size(), () -> containerResources.stream().map(Resource::toString).collect(Collectors.joining(",", "[", "]")));
         assertThat(containerResources.get(0).toString(), containsString("jetty-util"));
     }
 
