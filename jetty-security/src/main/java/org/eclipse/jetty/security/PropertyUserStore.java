@@ -206,7 +206,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
     @Override
     public String toString()
     {
-        return String.format("%s@%x[users.count=%d,identityService=%s]", getClass().getSimpleName(), hashCode(), getKnownUserIdentities().size(), getIdentityService());
+        return String.format("%s[cfg=%s]", super.toString(), _configPath);
     }
 
     protected void loadUsers() throws IOException
@@ -251,7 +251,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
             }
         }
 
-        List<String> currentlyKnownUsers = new ArrayList<>(getKnownUserIdentities().keySet());
+        List<String> currentlyKnownUsers = new ArrayList<>(_users.keySet());
         // if its not the initial load then we want to process removed users
         if (!_firstLoad)
         {

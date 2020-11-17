@@ -19,20 +19,13 @@
 package org.eclipse.jetty.security;
 
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import org.eclipse.jetty.server.UserIdentity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Properties User Realm.
- * <p>
- * An implementation of UserRealm that stores users and roles in-memory in HashMaps.
- * <p>
- * Typically these maps are populated by calling the load() method or passing a properties resource to the constructor. The format of the properties file is:
- *
+ * An implementation of a LoginService that stores users and roles in-memory in HashMaps.
+ * The source of the users and roles information is a properties file formatted like so:
  * <pre>
  *  username: password [,rolename ...]
  * </pre>
@@ -72,7 +65,7 @@ public class HashLoginService extends AbstractLoginService
     }
 
     /**
-     * Load realm users from properties file.
+     * Load users from properties file.
      * <p>
      * The property file maps usernames to password specs followed by an optional comma separated list of role names.
      * </p>
@@ -121,41 +114,21 @@ public class HashLoginService extends AbstractLoginService
     }
 
     @Override
-    protected String[] loadRoleInfo(UserPrincipal user)
+    protected List<RolePrincipal> loadRoleInfo(UserPrincipal user)
     {
-        UserIdentity id = _userStore.getUserIdentity(user.getName());
-        if (id == null)
-            return null;
-
-        Set<RolePrincipal> roles = id.getSubject().getPrincipals(RolePrincipal.class);
-        if (roles == null)
-            return null;
-
-        List<String> list = roles.stream()
-            .map(rolePrincipal -> rolePrincipal.getName())
-            .collect(Collectors.toList());
-
-        return list.toArray(new String[roles.size()]);
+        return _userStore.getRolePrincipals(user.getName());
     }
 
     @Override
     protected UserPrincipal loadUserInfo(String userName)
     {
-        UserIdentity id = _userStore.getUserIdentity(userName);
-        if (id != null)
-        {
-            return (UserPrincipal)id.getUserPrincipal();
-        }
-
-        return null;
+        return _userStore.getUserPrincipal(userName);
     }
 
     @Override
     protected void doStart() throws Exception
     {
         super.doStart();
-
-        // can be null so we switch to previous behaviour using PropertyUserStore
         if (_userStore == null)
         {
             if (LOG.isDebugEnabled())
@@ -179,7 +152,6 @@ public class HashLoginService extends AbstractLoginService
     }
 
     /**
-     * To facilitate testing.
      *
      * @return true if a UserStore has been created from a config, false if a UserStore was provided.
      */

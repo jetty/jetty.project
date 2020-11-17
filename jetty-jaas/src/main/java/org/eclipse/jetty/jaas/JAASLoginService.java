@@ -231,12 +231,14 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
         }
         catch (Exception e)
         {
-            LOG.trace("IGNORED", e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Login error", e);
         }
         finally
         {
             INSTANCE.remove();
         }
+        
         return null;
     }
 
