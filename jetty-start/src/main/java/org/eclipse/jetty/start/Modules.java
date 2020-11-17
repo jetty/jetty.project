@@ -167,6 +167,8 @@ public class Modules implements Iterable<Module>
         if (tags.contains("-*"))
             return;
 
+        tags = new ArrayList<>(tags);
+
         boolean wild = tags.contains("*");
         Set<String> included = new HashSet<>();
         if (wild)
