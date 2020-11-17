@@ -24,10 +24,13 @@ import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -43,6 +46,8 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.security.AbstractLoginService;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.security.RolePrincipal;
+import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NetworkConnector;
@@ -85,7 +90,7 @@ public class DigestPostTest
     public static class TestLoginService extends AbstractLoginService
     {
         protected Map<String, UserPrincipal> users = new HashMap<>();
-        protected Map<String, String[]> roles = new HashMap<>();
+        protected Map<String, List<RolePrincipal>> roles = new HashMap<>();
 
         public TestLoginService(String name)
         {
@@ -96,11 +101,12 @@ public class DigestPostTest
         {
             UserPrincipal userPrincipal = new UserPrincipal(username, credential);
             users.put(username, userPrincipal);
-            roles.put(username, rolenames);
+            if (rolenames != null)
+                roles.put(username, Arrays.stream(rolenames).map(RolePrincipal::new).collect(Collectors.toList()));
         }
 
         @Override
-        protected String[] loadRoleInfo(UserPrincipal user)
+        protected List<RolePrincipal> loadRoleInfo(UserPrincipal user)
         {
             return roles.get(user.getName());
         }
