@@ -77,6 +77,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -468,18 +469,12 @@ public class ConstraintTest
             )
         ));
 
-//        rawResponse = _connector.getResponse("GET /ctx/noauth/info HTTP/1.0\r\n\r\n");
-//        assertThat(rawResponse, startsWith("HTTP/1.1 200 OK"));
-
         scenarios.add(Arguments.of(
             new Scenario(
                 "GET /ctx/forbid/info HTTP/1.0\r\n\r\n",
                 HttpStatus.FORBIDDEN_403
             )
         ));
-
-//        rawResponse = _connector.getResponse("GET /ctx/forbid/info HTTP/1.0\r\n\r\n");
-//        assertThat(rawResponse, startsWith("HTTP/1.1 403 Forbidden"));
 
         scenarios.add(Arguments.of(
             new Scenario(
@@ -493,9 +488,39 @@ public class ConstraintTest
             )
         ));
 
-//        rawResponse = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
-//        assertThat(rawResponse, startsWith("HTTP/1.1 401 Unauthorized"));
-//        assertThat(rawResponse, containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
+        scenarios.add(Arguments.of(
+            new Scenario(
+                "POST /ctx/auth/info HTTP/1.1\r\n" +
+                    "Host: test\r\n" +
+                    "Content-Length: 10\r\n" +
+                    "\r\n" +
+                    "0123456789",
+                HttpStatus.UNAUTHORIZED_401,
+                (response) ->
+                {
+                    String authHeader = response.get(HttpHeader.WWW_AUTHENTICATE);
+                    assertThat(response.toString(), authHeader, containsString("basic realm=\"TestRealm\""));
+                    assertThat(response.get(HttpHeader.CONNECTION), nullValue());
+                }
+            )
+        ));
+
+        scenarios.add(Arguments.of(
+            new Scenario(
+                "POST /ctx/auth/info HTTP/1.1\r\n" +
+                    "Host: test\r\n" +
+                    "Content-Length: 10\r\n" +
+                    "\r\n" +
+                    "012345",
+                HttpStatus.UNAUTHORIZED_401,
+                (response) ->
+                {
+                    String authHeader = response.get(HttpHeader.WWW_AUTHENTICATE);
+                    assertThat(response.toString(), authHeader, containsString("basic realm=\"TestRealm\""));
+                    assertThat(response.get(HttpHeader.CONNECTION), is("close"));
+                }
+            )
+        ));
 
         scenarios.add(Arguments.of(
             new Scenario(
@@ -511,12 +536,6 @@ public class ConstraintTest
             )
         ));
 
-//        rawResponse = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
-//                "Authorization: Basic " + authBase64("user:wrong") + "\r\n" +
-//                "\r\n");
-//        assertThat(rawResponse, startsWith("HTTP/1.1 401 Unauthorized"));
-//        assertThat(rawResponse, containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
-
         scenarios.add(Arguments.of(
             new Scenario(
                 "GET /ctx/auth/info HTTP/1.0\r\n" +
@@ -526,10 +545,16 @@ public class ConstraintTest
             )
         ));
 
-//        rawResponse = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
-//                "Authorization: Basic " + authBase64("user:password") + "\r\n" +
-//                "\r\n");
-//        assertThat(rawResponse, startsWith("HTTP/1.1 200 OK"));
+        scenarios.add(Arguments.of(
+            new Scenario(
+                "POST /ctx/auth/info HTTP/1.0\r\n" +
+                    "Content-Length: 10\r\n" +
+                    "Authorization: Basic " + authBase64("user:password") + "\r\n" +
+                    "\r\n" +
+                    "0123456789",
+                HttpStatus.OK_200
+            )
+        ));
 
         // == test admin
         scenarios.add(Arguments.of(
@@ -543,10 +568,6 @@ public class ConstraintTest
                 }
             )
         ));
-
-//        rawResponse = _connector.getResponse("GET /ctx/admin/info HTTP/1.0\r\n\r\n");
-//        assertThat(rawResponse, startsWith("HTTP/1.1 401 Unauthorized"));
-//        assertThat(rawResponse, containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
 
         scenarios.add(Arguments.of(
             new Scenario(
@@ -1005,6 +1026,63 @@ public class ConstraintTest
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403"));
         assertThat(response, containsString("!role"));
+    }
+
+    @Test
+    public void testNonFormPostRedirectHttp10() throws Exception
+    {
+        _security.setAuthenticator(new FormAuthenticator("/testLoginPage", "/testErrorPage", false));
+        _server.start();
+
+        String response = _connector.getResponse("POST /ctx/auth/info HTTP/1.0\r\n" +
+            "Content-Type: text/plain\r\n" +
+            "Connection: keep-alive\r\n" +
+            "Content-Length: 10\r\n" +
+            "\r\n" +
+            "0123456789\r\n");
+        assertThat(response, containsString(" 302 Found"));
+        assertThat(response, containsString("/ctx/testLoginPage"));
+        assertThat(response, not(containsString("Connection: close")));
+        assertThat(response, containsString("Connection: keep-alive"));
+
+        response = _connector.getResponse("POST /ctx/auth/info HTTP/1.0\r\n" +
+            "Host: localhost\r\n" +
+            "Content-Type: text/plain\r\n" +
+            "Connection: keep-alive\r\n" +
+            "Content-Length: 10\r\n" +
+            "\r\n" +
+            "012345\r\n");
+        assertThat(response, containsString(" 302 Found"));
+        assertThat(response, containsString("/ctx/testLoginPage"));
+        assertThat(response, not(containsString("Connection: keep-alive")));
+    }
+
+    @Test
+    public void testNonFormPostRedirectHttp11() throws Exception
+    {
+        _security.setAuthenticator(new FormAuthenticator("/testLoginPage", "/testErrorPage", false));
+        _server.start();
+
+        String response = _connector.getResponse("POST /ctx/auth/info HTTP/1.1\r\n" +
+            "Host: test\r\n" +
+            "Content-Type: text/plain\r\n" +
+            "Content-Length: 10\r\n" +
+            "\r\n" +
+            "0123456789\r\n");
+        assertThat(response, containsString(" 303 See Other"));
+        assertThat(response, containsString("/ctx/testLoginPage"));
+        assertThat(response, not(containsString("Connection: close")));
+
+        response = _connector.getResponse("POST /ctx/auth/info HTTP/1.1\r\n" +
+            "Host: test\r\n" +
+            "Host: localhost\r\n" +
+            "Content-Type: text/plain\r\n" +
+            "Content-Length: 10\r\n" +
+            "\r\n" +
+            "012345\r\n");
+        assertThat(response, containsString(" 303 See Other"));
+        assertThat(response, containsString("/ctx/testLoginPage"));
+        assertThat(response, containsString("Connection: close"));
     }
 
     @Test

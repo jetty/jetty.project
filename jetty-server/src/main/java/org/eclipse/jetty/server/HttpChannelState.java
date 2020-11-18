@@ -904,8 +904,6 @@ public class HttpChannelState
                 default:
                     throw new IllegalStateException(getStatusStringLocked());
             }
-            if (_outputState != OutputState.OPEN)
-                throw new IllegalStateException("Response is " + _outputState);
 
             response.setStatus(code);
             response.errorClose();
