@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.tests;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
@@ -30,7 +31,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.servlet.DispatcherType;
 import javax.servlet.FilterConfig;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
+import javax.servlet.annotation.WebListener;
 import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.server.Server;
@@ -38,15 +42,18 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -64,6 +71,16 @@ public class JettyWebSocketFilterTest
     private WebSocketClient client;
     private ServletContextHandler contextHandler;
 
+    @BeforeEach
+    public void before()
+    {
+        server = new Server();
+        connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        client = new WebSocketClient();
+    }
+
     public void start(JettyWebSocketServletContainerInitializer.Configurator configurator) throws Exception
     {
         start(configurator, null);
@@ -76,20 +93,14 @@ public class JettyWebSocketFilterTest
 
     public void start(JettyWebSocketServletContainerInitializer.Configurator configurator, ServletHolder servletHolder) throws Exception
     {
-        server = new Server();
-        connector = new ServerConnector(server);
-        server.addConnector(connector);
-
         contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
         contextHandler.setContextPath("/");
         if (servletHolder != null)
             contextHandler.addServlet(servletHolder, "/");
         server.setHandler(contextHandler);
-
         JettyWebSocketServletContainerInitializer.configure(contextHandler, configurator);
-        server.start();
 
-        client = new WebSocketClient();
+        server.start();
         client.start();
     }
 
@@ -295,6 +306,98 @@ public class JettyWebSocketFilterTest
         }
         assertTrue(socket.closeLatch.await(5, TimeUnit.SECONDS));
         assertThat(socket.textMessages.poll(), is("hElLo wOrLd"));
+    }
+
+    @Test
+    public void testDefaultWebSocketUpgradeFilterOrdering() throws Exception
+    {
+        String timeoutFromAltFilter = "5999";
+        JettyWebSocketWebApp webApp = new JettyWebSocketWebApp("wsuf-ordering1");
+        Path webXml = MavenTestingUtils.getTestResourcePath("wsuf-ordering1.xml");
+        webApp.copyWebXml(webXml);
+        webApp.copyClass(WebSocketEchoServletContextListener.class);
+        webApp.copyClass(WebSocketEchoServletContextListener.EchoSocket.class);
+
+        server.setHandler(webApp);
+        server.start();
+        client.start();
+
+        // We have both websocket upgrade filters installed.
+        FilterHolder[] filterHolders = webApp.getServletHandler().getFilters();
+        assertThat(filterHolders.length, is(2));
+        assertThat(filterHolders[0].getFilter(), instanceOf(WebSocketUpgradeFilter.class));
+        assertThat(filterHolders[1].getFilter(), instanceOf(WebSocketUpgradeFilter.class));
+
+        // The custom filter defined in web.xml should be first in line so it will do the upgrade.
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + webApp.getContextPath() + "/echo");
+        EventSocket socket = new EventSocket();
+        CompletableFuture<Session> connect = client.connect(socket, uri);
+        try (Session session = connect.get(5, TimeUnit.SECONDS))
+        {
+            session.getRemote().sendString("hello world");
+            session.getRemote().sendString("getIdleTimeout");
+        }
+        assertTrue(socket.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(socket.textMessages.poll(), is("hello world"));
+        assertThat(socket.textMessages.poll(), is(timeoutFromAltFilter));
+    }
+
+    @Test
+    public void testWebSocketUpgradeFilterOrdering() throws Exception
+    {
+        String defaultIdleTimeout = Long.toString(WebSocketConstants.DEFAULT_IDLE_TIMEOUT.toMillis());
+        JettyWebSocketWebApp webApp = new JettyWebSocketWebApp("wsuf-ordering2");
+        Path webXml = MavenTestingUtils.getTestResourcePath("wsuf-ordering2.xml");
+        webApp.copyWebXml(webXml);
+        webApp.copyClass(WebSocketEchoServletContextListener.class);
+        webApp.copyClass(WebSocketEchoServletContextListener.EchoSocket.class);
+
+        server.setHandler(webApp);
+        server.start();
+        client.start();
+
+        // We have both websocket upgrade filters installed.
+        FilterHolder[] filterHolders = webApp.getServletHandler().getFilters();
+        assertThat(filterHolders.length, is(2));
+        assertThat(filterHolders[0].getFilter(), instanceOf(WebSocketUpgradeFilter.class));
+        assertThat(filterHolders[1].getFilter(), instanceOf(WebSocketUpgradeFilter.class));
+
+        // The custom filter defined in web.xml should be first in line so it will do the upgrade.
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + webApp.getContextPath() + "/echo");
+        EventSocket socket = new EventSocket();
+        CompletableFuture<Session> connect = client.connect(socket, uri);
+        try (Session session = connect.get(5, TimeUnit.SECONDS))
+        {
+            session.getRemote().sendString("hello world");
+            session.getRemote().sendString("getIdleTimeout");
+        }
+        assertTrue(socket.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(socket.textMessages.poll(), is("hello world"));
+        assertThat(socket.textMessages.poll(), is(defaultIdleTimeout));
+    }
+
+    @WebListener
+    public static class WebSocketEchoServletContextListener implements ServletContextListener
+    {
+        @Override
+        public void contextInitialized(ServletContextEvent sce)
+        {
+            JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(sce.getServletContext());
+            container.addMapping("/echo", EchoSocket.class);
+        }
+
+        @WebSocket
+        public static class EchoSocket
+        {
+            @OnWebSocketMessage
+            public void onMessage(Session session, String message) throws IOException
+            {
+                if ("getIdleTimeout".equals(message))
+                    session.getRemote().sendString(Long.toString(session.getIdleTimeout().toMillis()));
+                else
+                    session.getRemote().sendString(message);
+            }
+        }
     }
 
     public static class MyUpgradeFilter extends WebSocketUpgradeFilter
