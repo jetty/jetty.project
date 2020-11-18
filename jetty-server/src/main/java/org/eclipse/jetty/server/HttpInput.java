@@ -154,13 +154,14 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         synchronized (_inputQ)
         {
-            if (_content != null)
-                _content.failed(null);
+            Throwable failure = fail(_intercepted, null);
+            _intercepted = null;
+            failure = fail(_content, failure);
             _content = null;
             Content item = _inputQ.poll();
             while (item != null)
             {
-                item.failed(null);
+                failure = fail(item, failure);
                 item = _inputQ.poll();
             }
             _listener = null;
@@ -174,6 +175,17 @@ public class HttpInput extends ServletInputStream implements Runnable
                 ((Destroyable)_interceptor).destroy();
             _interceptor = null;
         }
+    }
+
+    private Throwable fail(Content content, Throwable failure)
+    {
+        if (content != null)
+        {
+            if (failure == null)
+                failure = new IOException("unconsumed input");
+            content.failed(failure);
+        }
+        return failure;
     }
 
     /**
