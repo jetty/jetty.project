@@ -1367,6 +1367,9 @@
       <properties>
         <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
       </properties>
+      <modules>
+        <module>javadoc</module>
+      </modules>
       <build>
         <pluginManagement>
           <plugins>
