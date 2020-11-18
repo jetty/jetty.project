@@ -64,7 +64,7 @@ public class SecuredRedirectHandler extends HandlerWrapper
             String secureScheme = httpConfig.getSecureScheme();
             String url = URIUtil.newURI(secureScheme, baseRequest.getServerName(), securePort, baseRequest.getRequestURI(), baseRequest.getQueryString());
             response.setContentLength(0);
-            response.sendRedirect(url);
+            baseRequest.getResponse().sendRedirect(HttpServletResponse.SC_MOVED_TEMPORARILY, url, true);
         }
         else
         {

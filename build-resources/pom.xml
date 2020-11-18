@@ -25,6 +25,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
+          <version>3.2.0</version>
           <configuration>
             <!-- No point building javadoc for this project -->
             <skip>true</skip>
