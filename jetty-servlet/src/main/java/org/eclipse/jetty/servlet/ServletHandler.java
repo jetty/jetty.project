@@ -1085,6 +1085,23 @@ public class ServletHandler extends ScopedHandler
     }
 
     /**
+     * Convenience method to add a preconstructed FilterHolder
+     *
+     * @param filter the filter holder
+     */
+    public void prependFilter(FilterHolder filter)
+    {
+        if (filter == null)
+            return;
+
+        try (AutoLock l = lock())
+        {
+            if (!containsFilterHolder(filter))
+                setFilters(ArrayUtil.prependToArray(filter, getFilters(), FilterHolder.class));
+        }
+    }
+
+    /**
      * Convenience method to add a preconstructed FilterMapping
      *
      * @param mapping the filter mapping

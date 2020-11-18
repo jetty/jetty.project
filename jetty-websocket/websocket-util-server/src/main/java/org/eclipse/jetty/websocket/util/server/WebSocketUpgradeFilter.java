@@ -35,6 +35,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -78,12 +79,12 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     private static final AutoLock LOCK = new AutoLock();
 
     /**
-     * Return any {@link WebSocketUpgradeFilter} already present on the {@link ServletContext}.
+     * Return the default {@link WebSocketUpgradeFilter} if present on the {@link ServletContext}.
      *
      * @param servletContext the {@link ServletContext} to use.
      * @return the configured default {@link WebSocketUpgradeFilter} instance.
      */
-    private static FilterHolder getFilter(ServletContext servletContext)
+    public static FilterHolder getFilter(ServletContext servletContext)
     {
         ContextHandler contextHandler = Objects.requireNonNull(ContextHandler.getContextHandler(servletContext));
         ServletHandler servletHandler = contextHandler.getChildHandlerByClass(ServletHandler.class);
@@ -111,14 +112,23 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
             if (existingFilter != null)
                 return existingFilter;
 
+            ContextHandler contextHandler = Objects.requireNonNull(ContextHandler.getContextHandler(servletContext));
+            ServletHandler servletHandler = contextHandler.getChildHandlerByClass(ServletHandler.class);
+
             final String pathSpec = "/*";
             FilterHolder holder = new FilterHolder(new WebSocketUpgradeFilter());
             holder.setName(WebSocketUpgradeFilter.class.getName());
-
             holder.setAsyncSupported(true);
-            ContextHandler contextHandler = Objects.requireNonNull(ContextHandler.getContextHandler(servletContext));
-            ServletHandler servletHandler = contextHandler.getChildHandlerByClass(ServletHandler.class);
-            servletHandler.addFilterWithMapping(holder, pathSpec, EnumSet.of(DispatcherType.REQUEST));
+
+            FilterMapping mapping = new FilterMapping();
+            mapping.setFilterName(holder.getName());
+            mapping.setPathSpec(pathSpec);
+            mapping.setDispatcherTypes(EnumSet.of(DispatcherType.REQUEST));
+
+            // Add the default WebSocketUpgradeFilter as the first filter in the list.
+            servletHandler.prependFilter(holder);
+            servletHandler.prependFilterMapping(mapping);
+
             if (LOG.isDebugEnabled())
                 LOG.debug("Adding {} mapped to {} in {}", holder, pathSpec, servletContext);
             return holder;

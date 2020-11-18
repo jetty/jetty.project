@@ -311,7 +311,7 @@ public class JettyWebSocketFilterTest
     @Test
     public void testDefaultWebSocketUpgradeFilterOrdering() throws Exception
     {
-        String timeoutFromAltFilter = "5999";
+        String defaultIdleTimeout = Long.toString(WebSocketConstants.DEFAULT_IDLE_TIMEOUT.toMillis());
         JettyWebSocketWebApp webApp = new JettyWebSocketWebApp("wsuf-ordering1");
         Path webXml = MavenTestingUtils.getTestResourcePath("wsuf-ordering1.xml");
         webApp.copyWebXml(webXml);
@@ -339,13 +339,13 @@ public class JettyWebSocketFilterTest
         }
         assertTrue(socket.closeLatch.await(5, TimeUnit.SECONDS));
         assertThat(socket.textMessages.poll(), is("hello world"));
-        assertThat(socket.textMessages.poll(), is(timeoutFromAltFilter));
+        assertThat(socket.textMessages.poll(), is(defaultIdleTimeout));
     }
 
     @Test
     public void testWebSocketUpgradeFilterOrdering() throws Exception
     {
-        String defaultIdleTimeout = Long.toString(WebSocketConstants.DEFAULT_IDLE_TIMEOUT.toMillis());
+        String timeoutFromAltFilter = "5999";
         JettyWebSocketWebApp webApp = new JettyWebSocketWebApp("wsuf-ordering2");
         Path webXml = MavenTestingUtils.getTestResourcePath("wsuf-ordering2.xml");
         webApp.copyWebXml(webXml);
@@ -373,7 +373,7 @@ public class JettyWebSocketFilterTest
         }
         assertTrue(socket.closeLatch.await(5, TimeUnit.SECONDS));
         assertThat(socket.textMessages.poll(), is("hello world"));
-        assertThat(socket.textMessages.poll(), is(defaultIdleTimeout));
+        assertThat(socket.textMessages.poll(), is(timeoutFromAltFilter));
     }
 
     @WebListener
