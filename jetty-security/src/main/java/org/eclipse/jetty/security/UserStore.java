@@ -18,59 +18,75 @@
 
 package org.eclipse.jetty.security;
 
-import java.security.Principal;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.security.auth.Subject;
+import java.util.stream.Collectors;
 
-import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.security.Credential;
 
 /**
- * Base class to store User
+ * Store of user authentication and authorization information.
+ * 
  */
 public class UserStore extends AbstractLifeCycle
 {
-    private IdentityService _identityService = new DefaultIdentityService();
-    private final Map<String, UserIdentity> _knownUserIdentities = new ConcurrentHashMap<>();
+    protected final Map<String, User> _users = new ConcurrentHashMap<>();
+    
+    protected class User
+    {
+        protected UserPrincipal _userPrincipal;
+        protected List<RolePrincipal> _rolePrincipals = Collections.emptyList();
+        
+        protected User(String username, Credential credential, String[] roles)
+        {
+            _userPrincipal = new UserPrincipal(username, credential);
 
+            _rolePrincipals = Collections.emptyList();
+            
+            if (roles != null)
+                _rolePrincipals = Arrays.stream(roles).map(RolePrincipal::new).collect(Collectors.toList());
+        }
+        
+        protected UserPrincipal getUserPrincipal()
+        {
+            return _userPrincipal;
+        }
+        
+        protected List<RolePrincipal> getRolePrincipals()
+        {
+            return _rolePrincipals;
+        }
+    }
+    
     public void addUser(String username, Credential credential, String[] roles)
     {
-        Principal userPrincipal = new AbstractLoginService.UserPrincipal(username, credential);
-        Subject subject = new Subject();
-        subject.getPrincipals().add(userPrincipal);
-        subject.getPrivateCredentials().add(credential);
-
-        if (roles != null)
-        {
-            for (String role : roles)
-            {
-                subject.getPrincipals().add(new AbstractLoginService.RolePrincipal(role));
-            }
-        }
-
-        subject.setReadOnly();
-        _knownUserIdentities.put(username, _identityService.newUserIdentity(subject, userPrincipal, roles));
+        _users.put(username, new User(username, credential, roles));
     }
 
     public void removeUser(String username)
     {
-        _knownUserIdentities.remove(username);
+        _users.remove(username);
+    }
+    
+    public UserPrincipal getUserPrincipal(String username)
+    {
+        User user = _users.get(username);
+        return (user == null ? null : user.getUserPrincipal());
+    }
+    
+    public List<RolePrincipal> getRolePrincipals(String username)
+    {
+        User user = _users.get(username);
+        return (user == null ? null : user.getRolePrincipals());
     }
 
-    public UserIdentity getUserIdentity(String userName)
+    @Override
+    public String toString()
     {
-        return _knownUserIdentities.get(userName);
-    }
-
-    public IdentityService getIdentityService()
-    {
-        return _identityService;
-    }
-
-    public Map<String, UserIdentity> getKnownUserIdentities()
-    {
-        return _knownUserIdentities;
+        return String.format("%s@%x[users.count=%d]", getClass().getSimpleName(), hashCode(), _users.size());
     }
 }

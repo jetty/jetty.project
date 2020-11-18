@@ -37,6 +37,7 @@ import org.infinispan.query.dsl.QueryFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -44,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 /**
  * RemoteInfinispanSessionDataStoreTest
  */
+@Testcontainers(disabledWithoutDocker = true)
 public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
     static

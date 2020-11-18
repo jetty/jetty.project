@@ -40,6 +40,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
@@ -767,7 +768,7 @@ public class HttpRequest implements Request
     public ContentResponse send() throws InterruptedException, TimeoutException, ExecutionException
     {
         FutureResponseListener listener = new FutureResponseListener(this);
-        send(this, listener);
+        send(listener);
 
         try
         {
@@ -806,15 +807,20 @@ public class HttpRequest implements Request
     @Override
     public void send(Response.CompleteListener listener)
     {
-        send(this, listener);
+        sendAsync(client::send, listener);
     }
 
-    private void send(HttpRequest request, Response.CompleteListener listener)
+    void sendAsync(HttpDestination destination, Response.CompleteListener listener)
+    {
+        sendAsync(destination::send, listener);
+    }
+
+    private void sendAsync(BiConsumer<HttpRequest, List<Response.ResponseListener>> sender, Response.CompleteListener listener)
     {
         if (listener != null)
             responseListeners.add(listener);
         sent();
-        client.send(request, responseListeners);
+        sender.accept(this, responseListeners);
     }
 
     void sent()

@@ -27,4 +27,5 @@ module org.eclipse.jetty.jaas
 
     // Only required if using JDBCLoginModule.
     requires static java.sql;
+    requires org.eclipse.jetty.util;
 }

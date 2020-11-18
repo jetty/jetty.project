@@ -47,10 +47,10 @@
     <unix.socket.tmp></unix.socket.tmp>
     <!-- enable or not TestTracker junit5 extension i.e log message when test method is starting -->
     <jetty.testtracker.log>false</jetty.testtracker.log>
-    <jetty.surefire.argLine>-Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx2g -Xms2g -Xlog:gc:stderr:time,level,tags</jetty.surefire.argLine>
+    <jetty.surefire.argLine>-Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx4g -Xms2g -Xlog:gc:stderr:time,level,tags</jetty.surefire.argLine>
 
     <!-- some maven plugins versions -->
-    <maven.surefire.version>3.0.0-M4</maven.surefire.version>
+    <maven.surefire.version>3.0.0-M5</maven.surefire.version>
     <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.1.2</maven.dependency.plugin.version>
     <maven.resources.plugin.version>3.2.0</maven.resources.plugin.version>
@@ -650,6 +650,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${maven.surefire.version}</version>
           <configuration>
+            <trimStackTrace>false</trimStackTrace>
             <rerunFailingTestsCount>${surefire.rerunFailingTestsCount}</rerunFailingTestsCount>
             <forkedProcessTimeoutInSeconds>3600</forkedProcessTimeoutInSeconds>
             <argLine>
@@ -1176,6 +1177,16 @@
         <artifactId>ant-launcher</artifactId>
         <version>${ant.version}</version>
       </dependency>
+      <dependency>
+        <groupId>commons-codec</groupId>
+        <artifactId>commons-codec</artifactId>
+        <version>1.13</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>3.9</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -1354,9 +1365,7 @@
     <profile>
       <id>ci</id>
       <properties>
-        <settingsPath>${env.GLOBAL_MVN_SETTINGS}</settingsPath>
-        <invoker.mergeUserSettings>true</invoker.mergeUserSettings>
-        <surefire.rerunFailingTestsCount>3</surefire.rerunFailingTestsCount>
+        <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
       </properties>
       <build>
         <pluginManagement>

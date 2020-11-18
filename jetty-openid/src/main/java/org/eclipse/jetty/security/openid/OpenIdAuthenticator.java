@@ -30,7 +30,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.ServerAuthException;
@@ -300,7 +299,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                             LOG.debug("authenticated {}->{}", openIdAuth, nuri);
 
                         response.setContentLength(0);
-                        baseResponse.sendRedirect(getRedirectCode(baseRequest.getHttpVersion()), nuri);
+                        baseResponse.sendRedirect(nuri, true);
                         return openIdAuth;
                     }
                 }
@@ -392,7 +391,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             String challengeUri = getChallengeUri(request);
             if (LOG.isDebugEnabled())
                 LOG.debug("challenge {}->{}", session.getId(), challengeUri);
-            baseResponse.sendRedirect(getRedirectCode(baseRequest.getHttpVersion()), challengeUri);
+            baseResponse.sendRedirect(challengeUri, true);
 
             return Authentication.SEND_CONTINUE;
         }
@@ -436,10 +435,9 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             {
                 String query = URIUtil.addQueries(ERROR_PARAMETER + "=" + UrlEncoded.encodeString(message), _errorQuery);
                 redirectUri = URIUtil.addPathQuery(URIUtil.addPaths(request.getContextPath(), _errorPath), query);
-                baseResponse.sendRedirect(getRedirectCode(baseRequest.getHttpVersion()), redirectUri);
             }
 
-            baseResponse.sendRedirect(getRedirectCode(baseRequest.getHttpVersion()), redirectUri);
+            baseResponse.sendRedirect(redirectUri, true);
         }
     }
 
@@ -459,12 +457,6 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     public boolean isErrorPage(String pathInContext)
     {
         return pathInContext != null && (pathInContext.equals(_errorPath));
-    }
-
-    private static int getRedirectCode(HttpVersion httpVersion)
-    {
-        return (httpVersion.getVersion() < HttpVersion.HTTP_1_1.getVersion()
-            ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
     }
 
     private String getRedirectUri(HttpServletRequest request)

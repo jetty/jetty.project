@@ -26,7 +26,7 @@ import javax.security.auth.login.LoginContext;
  * JAASUserPrincipal
  * <p>
  * Implements the JAAS version of the
- * org.eclipse.jetty.http.UserPrincipal interface.
+ * org.eclipse.jetty.security.UserPrincipal interface.
  */
 public class JAASUserPrincipal implements Principal
 {

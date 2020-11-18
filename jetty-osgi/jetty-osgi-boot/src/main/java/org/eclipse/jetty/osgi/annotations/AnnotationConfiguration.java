@@ -30,6 +30,7 @@ import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
+import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
@@ -72,6 +73,12 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
 
     public AnnotationConfiguration()
     {
+    }
+
+    @Override
+    public Class<? extends Configuration> replaces()
+    {
+        return org.eclipse.jetty.annotations.AnnotationConfiguration.class;
     }
 
     /**
