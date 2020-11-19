@@ -38,9 +38,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.BytesContentProvider;
-import org.eclipse.jetty.client.util.DeferredContentProvider;
+import org.eclipse.jetty.client.util.AsyncRequestContent;
+import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.HttpChannel;
@@ -76,10 +75,6 @@ public class GzipWithSendErrorTest
     private Server server;
     private HttpClient client;
     private ServerConnector connector;
-
-    private static void onComplete(Result result)
-    {
-    }
 
     @BeforeEach
     public void setup() throws Exception
@@ -129,8 +124,8 @@ public class GzipWithSendErrorTest
 
         response = client.newRequest(serverURI.resolve("/submit"))
             .method(HttpMethod.POST)
-            .header(HttpHeader.CONTENT_ENCODING, "gzip")
-            .content(new BytesContentProvider("text/plain", compressed("normal-A")))
+            .headers(fields -> fields.put(HttpHeader.CONTENT_ENCODING, "gzip"))
+            .body(new BytesRequestContent("text/plain", compressed("normal-A")))
             .send();
 
         assertEquals(200, response.getStatus(), "Response status on /submit (normal-A)");
@@ -138,8 +133,8 @@ public class GzipWithSendErrorTest
 
         response = client.newRequest(serverURI.resolve("/fail"))
             .method(HttpMethod.POST)
-            .header(HttpHeader.CONTENT_ENCODING, "gzip")
-            .content(new BytesContentProvider("text/plain", compressed("normal-B")))
+            .headers(fields -> fields.put(HttpHeader.CONTENT_ENCODING, "gzip"))
+            .body(new BytesRequestContent("text/plain", compressed("normal-B")))
             .send();
 
         assertEquals(400, response.getStatus(), "Response status on /fail (normal-B)");
@@ -147,8 +142,8 @@ public class GzipWithSendErrorTest
 
         response = client.newRequest(serverURI.resolve("/submit"))
             .method(HttpMethod.POST)
-            .header(HttpHeader.CONTENT_ENCODING, "gzip")
-            .content(new BytesContentProvider("text/plain", compressed("normal-C")))
+            .headers(fields -> fields.put(HttpHeader.CONTENT_ENCODING, "gzip"))
+            .body(new BytesRequestContent("text/plain", compressed("normal-C")))
             .send();
 
         assertEquals(200, response.getStatus(), "Response status on /submit (normal-C)");
@@ -218,7 +213,7 @@ public class GzipWithSendErrorTest
 
         int sizeActuallySent = compressedRequest.length / 2;
         ByteBuffer start = ByteBuffer.wrap(compressedRequest, 0, sizeActuallySent);
-        DeferredContentProvider contentProvider = new DeferredContentProvider(start)
+        AsyncRequestContent content = new AsyncRequestContent(start)
         {
             @Override
             public long getLength()
@@ -232,9 +227,9 @@ public class GzipWithSendErrorTest
 
         client.newRequest(serverURI.resolve("/fail"))
             .method(HttpMethod.POST)
-            .header(HttpHeader.CONTENT_TYPE, "application/octet-stream")
-            .header(HttpHeader.CONTENT_ENCODING, "gzip")
-            .content(contentProvider)
+            .headers(fields -> fields.put(HttpHeader.CONTENT_TYPE, "application/octet-stream"))
+            .headers(fields -> fields.put(HttpHeader.CONTENT_ENCODING, "gzip"))
+            .body(content)
             .onResponseSuccess((response) ->
             {
                 clientResponseRef.set(response);
@@ -255,17 +250,17 @@ public class GzipWithSendErrorTest
         // System.out.printf("Input Content Received: %,d%n", inputContentReceived.get());
         // System.out.printf("Input BytesIn Count: %,d%n", inputBytesIn.get());
 
-        // Servlet didn't read body content
-        assertThat("Request Input Content Consumed not have been used", inputContentConsumed.get(), is(0L));
-        // Network reads
-        assertThat("Request Input Content Received should have seen content", inputContentReceived.get(), greaterThan(0L));
+        // Servlet didn't read body content.
+        assertThat("Request Input Content Consumed none", inputContentConsumed.get(), is(0L));
+        // Content arrived to the HttpChannel, but not to the HttpInput.
+        assertThat("Request Input Content Received", inputContentReceived.get(), is(0L));
         assertThat("Request Input Content Received less then initial buffer", inputContentReceived.get(), lessThanOrEqualTo((long)sizeActuallySent));
         assertThat("Request Connection BytesIn should have some minimal data", inputBytesIn.get(), greaterThanOrEqualTo(1024L));
         assertThat("Request Connection BytesIn read should not have read all of the data", inputBytesIn.get(), lessThanOrEqualTo((long)sizeActuallySent));
 
         // Now provide rest
-        contentProvider.offer(ByteBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent));
-        contentProvider.close();
+        content.offer(ByteBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent));
+        content.close();
 
         assertTrue(clientResultComplete.await(5, TimeUnit.SECONDS));
     }
@@ -323,7 +318,7 @@ public class GzipWithSendErrorTest
 
         int sizeActuallySent = compressedRequest.length / 2;
         ByteBuffer start = ByteBuffer.wrap(compressedRequest, 0, sizeActuallySent);
-        DeferredContentProvider contentProvider = new DeferredContentProvider(start);
+        AsyncRequestContent content = new AsyncRequestContent(start);
         AtomicReference<Response> clientResponseRef = new AtomicReference<>();
         CountDownLatch clientResponseSuccessLatch = new CountDownLatch(1);
         CountDownLatch clientResultComplete = new CountDownLatch(1);
@@ -332,9 +327,9 @@ public class GzipWithSendErrorTest
 
         client.newRequest(uri)
             .method(HttpMethod.POST)
-            .header(HttpHeader.CONTENT_TYPE, "application/octet-stream")
-            .header(HttpHeader.CONTENT_ENCODING, "gzip")
-            .content(contentProvider)
+            .headers(fields -> fields.put(HttpHeader.CONTENT_TYPE, "application/octet-stream"))
+            .headers(fields -> fields.put(HttpHeader.CONTENT_ENCODING, "gzip"))
+            .body(content)
             .onResponseSuccess((response) ->
             {
                 clientResponseRef.set(response);
@@ -355,19 +350,17 @@ public class GzipWithSendErrorTest
         // System.out.printf("Input Content Received: %,d%n", inputContentReceived.get());
         // System.out.printf("Input BytesIn Count: %,d%n", inputBytesIn.get());
 
-        long readCount = read ? 1L : 0L;
-
-        // Servlet read of body content
-        assertThat("Request Input Content Consumed not have been used", inputContentConsumed.get(), is(readCount));
-        // Network reads
-        assertThat("Request Input Content Received should have seen content", inputContentReceived.get(), greaterThan(0L));
+        // Servlet read of body content.
+        assertThat("Request Input Content Consumed " + (read ? "some" : "none"), inputContentConsumed.get(), is(read ? 1L : 0L));
+        // Content arrived to the HttpChannel, but not to the HttpInput.
+        assertThat("Request Input Content Received", inputContentReceived.get(), read ? greaterThan(0L) : is(0L));
         assertThat("Request Input Content Received less then initial buffer", inputContentReceived.get(), lessThanOrEqualTo((long)sizeActuallySent));
         assertThat("Request Connection BytesIn should have some minimal data", inputBytesIn.get(), greaterThanOrEqualTo(1024L));
         assertThat("Request Connection BytesIn read should not have read all of the data", inputBytesIn.get(), lessThanOrEqualTo((long)sizeActuallySent));
 
         // Now provide rest
-        contentProvider.offer(ByteBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent));
-        contentProvider.close();
+        content.offer(ByteBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent));
+        content.close();
 
         assertTrue(clientResultComplete.await(5, TimeUnit.SECONDS));
     }
