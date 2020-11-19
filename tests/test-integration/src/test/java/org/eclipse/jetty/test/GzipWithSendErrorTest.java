@@ -38,7 +38,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
@@ -76,10 +75,6 @@ public class GzipWithSendErrorTest
     private Server server;
     private HttpClient client;
     private ServerConnector connector;
-
-    private static void onComplete(Result result)
-    {
-    }
 
     @BeforeEach
     public void setup() throws Exception
