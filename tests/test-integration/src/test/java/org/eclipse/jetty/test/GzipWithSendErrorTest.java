@@ -220,8 +220,15 @@ public class GzipWithSendErrorTest
             compressedRequest = out.toByteArray();
         }
 
+        // We want to write a request with request body content size / length
+        // that will exceed the various buffers in the network, the client, the server,
+        // etc.
         int sizeActuallySent = compressedRequest.length / 2;
         ByteBuffer start = ByteBuffer.wrap(compressedRequest, 0, sizeActuallySent);
+
+        // Using deferred content to allow us to write SOME of the request body content
+        // but not all of it (yet)
+        // We override the getLength to ensure that Content-Length is used.
         DeferredContentProvider contentProvider = new DeferredContentProvider(start)
         {
             @Override
@@ -250,6 +257,7 @@ public class GzipWithSendErrorTest
         Response response = clientResponseRef.get();
         assertEquals(400, response.getStatus(), "Response status on /fail");
 
+        // We expect the server to set `Connection: close`, as the request body content isn't fully sent (yet)
         assertEquals("close", response.getHeaders().get(HttpHeader.CONNECTION), "Response Connection header");
 
         // Await for server side to complete the request
@@ -270,7 +278,7 @@ public class GzipWithSendErrorTest
         assertThat("Request Connection BytesIn should have some minimal data", inputBytesIn.get(), greaterThanOrEqualTo(1024L));
         assertThat("Request Connection BytesIn read should not have read all of the data", inputBytesIn.get(), lessThanOrEqualTo((long)sizeActuallySent));
 
-        // Now provide rest
+        // Now use the deferred content to complete writing of the request body content
         contentProvider.offer(ByteBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent));
         contentProvider.close();
 
@@ -334,8 +342,15 @@ public class GzipWithSendErrorTest
             compressedRequest = out.toByteArray();
         }
 
+        // We want to write a request with request body content size / length
+        // that will exceed the various buffers in the network, the client, the server,
+        // etc.
+
         int sizeActuallySent = compressedRequest.length / 2;
         ByteBuffer start = ByteBuffer.wrap(compressedRequest, 0, sizeActuallySent);
+
+        // Using deferred content to allow us to write SOME of the request body content
+        // but not all of it (yet)
         DeferredContentProvider contentProvider = new DeferredContentProvider(start);
         AtomicReference<Response> clientResponseRef = new AtomicReference<>();
         CountDownLatch clientResponseSuccessLatch = new CountDownLatch(1);
@@ -359,6 +374,7 @@ public class GzipWithSendErrorTest
         Response response = clientResponseRef.get();
         assertEquals(400, response.getStatus(), "Response status on /fail");
 
+        // We expect the server to set `Connection: close`, as the request body content isn't fully sent (yet)
         assertEquals("close", response.getHeaders().get(HttpHeader.CONNECTION), "Response Connection header");
 
         // Await for server side to complete the request
@@ -381,7 +397,7 @@ public class GzipWithSendErrorTest
         assertThat("Request Connection BytesIn should have some minimal data", inputBytesIn.get(), greaterThanOrEqualTo(1024L));
         assertThat("Request Connection BytesIn read should not have read all of the data", inputBytesIn.get(), lessThanOrEqualTo((long)sizeActuallySent));
 
-        // Now provide rest
+        // Now use the deferred content to complete writing of the request body content
         contentProvider.offer(ByteBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent));
         contentProvider.close();
 
