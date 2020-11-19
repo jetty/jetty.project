@@ -22,7 +22,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import javax.websocket.server.PathParam;
 
-import org.eclipse.jetty.websocket.core.util.InvalidSignatureException;
+import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.util.InvokerUtils;
 
 /**

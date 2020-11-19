@@ -23,7 +23,7 @@ import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
-import org.eclipse.jetty.websocket.core.util.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.javax.common.encoders.AvailableEncoders;
 

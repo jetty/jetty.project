@@ -39,7 +39,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.websocket.core.util.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.javax.common.decoders.AbstractDecoder;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;

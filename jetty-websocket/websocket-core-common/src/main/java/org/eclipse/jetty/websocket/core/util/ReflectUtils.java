@@ -31,6 +31,9 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.websocket.core.exception.DuplicateAnnotationException;
+import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
+
 public class ReflectUtils
 {
 

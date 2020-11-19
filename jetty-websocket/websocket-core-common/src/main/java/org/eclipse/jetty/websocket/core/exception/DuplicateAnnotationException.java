@@ -16,10 +16,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.util;
+package org.eclipse.jetty.websocket.core.exception;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+
+import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 
 @SuppressWarnings("serial")
 public class DuplicateAnnotationException extends InvalidWebSocketException

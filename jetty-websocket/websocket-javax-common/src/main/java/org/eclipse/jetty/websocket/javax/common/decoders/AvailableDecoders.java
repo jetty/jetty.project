@@ -30,8 +30,8 @@ import java.util.stream.Stream;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
-import org.eclipse.jetty.websocket.core.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.core.util.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
+import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 
 public class AvailableDecoders implements Iterable<RegisteredDecoder>

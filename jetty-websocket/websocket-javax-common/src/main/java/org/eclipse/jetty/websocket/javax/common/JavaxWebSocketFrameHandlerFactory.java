@@ -43,12 +43,12 @@ import javax.websocket.Session;
 
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.websocket.core.CoreSession;
+import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
+import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.messages.MessageSink;
 import org.eclipse.jetty.websocket.core.messages.PartialByteArrayMessageSink;
 import org.eclipse.jetty.websocket.core.messages.PartialByteBufferMessageSink;
 import org.eclipse.jetty.websocket.core.messages.PartialStringMessageSink;
-import org.eclipse.jetty.websocket.core.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.core.util.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.util.InvokerUtils;
 import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;

@@ -28,8 +28,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
-import org.eclipse.jetty.websocket.core.util.InvalidSignatureException;
 
 public class ByteArrayMessageSink extends AbstractMessageSink
 {

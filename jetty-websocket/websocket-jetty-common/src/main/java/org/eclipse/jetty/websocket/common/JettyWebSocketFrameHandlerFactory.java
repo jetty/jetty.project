@@ -51,6 +51,8 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.core.CoreSession;
+import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
+import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.messages.ByteArrayMessageSink;
 import org.eclipse.jetty.websocket.core.messages.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.core.messages.InputStreamMessageSink;
@@ -59,8 +61,6 @@ import org.eclipse.jetty.websocket.core.messages.PartialByteBufferMessageSink;
 import org.eclipse.jetty.websocket.core.messages.PartialStringMessageSink;
 import org.eclipse.jetty.websocket.core.messages.ReaderMessageSink;
 import org.eclipse.jetty.websocket.core.messages.StringMessageSink;
-import org.eclipse.jetty.websocket.core.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.core.util.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.util.InvokerUtils;
 import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 

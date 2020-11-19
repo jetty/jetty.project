@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.util.InvalidSignatureException;
+import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.javax.common.sockets.TrackingSocket;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
