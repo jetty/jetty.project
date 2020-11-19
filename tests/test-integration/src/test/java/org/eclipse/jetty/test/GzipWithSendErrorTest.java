@@ -20,7 +20,16 @@ package org.eclipse.jetty.test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -28,35 +37,56 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.HttpInput;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GzipWithSendErrorTest
 {
     private Server server;
     private HttpClient client;
+    private ServerConnector connector;
+
+    private static void onComplete(Result result)
+    {
+    }
 
     @BeforeEach
     public void setup() throws Exception
     {
         server = new Server();
 
-        ServerConnector connector = new ServerConnector(server);
+        connector = new ServerConnector(server);
         connector.setPort(0);
         server.addConnector(connector);
 
@@ -100,7 +130,6 @@ public class GzipWithSendErrorTest
         response = client.newRequest(serverURI.resolve("/submit"))
             .method(HttpMethod.POST)
             .header(HttpHeader.CONTENT_ENCODING, "gzip")
-            .header(HttpHeader.ACCEPT_ENCODING, "gzip")
             .content(new BytesContentProvider("text/plain", compressed("normal-A")))
             .send();
 
@@ -110,7 +139,6 @@ public class GzipWithSendErrorTest
         response = client.newRequest(serverURI.resolve("/fail"))
             .method(HttpMethod.POST)
             .header(HttpHeader.CONTENT_ENCODING, "gzip")
-            .header(HttpHeader.ACCEPT_ENCODING, "gzip")
             .content(new BytesContentProvider("text/plain", compressed("normal-B")))
             .send();
 
@@ -120,7 +148,6 @@ public class GzipWithSendErrorTest
         response = client.newRequest(serverURI.resolve("/submit"))
             .method(HttpMethod.POST)
             .header(HttpHeader.CONTENT_ENCODING, "gzip")
-            .header(HttpHeader.ACCEPT_ENCODING, "gzip")
             .content(new BytesContentProvider("text/plain", compressed("normal-C")))
             .send();
 
@@ -139,6 +166,212 @@ public class GzipWithSendErrorTest
         }
     }
 
+    /**
+     * Make request with compressed content.
+     * <p>
+     * Request contains (roughly) 1 MB of request network data.
+     * Which unpacks to 1 GB of zeros.
+     * </p>
+     * <p>
+     * This test is to ensure that consumeAll only reads the network data,
+     * and doesn't process it through the interceptors.
+     * </p>
+     */
+    @Test
+    public void testGzipConsumeAllContentLengthBlocking() throws Exception
+    {
+        URI serverURI = server.getURI();
+
+        CountDownLatch serverRequestCompleteLatch = new CountDownLatch(1);
+        // count of bytes against network read
+        AtomicLong inputBytesIn = new AtomicLong(0L);
+        AtomicLong inputContentReceived = new AtomicLong(0L);
+        // count of bytes against API read
+        AtomicLong inputContentConsumed = new AtomicLong(0L);
+
+        connector.addBean(new HttpChannel.Listener()
+        {
+            @Override
+            public void onComplete(Request request)
+            {
+                HttpConnection connection = (HttpConnection)request.getHttpChannel().getConnection();
+                HttpInput httpInput = request.getHttpInput();
+                inputContentConsumed.set(httpInput.getContentConsumed());
+                inputContentReceived.set(httpInput.getContentReceived());
+                inputBytesIn.set(connection.getBytesIn());
+                serverRequestCompleteLatch.countDown();
+            }
+        });
+
+        // This is a doubly-compressed (with gzip) test resource.
+        // There's no point putting into SCM the full 1MB file, when the
+        // 3KB version is adequate.
+        Path zerosCompressed = MavenTestingUtils.getTestResourcePathFile("zeros.gz.gz");
+        byte[] compressedRequest;
+        try (InputStream in = Files.newInputStream(zerosCompressed);
+             GZIPInputStream gzipIn = new GZIPInputStream(in);
+             ByteArrayOutputStream out = new ByteArrayOutputStream())
+        {
+            IO.copy(gzipIn, out);
+            compressedRequest = out.toByteArray();
+        }
+
+        int sizeActuallySent = compressedRequest.length / 2;
+        ByteBuffer start = ByteBuffer.wrap(compressedRequest, 0, sizeActuallySent);
+        DeferredContentProvider contentProvider = new DeferredContentProvider(start)
+        {
+            @Override
+            public long getLength()
+            {
+                return compressedRequest.length;
+            }
+        };
+        AtomicReference<Response> clientResponseRef = new AtomicReference<>();
+        CountDownLatch clientResponseSuccessLatch = new CountDownLatch(1);
+        CountDownLatch clientResultComplete = new CountDownLatch(1);
+
+        client.newRequest(serverURI.resolve("/fail"))
+            .method(HttpMethod.POST)
+            .header(HttpHeader.CONTENT_TYPE, "application/octet-stream")
+            .header(HttpHeader.CONTENT_ENCODING, "gzip")
+            .content(contentProvider)
+            .onResponseSuccess((response) ->
+            {
+                clientResponseRef.set(response);
+                clientResponseSuccessLatch.countDown();
+            })
+            .send((result) -> clientResultComplete.countDown());
+
+        assertTrue(clientResponseSuccessLatch.await(5, TimeUnit.SECONDS), "Result not received");
+        Response response = clientResponseRef.get();
+        assertEquals(400, response.getStatus(), "Response status on /fail");
+
+        assertEquals("close", response.getHeaders().get(HttpHeader.CONNECTION), "Response Connection header");
+
+        // Await for server side to complete the request
+        assertTrue(serverRequestCompleteLatch.await(5, TimeUnit.SECONDS), "Request complete never occurred?");
+
+        // System.out.printf("Input Content Consumed: %,d%n", inputContentConsumed.get());
+        // System.out.printf("Input Content Received: %,d%n", inputContentReceived.get());
+        // System.out.printf("Input BytesIn Count: %,d%n", inputBytesIn.get());
+
+        // Servlet didn't read body content
+        assertThat("Request Input Content Consumed not have been used", inputContentConsumed.get(), is(0L));
+        // Network reads
+        assertThat("Request Input Content Received should have seen content", inputContentReceived.get(), greaterThan(0L));
+        assertThat("Request Input Content Received less then initial buffer", inputContentReceived.get(), lessThanOrEqualTo((long)sizeActuallySent));
+        assertThat("Request Connection BytesIn should have some minimal data", inputBytesIn.get(), greaterThanOrEqualTo(1024L));
+        assertThat("Request Connection BytesIn read should not have read all of the data", inputBytesIn.get(), lessThanOrEqualTo((long)sizeActuallySent));
+
+        // Now provide rest
+        contentProvider.offer(ByteBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent));
+        contentProvider.close();
+
+        assertTrue(clientResultComplete.await(5, TimeUnit.SECONDS));
+    }
+
+    /**
+     * Make request with compressed content.
+     * <p>
+     * Request contains (roughly) 1 MB of request network data.
+     * Which unpacks to 1 GB of zeros.
+     * </p>
+     * <p>
+     * This test is to ensure that consumeAll only reads the network data,
+     * and doesn't process it through the interceptors.
+     * </p>
+     */
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testGzipConsumeAllChunkedBlockingOnLastBuffer(boolean read) throws Exception
+    {
+        URI serverURI = server.getURI();
+
+        CountDownLatch serverRequestCompleteLatch = new CountDownLatch(1);
+        // count of bytes against network read
+        AtomicLong inputBytesIn = new AtomicLong(0L);
+        AtomicLong inputContentReceived = new AtomicLong(0L);
+        // count of bytes against API read
+        AtomicLong inputContentConsumed = new AtomicLong(0L);
+
+        connector.addBean(new HttpChannel.Listener()
+        {
+            @Override
+            public void onComplete(Request request)
+            {
+                HttpConnection connection = (HttpConnection)request.getHttpChannel().getConnection();
+                HttpInput httpInput = request.getHttpInput();
+                inputContentConsumed.set(httpInput.getContentConsumed());
+                inputContentReceived.set(httpInput.getContentReceived());
+                inputBytesIn.set(connection.getBytesIn());
+                serverRequestCompleteLatch.countDown();
+            }
+        });
+
+        // This is a doubly-compressed (with gzip) test resource.
+        // There's no point putting into SCM the full 1MB file, when the
+        // 3KB version is adequate.
+        Path zerosCompressed = MavenTestingUtils.getTestResourcePathFile("zeros.gz.gz");
+        byte[] compressedRequest;
+        try (InputStream in = Files.newInputStream(zerosCompressed);
+             GZIPInputStream gzipIn = new GZIPInputStream(in);
+             ByteArrayOutputStream out = new ByteArrayOutputStream())
+        {
+            IO.copy(gzipIn, out);
+            compressedRequest = out.toByteArray();
+        }
+
+        int sizeActuallySent = compressedRequest.length / 2;
+        ByteBuffer start = ByteBuffer.wrap(compressedRequest, 0, sizeActuallySent);
+        DeferredContentProvider contentProvider = new DeferredContentProvider(start);
+        AtomicReference<Response> clientResponseRef = new AtomicReference<>();
+        CountDownLatch clientResponseSuccessLatch = new CountDownLatch(1);
+        CountDownLatch clientResultComplete = new CountDownLatch(1);
+
+        URI uri = serverURI.resolve("/fail?read=" + read);
+
+        client.newRequest(uri)
+            .method(HttpMethod.POST)
+            .header(HttpHeader.CONTENT_TYPE, "application/octet-stream")
+            .header(HttpHeader.CONTENT_ENCODING, "gzip")
+            .content(contentProvider)
+            .onResponseSuccess((response) ->
+            {
+                clientResponseRef.set(response);
+                clientResponseSuccessLatch.countDown();
+            })
+            .send((result) -> clientResultComplete.countDown());
+
+        assertTrue(clientResponseSuccessLatch.await(5, TimeUnit.SECONDS), "Result not received");
+        Response response = clientResponseRef.get();
+        assertEquals(400, response.getStatus(), "Response status on /fail");
+
+        assertEquals("close", response.getHeaders().get(HttpHeader.CONNECTION), "Response Connection header");
+
+        // Await for server side to complete the request
+        assertTrue(serverRequestCompleteLatch.await(5, TimeUnit.SECONDS), "Request complete never occurred?");
+
+        // System.out.printf("Input Content Consumed: %,d%n", inputContentConsumed.get());
+        // System.out.printf("Input Content Received: %,d%n", inputContentReceived.get());
+        // System.out.printf("Input BytesIn Count: %,d%n", inputBytesIn.get());
+
+        long readCount = read ? 1L : 0L;
+
+        // Servlet read of body content
+        assertThat("Request Input Content Consumed not have been used", inputContentConsumed.get(), is(readCount));
+        // Network reads
+        assertThat("Request Input Content Received should have seen content", inputContentReceived.get(), greaterThan(0L));
+        assertThat("Request Input Content Received less then initial buffer", inputContentReceived.get(), lessThanOrEqualTo((long)sizeActuallySent));
+        assertThat("Request Connection BytesIn should have some minimal data", inputBytesIn.get(), greaterThanOrEqualTo(1024L));
+        assertThat("Request Connection BytesIn read should not have read all of the data", inputBytesIn.get(), lessThanOrEqualTo((long)sizeActuallySent));
+
+        // Now provide rest
+        contentProvider.offer(ByteBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent));
+        contentProvider.close();
+
+        assertTrue(clientResultComplete.await(5, TimeUnit.SECONDS));
+    }
+
     public static class PostServlet extends HttpServlet
     {
         @Override
@@ -146,8 +379,6 @@ public class GzipWithSendErrorTest
         {
             resp.setCharacterEncoding("utf-8");
             resp.setContentType("text/plain");
-            resp.setHeader("X-Servlet", req.getServletPath());
-
             String reqBody = IO.toString(req.getInputStream(), UTF_8);
             resp.getWriter().append(reqBody);
         }
@@ -158,7 +389,12 @@ public class GzipWithSendErrorTest
         @Override
         protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException
         {
-            resp.setHeader("X-Servlet", req.getServletPath());
+            boolean read = Boolean.parseBoolean(req.getParameter("read"));
+            if (read)
+            {
+                int val = req.getInputStream().read();
+                assertNotEquals(-1, val);
+            }
             // intentionally do not read request body here.
             resp.sendError(400);
         }
