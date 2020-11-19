@@ -123,8 +123,11 @@ public class HttpChannelOverFCGI extends HttpChannel
             _contentQueue.clear();
         }
         copy.forEach(c -> c.failed(failure));
-        HttpInput.Content lastContent = copy.isEmpty() ? null : copy.get(copy.size() - 1);
-        boolean atEof = lastContent != null && lastContent.isEof();
+        boolean atEof;
+        try (AutoLock l = _lock.lock())
+        {
+            atEof = _specialContent != null && _specialContent.isEof();
+        }
         if (LOG.isDebugEnabled())
             LOG.debug("failed all content, EOF = {}", atEof);
         return atEof;
