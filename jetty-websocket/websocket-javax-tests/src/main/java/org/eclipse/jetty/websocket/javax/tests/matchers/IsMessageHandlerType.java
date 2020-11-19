@@ -22,10 +22,10 @@ import javax.websocket.Decoder;
 import javax.websocket.MessageHandler;
 import javax.websocket.PongMessage;
 
+import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.javax.tests.MessageType;
-import org.eclipse.jetty.websocket.util.ReflectUtils;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 

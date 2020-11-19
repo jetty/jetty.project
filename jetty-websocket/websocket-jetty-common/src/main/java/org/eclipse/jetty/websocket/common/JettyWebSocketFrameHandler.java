@@ -45,9 +45,9 @@ import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.exception.UpgradeException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
-import org.eclipse.jetty.websocket.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.util.InvokerUtils;
-import org.eclipse.jetty.websocket.util.messages.MessageSink;
+import org.eclipse.jetty.websocket.core.messages.MessageSink;
+import org.eclipse.jetty.websocket.core.util.InvalidSignatureException;
+import org.eclipse.jetty.websocket.core.util.InvokerUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

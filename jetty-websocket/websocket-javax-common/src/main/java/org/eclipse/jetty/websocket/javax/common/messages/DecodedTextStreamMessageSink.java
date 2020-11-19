@@ -29,10 +29,10 @@ import javax.websocket.Decoder;
 
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
+import org.eclipse.jetty.websocket.core.messages.MessageSink;
+import org.eclipse.jetty.websocket.core.messages.ReaderMessageSink;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
-import org.eclipse.jetty.websocket.util.messages.MessageSink;
-import org.eclipse.jetty.websocket.util.messages.ReaderMessageSink;
 
 public class DecodedTextStreamMessageSink<T> extends AbstractDecodedMessageSink.Stream<Decoder.TextStream<T>>
 {

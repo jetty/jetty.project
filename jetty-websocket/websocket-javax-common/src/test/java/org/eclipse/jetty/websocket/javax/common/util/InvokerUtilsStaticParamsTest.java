@@ -26,9 +26,9 @@ import java.util.Map;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.websocket.core.util.InvokerUtils;
+import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
-import org.eclipse.jetty.websocket.util.InvokerUtils;
-import org.eclipse.jetty.websocket.util.ReflectUtils;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;

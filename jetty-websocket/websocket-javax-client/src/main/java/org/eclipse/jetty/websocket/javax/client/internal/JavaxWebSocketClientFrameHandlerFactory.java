@@ -21,10 +21,10 @@ package org.eclipse.jetty.websocket.javax.client.internal;
 import javax.websocket.ClientEndpoint;
 import javax.websocket.EndpointConfig;
 
+import org.eclipse.jetty.websocket.core.util.InvokerUtils;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerMetadata;
-import org.eclipse.jetty.websocket.util.InvokerUtils;
 
 public class JavaxWebSocketClientFrameHandlerFactory extends JavaxWebSocketFrameHandlerFactory
 {

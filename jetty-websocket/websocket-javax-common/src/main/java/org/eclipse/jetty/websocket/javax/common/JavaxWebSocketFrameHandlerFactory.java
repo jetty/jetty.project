@@ -43,20 +43,20 @@ import javax.websocket.Session;
 
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.websocket.core.CoreSession;
+import org.eclipse.jetty.websocket.core.messages.MessageSink;
+import org.eclipse.jetty.websocket.core.messages.PartialByteArrayMessageSink;
+import org.eclipse.jetty.websocket.core.messages.PartialByteBufferMessageSink;
+import org.eclipse.jetty.websocket.core.messages.PartialStringMessageSink;
+import org.eclipse.jetty.websocket.core.util.InvalidSignatureException;
+import org.eclipse.jetty.websocket.core.util.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.core.util.InvokerUtils;
+import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.javax.common.messages.AbstractDecodedMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedBinaryMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedBinaryStreamMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextStreamMessageSink;
-import org.eclipse.jetty.websocket.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.util.InvokerUtils;
-import org.eclipse.jetty.websocket.util.ReflectUtils;
-import org.eclipse.jetty.websocket.util.messages.MessageSink;
-import org.eclipse.jetty.websocket.util.messages.PartialByteArrayMessageSink;
-import org.eclipse.jetty.websocket.util.messages.PartialByteBufferMessageSink;
-import org.eclipse.jetty.websocket.util.messages.PartialStringMessageSink;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
