@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -147,8 +148,7 @@ public class GracefulStopTest
         handler.latch = new CountDownLatch(1);
         final int port = connector.getLocalPort();
         Socket client = new Socket("127.0.0.1", port);
-        client.getOutputStream().write(post);
-        client.getOutputStream().write(BODY_67890);
+        client.getOutputStream().write(concat(post, BODY_67890));
         client.getOutputStream().flush();
         assertTrue(handler.latch.await(5, TimeUnit.SECONDS));
 
@@ -163,8 +163,7 @@ public class GracefulStopTest
     void assertAvailable(Socket client, byte[] post, TestHandler handler) throws Exception
     {
         handler.latch = new CountDownLatch(1);
-        client.getOutputStream().write(post);
-        client.getOutputStream().write(BODY_67890);
+        client.getOutputStream().write(concat(post, BODY_67890));
         client.getOutputStream().flush();
         assertTrue(handler.latch.await(5, TimeUnit.SECONDS));
 
@@ -188,8 +187,7 @@ public class GracefulStopTest
                     Thread.sleep(100);
                 }
 
-                client.getOutputStream().write(post);
-                client.getOutputStream().write(BODY_67890);
+                client.getOutputStream().write(concat(post, BODY_67890));
                 client.getOutputStream().flush();
                 HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
 
@@ -279,6 +277,13 @@ public class GracefulStopTest
                 e.printStackTrace();
             }
         }).start();
+    }
+
+    private byte[] concat(byte[] bytes1, byte[] bytes2)
+    {
+        byte[] bytes = Arrays.copyOf(bytes1, bytes1.length + bytes2.length);
+        System.arraycopy(bytes2, 0, bytes, bytes1.length, bytes2.length);
+        return bytes;
     }
 
     @Test
