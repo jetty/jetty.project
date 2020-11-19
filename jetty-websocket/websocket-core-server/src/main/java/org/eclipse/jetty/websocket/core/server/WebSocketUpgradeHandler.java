@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.core.server;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Function;
 import javax.servlet.ServletException;
@@ -29,15 +30,17 @@ import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.server.internal.Handshaker;
+import org.eclipse.jetty.websocket.core.server.internal.HandshakerSelector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class WebSocketUpgradeHandler extends HandlerWrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketUpgradeHandler.class);
-    final Handshaker handshaker = Handshaker.newInstance();
-    final PathSpecSet paths = new PathSpecSet();
-    final WebSocketNegotiator negotiator;
+    private final Handshaker handshaker = new HandshakerSelector();
+    private final PathSpecSet paths = new PathSpecSet();
+    private final WebSocketNegotiator negotiator;
 
     public WebSocketUpgradeHandler(
         Function<Negotiation, FrameHandler> negotiate,
@@ -60,12 +63,7 @@ public class WebSocketUpgradeHandler extends HandlerWrapper
     public void addPathSpec(String... pathSpecs)
     {
         if (pathSpecs != null)
-        {
-            for (String spec : pathSpecs)
-            {
-                this.paths.add(spec);
-            }
-        }
+            this.paths.addAll(Arrays.asList(pathSpecs));
     }
 
     @Override

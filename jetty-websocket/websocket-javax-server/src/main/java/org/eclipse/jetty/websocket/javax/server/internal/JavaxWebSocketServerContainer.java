@@ -37,13 +37,13 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+import org.eclipse.jetty.websocket.core.server.WebSocketMapping;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.core.util.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.javax.server.config.ContainerDefaultConfigurator;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

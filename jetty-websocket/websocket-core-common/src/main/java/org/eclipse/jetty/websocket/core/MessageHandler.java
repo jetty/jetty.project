@@ -87,7 +87,7 @@ public class MessageHandler implements FrameHandler
         };
     }
 
-    protected static final Logger LOG = LoggerFactory.getLogger(MessageHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MessageHandler.class);
 
     private CoreSession coreSession;
     private Utf8StringBuilder textMessageBuffer;

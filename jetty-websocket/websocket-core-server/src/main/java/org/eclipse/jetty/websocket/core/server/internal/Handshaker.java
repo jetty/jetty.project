@@ -16,23 +16,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.util.server.internal;
+package org.eclipse.jetty.websocket.core.server.internal;
 
-/**
- * Abstract WebSocket creator interface.
- * <p>
- * Should you desire filtering of the WebSocket object creation due to criteria such as origin or sub-protocol, then you will be required to implement a custom
- * WebSocketCreator implementation.
- * </p>
- */
-public interface WebSocketCreator
+import java.io.IOException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.websocket.core.Configuration;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
+
+public interface Handshaker
 {
-    /**
-     * Create a websocket from the incoming request.
-     *
-     * @param req the request details
-     * @param resp the response details
-     * @return a websocket object to use, or null if no websocket should be created from this request.
-     */
-    Object createWebSocket(ServerUpgradeRequest req, ServerUpgradeResponse resp);
+    boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response, Configuration.Customizer defaultCustomizer) throws IOException;
 }

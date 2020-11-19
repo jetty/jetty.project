@@ -30,6 +30,7 @@ module org.eclipse.jetty.websocket.javax.server
 
     requires org.eclipse.jetty.websocket.javax.common;
     requires org.eclipse.jetty.websocket.util.server;
+    requires org.eclipse.jetty.websocket.core.server;
     requires org.slf4j;
     requires transitive org.eclipse.jetty.webapp;
     requires transitive org.eclipse.jetty.websocket.javax.client;

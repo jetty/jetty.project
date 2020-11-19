@@ -33,8 +33,8 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
-import org.eclipse.jetty.websocket.util.server.internal.ServerUpgradeRequest;
 
 public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
 {

@@ -23,12 +23,12 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientFrameHandlerFactory;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerMetadata;
-import org.eclipse.jetty.websocket.util.server.internal.FrameHandlerFactory;
-import org.eclipse.jetty.websocket.util.server.internal.ServerUpgradeRequest;
-import org.eclipse.jetty.websocket.util.server.internal.ServerUpgradeResponse;
 
 public class JavaxWebSocketServerFrameHandlerFactory extends JavaxWebSocketClientFrameHandlerFactory implements FrameHandlerFactory
 {

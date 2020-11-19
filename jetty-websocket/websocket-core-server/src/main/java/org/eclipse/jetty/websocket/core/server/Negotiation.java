@@ -33,7 +33,6 @@ import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 
 public abstract class Negotiation
 {
@@ -45,7 +44,6 @@ public abstract class Negotiation
     private List<ExtensionConfig> offeredExtensions;
     private List<ExtensionConfig> negotiatedExtensions;
     private List<String> offeredProtocols;
-    private ExtensionStack extensionStack;
     private String protocol;
 
     public Negotiation(Request baseRequest, HttpServletRequest request, HttpServletResponse response, WebSocketComponents webSocketComponents)
@@ -180,7 +178,6 @@ public abstract class Negotiation
         if (extensions == offeredExtensions)
             return;
         negotiatedExtensions = extensions;
-        extensionStack = null;
     }
 
     @Override

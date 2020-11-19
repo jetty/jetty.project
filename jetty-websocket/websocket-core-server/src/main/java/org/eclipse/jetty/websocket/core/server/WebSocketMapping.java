@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.util.server.internal;
+package org.eclipse.jetty.websocket.core.server;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -39,10 +39,8 @@ import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
-import org.eclipse.jetty.websocket.core.server.Handshaker;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
-import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
+import org.eclipse.jetty.websocket.core.server.internal.Handshaker;
+import org.eclipse.jetty.websocket.core.server.internal.HandshakerSelector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -137,7 +135,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
 
     private final PathMappings<Negotiator> mappings = new PathMappings<>();
     private final WebSocketComponents components;
-    private final Handshaker handshaker = Handshaker.newInstance();
+    private final Handshaker handshaker = new HandshakerSelector();
 
     public WebSocketMapping()
     {
@@ -246,7 +244,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
 
         public Negotiator(WebSocketCreator creator, FrameHandlerFactory factory, Configuration.Customizer customizer)
         {
-            super(components, customizer);
+            super(WebSocketMapping.this.components, customizer);
             this.creator = creator;
             this.factory = factory;
         }

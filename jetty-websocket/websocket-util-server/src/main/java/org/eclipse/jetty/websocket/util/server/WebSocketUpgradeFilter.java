@@ -40,7 +40,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.Configuration;
-import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
+import org.eclipse.jetty.websocket.core.server.WebSocketMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.util.server.internal;
+package org.eclipse.jetty.websocket.core.server;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,11 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
 
-/**
- * Servlet Specific UpgradeResponse implementation.
- */
 public class ServerUpgradeResponse
 {
     private final HttpServletResponse response;

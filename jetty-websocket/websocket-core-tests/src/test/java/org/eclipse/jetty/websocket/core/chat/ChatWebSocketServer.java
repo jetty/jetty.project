@@ -40,11 +40,15 @@ import org.eclipse.jetty.websocket.core.MessageHandler;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.util.Callback.NOOP;
 
 public class ChatWebSocketServer
 {
+    protected static final Logger LOG = LoggerFactory.getLogger(ChatWebSocketServer.class);
+
     private final Set<MessageHandler> members = new HashSet<>();
 
     private FrameHandler negotiate(Negotiation negotiation)
