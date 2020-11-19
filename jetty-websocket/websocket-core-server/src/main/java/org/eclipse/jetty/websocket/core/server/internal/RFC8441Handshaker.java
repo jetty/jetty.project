@@ -33,7 +33,7 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 
 public class RFC8441Handshaker extends AbstractHandshaker
 {
@@ -58,7 +58,7 @@ public class RFC8441Handshaker extends AbstractHandshaker
     }
 
     @Override
-    protected Negotiation newNegotiation(HttpServletRequest request, HttpServletResponse response, WebSocketComponents webSocketComponents)
+    protected WebSocketNegotiation newNegotiation(HttpServletRequest request, HttpServletResponse response, WebSocketComponents webSocketComponents)
     {
         return new RFC8441Negotiation(Request.getBaseRequest(request), request, response, webSocketComponents);
     }
@@ -87,7 +87,7 @@ public class RFC8441Handshaker extends AbstractHandshaker
     }
 
     @Override
-    protected void prepareResponse(Response response, Negotiation negotiation)
+    protected void prepareResponse(Response response, WebSocketNegotiation negotiation)
     {
         response.setStatus(HttpStatus.OK_200);
     }

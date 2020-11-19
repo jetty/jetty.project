@@ -35,9 +35,9 @@ import org.eclipse.jetty.websocket.core.ExtensionConfig;
 public class ServerUpgradeResponse
 {
     private final HttpServletResponse response;
-    private final Negotiation negotiation;
+    private final WebSocketNegotiation negotiation;
 
-    public ServerUpgradeResponse(Negotiation negotiation)
+    public ServerUpgradeResponse(WebSocketNegotiation negotiation)
     {
         this.negotiation = negotiation;
         this.response = negotiation.getResponse();

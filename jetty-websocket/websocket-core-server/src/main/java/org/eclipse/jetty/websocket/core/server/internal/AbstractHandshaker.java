@@ -47,7 +47,7 @@ import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,13 +58,12 @@ public abstract class AbstractHandshaker implements Handshaker
     private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
 
     @Override
-    public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response, Configuration.Customizer defaultCustomizer) throws IOException
+    public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response, WebSocketComponents components, Configuration.Customizer defaultCustomizer) throws IOException
     {
         if (!validateRequest(request))
             return false;
 
-        WebSocketComponents components = negotiator.getWebSocketComponents();
-        Negotiation negotiation = newNegotiation(request, response, components);
+        WebSocketNegotiation negotiation = newNegotiation(request, response, components);
         if (LOG.isDebugEnabled())
             LOG.debug("negotiation {}", negotiation);
         negotiation.negotiate();
@@ -172,11 +171,11 @@ public abstract class AbstractHandshaker implements Handshaker
 
     protected abstract boolean validateRequest(HttpServletRequest request);
 
-    protected abstract Negotiation newNegotiation(HttpServletRequest request, HttpServletResponse response, WebSocketComponents webSocketComponents);
+    protected abstract WebSocketNegotiation newNegotiation(HttpServletRequest request, HttpServletResponse response, WebSocketComponents webSocketComponents);
 
     protected abstract boolean validateFrameHandler(FrameHandler frameHandler, HttpServletResponse response);
 
-    protected boolean validateNegotiation(Negotiation negotiation)
+    protected boolean validateNegotiation(WebSocketNegotiation negotiation)
     {
         if (!negotiation.validateHeaders())
         {
@@ -218,5 +217,5 @@ public abstract class AbstractHandshaker implements Handshaker
         return new WebSocketConnection(endPoint, executor, scheduler, byteBufferPool, coreSession);
     }
 
-    protected abstract void prepareResponse(Response response, Negotiation negotiation);
+    protected abstract void prepareResponse(Response response, WebSocketNegotiation negotiation);
 }

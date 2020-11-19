@@ -26,6 +26,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -37,7 +38,8 @@ import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.MessageHandler;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 import org.slf4j.Logger;
@@ -51,7 +53,7 @@ public class ChatWebSocketServer
 
     private final Set<MessageHandler> members = new HashSet<>();
 
-    private FrameHandler negotiate(Negotiation negotiation)
+    private FrameHandler negotiate(WebSocketNegotiation negotiation)
     {
         // Finalize negotiations in API layer involves:
         //  + MAY mutate the policy
@@ -117,7 +119,9 @@ public class ChatWebSocketServer
         server.setHandler(context);
 
         ChatWebSocketServer chat = new ChatWebSocketServer();
-        WebSocketUpgradeHandler upgradeHandler = new WebSocketUpgradeHandler(WebSocketNegotiator.from(chat::negotiate));
+        WebSocketComponents components = new WebSocketComponents();
+        WebSocketUpgradeHandler upgradeHandler = new WebSocketUpgradeHandler(components);
+        upgradeHandler.addMapping(new ServletPathSpec("/*"), WebSocketNegotiator.from(chat::negotiate));
         context.setHandler(upgradeHandler);
 
         upgradeHandler.setHandler(new AbstractHandler()

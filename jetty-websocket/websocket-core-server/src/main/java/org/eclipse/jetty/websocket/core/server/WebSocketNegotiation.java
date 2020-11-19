@@ -34,7 +34,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 
-public abstract class Negotiation
+public abstract class WebSocketNegotiation
 {
     private final Request baseRequest;
     private final HttpServletRequest request;
@@ -46,7 +46,7 @@ public abstract class Negotiation
     private List<String> offeredProtocols;
     private String protocol;
 
-    public Negotiation(Request baseRequest, HttpServletRequest request, HttpServletResponse response, WebSocketComponents webSocketComponents)
+    public WebSocketNegotiation(Request baseRequest, HttpServletRequest request, HttpServletResponse response, WebSocketComponents webSocketComponents)
     {
         this.baseRequest = baseRequest;
         this.request = request;

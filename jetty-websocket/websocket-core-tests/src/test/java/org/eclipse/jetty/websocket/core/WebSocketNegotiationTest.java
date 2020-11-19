@@ -42,7 +42,7 @@ import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.exception.UpgradeException;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -81,10 +81,10 @@ public class WebSocketNegotiationTest extends WebSocketTester
     @BeforeEach
     public void startup() throws Exception
     {
-        WebSocketNegotiator negotiator = new WebSocketNegotiator.AbstractNegotiator(components, null)
+        WebSocketNegotiator negotiator = new WebSocketNegotiator.AbstractNegotiator()
         {
             @Override
-            public FrameHandler negotiate(Negotiation negotiation) throws IOException
+            public FrameHandler negotiate(WebSocketNegotiation negotiation) throws IOException
             {
                 if (negotiation.getOfferedSubprotocols().isEmpty())
                 {
@@ -127,7 +127,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
             }
         };
 
-        server = new WebSocketServer(negotiator);
+        server = new WebSocketServer(components, negotiator, false);
         client = new WebSocketCoreClient(null, components);
 
         server.start();

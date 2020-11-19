@@ -249,10 +249,9 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         @Override
         public JettyWebSocketCreator getMapping(String pathSpec)
         {
-            WebSocketCreator creator = mapping.getMapping(WebSocketMapping.parsePathSpec(pathSpec));
+            WebSocketCreator creator = mapping.getCreator(WebSocketMapping.parsePathSpec(pathSpec));
             if (creator instanceof WrappedJettyCreator)
                 return ((WrappedJettyCreator)creator).getJettyWebSocketCreator();
-
             return null;
         }
 

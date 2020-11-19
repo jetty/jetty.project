@@ -19,61 +19,50 @@
 package org.eclipse.jetty.websocket.core.server;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.function.Function;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.pathmap.PathSpecSet;
+import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.server.internal.Handshaker;
-import org.eclipse.jetty.websocket.core.server.internal.HandshakerSelector;
+import org.eclipse.jetty.websocket.core.Configuration;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class WebSocketUpgradeHandler extends HandlerWrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketUpgradeHandler.class);
-    private final Handshaker handshaker = new HandshakerSelector();
-    private final PathSpecSet paths = new PathSpecSet();
-    private final WebSocketNegotiator negotiator;
 
-    public WebSocketUpgradeHandler(Function<Negotiation, FrameHandler> negotiate, String... pathSpecs)
+    private final WebSocketMapping mappings;
+    private final Configuration.ConfigurationCustomizer customizer = new Configuration.ConfigurationCustomizer();
+
+    public WebSocketUpgradeHandler()
     {
-        this(WebSocketNegotiator.from(negotiate), pathSpecs);
+        this(new WebSocketComponents());
     }
 
-    public WebSocketUpgradeHandler(WebSocketNegotiator negotiator, String... pathSpecs)
+    public WebSocketUpgradeHandler(WebSocketComponents components)
     {
-        this.negotiator = Objects.requireNonNull(negotiator);
-        addPathSpec(pathSpecs);
+        this.mappings = new WebSocketMapping(components);
     }
 
-    public WebSocketNegotiator getWebSocketNegotiator()
+    public void addMapping(String pathSpec, WebSocketNegotiator negotiator)
     {
-        return negotiator;
+        mappings.addMapping(new ServletPathSpec(pathSpec), negotiator);
     }
 
-    public void addPathSpec(String... pathSpecs)
+    public void addMapping(PathSpec pathSpec, WebSocketNegotiator negotiator)
     {
-        if (pathSpecs != null)
-            this.paths.addAll(Arrays.asList(pathSpecs));
+        mappings.addMapping(pathSpec, negotiator);
     }
 
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        if (!paths.isEmpty() && !paths.test(target))
-        {
-            super.handle(target, baseRequest, request, response);
-            return;
-        }
-
-        if (handshaker.upgradeRequest(negotiator, request, response, null))
+        if (mappings.upgrade(request, response, customizer))
             return;
 
         if (!baseRequest.isHandled())

@@ -21,8 +21,8 @@ package org.eclipse.jetty.websocket.core.server;
 /**
  * Abstract WebSocket creator interface.
  * <p>
- * Should you desire filtering of the WebSocket object creation due to criteria such as origin or sub-protocol, then you will be required to implement a custom
- * WebSocketCreator implementation.
+ * Should you desire filtering of the WebSocket object creation due to criteria such as origin or sub-protocol,
+ * then you will be required to implement a custom WebSocketCreator implementation.
  * </p>
  */
 public interface WebSocketCreator

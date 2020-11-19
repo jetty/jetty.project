@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.core.server;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -39,6 +38,7 @@ import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
+import org.eclipse.jetty.websocket.core.server.internal.CreatorNegotiator;
 import org.eclipse.jetty.websocket.core.server.internal.Handshaker;
 import org.eclipse.jetty.websocket.core.server.internal.HandshakerSelector;
 import org.slf4j.Logger;
@@ -72,12 +72,6 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
         }
 
         return null;
-    }
-
-    public WebSocketCreator getMapping(PathSpec pathSpec)
-    {
-        Negotiator cn = mappings.get(pathSpec);
-        return cn == null ? null : cn.getWebSocketCreator();
     }
 
     public static WebSocketMapping ensureMapping(ServletContext servletContext, String mappingKey)
@@ -133,7 +127,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
 
     public static final String DEFAULT_KEY = "jetty.websocket.defaultMapping";
 
-    private final PathMappings<Negotiator> mappings = new PathMappings<>();
+    private final PathMappings<WebSocketNegotiator> mappings = new PathMappings<>();
     private final WebSocketComponents components;
     private final Handshaker handshaker = new HandshakerSelector();
 
@@ -171,6 +165,19 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
         Dumpable.dumpObjects(out, indent, this, mappings);
     }
 
+    public WebSocketNegotiator getMapping(PathSpec pathSpec)
+    {
+        return mappings.get(pathSpec);
+    }
+
+    public WebSocketCreator getCreator(PathSpec pathSpec)
+    {
+        WebSocketNegotiator negotiator = getMapping(pathSpec);
+        if (negotiator instanceof CreatorNegotiator)
+            return  ((CreatorNegotiator)negotiator).getWebSocketCreator();
+        return null;
+    }
+
     /**
      * Manually add a WebSocket mapping.
      * <p>
@@ -181,12 +188,28 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
      *
      * @param pathSpec the pathspec to respond on
      * @param creator the websocket creator to activate on the provided mapping.
-     * @param factory the factory to use to create a FrameHandler for the websocket
+     * @param factory the factory to use to create a FrameHandler for the websocket.
      * @param customizer the customizer to use to customize the WebSocket session.
      */
     public void addMapping(PathSpec pathSpec, WebSocketCreator creator, FrameHandlerFactory factory, Configuration.Customizer customizer) throws WebSocketException
     {
-        mappings.put(pathSpec, new Negotiator(creator, factory, customizer));
+        mappings.put(pathSpec, new CreatorNegotiator(creator, factory, customizer));
+    }
+
+    /**
+     * Manually add a WebSocket mapping.
+     * <p>
+     * If mapping is added before this configuration is started, then it is persisted through
+     * stop/start of this configuration's lifecycle.  Otherwise it will be removed when
+     * this configuration is stopped.
+     * </p>
+     *
+     * @param pathSpec the pathspec to respond on
+     * @param negotiator the WebSocketNegotiator to use to create a FrameHandler for the websocket.
+     */
+    public void addMapping(PathSpec pathSpec, WebSocketNegotiator negotiator) throws WebSocketException
+    {
+        mappings.put(pathSpec, negotiator);
     }
 
     public boolean removeMapping(PathSpec pathSpec)
@@ -203,7 +226,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
      */
     public WebSocketNegotiator getMatchedNegotiator(String target, Consumer<PathSpec> pathSpecConsumer)
     {
-        MappedResource<Negotiator> mapping = this.mappings.getMatch(target);
+        MappedResource<WebSocketNegotiator> mapping = this.mappings.getMatch(target);
         if (mapping == null)
             return null;
 
@@ -234,59 +257,6 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
             LOG.debug("WebSocket Negotiated detected on {} for endpoint {}", target, negotiator);
 
         // We have an upgrade request
-        return handshaker.upgradeRequest(negotiator, request, response, defaultCustomizer);
-    }
-
-    private class Negotiator extends WebSocketNegotiator.AbstractNegotiator
-    {
-        private final WebSocketCreator creator;
-        private final FrameHandlerFactory factory;
-
-        public Negotiator(WebSocketCreator creator, FrameHandlerFactory factory, Configuration.Customizer customizer)
-        {
-            super(WebSocketMapping.this.components, customizer);
-            this.creator = creator;
-            this.factory = factory;
-        }
-
-        public WebSocketCreator getWebSocketCreator()
-        {
-            return creator;
-        }
-
-        @Override
-        public FrameHandler negotiate(Negotiation negotiation) throws IOException
-        {
-            ServletContext servletContext = negotiation.getRequest().getServletContext();
-            if (servletContext == null)
-                throw new IllegalStateException("null servletContext from request");
-
-            ServerUpgradeRequest upgradeRequest = new ServerUpgradeRequest(negotiation);
-            ServerUpgradeResponse upgradeResponse = new ServerUpgradeResponse(negotiation);
-
-            AtomicReference<Object> result = new AtomicReference<>();
-            ((ContextHandler.Context)servletContext).getContextHandler().handle(() ->
-                result.set(creator.createWebSocket(upgradeRequest, upgradeResponse)));
-            Object websocketPojo = result.get();
-
-            // Handling for response forbidden (and similar paths)
-            if (upgradeResponse.isCommitted())
-                return null;
-
-            if (websocketPojo == null)
-            {
-                // no creation, sorry
-                upgradeResponse.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE, "WebSocket Endpoint Creation Refused");
-                return null;
-            }
-
-            return factory.newFrameHandler(websocketPojo, upgradeRequest, upgradeResponse);
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("%s@%x{%s,%s,%s}", getClass().getSimpleName(), hashCode(), creator, factory, getCustomizer());
-        }
+        return handshaker.upgradeRequest(negotiator, request, response, components, defaultCustomizer);
     }
 }

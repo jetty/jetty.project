@@ -42,6 +42,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +59,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Testcontainers
 public class AutobahnTests
 {
-    
     private static final Logger LOG = LoggerFactory.getLogger(AutobahnTests.class);
     private static final Path USER_DIR = Paths.get(System.getProperty("user.dir"));
 

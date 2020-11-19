@@ -49,11 +49,11 @@ public class ServerUpgradeRequest
     private final String queryString;
     private final UpgradeHttpServletRequest request;
     private final boolean secure;
-    private final Negotiation negotiation;
+    private final WebSocketNegotiation negotiation;
     private List<HttpCookie> cookies;
     private Map<String, List<String>> parameterMap;
 
-    public ServerUpgradeRequest(Negotiation negotiation) throws BadMessageException
+    public ServerUpgradeRequest(WebSocketNegotiation negotiation) throws BadMessageException
     {
         this.negotiation = negotiation;
         HttpServletRequest httpRequest = negotiation.getRequest();
@@ -111,7 +111,7 @@ public class ServerUpgradeRequest
 
     /**
      * @return The extensions offered
-     * @see Negotiation#getOfferedExtensions()
+     * @see WebSocketNegotiation#getOfferedExtensions()
      */
     public List<ExtensionConfig> getExtensions()
     {
