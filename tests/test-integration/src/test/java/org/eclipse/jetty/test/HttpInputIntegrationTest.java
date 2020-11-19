@@ -240,7 +240,7 @@ public class HttpInputIntegrationTest
             case ASYNC_OTHER_WAIT:
             {
                 CountDownLatch latch = new CountDownLatch(1);
-                HttpChannelState.State S = request.getHttpChannelState().getState();
+                HttpChannelState.State state = request.getHttpChannelState().getState();
                 new Thread(() ->
                 {
                     try
@@ -249,7 +249,7 @@ public class HttpInputIntegrationTest
                             fail("latch expired");
 
                         // Spin until state change
-                        while (request.getHttpChannelState().getState() == S)
+                        while (request.getHttpChannelState().getState() == state)
                         {
                             Thread.yield();
                         }
