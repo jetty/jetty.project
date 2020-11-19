@@ -53,6 +53,8 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,6 +74,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GzipWithSendErrorTest
 {
+    private static final Logger LOG = Log.getLogger(GzipWithSendErrorTest.class);
     private Server server;
     private HttpClient client;
     private ServerConnector connector;
@@ -199,8 +202,14 @@ public class GzipWithSendErrorTest
         });
 
         // This is a doubly-compressed (with gzip) test resource.
-        // There's no point putting into SCM the full 1MB file, when the
-        // 3KB version is adequate.
+        // There's no point putting into SCM the full 1MB file input file.
+        // So the zeros.gz.gz is committed.  This file uses full sized gzip
+        // headers and data segments.  Java's Gzip/Deflate handling cannot
+        // produce a gzip data stream like this.
+        // This test resource will unpack to
+        // -rw-rw-r-- 1 joakim joakim 1,042,069 Nov 19 10:14 zeros.gz
+        // That will unpack to
+        // -rw-rw-r-- 1 joakim joakim 1,073,741,824 Nov 19 10:14 zeros
         Path zerosCompressed = MavenTestingUtils.getTestResourcePathFile("zeros.gz.gz");
         byte[] compressedRequest;
         try (InputStream in = Files.newInputStream(zerosCompressed);
@@ -246,9 +255,12 @@ public class GzipWithSendErrorTest
         // Await for server side to complete the request
         assertTrue(serverRequestCompleteLatch.await(5, TimeUnit.SECONDS), "Request complete never occurred?");
 
-        // System.out.printf("Input Content Consumed: %,d%n", inputContentConsumed.get());
-        // System.out.printf("Input Content Received: %,d%n", inputContentReceived.get());
-        // System.out.printf("Input BytesIn Count: %,d%n", inputBytesIn.get());
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Input Content Consumed: %,d%n", inputContentConsumed.get());
+            LOG.debug("Input Content Received: %,d%n", inputContentReceived.get());
+            LOG.debug("Input BytesIn Count: %,d%n", inputBytesIn.get());
+        }
 
         // Servlet didn't read body content
         assertThat("Request Input Content Consumed not have been used", inputContentConsumed.get(), is(0L));
@@ -304,8 +316,14 @@ public class GzipWithSendErrorTest
         });
 
         // This is a doubly-compressed (with gzip) test resource.
-        // There's no point putting into SCM the full 1MB file, when the
-        // 3KB version is adequate.
+        // There's no point putting into SCM the full 1MB file input file.
+        // So the zeros.gz.gz is committed.  This file uses full sized gzip
+        // headers and data segments.  Java's Gzip/Deflate handling cannot
+        // produce a gzip data stream like this.
+        // This test resource will unpack to
+        // -rw-rw-r-- 1 joakim joakim 1,042,069 Nov 19 10:14 zeros.gz
+        // That will unpack to
+        // -rw-rw-r-- 1 joakim joakim 1,073,741,824 Nov 19 10:14 zeros
         Path zerosCompressed = MavenTestingUtils.getTestResourcePathFile("zeros.gz.gz");
         byte[] compressedRequest;
         try (InputStream in = Files.newInputStream(zerosCompressed);
@@ -346,9 +364,12 @@ public class GzipWithSendErrorTest
         // Await for server side to complete the request
         assertTrue(serverRequestCompleteLatch.await(5, TimeUnit.SECONDS), "Request complete never occurred?");
 
-        // System.out.printf("Input Content Consumed: %,d%n", inputContentConsumed.get());
-        // System.out.printf("Input Content Received: %,d%n", inputContentReceived.get());
-        // System.out.printf("Input BytesIn Count: %,d%n", inputBytesIn.get());
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Input Content Consumed: %,d%n", inputContentConsumed.get());
+            LOG.debug("Input Content Received: %,d%n", inputContentReceived.get());
+            LOG.debug("Input BytesIn Count: %,d%n", inputBytesIn.get());
+        }
 
         long readCount = read ? 1L : 0L;
 
