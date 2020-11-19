@@ -42,9 +42,7 @@ public class WebSocketUpgradeHandler extends HandlerWrapper
     private final PathSpecSet paths = new PathSpecSet();
     private final WebSocketNegotiator negotiator;
 
-    public WebSocketUpgradeHandler(
-        Function<Negotiation, FrameHandler> negotiate,
-        String... pathSpecs)
+    public WebSocketUpgradeHandler(Function<Negotiation, FrameHandler> negotiate, String... pathSpecs)
     {
         this(WebSocketNegotiator.from(negotiate), pathSpecs);
     }

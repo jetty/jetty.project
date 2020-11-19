@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.util.server;
+package org.eclipse.jetty.websocket.servlet;
 
 import java.io.IOException;
 import java.time.Duration;

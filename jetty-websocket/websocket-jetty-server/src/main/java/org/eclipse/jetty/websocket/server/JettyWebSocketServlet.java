@@ -40,7 +40,7 @@ import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.server.internal.DelegatedServerUpgradeRequest;
 import org.eclipse.jetty.websocket.server.internal.DelegatedServerUpgradeResponse;
 import org.eclipse.jetty.websocket.server.internal.JettyServerFrameHandlerFactory;
-import org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter;
+import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

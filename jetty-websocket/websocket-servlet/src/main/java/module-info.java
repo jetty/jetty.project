@@ -16,9 +16,9 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.websocket.util.server
+module org.eclipse.jetty.websocket.servlet
 {
-    exports org.eclipse.jetty.websocket.util.server;
+    exports org.eclipse.jetty.websocket.servlet;
 
     requires org.slf4j;
     requires org.eclipse.jetty.websocket.core.server;

@@ -13,7 +13,7 @@
 
   <filter>
     <filter-name>wsuf-test</filter-name>
-    <filter-class>org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter</filter-class>
+    <filter-class>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-class>
     <init-param>
       <param-name>jetty.websocket.WebSocketMapping</param-name>
       <param-value>jetty.websocket.defaultMapping</param-value>

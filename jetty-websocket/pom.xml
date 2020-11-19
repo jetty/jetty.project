@@ -29,7 +29,7 @@
     <module>websocket-javax-server</module>
     <module>websocket-javax-tests</module>
     <!-- Common WebSocket Implementation -->
-    <module>websocket-util-server</module>
+    <module>websocket-servlet</module>
   </modules>
   <build>
     <plugins>

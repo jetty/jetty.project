@@ -40,7 +40,7 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.server.WebSocketMapping;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.javax.server.internal.JavaxWebSocketServerContainer;
-import org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter;
+import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
