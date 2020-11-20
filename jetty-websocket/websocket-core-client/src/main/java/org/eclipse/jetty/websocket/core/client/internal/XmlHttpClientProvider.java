@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.client;
+package org.eclipse.jetty.websocket.core.client.internal;
 
 import java.net.URL;
 
@@ -26,7 +26,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class XmlHttpClientProvider implements HttpClientProvider
+public class XmlHttpClientProvider implements HttpClientProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(XmlHttpClientProvider.class);
 

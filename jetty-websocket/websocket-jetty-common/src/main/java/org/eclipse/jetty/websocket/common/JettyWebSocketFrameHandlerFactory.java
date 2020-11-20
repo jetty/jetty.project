@@ -135,7 +135,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         final MethodHandle pongHandle = InvokerUtils.bindTo(metadata.getPongHandle(), endpointInstance);
         BatchMode batchMode = metadata.getBatchMode();
 
-        JettyWebSocketFrameHandler frameHandler = new JettyWebSocketFrameHandler(
+        return new JettyWebSocketFrameHandler(
             container,
             endpointInstance,
             openHandle, closeHandle, errorHandle,
@@ -144,8 +144,6 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
             frameHandle, pingHandle, pongHandle,
             batchMode,
             metadata);
-
-        return frameHandler;
     }
 
     public static MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass, Executor executor, WebSocketSession session)

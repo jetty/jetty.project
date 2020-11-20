@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.client;
+package org.eclipse.jetty.websocket.core.client.internal;
 
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 
 public class HttpUpgraderOverHTTP2 implements HttpUpgrader
 {

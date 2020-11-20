@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.client;
+package org.eclipse.jetty.websocket.core.client.internal;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -34,6 +34,7 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
 
 public class HttpUpgraderOverHTTP implements HttpUpgrader
