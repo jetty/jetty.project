@@ -19,12 +19,10 @@
 [[elastic-beanstalk]]
 === Amazon Elastic Beanstalk
 
-____
 [WARNING]
+====
 This is an increasingly aged integration, things like likely changed enough this is not directly useful but may serve as a useful starting point should someone want to look into it.
-____
-
-
+====
 http://aws.amazon.com/elasticbeanstalk/[Elastic Beanstalk] is a component with the http://aws.amazon.com[Amazon Web Services] offering that allows you to configure an entire virtual machine based on one of several available baseline configurations and then customize it through a powerful configuration system. While the default offerings currently available are based on Tomcat for for the java community, we worked out the basics using that configuration system to enable the usage of Jetty instead.
 
 [[elastic-beanstalk-overview]]
@@ -69,20 +67,19 @@ jetty-beanstalk-testapp::
   Also included is examples of how to alter the jetty configuration for things like a customized
   `start.ini` file.
 
-____
 [NOTE]
+====
 The test webapps needs access to a snapshot version of the test-jetty-webapp so it really serves as more of an example of how to layer your webapp with the bits required to customize your app for beanstalk and jetty.
-____
-
+====
 To actually make use of these artifacts you currently must clone this git repository and build it locally.
 Once you have the artifacts you simply need to copy the approach in the jetty-beanstalk-testapp to apply the configuration to your webapp.
 
 * https://github.com/jmcc0nn3ll/jetty-beanstalk
 
-____
 [IMPORTANT]
+====
 Bluepill is used to manage the start and stop process of the app server.
 This seems to be a problematic bit of software with a colored history and the version in use at the time of this writing is old.
 When starting and stopping (or restarting) the appserver you may see error messages show up that the Server timed out getting a response or things like that.
 These are red herrings and my experience is that jetty has started and stopped just fine, the pid file required shows up in a very timely fashion (under `/var/run/jetty.pid`) so do check that the app server has started, but please be aware there is a strangeness here that hasn't been sorted out yet.
-____
+====

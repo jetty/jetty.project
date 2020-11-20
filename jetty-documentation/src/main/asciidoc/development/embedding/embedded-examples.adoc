@@ -22,12 +22,11 @@
 Jetty has a rich history of being embedded into a wide variety of applications.
 In this section we will walk you through a number of our simple examples under our embedded-jetty-examples project in our git repository.
 
-____
 [IMPORTANT]
+====
 These files are pulled directly from our git repository when this document is generated.
 If the line numbers do not line up feel free to fix this documentation in github and give us a pull request, or at least open an issue to notify us of the discrepancy.
-____
-
+====
 include::examples/embedded-file-server.adoc[]
 include::examples/embedded-split-file-server.adoc[]
 include::examples/embedded-many-connectors.adoc[]
@@ -42,7 +41,7 @@ This example is very similar to the one in the previous section, although it ena
 As of jetty-9.2, we use the JSP engine from Apache, which relies on a Servlet Specification 3.1 style `ServletContainerInitializer` to initialize itself.
 To get this to work with Jetty, you need to enable annotations processing, as shown in this example code:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/OneWebAppWithJsp.java[]
 
@@ -56,7 +55,7 @@ After you have started things up you should be able to navigate to http://localh
 
 To use this example in your project, you will need the following Maven dependencies declared, in addition to those from the previous section:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 
 <dependency>

@@ -24,10 +24,10 @@
 You will need to place the following Jetty jar files onto the classpath of your application.
 You can obtain them from the https://www.eclipse.org/jetty/download.html[Jetty distribution], or the https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-annotations[Maven repository]:
 
-....
+----
 jetty-plus.jar
 jetty-annotations.jar
-....
+----
 
 You will also need the http://asm.ow2.org/[asm] jar, which you can obtain from link:{MVNCENTRAL}/org/eclipse/jetty/orbit/org.objectweb.asm/3.3.1.v201105211655/org.objectweb.asm-3.3.1.v201105211655.jar[this link.]
 
@@ -39,7 +39,7 @@ The example also adds in the configuration classes that are responsible for JNDI
 
 The code is as follows:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
@@ -101,7 +101,7 @@ On lines 30, 33 and 37 JNDI resources that we will be able to reference with @Re
 
 With the setup above, a servlet that uses annotations and Jetty will honour the annotations when the webapp is deployed can be created:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 import javax.annotation.security.DeclareRoles;
 import javax.annotation.security.RunAs;

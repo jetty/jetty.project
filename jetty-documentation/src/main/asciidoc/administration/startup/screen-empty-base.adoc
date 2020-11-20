@@ -16,8 +16,8 @@
 //  ========================================================================
 //
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [jetty]$ mkdir mybase
 [jetty]$ cd mybase
 [mybase]$ ls -la
@@ -30,4 +30,4 @@ WARNING: Nothing to start, exiting ...
 
 Usage: java -jar start.jar [options] [properties] [configs]
        java -jar start.jar --help  # for more information
-....
+----

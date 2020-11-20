@@ -18,7 +18,7 @@
 
 [[quick-start]]
 
-= Getting Started With Jetty
+== Getting Started With Jetty
 
 include::introduction/chapter.adoc[]
 include::getting-started/chapter.adoc[]

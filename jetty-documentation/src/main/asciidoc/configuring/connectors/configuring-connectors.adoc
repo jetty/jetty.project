@@ -34,8 +34,8 @@ Additional settings, including construction your own constructor Jetty XML files
 Out of the box, Jetty provides several link:#startup-modules[modules] for enabling different types of connectors, from HTTP to HTTPS, HTTP/2, and others.
 If you startup Jetty with the `--list-modules=connector` command, you can see a list of all available connector modules:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [mybase]$ java -jar $JETTY_HOME/start.jar --list-modules=connector
 
 Available Modules:
@@ -178,13 +178,13 @@ Modules for tag 'connector':
      Depend: unixsocket-http
         XML: etc/jetty-unixsocket-secure.xml
 ...
-....
+----
 
 To enable a connector, simply activate the associated module.
 Below is an example of activating both the `http` and `https` modules in a fresh link:#startup-base-and-home[Jetty base] using the link:#start-vs-startd[start.d directory]:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [mybase] java -jar $JETTY_HOME/start.jar --create-startd
 MKDIR : ${jetty.base}/start.d
 INFO  : Base directory was modified
@@ -204,14 +204,14 @@ INFO  : Base directory was modified
 └── start.d
     ├── http.ini
     └── https.ini
-....
+----
 
 When the `http` and `https` modules were activated, so too were any modules they were dependent on, in this case `server` and `ssl`, as well as any dependencies for those modules, such as the `etc` and `ketystore` directories for `ssl`.
 
 At this point the server has been configured with connectors for both HTTP and HTTPS and can be started:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [mybase] java -jar $JETTY_HOME/start.jar
 2017-08-31 10:19:58.855:INFO::main: Logging initialized @372ms to org.eclipse.jetty.util.log.StdErrLog
 2017-08-31 10:19:59.076:INFO:oejs.Server:main: jetty-9.4.6.v20170531
@@ -220,14 +220,14 @@ At this point the server has been configured with connectors for both HTTP and H
 2017-08-31 10:19:59.151:INFO:oejus.SslContextFactory:main: x509=X509@5d624da6(mykey,h=[],w=[]) for SslContextFactory@2ef9b8bc(file:///Users/staff/installs/repository/jetty-distribution-{VERSION}/mybase/etc/keystore,file:///Users/staff/installs/repository/jetty-distribution-{VERSION}/mybase/etc/keystore)
 2017-08-31 10:19:59.273:INFO:oejs.AbstractConnector:main: Started ServerConnector@2b98378d{SSL,[ssl, http/1.1]}{0.0.0.0:8443}
 2017-08-31 10:19:59.274:INFO:oejs.Server:main: Started @791ms
-....
+----
 
 When modules are enabled, they are loaded with several default options.
 These can be changed by editing the associated module ini file in the `start.d` directory (or the associated lines in `server.ini` if your implementation does not use `start.d`).
 For example, if we examine the `http.ini` file in our `start.d` directory created above, we will see the following settings:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 # ---------------------------------------
 # Module: http
 # Enables a HTTP connector on the server.
@@ -261,41 +261,40 @@ For example, if we examine the `http.ini` file in our `start.d` directory create
 
 ## HTTP Compliance: RFC7230, RFC2616, LEGACY
 # jetty.http.compliance=RFC7230
-....
+----
 
 To make a change to these settings, uncomment the line (by removing the #) and change the property to the desired value.
 For example, if you wanted to change the HTTP port to 5231, you would edit the line as follows:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 ...
 ## Connector port to listen on
 jetty.http.port=5231
 ...
-....
+----
 
 Now when the server is started, HTTP connections will enter on port 5231:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [mybase] java -jar ../start.jar
 2017-08-31 10:31:32.955:INFO::main: Logging initialized @366ms to org.eclipse.jetty.util.log.StdErrLog
 2017-08-31 10:31:33.109:INFO:oejs.Server:main: jetty-9.4.6.v20170531
 2017-08-31 10:31:33.146:INFO:oejs.AbstractConnector:main: Started ServerConnector@2ef9b8bc{HTTP/1.1,[http/1.1]}{0.0.0.0:5231}
 ...
 2017-08-31 10:31:33.263:INFO:oejs.Server:main: Started @675ms
-....
+----
 
 Every module has their own set of configuration options, and reviewing them all is recommended.
 For additional information on the module system, please refer to our documentation on link:#startup-modules[Startup Modules].
 
-____
 [NOTE]
+====
 Editing these module files is the recommended way to edit the configuration of your server.
 Making changes to the associated Jetty XML file for connectors is *not* recommended, and is for advanced users only.
 If you do wish to edit Jetty XML, please see our section on managing link:#[Jetty Home and Jetty Base] to ensure your Jetty Home remains a standard of truth for your implementation.
-____
-
+====
 ==== Limiting Connections
 
 Jetty also provides the means by which to limit connections to the server and/or contexts.
@@ -338,7 +337,7 @@ link:{GITBROWSEURL}/jetty-alpn/jetty-alpn-server/src/main/config/etc/jetty-alpn.
 The services a link:{JDURL}/org/eclipse/jetty/server/ServerConnector.html[`ServerConnector`] instance uses are set by constructor injection and once instantiated cannot be changed.
 Many of the services may be defaulted with null or 0 values so that a reasonable default is used, thus for most purposes only the Server and the connection factories need to be passed to the connector constructor. In Jetty XML (that is, in link:{GITBROWSEURL}/jetty-server/src/main/config/etc/jetty-http.xml[`jetty-http.xml`]) you can do this by:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <New class="org.eclipse.jetty.server.ServerConnector">
   <Arg name="server"><Ref refid="Server" /></Arg>
@@ -360,7 +359,7 @@ Typically the defaults are sufficient for almost all deployments.
 You can configure connector network settings by calling setters on the connector before it is started.
 For example, you can set the port with the Jetty XML:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <New class="org.eclipse.jetty.server.ServerConnector">
   <Arg name="server"><Ref refid="Server" /></Arg>
@@ -373,7 +372,7 @@ For example, you can set the port with the Jetty XML:
 Values in Jetty XML can also be parameterized so that they may be passed from property files or set on the command line.
 Thus typically the port is set within Jetty XML, but uses the `Property` element to be customizable:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <New class="org.eclipse.jetty.server.ServerConnector">
   <Arg name="server"><Ref refid="Server" /></Arg>
@@ -418,7 +417,7 @@ To avoid duplicate configuration, the standard Jetty distribution creates the co
 
 A typical configuration of link:{JDURL}/org/eclipse/jetty/server/HttpConfiguration.html[HttpConfiguration] is:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
   <Set name="secureScheme">https</Set>
@@ -431,7 +430,7 @@ A typical configuration of link:{JDURL}/org/eclipse/jetty/server/HttpConfigurati
 
 This example HttpConfiguration may be used by reference to the ID "`httpConfig`":
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Call name="addConnector">
   <Arg>
@@ -457,7 +456,7 @@ Please note that if your `httpConfig` does not include a `secureScheme` or `secu
 
 For SSL-based connectors (in `jetty-https.xml` and `jetty-http2.xml`), the common "`httpConfig`" instance is used as the basis to create an SSL specific configuration with ID "`sslHttpConfig`":
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <New id="sslHttpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
   <Arg><Ref refid="httpConfig"/></Arg>
@@ -484,19 +483,18 @@ In such environments, the TCP/IP connection terminating on the server does not o
 Thus Intermediaries typically implement one of several de facto standards to communicate to the server information about the original client connection terminating on the intermediary.
 Jetty supports the `X-Forwarded-For` header and the http://www.haproxy.org/download/1.5/doc/proxy-protocol.txt[Proxy Protocol] mechanisms as described below.
 
-____
 [NOTE]
+====
 The XML files in the Jetty distribution contain commented out examples of both the `X-Forwarded-For` and http://www.haproxy.org/download/1.5/doc/proxy-protocol.txt[Proxy Protocol] mechanisms.
 When using those examples, it is recommended that the XML in the Jetty distribution is not edited.
 Rather the files should be copied into a Jetty base directory and then modified.
-____
-
+====
 ===== X-Forward-for Configuration
 
 The `X-Forwarded-for` header and associated headers are a de facto standard where intermediaries add HTTP headers to each request they forward to describe the originating connection.
 These headers can be interpreted by an instance of link:{JDURL}/org/eclipse/jetty/server/ForwardedRequestCustomizer.html[`ForwardedRequestCustomizer`] which can be added to a `HttpConfiguration` as follows:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
   <Set name="outputBufferSize">32768</Set>
@@ -519,7 +517,7 @@ The connection factory can be added to any link:{JDURL}/org/eclipse/jetty/server
 
 An example of adding the factory to a HTTP connector is shown below:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Call name="addConnector">
   <Arg>

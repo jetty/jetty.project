@@ -240,8 +240,8 @@ INFO  : server          initialized in ${jetty.base}/start.d/server.ini
 INFO  : Base directory was modified
 ----
 
-____
 [NOTE]
+====
 It is important to keep in mind that when activating a dependency, Jetty does not just go one layer down.
 If a dependent module also has dependencies they too will be enabled.
-____
+====

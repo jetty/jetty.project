@@ -34,19 +34,17 @@ Logging APIs that Slf4j supports:
 To accomplish this configuration a single underlying logging framework should first be chosen.
 This decision guides the rest of the choices about jar files to place on the server classpath.
 
-____
 [CAUTION]
+====
 There MUST NOT be multiple underlying logging frameworks on the classpath.
 If there are, the Slf4j framework fails to load.
-____
-
-____
+====
 [NOTE]
+====
 Some third party libraries provide their own implementations of common logging APIs; be careful not to accidentally include an underlying logging framework.
 For example, if you are using SpringSource you likely have a `com.springsource.org.apache.log4j.jar` along with a `log4j.jar`, which have the same classes in them.
 In this example, use the `com.springsource.org.apache.log4j.jar` version and exclude the `log4j.jar`, as the SpringSource version includes extra metadata suitable for using SpringSource.
-____
-
+====
 .Slf4j Logging Grid
 [width="100%",cols="25%,25%,25%,25%",options="header",]
 |=======================================================================
@@ -88,8 +86,8 @@ It also requires including the other Slf4j binding JARs in the classpath, along 
 
 A convenient replacement `logging` module has been created to bootstrap the `${jetty.base}` directory for capturing all Jetty server logging from multiple logging frameworks into a single logging output file managed by logback.
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [mybase]$ mkdir modules
 [mybase]$ cd modules
 
@@ -115,7 +113,7 @@ INFO: resources       initialised transitively
 INFO: resources       enabled in     ${jetty.base}/start.ini
 
 [mybase]$ java -jar /opt/jetty-dist/start.jar
-....
+----
 
 The replacement `logging.mod` performs a number of tasks.
 

@@ -35,7 +35,7 @@ Internally, configuring an authentication mechanism is done by setting an instan
 
 Below is an example taken from the link:{GITBROWSEURL}/tests/test-webapps/test-jetty-webapp/src/main/webapp/WEB-INF/web.xml?h=release-9[jetty-test-webapp web.xml] that configures BASIC authentication:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <login-config>
     <auth-method>BASIC</auth-method>
@@ -46,7 +46,7 @@ Below is an example taken from the link:{GITBROWSEURL}/tests/test-webapps/test-j
 
 The link:{GITBROWSEURL}/tests/test-webapps/test-jetty-webapp/src/main/webapp/WEB-INF/web.xml?h=release-9[jetty-test-webapp web.xml] also includes commented out examples of other DIGEST and FORM configuration:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <login-config>
     <auth-method>FORM</auth-method>
@@ -62,7 +62,7 @@ The link:{GITBROWSEURL}/tests/test-webapps/test-jetty-webapp/src/main/webapp/WEB
 With FORM Authentication, you must also configure URLs of pages to generate a login form and handle errors.
 Below is a simple HTML form from the link:{GITBROWSEURL}/tests/test-webapps/test-jetty-webapp/src/main/webapp/logon.html?h=release-9[test webapp logon.html]:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <HTML>
 <H1>FORM Authentication demo</H1>
@@ -129,7 +129,7 @@ A LoginService is available to all web applications on a Server instance if you 
 Such a definition would go into an xml file in your `${jetty.base}/etc` directory, e.g. `${jetty.base}/etc/my-realm.xml` and you would add this xml file to the execution path via `start.ini` or `start.d` (you may want to review the material in the link:#startup[Starting Jetty] chapter).
 Here's an example of an xml file that defines an in-memory type of LoginService called the link:{JDURL}/org/eclipse/jetty/security/HashLoginService.html[HashLoginService]:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
@@ -151,7 +151,7 @@ If you define more than one `LoginService` on a Server, you will need to specify
 You can do that by telling the context the name of the `LoginService`, or passing it the `LoginService` instance.
 Here's an example of doing both of these, using a link:#deployable-descriptor-file[context xml file]:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
@@ -176,7 +176,7 @@ Here's an example of doing both of these, using a link:#deployable-descriptor-fi
 Alternatively, you can define a `LoginService` for just a single web application.
 Here's how to define the same HashLoginService, but inside a link:#deployable-descriptor-file[context xml file]:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
@@ -254,7 +254,7 @@ guest: guest,read-only
 
 You configure the `HashLoginService` with a name and a reference to the location of the properties file:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 
 <Item>
@@ -268,7 +268,7 @@ You configure the `HashLoginService` with a name and a reference to the location
 
 You can also configure it to reload the configuration file when changes to it are detected.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 
 <New class="org.eclipse.jetty.security.HashLoginService">
@@ -362,7 +362,7 @@ If you want to use obfuscated, MD5 hashed or encrypted passwords the `pwd` colum
 
 You define a `JDBCLoginService` with the name of the realm and the location of the properties file describing the database:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <New class="org.eclipse.jetty.security.JDBCLoginService">
   <Set name="name">Test JDBC Realm</Set>
@@ -380,7 +380,7 @@ Until Servlet 3.1, role-based authorization could define:
 
 * Access granted to a set of named roles:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <security-constraint>
   <web-resource-collection>
@@ -396,7 +396,7 @@ Until Servlet 3.1, role-based authorization could define:
 
 * Access totally forbidden, regardless of role:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <security-constraint>
   <web-resource-collection>
@@ -410,7 +410,7 @@ Until Servlet 3.1, role-based authorization could define:
 * Access granted to a user in any of the roles defined in the effective `web.xml`.
 This is indicated by the special value of `*` for the `<role-name>` of a `<auth-constraint>` in the `<security-constraint>`:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <security-constraint>
   <web-resource-collection>
@@ -428,7 +428,7 @@ Servlet 3.1 introduced an additional authorization:
 * Access granted to any user who is authenticated, regardless of roles.
 This is indicated by the special value of `**` for the `<role-name>` of a `<auth-constraint>` in the `<security-constraint>`:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <security-constraint>
   <web-resource-collection>
@@ -445,7 +445,7 @@ Additionally, when configuring your security constraints you can protect various
 This is done by adding the method you want to protect as a `<http-method>` in the `<web-resource-collection>`.
 You can then define roles that should be able to perform these protected methods in an `<auth-constraint>`:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <security-constraint>
   <web-resource-collection>
@@ -470,7 +470,7 @@ This is especially helpful if authorization needs change over time and need upda
 To do this, we add a section for security constraints into the context xml file for our web app as part of the `securityHandler`.
 In the example below, a `HashLoginService` is defined with authorization being granted too `foo/*` paths to users with the `admin` and `manager` roles.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure id="testWebapp" class="org.eclipse.jetty.webapp.WebAppContext">
   <Get name="securityHandler">
@@ -512,7 +512,7 @@ If roles changed in the future, administrators could easily change this context 
 In addition to the distribution, security can be defined as part of an embedded implementation as well.
 Below is an example which, like the one above, sets up a server with a `HashLoginService` and adds security constraints to restrict access based on roles.
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/SecuredHelloHandler.java[]
 ----

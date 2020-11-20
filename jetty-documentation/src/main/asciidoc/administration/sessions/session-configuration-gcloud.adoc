@@ -66,7 +66,7 @@ To enable communication using the GCloud Emulator:
 When using the Jetty distribution, you will first need to enable the `session-store-gcloud` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 $ java -jar ../start.jar --create-startd
 INFO : Base directory was modified
@@ -191,7 +191,7 @@ It does *not*, however, configure a SLF4J implementation for the users.
 As such, you will also need to enable one of the SLF4J implementation modules listed.
 In this example, we will enable the `slf4j-simple-impl` module to provide a SLF4J implementation.
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 $ java -jar ../start.jar --add-to-start=slf4j-simple-impl
 INFO  : slf4j-simple-impl initialized in ${jetty.base}/start.d/slf4j-simple-impl.ini
@@ -206,16 +206,15 @@ When the `--add-to-start` argument was added to the command line the first time,
 
 In addition to adding these modules to the classpath of the server it also added the respective configuration files to the `${jetty.base}start.d` directory.
 
-____
 [NOTE]
+====
 If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `${jetty.base}/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
-____
-
+====
 ==== Configuring GCloud Session Properties
 
 Opening the `start.d/session-store-gcloud.ini` will display a list of all the configurable properties for the Google Cloud DataStore module:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 # ---------------------------------------
 # Module: session-store-gcloud
@@ -250,14 +249,13 @@ jetty.session.savePeriod.seconds=0::
 By default whenever the last concurrent request leaves a session, that session is always persisted via the `SessionDataStore`, even if the only thing that changed on the session is its updated last access time.
 A non-zero value means that the `SessionDataStore` will skip persisting the session if only the access time changed, and it has been less than `savePeriod` seconds since the last time the session was written.
 +
-____
 [NOTE]
+====
 Configuring `savePeriod` is useful if your persistence technology is very slow/costly for writes.
 In a clustered environment, there is a risk of the last access time of the session being out-of-date in the shared store for up to `savePeriod` seconds.
 This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
 Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
-____
-
+====
 jetty.session.gcloud.maxRetries::
 Maxmium number of tries to connect to GCloud DataStore to write sessions.
 jetty.session.gcloud.backoffMs::

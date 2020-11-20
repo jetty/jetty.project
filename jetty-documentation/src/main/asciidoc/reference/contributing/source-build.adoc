@@ -55,25 +55,24 @@ Jetty uses http://maven.apache.org/[Apache Maven 3] for managing its build and p
 
 Building Jetty should simply be a matter of changing into the relevant directory and executing the following commands:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 
 $ git clone https://github.com/eclipse/jetty.project.git
 $ cd jetty.project
 $ mvn install
 
     
-....
+----
 
 All relevant dependencies will be downloaded into your local repository automatically.
 
-____
 [NOTE]
+====
 Jetty has a great many test cases that run through the course of its build.
 Periodically we find some test cases to be more time dependent than they should be and this results in intermittent test failures.
 You can help track these down by opening a bug report.
-____
-
+====
 ==== Import into Eclipse
 
 Jetty is a Maven project. To develop Jetty in Eclipse, follow these directions:

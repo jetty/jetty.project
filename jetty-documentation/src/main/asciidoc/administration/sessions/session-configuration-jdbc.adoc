@@ -24,7 +24,7 @@
 
 When using the Jetty distribution, you will first need to enable the `session-store-jdbc` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 $ java -jar ../start.jar --create-startd
 INFO : Base directory was modified
@@ -48,7 +48,7 @@ In addition to adding these modules to the classpath of the server, several ini 
 
 Opening the `start.d/session-store-jdbc.ini` will show a list of all the configurable options for the JDBC module:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 # ---------------------------------------
 # Module: session-store-jdbc
@@ -103,14 +103,13 @@ jetty.session.savePeriod.seconds=0::
 By default whenever the last concurrent request leaves a session, that session is always persisted via the `SessionDataStore`, even if the only thing that changed on the session is its updated last access time.
 A non-zero value means that the `SessionDataStore` will skip persisting the session if only the access time changed, and it has been less than `savePeriod` seconds since the last time the session was written.
 +
-____
 [NOTE]
+====
 Configuring `savePeriod` is useful if your persistence technology is very slow/costly for writes.
 In a clustered environment, there is a risk of the last access time of the session being out-of-date in the shared store for up to `savePeriod` seconds.
 This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
 Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
-____
-
+====
 db-connection-type::
 Set to either `datasource` or `driver` depending on the type of connection being used.
 jetty.session.jdbc.datasourceName::

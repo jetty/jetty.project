@@ -24,11 +24,10 @@ If you have memory leaks, and you have thoroughly investigated tools like jconso
 [[preventing-webapp-classloader-pinning]]
 ==== Preventing WebApp Classloader Pinning
 
-____
 [NOTE]
+====
 This feature is available for Jetty 7.6.6 and later.
-____
-
+====
 Code that keeps references to a webapp classloader can cause memory leaks.
 These leaks fall generally into two categories: static fields and daemon threads.
 
@@ -76,7 +75,7 @@ See https://issues.apache.org/bugzilla/show_bug.cgi?id=51687[ASF bug 51687.]
 
 You can individually enable each preventer by adding an instance to a Server with the ` addBean(Object)` call. Here's an example of how to do it in code with the `org.eclipse.jetty.util.preventers.AppContextLeakPreventer`:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 
 Server server = new Server();
@@ -89,7 +88,7 @@ You can add the equivalent in code to the `$JETTY_HOME/etc/jetty.xml` file or an
 Be aware that if you have more than one Server instance in your JVM, you should configure these preventers on just _one_ of them.
 Here's the example from code put into xml:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">

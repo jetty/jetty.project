@@ -35,7 +35,7 @@ There exists 2 system properties that will adjust the default maximum form sizes
 
 Used from command line as such:
 
-[source,shell,subs="{sub-order}"]
+[source,shell]
 ----
 $ java -Dorg.eclipse.jetty.server.Request.maxFormKeys=200 -jar ...
 
@@ -45,7 +45,7 @@ $ java -Dorg.eclipse.jetty.server.Request.maxFormContentSize=400000 -jar ...
 
 Or via Java code (make sure you do this before you instantiate any `ContextHandler`, `ServletContextHandler`, or `WebAppContext`)
 
-[source,java,subs="{sub-order}"]
+[source,java]
 ----
 System.setProperty(ContextHandler.MAX_FORM_KEYS_KEY, "200");
 System.setProperty(ContextHandler.MAX_FORM_CONTENT_SIZE_KEY, "400000");
@@ -56,7 +56,7 @@ System.setProperty(ContextHandler.MAX_FORM_CONTENT_SIZE_KEY, "400000");
 
 To configure the form limits for a single web application, the context handler (or webappContext) instance must be configured using the following methods:
 
-[source,java,subs="{sub-order}"]
+[source,java]
 ----
 ContextHandler.setMaxFormContentSize(int maxSizeInBytes);
 ContextHandler.setMaxFormKeys(int formKeys);
@@ -65,7 +65,7 @@ ContextHandler.setMaxFormKeys(int formKeys);
 
 These methods may be called directly when embedding Jetty, but more commonly are configured from a context XML file or WEB-INF/jetty-web.xml file:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
 

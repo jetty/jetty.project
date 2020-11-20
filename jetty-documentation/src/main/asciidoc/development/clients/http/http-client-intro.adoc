@@ -54,7 +54,7 @@ it provides you with the responses to the requests you make.
 
 In order to use `HttpClient`, you must instantiate it, configure it, and then start it:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 // Instantiate HttpClient
 HttpClient httpClient = new HttpClient();
@@ -78,7 +78,7 @@ When you create a `HttpClient` instance using the parameterless constructor, you
 In order to perform HTTPS requests, you should create first a link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.Client.html[`SslContextFactory.Client`], configure it, and pass it to the `HttpClient` constructor.
 When created with a `SslContextFactory`, the `HttpClient` will be able to perform both HTTP and HTTPS requests to any domain.
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 // Instantiate and configure the SslContextFactory
 SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
@@ -97,7 +97,7 @@ httpClient.start();
 
 It is recommended that when your application stops, you also stop the `HttpClient` instance (or instances) that you are using.
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 httpClient.stop();
 ----

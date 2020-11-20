@@ -153,7 +153,7 @@ You can place additional Jars here.
 You can add an additional classpath to a context classloader by calling link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html#setExtraClasspath(java.lang.String)[org.eclipse.jetty.webapp.WebAppContext.setExtraClasspath(String)] with a comma-separated list of paths.
 You can do so directly to the API via a context XML file such as the following:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
  ...
@@ -172,7 +172,7 @@ Without this interface, session persistence will be slower.
 
 You configure the classloader for the webapp like so:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 MyCleverClassLoader myCleverClassLoader = new MyCleverClassLoader();
  ...
@@ -190,14 +190,14 @@ You can also accomplish this in a context xml file.
 If you start a Jetty server using a custom class loader–consider the Jetty classes not being available to the system class loader, only your custom class loader–you may run into class loading issues when the `WebAppClassLoader` kicks in.
 By default the `WebAppClassLoader` uses the system class loader as its parent, hence the problem. This is easy to fix, like so:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 context.setClassLoader(new WebAppClassLoader(this.getClass().getClassLoader(), context));
 ----
 
 or
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 context.setClassLoader(new WebAppClassLoader(new MyCustomClassLoader(), context));
 ----

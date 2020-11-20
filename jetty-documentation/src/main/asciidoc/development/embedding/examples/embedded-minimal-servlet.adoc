@@ -24,7 +24,7 @@ Note that this is strictly a servlet, not a servlet in the context of a web appl
 This is purely just a servlet deployed and mounted on a context and able to process requests.
 This example is excellent for situations where you have a simple servlet that you need to unit test, just mount it on a context and issue requests using your favorite http client library (like our Jetty client found in xref:http-client[]).
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/MinimalServlets.java[]
 
@@ -43,7 +43,7 @@ After you have started things up you should be able to navigate to http://localh
 
 To use this example in your project you will need the following Maven dependencies declared.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
                 
 <dependency>

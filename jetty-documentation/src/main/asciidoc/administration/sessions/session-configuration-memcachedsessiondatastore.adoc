@@ -31,7 +31,7 @@ To enable it with the Jetty distribution, enable the `session-store-cache` link:
 
 After enabling, the `$jetty.base/start.d/session-store-cache.ini` file will be generated:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 --module=session-store-cache
 

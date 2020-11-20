@@ -31,8 +31,8 @@ These options are general to OpenJDK (and therefore also for the Oracle JVM).
 They provide good information about the GC activity of your JVM, producing logs that can later be analyzed to perform finer tuning.
 
 .JDK 8 Garbage Collection Logging Configuration
-[source,screen, subs="{sub-order}"]
-....
+[source,screen]
+----
 -Xloggc:/path/to/myjettybase/logs/gc.log
 -XX:+PrintGCDateStamps
 -XX:+PrintGCDetails
@@ -40,18 +40,18 @@ They provide good information about the GC activity of your JVM, producing logs 
 -XX:+PrintReferenceGC
 -XX:+PrintTenuringDistribution
 -XX:+PrintAdaptiveSizePolicy
-....
+----
 
 .JDK 9 Garbage Collection Logging Configuration
-[source,screen, subs="{sub-order}"]
-....
+[source,screen]
+----
 Xlog:gc*,ergo*=trace,ref*=debug,age*=trace:file=/path/to/myjettybase/logs/gc.log:time,level,tags
-....
+----
 
 There are not many recommended options for GC that can apply to all users.
 However, the most obvious one is to disable explicit GC (this is performed regularly by RMI and can introduce an abnormal amount of GC pauses).
 
-[source,screen, subs="{sub-order}"]
-....
+[source,screen]
+----
 -XX:+DisableExplicitGC
-....
+----
