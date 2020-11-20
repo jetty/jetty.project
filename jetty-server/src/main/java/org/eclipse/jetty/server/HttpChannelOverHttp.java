@@ -130,8 +130,10 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     {
         if (LOG.isDebugEnabled())
             LOG.debug("failing all content with {}", (Object)failure);
-        if (_content != null && !_content.isSpecial())
+        if (_content != null)
         {
+            if (_content.isSpecial())
+                return _content.isEof();
             _content.failed(failure);
             _content = _content.isEof() ? EOF : null;
             if (_content == EOF)
@@ -146,14 +148,20 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
                     LOG.debug("failed all content, EOF was not reached");
                 return false;
             }
-            c.skip(c.remaining());
-            c.failed(failure);
             if (c.isSpecial())
             {
+                _content = c;
                 boolean atEof = c.isEof();
                 if (LOG.isDebugEnabled())
                     LOG.debug("failed all content, EOF = {}", atEof);
                 return atEof;
+            }
+            c.skip(c.remaining());
+            c.failed(failure);
+            if (c.isEof())
+            {
+                _content = EOF;
+                return true;
             }
         }
     }

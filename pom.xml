@@ -1165,7 +1165,7 @@
       <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-core</artifactId>
-        <version>1.33.0</version>
+        <version>1.33.1</version>
       </dependency>
       <dependency>
         <groupId>org.apache.ant</groupId>
@@ -1367,6 +1367,9 @@
       <properties>
         <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
       </properties>
+      <modules>
+        <module>javadoc</module>
+      </modules>
       <build>
         <pluginManagement>
           <plugins>
