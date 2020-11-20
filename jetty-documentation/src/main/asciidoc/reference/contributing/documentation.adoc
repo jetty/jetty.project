@@ -210,31 +210,32 @@ license blocks::
 
 Some admonition examples:
 
-__________________________________________
+
 [NOTE]
+====
 A note about the previous case to be aware of.
-______________________________________________
+====
 
-________________________________________
 [IMPORTANT]
+====
 Important notes are marked with an icon.
-________________________________________
+====
 
-________________________________
 [TIP]
+====
 Tips that make your life easier.
-________________________________
+====
 
-_______________________________________________________
 [CAUTION]
+====
 Places where you have to be careful what you are doing.
-_______________________________________________________
+====
 
-__________________________________________________________________________________________________________________
 [WARNING]
+====
 Where extreme care has to be taken. Data corruption or other nasty
 things may occur if these warnings are ignored.
-__________________________________________________________________________________________________________________
+====
 
 ==== Oddities
 

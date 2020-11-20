@@ -19,7 +19,7 @@
 [[quickstart-jetty-coordinates]]
 === Finding Jetty in Maven
 
-_[IMPORTANT]
+[IMPORTANT]
 ====
 It is important that only stable releases are used in production environments.
 Versions that have been deprecated or are released as Milestones (M) or Release Candidates (RC) are not suitable for production as they may contain security flaws or incomplete/non-functioning feature sets.

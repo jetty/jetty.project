@@ -823,7 +823,7 @@ Here is a more practical example, taken from the handler configuration section i
 
 <!-- configure the RequestLogHandler object ("RequestLog") that we created earlier -->
 <Ref refid="RequestLog">
-  ----
+    ...
 </Ref>
 ----
 

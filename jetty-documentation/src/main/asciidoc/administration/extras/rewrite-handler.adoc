@@ -36,7 +36,7 @@ The standard Jetty distribution bundle contains the `jetty-rewrite` link:#startu
 $ java -jar start.jar --add-to-start=rewrite
 ----
 
-_[NOTE]
+[NOTE]
 ====
 If you are running the standard Jetty distribution with the sample test webapp, there will be a demo of the rewrite module at http://localhost:8080/test/rewrite/
 ====
