@@ -50,8 +50,8 @@ This filter will perform the following actions on each response:
 * Set the Expires header to approximately one year in the future.
 * Add a Date header with the current system time.
 
-____
 [NOTE]
+____
 Each action must be separated by a comma.
 ____
 

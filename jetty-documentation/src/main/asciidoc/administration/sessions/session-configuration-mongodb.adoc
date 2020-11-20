@@ -61,8 +61,8 @@ It also downloaded the needed Mongo-specific jar file and created a directory na
 
 In addition to adding these modules to the classpath of the server, several ini configuration files were added to the `${jetty.base}/start.d` directory.
 
-____
 [NOTE]
+____
 If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `${jetty.base}/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
 ____
 
@@ -97,8 +97,8 @@ jetty.session.savePeriod.seconds=0::
 By default whenever the last concurrent request leaves a session, that session is always persisted via the `SessionDataStore`, even if the only thing that changed on the session is its updated last access time.
 A non-zero value means that the `SessionDataStore` will skip persisting the session if only the access time changed, and it has been less than `savePeriod` seconds since the last time the session was written.
 +
-____
 [NOTE]
+____
 Configuring `savePeriod` is useful if your persistence technology is very slow/costly for writes.
 In a clustered environment, there is a risk of the last access time of the session being out-of-date in the shared store for up to `savePeriod` seconds.
 This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
@@ -123,8 +123,8 @@ jetty.session.mongo.connectionString;;
 The string defining the MongoURI value, such as `mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]`.
 More information on how to format the MongoURI string can be found in the https://docs.mongodb.com/manual/reference/connection-string/[official documentation for mongo.]
 +
-____
 [NOTE]
+____
 You will only use *one* `connection-type` at a time, `address` or `uri`.
 If both are utilized in your `session-store-mongo.ini`, only the last `connection-type` configured in the file will be used.
 By default, the `connection-type` of `address` is used.

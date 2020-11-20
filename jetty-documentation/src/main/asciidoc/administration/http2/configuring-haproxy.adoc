@@ -41,8 +41,8 @@ $ sudo apt-get install haproxy
 
 Alternatively you can download the HAProxy source code and build it on your environment by following the README bundled with the HAProxy source code tarball.
 
-____
 [NOTE]
+____
 HAProxy supports ALPN only if built with OpenSSL 1.0.2 or greater.
 Use `haproxy -vv` to know with which OpenSSL version HAProxy has been built.
 ____
@@ -176,8 +176,8 @@ $ java -jar $JETTY_HOME/start.jar jetty.http.host=127.0.0.1 jetty.http.port=8282
 
 Now you can browse https://domain.com/async-rest (replace `domain.com` with your own domain, or with `localhost`, to make this example work).
 
-____
 [NOTE]
+____
 You want the Jetty connector that listens on port 8282 to be available only to HAProxy, and not to remote clients.
 For this reason, you want to specify the `jetty.http.host` property on the command line (or in `start.ini`/ `start.d/http.ini` to make this setting persistent) to bind the Jetty connector only on the loopback interface (127.0.0.1), making it available to HAProxy but not to remote clients.
 If your Jetty instance runs on a different machine and/or on a different (sub)network, you may want to adjust both the back-end section of the HAProxy configuration file and the `jetty.http.host` property to match accordingly.

@@ -43,8 +43,8 @@ All CBC based ciphers are supported since Java 7, the new GCM modes are supporte
 
 TLS v1.0, v1.1 and SSL v3 are no longer supported by default. If your Jetty implementation requires these protocols for legacy support, they can be enabled manually.
 
-____
 [NOTE]
+____
 Once TLS v1.3 is released, there will be no workaround available for TLS v1.0 or v1.1.
 Plans for TLS v1.3 include banning ciphers with known vulnerabilities from being present at any level.
 It is recommended to upgrade any clients using these ciphers as soon as possible or face being locked into a outdated version of Jetty, Java or even OS.
@@ -115,8 +115,8 @@ The following command generates a key pair and certificate directly into file `k
 $ keytool -keystore keystore -alias jetty -genkey -keyalg RSA
 ----
 
-____
 [NOTE]
+____
 The DSA key algorithm certificate produces an error after loading several pages.
 In a browser, it displays a message "Could not establish an encrypted connection because certificate presented by localhost as an invalid signature."
 The solution is to use RSA for the key algorithm.
@@ -266,8 +266,8 @@ You need to enter the details for the certificate again.
 
 Once a CA has sent you a certificate, or if you generated your own certificate without `keytool`, you need to load it into a JSSE keystore.
 
-____
 [NOTE]
+____
 You need both the private key and the certificate in the JSSE keystore.
 You should load the certificate into the keystore used to generate the CSR with `keytool`.
 If your key pair is not already in a keystore (for example, because it has been generated with OpenSSL), you need to use the PKCS12 format to load both key and certificate (see link:#loading-keys-and-certificates-via-pkcks12[PKCKS12 Keys &Certificates]).
@@ -335,8 +335,8 @@ $ cat example.crt intermediate.crt [intermediate2.crt] ... rootCA.crt > cert-cha
 $ openssl pkcs12 -export -inkey example.key -in cert-chain.txt -out example.pkcs12
 ----
 
-____
 [NOTE]
+____
 The order of certificates must be from server to rootCA, as per link:https://www.ietf.org/rfc/rfc2246.txt[RFC2246 section 7.4.2.]
 ____
 
@@ -378,8 +378,8 @@ image::configuring/connectors/images/certificate-chain.png[title="Certificate ch
     └── Root CA certificate
 ....
 
-____
 [NOTE]
+____
 Both the `Intermediary CA certificate` and `Root CA certificate` are optional.
 ____
 
@@ -686,8 +686,8 @@ While the `SslContextFactory` can operate without a keystore (this mode is most 
 
 setKeyStorePath::
   The configured keystore to use for all SSL/TLS in configured Jetty Connector (or Client).
-____
 [NOTE]
+____
 As a keystore is vital security information, it can be desirable to locate the file in a directory with *very* restricted access.
 ____
 
@@ -704,15 +704,15 @@ setExcludeCipherSuites / setIncludeCipherSuites::
 setExcludeProtocols / setIncludeProtocols::
   This allows for the customization of the selected Protocols that will be used by SSL/TLS.
 
-____
 [NOTE]
+____
 When working with Includes / Excludes, it is important to know that *Excludes will always win.*
 The selection process is to process the JVM list of available Cipher Suites or Protocols against the include list, then remove the excluded ones.
 Be aware that each Include / Exclude list has a Set method (replace the list) or Add method (append the list).
 ____
 
-____
 [CAUTION]
+____
 The keystore and truststore passwords may also be set using the system properties: `org.eclipse.jetty.ssl.keypassword` `org.eclipse.jetty.ssl.password`.
 This is _not_ a recommended usage.
 ____
@@ -760,14 +760,14 @@ It's crucial that you use the _exact_ names of the cipher suites as used/known b
 You can get them by obtaining an instance of SSLEngine and call `getSupportedCipherSuites()`.
 Tools like https://www.ssllabs.com/[ssllabs.com] might report slightly different names which will be ignored.
 
-____
 [IMPORTANT]
+____
 It is important to stay up-to-date with the latest supported cipher suites.
 Be sure to consult Oracle's link:https://java.com/en/jre-jdk-cryptoroadmap.html[JRE and JDK Cryptographic Roadmap] frequently for recent and upcoming changes to supported ciphers.
 ____
 
-____
 [IMPORTANT]
+____
 It's recommended to install the Java Cryptography Extension (JCE) Unlimited Strength policy files in your JRE to get full strength ciphers such as AES-256.
 The files can be found on the http://www.oracle.com/technetwork/java/javase/downloads/index.html[Java download page].
 Just overwrite the two present JAR files in `<JRE_HOME>/lib/security/`.
@@ -776,8 +776,8 @@ ____
 Both `setIncludeCipherSuites` and `setExcludeCipherSuites` can be fed by the exact cipher suite name used in the JDK or by using regular expressions.
 If you have a need to adjust the Includes or Excludes, then this is best done with a custom XML that configures the `SslContextFactory` to suit your needs.
 
-____
 [NOTE]
+____
 Jetty *does* allow users to enable weak/deprecated cipher suites (or even no cipher suites at all).
 By default, if you have these suites enabled warning messages will appear in the server logs.
 ____
@@ -821,15 +821,15 @@ etc/tweak-ssl.xml
 $
 ----
 
-____
 [NOTE]
+____
 The default `SslContextFactory` implementation applies the latest SSL/TLS recommendations surrounding vulnerabilities in SSL/TLS.
 Check the release notes (the `VERSION.txt` found in the root of the Jetty Distribution, or the http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.eclipse.jetty%22%20AND%20a%3A%22jetty-project%22[alternate (classified 'version') artifacts for the `jetty-project` component] on Maven Central) for updates.
 The Java JVM also applies exclusions at the JVM level and, as such, if you have a need to enable something that is generally accepted by the industry as being insecure or vulnerable you will likely have to enable it in *both* the Java JVM and your Jetty configuration.
 ____
 
-____
 [TIP]
+____
 You can enable the `org.eclipse.jetty.util.ssl` named logger at `DEBUG` level to see what the list of selected Protocols and Cipher suites are at startup of Jetty.
 ____
 
@@ -884,8 +884,8 @@ Additional Include / Exclude examples:
   </Call>
 ----
 
-____
 [NOTE]
+____
 Note that disabling SSLv3 prevents very old browsers like Internet Explorer 6 on Windows XP from connecting.
 ____
 

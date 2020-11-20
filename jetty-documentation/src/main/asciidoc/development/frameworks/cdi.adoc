@@ -98,8 +98,8 @@ This module is equivalent to directly modifying the class path configuration wit
 </Configure>
 -------------------------------------------------------------
 
-____
 [TIP]
+____
 The `cdi2` module or directly modifying the web application classpath will not work for Jetty 10.0.0 and later.
 It should only be used for versions prior to Jetty 9.4.20 and/or Weld 3.1.2.Final
 ____

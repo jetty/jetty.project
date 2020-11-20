@@ -24,8 +24,8 @@ If you have memory leaks, and you have thoroughly investigated tools like jconso
 [[preventing-webapp-classloader-pinning]]
 ==== Preventing WebApp Classloader Pinning
 
-____
 [NOTE]
+____
 This feature is available for Jetty 7.6.6 and later.
 ____
 

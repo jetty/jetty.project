@@ -33,8 +33,8 @@ To use `jetty.xml`, specify it as a configuration file when running Jetty.
  java -jar start.jar etc/jetty.xml
 ----
 
-____
 [NOTE]
+____
 If you start Jetty without specifying a configuration file, Jetty automatically locates and uses the default installation `jetty.xml` file.
 Therefore `java -jar start.jar` is equivalent to `java -jar start.jar etc/jetty.xml` .
 ____

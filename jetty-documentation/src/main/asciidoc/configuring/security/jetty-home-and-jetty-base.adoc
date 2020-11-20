@@ -455,8 +455,8 @@ If you want to start using a new module:
 
 This adds the `--module=` lines and associated properties (the parameterized values mentioned above), to your `start.ini`.
 
-____
 [IMPORTANT]
+____
 Do not edit the modules and XML files in the `${jetty.home}` directory; there is no need to be moving or copying them unless you want to make your own modules or override the behavior of an existing module.
 ____
 

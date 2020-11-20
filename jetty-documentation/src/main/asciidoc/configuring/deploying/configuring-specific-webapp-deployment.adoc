@@ -71,8 +71,8 @@ For example, if the system property is set to `myapp.home=/opt/myapp`, the previ
 If the home path for an application needs altered, only the system property needs changed.
 This is useful if the version of an app is frequently changed.
 
-____
 [NOTE]
+____
 To ensure your `web.xml` files are validated, you will need to set the `validateXml` attribute to true as described link:#jetty-xml-dtd[here.]
 ____
 

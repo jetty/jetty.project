@@ -91,7 +91,7 @@ Configure this in an xml file like so:
 </New>
 ----
 
-____
 [NOTE]
+____
 Be careful with this option when using an explicitly setlink:#ref-temp-directories[temp directory] name - as the name of the temp directory will not unique across redeployments, copying the static content into the same directory name each time may not avoid the locking problem.
 ____

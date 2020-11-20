@@ -59,8 +59,8 @@ It should look something like so:
 
 image:administration/jmx/images/jconsole1.jpg[image,width=576]
 
-____
 [IMPORTANT]
+____
 If you don't see your Jetty process in the list of processes you can connect to, quickly switch tabs, or close and reopen a new "New Connection" dialog window.
 This forces JConsole to refresh the list, and recognize your newly-started Jetty process.
 ____
@@ -94,8 +94,8 @@ It should look something like so:
 
 image:administration/jmx/images/jmc1.png[image,width=576]
 
-____
 [IMPORTANT]
+____
 If you don't see your Jetty process in the list of processes you can connect to, quickly switch tabs, or close and reopen a new "New Connection" dialog window.
 This forces JMC to refresh the list, and recognize your newly-started Jetty process.
 ____

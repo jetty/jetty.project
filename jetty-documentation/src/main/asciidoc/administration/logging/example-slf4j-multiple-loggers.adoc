@@ -34,14 +34,14 @@ Logging APIs that Slf4j supports:
 To accomplish this configuration a single underlying logging framework should first be chosen.
 This decision guides the rest of the choices about jar files to place on the server classpath.
 
-____
 [CAUTION]
+____
 There MUST NOT be multiple underlying logging frameworks on the classpath.
 If there are, the Slf4j framework fails to load.
 ____
 
-____
 [NOTE]
+____
 Some third party libraries provide their own implementations of common logging APIs; be careful not to accidentally include an underlying logging framework.
 For example, if you are using SpringSource you likely have a `com.springsource.org.apache.log4j.jar` along with a `log4j.jar`, which have the same classes in them.
 In this example, use the `com.springsource.org.apache.log4j.jar` version and exclude the `log4j.jar`, as the SpringSource version includes extra metadata suitable for using SpringSource.

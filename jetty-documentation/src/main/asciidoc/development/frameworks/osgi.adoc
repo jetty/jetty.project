@@ -59,8 +59,8 @@ You *must also install the Apache Aries SPI Fly bundles* as  many parts of Jetty
 |https://repo1.maven.org/maven2/org/apache/aries/spifly/org.apache.aries.spifly.dynamic.bundle/[Maven central]
 |=======================================================================
 
-____
 [NOTE]
+____
 We strongly recommend that you also deploy the link:#osgi-annotations[annotation-related] jars also, as the Servlet Specification increasingly relies on annotations for functionality.
 ____
 
@@ -688,8 +688,8 @@ Here is the list of recommended jars (NOTE the version numbers may change in fut
 |https://repo1.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-boot-jsp[Maven central]
 |=======================================================================
 
-____
 [NOTE]
+____
 1. As of Jetty 9.2.3 the jetty-osgi-boot-jsp bundle changed to using Apache Jasper as the JSP implementation.
 Prior to this the Glassfish Jasper implementation was used, which had a different set of dependencies - pay careful attention to the jars listed both at the top of this page and in this section, as deployment of other jars can cause incomplete or incorrect package resolution in the OSGi container.
 2.  The order of deployment is important.
@@ -860,13 +860,13 @@ org.eclipse.jetty.orbit:javax.mail.glassfish-1.4.1.v201005082020.jar)^*^
 |jetty-annotations |org.eclipse.jetty.annotations |Distribution lib/
 |=======================================================================
 
-____
 [IMPORTANT]
+____
 If you wish to use JSPs you will need to deploy these annotation-related jars.
 ____
 
-____
 [NOTE]
+____
 You may be able to deploy later versions or other providers of these specifications, however these particular versions are known to have correct manifests and have been tested and known to work with OSGi.
 ____
 

@@ -43,8 +43,8 @@ $ java -jar {$jetty.home}/start.jar --add-to-start=stats
 In addition to these, the `SessionHandler` and `DefaultSessionCache` classes collect statistics for sessions.
 These statistics are enabled by default and are accessible via JMX interface.
 
-_____
-[NOTE]
+_[NOTE]
+____
 To view statistics, you have to be able to connect to Jetty using either JConsole or some other JMX agent. See xref:using-jmx[] for more information.
 _____
 

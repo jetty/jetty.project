@@ -216,8 +216,8 @@ This may download a file from the network if the module provides a URL.
 Disable the [files] section validation of content in the `${jetty.base}` directory for a specific module.
 Useful for modules that have downloadable content that is being overridden with alternatives in the `${jetty.base}`` directory.
 
-____
 [CAUTION]
+____
 This advanced option is for administrators that fully understand the configuration of their `${jetty.base}` and are willing to forego some of the safety checks built into the jetty-start mechanism.
 ____
 
@@ -266,8 +266,8 @@ Here's how to use the Jetty distribution, leveraging `start.jar`, to perform a s
 > java -jar start.jar STOP.PORT=8181 STOP.KEY=abc123 --stop
 ....
 
-____
 [NOTE]
+____
 To perform a graceful shutdown of Jetty, the `stats` link:#startup-modules[module] *must* be enabled.
 ____
 

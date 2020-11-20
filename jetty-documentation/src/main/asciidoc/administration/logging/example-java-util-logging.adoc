@@ -73,8 +73,8 @@ In essence, Jetty is now configured to emit its own logging events to slf4j, and
 
 If there any custom `java.util.logging` handlers to be used, put the implementation jar in the `${jetty.base}/lib/logging/` directory and reference them in the `${jetty.base}/resources/logging.properties` file.
 
-____
 [NOTE]
+____
 `java.util.logging` is configured via the `${jetty.base}/resources/logging.properties` file during a valid startup of Jetty.
 
 This means that if there is any startup errors that occur before `java.util.logging` is configured, they will likely be lost and/or not routed through your configuration.

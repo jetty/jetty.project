@@ -26,8 +26,8 @@ If you have a web application deployed into Jetty you can interact with it remot
 The basics are that you must start up the remote JVM with additional parameters and then start up a remote debugging session in Eclipse for the webapp in question.
 This is easily accomplished.
 
-____
 [NOTE]
+____
 This example assumes you are deploying your web application into the jetty-distribution.
 ____
 

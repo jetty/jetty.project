@@ -21,8 +21,8 @@
 
 Here are examples of configuring a JNDI datasource for various databases.
 
-____
 [NOTE]
+____
 Read xref:configuring-datasources[] in xref:jndi-configuration[] for more information about configuring datasources.
 ____
 
@@ -42,8 +42,8 @@ These examples assume that all of the datasources are declared at the JVM scope,
 You can configure all JNDI resources in a `jetty.xml` file, a `WEB-INF/jetty-env.xml` file, or a context XML file.
 See the section xref:jndi-where-to-declare[] for more information.
 
-____
 [IMPORTANT]
+____
 You must provide Jetty with the libraries necessary to instantiate the datasource you have configured by putting the corresponding Jar in `JETTY_HOME/lib/ext`.
 ____
 

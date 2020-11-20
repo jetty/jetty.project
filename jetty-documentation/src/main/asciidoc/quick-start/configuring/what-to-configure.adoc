@@ -75,13 +75,13 @@ SSL Context Factory::
   The TLS connector types (HTTPS and HTTP2) configure an SSL Context Factory with the location of the server keystore and truststore for obtaining server certificates.
 
 
-____
 [NOTE]
+____
 Virtual hosts are not configured on connectors. You must configure individual contexts with the virtual hosts to which they respond.
 ____
 
-____
 [NOTE]
+____
 Prior to Jetty 9, the type of the connector reflected both the protocol supported (HTTP, HTTPS, AJP, SPDY), and the nature of the implementation (NIO or BIO). 
 From Jetty 9 onwards there is only one prime Connector type (`ServerConnector`), which is NIO based and uses Connection Factories to handle one or more protocols.
 ____
@@ -92,8 +92,8 @@ ____
 A Jetty context is a handler that groups other handlers under a context path together with associated resources and is roughly equivalent to the standard ServletContext API. 
 A context may contain either standard Jetty handlers or a custom application handler.
 
-____
 [NOTE]
+____
 The servlet specification defines a web application. 
 In Jetty a standard web application is a specialized context that uses a standard layout and `WEB-INF/web.xml` to instantiate and configure classpath, resource base and handlers for sessions, security, and servlets, plus servlets for JSPs and static content. 
 Standard web applications often need little or no additional configuration, but you can also use the techniques for arbitrary contexts to refine or modify the configuration of standard web applications.
@@ -255,8 +255,8 @@ The new WebAppProvider will attempt to avoid double deployments during the direc
 * If a directory and matching XML file exists (eg: `foo/` and `foo.xml`), then the directory is assumed to be an unpacked WAR and only the XML is deployed (which may use the directory in its own configuration)
 * If a WAR file and matching XML file exist (eg: `foo.war` and `foo.xml`), then the WAR is assumed to be configured by the XML and only the XML is deployed.
 
-____
 [NOTE]
+____
 In prior versions of Jetty there was a separate ContextDeployer that provided XML-based deployment. As of Jetty 9 the ContextDeployer no longer exists and its functionality has been merged with the new link:{JDURL}/org/eclipse/jetty/deploy/providers/WebAppProvider.html[WebAppProvider] to avoid double deployment scenarios.
 ____
 

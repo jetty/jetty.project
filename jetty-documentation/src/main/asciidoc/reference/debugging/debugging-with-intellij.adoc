@@ -61,8 +61,8 @@ Debugging in IntelliJ is extremely powerful.
 For example it's possible to have conditional breakpoints that only trigger a break if the configured conditions are met.
 Have a look at the various tutorials in the internet or the http://www.jetbrains.com/idea/webhelp/getting-help.html[IntelliJ documentation] for further details.
 
-____
 [TIP]
+____
 You can easily configure logging through a `jetty-logging.properties` file.
 If this file is on your classpath then Jetty will use it for configuring logging, we use this approach extensively throughout Jetty development and it makes life ever so much easier.
 You can see this in action in the xref:configuring-jetty-stderrlog[] section.

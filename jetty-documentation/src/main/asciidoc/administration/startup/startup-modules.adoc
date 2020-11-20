@@ -25,8 +25,8 @@ Modules allow flexibility for implementations and their plug-and-play nature mak
 
 [[enabling-modules]]
 ==== Enabling Modules
-____
 [TIP]
+____
 The default distribution has a co-mingled `${jetty.home}` and `${jetty.base}` where the directories for `${jetty.home}` and `${jetty.base}` point to the same location.
 It is highly encouraged that you learn about the differences in link:#startup-base-and-home[Jetty Base vs Jetty Home] and take full advantage of this setup.
 ____
@@ -148,8 +148,8 @@ This is done by editing the associated ini file for the module.
 If your server setup is using a centralized ini configuration, you will edit the `${jetty.base}/server.ini` file.
 If you have elected to manage each module within it's own ini file, you can find these files in the `${jetty.base}/start.d` directory.
 
-____
 [IMPORTANT]
+____
 It is important that you *do not* modify the module files in the `$JETTY_HOME/modules` directory.
 $JETTY_HOME should always remain a standard of truth.
 If you want to make a change to an actual module file (not the values in its `ini-template`), either edit its associated `ini` file in the `$JETTY_BASE/start.d` directory or make a copy of the desired module file and copy it to the `$JETTY_BASE` directory and edit it there.
@@ -215,8 +215,8 @@ This command will also show you which modules are __enabled__.
 Modules are sorted by the value in the `[tags]` section of the associated `.mod` file.
 If there are multiple entries in the `[tags]` section, it sorts by the first tag in the list.
 
-____
 [NOTE]
+____
 By default, the `--list-modules` command line argument shows all modules that do not include `internal` in the `[tags]` section of the associated `.mod` file.
 If you would like to see *all* modules, use `--list-all-modules`
 ____

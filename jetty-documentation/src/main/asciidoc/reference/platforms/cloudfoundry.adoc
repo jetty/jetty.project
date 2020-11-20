@@ -19,8 +19,8 @@
 [[cloudfoundry]]
 === CloudFoundry
 
-____
 [WARNING]
+____
 This is an increasingly aged integration, things like likely changed enough this is not directly useful but may serve as a useful starting point should someone want to look into it.
 ____
 
@@ -52,8 +52,8 @@ $ cf push snifftest --buildpack=git://github.com/jmcc0nn3ll/jetty-buildpack.git
 
 ....
 
-____
 [TIP]
+____
 In this example the web application is uploaded from the *current* directory so make sure you have changed directory into the root of your web application.
 The `snifftest` on the commandline refers to what you are calling the application, not the directory to deploy.
 Also note that the webapplication is installed into the `ROOT` context of Jetty as is available at the root context of the server.

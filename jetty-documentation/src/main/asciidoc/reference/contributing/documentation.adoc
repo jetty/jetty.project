@@ -100,8 +100,8 @@ The build is finished once you see a message akin to this:
 You may now open your web browser and browse to the first page of the html output to see what you have produced!
 Generally you can do this with File -> Open File -> which will open a file system browsing screen, navigate to your jetty-documentation directory and then further into target/docbkx/html/index/index.html which is the first page of the produced documentation.
 
-____
 [TIP]
+____
 If the build is broken, feel free to notify us.
 ____
 
@@ -131,8 +131,8 @@ Then commit the change.
 $ git commit -s -m "Tweaked the introduction to fix a horrid misspelled word." src/main/asciidoc/quickstart/introduction/topic.xml
 ....
 
-____
 [NOTE]
+____
 In order for us to accept your commit into the Jetty repository you must have an Eclipse CLA on file and sign your commit.
 Please check out the link:#contributing-cla[patches] section for more information.
 ____
@@ -212,8 +212,8 @@ license blocks::
 
 Some admonition examples:
 
-______________________________________________
-[NOTE]
+__________________________________________[NOTE]
+____
 A note about the previous case to be aware of.
 ______________________________________________
 

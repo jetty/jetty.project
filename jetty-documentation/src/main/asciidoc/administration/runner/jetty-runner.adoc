@@ -55,8 +55,8 @@ In fact, the webapp does not have to be a war or even a directory, it can simply
 > java -jar jetty-runner.jar simple-context.xml
 ....
 
-____
 [NOTE]
+____
 When using a context xml file, the application being deployed is not even required to be a fully-fledged webapp.
 It can simply be a Jetty link:#what-is-a-context[context].
 ____
@@ -95,8 +95,8 @@ Just provide the list of context files like so:
 > java -jar jetty-runner.jar my-first-context.xml my-second-context.xml my-third-context.xml
 ....
 
-____
 [NOTE]
+____
 Switched used on the command line override configuration file settings.
 So, for example, you could set the context path for the webapp inside the context xml file, and use the `--path` switch to override it on the command line.
 ____
@@ -251,8 +251,8 @@ Here's an example of configuring a single extra classes dir:
 > java -jar jetty-runner.jar --classes /opt/stuff/classes my.war
 ....
 
-____
 [NOTE]
+____
 When using the `--jar` and/or `--lib` arguments, by default these will *not* be inspected for `META-INF` information such as `META-INF/resources`, `META-INF/web-fragment.xml`, or `META-INF/taglib.tld`.
 If you require these jar files inspected you will need to define the link:https://www.eclipse.org/jetty/documentation/current/configuring-webapps.html#webapp-context-attributes[jar pattern in your context xml file].
 Jetty-Runner automatically provides and appends a suitable pattern for jtsl taglibs (this pattern is different than the one in the standard Jetty distribution).

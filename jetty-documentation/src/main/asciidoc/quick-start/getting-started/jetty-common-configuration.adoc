@@ -32,8 +32,8 @@ jetty.home::
 jetty.base::
   The property that defines the location of a specific implementation of a Jetty server, its configuration, logs and web applications (typically start.d/*.ini files, logs and webapps).
 
-____
 [IMPORTANT]
+____
 Your Jetty Home directory should be treated as a standard of truth and remain unmodified or changed.
 Changes or additions to your configuration should take place in the Jetty Base directory.
 ____
@@ -102,8 +102,8 @@ When the server starts, it will now run on port `8081`.
 It is important to note that setting properties on the command line will only take affect for that instance of the server.
 To change the configuration so that the server will always start on the desired port, you will need to edit the `start.d/http.ini`
 
-____
 [NOTE]
+____
 --
 The configuration by properties works via the following chain:
 

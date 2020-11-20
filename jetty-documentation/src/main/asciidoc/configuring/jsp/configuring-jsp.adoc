@@ -63,8 +63,8 @@ For example, suppose you have precompiled your JSPs with the custom package pref
   </context-param>
 ----
 
-____
 [NOTE]
+____
 Both Jetty Maven plugins - link:#jetty-jspc-maven-plugin[jetty-jspc-maven-plugin] and the link:#jetty-maven-plugin[jetty-maven-plugin] - will only use Apache Jasper.
 ____
 
@@ -161,8 +161,8 @@ Parameters also differ among the various versions of the JSP engine.
 This page lists the configuration parameters, their meanings, and their default settings.
 Set all parameters on the `org.apache.jasper.servlet.JspServlet` instance defined in the link:#webdefault-xml[`webdefault.xml`] file.
 
-____
 [NOTE]
+____
 Be careful: for all of these parameters, if the value you set doesn't take effect, try using all lower case instead of camel case, or capitalizing only some of the words in the name, as JSP is inconsistent in its parameter naming strategy.
 ____
 

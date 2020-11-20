@@ -75,8 +75,8 @@ The `http.mod` is enabled by default in the distribution, while the link:#quicks
 # java -jar start.jar --add-to-start=setuid
 ----
 +
-____
 [NOTE]
+____
 The --add-to-start command will enable the setuid module for this and all subsequent executions of jetty.
 There are other ways to enable the module, such as for a single execution.
 For more information on the alternatives see the section on link:#startup-modules[Managing Startup Modules].
@@ -96,8 +96,8 @@ jetty.groupname=bar
 jetty.umask=002
 ----
 
-____
 [NOTE]
+____
 As well as opening the connectors as `root`, you can also have Jetty start the Server as `root` before changing to the non-`root` user.
 ____
 

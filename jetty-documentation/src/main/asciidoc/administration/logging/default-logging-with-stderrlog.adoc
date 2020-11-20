@@ -47,8 +47,8 @@ INFO  : Base directory was modified
 
 The default configuration for logging output will create a file `${jetty.base}/logs/yyyy_mm_dd.stderrout.log` which allows configuration of the output directory by setting the `jetty.logs` property.
 
-____
 [NOTE]
+____
 By default, logs are not set to be appended, meaning a the log file is wiped clean upon sever restart.
 You can change this setting by editing the `console-capture.ini` and un-commenting the line that reads `jetty.console-capture.append=true`.
 ____

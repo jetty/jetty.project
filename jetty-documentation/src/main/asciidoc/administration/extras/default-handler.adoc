@@ -34,8 +34,8 @@ As in the example below, if a resource to be served is not matched within the re
 This class is a useful template to either extend and embrace or simply provide a similar implementation for customizing to your needs.
 There is also an link:#error-handler[Error Handler] that services errors related to the servlet api specification, so it is best to not get the two confused.
 
-_____
-[NOTE]
+_[NOTE]
+____
 The `DefaultHandler` will also handle serving out the `flav.ico` file should a request make it through all of the other handlers without being resolved.
 _____
 

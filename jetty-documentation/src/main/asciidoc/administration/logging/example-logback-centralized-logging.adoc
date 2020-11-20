@@ -24,8 +24,8 @@ It routes all logging events from the web applications to a single configuration
 
 The example below shows how to accomplish this with Jetty and Slf4j, using `Logback` to manage the final writing of logs to disk.
 
-____
 [IMPORTANT]
+____
 This mechanism forces all webapps to use the server's configuration for logging, something that isn't 100% appropriate for all webapps.
 An example would be having Jenkins-CI deployed as an webapp, if you force its logging configuration to the server side, you lose the ability on http://jenkins-ci.org/[Jenkins-CI] to see the logs from the various builds (as now those logs are actually going to the main server log).
 ____

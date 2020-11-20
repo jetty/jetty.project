@@ -138,8 +138,8 @@ ports and connectors:::
 
 ----
 +
-____
 [TIP]
+____
 You can set the port to 0, which starts the Jetty server connector on an arbitrary available port.
 You can then access these values from system properties `jetty.ant.server.port` and `jetty.ant.server.host`.
 ____

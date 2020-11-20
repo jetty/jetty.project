@@ -135,8 +135,8 @@ context.setAttribute("javax.servlet.context.tempdir", "/some/dir/foo");
 
 Once a temporary directory has been created by either of these methods, a file instance for it is set as the value of the `javax.servlet.context.tempdir` attribute of the web application.
 
-____
 [NOTE]
+____
 Be wary of setting an explicit temp directory if you are likely to change the jars in WEB-INF/lib between redeployments.
 There is a JVM bug concerning link:http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4774421[caching of jar contents.]
 ____
@@ -204,7 +204,7 @@ Sometimes it is useful to keep the contents of the temporary directory between r
 By default, Jetty will *not* persist the temp directory.
 To configure Jetty to keep it, use link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[WebAppContext.setPersistTempDirectory(true)].
 
-____
 [NOTE]
+____
 Be aware that if you call `setPersistTempDirectory(true)`, but let Jetty create a new temp directory each time (i.e. you do NOT set an explicit temp directory), then you will accumulate temp directories in your chosen temp directory location.
 ____

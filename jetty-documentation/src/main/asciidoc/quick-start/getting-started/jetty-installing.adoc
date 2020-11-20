@@ -32,8 +32,8 @@ When you download and unpack the binary, it is extracted into a directory called
 Put this directory in a convenient location.
 The rest of the instructions in this documentation refer to this location as either `$JETTY_HOME` or as `$(jetty.home).`
 
-_____
-[IMPORTANT]
+_[IMPORTANT]
+____
 It is important that *only* stable releases are used in production environments.
 Versions that have been deprecated or are released as Milestones (M) or Release Candidates (RC) are *not* suitable for production as they may contain security flaws or incomplete/non-functioning feature sets.
 _____

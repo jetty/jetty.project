@@ -25,8 +25,8 @@ Jetty.
 This example demonstrates how to configuring Jetty for logging to
 `java.util.logging` via Jetty's own JavaUtilLog implementation.
 
-____
 [IMPORTANT]
+____
 While this is a valid setup, the Jetty project recommends always using the link:#example-logging-java-util-logging[slf4j to java.util.logging configuration] for memory and performance reasons.
 This native implementation is very non-performant and is not guaranteed to exist in the future.
 ____
@@ -78,8 +78,8 @@ In essence, Jetty is now configured to use `org.eclipse.jetty.util.log.JavaUtilL
 
 If there any custom `java.util.logging` handlers to be used, put the implementation jar in the `${jetty.base}/lib/logging/` directory and reference them in the `${jetty.base}/resources/logging.properties` file.
 
-____
 [NOTE]
+____
 `java.util.logging` is configured via the `${jetty.base}/resources/logging.properties` file during a valid startup of Jetty.
 
 This means that if there is any startup errors that occur before `java.util.logging` is configured, they will likely be lost and/or not routed through your configuration.

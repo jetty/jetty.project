@@ -170,8 +170,8 @@ Here is a comparison of file formats, note that the file contents are listed in 
 | `maxInactive (long)` |
 |===
 
-____
 [NOTE]
+____
 Session data is now only loaded when requested.
 Previous functionality such as `setLazyLoad` has been removed.
 ____

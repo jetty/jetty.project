@@ -42,8 +42,8 @@ Of special note, there are 2 structural modules defined to ease some of this for
   +
   Logging libraries often have classpath lookup of their configuration files (eg: `log4j.properties`, `log4j.xml`, `logging.properties`, and `logback.xml`), so this would be the ideal setup for this sort of configuration demand.
 
-____
 [NOTE]
+____
 Both the `ext` and `resources` modules declare relative paths that follow link:#base-vs-home-resolution[Jetty Base and Jetty Home path resolution rules].
 ____
 

@@ -25,8 +25,8 @@ Based on the concept of a project object model (POM), Maven can manage a project
 It is an ideal tool to build a web application project, and such projects can use the link:#jetty-maven-plugin[jetty-maven-plugin] to easily run the web application and save time in development.
 You can also use Maven to build, test and run a project which embeds Jetty.
 
-____
 [NOTE]
+____
 Use of Maven and the jetty-maven-plugin is *not* required.
 Using Maven for Jetty implementations is a popular choice, but users encouraged to manage their projects in whatever way suits their needs.
 Other popular tools include Ant and Gradle. 

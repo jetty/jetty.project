@@ -77,8 +77,8 @@ then you need to create a `JAASLoginService` with the matching realm name of "Te
 ----
 
 The `LoginModuleName` must match the name of your LoginModule as declared in your login module configuration file (see <<jaas-step-2,Step 2>>).
-____
 [CAUTION]
+____
 The name of the realm-name that you declare in `web.xml` must match *exactly* the `Name` field of your `JAASLoginService`.
 ____
 
@@ -134,8 +134,8 @@ xyz {
     };
 ----
 
-____
 [CAUTION]
+____
 It is imperative that the application name on the first line is *exactly* the same as the `LoginModuleName` of your `JAASLoginService`.
 ____
 
@@ -156,8 +156,8 @@ To accomplish the above, use the Jetty link:#startup-overview[startup] link:#sta
 java -jar start.jar --add-to-start=jaas
 ....
 
-____
 [NOTE]
+____
 The top level of the distribution does not have the JAAS module enabled by default.
 However, there are several link:#demo-webapps-base[demo webapps] - including a JAAS webapp - available in the `demo-base` directory of the distribution which has pre-enabled the JAAS module.
 ____
@@ -220,8 +220,8 @@ As `LoginModules` are free to use their own implementation of the JAAS Principal
 * link:{JDURL}/org/eclipse/jetty/jaas/spi/DataSourceLoginModule.html[`org.eclipse.jetty.jaas.spi.DataSourceLoginModule`]
 * link:{JDURL}/org/eclipse/jetty/jaas/spi/LdapLoginModule.html[`org.eclipse.jetty.jaas.ldap.LdapLoginModule`]
 
-____
 [NOTE]
+____
 Passwords can be stored in clear text, obfuscated or checksummed.
 The class link:{JDURL}/org/eclipse/jetty/util/security/Password.html[`org.eclipse.jetty.util.security.Password`] should be used to generate all varieties of passwords,the output from which can be put in to property files or entered into database tables.
 See more on this under the Configuration section on link:#configuring-security-secure-passwords[securing passwords].

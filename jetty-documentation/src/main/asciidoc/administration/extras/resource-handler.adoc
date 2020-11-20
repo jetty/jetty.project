@@ -31,13 +31,13 @@
 
 This handler will serve static content and handle If-Modified-Since headers and is suitable for simple serving of static content.
 
-____
 [IMPORTANT]
+____
 There is no caching done with this handler, so if you are looking for a more fully featured way of serving static content look to the xref:default-servlet[].
 ____
 
-____
 [NOTE]
+____
 Requests for resources that do not exist are let pass (Eg no 404's).
 ____
 

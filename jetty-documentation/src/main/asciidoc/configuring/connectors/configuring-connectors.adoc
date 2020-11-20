@@ -289,8 +289,8 @@ Now when the server is started, HTTP connections will enter on port 5231:
 Every module has their own set of configuration options, and reviewing them all is recommended.
 For additional information on the module system, please refer to our documentation on link:#startup-modules[Startup Modules].
 
-____
 [NOTE]
+____
 Editing these module files is the recommended way to edit the configuration of your server.
 Making changes to the associated Jetty XML file for connectors is *not* recommended, and is for advanced users only.
 If you do wish to edit Jetty XML, please see our section on managing link:#[Jetty Home and Jetty Base] to ensure your Jetty Home remains a standard of truth for your implementation.
@@ -484,8 +484,8 @@ In such environments, the TCP/IP connection terminating on the server does not o
 Thus Intermediaries typically implement one of several de facto standards to communicate to the server information about the original client connection terminating on the intermediary.
 Jetty supports the `X-Forwarded-For` header and the http://www.haproxy.org/download/1.5/doc/proxy-protocol.txt[Proxy Protocol] mechanisms as described below.
 
-____
 [NOTE]
+____
 The XML files in the Jetty distribution contain commented out examples of both the `X-Forwarded-For` and http://www.haproxy.org/download/1.5/doc/proxy-protocol.txt[Proxy Protocol] mechanisms.
 When using those examples, it is recommended that the XML in the Jetty distribution is not edited.
 Rather the files should be copied into a Jetty base directory and then modified.
