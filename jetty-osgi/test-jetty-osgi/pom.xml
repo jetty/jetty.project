@@ -176,7 +176,7 @@
     <dependency>
       <groupId>org.glassfish.web</groupId>
       <artifactId>javax.servlet.jsp.jstl</artifactId>
-      <version>1.2.2</version>
+      <version>1.2.5</version>
       <exclusions>
         <exclusion>
           <groupId>javax.servlet.jsp.jstl</groupId>
