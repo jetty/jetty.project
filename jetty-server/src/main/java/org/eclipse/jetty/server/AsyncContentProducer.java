@@ -222,18 +222,33 @@ class AsyncContentProducer implements ContentProducer
         if (content == null)
         {
             _httpChannel.getState().onReadUnready();
-            if (_httpChannel.needContent())
+            while (true)
             {
-                content = nextTransformedContent();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("isReady got transformed content after needContent retry {}", content);
-                if (content != null)
-                    _httpChannel.getState().onContentAdded();
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("isReady has no transformed content after needContent");
+                if (_httpChannel.needContent())
+                {
+                    content = nextTransformedContent();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("isReady got transformed content after needContent retry {} {}", content, this);
+                    if (content != null)
+                    {
+                        _httpChannel.getState().onContentAdded();
+                        break;
+                    }
+                    else
+                    {
+                        // We could have read some rawContent but not enough to generate
+                        // transformed content, so we need to call needContent() again
+                        // to tell the channel that more content is needed.
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("isReady could not transform content after needContent retry {}", this);
+                    }
+                }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("isReady false needContent retry {}", this);
+                    break;
+                }
             }
         }
         else

@@ -291,6 +291,13 @@ public class HttpInput extends ServletInputStream implements Runnable
     @Override
     public void run()
     {
+        // Call isReady() to make sure that if not ready we register for fill interest.
+        if (!_contentProducer.isReady())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("running but not ready {}", this);
+            return;
+        }
         Content content = _contentProducer.nextContent();
         if (LOG.isDebugEnabled())
             LOG.debug("running on content {} {}", content, this);
