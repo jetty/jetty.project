@@ -54,10 +54,9 @@ java -jar $JETTY_HOME/start.jar --add-to-start=cdi-decorate
 -------------------------
 
 [TIP]
-____
+====
 For use with the jetty-maven-plugin, the best idea is to make the org.jboss.weld.servlet:weld-servlet and jetty-cdi artifacts _plugin_ dependencies (__not__ a webapp dependency).
-____
-
+====
 [[weld-embedded]]
 ==== Weld with Embedded Jetty
 

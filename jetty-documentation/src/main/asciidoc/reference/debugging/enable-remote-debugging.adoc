@@ -27,10 +27,9 @@ The basics are that you must start up the remote JVM with additional parameters 
 This is easily accomplished.
 
 [NOTE]
-____
+====
 This example assumes you are deploying your web application into the jetty-distribution.
-____
-
+====
 ===== Starting Jetty
 
 Assuming you have your webapp deployed into jetty, there are two different ways to approach this:

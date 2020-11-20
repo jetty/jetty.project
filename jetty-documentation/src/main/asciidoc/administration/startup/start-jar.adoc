@@ -217,10 +217,9 @@ Disable the [files] section validation of content in the `${jetty.base}` directo
 Useful for modules that have downloadable content that is being overridden with alternatives in the `${jetty.base}`` directory.
 
 [CAUTION]
-____
+====
 This advanced option is for administrators that fully understand the configuration of their `${jetty.base}` and are willing to forego some of the safety checks built into the jetty-start mechanism.
-____
-
+====
 --approve-all-licenses::
 Approve all license questions.
 Useful for enabling modules from a script that does not require user interaction.
@@ -267,10 +266,9 @@ Here's how to use the Jetty distribution, leveraging `start.jar`, to perform a s
 ....
 
 [NOTE]
-____
+====
 To perform a graceful shutdown of Jetty, the `stats` link:#startup-modules[module] *must* be enabled.
-____
-
+====
 ===== Advanced Commands
 
 --lib=<classpath>::

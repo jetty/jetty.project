@@ -101,10 +101,9 @@ You may now open your web browser and browse to the first page of the html outpu
 Generally you can do this with File -> Open File -> which will open a file system browsing screen, navigate to your jetty-documentation directory and then further into target/docbkx/html/index/index.html which is the first page of the produced documentation.
 
 [TIP]
-____
+====
 If the build is broken, feel free to notify us.
-____
-
+====
 ==== Making Changes
 
 Now that you have built the documentation, you want to edit it and make some changes.
@@ -132,11 +131,10 @@ $ git commit -s -m "Tweaked the introduction to fix a horrid misspelled word." s
 ....
 
 [NOTE]
-____
+====
 In order for us to accept your commit into the Jetty repository you must have an Eclipse CLA on file and sign your commit.
 Please check out the link:#contributing-cla[patches] section for more information.
-____
-
+====
 This will commit the change in your local repository.
 You can then push the change up to your repository on github.
 
@@ -212,8 +210,8 @@ license blocks::
 
 Some admonition examples:
 
-__________________________________________[NOTE]
-____
+__________________________________________
+[NOTE]
 A note about the previous case to be aware of.
 ______________________________________________
 

@@ -44,10 +44,9 @@ Jetty applies `jetty-env.xml` on a per-webapp basis, and configures an instance 
 ----
 
 [CAUTION]
-____
+====
 Make sure you are applying the configuration to an instance of the proper class. `jetty-env.xml` configures an instance of WebAppContext, and not an instance of Server.
-____
-
+====
 [[using-jetty-env-xml]]
 ==== Using `jetty-env.xml`
 

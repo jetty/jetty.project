@@ -41,10 +41,9 @@ For a more in-depth look at the syntax, see xref:jetty-xml-syntax[].
 ----
 
 [CAUTION]
-____
+====
 Make sure you are applying the configuration to an instance of the proper class. `jetty-web.xml` configures an instance of `WebAppContext`; `jetty.xml` configures an instance of `Server`.
-____
-
+====
 [[using-jetty-web-xml]]
 ==== Using jetty-web.xml
 
@@ -53,10 +52,9 @@ When Jetty deploys a web application, it looks for a file called `WEB-INF/jetty-
 Be aware that `jetty-web.xml` is called _after_ all other configuration has been applied to the web application.
 
 [IMPORTANT]
-____
+====
 It is important to note that `jetty-web.xml` files utilize the webapp classpath, not the classpath of the server.
-____
-
+====
 [[jetty-web-xml-examples]]
 ==== jetty-web.xml Examples
 

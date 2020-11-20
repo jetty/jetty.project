@@ -25,10 +25,9 @@ If you have memory leaks, and you have thoroughly investigated tools like jconso
 ==== Preventing WebApp Classloader Pinning
 
 [NOTE]
-____
+====
 This feature is available for Jetty 7.6.6 and later.
-____
-
+====
 Code that keeps references to a webapp classloader can cause memory leaks.
 These leaks fall generally into two categories: static fields and daemon threads.
 

@@ -76,12 +76,11 @@ The `http.mod` is enabled by default in the distribution, while the link:#quicks
 ----
 +
 [NOTE]
-____
+====
 The --add-to-start command will enable the setuid module for this and all subsequent executions of jetty.
 There are other ways to enable the module, such as for a single execution.
 For more information on the alternatives see the section on link:#startup-modules[Managing Startup Modules].
-____
-
+====
 .  Edit the configuration for the `setuid` module to substitute the `userid` and `groupid` of the user to switch to after starting.
 If your server instance has a `${jetty.base/start.d}` directory, this configuration is in the `start.d/setuid.ini` file instead.
 Otherwise. this configuration is in the `${jetty.base}start.ini` file.
@@ -97,10 +96,9 @@ jetty.umask=002
 ----
 
 [NOTE]
-____
+====
 As well as opening the connectors as `root`, you can also have Jetty start the Server as `root` before changing to the non-`root` user.
-____
-
+====
 .  A native code library is required to perform user switching.
 This code is hosted as part of the https://github.com/eclipse/jetty.toolchain[Jetty ToolChain] project and is released independently from Jetty itself.
 You can find the source code in the https://github.com/eclipse/jetty.toolchain/tree/master/jetty-setuid[eclipse/jetty.toolchain/jetty-setuid] project.

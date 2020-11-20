@@ -53,12 +53,11 @@ The Jetty distribution uses the following configuration files to instantiate, in
   * Some JVM options in combination with `--exec`, such as `-Xbootclasspath`.
 
 [NOTE]
-____
+====
 --
 It is the `ini` files located in the Jetty base directory (if different from Jetty home) that are typically edited to change the configuration (e.g. change ports). 
 --
-____
-
+====
 `mod` files::
   The `$JETTY_HOME/modules/*.mod` files contain the definition of modules that can be activated by `--module=name`.
   Each `mod` file defines:
@@ -280,12 +279,11 @@ Now we can see where those properties in our `ini` and module files came from.
 In Jetty XML files, Jetty objects come to life; defined properties are set which link back to the jar libraries and run the server to a user's specification.
 
 [IMPORTANT]
-____
+====
 It is important to remember that you should *not* modify the XML files in your `$JETTY_HOME`.
 If you do for some reason feel you want to change the way an XML file operates, it is best to make a copy of it in your `$JETTY_BASE` in an `/etc` directory.
 Jetty will always look first to the `$JETTY_BASE` for configuration.
-____
-
+====
 ==== Other Configuration Files
 
 In addition to the configuration files described above, the configuration of the server can use the following file types:

@@ -60,10 +60,9 @@ You *must also install the Apache Aries SPI Fly bundles* as  many parts of Jetty
 |=======================================================================
 
 [NOTE]
-____
+====
 We strongly recommend that you also deploy the link:#osgi-annotations[annotation-related] jars also, as the Servlet Specification increasingly relies on annotations for functionality.
-____
-
+====
 You will also need the **OSGi Event Management service** and the **OSGi Configuration Management service**.
 If your OSGi container does not automatically make these available, you will need to add them in a way appropriate to your container.
 
@@ -689,14 +688,13 @@ Here is the list of recommended jars (NOTE the version numbers may change in fut
 |=======================================================================
 
 [NOTE]
-____
+====
 1. As of Jetty 9.2.3 the jetty-osgi-boot-jsp bundle changed to using Apache Jasper as the JSP implementation.
 Prior to this the Glassfish Jasper implementation was used, which had a different set of dependencies - pay careful attention to the jars listed both at the top of this page and in this section, as deployment of other jars can cause incomplete or incorrect package resolution in the OSGi container.
 2.  The order of deployment is important.
 Deploy these bundles in the order shown or you may experience strange failures in the compilation of jsps.
 This can be hard to diagnose but is almost always caused by the `ServletContainerInitializer` in the `org.eclipse.jetty.apache-jsp` bundle for the jsp container not being invoked due to incorrect startup of the annotation jars.
-____
-
+====
 For the JSTL library, we recommend the use of the implementation from Glassfish, as it has fewer dependencies:
 
 .Jars Required for Glassfish JSTL
@@ -861,15 +859,13 @@ org.eclipse.jetty.orbit:javax.mail.glassfish-1.4.1.v201005082020.jar)^*^
 |=======================================================================
 
 [IMPORTANT]
-____
+====
 If you wish to use JSPs you will need to deploy these annotation-related jars.
-____
-
+====
 [NOTE]
-____
+====
 You may be able to deploy later versions or other providers of these specifications, however these particular versions are known to have correct manifests and have been tested and known to work with OSGi.
-____
-
+====
 Even if your webapp itself does not not use annotations, you may need to deploy these jars because your webapp depends on a Jetty module or a 3rd party library that uses a http://docs.oracle.com/javaee/6/api/javax/servlet/ServletContainerInitializer.html[javax.servlet.ServletContainerInitializer].
 This interface requires annotation support.
 It is implemented by providers of code that extend the capabilities of the container.

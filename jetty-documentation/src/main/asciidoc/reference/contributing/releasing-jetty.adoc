@@ -78,11 +78,10 @@ $ git push origin release-9
 6.  Prepare the Release
 +
 [NOTE]
-____
+====
 This step updates the <version> elements in the pom.xml files, does a test build with these new versions, and then commits the pom.xml changes to your local git repo.
 The `eclipse-release` profile is required on the prepare in order to bring in the jetty aggregates as that profile defines a module which is ignored otherwise.
-____
-
+====
 +
 [source, screen]
 ....
@@ -94,10 +93,9 @@ $ mvn release:prepare -DreleaseVersion=9.0.0.v20130322 \
 7.  Perform the Release
 +
 [NOTE]
-____
+====
 This step performs the release and deploys it to a oss.sonatype.org staging repository.
-____
-
+====
 +
 [source, screen]
 ....
@@ -250,8 +248,8 @@ Make sure you follow the other examples and include the `rel="nofollow"` attribu
 8. Commit the changes to the jetty-website project
 
 [NOTE]
-____
+====
 There is a separate Jenkins build job that publishes documentation to https://www.eclipse.org/jetty/documentation/current triggered by a push of changed files to the jetty-documentation project.
 If you commit your change to the <version> number from step 2, then these builds will use the same release version number.
 It is preferable if you _don't_ commit that version number change, or better yet, ensure that it is set to the next -SNAPSHOT version number for your jetty major release number.
-____
+====

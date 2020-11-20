@@ -51,10 +51,9 @@ This filter will perform the following actions on each response:
 * Add a Date header with the current system time.
 
 [NOTE]
-____
+====
 Each action must be separated by a comma.
-____
-
+====
 [source, xml]
 ----
 <filter>

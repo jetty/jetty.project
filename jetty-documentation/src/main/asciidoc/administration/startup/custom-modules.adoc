@@ -241,7 +241,7 @@ INFO  : Base directory was modified
 ----
 
 [NOTE]
-____
+====
 It is important to keep in mind that when activating a dependency, Jetty does not just go one layer down.
 If a dependent module also has dependencies they too will be enabled.
-____
+====

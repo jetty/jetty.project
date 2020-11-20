@@ -56,11 +56,10 @@ In fact, the webapp does not have to be a war or even a directory, it can simply
 ....
 
 [NOTE]
-____
+====
 When using a context xml file, the application being deployed is not even required to be a fully-fledged webapp.
 It can simply be a Jetty link:#what-is-a-context[context].
-____
-
+====
 By default, `jetty-runner` implements all Configuration Classes so that users can set up and deploy new instances with as little configuration as possible.
 If you wish to only implement certain Configuration Classes, they will need to be defined in the context xml for the webapp/context.
 The default Configuration Classes are:
@@ -96,12 +95,10 @@ Just provide the list of context files like so:
 ....
 
 [NOTE]
-____
+====
 Switched used on the command line override configuration file settings.
 So, for example, you could set the context path for the webapp inside the context xml file, and use the `--path` switch to override it on the command line.
-____
-
-
+====
 ===== Changing the Default Port
 
 By default the `jetty-runner` will listen on port 8080.
@@ -252,13 +249,11 @@ Here's an example of configuring a single extra classes dir:
 ....
 
 [NOTE]
-____
+====
 When using the `--jar` and/or `--lib` arguments, by default these will *not* be inspected for `META-INF` information such as `META-INF/resources`, `META-INF/web-fragment.xml`, or `META-INF/taglib.tld`.
 If you require these jar files inspected you will need to define the link:https://www.eclipse.org/jetty/documentation/current/configuring-webapps.html#webapp-context-attributes[jar pattern in your context xml file].
 Jetty-Runner automatically provides and appends a suitable pattern for jtsl taglibs (this pattern is different than the one in the standard Jetty distribution).
-____
-
-
+====
 ===== Gathering Statistics
 If statistics gathering is enabled, then they are viewable by surfing to the context `/stats`.
 You may optionally protect access to that context with a password.

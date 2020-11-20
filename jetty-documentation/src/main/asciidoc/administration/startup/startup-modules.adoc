@@ -26,11 +26,10 @@ Modules allow flexibility for implementations and their plug-and-play nature mak
 [[enabling-modules]]
 ==== Enabling Modules
 [TIP]
-____
+====
 The default distribution has a co-mingled `${jetty.home}` and `${jetty.base}` where the directories for `${jetty.home}` and `${jetty.base}` point to the same location.
 It is highly encouraged that you learn about the differences in link:#startup-base-and-home[Jetty Base vs Jetty Home] and take full advantage of this setup.
-____
-
+====
 Enabling a module is a simple process: simply add the `--add-to-start=<module-name1>,<module-name2>,...etc.` syntax on the command line.
 Doing this will enable the specified module and any dependent modules.
 
@@ -149,13 +148,12 @@ If your server setup is using a centralized ini configuration, you will edit the
 If you have elected to manage each module within it's own ini file, you can find these files in the `${jetty.base}/start.d` directory.
 
 [IMPORTANT]
-____
+====
 It is important that you *do not* modify the module files in the `$JETTY_HOME/modules` directory.
 $JETTY_HOME should always remain a standard of truth.
 If you want to make a change to an actual module file (not the values in its `ini-template`), either edit its associated `ini` file in the `$JETTY_BASE/start.d` directory or make a copy of the desired module file and copy it to the `$JETTY_BASE` directory and edit it there.
 The start.jar reads local `$JETTY_BASE/modules` files (if they exist) before scanning `$JETTY_HOME`.
-____
-
+====
 When a module is activated, a number of properties are set by default.
 To view these defaults, open up the associated ini file.
 Listed in the ini file is the associated module file and any properties that can be set.
@@ -216,11 +214,10 @@ Modules are sorted by the value in the `[tags]` section of the associated `.mod`
 If there are multiple entries in the `[tags]` section, it sorts by the first tag in the list.
 
 [NOTE]
-____
+====
 By default, the `--list-modules` command line argument shows all modules that do not include `internal` in the `[tags]` section of the associated `.mod` file.
 If you would like to see *all* modules, use `--list-all-modules`
-____
-
+====
 Here's an example of the `--list-modules` command:
 
 include::screen-list-modules.adoc[]

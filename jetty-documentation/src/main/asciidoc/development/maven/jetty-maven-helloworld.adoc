@@ -26,12 +26,11 @@ It is an ideal tool to build a web application project, and such projects can us
 You can also use Maven to build, test and run a project which embeds Jetty.
 
 [NOTE]
-____
+====
 Use of Maven and the jetty-maven-plugin is *not* required.
 Using Maven for Jetty implementations is a popular choice, but users encouraged to manage their projects in whatever way suits their needs.
 Other popular tools include Ant and Gradle. 
-____
-
+====
 First we'll have a look at a very simple HelloWorld java application that embeds Jetty, then a simple webapp which makes use of the link:#jetty-maven-plugin[jetty-maven-plugin] to speed up the development cycle.
 
 [[configuring-embedded-jetty-with-maven]]

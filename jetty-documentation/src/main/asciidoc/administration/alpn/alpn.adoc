@@ -98,11 +98,10 @@ java -Xbootclasspath/p:<path_to_alpn_boot_jar> ...
 Where `path_to_alpn_boot_jar` is the path on the file system for the `alpn-boot` artifact, such as the one at the Maven coordinates `org.mortbay.jetty.alpn:alpn-boot`.
 
 [IMPORTANT]
-____
+====
 Be certain to get the
 link:#alpn-versions[ALPN boot artifact version that matches the version of your JRE].
-____
-
+====
 [[alpn-openjdk8-agent]]
 ==== ALPN agent and OpenJDK 8
 
@@ -127,7 +126,7 @@ java -javaagent:<path_to_alpn_agent_jar> ...
 ----
 
 [NOTE]
-____
+====
 The Jetty ALPN agent works with any Java 8 version. It is _required_ if you use
 an OpenJDK version up to `1.8.0_242` included, and it is _optional_ if you use an
 OpenJDK version equal or greater than `1.8.0_252`.
@@ -135,8 +134,7 @@ OpenJDK version equal or greater than `1.8.0_252`.
 The Jetty ALPN agent can be left on the command line even when using an OpenJDK version
 equal or greater than `1.8.0_252` but we recommend to remove it from the command line
 when you use OpenJDK `1.8.0_252` or later.
-____
-
+====
 [[alpn-conscrypt]]
 ==== ALPN and Conscrypt
 
@@ -167,12 +165,11 @@ This jar contains a `Fragment-Host` directive that ensures the ALPN classes will
 You can download the https://repo1.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-alpn/[jetty-osgi-alpn jar] from Maven Central.
 
 [NOTE]
-____
+====
 OSGi *requires* a `ServiceLoader` implementation for Jetty to function properly.
 OSGi leverages http://aries.apache.org/modules/spi-fly.html[Apache Aries SPI Fly] for this functionality.
 You can read more about OSGi and `ServiceLoader` http://blog.osgi.org/2013/02/javautilserviceloader-in-osgi.html[here.]
-____
-
+====
 [[alpn-troubleshooting]]
 ==== ALPN Troubleshooting
 

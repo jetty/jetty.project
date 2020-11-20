@@ -139,11 +139,10 @@ ports and connectors:::
 ----
 +
 [TIP]
-____
+====
 You can set the port to 0, which starts the Jetty server connector on an arbitrary available port.
 You can then access these values from system properties `jetty.ant.server.port` and `jetty.ant.server.host`.
-____
-
+====
 login services:::
   If your web application requires authentication and authorization services, you can configure these on the Jetty container.
   Here's an example of how to set up an link:{JDURL}/org/eclipse/jetty/security/HashLoginService.html[org.eclipse.jetty.security.HashLoginService]:

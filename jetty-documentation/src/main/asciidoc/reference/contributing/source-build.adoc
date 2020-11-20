@@ -68,12 +68,11 @@ $ mvn install
 All relevant dependencies will be downloaded into your local repository automatically.
 
 [NOTE]
-____
+====
 Jetty has a great many test cases that run through the course of its build.
 Periodically we find some test cases to be more time dependent than they should be and this results in intermittent test failures.
 You can help track these down by opening a bug report.
-____
-
+====
 ==== Import into Eclipse
 
 Jetty is a Maven project. To develop Jetty in Eclipse, follow these directions:

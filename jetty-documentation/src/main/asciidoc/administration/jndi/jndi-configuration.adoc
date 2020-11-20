@@ -153,11 +153,10 @@ public class MyClass {
 ----
 
 [NOTE]
-____
+====
 Careful! When configuring Resources, ensure that the type of object you configure matches the type of object you expect to look up in `java:comp/env`.
 For database connection factories, this means that the object you register as a Resource _must_ implement the `javax.sql.DataSource` interface.
-____
-
+====
 For more examples of datasource configurations, see xref:jndi-datasource-examples[].
 
 [[configuring-jms-queues-topics-connectionfactories]]
@@ -227,11 +226,10 @@ This setup creates an instance of the `org.eclipse.jetty.jndi.factories.MailSess
 The result is that an application can look up `java:comp/env/mail/Session` at runtime and obtain access to a `javax.mail.Session` that has the necessary configuration to permit it to send email via SMTP.
 
 [TIP]
-____
+====
 You can set the password to be plain text, or use Jetty's link:#configuring-security-secure-passwords[Secure Password Obfuscation] (OBF:) mechanism to make the config file a little more secure from prying eyes.
 Remember that you cannot use the other Jetty encryption mechanisms of MD5 and Crypt because they do not allow you to recover the original password, which the mail system requires.
-____
-
+====
 [[configuring-xa-transactions]]
 ==== Configuring XA Transactions
 

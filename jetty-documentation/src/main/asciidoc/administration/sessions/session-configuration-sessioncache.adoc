@@ -48,10 +48,9 @@ Values are:
 *  >= 1 : any positive number is the time in seconds after which a session that is in the cache but has not experienced any activity will be evicted
 
 [NOTE]
-____
+====
 If you are not using a `SessionDataStore` that persists sessions, be aware that evicted sessions will be lost.
-____
-
+====
 jetty.session.saveOnInactiveEvict::
 Boolean, default `false`.
 Controls whether a session will be saved to the `SessionDataStore` just prior to its eviction.

@@ -171,12 +171,10 @@ Here is a comparison of file formats, note that the file contents are listed in 
 |===
 
 [NOTE]
-____
+====
 Session data is now only loaded when requested.
 Previous functionality such as `setLazyLoad` has been removed.
-____
-
-
+====
 ===== JDBC Sessions
 
 As with earlier versions of Jetty, sessions may be persisted to a relational database.

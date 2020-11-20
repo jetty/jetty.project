@@ -31,11 +31,10 @@ Jetty Home::
   * This is the location for the Jetty distribution binaries, default XML IoC configurations, and default module definitions.
 
 [IMPORTANT]
-____
+====
 Jetty Home should always be treated as a standard of truth.
 All configuration modifications, changes and additions should be made in the appropriate Jetty Base directory.
-____
-
+====
 [[base-vs-home-resolution]]
 
 Potential configuration is resolved from these 2 directory locations.
@@ -323,7 +322,7 @@ The following demonstrates this by allowing default discovery of `${jetty.home}`
 ....
 
 [IMPORTANT]
-____
+====
 Be aware of the `user.dir` system property, as it can only be safely set when the JVM starts and many 3rd party libraries (especially logging) use this system property.
 It is strongly recommended that you sit in the directory that is your desired `${jetty.base}` when starting Jetty to have consistent behavior and use of the `user.dir` system property.
-____
+====

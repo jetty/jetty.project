@@ -40,12 +40,11 @@ The link:{JDURL}/org/eclipse/jetty/websocket/servlet/WebSocketServlet.html#confi
 In the example we specify a 10 second idle timeout and register MyEchoSocket with the default WebSocketCreator the WebSocket class we want to be created on Upgrade.
 
 [NOTE]
-____
+====
 It is important that you take in account any firewall or router timeouts
 when configuring websockets. Be sure the websocket configuration is
 lower than your firewall or router.
-____
-
+====
 ==== Using the WebSocketCreator
 
 All WebSocket's are created via whatever link:{JDURL}/org/eclipse/jetty/websocket/servlet/WebSocketCreator.html[WebSocketCreator] you have registered with the link:{JDURL}/org/eclipse/jetty/websocket/servlet/WebSocketServletFactory.html[WebSocketServletFactory].

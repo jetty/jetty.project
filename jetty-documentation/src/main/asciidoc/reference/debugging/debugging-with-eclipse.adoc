@@ -50,10 +50,10 @@ Once you have a main method defined in order to launch your application, right-c
 In your *Console* tab within Eclipse you should see your application startup and once it has completed startup you should be able to configure breakpoints and hit the Jetty instance as normal via your web browser.
 
 [TIP]
-____
+====
 You can easily configure logging through a `jetty-logging.properties`
 file. If this file is on your classpath then Jetty will use it for
 configuring logging, we use this approach extensively throughout Jetty
 development and it makes life ever so much easier. You can see this in
 action in the xref:configuring-jetty-stderrlog[] section.
-____
+====

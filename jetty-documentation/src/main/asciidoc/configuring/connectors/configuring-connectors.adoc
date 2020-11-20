@@ -290,12 +290,11 @@ Every module has their own set of configuration options, and reviewing them all 
 For additional information on the module system, please refer to our documentation on link:#startup-modules[Startup Modules].
 
 [NOTE]
-____
+====
 Editing these module files is the recommended way to edit the configuration of your server.
 Making changes to the associated Jetty XML file for connectors is *not* recommended, and is for advanced users only.
 If you do wish to edit Jetty XML, please see our section on managing link:#[Jetty Home and Jetty Base] to ensure your Jetty Home remains a standard of truth for your implementation.
-____
-
+====
 ==== Limiting Connections
 
 Jetty also provides the means by which to limit connections to the server and/or contexts.
@@ -485,12 +484,11 @@ Thus Intermediaries typically implement one of several de facto standards to com
 Jetty supports the `X-Forwarded-For` header and the http://www.haproxy.org/download/1.5/doc/proxy-protocol.txt[Proxy Protocol] mechanisms as described below.
 
 [NOTE]
-____
+====
 The XML files in the Jetty distribution contain commented out examples of both the `X-Forwarded-For` and http://www.haproxy.org/download/1.5/doc/proxy-protocol.txt[Proxy Protocol] mechanisms.
 When using those examples, it is recommended that the XML in the Jetty distribution is not edited.
 Rather the files should be copied into a Jetty base directory and then modified.
-____
-
+====
 ===== X-Forward-for Configuration
 
 The `X-Forwarded-for` header and associated headers are a de facto standard where intermediaries add HTTP headers to each request they forward to describe the originating connection.

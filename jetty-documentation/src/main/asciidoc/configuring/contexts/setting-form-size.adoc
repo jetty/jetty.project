@@ -57,12 +57,11 @@ Set an attribute in `jetty.xml` on the Server instance for which you want to mod
 ----
 
 [IMPORTANT]
-____
+====
 It is important to remember that you should *not* modify the XML files in your `$JETTY_HOME`.
 If you do for some reason feel you want to change the way an XML file operates, it is best to make a copy of it in your `$JETTY_BASE` in an `/etc` directory.
 Jetty will always look first to the `$JETTY_BASE` for configuration.
-____
-
+====
 ==== For All Apps in the JVM
 
 Use the system property `org.eclipse.jetty.server.Request.maxFormContentSize`.

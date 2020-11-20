@@ -23,11 +23,10 @@ Jetty has a rich history of being embedded into a wide variety of applications.
 In this section we will walk you through a number of our simple examples under our embedded-jetty-examples project in our git repository.
 
 [IMPORTANT]
-____
+====
 These files are pulled directly from our git repository when this document is generated.
 If the line numbers do not line up feel free to fix this documentation in github and give us a pull request, or at least open an issue to notify us of the discrepancy.
-____
-
+====
 include::examples/embedded-file-server.adoc[]
 include::examples/embedded-split-file-server.adoc[]
 include::examples/embedded-many-connectors.adoc[]

@@ -54,11 +54,10 @@ The common properties associated with connectors (host,port, timeouts, etc.) can
 These properties are instantiated in the associated XML files: `${jetty.home}/etc/jetty-http.xml`; `${jetty.home}/etc/jetty-ssl.xml`, plus the SSL keystore is instantiated in `${jetty.home}/etc/jetty-ssl-context.xml`.
 
 [NOTE]
-____
+====
 If you are planning to edit XML files, make sure to copy them to your `{$jetty.base}/etc/` directory before doing so.
 The XML files that come with the Jetty distribution should *not* be modified directly.
-____
-
+====
 HTTP/2 specific properties can be set in the module ini files: `${jetty.base}/start.d/http2.ini` and `${jetty.base}/start.d/http2c.ini`, which are instantiated in the associated XML files: `${jetty.home}/etc/jetty-http2.xml`; `${jetty.home}/etc/jetty-http2c.xml`, respectively.
 Currently there are very few HTTP/2 configuration properties and the default values are reasonable:
 

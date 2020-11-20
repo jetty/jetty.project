@@ -33,11 +33,10 @@ jetty.base::
   The property that defines the location of a specific implementation of a Jetty server, its configuration, logs and web applications (typically start.d/*.ini files, logs and webapps).
 
 [IMPORTANT]
-____
+====
 Your Jetty Home directory should be treated as a standard of truth and remain unmodified or changed.
 Changes or additions to your configuration should take place in the Jetty Base directory.
-____
-
+====
 The `jetty.home` and `jetty.base` properties may be explicitly set on the command line, or they can be inferred from the environment if used with commands like:
 
 [source, screen]
@@ -103,7 +102,7 @@ It is important to note that setting properties on the command line will only ta
 To change the configuration so that the server will always start on the desired port, you will need to edit the `start.d/http.ini`
 
 [NOTE]
-____
+====
 --
 The configuration by properties works via the following chain:
 
@@ -113,8 +112,7 @@ The configuration by properties works via the following chain:
 
 For more information see the link:#quick-start-configure[Quickstart Configuration Guide] and link:#configuring-connectors[Configuring Connectors].
 --
-____
-
+====
 [[quickstart-starting-https]]
 ==== Adding SSL for HTTPS & HTTP2
 

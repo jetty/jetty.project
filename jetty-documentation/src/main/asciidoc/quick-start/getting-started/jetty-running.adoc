@@ -44,13 +44,12 @@ To stop the server, press `CTRL` + `c` or `CTRL` + `z` in your terminal.
 Instead, see how to link:#creating-jetty-base[create a Jetty Base] below.
 
 [NOTE]
-____
+====
 You will see examples throughout the documentation referencing `$JETTY_HOME` and `$JETTY_BASE` as well as `{jetty.home}` and `{jetty.base}`.
 These terms are used to refer to the location of your Jetty installation directories.
 Many users find it helpful to define `$JETTY_HOME` as an environment variable that maps to their Jetty distribution directory.
 More information can be found in our Administration section on link:#startup-base-and-home[managing Jetty Home and Jetty Base.]
-____
-
+====
 [[demo-webapps-base]]
 ==== Demo Base
 
@@ -104,10 +103,9 @@ $ java -jar ../start.jar
 You can visit this demo server by pointing a browser at link:http://localhost:8080[], which will now show a welcome page and several demo/test web applications.
 
 [WARNING]
-____
+====
 The demonstration web applications are not necessarily secure and should *not* be deployed in production web servers.
-____
-
+====
 You can see the configuration of the `demo-base` by using the following commands:
 
 [source, screen]

@@ -38,11 +38,10 @@ The `GzipHandler` can be added to the entire server by enabling the `gzip.mod` m
 It may also be added to individual contexts in a context xml file.
 
 [NOTE]
-____
+====
 Jetty 9 only compresses using GZip.
 Using deflate HTTP compression is not supported and will not function.
-____
-
+====
 [[gzip-filter-rules]]
 ==== Gzip Rules
 
@@ -64,12 +63,10 @@ The `GzipHandler` installs an output interceptor which passes through to the `De
 If the content served by `DefaultServlet` is already compressed, the `GzipHandler` does nothing; if it is not compressed, the content is compressed on-the-fly.
 
 [NOTE]
-____
+====
 Automatic precompression by the `DefaultServlet` can be configured.
 Read more about the `DefaultServlet` link:#default-servlet[here.]
-____
-
-
+====
 [[gzip-filter-init]]
 ==== Gzip Configuration
 
