@@ -17,7 +17,7 @@
 //
 
 [source, screen]
-....
+----
 [mybase]$ java -jar $JETTY_HOME/start.jar --list-config
 
 Java Environment:
@@ -83,4 +83,4 @@ ${jetty.home}/etc/jetty.xml
 ${jetty.home}/etc/jetty-webapp.xml
 ${jetty.home}/etc/jetty-deploy.xml
 ${jetty.home}/etc/jetty-http.xml
-....
+----

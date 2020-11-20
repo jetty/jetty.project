@@ -165,9 +165,9 @@ For example, the following profile will only be invoked if the flag `-Dprod` is 
 The following invocation would cause your code to be compiled, the jsps to be compiled, the <servlet> and <servlet-mapping>s inserted in the `web.xml` and your webapp assembled into a war:
 
 [source, screen]
-....
+----
 $ mvn -Dprod package
-....
+----
 
 [[jspc-overlay-precompile]]
 ==== Precompiling Jsps with Overlaid Wars

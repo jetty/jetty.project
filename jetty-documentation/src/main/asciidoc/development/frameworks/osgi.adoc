@@ -148,9 +148,9 @@ If the path is relative, it is resolved against either *jetty.home* or **jetty.h
 You can use this ability to mix and match jetty configuration files to add functionality, such as adding in a https connector.
 Here's an example of adding a HTTPS connector, using the relevant files from the jetty-distribution:
 +
-....
+----
 etc/jetty.xml, etc/jetty-http.xml, /opt/jetty/etc/jetty-ssl.xml, /opt/jetty/etc/jetty-https.xml, etc/jetty-deploy.xml
-....
+----
 +
 
 Note that regardless of whether you set the *jetty.home* or *jetty.home.bundle* property, when Jetty executes the configuration files, it will set an appropriate value for *jetty.home* so that references in xml files to `<property name="jetty.home">` will work.
@@ -1089,7 +1089,7 @@ org.osgi.framework.system.packages=org.osgi.framework;version=1.7.0, org.osgi.fr
 You should now be able to start Felix, and deploy all the jars listed on this page.
 You should see output similar to this on the console, using the `felix:lb` command:
 
-....
+----
     ID|State      |Level|Name
     0|Active     |    0|System Bundle (4.4.1)
     1|Active     |    1|ASM (7.0)
@@ -1128,7 +1128,7 @@ You should see output similar to this on the console, using the `felix:lb` comma
    35|Active     |    1|Eclipse Compiler for Java(TM) (3.8.2.v20130121-145325)
    36|Active     |    1|Mortbay EL API and Implementation (8.5.33.1)
    37|Active     |    1|Mortbay Jasper (8.5.33.1)
-....
+----
 
 ===== Eclipse
 

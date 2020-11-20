@@ -33,7 +33,7 @@ This native implementation is very non-performant and is not guaranteed to exist
 A convenient replacement `logging` module has been created to bootstrap your `${jetty.base}` directory for logging with `java.util.logging`.
 
 [source, screen]
-....
+----
 [mybase]$ mkdir modules
 [mybase]$ cd modules
 
@@ -53,7 +53,7 @@ INFO: resources       initialised transitively
 INFO: resources       enabled in     ${jetty.base}/${jetty.base}
 
 [mybase]$ java -jar /opt/jetty-dist/start.jar
-....
+----
 
 The replacement `logging.mod` performs a number of tasks.
 

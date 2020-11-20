@@ -49,9 +49,9 @@ First, add `jetty-maven-plugin` to your `pom.xml` definition:
 Then, from the same directory as your root `pom.xml`, type:
 
 [source, screen]
-....
+----
 mvn jetty:run
-....
+----
 
 This starts Jetty and serves up your project on http://localhost:8080/.
 
@@ -78,16 +78,16 @@ There are different goals to accomplish these tasks, as well as several others.
 To see a list of all goals supported by the Jetty Maven plugin, do:
 
 [source, screen]
-....
+----
 mvn jetty:help
-....
+----
 
 To see the detailed list of parameters that can be configured for a particular goal, in addition to its description, do:
 
 [source, screen]
-....
+----
 mvn jetty:help -Ddetail=true -Dgoal= <goal name>
-....
+----
 
 [[configuring-jetty-container]]
 ==== Configuring the Jetty Container
@@ -655,9 +655,9 @@ Use the `jvmArgs` parameter to pass system properties to the forked process.
 To deploy your unassembled web app to Jetty running in a new JVM:
 
 [source, screen]
-....
+----
 mvn jetty:run-forked
-....
+----
 
 Jetty continues to execute until you either:
 
@@ -796,9 +796,9 @@ For example, in the configuration above support for JMX is configured by adding 
 To deploy your unassembled web app to jetty running as a local distribution:
 
 [source, screen]
-....
+----
 mvn jetty:run-distro
-....
+----
 
 
 [[jetty-start-goal]]
@@ -882,9 +882,9 @@ Here's a configuration example:
 Then, while Jetty is running (in another window), type:
 
 [source, screen]
-....
+----
 mvn jetty:stop
-....
+----
 
 The `stopPort` must be free on the machine you are running on.
 If this is not the case, you will get an "Address already in use" error message after the "Started ServerConnector ..." message.

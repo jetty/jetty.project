@@ -24,10 +24,10 @@
 You will need to place the following Jetty jar files onto the classpath of your application.
 You can obtain them from the https://www.eclipse.org/jetty/download.html[Jetty distribution], or the https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-annotations[Maven repository]:
 
-....
+----
 jetty-plus.jar
 jetty-annotations.jar
-....
+----
 
 You will also need the http://asm.ow2.org/[asm] jar, which you can obtain from link:{MVNCENTRAL}/org/eclipse/jetty/orbit/org.objectweb.asm/3.3.1.v201105211655/org.objectweb.asm-3.3.1.v201105211655.jar[this link.]
 

@@ -41,11 +41,11 @@ Please consider using link:#jetty-maven-helloworld[Maven] to manage your project
 Use curl as follows:
 
 [source, screen]
-....
+----
 > mkdir Demo
 > cd Demo
 > curl -o jetty-all-uber.jar https://repo1.maven.org/maven2/org/eclipse/jetty/aggregate/jetty-all/{VERSION}/jetty-all-{VERSION}-uber.jar
-....
+----
 
 [[writing-helloworld-example]]
 ==== Writing a HelloWorld Example
@@ -65,10 +65,10 @@ include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/Hel
 The following command compiles the HelloWorld class:
 
 [source, screen]
-....
+----
 > mkdir classes
 > javac -d classes -cp jetty-all-uber.jar HelloWorld.java
-....
+----
 
 [[running-handler-and-server]]
 ==== Running the Handler and Server
@@ -76,9 +76,9 @@ The following command compiles the HelloWorld class:
 The following command runs the HelloWorld example:
 
 [source, screen]
-....
+----
 > java -cp classes:jetty-all-uber.jar org.eclipse.jetty.embedded.HelloWorld
-....
+----
 
 You can now point your browser at http://localhost:8080/[http://localhost:8080] to see your hello world page.
 

@@ -35,9 +35,9 @@ The instructions that follow are for Linux.
 You will need HAProxy 1.5 or later, because it provides support for SSL and ALPN, both required by HTTP/2. Most Linux distributions have the HAProxy package available to be installed out of the box. For example on Ubuntu 15.04:
 
 [source,screen]
-....
+----
 $ sudo apt-get install haproxy
-....
+----
 
 Alternatively you can download the HAProxy source code and build it on your environment by following the README bundled with the HAProxy source code tarball.
 
@@ -62,7 +62,7 @@ HAProxy will need a single file containing the X509 certificates and the private
 Let's use `keytool` to generate a self signed certificate:
 
 [source,screen]
-....
+----
 $ keytool -genkeypair -keyalg RSA -keystore keystore.p12 -storetype pkcs12 -storepass storepwd -ext SAN=DNS:domain.com
 What is your first and last name?
 [Unknown]:  *.domain.com
@@ -78,7 +78,7 @@ What is the two-letter country code for this unit?
 [Unknown]:  IT
 Is CN=*.domain.com, OU=Unit, O=Domain, L=Torino, ST=TO, C=IT correct?
 [no]:  yes
-....
+----
 
 The above command will generate a self signed certificate and private key for `domain.com` and subdomains, stored in the `keystore.p12` file in PKCS#12 format.
 We need to extract the certificate and the private key in PEM format.
@@ -86,23 +86,23 @@ We need to extract the certificate and the private key in PEM format.
 To extract the certificate into `certificate.pem`:
 
 [source,screen]
-....
+----
 $ keytool -exportcert -keystore keystore.p12 -storetype pkcs12 -storepass storepwd -rfc -file certificate.pem
-....
+----
 
 To export the private key into `private_key.pem`:
 
 [source,screen]
-....
+----
 $ openssl pkcs12 -in keystore.p12 -nodes -nocerts -out private_key.pem -passin pass:storepwd
-....
+----
 
 At this point you just need to concatenate the two files into one, in the correct order:
 
 [source,screen]
-....
+----
 $ cat certificate.pem private_key.pem > domain.pem
-....
+----
 
 The `domain.pem` file will be used later by HAProxy.
 
@@ -113,7 +113,7 @@ Now we can setup `haproxy.cfg` to configure HAProxy.
 This is a minimal configuration:
 
 [source]
-....
+----
 global
 tune.ssl.default-dh-param 1024
 
@@ -136,7 +136,7 @@ default_backend be_http
 backend be_http
 mode tcp
 server domain 127.0.0.1:8282
-....
+----
 
 The HAProxy configuration file works in the following way.
 The `fe_http` front-end accepts connections on port 80 and redirects them to use the `https` scheme.
@@ -157,21 +157,21 @@ Since the `http2c` module depends on the `http` module, the `http` module will b
 Additionally, you will also enable the `deploy` module to be able to deploy a sample web application:
 
 [source,screen]
-....
+----
 $ JETTY_BASE=haproxy-jetty-http2
 $ mkdir $JETTY_BASE
 $ cd $JETTY_BASE
 $ java -jar $JETTY_HOME/start.jar --add-to-start=http2c,deploy
-....
+----
 
 Now let's deploy a demo web application and start Jetty:
 
 [source,screen]
-....
+----
 $ cd $JETTY_BASE
 $ cp $JETTY_HOME/demo-base/webapps/async-rest.war $JETTY_BASE/webapps/
 $ java -jar $JETTY_HOME/start.jar jetty.http.host=127.0.0.1 jetty.http.port=8282
-....
+----
 
 Now you can browse https://domain.com/async-rest (replace `domain.com` with your own domain, or with `localhost`, to make this example work).
 

@@ -38,12 +38,12 @@ Via command line::
   Add the required parameters on the commandline like so.
 +
 [source, screen]
-....
+----
                             
 $ java -Xdebug -agentlib:jdwp=transport=dt_socket,address=9999,server=y,suspend=n -jar start.jar
 
                         
-....
+----
 
 Via `start.ini`::
   This approach is best used if you want to debug a particular jetty-distribution and not have to remember the commandline incantations.

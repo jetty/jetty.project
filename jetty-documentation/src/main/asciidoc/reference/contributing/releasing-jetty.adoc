@@ -32,16 +32,16 @@ This release script is for jetty-9 (to release jetty-7 or jetty-8 see older docu
 +
 These follow a strict format and will be used when prompted during step link:#prepare-release-step[listitem_title] below.
 +
-....
+----
 Release Version                : 9.0.0.v20130322  (v[year][month][day])
 Next Development Version       : 9.0.1-SNAPSHOT
 Tag Name                       : jetty-9.9.0.v20130322
-....
+----
 
 2.  We use the 'release-9' branch to avoid problems with other developers actively working on the master branch.
 +
 [source, screen]
-....
+----
 // Get all of the remotes
 $ git pull origin
 // Create a local tracking branch (if you haven't already)
@@ -51,29 +51,29 @@ $ git checkout release-9
 // Merge from master into the branch (this becomes your point in time
 // from master that you will be releasing from)
 $ git merge --no-ff master
-....
+----
 
 3.  Update the VERSION.txt with changes from the git logs, this populates the resolves issues since the last release.
 +
 [source, screen]
-....
+----
 $ mvn -N -Pupdate-version
-....
+----
 
 4.  Edit the VERSION.txt file to set the 'Release Version' at the top alongside the Date of this release.
 +
 [source, screen]
-....
+----
 $ vi VERSION.txt
-....
+----
 
 5.  Make sure everything is commit'd and pushed to github.com/eclipse/jetty.project
 +
 [source, screen]
-....
+----
 $ git commit -m "Updating VERSION.txt top section" VERSION.txt
 $ git push origin release-9
-....
+----
 
 6.  Prepare the Release
 +
@@ -84,12 +84,12 @@ The `eclipse-release` profile is required on the prepare in order to bring in th
 ====
 +
 [source, screen]
-....
+----
 $ mvn release:prepare -DreleaseVersion=9.0.0.v20130322 \
                       -DdevelopmentVersion=9.0.1-SNAPSHOT \
                       -Dtag=jetty-9.0.0.v20130322 \
                       -Peclipse-release
-....
+----
 7.  Perform the Release
 +
 [NOTE]
@@ -98,9 +98,9 @@ This step performs the release and deploys it to a oss.sonatype.org staging repo
 ====
 +
 [source, screen]
-....
+----
 $ mvn release:perform
-....
+----
 8.  Set up files for next development versions.
 +
 Edit `VERSION.txt` for 'Next Development Version' at the top.
@@ -109,11 +109,11 @@ Do not date this line.
 Make sure everything is commit'd and pushed to github.com/eclipse/jetty.project
 +
 [source, screen]
-....
+----
 $ vi VERSION.txt
 $ git commit -m "Updating VERSION.txt top section" VERSION.txt
 $ git push origin release-9
-....
+----
 
 9.  Close the staging repository on oss.sonatype.org
 
@@ -125,11 +125,11 @@ $ git push origin release-9
 * Merge back the changes in release-9 to master
 +
 [source, screen]
-....
+----
 $ git checkout master
 $ git merge --no-ff release-9
 $ git push origin master
-....
+----
 
 [[releasing-aggregates]]
 ==== Building and Deploying Aggregate Javadoc and Xref
@@ -141,11 +141,11 @@ If you don't know if you have access to this then you probably don't and will ne
 To build and deploy the aggregate javadoc and jxr bits:
 
 [source, screen]
-....
+----
 $ cd target/checkout
 $ mvn -Paggregate-site javadoc:aggregate jxr:jxr
 $ mvn -N site:deploy
-....
+----
 
 This will generate the aggregate docs and deploy them to the `/home/www/jetty/<project version>/jetty-project` directory on download.eclipse.org.
 
@@ -166,9 +166,9 @@ To localize the scripts to your environment:
 Once these are setup you can deploy a release to eclipse with the following incantation:
 
 [source, screen]
-....
+----
 $ ./promote-to-eclipse.sh 9.0.0.v20130322
-....
+----
 
 Each of these scripts will download all of the relevant files from maven central and then copy them into the correct location on eclipse infrastructure.
 On the eclipse side of it they will also adjust the xref and javadoc documentation links if they remain broken as well as regenerate all of the html files on the eclipse download site.
@@ -180,22 +180,22 @@ Since we are not allowed to have symbolic links on the download site we have to 
 Maintaining the conventions we use on the site will allow all 'stable' links to be stable and not needed to update to the latest major Jetty build version:
 
 [source, screen]
-....
+----
 $ ssh <user>@build.eclipse.org
 $ cd ~downloads/jetty/
 $ rm -Rf stable-9
 $ cp -r <version> stable-9
 $ ./index.sh
-....
+----
 
 This needs to be done for all Eclipse Jetty releases (regardless of version). In addition we have to work to reduce the footprint of jetty on the primary eclipse download resources so we want to move older releases to the eclipse archive site.
 
 [source, screen]
-....
+----
 $ cd ~/downloads/jetty
 $ mv <old release> /home/data/httpd/archive.eclipse.org/jetty/
 $ ./index.sh
-....
+----
 
 Periodically we need to do the same for the osgi P2 repositories to keep the size of our downloads directory at a reasonable size.
 

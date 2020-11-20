@@ -29,9 +29,9 @@ The skeleton of a jetty spring module can be enabled from the jetty-distribution
 For example:
 
 [source, screen]
-....
+----
 $ java -jar start.jar --add-to-start=spring
-....
+----
 
 This (or the alternative link:#start-jar[--add-to-start]=spring command) creates a `${jetty.home}/lib/spring` directory and populates it with the jetty-spring integration jar.
 It does NOT supply the spring jars and their dependencies.

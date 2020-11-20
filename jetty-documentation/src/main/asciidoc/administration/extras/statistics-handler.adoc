@@ -36,9 +36,9 @@ Jetty currently has two main statistics collection mechanisms:
 
 The `StatisticsHandler` and `ConnectionStatistics` are not included in the default Jetty configuration, these need to be configured manually or enabled using the Jetty `stats` module on the command line.
 [source, screen]
-....
+----
 $ java -jar {$jetty.home}/start.jar --add-to-start=stats
-....
+----
 
 In addition to these, the `SessionHandler` and `DefaultSessionCache` classes collect statistics for sessions.
 These statistics are enabled by default and are accessible via JMX interface.

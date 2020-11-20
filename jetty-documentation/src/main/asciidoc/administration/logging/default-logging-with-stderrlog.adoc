@@ -32,7 +32,7 @@ Included in the Jetty distribution is a logging module named `console-capture` t
 To enable this feature, simply activate the `console-capture` module on the command line:
 
 [source, screen]
-....
+----
 [my-base]$ java -jar ../start.jar --add-to-start=console-capture
 INFO  : console-capture initialized in ${jetty.base}/start.d/console-capture.ini
 MKDIR : ${jetty.base}/logs
@@ -43,7 +43,7 @@ INFO  : Base directory was modified
 ├── logs
 └── start.d
     └── console-capture.ini
-....
+----
 
 The default configuration for logging output will create a file `${jetty.base}/logs/yyyy_mm_dd.stderrout.log` which allows configuration of the output directory by setting the `jetty.logs` property.
 
@@ -57,7 +57,7 @@ To customize the log further, a module named `logging-jetty` is available to pro
 As with `console-capture`, you activate the `logging-jetty` on the command line.
 
 [source, screen]
-....
+----
 [my-base]$ java -jar ../start.jar --add-to-start=logging-jetty
 INFO  : logging-jetty   initialized in ${jetty.base}/start.d/logging-jetty.ini
 INFO  : resources       transitively enabled
@@ -73,14 +73,14 @@ INFO  : Base directory was modified
 └── start.d
     ├── console-capture.ini
     └── logging-jetty.ini
-....
+----
 
 Once activated, you can find the properties file at `${jetty.base}/resources/jetty-logging.properties`.
 By default, the following parameters are defined.
 To change them, un-comment the line and substitute your naming scheme and configuration choices.
 
 [source, properties]
-....
+----
 ## Force jetty logging implementation
 #org.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.StdErrLog
 
@@ -93,7 +93,7 @@ To change them, un-comment the line and substitute your naming scheme and config
 
 ## Show the source file of a log location?
 #com.example.SOURCE=false
-....
+----
 
 There are a number of properties that can be defined in the configuration that will affect the behavior of StdErr logging with `console-capture`.
 
@@ -124,22 +124,22 @@ There are a number of properties that can be defined in the configuration that w
   * Example when set to false:
 +
 [source, screen]
-....
+----
 2016-10-21 15:31:01.248:INFO::main: Logging initialized @332ms to org.eclipse.jetty.util.log.StdErrLog
 2016-10-21 15:31:01.370:INFO:oejs.Server:main: jetty-9.4.0-SNAPSHOT
 2016-10-21 15:31:01.400:INFO:oejs.AbstractConnector:main: Started ServerConnector@2c330fbc{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
 2016-10-21 15:31:01.400:INFO:oejs.Server:main: Started @485ms
-....
+----
 +
   * Example when set to true:
 +
 [source, screen]
-....
+----
 2016-10-21 15:31:35.020:INFO::main: Logging initialized @340ms to org.eclipse.jetty.util.log.StdErrLog
 2016-10-21 15:31:35.144:INFO:org.eclipse.jetty.server.Server:main: jetty-9.4.0-SNAPSHOT
 2016-10-21 15:31:35.174:INFO:org.eclipse.jetty.server.AbstractConnector:main: Started ServerConnector@edf4efb{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
 2016-10-21 15:31:35.175:INFO:org.eclipse.jetty.server.Server:main: Started @495ms
-....
+----
 
 [[deprecated-parameters]]
 ==== Deprecated Parameters

@@ -70,7 +70,7 @@ Modules activated when a `start.d` directory exists will be stored as a single f
 Below is an example of a fresh `${jetty.base}` that will create a `start.d` directory and activate several modules.
 
 [source, screen]
-....
+----
 [jetty.home]$ mkdir mybase
 [jetty.home]$ cd mybase/
 [mybase]$ java -jar ../start.jar --create-startd
@@ -96,7 +96,7 @@ drwxr-xr-x  3 staff  staff   102 Aug 29 15:16 ..
 -rw-r--r--  1 staff  staff  2250 Aug 29 15:19 server.ini
 -rw-r--r--  1 staff  staff   265 Aug 29 15:19 webapp.ini
 -rw-r--r--  1 staff  staff   177 Aug 29 15:19 websocket.ini
-....
+----
 
 In the example, we first create a new `${jetty.base}` and then create the `start.d` directory with the `--create-startd` command.
 Next, we use the `--add-to-start` command which activates the modules and creates their respective ini files in the `start.d` directory.
@@ -106,7 +106,7 @@ Doing this will create the `start.d` directory and copy your existing `start.ini
 Any new modules added to the server will have their own `<module name>.ini` file created in the `start.d` directory.
 
 [source, screen]
-....
+----
 [mybase]$ java -jar ../start.jar --add-to-start=server,client,webapp,websocket
 INFO : webapp          initialised in ${jetty.base}/start.ini
 INFO : server          initialised in ${jetty.base}/start.ini
@@ -131,7 +131,7 @@ INFO : Base directory was modified
 └── start.d
     ├── ssl.ini
     └── start.ini
-....
+----
 
 [NOTE]
 --
@@ -161,7 +161,7 @@ Listed in the ini file is the associated module file and any properties that can
 Below is an example of the `requestlog.ini` file:
 
 [source, screen]
-....
+----
 # ---------------------------------------
 # Module: requestlog
 --module=requestlog
@@ -192,7 +192,7 @@ Below is an example of the `requestlog.ini` file:
 
 ## Whether to log LogLatency
 # jetty.requestlog.loglatency=false
-....
+----
 
 The first lines name the module file being called (located in `{$jetty.home/modules}`).
 Subsequent lines list properties that can be changed as well as a description for each property.

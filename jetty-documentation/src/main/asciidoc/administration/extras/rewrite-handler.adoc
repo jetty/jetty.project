@@ -32,9 +32,9 @@ The most common use is to rewrite request URIs, but it is capable of much more: 
 The standard Jetty distribution bundle contains the `jetty-rewrite` link:#startup-modules[module], so all you need to do is to enable it using one of the link:#start-jar[module commands], eg:
 
 [source, screen]
-....
+----
 $ java -jar start.jar --add-to-start=rewrite
-....
+----
 
 _[NOTE]
 ====

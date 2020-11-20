@@ -157,14 +157,14 @@ The ID must be unique for each object you create.
 For XML elements that contain only other XML Elements, there is a choice of using attributes or elements style.
 The following is an example of attribute style:
 
-....
+----
   <Call id="result" class="org.example.SomeClass" name="someMethod" arg="value0,value1"/>
-....
+----
 
 Attribute style has the benefit of brevity, but is limited by: values can only be Strings; multivalued items can not contain ','; values may not be subject to property expansion or other elements that return values.
 Thus, the more verbose element style is available and the following is semantically equivalent to the attribute style above:
 
-....
+----
   <Call>
     <Id>result</Id>
     <Class>org.example.SomeClass</Class>
@@ -172,12 +172,12 @@ Thus, the more verbose element style is available and the following is semantica
     <Arg>value0</Arg>
     <Arg>value1</Arg>
   </Call>
-....
+----
 
 Note that multivalued elements like `Arg` must be repeated and may not be comma-separated like they are when provided as attributes.
 It is possible to use a mix of styles and the following example shows a moretypical example that uses property expansion as the reason for element style:
 
-....
+----
   <Call id="result" name="someMethod">
     <Class><Property name="which.class">
       <Default><Property name="default.class" default="org.example.SomeClass"/>
@@ -185,7 +185,7 @@ It is possible to use a mix of styles and the following example shows a moretypi
     <Arg>value0</Arg>
     <Arg>value1</Arg>
   </Call>
-....
+----
 
 Attributes may not be expressed as elements when their parent element is one that contains data.
 Thus `Arg`, `Item`, `Set`, `Put` and `Get` elements may not have their attributes expressed as elements.
@@ -259,9 +259,9 @@ In `etc/jetty-logging.xml`:
 
 Then run the combined configuration using:
 
-....
+----
 java -jar start.jar etc/jetty.xml jetty-logging.xml
-....
+----
 
 [[jetty-xml-set]]
 ==== <Set>
@@ -823,7 +823,7 @@ Here is a more practical example, taken from the handler configuration section i
 
 <!-- configure the RequestLogHandler object ("RequestLog") that we created earlier -->
 <Ref refid="RequestLog">
-  ....
+  ----
 </Ref>
 ----
 

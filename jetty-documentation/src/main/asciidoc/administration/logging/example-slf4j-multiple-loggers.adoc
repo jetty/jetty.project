@@ -87,7 +87,7 @@ It also requires including the other Slf4j binding JARs in the classpath, along 
 A convenient replacement `logging` module has been created to bootstrap the `${jetty.base}` directory for capturing all Jetty server logging from multiple logging frameworks into a single logging output file managed by logback.
 
 [source, screen]
-....
+----
 [mybase]$ mkdir modules
 [mybase]$ cd modules
 
@@ -113,7 +113,7 @@ INFO: resources       initialised transitively
 INFO: resources       enabled in     ${jetty.base}/start.ini
 
 [mybase]$ java -jar /opt/jetty-dist/start.jar
-....
+----
 
 The replacement `logging.mod` performs a number of tasks.
 

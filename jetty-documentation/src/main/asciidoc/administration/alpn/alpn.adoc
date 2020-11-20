@@ -325,9 +325,9 @@ The solution that we use with Maven is to specify an additional command line arg
 
 You can enable debug logging for the ALPN implementation in this way:
 
-....
+----
 ALPN.debug = true;
-....
+----
 
 Since the ALPN class is in the boot classpath, we chose not to use logging libraries because we do not want to override application logging library choices; therefore the logging is performed directly on `System.err`.
 
@@ -425,19 +425,19 @@ This section is for Jetty developers that need to update the ALPN implementation
 Clone the OpenJDK repository with the following command:
 
 [source, screen]
-....
+----
 $ hg clone https://hg.openjdk.java.net/jdk8u/jdk8u jdk8u
 $ cd !$
 $ ./get_source.sh
-....
+----
 
 To update the source to a specific tag, use the following command:
 
 [source, screen]
-....
+----
 $ ./make/scripts/hgforest.sh update <tag-name>
 
-....
+----
 
 The list of OpenJDK tags can be obtained from this page:
 https://hg.openjdk.java.net/jdk8u/jdk8u/tags[OpenJDK 8 Tags].

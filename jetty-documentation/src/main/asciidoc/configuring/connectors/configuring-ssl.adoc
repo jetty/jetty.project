@@ -361,7 +361,7 @@ image::configuring/connectors/images/certificate-chain.png[title="Certificate ch
 
 [literal]
 .The structure of KeyStore file:
-....
+----
 ├── PrivateKeyEntry
 │   ├── PrivateKey
 │   ├── Certificate chain
@@ -372,7 +372,7 @@ image::configuring/connectors/images/certificate-chain.png[title="Certificate ch
 │   └── Intermediary CA certificate
 └── TrustedCertEntry
     └── Root CA certificate
-....
+----
 
 [NOTE]
 ====
@@ -639,21 +639,21 @@ the other is `$JETTY/etc/truststore` which contains intermediary CA and root CA.
 
 [literal]
 .The structure of `$JETTY/etc/keystore`
-....
+----
 └── PrivateKeyEntry
     ├── PrivateKey
     └── Certificate chain
         └── Server certificate (end entity)
-....
+----
 
 [literal]
 .The structure of `$JETTY/etc/truststore`
-....
+----
 ├── TrustedCertEntry
 │   └── Intermediary CA certificate
 └── TrustedCertEntry
     └── Root CA certificate
-....
+----
 
 [[configuring-sslcontextfactory]]
 ==== Configuring the Jetty SslContextFactory

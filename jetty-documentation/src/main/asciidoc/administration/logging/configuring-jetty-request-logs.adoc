@@ -28,12 +28,12 @@ There is one entry per request received, and commonly in the standard NCSA forma
 A standard request log entry includes the client IP address, date, method, URL, result, size, referrer, user agent and latency.
 For example:
 
-....
+----
 123.4.5.6 - - [20/Jul/2016:10:16:17 +0000]
   "GET /jetty/tut/XmlConfiguration.html HTTP/1.1"
   200 76793 "http://localhost:8080/jetty/tut/logging.html"
   "Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.6) Gecko/20040614 Firefox/0.8" 342
-....
+----
 
 [[implementing-request-log]]
 ==== Implementing a Request Log

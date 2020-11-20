@@ -117,14 +117,14 @@ For example, when a `ContextHandler` calls some application listeners to inform 
 The `HandlerWrapper` is specialized to the link:{JDURL}/org/eclipse/jetty/server/handler/ScopedHandler.html[`ScopedHandler`] abstract class, which supports a daisy chain of scopes.
 For example if a `ServletHandler` is nested within a `ContextHandler`, the order and nesting of execution of methods is:
 
-....
+----
 Server.handle(...)
   ContextHandler.doScope(...)
     ServletHandler.doScope(...)
       ContextHandler.doHandle(...)
         ServletHandler.doHandle(...)
           SomeServlet.service(...)
-....
+----
 
 Thus when the `ContextHandler` handles the request, it does so within the scope the `ServletHandler` has established.
 

@@ -47,10 +47,10 @@ To do that, you can use `--skip-file-validation=infinispan` argument to start.ja
 
 You will also find the following properties, either in your base's `start.d/infinispan.ini` file or appended to your `start.ini`, depending on how you enabled the module:
 
-....
+----
 ## Unique identifier for this node in the cluster
 jetty.infinispanSession.workerName=node1
-....
+----
 
 jetty.infinispanSession.workerName::
   The name that uniquely identifies this node in the cluster.
@@ -187,6 +187,6 @@ To do this, firstly ensure that you have included the lines containing the `getS
 Then, create the file `${jetty.base}/resources/hotrod-client.properties`.
 Add the following line to this file:
 
-....
+----
 infinispan.client.hotrod.marshaller=org.eclipse.jetty.session.infinispan.WebAppMarshaller
-....
+----

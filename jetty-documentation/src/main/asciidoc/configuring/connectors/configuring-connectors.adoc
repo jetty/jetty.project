@@ -35,7 +35,7 @@ Out of the box, Jetty provides several link:#startup-modules[modules] for enabli
 If you startup Jetty with the `--list-modules=connector` command, you can see a list of all available connector modules:
 
 [source, screen]
-....
+----
 [mybase]$ java -jar $JETTY_HOME/start.jar --list-modules=connector
 
 Available Modules:
@@ -178,13 +178,13 @@ Modules for tag 'connector':
      Depend: unixsocket-http
         XML: etc/jetty-unixsocket-secure.xml
 ...
-....
+----
 
 To enable a connector, simply activate the associated module.
 Below is an example of activating both the `http` and `https` modules in a fresh link:#startup-base-and-home[Jetty base] using the link:#start-vs-startd[start.d directory]:
 
 [source, screen]
-....
+----
 [mybase] java -jar $JETTY_HOME/start.jar --create-startd
 MKDIR : ${jetty.base}/start.d
 INFO  : Base directory was modified
@@ -204,14 +204,14 @@ INFO  : Base directory was modified
 └── start.d
     ├── http.ini
     └── https.ini
-....
+----
 
 When the `http` and `https` modules were activated, so too were any modules they were dependent on, in this case `server` and `ssl`, as well as any dependencies for those modules, such as the `etc` and `ketystore` directories for `ssl`.
 
 At this point the server has been configured with connectors for both HTTP and HTTPS and can be started:
 
 [source, screen]
-....
+----
 [mybase] java -jar $JETTY_HOME/start.jar
 2017-08-31 10:19:58.855:INFO::main: Logging initialized @372ms to org.eclipse.jetty.util.log.StdErrLog
 2017-08-31 10:19:59.076:INFO:oejs.Server:main: jetty-9.4.6.v20170531
@@ -220,14 +220,14 @@ At this point the server has been configured with connectors for both HTTP and H
 2017-08-31 10:19:59.151:INFO:oejus.SslContextFactory:main: x509=X509@5d624da6(mykey,h=[],w=[]) for SslContextFactory@2ef9b8bc(file:///Users/staff/installs/repository/jetty-distribution-{VERSION}/mybase/etc/keystore,file:///Users/staff/installs/repository/jetty-distribution-{VERSION}/mybase/etc/keystore)
 2017-08-31 10:19:59.273:INFO:oejs.AbstractConnector:main: Started ServerConnector@2b98378d{SSL,[ssl, http/1.1]}{0.0.0.0:8443}
 2017-08-31 10:19:59.274:INFO:oejs.Server:main: Started @791ms
-....
+----
 
 When modules are enabled, they are loaded with several default options.
 These can be changed by editing the associated module ini file in the `start.d` directory (or the associated lines in `server.ini` if your implementation does not use `start.d`).
 For example, if we examine the `http.ini` file in our `start.d` directory created above, we will see the following settings:
 
 [source, screen]
-....
+----
 # ---------------------------------------
 # Module: http
 # Enables a HTTP connector on the server.
@@ -261,30 +261,30 @@ For example, if we examine the `http.ini` file in our `start.d` directory create
 
 ## HTTP Compliance: RFC7230, RFC2616, LEGACY
 # jetty.http.compliance=RFC7230
-....
+----
 
 To make a change to these settings, uncomment the line (by removing the #) and change the property to the desired value.
 For example, if you wanted to change the HTTP port to 5231, you would edit the line as follows:
 
 [source, screen]
-....
+----
 ...
 ## Connector port to listen on
 jetty.http.port=5231
 ...
-....
+----
 
 Now when the server is started, HTTP connections will enter on port 5231:
 
 [source, screen]
-....
+----
 [mybase] java -jar ../start.jar
 2017-08-31 10:31:32.955:INFO::main: Logging initialized @366ms to org.eclipse.jetty.util.log.StdErrLog
 2017-08-31 10:31:33.109:INFO:oejs.Server:main: jetty-9.4.6.v20170531
 2017-08-31 10:31:33.146:INFO:oejs.AbstractConnector:main: Started ServerConnector@2ef9b8bc{HTTP/1.1,[http/1.1]}{0.0.0.0:5231}
 ...
 2017-08-31 10:31:33.263:INFO:oejs.Server:main: Started @675ms
-....
+----
 
 Every module has their own set of configuration options, and reviewing them all is recommended.
 For additional information on the module system, please refer to our documentation on link:#startup-modules[Startup Modules].
