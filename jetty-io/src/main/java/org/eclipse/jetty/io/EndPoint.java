@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.thread.Invocable;
 /**
  * <p>EndPoint is the abstraction for an I/O channel that transports bytes.</p>
  *
- * <h3>Asynchronous Methods</h3>
+ * <p>Asynchronous Methods</p>
  * <p>The asynchronous scheduling methods of {@link EndPoint}
  * has been influenced by NIO.2 Futures and Completion
  * handlers, but does not use those actual interfaces because they have
@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  * implementations of {@link Callback}, such as {@link FutureCallback} and
  * {@link IteratingCallback}.</p>
  *
- * <h3>Reads</h3>
+ * <p>Reads</p>
  * <p>A {@link FutureCallback} can be used to block until an endpoint is ready
  * to fill bytes - the notification will be emitted by the NIO subsystem:</p>
  * <pre>
@@ -56,7 +56,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  * int filled = endPoint.fill(byteBuffer);
  * </pre>
  *
- * <h3>Asynchronous Reads</h3>
+ * <p>Asynchronous Reads</p>
  * <p>A {@link Callback} can be used to read asynchronously in its own dispatched
  * thread:</p>
  * <pre>
@@ -77,7 +77,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  * });
  * </pre>
  *
- * <h3>Blocking Writes</h3>
+ * <p>Blocking Writes</p>
  * <p>The write contract is that the callback is completed when all the bytes
  * have been written or there is a failure.
  * Blocking writes look like this:</p>

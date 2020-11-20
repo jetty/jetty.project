@@ -91,6 +91,7 @@ public interface ClientConnectionFactory
          * Tests whether one of the protocols of this class is also present in the given candidates list.
          *
          * @param candidates the candidates to match against
+         * @param secure whether the protocol should be a secure one
          * @return whether one of the protocols of this class is present in the candidates
          */
         public boolean matches(List<String> candidates, boolean secure)
