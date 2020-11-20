@@ -42,11 +42,11 @@ public class HttpInput extends ServletInputStream implements Runnable
     private final byte[] _oneByteBuffer = new byte[1];
     private final BlockingContentProducer _blockingContentProducer;
     private final AsyncContentProducer _asyncContentProducer;
-
     private final HttpChannelState _channelState;
     private ContentProducer _contentProducer;
     private boolean _consumedEof;
     private ReadListener _readListener;
+    private long _contentConsumed;
 
     public HttpInput(HttpChannelState state)
     {
@@ -56,8 +56,6 @@ public class HttpInput extends ServletInputStream implements Runnable
         _contentProducer = _blockingContentProducer;
     }
 
-    /* HttpInput */
-
     public void recycle()
     {
         if (LOG.isDebugEnabled())
@@ -66,6 +64,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         _contentProducer = _blockingContentProducer;
         _consumedEof = false;
         _readListener = null;
+        _contentConsumed = 0;
     }
 
     /**
@@ -110,6 +109,18 @@ public class HttpInput extends ServletInputStream implements Runnable
                 LOG.debug("adding chained interceptor: {}", chainedInterceptor);
             _contentProducer.setInterceptor(chainedInterceptor);
         }
+    }
+
+    public int get(Content content, byte[] bytes, int offset, int length)
+    {
+        int consumed = content.get(bytes, offset, length);
+        _contentConsumed += consumed;
+        return consumed;
+    }
+
+    public long getContentConsumed()
+    {
+        return _contentConsumed;
     }
 
     public long getContentReceived()
@@ -216,7 +227,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             throw new IllegalStateException("read on unready input");
         if (!content.isSpecial())
         {
-            int read = content.get(b, off, len);
+            int read = get(content, b, off, len);
             if (LOG.isDebugEnabled())
                 LOG.debug("read produced {} byte(s)", read);
             if (content.isEmpty())
