@@ -126,7 +126,6 @@
     <module>jetty-jndi</module>
     <module>jetty-jaas</module>
     <module>jetty-cdi</module>
-    <module>jetty-spring</module>
     <module>jetty-client</module>
     <module>jetty-proxy</module>
     <module>jetty-jaspi</module>
