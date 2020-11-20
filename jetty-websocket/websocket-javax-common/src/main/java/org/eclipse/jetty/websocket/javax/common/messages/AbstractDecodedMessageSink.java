@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
-import org.eclipse.jetty.websocket.core.messages.MessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.MessageSink;
 import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

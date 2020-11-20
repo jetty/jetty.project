@@ -22,7 +22,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.websocket.core.util.InvokerUtils;
+import org.eclipse.jetty.websocket.core.internal.util.InvokerUtils;
 
 /**
  * Simple {@link InvokerUtils.ParamIdentifier}

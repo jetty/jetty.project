@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.util;
+package org.eclipse.jetty.websocket.core.internal.util;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;

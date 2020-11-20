@@ -16,23 +16,21 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.tests.framehandlers;
+package org.eclipse.jetty.websocket.core.internal.messages;
 
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.internal.MessageHandler;
+import java.lang.invoke.MethodHandle;
+import java.util.Objects;
 
-public class StaticText extends MessageHandler
+import org.eclipse.jetty.websocket.core.CoreSession;
+
+public abstract class AbstractMessageSink implements MessageSink
 {
-    private final String staticMessage;
+    protected final CoreSession session;
+    protected final MethodHandle methodHandle;
 
-    public StaticText(String message)
+    public AbstractMessageSink(CoreSession session, MethodHandle methodHandle)
     {
-        this.staticMessage = message;
-    }
-
-    @Override
-    public void onText(String wholeMessage, Callback callback)
-    {
-        sendText(staticMessage, callback, false);
+        this.session = Objects.requireNonNull(session, "CoreSession");
+        this.methodHandle = Objects.requireNonNull(methodHandle, "MethodHandle");
     }
 }

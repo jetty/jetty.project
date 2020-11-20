@@ -22,7 +22,7 @@ import javax.websocket.Decoder;
 import javax.websocket.MessageHandler;
 import javax.websocket.PongMessage;
 
-import org.eclipse.jetty.websocket.core.util.ReflectUtils;
+import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.javax.tests.MessageType;

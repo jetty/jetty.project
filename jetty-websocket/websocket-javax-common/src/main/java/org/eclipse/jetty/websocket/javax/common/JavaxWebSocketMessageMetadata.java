@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.javax.common;
 import java.lang.invoke.MethodHandle;
 import java.util.List;
 
-import org.eclipse.jetty.websocket.core.messages.MessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.MessageSink;
 import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 
 public class JavaxWebSocketMessageMetadata

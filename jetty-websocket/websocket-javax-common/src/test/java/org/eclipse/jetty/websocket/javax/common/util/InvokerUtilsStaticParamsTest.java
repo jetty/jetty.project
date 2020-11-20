@@ -26,8 +26,8 @@ import java.util.Map;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.websocket.core.util.InvokerUtils;
-import org.eclipse.jetty.websocket.core.util.ReflectUtils;
+import org.eclipse.jetty.websocket.core.internal.util.InvokerUtils;
+import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
 import org.junit.jupiter.api.Test;
 

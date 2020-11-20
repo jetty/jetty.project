@@ -16,23 +16,34 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.messages;
+package org.eclipse.jetty.websocket.core.internal.messages;
 
 import java.lang.invoke.MethodHandle;
 
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 
-public class ReaderMessageSink extends DispatchedMessageSink
+public class PartialByteBufferMessageSink extends AbstractMessageSink
 {
-    public ReaderMessageSink(CoreSession session, MethodHandle methodHandle)
+    public PartialByteBufferMessageSink(CoreSession session, MethodHandle methodHandle)
     {
         super(session, methodHandle);
     }
 
     @Override
-    public MessageReader newSink(Frame frame)
+    public void accept(Frame frame, Callback callback)
     {
-        return new MessageReader(session.getInputBufferSize());
+        try
+        {
+            if (frame.hasPayload() || frame.isFin())
+                methodHandle.invoke(frame.getPayload(), frame.isFin());
+
+            callback.succeeded();
+        }
+        catch (Throwable t)
+        {
+            callback.failed(t);
+        }
     }
 }

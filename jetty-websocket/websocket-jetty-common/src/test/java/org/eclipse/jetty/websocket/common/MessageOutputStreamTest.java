@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.core.messages.MessageOutputStream;
+import org.eclipse.jetty.websocket.core.internal.messages.MessageOutputStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

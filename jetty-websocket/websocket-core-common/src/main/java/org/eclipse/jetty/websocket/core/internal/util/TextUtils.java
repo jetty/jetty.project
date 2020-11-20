@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.util;
+package org.eclipse.jetty.websocket.core.internal.util;
 
 /**
  * Collection of utility methods for Text content

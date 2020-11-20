@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.messages;
+package org.eclipse.jetty.websocket.core.internal.messages;
 
 import java.io.IOException;
 import java.io.OutputStream;

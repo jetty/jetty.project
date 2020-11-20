@@ -23,8 +23,8 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.concurrent.CompletableFuture;
 
-import org.eclipse.jetty.websocket.core.util.InvokerUtils;
-import org.eclipse.jetty.websocket.core.util.ReflectUtils;
+import org.eclipse.jetty.websocket.core.internal.util.InvokerUtils;
+import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
 
 public class CompletableFutureMethodHandle

@@ -22,7 +22,7 @@ import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.EndpointConfig;
 
-import org.eclipse.jetty.websocket.core.util.InvokerUtils;
+import org.eclipse.jetty.websocket.core.internal.util.InvokerUtils;
 
 public class DummyFrameHandlerFactory extends JavaxWebSocketFrameHandlerFactory
 {

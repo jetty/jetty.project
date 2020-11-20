@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.core.internal;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
@@ -27,6 +27,11 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.CoreSession;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 import org.slf4j.Logger;

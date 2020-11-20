@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.messages.InputStreamMessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.InputStreamMessageSink;
 import org.eclipse.jetty.websocket.javax.common.AbstractSessionTest;
 import org.junit.jupiter.api.Test;
 

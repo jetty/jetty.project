@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.javax.client.internal;
 import javax.websocket.ClientEndpoint;
 import javax.websocket.EndpointConfig;
 
-import org.eclipse.jetty.websocket.core.util.InvokerUtils;
+import org.eclipse.jetty.websocket.core.internal.util.InvokerUtils;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerMetadata;
