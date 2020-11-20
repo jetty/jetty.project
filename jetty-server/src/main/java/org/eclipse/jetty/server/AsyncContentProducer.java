@@ -77,7 +77,7 @@ class AsyncContentProducer implements ContentProducer
         HttpInput.Content content = nextTransformedContent();
         int available = content == null ? 0 : content.remaining();
         if (LOG.isDebugEnabled())
-            LOG.debug("available = {}", available);
+            LOG.debug("available = {} {}", available, this);
         return available;
     }
 
@@ -86,7 +86,7 @@ class AsyncContentProducer implements ContentProducer
     {
         boolean hasContent = _rawContent != null;
         if (LOG.isDebugEnabled())
-            LOG.debug("hasContent = {}", hasContent);
+            LOG.debug("hasContent = {} {}", hasContent, this);
         return hasContent;
     }
 
@@ -94,7 +94,7 @@ class AsyncContentProducer implements ContentProducer
     public boolean isError()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("isError = {}", _error);
+            LOG.debug("isError = {} {}", _error, this);
         return _error;
     }
 
@@ -103,7 +103,7 @@ class AsyncContentProducer implements ContentProducer
     {
         long minRequestDataRate = _httpChannel.getHttpConfiguration().getMinRequestDataRate();
         if (LOG.isDebugEnabled())
-            LOG.debug("checkMinDataRate [m={},t={}]", minRequestDataRate, _firstByteTimeStamp);
+            LOG.debug("checkMinDataRate [m={},t={}] {}", minRequestDataRate, _firstByteTimeStamp, this);
         if (minRequestDataRate > 0 && _firstByteTimeStamp != Long.MIN_VALUE)
         {
             long period = System.nanoTime() - _firstByteTimeStamp;
@@ -113,13 +113,13 @@ class AsyncContentProducer implements ContentProducer
                 if (getRawContentArrived() < minimumData)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("checkMinDataRate check failed");
+                        LOG.debug("checkMinDataRate check failed {}", this);
                     BadMessageException bad = new BadMessageException(HttpStatus.REQUEST_TIMEOUT_408,
                         String.format("Request content data rate < %d B/s", minRequestDataRate));
                     if (_httpChannel.getState().isResponseCommitted())
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("checkMinDataRate aborting channel");
+                            LOG.debug("checkMinDataRate aborting channel {}", this);
                         _httpChannel.abort(bad);
                     }
                     failCurrentContent(bad);
@@ -133,7 +133,7 @@ class AsyncContentProducer implements ContentProducer
     public long getRawContentArrived()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("getRawContentArrived = {}", _rawContentArrived);
+            LOG.debug("getRawContentArrived = {} {}", _rawContentArrived, this);
         return _rawContentArrived;
     }
 
@@ -141,7 +141,7 @@ class AsyncContentProducer implements ContentProducer
     public boolean consumeAll(Throwable x)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("consumeAll [e={}]", (Object)x);
+            LOG.debug("consumeAll [e={}] {}", x, this);
         failCurrentContent(x);
         // A specific HttpChannel mechanism must be used as the following code
         // does not guarantee that the channel will synchronously deliver all
@@ -156,14 +156,14 @@ class AsyncContentProducer implements ContentProducer
         // deliver the content asynchronously. Tests in StreamResetTest cover this.
         boolean atEof = _httpChannel.failAllContent(x);
         if (LOG.isDebugEnabled())
-            LOG.debug("failed all content of http channel; at EOF? {}", atEof);
+            LOG.debug("failed all content of http channel EOF={} {}", atEof, this);
         return atEof;
     }
 
     private void failCurrentContent(Throwable x)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("failing currently held content [r={},t={}]", _rawContent, _transformedContent, x);
+            LOG.debug("failing currently held content {}", this, x);
         if (_transformedContent != null && !_transformedContent.isSpecial())
         {
             if (_transformedContent != _rawContent)
@@ -186,7 +186,7 @@ class AsyncContentProducer implements ContentProducer
     public boolean onContentProducible()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onContentProducible");
+            LOG.debug("onContentProducible {}", this);
         return _httpChannel.getState().onReadReady();
     }
 
@@ -195,7 +195,7 @@ class AsyncContentProducer implements ContentProducer
     {
         HttpInput.Content content = nextTransformedContent();
         if (LOG.isDebugEnabled())
-            LOG.debug("nextContent = {}", content);
+            LOG.debug("nextContent = {} {}", content, this);
         if (content != null)
             _httpChannel.getState().onReadIdle();
         return content;
@@ -205,7 +205,7 @@ class AsyncContentProducer implements ContentProducer
     public void reclaim(HttpInput.Content content)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("reclaim {} [t={}]", content, _transformedContent);
+            LOG.debug("reclaim {} {}", content, this);
         if (_transformedContent == content)
         {
             content.succeeded();
@@ -239,7 +239,7 @@ class AsyncContentProducer implements ContentProducer
         else
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("isReady got transformed content {}", content);
+                LOG.debug("isReady got transformed content {} {}", content, this);
             _httpChannel.getState().onContentAdded();
         }
         boolean ready = content != null;
@@ -251,7 +251,7 @@ class AsyncContentProducer implements ContentProducer
     private HttpInput.Content nextTransformedContent()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("nextTransformedContent [r={},t={}]", _rawContent, _transformedContent);
+            LOG.debug("nextTransformedContent {}", this);
         if (_rawContent == null)
         {
             _rawContent = produceRawContent();
@@ -264,7 +264,7 @@ class AsyncContentProducer implements ContentProducer
             if (_transformedContent != _rawContent)
                 _transformedContent.succeeded();
             if (LOG.isDebugEnabled())
-                LOG.debug("nulling depleted transformed content");
+                LOG.debug("nulling depleted transformed content {}", this);
             _transformedContent = null;
         }
 
@@ -276,20 +276,20 @@ class AsyncContentProducer implements ContentProducer
 
                 _error = _rawContent.getError() != null;
                 if (LOG.isDebugEnabled())
-                    LOG.debug("raw content is special (with error = {}), returning it", _error);
+                    LOG.debug("raw content is special (with error = {}), returning it {}", _error, this);
                 return _rawContent;
             }
 
             if (_interceptor != null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("using interceptor {} to transform raw content", _interceptor);
+                    LOG.debug("using interceptor to transform raw content {}", this);
                 _transformedContent = _interceptor.readFrom(_rawContent);
             }
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("null interceptor, transformed content = raw content");
+                    LOG.debug("null interceptor, transformed content = raw content {}", this);
                 _transformedContent = _rawContent;
             }
 
@@ -298,7 +298,7 @@ class AsyncContentProducer implements ContentProducer
                 if (_transformedContent != _rawContent)
                     _transformedContent.succeeded();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("nulling depleted transformed content");
+                    LOG.debug("nulling depleted transformed content {}", this);
                 _transformedContent = null;
             }
 
@@ -309,30 +309,30 @@ class AsyncContentProducer implements ContentProducer
                     _rawContent.succeeded();
                     _rawContent = null;
                     if (LOG.isDebugEnabled())
-                        LOG.debug("nulling depleted raw content");
+                        LOG.debug("nulling depleted raw content {}", this);
                     _rawContent = produceRawContent();
                     if (_rawContent == null)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("produced null raw content, returning null");
+                            LOG.debug("produced null raw content, returning null, {}", this);
                         return null;
                     }
                 }
                 else
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("raw content is not empty");
+                        LOG.debug("raw content is not empty {}", this);
                 }
             }
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("transformed content is not empty");
+                    LOG.debug("transformed content is not empty {}", this);
             }
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("returning transformed content {}", _transformedContent);
+            LOG.debug("returning transformed content {}", this);
         return _transformedContent;
     }
 
@@ -345,10 +345,24 @@ class AsyncContentProducer implements ContentProducer
             if (_firstByteTimeStamp == Long.MIN_VALUE)
                 _firstByteTimeStamp = System.nanoTime();
             if (LOG.isDebugEnabled())
-                LOG.debug("produceRawContent updated rawContentArrived to {} and firstByteTimeStamp to {}", _rawContentArrived, _firstByteTimeStamp);
+                LOG.debug("produceRawContent updated rawContentArrived to {} and firstByteTimeStamp to {} {}", _rawContentArrived, _firstByteTimeStamp, this);
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("produceRawContent produced {}", content);
+            LOG.debug("produceRawContent produced {} {}", content, this);
         return content;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x[r=%s,t=%s,i=%s,error=%b,c=%s]",
+            getClass().getSimpleName(),
+            hashCode(),
+            _rawContent,
+            _transformedContent,
+            _interceptor,
+            _error,
+            _httpChannel
+        );
     }
 }

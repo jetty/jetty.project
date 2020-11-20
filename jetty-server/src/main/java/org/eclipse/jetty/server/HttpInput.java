@@ -83,7 +83,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     public void setInterceptor(Interceptor interceptor)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("setting interceptor to {}", interceptor);
+            LOG.debug("setting interceptor to {} on {}", interceptor, this);
         _contentProducer.setInterceptor(interceptor);
     }
 
@@ -99,14 +99,14 @@ public class HttpInput extends ServletInputStream implements Runnable
         if (currentInterceptor == null)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("adding single interceptor: {}", interceptor);
+                LOG.debug("adding single interceptor: {} on {}", interceptor, this);
             _contentProducer.setInterceptor(interceptor);
         }
         else
         {
             ChainedInterceptor chainedInterceptor = new ChainedInterceptor(currentInterceptor, interceptor);
             if (LOG.isDebugEnabled())
-                LOG.debug("adding chained interceptor: {}", chainedInterceptor);
+                LOG.debug("adding chained interceptor: {} on {}", chainedInterceptor, this);
             _contentProducer.setInterceptor(chainedInterceptor);
         }
     }
@@ -131,7 +131,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     public boolean consumeAll()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("consume all");
+            LOG.debug("consumeAll {}", this);
         boolean atEof = _contentProducer.consumeAll(new IOException("Unconsumed content"));
         if (atEof)
             _consumedEof = true;
@@ -146,14 +146,14 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         boolean error = _contentProducer.isError();
         if (LOG.isDebugEnabled())
-            LOG.debug("isError = {}", error);
+            LOG.debug("isError={} {}", error, this);
         return error;
     }
 
     public boolean isAsync()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("isAsync read listener = " + _readListener);
+            LOG.debug("isAsync read listener {} {}", _readListener, this);
         return _readListener != null;
     }
 
@@ -164,7 +164,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         boolean finished = _consumedEof;
         if (LOG.isDebugEnabled())
-            LOG.debug("isFinished? {}", finished);
+            LOG.debug("isFinished={} {}", finished, this);
         return finished;
     }
 
@@ -172,23 +172,16 @@ public class HttpInput extends ServletInputStream implements Runnable
     public boolean isReady()
     {
         boolean ready = _contentProducer.isReady();
-        if (!ready)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("isReady? false");
-            return false;
-        }
-
         if (LOG.isDebugEnabled())
-            LOG.debug("isReady? true");
-        return true;
+            LOG.debug("isReady={} {}", ready, this);
+        return ready;
     }
 
     @Override
     public void setReadListener(ReadListener readListener)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("setting read listener to {}", readListener);
+            LOG.debug("setting read listener to {} {}", readListener, this);
         if (_readListener != null)
             throw new IllegalStateException("ReadListener already set");
         _readListener = Objects.requireNonNull(readListener);
@@ -229,7 +222,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         {
             int read = get(content, b, off, len);
             if (LOG.isDebugEnabled())
-                LOG.debug("read produced {} byte(s)", read);
+                LOG.debug("read produced {} byte(s) {}", read, this);
             if (content.isEmpty())
                 _contentProducer.reclaim(content);
             return read;
@@ -237,7 +230,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
         Throwable error = content.getError();
         if (LOG.isDebugEnabled())
-            LOG.debug("read error = " + error);
+            LOG.debug("read error={} {}", error, this);
         if (error != null)
         {
             if (error instanceof IOException)
@@ -248,7 +241,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         if (content.isEof())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("read at EOF, setting consumed EOF to true");
+                LOG.debug("read at EOF, setting consumed EOF to true {}", this);
             _consumedEof = true;
             // If EOF do we need to wake for allDataRead callback?
             if (onContentProducible())
@@ -276,7 +269,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         // which is forbidden by this method's contract.
         boolean hasContent = _contentProducer.hasContent();
         if (LOG.isDebugEnabled())
-            LOG.debug("hasContent = {}", hasContent);
+            LOG.debug("hasContent={} {}", hasContent, this);
         return hasContent;
     }
 
@@ -285,7 +278,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         int available = _contentProducer.available();
         if (LOG.isDebugEnabled())
-            LOG.debug("available = {}", available);
+            LOG.debug("available={} {}", available, this);
         return available;
     }
 
@@ -300,17 +293,13 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         Content content = _contentProducer.nextContent();
         if (LOG.isDebugEnabled())
-            LOG.debug("running on content {}", content);
-        // The nextContent() call could return null if the transformer ate all
-        // the raw bytes without producing any transformed content.
-        if (content == null)
-            return;
+            LOG.debug("running on content {} {}", content, this);
 
         // This check is needed when a request is started async but no read listener is registered.
         if (_readListener == null)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("running without a read listener");
+                LOG.debug("running without a read listener {}", this);
             onContentProducible();
             return;
         }
@@ -321,7 +310,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             if (error != null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("running has error: {}", (Object)error);
+                    LOG.debug("running error={} {}", error, this);
                 // TODO is this necessary to add here?
                 _channelState.getHttpChannel().getResponse().getHttpFields().add(HttpConnection.CONNECTION_CLOSE);
                 _readListener.onError(error);
@@ -331,13 +320,13 @@ public class HttpInput extends ServletInputStream implements Runnable
                 try
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("running at EOF");
+                        LOG.debug("running at EOF {}", this);
                     _readListener.onAllDataRead();
                 }
                 catch (Throwable x)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("running failed onAllDataRead", x);
+                        LOG.debug("running failed onAllDataRead {}", this, x);
                     _readListener.onError(x);
                 }
             }
@@ -345,7 +334,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         else
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("running has content");
+                LOG.debug("running has content {}", this);
             try
             {
                 _readListener.onDataAvailable();
@@ -353,7 +342,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("running failed onDataAvailable", x);
+                    LOG.debug("running failed onDataAvailable {}", this, x);
                 _readListener.onError(x);
             }
         }

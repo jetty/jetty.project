@@ -90,7 +90,7 @@ public class HttpInputIntegrationTest
         __server.addConnector(local);
 
         ServerConnector http = new ServerConnector(__server, new HttpConnectionFactory(__config), new HTTP2CServerConnectionFactory(__config));
-        http.setIdleTimeout(4000);
+        http.setIdleTimeout(5000);
         __server.addConnector(http);
 
         // SSL Context Factory for HTTPS and HTTP/2
@@ -119,7 +119,7 @@ public class HttpInputIntegrationTest
 
         // HTTP/2 Connector
         ServerConnector http2 = new ServerConnector(__server, ssl,/*TODO alpn,h2,*/ h1);
-        http2.setIdleTimeout(4000);
+        http2.setIdleTimeout(5000);
         __server.addConnector(http2);
 
         ServletContextHandler context = new ServletContextHandler(__server, "/ctx");
@@ -336,7 +336,7 @@ public class HttpInputIntegrationTest
 
         for (int i = 0; i < threads; i++)
         {
-            t[i] = new Thread(run);
+            t[i] = new Thread(run, "client-" + i);
             t[i].start();
         }
         for (int i = 0; i < threads; i++)
