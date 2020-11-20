@@ -113,7 +113,7 @@ The `domain.pem` file will be used later by HAProxy.
 Now we can setup `haproxy.cfg` to configure HAProxy.
 This is a minimal configuration:
 
-[source, ,]
+[source]
 ....
 global
 tune.ssl.default-dh-param 1024
