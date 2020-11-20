@@ -751,6 +751,7 @@
               <VERSION>${project.version}</VERSION>
               <TIMESTAMP>${maven.build.timestamp}</TIMESTAMP>
               <toc>left</toc>
+              <icons>font</icons>
             </attributes>
           </configuration>
           <executions>

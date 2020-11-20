@@ -22,7 +22,6 @@
 :revnumber: {VERSION}
 
 :toc:
-:icons: font
 
 include::quick-start/part.adoc[]
 include::configuring/part.adoc[]
