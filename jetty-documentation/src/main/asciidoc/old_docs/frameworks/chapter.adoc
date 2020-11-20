@@ -21,6 +21,5 @@
 
 include::cdi.adoc[]
 include::weld.adoc[]
-include::spring-usage.adoc[]
 include::osgi.adoc[]
 include::metro.adoc[]
