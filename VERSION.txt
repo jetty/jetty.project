@@ -1,3 +1,5 @@
+jetty-9.4.36-SNAPSHOT
+
 jetty-9.4.35.v20201120 - 20 November 2020
  + 4711 Reset trailers on recycled response
  + 5486 PropertyFileLoginModule retains PropertyUserStores
