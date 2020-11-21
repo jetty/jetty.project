@@ -219,48 +219,37 @@ class AsyncContentProducer implements ContentProducer
     public boolean isReady()
     {
         HttpInput.Content content = nextTransformedContent();
-        if (content == null)
-        {
-            _httpChannel.getState().onReadUnready();
-            while (true)
-            {
-                if (_httpChannel.needContent())
-                {
-                    content = nextTransformedContent();
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("isReady got transformed content after needContent retry {} {}", content, this);
-                    if (content != null)
-                    {
-                        _httpChannel.getState().onContentAdded();
-                        break;
-                    }
-                    else
-                    {
-                        // We could have read some rawContent but not enough to generate
-                        // transformed content, so we need to call needContent() again
-                        // to tell the channel that more content is needed.
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("isReady could not transform content after needContent retry {}", this);
-                    }
-                }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("isReady false needContent retry {}", this);
-                    break;
-                }
-            }
-        }
-        else
+        if (content != null)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("isReady got transformed content {} {}", content, this);
+                LOG.debug("isReady(), got transformed content {} {}", content, this);
             _httpChannel.getState().onContentAdded();
+            return true;
         }
-        boolean ready = content != null;
+
+        _httpChannel.getState().onReadUnready();
+        while (_httpChannel.needContent())
+        {
+            content = nextTransformedContent();
+            if (LOG.isDebugEnabled())
+                LOG.debug("isReady(), got transformed content after needContent retry {} {}", content, this);
+            if (content != null)
+            {
+                _httpChannel.getState().onContentAdded();
+                return true;
+            }
+            else
+            {
+                // We could have read some rawContent but not enough to generate
+                // transformed content, so we need to call needContent() again
+                // to tell the channel that more content is needed.
+                if (LOG.isDebugEnabled())
+                    LOG.debug("isReady(), could not transform content after needContent retry {}", this);
+            }
+        }
         if (LOG.isDebugEnabled())
-            LOG.debug("isReady = {}", ready);
-        return ready;
+            LOG.debug("isReady(), no content for needContent retry {}", this);
+        return false;
     }
 
     private HttpInput.Content nextTransformedContent()
