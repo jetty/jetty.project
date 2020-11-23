@@ -310,10 +310,6 @@
         </exclusion>
         <exclusion>
           <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-spring</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty</groupId>
           <artifactId>jetty-start</artifactId>
         </exclusion>
         <exclusion>
