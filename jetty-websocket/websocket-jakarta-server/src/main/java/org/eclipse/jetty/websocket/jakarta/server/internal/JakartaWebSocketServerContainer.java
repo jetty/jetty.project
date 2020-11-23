@@ -43,7 +43,7 @@ import org.eclipse.jetty.websocket.jakarta.server.config.ContainerDefaultConfigu
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.util.InvalidSignatureException;
 import org.eclipse.jetty.websocket.util.ReflectUtils;
-import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
+import org.eclipse.jetty.websocket.util.server.internal.WebSocketMappings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,7 +99,7 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
 
             // Create the Jetty ServerContainer implementation
             container = new JakartaWebSocketServerContainer(
-                WebSocketMapping.ensureMapping(servletContext, WebSocketMapping.DEFAULT_KEY),
+                WebSocketMappings.ensureMapping(servletContext),
                 WebSocketServerComponents.getWebSocketComponents(servletContext),
                 coreClientSupplier);
             contextHandler.addManaged(container);
@@ -110,7 +110,7 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
         return container;
     }
 
-    private final WebSocketMapping webSocketMapping;
+    private final WebSocketMappings webSocketMappings;
     private final JakartaWebSocketServerFrameHandlerFactory frameHandlerFactory;
     private List<Class<?>> deferredEndpointClasses;
     private List<ServerEndpointConfig> deferredEndpointConfigs;
@@ -118,31 +118,31 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
     /**
      * Main entry point for {@link JakartaWebSocketServletContainerInitializer}.
      *
-     * @param webSocketMapping the {@link WebSocketMapping} that this container belongs to
+     * @param webSocketMappings the {@link WebSocketMappings} that this container belongs to
      */
-    public JakartaWebSocketServerContainer(WebSocketMapping webSocketMapping)
+    public JakartaWebSocketServerContainer(WebSocketMappings webSocketMappings)
     {
-        this(webSocketMapping, new WebSocketComponents());
+        this(webSocketMappings, new WebSocketComponents());
     }
 
-    public JakartaWebSocketServerContainer(WebSocketMapping webSocketMapping, WebSocketComponents components)
+    public JakartaWebSocketServerContainer(WebSocketMappings webSocketMappings, WebSocketComponents components)
     {
         super(components);
-        this.webSocketMapping = webSocketMapping;
+        this.webSocketMappings = webSocketMappings;
         this.frameHandlerFactory = new JakartaWebSocketServerFrameHandlerFactory(this);
     }
 
     /**
      * Main entry point for {@link JakartaWebSocketServletContainerInitializer}.
      *
-     * @param webSocketMapping the {@link WebSocketMapping} that this container belongs to
+     * @param webSocketMappings the {@link WebSocketMappings} that this container belongs to
      * @param components the {@link WebSocketComponents} instance to use
      * @param coreClientSupplier the supplier of the {@link WebSocketCoreClient} instance to use
      */
-    public JakartaWebSocketServerContainer(WebSocketMapping webSocketMapping, WebSocketComponents components, Function<WebSocketComponents, WebSocketCoreClient> coreClientSupplier)
+    public JakartaWebSocketServerContainer(WebSocketMappings webSocketMappings, WebSocketComponents components, Function<WebSocketComponents, WebSocketCoreClient> coreClientSupplier)
     {
         super(components, coreClientSupplier);
-        this.webSocketMapping = webSocketMapping;
+        this.webSocketMappings = webSocketMappings;
         this.frameHandlerFactory = new JakartaWebSocketServerFrameHandlerFactory(this);
     }
 
@@ -265,7 +265,7 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
             frameHandlerFactory.getMetadata(config.getEndpointClass(), config);
             JakartaWebSocketCreator creator = new JakartaWebSocketCreator(this, config, getExtensionRegistry());
             PathSpec pathSpec = new UriTemplatePathSpec(config.getPath());
-            webSocketMapping.addMapping(pathSpec, creator, frameHandlerFactory, defaultCustomizer);
+            webSocketMappings.addMapping(pathSpec, creator, frameHandlerFactory, defaultCustomizer);
         }
         catch (InvalidSignatureException e)
         {

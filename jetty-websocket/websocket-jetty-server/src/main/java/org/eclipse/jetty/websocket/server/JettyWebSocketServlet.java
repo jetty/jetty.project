@@ -40,14 +40,14 @@ import org.eclipse.jetty.websocket.util.server.internal.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.util.server.internal.ServerUpgradeRequest;
 import org.eclipse.jetty.websocket.util.server.internal.ServerUpgradeResponse;
 import org.eclipse.jetty.websocket.util.server.internal.WebSocketCreator;
-import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
+import org.eclipse.jetty.websocket.util.server.internal.WebSocketMappings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Abstract Servlet used to bridge the Servlet API to the WebSocket API.
  * <p>
- * To use this servlet, you will be required to register your websockets with the {@link WebSocketMapping} so that it can create your websockets under the
+ * To use this servlet, you will be required to register your websockets with the {@link WebSocketMappings} so that it can create your websockets under the
  * appropriate conditions.
  * </p>
  * <p>The most basic implementation would be as follows:</p>
@@ -68,11 +68,11 @@ import org.slf4j.LoggerFactory;
  * }
  * </pre>
  * <p>
- * Only request that conforms to a "WebSocket: Upgrade" handshake request will trigger the {@link WebSocketMapping} handling of creating
+ * Only request that conforms to a "WebSocket: Upgrade" handshake request will trigger the {@link WebSocketMappings} handling of creating
  * WebSockets.  All other requests are treated as normal servlet requests.  The configuration defined by this servlet init parameters will
  * be used as the customizer for any mappings created by {@link JettyWebSocketServletFactory#addMapping(String, JettyWebSocketCreator)} during
  * {@link #configure(JettyWebSocketServletFactory)} calls.  The request upgrade may be peformed by this servlet, or is may be performed by a
- * {@link WebSocketUpgradeFilter} instance that will share the same {@link WebSocketMapping} instance.  If the filter is used, then the
+ * {@link WebSocketUpgradeFilter} instance that will share the same {@link WebSocketMappings} instance.  If the filter is used, then the
  * filter configuraton is used as the default configuration prior to this servlets configuration being applied.
  * </p>
  * <p>
@@ -99,7 +99,7 @@ public abstract class JettyWebSocketServlet extends HttpServlet
     private static final Logger LOG = LoggerFactory.getLogger(JettyWebSocketServlet.class);
     private final CustomizedWebSocketServletFactory customizer = new CustomizedWebSocketServletFactory();
 
-    private WebSocketMapping mapping;
+    private WebSocketMappings mapping;
     private WebSocketComponents components;
 
     /**
@@ -133,7 +133,7 @@ public abstract class JettyWebSocketServlet extends HttpServlet
             ServletContext servletContext = getServletContext();
 
             components = WebSocketServerComponents.getWebSocketComponents(servletContext);
-            mapping = new WebSocketMapping(components);
+            mapping = new WebSocketMappings(components);
 
             String max = getInitParameter("idleTimeout");
             if (max == null)
@@ -208,7 +208,7 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         @Override
         public void addMapping(String pathSpec, JettyWebSocketCreator creator)
         {
-            mapping.addMapping(WebSocketMapping.parsePathSpec(pathSpec), new WrappedJettyCreator(creator), getFactory(), this);
+            mapping.addMapping(WebSocketMappings.parsePathSpec(pathSpec), new WrappedJettyCreator(creator), getFactory(), this);
         }
 
         @Override
@@ -249,7 +249,7 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         @Override
         public JettyWebSocketCreator getMapping(String pathSpec)
         {
-            WebSocketCreator creator = mapping.getMapping(WebSocketMapping.parsePathSpec(pathSpec));
+            WebSocketCreator creator = mapping.getMapping(WebSocketMappings.parsePathSpec(pathSpec));
             if (creator instanceof WrappedJettyCreator)
                 return ((WrappedJettyCreator)creator).getJettyWebSocketCreator();
 
@@ -259,7 +259,7 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         @Override
         public boolean removeMapping(String pathSpec)
         {
-            return mapping.removeMapping(WebSocketMapping.parsePathSpec(pathSpec));
+            return mapping.removeMapping(WebSocketMappings.parsePathSpec(pathSpec));
         }
     }
 

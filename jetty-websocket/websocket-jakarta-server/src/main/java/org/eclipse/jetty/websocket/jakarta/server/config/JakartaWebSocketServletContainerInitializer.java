@@ -40,7 +40,7 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.jakarta.server.internal.JakartaWebSocketServerContainer;
 import org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter;
-import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
+import org.eclipse.jetty.websocket.util.server.internal.WebSocketMappings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -153,7 +153,7 @@ public class JakartaWebSocketServletContainerInitializer implements ServletConta
         {
             WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(context.getServer(), context.getServletContext());
             FilterHolder filterHolder = WebSocketUpgradeFilter.ensureFilter(context.getServletContext());
-            WebSocketMapping mapping = WebSocketMapping.ensureMapping(context.getServletContext(), WebSocketMapping.DEFAULT_KEY);
+            WebSocketMappings mapping = WebSocketMappings.ensureMapping(context.getServletContext());
             serverContainer = JakartaWebSocketServerContainer.ensureContainer(context.getServletContext());
 
             if (LOG.isDebugEnabled())

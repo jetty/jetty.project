@@ -56,24 +56,14 @@ import org.slf4j.LoggerFactory;
  * wrap that POJO with a {@link FrameHandler} and the customizer is used to configure the resulting
  * {@link CoreSession}.</p>
  */
-public class WebSocketMapping implements Dumpable, LifeCycle.Listener
+public class WebSocketMappings implements Dumpable, LifeCycle.Listener
 {
-    private static final Logger LOG = LoggerFactory.getLogger(WebSocketMapping.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebSocketMappings.class);
+    public static final String WEBSOCKET_MAPPING_ATTRIBUTE = WebSocketMappings.class.getName();
 
-    public static WebSocketMapping getMapping(ServletContext servletContext, String mappingKey)
+    public static WebSocketMappings getMapping(ServletContext servletContext)
     {
-        Object mappingObject = servletContext.getAttribute(mappingKey);
-        if (mappingObject != null)
-        {
-            if (mappingObject instanceof WebSocketMapping)
-                return (WebSocketMapping)mappingObject;
-            else
-                throw new IllegalStateException(
-                    String.format("ContextHandler attribute %s is not of type WebSocketMapping: {%s}",
-                        mappingKey, mappingObject.toString()));
-        }
-
-        return null;
+        return (WebSocketMappings)servletContext.getAttribute(WEBSOCKET_MAPPING_ATTRIBUTE);
     }
 
     public WebSocketCreator getMapping(PathSpec pathSpec)
@@ -82,13 +72,13 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
         return cn == null ? null : cn.getWebSocketCreator();
     }
 
-    public static WebSocketMapping ensureMapping(ServletContext servletContext, String mappingKey)
+    public static WebSocketMappings ensureMapping(ServletContext servletContext)
     {
-        WebSocketMapping mapping = getMapping(servletContext, mappingKey);
+        WebSocketMappings mapping = getMapping(servletContext);
         if (mapping == null)
         {
-            mapping = new WebSocketMapping(WebSocketServerComponents.getWebSocketComponents(servletContext));
-            servletContext.setAttribute(mappingKey, mapping);
+            mapping = new WebSocketMappings(WebSocketServerComponents.getWebSocketComponents(servletContext));
+            servletContext.setAttribute(WEBSOCKET_MAPPING_ATTRIBUTE, mapping);
         }
 
         return mapping;
@@ -133,18 +123,16 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
         throw new IllegalArgumentException("Unrecognized path spec syntax [" + rawSpec + "]");
     }
 
-    public static final String DEFAULT_KEY = "jetty.websocket.defaultMapping";
-
     private final PathMappings<Negotiator> mappings = new PathMappings<>();
     private final WebSocketComponents components;
     private final Handshaker handshaker = Handshaker.newInstance();
 
-    public WebSocketMapping()
+    public WebSocketMappings()
     {
         this(new WebSocketComponents());
     }
 
-    public WebSocketMapping(WebSocketComponents components)
+    public WebSocketMappings(WebSocketComponents components)
     {
         this.components = components;
     }
@@ -153,7 +141,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
     public void lifeCycleStopping(LifeCycle context)
     {
         ContextHandler contextHandler = (ContextHandler)context;
-        WebSocketMapping mapping = contextHandler.getBean(WebSocketMapping.class);
+        WebSocketMappings mapping = contextHandler.getBean(WebSocketMappings.class);
         if (mapping == this)
         {
             contextHandler.removeBean(mapping);
