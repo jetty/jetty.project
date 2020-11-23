@@ -90,7 +90,10 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <skipTests>true</skipTests>
+          <skipTests>false</skipTests>
+          <systemPropertyVariables>
+            <infinispan.docker.image.version>${infinispan.docker.image.version}</infinispan.docker.image.version>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
     </plugins>
@@ -137,29 +140,4 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-  <profiles>
-    <profile>
-      <id>remote-session-tests</id>
-      <activation>
-        <property>
-          <name>hotrod.enabled</name>
-          <value>true</value>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <skipTests>false</skipTests>
-              <systemPropertyVariables>
-                <infinispan.docker.image.version>${infinispan.docker.image.version}</infinispan.docker.image.version>
-              </systemPropertyVariables>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>

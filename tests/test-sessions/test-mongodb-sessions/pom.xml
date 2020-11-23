@@ -28,7 +28,9 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <skipTests>true</skipTests>
+          <systemPropertyVariables>
+            <mongo.docker.version>${mongo.docker.version}</mongo.docker.version>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
       <plugin>
@@ -128,29 +130,4 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-  <profiles>
-    <profile>
-      <id>remote-session-tests</id>
-      <activation>
-        <property>
-          <name>mongo.enabled</name>
-          <value>true</value>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <systemPropertyVariables>
-                <mongo.docker.version>${mongo.docker.version}</mongo.docker.version>
-              </systemPropertyVariables>
-              <skipTests>false</skipTests>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>
