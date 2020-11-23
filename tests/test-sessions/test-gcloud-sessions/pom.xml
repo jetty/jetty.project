@@ -21,13 +21,6 @@
           <skip>true</skip>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <skipTests>true</skipTests>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
   <dependencies>
@@ -85,20 +78,14 @@
   </dependencies>
   <profiles>
     <profile>
-      <id>gcloud</id>
-      <activation>
-        <property>
-          <name>gcloud.enabled</name>
-          <value>true</value>
-        </property>
-      </activation>
+      <id>no-remote-session-tests</id>
       <build>
         <plugins>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-              <skipTests>false</skipTests>
+              <skipTests>true</skipTests>
             </configuration>
           </plugin>
         </plugins>
