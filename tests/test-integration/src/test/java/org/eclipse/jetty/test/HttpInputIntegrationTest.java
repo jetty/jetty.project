@@ -32,13 +32,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import javax.net.ssl.SSLSocket;
-import javax.servlet.AsyncContext;
-import javax.servlet.ReadListener;
-import javax.servlet.ServletInputStream;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.ReadListener;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.server.Connector;
@@ -90,7 +90,7 @@ public class HttpInputIntegrationTest
         __server.addConnector(local);
 
         ServerConnector http = new ServerConnector(__server, new HttpConnectionFactory(__config), new HTTP2CServerConnectionFactory(__config));
-        http.setIdleTimeout(4000);
+        http.setIdleTimeout(5000);
         __server.addConnector(http);
 
         // SSL Context Factory for HTTPS and HTTP/2
@@ -119,7 +119,7 @@ public class HttpInputIntegrationTest
 
         // HTTP/2 Connector
         ServerConnector http2 = new ServerConnector(__server, ssl,/*TODO alpn,h2,*/ h1);
-        http2.setIdleTimeout(4000);
+        http2.setIdleTimeout(5000);
         __server.addConnector(http2);
 
         ServletContextHandler context = new ServletContextHandler(__server, "/ctx");
@@ -336,7 +336,7 @@ public class HttpInputIntegrationTest
 
         for (int i = 0; i < threads; i++)
         {
-            t[i] = new Thread(run);
+            t[i] = new Thread(run, "client-" + i);
             t[i].start();
         }
         for (int i = 0; i < threads; i++)
