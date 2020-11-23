@@ -12,7 +12,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk11", "-T3 clean install -Premote-session-tests -Pgcloud", "maven3",
+                mavenBuild( "jdk11", "-T3 clean install", "maven3",
                             [[parserName: 'Maven'], [parserName: 'Java']] ) // -Pautobahn
                 // Collect up the jacoco execution results (only on main build)
                 jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
@@ -36,14 +36,12 @@ pipeline {
             }
           }
         }
-
         stage("Build / Test - JDK15") {
           agent { node { label 'linux' } }
           steps {
             container( 'jetty-build' ) {
               timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk15", "clean install -T3 -Djacoco.skip=true -Premote-session-tests -Pgcloud -Djacoco.skip=true", "maven3",
-                            [[parserName: 'Maven'], [parserName: 'Java']])
+                mavenBuild( "jdk15", "clean install -T3 -Djacoco.skip=true -Djacoco.skip=true", "maven3",
               }
             }
           }
@@ -67,7 +65,7 @@ pipeline {
 def slackNotif() {
   script {
     try {
-      if ( env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-9.4.x' || env.BRANCH_NAME == 'jetty-11.0.x') {
+      if ( env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-11.0.x') {
         //BUILD_USER = currentBuild.rawBuild.getCause(Cause.UserIdCause).getUserId()
         // by ${BUILD_USER}
         COLOR_MAP = ['SUCCESS': 'good', 'FAILURE': 'danger', 'UNSTABLE': 'danger', 'ABORTED': 'danger']
