@@ -175,6 +175,8 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                 throw new ClosedChannelException();
 
             ByteBuffer in = _inQ.peek();
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} needsFillInterest EOF={} {}", this, in == EOF, BufferUtil.toDetailString(in));
             if (BufferUtil.hasContent(in) || isEOF(in))
                 execute(_runFillable);
         }
@@ -201,11 +203,15 @@ public class ByteArrayEndPoint extends AbstractEndPoint
             boolean wasEmpty = _inQ.isEmpty();
             if (in == null)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} addEOFAndRun=true", this);
                 _inQ.add(EOF);
                 fillable = true;
             }
             if (BufferUtil.hasContent(in))
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} addInputAndRun={} {}", this, wasEmpty, BufferUtil.toDetailString(in));
                 _inQ.add(in);
                 fillable = wasEmpty;
             }
@@ -234,11 +240,15 @@ public class ByteArrayEndPoint extends AbstractEndPoint
             boolean wasEmpty = _inQ.isEmpty();
             if (in == null)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} addEOFAndExecute=true", this);
                 _inQ.add(EOF);
                 fillable = true;
             }
             if (BufferUtil.hasContent(in))
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} addInputAndExecute={} {}", this, wasEmpty, BufferUtil.toDetailString(in));
                 _inQ.add(in);
                 fillable = wasEmpty;
             }
