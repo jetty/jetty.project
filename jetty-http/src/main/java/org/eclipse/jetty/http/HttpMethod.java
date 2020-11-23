@@ -20,10 +20,8 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.ArrayTernaryTrie;
-import org.eclipse.jetty.util.ArrayTrie;
+import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.Trie;
 
 /**
  * Known HTTP Methods
@@ -142,29 +140,24 @@ public enum HttpMethod
         return _method;
     }
 
-    public static final Trie<HttpMethod> INSENSITIVE_CACHE = new ArrayTrie<>(252);
-    public static final Trie<HttpMethod> CACHE = new ArrayTernaryTrie<>(false, 300);
-    public static final Trie<HttpMethod> LOOK_AHEAD = new ArrayTernaryTrie<>(false, 330);
+    public static final Index<HttpMethod> INSENSITIVE_CACHE = new Index.Builder<HttpMethod>()
+        .caseSensitive(false)
+        .withAll(HttpMethod.values(), HttpMethod::asString)
+        .build();
+    public static final Index<HttpMethod> CACHE = new Index.Builder<HttpMethod>()
+        .caseSensitive(true)
+        .withAll(HttpMethod.values(), HttpMethod::asString)
+        .build();
+    public static final Index<HttpMethod> LOOK_AHEAD = new Index.Builder<HttpMethod>()
+        .caseSensitive(true)
+        .withAll(HttpMethod.values(), httpMethod -> httpMethod.asString() + ' ')
+        .build();
     public static final int ACL_AS_INT = ('A' & 0xff) << 24 | ('C' & 0xFF) << 16 | ('L' & 0xFF) << 8 | (' ' & 0xFF);
     public static final int GET_AS_INT = ('G' & 0xff) << 24 | ('E' & 0xFF) << 16 | ('T' & 0xFF) << 8 | (' ' & 0xFF);
     public static final int PRI_AS_INT = ('P' & 0xff) << 24 | ('R' & 0xFF) << 16 | ('I' & 0xFF) << 8 | (' ' & 0xFF);
     public static final int PUT_AS_INT = ('P' & 0xff) << 24 | ('U' & 0xFF) << 16 | ('T' & 0xFF) << 8 | (' ' & 0xFF);
     public static final int POST_AS_INT = ('P' & 0xff) << 24 | ('O' & 0xFF) << 16 | ('S' & 0xFF) << 8 | ('T' & 0xFF);
     public static final int HEAD_AS_INT = ('H' & 0xff) << 24 | ('E' & 0xFF) << 16 | ('A' & 0xFF) << 8 | ('D' & 0xFF);
-    static
-    {
-        for (HttpMethod method : HttpMethod.values())
-        {
-            if (!INSENSITIVE_CACHE.put(method.asString(), method))
-                throw new IllegalStateException("INSENSITIVE_CACHE too small: " + method);
-
-            if (!CACHE.put(method.asString(), method))
-                throw new IllegalStateException("CACHE too small: " + method);
-
-            if (!LOOK_AHEAD.put(method.asString() + ' ', method))
-                throw new IllegalStateException("LOOK_AHEAD too small: " + method);
-        }
-    }
 
     /**
      * Optimized lookup to find a method name and trailing space in a byte array.

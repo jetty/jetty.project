@@ -29,23 +29,20 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.QuotedCSV;
-import org.eclipse.jetty.util.ArrayTrie;
+import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.Trie;
 
 /**
  * Represents an Extension Configuration, as seen during the connection Handshake process.
  */
 public class ExtensionConfig
 {
-    private static final Trie<ExtensionConfig> CACHE = new ArrayTrie<>(512);
-
-    static
-    {
-        CACHE.put("identity", new ExtensionConfig("identity"));
-        CACHE.put("permessage-deflate", new ExtensionConfig("permessage-deflate"));
-        CACHE.put("permessage-deflate; client_max_window_bits", new ExtensionConfig("permessage-deflate; client_max_window_bits"));
-    }
+    private static final Index<ExtensionConfig> CACHE = new Index.Builder<ExtensionConfig>()
+        .caseSensitive(false)
+        .with("identity", new ExtensionConfig("identity"))
+        .with("permessage-deflate", new ExtensionConfig("permessage-deflate"))
+        .with("permessage-deflate; client_max_window_bits", new ExtensionConfig("permessage-deflate; client_max_window_bits"))
+        .build();
 
     /**
      * Parse a single parameterized name.

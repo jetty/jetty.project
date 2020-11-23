@@ -27,9 +27,8 @@ import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Jetty;
-import org.eclipse.jetty.util.TreeTrie;
-import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -51,7 +50,10 @@ public class HttpConfiguration implements Dumpable
 {
     public static final String SERVER_VERSION = "Jetty(" + Jetty.VERSION + ")";
     private final List<Customizer> _customizers = new CopyOnWriteArrayList<>();
-    private final Trie<Boolean> _formEncodedMethods = new TreeTrie<>();
+    private final Index.Mutable<Boolean> _formEncodedMethods = new Index.Builder<Boolean>()
+        .caseSensitive(false)
+        .mutable()
+        .build();
     private int _outputBufferSize = 32 * 1024;
     private int _outputAggregationSize = _outputBufferSize / 4;
     private int _requestHeaderSize = 8 * 1024;
@@ -424,7 +426,7 @@ public class HttpConfiguration implements Dumpable
 
     /**
      * @param headerCacheSize The size of the header field cache, in terms of unique characters branches
-     * in the lookup {@link Trie} and associated data structures.
+     * in the lookup {@link Index.Mutable} and associated data structures.
      */
     public void setHeaderCacheSize(int headerCacheSize)
     {
@@ -491,7 +493,7 @@ public class HttpConfiguration implements Dumpable
      */
     public void addFormEncodedMethod(String method)
     {
-        _formEncodedMethods.put(method, Boolean.TRUE);
+        _formEncodedMethods.put(method,Boolean.TRUE);
     }
 
     /**
@@ -504,7 +506,7 @@ public class HttpConfiguration implements Dumpable
      */
     public boolean isFormEncodedMethod(String method)
     {
-        return Boolean.TRUE.equals(_formEncodedMethods.get(method));
+        return _formEncodedMethods.get(method) != null;
     }
 
     /**
