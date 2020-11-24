@@ -215,20 +215,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
                 .filter(p -> isSessionFilename(p.getFileName().toString()))
                 .filter(p -> isExpired(now, p))
                 .collect(Collectors.toList()) // Don't delete whilst walking
-                .forEach(p ->
-                {
-                    try
-                    {
-                        if (!Files.deleteIfExists(p))
-                            LOG.warn("Could not delete {}", p.getFileName());
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Sweep deleted {}", p.getFileName());
-                    }
-                    catch (IOException e)
-                    {
-                        LOG.warn("Could not delete {}", p.getFileName(), e);
-                    }
-                });
+                .forEach(this::deleteFile);
         }
         catch (Exception e)
         {
@@ -261,17 +248,25 @@ public class FileSessionDataStore extends AbstractSessionDataStore
      *
      * @param now the time now in msec
      * @param p the file to check
-     * @throws Exception indicating error in sweep
      */
     public void sweepFile(long now, Path p)
-        throws Exception
     {
         if (isExpired(now, p))
+            deleteFile(p);
+    }
+
+    private void deleteFile(Path p)
+    {
+        try
         {
             if (!Files.deleteIfExists(p))
                 LOG.warn("Could not delete {}", p.getFileName());
-            if (LOG.isDebugEnabled())
-                LOG.debug("Sweep deleted {}", p.getFileName());
+            else if (LOG.isDebugEnabled())
+                LOG.debug("Deleted {}", p.getFileName());
+        }
+        catch (IOException e)
+        {
+            LOG.warn("Could not delete {}", p.getFileName(), e);
         }
     }
 
