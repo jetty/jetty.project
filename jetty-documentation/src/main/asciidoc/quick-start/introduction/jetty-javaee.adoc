@@ -19,7 +19,7 @@
 [[jetty-javaee]]
 === Jetty and Java EE Web Profile
 
-Jetty implements aspects of the Java EE specification, primarily the Servlet Specification. 
+Jetty implements aspects of the Java EE specification, primarily the Servlet Specification.
 Recent releases of the Java EE platform have introduced a Web Profile, recognizing that many developers need only a subset of the many technologies under the Java EE umbrella.
 
 While Jetty itself does not ship all of the Web Profile technologies, Jetty architecture is such that you can plug in third party implementations to produce a container customized to your exact needs.
@@ -67,7 +67,7 @@ Validator]
 
 |http://jcp.org/en/jsr/detail?id=353[JSR 353] |Java API for JSON Processing 1.0 (JSON-P) |No |Yes, eg JSON-P https://java.net/projects/jsonp/[reference implementation]
 
-|link:jcp.org/en/jsr/detail?id=318[JSR 318] |Interceptors 1.2 |No |Yes as part of a CDI implementation
+|http://jcp.org/en/jsr/detail?id=318[JSR 318] |Interceptors 1.2 |No |Yes as part of a CDI implementation
 |=======================================================================
 
 [[jetty-javaee-6]]
@@ -102,7 +102,7 @@ Here is the matrix of JSRs for Java EE 6 Web Profile, and how they relate to Jet
 
 |http://jcp.org/en/jsr/detail?id=250[JSR 250] |Common Annotations for the Java Platform |Yes |Partially (for non-core Servlet Spec annotations)
 
-|http://jcp.org/en/jsr/detail?id=907[JSR 907] |Java Transaction API (JTA) |Yes |Implementations are pluggable, such as http://www.atomikos.com/[Atomikos], http://jotm.ow2.org/xwiki/bin/view/Main/WebHome[JOTM], http://jencks.codehaus.org/Transaction+Manager[Jencks (Geronimo Transaction Manager)]
+|http://jcp.org/en/jsr/detail?id=907[JSR 907] |Java Transaction API (JTA) |Yes |Implementations are pluggable, such as http://www.atomikos.com/[Atomikos], http://jotm.ow2.org/[JOTM], http://jencks.codehaus.org/Transaction+Manager[Jencks (Geronimo Transaction Manager)]
 
 |http://jcp.org/en/jsr/detail?id=303[JSR 303] |Bean Validation 1.0 |No |Yes as part of another technology (JSF), or a stand-alone implementation such as http://www.hibernate.org/subprojects/validator/docs.html[Hiberate
 Validator]
