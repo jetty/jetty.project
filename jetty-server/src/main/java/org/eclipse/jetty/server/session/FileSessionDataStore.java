@@ -154,7 +154,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     public Set<String> doGetExpired(final Set<String> candidates)
     {
         final long now = System.currentTimeMillis();
-        HashSet<String> expired = new HashSet<String>();
+        HashSet<String> expired = new HashSet<>();
 
         //iterate over the files and work out which have expired
         for (String filename : _sessionFileMap.values())
@@ -212,31 +212,12 @@ public class FileSessionDataStore extends AbstractSessionDataStore
             stream
                 .filter(p -> !Files.isDirectory(p)).filter(p -> !isOurContextSessionFilename(p.getFileName().toString()))
                 .filter(p -> isSessionFilename(p.getFileName().toString()))
-                .filter(p -> isExpired(now, p))
-                .forEach(this::deleteFile);
+                .forEach(p -> sweepFile(now, p));
         }
         catch (Exception e)
         {
             LOG.warn(e);
         }
-    }
-
-    public boolean isExpired(long now, Path p)
-    {
-        if (p == null)
-            return false;
-        try
-        {
-            long expiry = getExpiryFromFilename(p.getFileName().toString());
-            //files with 0 expiry never expire
-            return expiry > 0 && ((now - expiry) >= (5 * TimeUnit.SECONDS.toMillis(_gracePeriodSec)));
-        }
-        catch (NumberFormatException e)
-        {
-            LOG.warn("Not valid session filename {}", p.getFileName());
-            LOG.warn(e);
-        }
-        return false;
     }
 
     /**
@@ -249,22 +230,32 @@ public class FileSessionDataStore extends AbstractSessionDataStore
      */
     public void sweepFile(long now, Path p)
     {
-        if (isExpired(now, p))
-            deleteFile(p);
-    }
-
-    private void deleteFile(Path p)
-    {
-        try
+        if (p != null)
         {
-            if (!Files.deleteIfExists(p))
-                LOG.warn("Could not delete {}", p.getFileName());
-            else if (LOG.isDebugEnabled())
-                LOG.debug("Deleted {}", p.getFileName());
-        }
-        catch (IOException e)
-        {
-            LOG.warn("Could not delete {}", p.getFileName(), e);
+            try
+            {
+                long expiry = getExpiryFromFilename(p.getFileName().toString());
+                //files with 0 expiry never expire
+                if (expiry > 0 && ((now - expiry) >= (5 * TimeUnit.SECONDS.toMillis(_gracePeriodSec))))
+                {
+                    try
+                    {
+                        if (!Files.deleteIfExists(p))
+                            LOG.warn("Could not delete {}", p.getFileName());
+                        else if (LOG.isDebugEnabled())
+                            LOG.debug("Deleted {}", p.getFileName());
+                    }
+                    catch (IOException e)
+                    {
+                        LOG.warn("Could not delete {}", p.getFileName(), e);
+                    }
+                }
+            }
+            catch (NumberFormatException e)
+            {
+                LOG.warn("Not valid session filename {}", p.getFileName());
+                LOG.warn(e);
+            }
         }
     }
 
@@ -316,7 +307,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
-        File file = null;
+        File file;
         if (_storeDir != null)
         {
             delete(id);
@@ -333,8 +324,9 @@ public class FileSessionDataStore extends AbstractSessionDataStore
             }
             catch (Exception e)
             {
-                if (file != null)
-                    file.delete(); // No point keeping the file if we didn't save the whole session
+                // No point keeping the file if we didn't save the whole session
+                if (!file.delete())
+                    e.addSuppressed(new IOException("Could not delete " + file));
                 throw new UnwriteableSessionDataException(id, _context, e);
             }
         }
@@ -358,7 +350,10 @@ public class FileSessionDataStore extends AbstractSessionDataStore
             throw new IllegalStateException("No file store specified");
 
         if (!_storeDir.exists())
-            _storeDir.mkdirs();
+        {
+            if (!_storeDir.mkdirs())
+                throw new IllegalStateException("Could not create " + _storeDir);
+        }
         else
         {
             if (!(_storeDir.isDirectory() && _storeDir.canWrite() && _storeDir.canRead()))
@@ -379,11 +374,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
                     .forEach(p ->
                     {
                         // first get rid of all ancient files
-                        if (isExpired(now, p))
-                        {
-                            deleteFile(p);
-                            return;
-                        }
+                        sweepFile(now, p);
 
                         String filename = p.getFileName().toString();
                         String context = getContextFromFilename(filename);
@@ -517,11 +508,11 @@ public class FileSessionDataStore extends AbstractSessionDataStore
 
     protected long getExpiryFromFilename(String filename)
     {
-        if (StringUtil.isBlank(filename) || filename.indexOf("_") < 0)
+        if (StringUtil.isBlank(filename) || !filename.contains("_"))
             throw new IllegalStateException("Invalid or missing filename");
 
         String s = filename.substring(0, filename.indexOf('_'));
-        return (s == null ? 0 : Long.parseLong(s));
+        return Long.parseLong(s);
     }
 
     protected String getContextFromFilename(String filename)
@@ -598,11 +589,11 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     protected SessionData load(InputStream is, String expectedId)
         throws Exception
     {
-        String id = null; //the actual id from inside the file
+        String id; //the actual id from inside the file
 
         try
         {
-            SessionData data = null;
+            SessionData data;
             DataInputStream di = new DataInputStream(is);
 
             id = di.readUTF();
