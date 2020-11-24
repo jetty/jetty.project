@@ -18,10 +18,10 @@
 
 module org.eclipse.jetty.websocket.javax.common
 {
-    exports org.eclipse.jetty.websocket.javax.common;
-    exports org.eclipse.jetty.websocket.javax.common.decoders;
-    exports org.eclipse.jetty.websocket.javax.common.encoders;
-    exports org.eclipse.jetty.websocket.javax.common.messages;
+    exports org.eclipse.jetty.websocket.javax.common to org.eclipse.jetty.websocket.javax.server, org.eclipse.jetty.websocket.javax.client;
+    exports org.eclipse.jetty.websocket.javax.common.decoders to org.eclipse.jetty.websocket.javax.server, org.eclipse.jetty.websocket.javax.client;
+    exports org.eclipse.jetty.websocket.javax.common.encoders to org.eclipse.jetty.websocket.javax.server, org.eclipse.jetty.websocket.javax.client;
+    exports org.eclipse.jetty.websocket.javax.common.messages to org.eclipse.jetty.websocket.javax.server, org.eclipse.jetty.websocket.javax.client;
 
     requires org.slf4j;
     requires transitive jetty.websocket.api;

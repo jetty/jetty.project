@@ -21,7 +21,7 @@ import org.eclipse.jetty.websocket.common.ExtensionConfigParser;
 
 module org.eclipse.jetty.websocket.jetty.common
 {
-    exports org.eclipse.jetty.websocket.common;
+    exports org.eclipse.jetty.websocket.common to org.eclipse.jetty.websocket.jetty.client, org.eclipse.jetty.websocket.jetty.server;
 
     requires org.eclipse.jetty.util;
     requires org.slf4j;
