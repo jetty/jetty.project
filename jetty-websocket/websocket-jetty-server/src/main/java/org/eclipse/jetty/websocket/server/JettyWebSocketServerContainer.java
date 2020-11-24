@@ -40,7 +40,7 @@ import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
 import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
-import org.eclipse.jetty.websocket.core.server.WebSocketMapping;
+import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.internal.DelegatedServerUpgradeRequest;
 import org.eclipse.jetty.websocket.server.internal.DelegatedServerUpgradeResponse;
@@ -73,7 +73,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
                 executor = contextHandler.getServer().getThreadPool();
 
             // Create the Jetty ServerContainer implementation
-            WebSocketMapping mappings = WebSocketMapping.ensureMapping(servletContext, WebSocketMapping.DEFAULT_KEY);
+            WebSocketMappings mappings = WebSocketMappings.ensureMappings(servletContext);
             container = new JettyWebSocketServerContainer(contextHandler, mappings, executor);
             servletContext.setAttribute(JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE, container);
             contextHandler.addManaged(container);
@@ -86,7 +86,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
     private static final Logger LOG = LoggerFactory.getLogger(JettyWebSocketServerContainer.class);
 
     private final ServletContextHandler contextHandler;
-    private final WebSocketMapping webSocketMapping;
+    private final WebSocketMappings webSocketMappings;
     private final FrameHandlerFactory frameHandlerFactory;
     private final Executor executor;
     private final Configuration.ConfigurationCustomizer customizer = new Configuration.ConfigurationCustomizer();
@@ -97,13 +97,13 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
     /**
      * Main entry point for {@link JettyWebSocketServletContainerInitializer}.
      *
-     * @param webSocketMapping the {@link WebSocketMapping} that this container belongs to
+     * @param webSocketMappings the {@link WebSocketMappings} that this container belongs to
      * @param executor the {@link Executor} to use
      */
-    JettyWebSocketServerContainer(ServletContextHandler contextHandler, WebSocketMapping webSocketMapping, Executor executor)
+    JettyWebSocketServerContainer(ServletContextHandler contextHandler, WebSocketMappings webSocketMappings, Executor executor)
     {
         this.contextHandler = contextHandler;
-        this.webSocketMapping = webSocketMapping;
+        this.webSocketMappings = webSocketMappings;
         this.executor = executor;
 
         // Ensure there is a FrameHandlerFactory
@@ -122,12 +122,12 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
 
     public void addMapping(String pathSpec, JettyWebSocketCreator creator)
     {
-        PathSpec ps = WebSocketMapping.parsePathSpec(pathSpec);
-        if (webSocketMapping.getMapping(ps) != null)
+        PathSpec ps = WebSocketMappings.parsePathSpec(pathSpec);
+        if (webSocketMappings.getMappings(ps) != null)
             throw new WebSocketException("Duplicate WebSocket Mapping for PathSpec");
 
         WebSocketUpgradeFilter.ensureFilter(contextHandler.getServletContext());
-        webSocketMapping.addMapping(ps,
+        webSocketMappings.addMapping(ps,
             (req, resp) -> creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp)),
             frameHandlerFactory, customizer);
     }

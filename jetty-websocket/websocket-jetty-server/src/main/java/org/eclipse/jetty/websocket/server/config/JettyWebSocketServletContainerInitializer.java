@@ -25,7 +25,7 @@ import javax.servlet.ServletContext;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.listener.ContainerInitializer;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.core.server.WebSocketMapping;
+import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
 import org.slf4j.Logger;
@@ -48,7 +48,7 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
      * during the {@link ServletContext} initialization phase.
      *
      * @param context the context to add listener to.
-     * @param configurator a lambda that is called to allow the {@link WebSocketMapping} to
+     * @param configurator a lambda that is called to allow the {@link WebSocketMappings} to
      * be configured during {@link ServletContext} initialization phase
      */
     public static void configure(ServletContextHandler context, Configurator configurator)

@@ -36,7 +36,7 @@ public class WebSocketUpgradeHandler extends HandlerWrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketUpgradeHandler.class);
 
-    private final WebSocketMapping mappings;
+    private final WebSocketMappings mappings;
     private final Configuration.ConfigurationCustomizer customizer = new Configuration.ConfigurationCustomizer();
 
     public WebSocketUpgradeHandler()
@@ -46,7 +46,7 @@ public class WebSocketUpgradeHandler extends HandlerWrapper
 
     public WebSocketUpgradeHandler(WebSocketComponents components)
     {
-        this.mappings = new WebSocketMapping(components);
+        this.mappings = new WebSocketMappings(components);
     }
 
     public void addMapping(String pathSpec, WebSocketNegotiator negotiator)

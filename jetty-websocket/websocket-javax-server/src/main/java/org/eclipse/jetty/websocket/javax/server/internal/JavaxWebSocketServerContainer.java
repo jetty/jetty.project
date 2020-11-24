@@ -39,7 +39,7 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
-import org.eclipse.jetty.websocket.core.server.WebSocketMapping;
+import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.javax.server.config.ContainerDefaultConfigurator;
@@ -98,7 +98,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
 
             // Create the Jetty ServerContainer implementation
             container = new JavaxWebSocketServerContainer(
-                WebSocketMapping.ensureMapping(servletContext, WebSocketMapping.DEFAULT_KEY),
+                WebSocketMappings.ensureMappings(servletContext),
                 WebSocketServerComponents.getWebSocketComponents(servletContext),
                 coreClientSupplier);
             contextHandler.addManaged(container);
@@ -109,7 +109,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
         return container;
     }
 
-    private final WebSocketMapping webSocketMapping;
+    private final WebSocketMappings webSocketMappings;
     private final JavaxWebSocketServerFrameHandlerFactory frameHandlerFactory;
     private List<Class<?>> deferredEndpointClasses;
     private List<ServerEndpointConfig> deferredEndpointConfigs;
@@ -117,31 +117,31 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     /**
      * Main entry point for {@link JavaxWebSocketServletContainerInitializer}.
      *
-     * @param webSocketMapping the {@link WebSocketMapping} that this container belongs to
+     * @param webSocketMappings the {@link WebSocketMappings} that this container belongs to
      */
-    public JavaxWebSocketServerContainer(WebSocketMapping webSocketMapping)
+    public JavaxWebSocketServerContainer(WebSocketMappings webSocketMappings)
     {
-        this(webSocketMapping, new WebSocketComponents());
+        this(webSocketMappings, new WebSocketComponents());
     }
 
-    public JavaxWebSocketServerContainer(WebSocketMapping webSocketMapping, WebSocketComponents components)
+    public JavaxWebSocketServerContainer(WebSocketMappings webSocketMappings, WebSocketComponents components)
     {
         super(components);
-        this.webSocketMapping = webSocketMapping;
+        this.webSocketMappings = webSocketMappings;
         this.frameHandlerFactory = new JavaxWebSocketServerFrameHandlerFactory(this);
     }
 
     /**
      * Main entry point for {@link JavaxWebSocketServletContainerInitializer}.
      *
-     * @param webSocketMapping the {@link WebSocketMapping} that this container belongs to
+     * @param webSocketMappings the {@link WebSocketMappings} that this container belongs to
      * @param components the {@link WebSocketComponents} instance to use
      * @param coreClientSupplier the supplier of the {@link WebSocketCoreClient} instance to use
      */
-    public JavaxWebSocketServerContainer(WebSocketMapping webSocketMapping, WebSocketComponents components, Function<WebSocketComponents, WebSocketCoreClient> coreClientSupplier)
+    public JavaxWebSocketServerContainer(WebSocketMappings webSocketMappings, WebSocketComponents components, Function<WebSocketComponents, WebSocketCoreClient> coreClientSupplier)
     {
         super(components, coreClientSupplier);
-        this.webSocketMapping = webSocketMapping;
+        this.webSocketMappings = webSocketMappings;
         this.frameHandlerFactory = new JavaxWebSocketServerFrameHandlerFactory(this);
     }
 
@@ -264,7 +264,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
             frameHandlerFactory.getMetadata(config.getEndpointClass(), config);
             JavaxWebSocketCreator creator = new JavaxWebSocketCreator(this, config, getExtensionRegistry());
             PathSpec pathSpec = new UriTemplatePathSpec(config.getPath());
-            webSocketMapping.addMapping(pathSpec, creator, frameHandlerFactory, defaultCustomizer);
+            webSocketMappings.addMapping(pathSpec, creator, frameHandlerFactory, defaultCustomizer);
         }
         catch (InvalidSignatureException e)
         {

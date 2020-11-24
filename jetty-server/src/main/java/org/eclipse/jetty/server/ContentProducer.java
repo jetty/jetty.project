@@ -114,7 +114,6 @@ public interface ContentProducer
      * If there isn't any and the implementation does not block, this method will trigger a
      * {@link javax.servlet.ReadListener} callback once some content is available.
      * This call is always non-blocking.
-     * After this call, state can be either of UNREADY or READY.
      * @return true if some content is immediately available, false otherwise.
      */
     boolean isReady();

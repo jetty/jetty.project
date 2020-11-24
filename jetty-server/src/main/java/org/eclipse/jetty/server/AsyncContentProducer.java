@@ -223,7 +223,6 @@ class AsyncContentProducer implements ContentProducer
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("isReady(), got transformed content {} {}", content, this);
-            _httpChannel.getState().onContentAdded();
             return true;
         }
 
