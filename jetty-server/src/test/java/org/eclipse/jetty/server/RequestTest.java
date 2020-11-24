@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
@@ -424,7 +425,13 @@ public class RequestTest
         Path testTmpDir = workDir.getEmptyPathDir();
 
         // We should have two tmp files after parsing the multipart form.
-        RequestTester tester = (request, response) -> Files.list(testTmpDir).count() == 2;
+        RequestTester tester = (request, response) ->
+        {
+            try (Stream<Path> s = Files.list(testTmpDir))
+            {
+                return s.count() == 2;
+            }
+        };
 
         ContextHandler contextHandler = new ContextHandler();
         contextHandler.setContextPath("/foo");
@@ -1977,9 +1984,9 @@ public class RequestTest
 
     private static long getFileCount(Path path)
     {
-        try
+        try (Stream<Path> s = Files.list(path))
         {
-            return Files.list(path).count();
+            return s.count();
         }
         catch (IOException e)
         {
