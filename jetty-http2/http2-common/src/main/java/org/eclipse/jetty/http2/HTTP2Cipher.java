@@ -18,13 +18,7 @@
 
 package org.eclipse.jetty.http2;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.Trie;
@@ -37,6 +31,7 @@ public class HTTP2Cipher
     private static final Trie<Boolean> __blackCiphers = new ArrayTrie<>(275 * 40);
 
     static String[] _xxx;
+
     static
     {
         String[] protocols = {"TLSv1.2", "TLSv1.1", "TLSv1", "SSL", "SSLv2", "SSLv3"};
