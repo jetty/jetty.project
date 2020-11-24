@@ -213,6 +213,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
             stream
                 .filter(p -> !Files.isDirectory(p)).filter(p -> !isOurContextSessionFilename(p.getFileName().toString()))
                 .filter(p -> isSessionFilename(p.getFileName().toString()))
+                .filter(p -> isExpired(now, p))
                 .collect(Collectors.toList()) // Don't delete whilst walking
                 .forEach(p ->
                 {
