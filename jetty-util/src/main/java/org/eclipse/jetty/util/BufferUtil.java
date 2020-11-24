@@ -136,6 +136,24 @@ public class BufferUtil
     }
 
     /**
+     * Deep copy of a buffer
+     *
+     * @param buffer The buffer to copy
+     * @return A copy of the buffer
+     */
+    public static ByteBuffer copy(ByteBuffer buffer)
+    {
+        if (buffer == null)
+            return null;
+        int p = buffer.position();
+        ByteBuffer clone = buffer.isDirect() ? ByteBuffer.allocateDirect(buffer.remaining()) : ByteBuffer.allocate(buffer.remaining());
+        clone.put(buffer);
+        clone.flip();
+        buffer.position(p);
+        return clone;
+    }
+
+    /**
      * Clear the buffer to be empty in flush mode.
      * The position and limit are set to 0;
      *
