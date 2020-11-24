@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
@@ -214,7 +213,6 @@ public class FileSessionDataStore extends AbstractSessionDataStore
                 .filter(p -> !Files.isDirectory(p)).filter(p -> !isOurContextSessionFilename(p.getFileName().toString()))
                 .filter(p -> isSessionFilename(p.getFileName().toString()))
                 .filter(p -> isExpired(now, p))
-                .collect(Collectors.toList()) // Don't delete whilst walking
                 .forEach(this::deleteFile);
         }
         catch (Exception e)
@@ -372,12 +370,6 @@ public class FileSessionDataStore extends AbstractSessionDataStore
             MultiException me = new MultiException();
             long now = System.currentTimeMillis();
 
-
-            // first get rid of all ancient files, regardless of which
-            // context they are for. Don't do in the following sweep to avoid
-            // deleting whilst walking.
-            sweepDisk();
-
             // Build session file map by walking directory
             try (Stream<Path> stream = Files.walk(_storeDir.toPath(), 1, FileVisitOption.FOLLOW_LINKS))
             {
@@ -386,6 +378,13 @@ public class FileSessionDataStore extends AbstractSessionDataStore
                     .filter(p -> isSessionFilename(p.getFileName().toString()))
                     .forEach(p ->
                     {
+                        // first get rid of all ancient files
+                        if (isExpired(now, p))
+                        {
+                            deleteFile(p);
+                            return;
+                        }
+
                         String filename = p.getFileName().toString();
                         String context = getContextFromFilename(filename);
                         //now process it if it wasn't deleted, and it is for our context
