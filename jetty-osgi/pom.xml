@@ -12,8 +12,8 @@
   <packaging>pom</packaging>
 
   <properties>
-    <osgi-version>3.7.1</osgi-version>
-    <osgi-services-version>3.2.100.v20100503</osgi-services-version>
+    <osgi-version>3.16.0</osgi-version>
+    <osgi-services-version>3.9.0</osgi-services-version>
     <equinox-http-servlet-version>1.0.0-v20070606</equinox-http-servlet-version>
   </properties>
 
@@ -134,7 +134,7 @@
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.osgi</groupId>
+        <groupId>org.eclipse.platform</groupId>
         <artifactId>org.eclipse.osgi.services</artifactId>
         <version>${osgi-services-version}</version>
         <exclusions>
@@ -151,7 +151,7 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.osgi</groupId>
+        <groupId>org.eclipse.platform</groupId>
         <artifactId>org.eclipse.osgi</artifactId>
         <version>${osgi-version}</version>
       </dependency>

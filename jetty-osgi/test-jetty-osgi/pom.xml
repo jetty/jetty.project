@@ -118,13 +118,19 @@
     <dependency>
       <groupId>org.eclipse.platform</groupId>
       <artifactId>org.eclipse.osgi</artifactId>
-      <version>3.16.0</version>
+      <version>${osgi-version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.platform</groupId>
       <artifactId>org.eclipse.osgi.services</artifactId>
-      <version>3.9.0</version>
+      <version>${osgi-services-version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.platform</groupId>
+      <artifactId>org.eclipse.osgi.util</artifactId>
+      <version>3.5.300</version>
       <scope>test</scope>
     </dependency>
 
@@ -136,11 +142,11 @@
       <scope>test</scope>
       <exclusions>
         <exclusion>
-          <groupId>org.eclipse.osgi</groupId>
+          <groupId>org.eclipse.platform</groupId>
           <artifactId>org.eclipse.osgi</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.eclipse.osgi</groupId>
+          <groupId>org.eclipse.platform</groupId>
           <artifactId>org.eclipse.osgi.services</artifactId>
         </exclusion>
       </exclusions>
@@ -152,11 +158,11 @@
       <scope>test</scope>
       <exclusions>
         <exclusion>
-          <groupId>org.eclipse.osgi</groupId>
+          <groupId>org.eclipse.platform</groupId>
           <artifactId>org.eclipse.osgi</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.eclipse.osgi</groupId>
+          <groupId>org.eclipse.platform</groupId>
           <artifactId>org.eclipse.osgi.services</artifactId>
         </exclusion>
       </exclusions>
