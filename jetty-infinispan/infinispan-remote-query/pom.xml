@@ -90,7 +90,6 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <skipTests>false</skipTests>
           <systemPropertyVariables>
             <infinispan.docker.image.version>${infinispan.docker.image.version}</infinispan.docker.image.version>
           </systemPropertyVariables>
