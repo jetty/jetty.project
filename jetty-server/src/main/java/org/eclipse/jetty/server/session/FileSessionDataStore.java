@@ -35,6 +35,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.MultiException;
@@ -206,21 +208,24 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         long now = System.currentTimeMillis();
         if (LOG.isDebugEnabled())
             LOG.debug("Sweeping {} for old session files", _storeDir);
-        try
+        try (Stream<Path> stream = Files.walk(_storeDir.toPath(), 1, FileVisitOption.FOLLOW_LINKS))
         {
-            Files.walk(_storeDir.toPath(), 1, FileVisitOption.FOLLOW_LINKS)
+            stream
                 .filter(p -> !Files.isDirectory(p)).filter(p -> !isOurContextSessionFilename(p.getFileName().toString()))
                 .filter(p -> isSessionFilename(p.getFileName().toString()))
+                .collect(Collectors.toList()) // Don't delete whilst walking
                 .forEach(p ->
                 {
-
                     try
                     {
-                        sweepFile(now, p);
+                        if (!Files.deleteIfExists(p))
+                            LOG.warn("Could not delete {}", p.getFileName());
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Sweep deleted {}", p.getFileName());
                     }
-                    catch (Exception e)
+                    catch (IOException e)
                     {
-                        LOG.warn(e);
+                        LOG.warn("Could not delete {}", p.getFileName(), e);
                     }
                 });
         }
@@ -228,6 +233,24 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         {
             LOG.warn(e);
         }
+    }
+
+    public boolean isExpired(long now, Path p)
+    {
+        if (p == null)
+            return false;
+        try
+        {
+            long expiry = getExpiryFromFilename(p.getFileName().toString());
+            //files with 0 expiry never expire
+            return expiry > 0 && ((now - expiry) >= (5 * TimeUnit.SECONDS.toMillis(_gracePeriodSec)));
+        }
+        catch (NumberFormatException e)
+        {
+            LOG.warn("Not valid session filename {}", p.getFileName());
+            LOG.warn(e);
+        }
+        return false;
     }
 
     /**
@@ -242,24 +265,12 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     public void sweepFile(long now, Path p)
         throws Exception
     {
-        if (p == null)
-            return;
-
-        try
+        if (isExpired(now, p))
         {
-            long expiry = getExpiryFromFilename(p.getFileName().toString());
-            //files with 0 expiry never expire
-            if (expiry > 0 && ((now - expiry) >= (5 * TimeUnit.SECONDS.toMillis(_gracePeriodSec))))
-            {
-                Files.deleteIfExists(p);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Sweep deleted {}", p.getFileName());
-            }
-        }
-        catch (NumberFormatException e)
-        {
-            LOG.warn("Not valid session filename {}", p.getFileName());
-            LOG.warn(e);
+            if (!Files.deleteIfExists(p))
+                LOG.warn("Could not delete {}", p.getFileName());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Sweep deleted {}", p.getFileName());
         }
     }
 
@@ -365,70 +376,70 @@ public class FileSessionDataStore extends AbstractSessionDataStore
             MultiException me = new MultiException();
             long now = System.currentTimeMillis();
 
-            Files.walk(_storeDir.toPath(), 1, FileVisitOption.FOLLOW_LINKS)
-                .filter(p -> !Files.isDirectory(p)).filter(p -> isSessionFilename(p.getFileName().toString()))
-                .forEach(p ->
-                {
-                    //first get rid of all ancient files, regardless of which
-                    //context they are for
-                    try
-                    {
-                        sweepFile(now, p);
-                    }
-                    catch (Exception x)
-                    {
-                        me.add(x);
-                    }
 
-                    String filename = p.getFileName().toString();
-                    String context = getContextFromFilename(filename);
-                    //now process it if it wasn't deleted, and it is for our context
-                    if (Files.exists(p) && _contextString.equals(context))
+            // first get rid of all ancient files, regardless of which
+            // context they are for. Don't do in the following sweep to avoid
+            // deleting whilst walking.
+            sweepDisk();
+
+            // Build session file map by walking directory
+            try (Stream<Path> stream = Files.walk(_storeDir.toPath(), 1, FileVisitOption.FOLLOW_LINKS))
+            {
+                stream
+                    .filter(p -> !Files.isDirectory(p))
+                    .filter(p -> isSessionFilename(p.getFileName().toString()))
+                    .forEach(p ->
                     {
-                        //the session is for our context, populate the map with it
-                        String sessionIdWithContext = getIdWithContextFromFilename(filename);
-                        if (sessionIdWithContext != null)
+                        String filename = p.getFileName().toString();
+                        String context = getContextFromFilename(filename);
+                        //now process it if it wasn't deleted, and it is for our context
+                        if (Files.exists(p) && _contextString.equals(context))
                         {
-                            //handle multiple session files existing for the same session: remove all
-                            //but the file with the most recent expiry time
-                            String existing = _sessionFileMap.putIfAbsent(sessionIdWithContext, filename);
-                            if (existing != null)
+                            //the session is for our context, populate the map with it
+                            String sessionIdWithContext = getIdWithContextFromFilename(filename);
+                            if (sessionIdWithContext != null)
                             {
-                                //if there was a prior filename, work out which has the most
-                                //recent modify time
-                                try
+                                //handle multiple session files existing for the same session: remove all
+                                //but the file with the most recent expiry time
+                                String existing = _sessionFileMap.putIfAbsent(sessionIdWithContext, filename);
+                                if (existing != null)
                                 {
-                                    long existingExpiry = getExpiryFromFilename(existing);
-                                    long thisExpiry = getExpiryFromFilename(filename);
+                                    //if there was a prior filename, work out which has the most
+                                    //recent modify time
+                                    try
+                                    {
+                                        long existingExpiry = getExpiryFromFilename(existing);
+                                        long thisExpiry = getExpiryFromFilename(filename);
 
-                                    if (thisExpiry > existingExpiry)
-                                    {
-                                        //replace with more recent file
-                                        Path existingPath = _storeDir.toPath().resolve(existing);
-                                        //update the file we're keeping
-                                        _sessionFileMap.put(sessionIdWithContext, filename);
-                                        //delete the old file
-                                        Files.delete(existingPath);
-                                        if (LOG.isDebugEnabled())
-                                            LOG.debug("Replaced {} with {}", existing, filename);
+                                        if (thisExpiry > existingExpiry)
+                                        {
+                                            //replace with more recent file
+                                            Path existingPath = _storeDir.toPath().resolve(existing);
+                                            //update the file we're keeping
+                                            _sessionFileMap.put(sessionIdWithContext, filename);
+                                            //delete the old file
+                                            Files.delete(existingPath);
+                                            if (LOG.isDebugEnabled())
+                                                LOG.debug("Replaced {} with {}", existing, filename);
+                                        }
+                                        else
+                                        {
+                                            //we found an older file, delete it
+                                            Files.delete(p);
+                                            if (LOG.isDebugEnabled())
+                                                LOG.debug("Deleted expired session file {}", filename);
+                                        }
                                     }
-                                    else
+                                    catch (IOException e)
                                     {
-                                        //we found an older file, delete it
-                                        Files.delete(p);
-                                        if (LOG.isDebugEnabled())
-                                            LOG.debug("Deleted expired session file {}", filename);
+                                        me.add(e);
                                     }
-                                }
-                                catch (IOException e)
-                                {
-                                    me.add(e);
                                 }
                             }
                         }
-                    }
-                });
-            me.ifExceptionThrow();
+                    });
+                me.ifExceptionThrow();
+            }
         }
     }
 
