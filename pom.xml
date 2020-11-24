@@ -27,8 +27,8 @@
     <servlet.api.version>5.0.1</servlet.api.version>
     <!-- change version in jetty-websocket/websocket-jakarta-server/src/main/config/modules/websocket-jakarta.mod -->
     <websocket.api.version>2.0.0</websocket.api.version>
-    <jsp.version>10.0.0-1-M7</jsp.version>
-    <jsp.api.version>5.0</jsp.api.version>
+    <jsp.version>10.0.0-M10</jsp.version>
+    <jsp.api.version>3.0</jsp.api.version>
     <annotation-api.version>2.0.0</annotation-api.version>
     <transaction-api.version>2.0.0-RC1</transaction-api.version>
     <mail-api.version>2.0.0-RC6</mail-api.version>
