@@ -130,7 +130,7 @@
     <dependency>
       <groupId>org.eclipse.platform</groupId>
       <artifactId>org.eclipse.osgi.util</artifactId>
-      <version>3.5.300</version>
+      <version>${osgi-util-version}</version>
       <scope>test</scope>
     </dependency>
 
