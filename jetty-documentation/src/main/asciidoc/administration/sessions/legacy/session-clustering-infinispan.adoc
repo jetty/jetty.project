@@ -47,10 +47,10 @@ To do that, you can use `--skip-file-validation=infinispan` argument to start.ja
 
 You will also find the following properties, either in your base's `start.d/infinispan.ini` file or appended to your `start.ini`, depending on how you enabled the module:
 
-....
+----
 ## Unique identifier for this node in the cluster
 jetty.infinispanSession.workerName=node1
-....
+----
 
 jetty.infinispanSession.workerName::
   The name that uniquely identifies this node in the cluster.
@@ -65,7 +65,7 @@ The Infinispan module will have installed file called `$\{jetty.home}/etc/jetty-
 This file configures an instance of the `InfinispanSessionIdManager` that will be shared across all webapps deployed on that server.
 It looks like this:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 include::{SRCDIR}/jetty-infinispan/src/main/config/etc/jetty-infinispan.xml[]
 ----
@@ -91,7 +91,7 @@ The basic difference is how you get a reference to the Jetty `org.eclipse.jetty.
 
 From a context xml file, you reference the Server instance as a Ref:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <!-- Expose the jetty infinispan classes for session serialization -->
   <Get name="serverClasspathPattern">
@@ -132,7 +132,7 @@ From a context xml file, you reference the Server instance as a Ref:
 
 From a `WEB-INF/jetty-web.xml` file, you can reference the Server instance directly:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <!-- Expose the jetty infinispan classes for session serialization -->
 <Get name="serverClasspathPattern">
@@ -187,6 +187,6 @@ To do this, firstly ensure that you have included the lines containing the `getS
 Then, create the file `${jetty.base}/resources/hotrod-client.properties`.
 Add the following line to this file:
 
-....
+----
 infinispan.client.hotrod.marshaller=org.eclipse.jetty.session.infinispan.WebAppMarshaller
-....
+----

@@ -25,12 +25,11 @@ The requirements for running HTTP/2 are JDK 8 or greater, and typically also ALP
 
 A server deployed over TLS (SSL) normally advertises the HTTP/2 protocol via the TLS extension Application Layer Protocol Negotiation link:#alpn[(ALPN)].
 
-____
 [NOTE]
+====
 To use HTTP/2 in Jetty via a TLS connector you need to add the link:#alpn-starting[ALPN boot jar] in the boot classpath.
 This is done automatically when using the Jetty distribution's start.jar link:#startup-modules[module system], but must be configured directly otherwise.
-____
-
+====
 [[http2-security-update]]
 ==== Jetty HTTP/2 Security Update
 

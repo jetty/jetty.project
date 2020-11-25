@@ -26,7 +26,7 @@ If you wish to change any of the default values, you need to enable the `session
 
 Once the `session-cache-hash` module has been enabled, you can view a list of all the configurable values by opening `start.d/session-cache-hash.ini`:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 --module=session-cache-hash
 
@@ -47,11 +47,10 @@ Values are:
 *  0 : sessions are evicted from the cache as soon as the last active request for it finishes
 *  >= 1 : any positive number is the time in seconds after which a session that is in the cache but has not experienced any activity will be evicted
 
-____
 [NOTE]
+====
 If you are not using a `SessionDataStore` that persists sessions, be aware that evicted sessions will be lost.
-____
-
+====
 jetty.session.saveOnInactiveEvict::
 Boolean, default `false`.
 Controls whether a session will be saved to the `SessionDataStore` just prior to its eviction.

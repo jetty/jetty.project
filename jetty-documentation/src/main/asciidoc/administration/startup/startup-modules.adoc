@@ -25,12 +25,11 @@ Modules allow flexibility for implementations and their plug-and-play nature mak
 
 [[enabling-modules]]
 ==== Enabling Modules
-____
 [TIP]
+====
 The default distribution has a co-mingled `${jetty.home}` and `${jetty.base}` where the directories for `${jetty.home}` and `${jetty.base}` point to the same location.
 It is highly encouraged that you learn about the differences in link:#startup-base-and-home[Jetty Base vs Jetty Home] and take full advantage of this setup.
-____
-
+====
 Enabling a module is a simple process: simply add the `--add-to-start=<module-name1>,<module-name2>,...etc.` syntax on the command line.
 Doing this will enable the specified module and any dependent modules.
 
@@ -70,8 +69,8 @@ As an alternative to a single `start.ini` file you can opt to house modules in a
 Modules activated when a `start.d` directory exists will be stored as a single file per module.
 Below is an example of a fresh `${jetty.base}` that will create a `start.d` directory and activate several modules.
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [jetty.home]$ mkdir mybase
 [jetty.home]$ cd mybase/
 [mybase]$ java -jar ../start.jar --create-startd
@@ -97,7 +96,7 @@ drwxr-xr-x  3 staff  staff   102 Aug 29 15:16 ..
 -rw-r--r--  1 staff  staff  2250 Aug 29 15:19 server.ini
 -rw-r--r--  1 staff  staff   265 Aug 29 15:19 webapp.ini
 -rw-r--r--  1 staff  staff   177 Aug 29 15:19 websocket.ini
-....
+----
 
 In the example, we first create a new `${jetty.base}` and then create the `start.d` directory with the `--create-startd` command.
 Next, we use the `--add-to-start` command which activates the modules and creates their respective ini files in the `start.d` directory.
@@ -106,8 +105,8 @@ If you have an existing `start.ini` file but would like to use the `start.d` str
 Doing this will create the `start.d` directory and copy your existing `start.ini` file in to it.
 Any new modules added to the server will have their own `<module name>.ini` file created in the `start.d` directory.
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [mybase]$ java -jar ../start.jar --add-to-start=server,client,webapp,websocket
 INFO : webapp          initialised in ${jetty.base}/start.ini
 INFO : server          initialised in ${jetty.base}/start.ini
@@ -132,7 +131,7 @@ INFO : Base directory was modified
 └── start.d
     ├── ssl.ini
     └── start.ini
-....
+----
 
 [NOTE]
 --
@@ -148,22 +147,21 @@ This is done by editing the associated ini file for the module.
 If your server setup is using a centralized ini configuration, you will edit the `${jetty.base}/server.ini` file.
 If you have elected to manage each module within it's own ini file, you can find these files in the `${jetty.base}/start.d` directory.
 
-____
 [IMPORTANT]
+====
 It is important that you *do not* modify the module files in the `$JETTY_HOME/modules` directory.
 $JETTY_HOME should always remain a standard of truth.
 If you want to make a change to an actual module file (not the values in its `ini-template`), either edit its associated `ini` file in the `$JETTY_BASE/start.d` directory or make a copy of the desired module file and copy it to the `$JETTY_BASE` directory and edit it there.
 The start.jar reads local `$JETTY_BASE/modules` files (if they exist) before scanning `$JETTY_HOME`.
-____
-
+====
 When a module is activated, a number of properties are set by default.
 To view these defaults, open up the associated ini file.
 Listed in the ini file is the associated module file and any properties that can be set.
 
 Below is an example of the `requestlog.ini` file:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 # ---------------------------------------
 # Module: requestlog
 --module=requestlog
@@ -194,7 +192,7 @@ Below is an example of the `requestlog.ini` file:
 
 ## Whether to log LogLatency
 # jetty.requestlog.loglatency=false
-....
+----
 
 The first lines name the module file being called (located in `{$jetty.home/modules}`).
 Subsequent lines list properties that can be changed as well as a description for each property.
@@ -215,12 +213,11 @@ This command will also show you which modules are __enabled__.
 Modules are sorted by the value in the `[tags]` section of the associated `.mod` file.
 If there are multiple entries in the `[tags]` section, it sorts by the first tag in the list.
 
-____
 [NOTE]
+====
 By default, the `--list-modules` command line argument shows all modules that do not include `internal` in the `[tags]` section of the associated `.mod` file.
 If you would like to see *all* modules, use `--list-all-modules`
-____
-
+====
 Here's an example of the `--list-modules` command:
 
 include::screen-list-modules.adoc[]

@@ -74,7 +74,7 @@ The following sections provide examples of how to apply the init parameters.
 
 You can set these parameters as context parameters in a web application's `WEB-INF/web.xml` file:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 
 <?xml version="1.0" encoding="UTF-8"?>
@@ -103,7 +103,7 @@ You can set these parameters as context parameters in a web application's `WEB-I
 
 You can configure init parameters on a web application, either in code, or in a Jetty context xml file equivalent:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
@@ -130,7 +130,7 @@ You can configure init parameters on a web application, either in code, or in a 
 
 You can configure init parameters directly on a `SessionManager` instance, either in code or the equivalent in xml:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
@@ -165,7 +165,7 @@ For full details, consult the http://docs.oracle.com/javaee/6/api/javax/servlet/
 
 Below is an example of this implementation: a `ServletContextListener` retrieves the `SessionCookieConfig` and sets up some new values when the context is being initialized:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.ServletContextEvent;
@@ -205,7 +205,7 @@ public class TestListener implements ServletContextListener
 
 You can also use `web.xml` to configure the session handling characteristics instead: here's an example doing exactly the same as above instead of using code:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app
@@ -236,7 +236,7 @@ In addition to the configuration of link:#session-cookie-configuration[session c
 
 To determine what are the _default_ session tracking characteristics used by the container, call:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 javax.servlet.SessionContext.getDefaultSessionTrackingModes();
 ----
@@ -249,21 +249,21 @@ _default_ session tracking modes for Jetty are:
 
 To see which session tracking modes are actually in effect for this Context, the following call returns a `java.util.Set` of `javax.servlet.SessionTrackingMode`:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 javax.servlet.SessionContext.getEffectiveSessionTrackingModes();
 ----
 
 To change the session tracking modes, call:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 javax.servlet.SessionContext.setSessionTrackingModes(Set<SessionTrackingMode>);
 ----
 
 You may also set the tracking mode in `web.xml`, e.g.:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app

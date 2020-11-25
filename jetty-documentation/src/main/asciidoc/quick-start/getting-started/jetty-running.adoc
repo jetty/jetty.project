@@ -25,7 +25,7 @@ Jetty has no GUI (Graphical User Interface), so running the server and performin
 Once you have access to your system's command line, navigate to the directory where you unpacked your copy of the Jetty distribution.
 To start Jetty on the default port of 8080, run the following command:
 
-[source,screen,subs="{sub-order}"]
+[source,screen]
 ----
 $ java -jar start.jar
 2017-09-20 15:45:11.986:INFO::main: Logging initialized @683ms to org.eclipse.jetty.util.log.StdErrLog
@@ -43,14 +43,13 @@ To stop the server, press `CTRL` + `c` or `CTRL` + `z` in your terminal.
 *Note* the `HomeBaseWarning` - it is *not* recommended to run Jetty from the `$JETTY_HOME` directory.
 Instead, see how to link:#creating-jetty-base[create a Jetty Base] below.
 
-____
 [NOTE]
+====
 You will see examples throughout the documentation referencing `$JETTY_HOME` and `$JETTY_BASE` as well as `{jetty.home}` and `{jetty.base}`.
 These terms are used to refer to the location of your Jetty installation directories.
 Many users find it helpful to define `$JETTY_HOME` as an environment variable that maps to their Jetty distribution directory.
 More information can be found in our Administration section on link:#startup-base-and-home[managing Jetty Home and Jetty Base.]
-____
-
+====
 [[demo-webapps-base]]
 ==== Demo Base
 
@@ -58,7 +57,7 @@ Within the standard Jetty distribution there is the `demo-base` directory.
 This is a fully-functioning Jetty Base (more on that later) complete with numerous web applications demonstrating different Jetty functionality.
 Additionally, the `demo-base` demonstrates the recommended way to run a Jetty base in a directory separate from `$JETTY_HOME`:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 $ cd demo-base/
 $ java -jar ../start.jar
@@ -103,14 +102,13 @@ $ java -jar ../start.jar
 
 You can visit this demo server by pointing a browser at link:http://localhost:8080[], which will now show a welcome page and several demo/test web applications.
 
-____
 [WARNING]
+====
 The demonstration web applications are not necessarily secure and should *not* be deployed in production web servers.
-____
-
+====
 You can see the configuration of the `demo-base` by using the following commands:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 > cd $JETTY_HOME/demo-base/
 > java -jar $JETTY_HOME/start.jar --list-modules

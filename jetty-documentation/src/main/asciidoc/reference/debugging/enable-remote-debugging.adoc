@@ -26,11 +26,10 @@ If you have a web application deployed into Jetty you can interact with it remot
 The basics are that you must start up the remote JVM with additional parameters and then start up a remote debugging session in Eclipse for the webapp in question.
 This is easily accomplished.
 
-____
 [NOTE]
+====
 This example assumes you are deploying your web application into the jetty-distribution.
-____
-
+====
 ===== Starting Jetty
 
 Assuming you have your webapp deployed into jetty, there are two different ways to approach this:
@@ -38,13 +37,13 @@ Assuming you have your webapp deployed into jetty, there are two different ways 
 Via command line::
   Add the required parameters on the commandline like so.
 +
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
                             
 $ java -Xdebug -agentlib:jdwp=transport=dt_socket,address=9999,server=y,suspend=n -jar start.jar
 
                         
-....
+----
 
 Via `start.ini`::
   This approach is best used if you want to debug a particular jetty-distribution and not have to remember the commandline incantations.
@@ -52,7 +51,7 @@ Via `start.ini`::
 1.  Edit the `start.ini` and uncomment the --exec line, this is required if you are adding jvm options to the start.ini file as jetty-start must generate the classpath required and fork a new jvm.
 2.  Add the parameters mentioned above in the Command Line option so your start.ini looks like this:
 +
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 #===========================================================
 # Configure JVM arguments.
@@ -86,7 +85,7 @@ Uncomment any other jvm environmental options you so desire for your debugging s
 
 3.  Regardless of the option chosen, you should see the following lines at the top of your jetty-distribution startup.
 +
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 Listening for transport dt_socket at address: 9999
 

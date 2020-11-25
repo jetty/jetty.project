@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.ZipFile;
 
 import org.eclipse.jetty.toolchain.test.FS;
@@ -264,7 +265,10 @@ public class JarResourceTest
 
     private List<Path> listFiles(Path dir) throws IOException
     {
-        return Files.list(dir).collect(Collectors.toList());
+        try (Stream<Path> s = Files.list(dir))
+        {
+            return s.collect(Collectors.toList());
+        }
     }
 
     private List<Path> listFiles(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException

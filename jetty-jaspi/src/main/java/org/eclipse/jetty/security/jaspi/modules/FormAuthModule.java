@@ -35,6 +35,7 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.security.authentication.LoginCallbackImpl;
 import org.eclipse.jetty.security.authentication.SessionAuthentication;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -132,7 +133,6 @@ public class FormAuthModule extends BaseAuthModule
     @Override
     public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject, Subject serviceSubject) throws AuthException
     {
-
         HttpServletRequest request = (HttpServletRequest)messageInfo.getRequestMessage();
         HttpServletResponse response = (HttpServletResponse)messageInfo.getResponseMessage();
         String uri = request.getRequestURI();
@@ -173,7 +173,7 @@ public class FormAuthModule extends BaseAuthModule
                     }
 
                     response.setContentLength(0);
-                    response.sendRedirect(response.encodeRedirectURL(nuri));
+                    Request.getBaseRequest(request).getResponse().sendRedirect(HttpServletResponse.SC_MOVED_TEMPORARILY, nuri, true);
                     return AuthStatus.SEND_CONTINUE;
                 }
                 // not authenticated
@@ -187,7 +187,8 @@ public class FormAuthModule extends BaseAuthModule
                 else
                 {
                     response.setContentLength(0);
-                    response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(), _formErrorPage)));
+                    Request.getBaseRequest(request).getResponse().sendRedirect(HttpServletResponse.SC_MOVED_TEMPORARILY,
+                        response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(), _formErrorPage)), true);
                 }
                 // TODO is this correct response if isMandatory false??? Can
                 // that occur?
@@ -229,14 +230,13 @@ public class FormAuthModule extends BaseAuthModule
             }
 
             response.setContentLength(0);
-            response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(), _formLoginPage)));
+            Request.getBaseRequest(request).getResponse().sendRedirect(
+                HttpServletResponse.SC_MOVED_TEMPORARILY,
+                response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(), _formLoginPage)),
+                true);
             return AuthStatus.SEND_CONTINUE;
         }
-        catch (IOException e)
-        {
-            throw new AuthException(e.getMessage());
-        }
-        catch (UnsupportedCallbackException e)
+        catch (IOException | UnsupportedCallbackException e)
         {
             throw new AuthException(e.getMessage());
         }

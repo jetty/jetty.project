@@ -79,7 +79,7 @@ The Server MBean has a `dump()` method, which dumps everything, plus a `dumpStdE
 
 This is a dump of the OneServletContext embedded example with extra threadpool information:
 
-....
+----
 Server@59906517{STARTED}[9.4.32-SNAPSHOT] - STARTED
 += QueuedThreadPool[qtp488044861]@1d16f93d{STARTED,8<=8<=200,i=2,r=4,q=0}[ReservedThreadExecutor@16267862{s=2/4,p=0}] - STARTED
 |  += ReservedThreadExecutor@16267862{s=2/4,p=0} - STARTED
@@ -221,4 +221,4 @@ Server@59906517{STARTED}[9.4.32-SNAPSHOT] - STARTED
 +> jdk.internal.loader.ClassLoaders$AppClassLoader@2c13da15
    +> jdk.internal.loader.ClassLoaders$PlatformClassLoader@7364985f
 key: +- bean, += managed, +~ unmanaged, +? auto, +: iterable, +] array, +@ map, +> undefined
-....
+----

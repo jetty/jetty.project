@@ -22,7 +22,7 @@
 To serve purely static content, the Jetty Deployment Descriptor XML concepts and the internal `ResourceHandler` can be used.
 Create a file called `scratch.xml` in the `${jetty.base}/webapps` directory and paste the following file contents in it.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">

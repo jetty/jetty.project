@@ -641,7 +641,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         if (dataConstraint == null || dataConstraint == UserDataConstraint.None)
             return true;
 
-        HttpConfiguration httpConfig = Request.getBaseRequest(request).getHttpChannel().getHttpConfiguration();
+        Request baseRequest = Request.getBaseRequest(request);
+        HttpConfiguration httpConfig = baseRequest.getHttpChannel().getHttpConfiguration();
 
         if (dataConstraint == UserDataConstraint.Confidential || dataConstraint == UserDataConstraint.Integral)
         {
@@ -655,7 +656,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
 
                 String url = URIUtil.newURI(scheme, request.getServerName(), port, request.getRequestURI(), request.getQueryString());
                 response.setContentLength(0);
-                response.sendRedirect(url);
+                response.sendRedirect(url, true);
             }
             else
                 response.sendError(HttpStatus.FORBIDDEN_403, "!Secure");

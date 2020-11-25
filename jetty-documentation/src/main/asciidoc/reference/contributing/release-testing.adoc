@@ -23,23 +23,23 @@ To test a Jetty release, complete the following steps for each release you want 
 
 1.  Download the staged release:
 +
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 
  wget https://oss.sonatype.org/content/repositories/jetty-[reponumber]/org/eclipse/jetty/jetty-distribution/[jetty-version]/jetty-distribution-9.[jetty-minor-version].tar.gz
 
       
-....
+----
 2.  Extract to a directory of your choice.
 3.  Start jetty:
 +
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 
  cd [installdir] ; java -jar start.jar
  
       
-....
+----
 4.  If there are no exceptions, proceed. Otherwise, investigate.
 5.  Open http://localhost:8080/ in a browser. In the examples section click "Test Jetty Webapp". You should see the `test.war` webapp.
 6.  Go through ALL the tests and verify that everything works as expected.
@@ -48,35 +48,35 @@ To test a Jetty release, complete the following steps for each release you want 
 9.  In the examples section click "Servlet 3.1 Test" and verify that everything works as expected.
 10. Verify that hot deployment works.
 +
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 
  cd [installdir] ;
  touch [pathToJettyDistribution]/webapps.demo/test.xml
  
       
-....
+----
 11. Verify that `test.war` gets redeployed in `STDOUT`.
 12. Verify that the spdy example webapp and spdy-proxy do work
 +
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 
  cd jetty_src/jetty-spdy/spdy-example-webapp
  mvn jetty:run-forked
  
       
-....
+----
 13. Browse to https://localhost:8443 and verify that all looks ok
 14. Stop the server with CTRL+C and restart it in proxy mode:
 +
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 
  mvn -Pproxy jetty:run-forked
  
       
-....
+----
 15. Browse to http://localhost:8080 and https://localhost:8443 and verify that all looks ok
 
 [[testing-cometd]]
@@ -84,17 +84,17 @@ To test a Jetty release, complete the following steps for each release you want 
 
 1.  Clone CometD.
 +
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 
  clone git://github.com/cometd/cometd.git
  git clone git://github.com/cometd/cometd.git
  
         
-....
+----
 2.  Edit `pom.xml` and update `jetty-version.`
 +
-....
+----
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -111,16 +111,16 @@ To test a Jetty release, complete the following steps for each release you want 
   </repositories>
  
         
-....
+----
 3.  Build Cometd:
 +
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 
  mvn clean install
   
         
-....
+----
 4.  Be patient.
 5.  Run the loadtest as it is described here: http://cometd.org/documentation/2.x/howtos/loadtesting.
 Keep the default values, but make sure that you raise the clients setting to 1000.
@@ -128,8 +128,8 @@ Run the loadtest until ''JIT compilation time'' is close to a value of zero (abo
 6.  Make sure that the performance results are reasonably fast.
 On a MacBook Pro i7 2.6ghz dualcore produces the following:
 +
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 
  ========================================
 Statistics Started at Fri Mar 09 13:44:35 CET 2012
@@ -199,32 +199,32 @@ Messages - Network Latency Min/Ave/Max = 1/114/417 ms
 Thread Pool - Concurrent Threads max = 239 | Queue Size max = 1002 | Queue Latency avg/max = 12/101 ms
 
         
-....
+----
 7.  Deploy `cometd.war` to the `webapps` directory of the jetty-distribution tested above.
 +
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 
  cp cometd-demo/target/cometd-demo-[version].war [pathToJetty]/jetty-distribution-[jetty-version]/webapps/
  
         
-....
+----
 8.  Start jetty and make sure there are no exceptions.
 +
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 
  cd [pathToJetty] && java -jar start.jar
  
         
-....
+----
 9.  Go through all pages of the demo and test them:
 +
-....
+----
 
  http://localhost:8080/cometd-demo-2.4.1-SNAPSHOT/
 
         
-....
+----
 
 If all tests are green, you are done!

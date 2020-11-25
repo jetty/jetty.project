@@ -21,12 +21,12 @@
 
 The most basic way of starting the Jetty standalone server is to execute the `start.jar`, which is a bootstrap for starting Jetty with the configuration you want.
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [jetty-distribution-{VERSION}]$ java -jar start.jar
 2013-09-23 11:27:06.654:INFO:oejs.Server:main: jetty-{VERSION}
 ...
-....
+----
 
 Jetty is a highly modularized web server container.
 Very little is mandatory and required, and most components are optional; you enable or disable them according to the needs of your environment.
@@ -90,10 +90,10 @@ Lists the resolved configuration that will start Jetty.
 * Server XML configuration files
 --dry-run::
 Print the command line that the start.jar generates, then exit. This may be used to generate command lines when the start.ini includes -X or -D arguments:
-....
+----
 $ java -jar start.jar --dry-run > jetty.sh
 $ . jetty.sh
-....
+----
 --dry-run=<parts>::
 Print specific parts of the command line. The parts are a comma separated list of:
 
@@ -104,17 +104,17 @@ Print specific parts of the command line. The parts are a comma separated list o
  * "args" - the arguments passed to the main class
 
 It is possible to decompose the start command:
-....
+----
 $ OPTS=$(java -jar start.jar --dry-run=opts,path)
 $ MAIN=$(java -jar start.jar --dry-run=main)
 $ ARGS=$(java -jar start.jar --dry-run=args)
 $ java $OPTS -Dextra=opt $MAIN $ARGS extra=arg
-....
+----
 Alternatively to create an args file for java:
-....
+----
 $ java -jar start.jar --dry-run=opts,path,main,args > /tmp/args
 $ java @/tmp/args
-....
+----
 --exec::
 Forces the start to use a forked instance of java to run Jetty.
 Some modules include `--exec` in order to set java command line options.
@@ -163,25 +163,25 @@ Note: Transitive modules are also appended.
 If a module contains an .ini template with properties, you can also edit these properties when activating the module.
 To do this, simply list the property and its value after the `-add-to-start` command, such as in the following example:
 +
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 $ java -jar start.jar --add-to-start=http jetty.http.port=8379 jetty.http.host=1.2.3.4
-....
+----
 +
 Doing this will uncomment the property in the associated .ini file and set it to the value specified.
 --update-ini::
 Used to update a specified property or properties that exist in an existing .ini file.
 Jetty scans the command line, `${jetty.base}` and `${jetty.home}` for .ini files that have the specified property and update it accordingly.
 +
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 $ java -jar ../start.jar --update-ini jetty.http.port=8417
 ConfigSource <command-line>
 ConfigSource ${jetty.base}
 INFO  : http            property updated jetty.http.port=8417
 INFO  : http            updated ${jetty.base}/start.d/http.ini
 ConfigSource ${jetty.home}
-....
+----
 +
 --create-startd::
 Creates a `${jetty.base}/start.d/` directory.
@@ -197,16 +197,16 @@ Please see link:#start-vs-startd[Start.ini vs. Start.d] for more information.
 --write-module-graph=<filename>::
 Advanced feature: Creates a graphviz http://graphviz.org/content/dot-language[dot file] of the module graph as it exists for the active `${jetty.base}`.
 +
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 # generate module.dot
 $ java -jar start.jar --module=websocket --write-module-graph=modules.dot
 
 # post process to a PNG file
 $ dot -Tpng -o modules.png modules.dot
-....
+----
 +
-See http://graphviz.org/[graphviz.org] for details on http://graphviz.org/content/command-line-invocation[how to post-process this dotty file] into the output best suited for your needs.
+See http://graphviz.org/[graphviz.org] for details on how to post-process this dotty file into the output best suited for your needs.
 
 --create-files::
 Create any missing files that are required by initialized modules.
@@ -216,11 +216,10 @@ This may download a file from the network if the module provides a URL.
 Disable the [files] section validation of content in the `${jetty.base}` directory for a specific module.
 Useful for modules that have downloadable content that is being overridden with alternatives in the `${jetty.base}`` directory.
 
-____
 [CAUTION]
+====
 This advanced option is for administrators that fully understand the configuration of their `${jetty.base}` and are willing to forego some of the safety checks built into the jetty-start mechanism.
-____
-
+====
 --approve-all-licenses::
 Approve all license questions.
 Useful for enabling modules from a script that does not require user interaction.
@@ -252,25 +251,24 @@ You can configure a port number for Jetty to listen on for a stop command, so yo
 This requires the use of a "secret" key, to prevent malicious or accidental termination.
 Use the `STOP.PORT` and `STOP.KEY` (or `-DSTOP.PORT=` and `-DSTOP.KEY=`, respectively, which will set these as system parameters) parameters as arguments to the `start.jar`:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > java -jar ${JETTY_HOME}/start.jar STOP.PORT=1234 STOP.KEY=secretpassword
-....
+----
 
 Then, to stop Jetty from a different terminal, you need to supply this port and key information.
 You can either use a copy of the Jetty distribution, the link:#jetty-maven-plugin[jetty-maven-plugin], the link:#jetty-ant[jetty-ant plugin], or a custom class to accomplish this.
 Here's how to use the Jetty distribution, leveraging `start.jar`, to perform a stop:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > java -jar start.jar STOP.PORT=8181 STOP.KEY=abc123 --stop
-....
+----
 
-____
 [NOTE]
+====
 To perform a graceful shutdown of Jetty, the `stats` link:#startup-modules[module] *must* be enabled.
-____
-
+====
 ===== Advanced Commands
 
 --lib=<classpath>::
@@ -293,34 +291,34 @@ Default is https://repo1.maven.org/maven2/.
 ==== Shaded Start.jar
 
 If you have a need for a shaded version of `start.jar` (such as for Gradle), you can achieve this via a Maven dependency.
-[source, xml, subs="{sub-order}"]
-....
+[source, xml]
+----
 <dependency>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-start</artifactId>
     <version>{VERSION}</version>
     <classifier>shaded</classifier>
 </dependency>
-....
+----
 
 ==== Start.jar without exec or forking.
 
 Some Jetty modules include the `--exec` option so that java command line options can be set.
 Also some `start.jar` options (eg. `--jpms`) include an implicit `--exec`.
 To start jetty without forking a new JVM instance from the start JVM, the `--dry-run` option can be used to generate a command line:
-....
+----
 $ CMD=$(java -jar start.jar --dry-run)
 $ $CMD
-....
+----
 It is possible to decompose the start command so that it can be modified:
-....
+----
 $ OPTS=$(java -jar start.jar --dry-run=opts,path)
 $ MAIN=$(java -jar start.jar --dry-run=main)
 $ ARGS=$(java -jar start.jar --dry-run=args)
 $ java $OPTS -Dextra=opt $MAIN $ARGS extra=arg
-....
+----
 Alternatively to create an args file for java:
-....
+----
 $ java -jar start.jar --dry-run=opts,path,main,args > /tmp/args
 $ java @/tmp/args
-....
+----

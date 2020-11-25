@@ -24,12 +24,11 @@ It routes all logging events from the web applications to a single configuration
 
 The example below shows how to accomplish this with Jetty and Slf4j, using `Logback` to manage the final writing of logs to disk.
 
-____
 [IMPORTANT]
+====
 This mechanism forces all webapps to use the server's configuration for logging, something that isn't 100% appropriate for all webapps.
 An example would be having Jenkins-CI deployed as an webapp, if you force its logging configuration to the server side, you lose the ability on http://jenkins-ci.org/[Jenkins-CI] to see the logs from the various builds (as now those logs are actually going to the main server log).
-____
-
+====
 This configuration is essentially the multiple logger configuration with added configuration to the deployers to force a `WebAppClassLoader` change to use the server classpath over the webapps classpath for the logger specific classes.
 
 The technique used by this configuration is to provide an link:{JDURL}org/eclipse/jetty/deploy/AppLifeCycle.Binding.html[AppLifeCycle.Binding] against the link:{JDURL}/org/eclipse/jetty/deploy/AppLifeCycle.html[`"deploying"`node] that modifies the
@@ -38,8 +37,8 @@ See https://github.com/jetty-project/jetty-webapp-logging/blob/master/jetty-weba
 
 A convenient replacement `logging` module has been created to bootstrap your `${jetty.base}` directory for capturing all Jetty server logging from multiple logging frameworks into a single logging output file managed by Logback.
 
-[source,screen,subs="{sub-order}"]
-....
+[source,screen,]
+----
 [mybase]$ curl -O https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-webapp-logging/9.4.27/jetty-webapp-logging-9.4.27-config.jar
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
@@ -114,7 +113,7 @@ DOWNLD: https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-webapp-logging/9.
 INFO  : Base directory was modified
 
 $
-....
+----
 
 This replacement `centralized-webapp-logging.mod` performs a number of tasks.
 

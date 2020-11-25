@@ -98,13 +98,11 @@ This module is equivalent to directly modifying the class path configuration wit
 </Configure>
 -------------------------------------------------------------
 
-____
 [TIP]
+====
 The `cdi2` module or directly modifying the web application classpath will not work for Jetty 10.0.0 and later.
 It should only be used for versions prior to Jetty 9.4.20 and/or Weld 3.1.2.Final
-____
-
-
+====
 [[cdi-embedded]]
 ==== Embedded Jetty with CDI
 When starting embedded Jetty programmatically from the `main` method, to use CDI it may be

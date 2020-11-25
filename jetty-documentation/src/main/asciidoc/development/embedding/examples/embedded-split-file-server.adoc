@@ -21,7 +21,7 @@
 
 This example builds on the link:#emebedded-file-server[Simple File Server] to show how chaining multiple `ResourceHandlers` together can let you aggregate multiple directories to serve content on a single path and how you can link these together with `ContextHandlers`.
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/SplitFileServer.java[]
       
@@ -38,7 +38,7 @@ Any requests for files will be looked for in the first resource handler, then th
 To use this example as is in your project you will need the following maven dependencies declared.
 We would recommend not using the toolchain dependency in your actual application.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 
 <dependency>  

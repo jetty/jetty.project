@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
@@ -1837,9 +1838,9 @@ public class RequestTest
 
     private static long getFileCount(Path path)
     {
-        try
+        try (Stream<Path> s = Files.list(path))
         {
-            return Files.list(path).count();
+            return s.count();
         }
         catch (IOException e)
         {

@@ -31,7 +31,7 @@ A `SessionManager` does just what its name suggests – it manages the lifecycle
 Each webapp must have its own unique `SessionManager` instance. 
 Enabling persistence is as simple as configuring the `HashSessionManager` as the `SessionManager` for a webapp and telling it where on disk to store the sessions:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
@@ -75,7 +75,7 @@ For example, the Wicket web framework requires the servlet environment to be ava
 Using `SessionManager.setLazyLoad(true)`, Jetty loads sessions lazily either when it receives the first request for a session, or the session scavenger runs for the first time, whichever happens first. 
 Here's how the configuration looks in XML:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Set name="sessionHandler">
   <New class="org.eclipse.jetty.server.session.SessionHandler">
@@ -93,7 +93,7 @@ Here's how the configuration looks in XML:
 
 To enable session persistence for the Jetty Maven plugin, set up the `HashSessionManager` in the configuration section like so:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <plugin>
   <groupId>org.eclipse.jetty</groupId>

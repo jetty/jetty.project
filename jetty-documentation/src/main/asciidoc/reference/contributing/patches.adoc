@@ -47,12 +47,11 @@ The Eclipse Foundation has a strong Intellectual Property policy which tracks co
 A contributor needs to e-sign a Eclipse Contributor Agreement (for more explanation see the http://www.eclipse.org/legal/ecafaq.php[Eclipse ECA FAQ] ) regardless of how their contribution patch is provided.
 You can familiarize yourself with the Eclipse wiki page at http://wiki.eclipse.org/Development_Resources/Contributing_via_Git[Contributing via Git].
 In order to have a pull request accepted by any Eclipse project you *must* complete this agreement.
-____
 [TIP]
+====
 Log into the https://www.eclipse.org[Eclipse home page] (you will need to create an account with the Eclipse Foundation if you have not already done so), click on "Eclipse ECA", and complete the form.
 Be sure to use the _same email address_ when you create any Git commit records.
-____
-
+====
 [[contributing-git-config]]
 ==== Configuring Git
 
@@ -66,12 +65,11 @@ When making the commit for the pull request it is  _vital_ that you "sign-off" o
 Without this sign-off, your patch cannot be applied to the Jetty repository because it will be rejected.
 
 You can check out the link:https://help.github.com/articles/signing-tags-using-gpg[guide at Github] for more information.
-____
 [TIP]
+====
 One way to think of this is that when you sign the ECA you are indicating that you are free to contribute to eclipse, but that doesn't mean everything you ever do can be contributed.
 Using the commit signing mechanism indicates that your commit is under the auspices of your agreement.
-____
-
+====
 If a pull request is for a particular issue in our repository then the format of the commit message is important.
 The message should follow the form "Issue #123 <description of the commit>".
 When the Jetty project runs releases we have an automated process that scans for commits with this format for inclusion in our VERSION.txt file.

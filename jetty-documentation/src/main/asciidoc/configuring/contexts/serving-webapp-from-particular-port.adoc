@@ -35,14 +35,14 @@ When creating new configurations for alternative server:
 
 * Change all `id="Server"` to the new server name:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure id="OtherServer" class="org.eclipse.jetty.server.Server">
 ----
 
 * For all connectors for the new server change the `refid` in the server argument:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Arg name="server"><Ref refid="OtherServer" /></Arg>
 ----
@@ -55,14 +55,14 @@ When creating new configurations for alternative server:
 
 The following example creates another server instance and configures it with a connector and deployer:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 include::{SRCDIR}/examples/embedded/src/main/resources/jetty-otherserver.xml[]
 ----
 
 To run the other server, add the extra configuration file(s) to the command line:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 java -jar start.jar jetty-otherserver.xml
 ----

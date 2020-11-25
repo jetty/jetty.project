@@ -18,7 +18,7 @@
     <bnd.version>5.2.0</bnd.version>
     <swissbox.version>1.8.3</swissbox.version>
     <tinybundles.version>3.0.0</tinybundles.version>
-    <injection.bundle.version>1.0</injection.bundle.version>
+    <injection.bundle.version>1.2</injection.bundle.version>
   </properties>
   <dependencies>
     <!-- Pax Exam Dependencies -->
@@ -212,7 +212,7 @@
     <dependency>
       <groupId>org.glassfish.web</groupId>
       <artifactId>javax.servlet.jsp.jstl</artifactId>
-      <version>1.2.2</version>
+      <version>1.2.5</version>
       <exclusions>
         <exclusion>
           <groupId>javax.servlet.jsp.jstl</groupId>

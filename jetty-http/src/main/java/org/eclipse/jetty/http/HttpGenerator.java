@@ -23,6 +23,8 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.ArrayTrie;
@@ -658,17 +660,23 @@ public class HttpGenerator
 
                         case CONNECTION:
                         {
-                            putTo(field, header);
+                            boolean keepAlive = field.contains(HttpHeaderValue.KEEP_ALIVE.asString());
+                            if (keepAlive && info.getHttpVersion() == HttpVersion.HTTP_1_0 && _persistent == null)
+                            {
+                                _persistent = true;
+                            }
                             if (field.contains(HttpHeaderValue.CLOSE.asString()))
                             {
                                 close = true;
                                 _persistent = false;
                             }
-
-                            if (info.getHttpVersion() == HttpVersion.HTTP_1_0 && _persistent == null && field.contains(HttpHeaderValue.KEEP_ALIVE.asString()))
+                            if (keepAlive && _persistent == Boolean.FALSE)
                             {
-                                _persistent = true;
+                                field = new HttpField(HttpHeader.CONNECTION,
+                                    Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s))
+                                        .collect(Collectors.joining(", ")));
                             }
+                            putTo(field, header);
                             break;
                         }
 
