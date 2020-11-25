@@ -239,7 +239,7 @@ The link:{GITBROWSEURL}/examples/embedded/src/main/java/org/eclipse/jetty/embedd
 * link:{GITBROWSEURL}/jetty-server/src/main/config/etc/jetty-stats.xml[jetty-stats.xml]
 * link:{GITBROWSEURL}/jetty-server/src/main/config/etc/jetty-requestlog.xml[jetty-requestlog.xml]
 * link:{GITBROWSEURL}/jetty-server/src/main/config/etc/jetty-lowresources.xml[jetty-lowresources.xml]
-* link:{GITBROWSEURL}/tests/test-webapps/test-jetty-webapp/src/main/config/etc/test-realm.xml[test-realm.xml]
+* link:{GITBROWSEURL}/tests/test-webapps/test-jetty-webapp/src/main/config/demo-base/etc/test-realm.xml[test-realm.xml]
 
 [source, java]
 ----

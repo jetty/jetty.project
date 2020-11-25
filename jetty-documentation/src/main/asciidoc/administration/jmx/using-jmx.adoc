@@ -213,7 +213,6 @@ The `JMXServiceURL` above specifies that the RMI server binds to the wildcard ad
 ===== JMX Remote Access Authorization
 
 The standard `JMXConnectorServer` provides several options to authorize access.
-For a complete guide to controlling authentication and authorization in JMX, see https://blogs.oracle.com/lmalventosa/entry/jmx_authentication_authorization[Authentication and Authorization in JMX RMI connectors].
 
 To authorize access to the `JMXConnectorServer` you can use this configuration, where the `jmx.password` and `jmx.access` files have the format specified in the blog entry above:
 

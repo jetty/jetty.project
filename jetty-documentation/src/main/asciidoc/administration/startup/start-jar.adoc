@@ -206,7 +206,7 @@ $ java -jar start.jar --module=websocket --write-module-graph=modules.dot
 $ dot -Tpng -o modules.png modules.dot
 ----
 +
-See http://graphviz.org/[graphviz.org] for details on http://graphviz.org/content/command-line-invocation[how to post-process this dotty file] into the output best suited for your needs.
+See http://graphviz.org/[graphviz.org] for details on how to post-process this dotty file into the output best suited for your needs.
 
 --create-files::
 Create any missing files that are required by initialized modules.
