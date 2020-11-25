@@ -20,12 +20,9 @@ package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -252,74 +249,5 @@ public class TrieTest
         testGetString(trie);
         testGetBestArray(trie);
         testGetBestBuffer(trie);
-    }
-
-    public static int requiredCapacity(Set<String> keys)
-    {
-        List<String> list = new ArrayList<>(keys);
-        Collections.sort(list);
-        return requiredCapacity(list, 0, list.size(), 0);
-    }
-
-    private static int requiredCapacity(List<String> keys, int offset, int length, int index)
-    {
-        if (length == 0)
-            return 0;
-
-        int required = 0;
-
-        Character c = null;
-        for (int i = 0; i < length; i++)
-        {
-            String k = keys.get(offset + i);
-            if (k.length() <= index)
-                continue;
-            char n = k.charAt(index);
-            if (c == null)
-            {
-                required++;
-                c = n;
-                offset += i;
-                length -= i;
-            }
-            else if (c != n)
-            {
-                required +=  requiredCapacity(keys, offset, i, index + 1) + 1;
-                offset += i;
-                length -= i;
-                c = n;
-                i = 1;
-            }
-        }
-
-        if (c != null)
-        {
-            required += requiredCapacity(keys, offset, length, index + 1);
-        }
-        return required;
-    }
-
-    @Test
-    public void testRequiredCapacity()
-    {
-        assertThat(requiredCapacity(Set.of("A", "ABCD")), is(4));
-
-        assertThat(requiredCapacity(Set.of("ABC")), is(3));
-        assertThat(requiredCapacity(Set.of("ABC", "XYZ")), is(6));
-        assertThat(requiredCapacity(Set.of("A00", "A11")), is(5));
-        assertThat(requiredCapacity(Set.of("A00", "A01", "A10", "A11")), is(7));
-        assertThat(requiredCapacity(Set.of("A", "AB")), is(2));
-        assertThat(requiredCapacity(Set.of("A", "ABC")), is(3));
-        assertThat(requiredCapacity(Set.of("A", "ABCD")), is(4));
-        assertThat(requiredCapacity(Set.of("AB", "ABC")), is(3));
-        assertThat(requiredCapacity(Set.of("ABC", "ABCD")), is(4));
-        assertThat(requiredCapacity(Set.of("ABC", "ABCDEF")), is(6));
-        assertThat(requiredCapacity(Set.of("AB", "A")), is(2));
-        assertThat(requiredCapacity(Set.of("ABC", "ABCDEF")), is(6));
-        assertThat(requiredCapacity(Set.of("ABCDEF", "ABC")), is(6));
-        assertThat(requiredCapacity(Set.of("ABC", "ABCDEF", "ABX")), is(7));
-        assertThat(requiredCapacity(Set.of("ABCDEF", "ABC", "ABX")), is(7));
-        assertThat(requiredCapacity(Set.of("ADEF", "AQPR4", "AQZ")), is(9));
-        assertThat(requiredCapacity(Set.of("111", "ADEF", "AQPR4", "AQZ", "999")), is(15));
     }
 }
