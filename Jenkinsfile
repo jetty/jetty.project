@@ -11,8 +11,8 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             container('jetty-build') {
-              timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk11", "-T3 clean install", "maven3",
+              timeout( time: 240, unit: 'MINUTES' ) {
+                mavenBuild( "jdk11", "clean install", "maven3",
                             [[parserName: 'Maven'], [parserName: 'Java'], [parserName: 'JavaDoc']] )
                 // Collect up the jacoco execution results (only on main build)
                 jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
@@ -40,8 +40,8 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             container( 'jetty-build' ) {
-              timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk15", "clean install -T3 -Djacoco.skip=true", "maven3",
+              timeout( time: 240, unit: 'MINUTES' ) {
+                mavenBuild( "jdk15", "clean install -Djacoco.skip=true", "maven3",
                             [[parserName: 'Maven'], [parserName: 'Java'], [parserName: 'JavaDoc']])
               }
             }
