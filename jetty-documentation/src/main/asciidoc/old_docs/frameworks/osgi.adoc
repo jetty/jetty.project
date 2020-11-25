@@ -1157,6 +1157,6 @@ In addition, as the feature group includes websocket, you will need to download 
 |=======================================================================
 |Jar |Bundle Symbolic Name |Location
 |javax.websocket-api |javax.websocket-api
-|https://repo1.maven.org/maven2/javax/websocket/websocket-api[Maven
+|https://repo1.maven.org/maven2/javax/websocket/[Maven
 central]
 |=======================================================================

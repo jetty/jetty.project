@@ -33,12 +33,12 @@ The `webdefault.xml` file is located in `$(jetty.home)/etc/webdefault.xml`.
 
 You can specify a custom configuration file to use for specific webapps, or for all webapps. If you do not specify an alternate defaults descriptor, the `$JETTY-HOME/etc/jetty-deploy.xml` file will configure jetty to automatically use `$JETTY_HOME/etc/webdefault.xml`.
 
-____
 [NOTE]
+====
 To ensure your `webdefault.xml` files are validated, you will need to set the `validateXml` attribute to true as described link:#jetty-xml-dtd[here.]
-____
+====
 
-The `webdefault.xml` link:{GITBROWSURL}/jetty-webapp/src/main/config/etc/webdefault.xml[included with the Jetty Distribution] contains several configuration options, such as init params and servlet mappings, and is separated into sections for easy navigation.
+The `webdefault.xml` link:{GITBROWSEURLSURL}/jetty-webapp/src/main/config/etc/webdefault.xml[included with the Jetty Distribution] contains several configuration options, such as init params and servlet mappings, and is separated into sections for easy navigation.
 Some of the more common options include, but are not limited to:
 
 dirAllowed::
