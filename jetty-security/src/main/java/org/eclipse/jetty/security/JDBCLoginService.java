@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.security;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -28,7 +27,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import javax.servlet.ServletRequest;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.resource.Resource;
@@ -37,17 +36,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * HashMapped User Realm with JDBC as data source.
- * The {@link #login(String, Object, ServletRequest)} method checks the inherited Map for the user. If the user is not
- * found, it will fetch details from the database and populate the inherited
- * Map. It then calls the superclass {@link #login(String, Object, ServletRequest)} method to perform the actual
- * authentication. Periodically (controlled by configuration parameter),
- * internal hashes are cleared. Caching can be disabled by setting cache refresh
- * interval to zero. Uses one database connection that is initialized at
- * startup. Reconnect on failures.
- * <p>
- * An example properties file for configuration is in
- * <code>${jetty.home}/etc/jdbcRealm.properties</code>
+ * JDBC as a source of user authentication and authorization information.
+ * Uses one database connection that is lazily initialized. Reconnect on failures.
  */
 public class JDBCLoginService extends AbstractLoginService
 {
@@ -61,16 +51,18 @@ public class JDBCLoginService extends AbstractLoginService
     protected String _userTableKey;
     protected String _userTablePasswordField;
     protected String _roleTableRoleField;
-    protected Connection _con;
     protected String _userSql;
     protected String _roleSql;
+    protected Connection _con;
 
     /**
-     * JDBCKnownUser
+     * JDBCUserPrincipal
+     * 
+     * A UserPrincipal with extra jdbc key info.
      */
     public class JDBCUserPrincipal extends UserPrincipal
     {
-        int _userKey;
+        final int _userKey;
 
         public JDBCUserPrincipal(String name, Credential credential, int key)
         {
@@ -85,25 +77,21 @@ public class JDBCLoginService extends AbstractLoginService
     }
 
     public JDBCLoginService()
-        throws IOException
     {
     }
 
     public JDBCLoginService(String name)
-        throws IOException
     {
         setName(name);
     }
 
     public JDBCLoginService(String name, String config)
-        throws IOException
     {
         setName(name);
         setConfig(config);
     }
 
     public JDBCLoginService(String name, IdentityService identityService, String config)
-        throws IOException
     {
         setName(name);
         setIdentityService(identityService);
@@ -171,19 +159,12 @@ public class JDBCLoginService extends AbstractLoginService
     }
 
     /**
-     * (re)Connect to database with parameters setup by loadConfig()
+     * Connect to database with parameters setup by loadConfig()
      */
-    public void connectDatabase()
+    public Connection connectDatabase()
+        throws SQLException
     {
-        try
-        {
-            Class.forName(_jdbcDriver);
-            _con = DriverManager.getConnection(_url, _userName, _password);
-        }
-        catch (Exception e)
-        {
-            LOG.warn("UserRealm {} could not connect to database; will try later", getName(), e);
-        }
+        return DriverManager.getConnection(_url, _userName, _password);
     }
 
     @Override
@@ -192,10 +173,7 @@ public class JDBCLoginService extends AbstractLoginService
         try
         {
             if (null == _con)
-                connectDatabase();
-
-            if (null == _con)
-                throw new SQLException("Can't connect to database");
+                _con = connectDatabase();
 
             try (PreparedStatement stat1 = _con.prepareStatement(_userSql))
             {
@@ -214,7 +192,7 @@ public class JDBCLoginService extends AbstractLoginService
         }
         catch (SQLException e)
         {
-            LOG.warn("UserRealm {} could not load user information from database", getName(), e);
+            LOG.warn("LoginService {} could not load user {}", getName(), username, e);
             closeConnection();
         }
 
@@ -222,17 +200,17 @@ public class JDBCLoginService extends AbstractLoginService
     }
 
     @Override
-    public String[] loadRoleInfo(UserPrincipal user)
+    public List<RolePrincipal> loadRoleInfo(UserPrincipal user)
     {
+        if (user == null)
+            return null;
+
         JDBCUserPrincipal jdbcUser = (JDBCUserPrincipal)user;
 
         try
         {
             if (null == _con)
-                connectDatabase();
-
-            if (null == _con)
-                throw new SQLException("Can't connect to database");
+                _con = connectDatabase();
 
             List<String> roles = new ArrayList<String>();
 
@@ -242,16 +220,15 @@ public class JDBCLoginService extends AbstractLoginService
                 try (ResultSet rs2 = stat2.executeQuery())
                 {
                     while (rs2.next())
-                    {
                         roles.add(rs2.getString(_roleTableRoleField));
-                    }
-                    return roles.toArray(new String[roles.size()]);
+                                        
+                    return roles.stream().map(RolePrincipal::new).collect(Collectors.toList());
                 }
             }
         }
         catch (SQLException e)
         {
-            LOG.warn("UserRealm {} could not load user information from database", getName(), e);
+            LOG.warn("LoginService {} could not load roles for user {}", getName(), user.getName(), e);
             closeConnection();
         }
 
@@ -273,7 +250,7 @@ public class JDBCLoginService extends AbstractLoginService
         if (_con != null)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Closing db connection for JDBCUserRealm");
+                LOG.debug("Closing db connection for JDBCLoginService");
             try
             {
                 _con.close();

@@ -120,6 +120,14 @@ public interface IStream extends Stream, Attachable, Closeable
     boolean isRemotelyClosed();
 
     /**
+     * Fail all data queued in the stream and reset
+     * demand to 0.
+     * @param x the exception to fail the data with.
+     * @return true if the end of the stream was reached, false otherwise.
+     */
+    boolean failAllData(Throwable x);
+
+    /**
      * @return whether this stream has been reset (locally or remotely) or has been failed
      * @see #isReset()
      * @see Listener#onFailure(Stream, int, String, Throwable, Callback)

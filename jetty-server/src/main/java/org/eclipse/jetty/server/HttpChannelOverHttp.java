@@ -40,6 +40,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +51,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelOverHttp.class);
     private static final HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE, "h2c");
+    private static final HttpInput.Content EOF = new HttpInput.EofContent();
     private final HttpConnection _httpConnection;
     private final RequestBuilder _requestBuilder = new RequestBuilder();
     private MetaData.Request _metadata;
@@ -61,6 +63,14 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     private boolean _expect102Processing = false;
     private List<String> _complianceViolations;
     private HttpFields.Mutable _trailers;
+    // Field _content doesn't need to be volatile nor protected by a lock
+    // as it is always accessed by the same thread, i.e.: we get notified by onFillable
+    // that the socket contains new bytes and either schedule an onDataAvailable
+    // call that is going to read the socket or release the blocking semaphore to wake up
+    // the blocked reader and make it read the socket. The same logic is true for async
+    // events like timeout: we get notified and either schedule onError or release the
+    // blocking semaphore.
+    private HttpInput.Content _content;
 
     public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport)
     {
@@ -76,6 +86,87 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     }
 
     @Override
+    public boolean needContent()
+    {
+        if (_content != null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("needContent has content immediately available: {}", _content);
+            return true;
+        }
+        _httpConnection.parseAndFillForContent();
+        if (_content != null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("needContent has content after parseAndFillForContent: {}", _content);
+            return true;
+        }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("needContent has no content");
+        _httpConnection.asyncReadFillInterested();
+        return false;
+    }
+
+    @Override
+    public HttpInput.Content produceContent()
+    {
+        if (_content == null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("produceContent has no content, parsing and filling");
+            _httpConnection.parseAndFillForContent();
+        }
+        HttpInput.Content result = _content;
+        if (result != null && !result.isSpecial())
+            _content = result.isEof() ? EOF : null;
+        if (LOG.isDebugEnabled())
+            LOG.debug("produceContent produced {}", result);
+        return result;
+    }
+
+    @Override
+    public boolean failAllContent(Throwable failure)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("failing all content with {}", (Object)failure);
+        if (_content != null)
+        {
+            if (_content.isSpecial())
+                return _content.isEof();
+            _content.failed(failure);
+            _content = _content.isEof() ? EOF : null;
+            if (_content == EOF)
+                return true;
+        }
+        while (true)
+        {
+            HttpInput.Content c = produceContent();
+            if (c == null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("failed all content, EOF was not reached");
+                return false;
+            }
+            if (c.isSpecial())
+            {
+                _content = c;
+                boolean atEof = c.isEof();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("failed all content, EOF = {}", atEof);
+                return atEof;
+            }
+            c.skip(c.remaining());
+            c.failed(failure);
+            if (c.isEof())
+            {
+                _content = EOF;
+                return true;
+            }
+        }
+    }
+
+    @Override
     public void badMessage(BadMessageException failure)
     {
         _httpConnection.getGenerator().setPersistent(false);
@@ -85,7 +176,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
             if (_metadata == null)
                 _metadata = _requestBuilder.build();
             onRequest(_metadata);
-            getRequest().getHttpInput().earlyEOF();
+            markEarlyEOF();
         }
         catch (Exception e)
         {
@@ -96,12 +187,23 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     }
 
     @Override
-    public boolean content(ByteBuffer content)
+    public boolean content(ByteBuffer buffer)
     {
-        HttpInput.Content c = _httpConnection.newContent(content);
-        boolean handle = onContent(c) || _delayedForContent;
-        _delayedForContent = false;
-        return handle;
+        HttpInput.Content content = _httpConnection.newContent(buffer);
+        if (_content != null)
+        {
+            if (_content.isSpecial())
+                content.failed(_content.getError());
+            else
+                throw new AssertionError("Cannot overwrite exiting content " + _content + " with " + content);
+        }
+        else
+        {
+            _content = content;
+            onContent(_content);
+            _delayedForContent = false;
+        }
+        return true;
     }
 
     @Override
@@ -147,12 +249,69 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         _httpConnection.getGenerator().setPersistent(false);
         // If we have no request yet, just close
         if (_metadata == null)
-            _httpConnection.close();
-        else if (onEarlyEOF() || _delayedForContent)
         {
-            _delayedForContent = false;
-            handle();
+            _httpConnection.close();
         }
+        else
+        {
+            markEarlyEOF();
+            if (_delayedForContent)
+            {
+                _delayedForContent = false;
+                handle();
+            }
+        }
+    }
+
+    private void markEarlyEOF()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("received early EOF, content = {}", _content);
+        EofException failure = new EofException("Early EOF");
+        if (_content != null)
+            _content.failed(failure);
+        _content = new HttpInput.ErrorContent(failure);
+    }
+
+    @Override
+    protected boolean eof()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("received EOF, content = {}", _content);
+        if (_content == null)
+        {
+            _content = EOF;
+        }
+        else
+        {
+            HttpInput.Content c = _content;
+            _content = new HttpInput.WrappingContent(c, true);
+        }
+        return false;
+    }
+
+    @Override
+    public boolean failed(Throwable x)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("failed {}, content = {}", x, _content);
+
+        Throwable error = null;
+        if (_content != null && _content.isSpecial())
+            error = _content.getError();
+
+        if (error != null && error != x)
+        {
+            error.addSuppressed(x);
+        }
+        else
+        {
+            if (_content != null)
+                _content.failed(x);
+            _content = new HttpInput.ErrorContent(x);
+        }
+
+        return getRequest().getHttpInput().onContentProducible();
     }
 
     @Override
@@ -310,24 +469,6 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     }
 
     @Override
-    public void onAsyncWaitForContent()
-    {
-        _httpConnection.asyncReadFillInterested();
-    }
-
-    @Override
-    public void onBlockWaitForContent()
-    {
-        _httpConnection.blockingReadFillInterested();
-    }
-
-    @Override
-    public void onBlockWaitForContentFailure(Throwable failure)
-    {
-        _httpConnection.blockingReadFailure(failure);
-    }
-
-    @Override
     public void onComplianceViolation(ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
     {
         if (_httpConnection.isRecordHttpComplianceViolations())
@@ -434,6 +575,9 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         _upgrade = null;
         _trailers = null;
         _metadata = null;
+        if (_content != null && !_content.isSpecial())
+            throw new AssertionError("unconsumed content: " + _content);
+        _content = null;
     }
 
     @Override
@@ -457,12 +601,6 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     {
         _httpConnection.getGenerator().setPersistent(false);
         super.handleException(x);
-    }
-
-    @Override
-    protected HttpInput newHttpInput(HttpChannelState state)
-    {
-        return new HttpInputOverHTTP(state);
     }
 
     /**
@@ -534,11 +672,22 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         if (_delayedForContent)
         {
             _delayedForContent = false;
-            getRequest().getHttpInput().onIdleTimeout(timeout);
+            doOnIdleTimeout(timeout);
             execute(this);
             return false;
         }
         return true;
+    }
+
+    private void doOnIdleTimeout(Throwable x)
+    {
+        boolean neverDispatched = getState().isIdle();
+        boolean waitingForContent = _content == null || _content.remaining() == 0;
+        if ((waitingForContent || neverDispatched) && (_content == null || !_content.isSpecial()))
+        {
+            x.addSuppressed(new Throwable("HttpInput idle timeout"));
+            _content = new HttpInput.ErrorContent(x);
+        }
     }
 
     private static class RequestBuilder

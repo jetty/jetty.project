@@ -18,19 +18,21 @@
 
 package org.eclipse.jetty.security;
 
-import java.io.Serializable;
-import java.security.Principal;
+import java.util.ArrayList;
+import java.util.List;
 import javax.security.auth.Subject;
 import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.security.Credential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * AbstractLoginService
+ * 
+ * Base class for LoginServices that allows subclasses to provide the user authentication and authorization information,
+ * but provides common behaviour such as handling authentication. 
  */
 public abstract class AbstractLoginService extends ContainerLifeCycle implements LoginService
 {
@@ -40,65 +42,7 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
     protected String _name;
     protected boolean _fullValidate = false;
 
-    /**
-     * RolePrincipal
-     */
-    public static class RolePrincipal implements Principal, Serializable
-    {
-        private static final long serialVersionUID = 2998397924051854402L;
-        private final String _roleName;
-
-        public RolePrincipal(String name)
-        {
-            _roleName = name;
-        }
-
-        @Override
-        public String getName()
-        {
-            return _roleName;
-        }
-    }
-
-    /**
-     * UserPrincipal
-     */
-    public static class UserPrincipal implements Principal, Serializable
-    {
-        private static final long serialVersionUID = -6226920753748399662L;
-        private final String _name;
-        private final Credential _credential;
-
-        public UserPrincipal(String name, Credential credential)
-        {
-            _name = name;
-            _credential = credential;
-        }
-
-        public boolean authenticate(Object credentials)
-        {
-            return _credential != null && _credential.check(credentials);
-        }
-
-        public boolean authenticate(Credential c)
-        {
-            return (_credential != null && c != null && _credential.equals(c));
-        }
-
-        @Override
-        public String getName()
-        {
-            return _name;
-        }
-
-        @Override
-        public String toString()
-        {
-            return _name;
-        }
-    }
-
-    protected abstract String[] loadRoleInfo(UserPrincipal user);
+    protected abstract List<RolePrincipal> loadRoleInfo(UserPrincipal user);
 
     protected abstract UserPrincipal loadUserInfo(String username);
 
@@ -155,18 +99,22 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
         if (userPrincipal != null && userPrincipal.authenticate(credentials))
         {
             //safe to load the roles
-            String[] roles = loadRoleInfo(userPrincipal);
+            List<RolePrincipal> roles = loadRoleInfo(userPrincipal);
 
+            List<String> roleNames = new ArrayList<>();
             Subject subject = new Subject();
-            subject.getPrincipals().add(userPrincipal);
-            subject.getPrivateCredentials().add(userPrincipal._credential);
+            userPrincipal.configureSubject(subject);
             if (roles != null)
-                for (String role : roles)
+            {
+                roles.forEach(p -> 
                 {
-                    subject.getPrincipals().add(new RolePrincipal(role));
-                }
+                    p.configureForSubject(subject);
+                    roleNames.add(p.getName());
+                });
+            }
+  
             subject.setReadOnly();
-            return _identityService.newUserIdentity(subject, userPrincipal, roles);
+            return _identityService.newUserIdentity(subject, userPrincipal, roleNames.toArray(new String[0]));
         }
 
         return null;
@@ -185,10 +133,10 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
 
         if (user.getUserPrincipal() instanceof UserPrincipal)
         {
-            return fresh.authenticate(((UserPrincipal)user.getUserPrincipal())._credential);
+            return fresh.authenticate(((UserPrincipal)user.getUserPrincipal()));
         }
 
-        throw new IllegalStateException("UserPrincipal not KnownUser"); //can't validate
+        throw new IllegalStateException("UserPrincipal not known"); //can't validate
     }
 
     @Override
@@ -201,7 +149,6 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
     public void logout(UserIdentity user)
     {
         //Override in subclasses
-
     }
 
     public boolean isFullValidate()

@@ -88,9 +88,9 @@
               <goal>run</goal>
             </goals>
             <configuration>
-              <tasks>
+              <target>
                 <mkdir dir="${sources-directory}" />
-              </tasks>
+              </target>
             </configuration>
           </execution>
         </executions>
@@ -327,12 +327,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-openid</artifactId>
-      <version>${project.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-spring</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>

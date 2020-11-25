@@ -35,13 +35,13 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.Configuration;
-import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
-import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
+import org.eclipse.jetty.websocket.util.server.internal.WebSocketMappings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
  * <p>
  * The configuration applied to this filter via init params will be used as the the default
  * configuration of any websocket upgraded by this filter, prior to the configuration of the
- * websocket applied by the {@link WebSocketMapping}.
+ * websocket applied by the {@link WebSocketMappings}.
  * </p>
  * <p>
  * <b>Configuration / Init-Parameters:</b>
@@ -78,34 +78,29 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketUpgradeFilter.class);
     private static final AutoLock LOCK = new AutoLock();
 
-    private static FilterHolder getFilter(ServletContext servletContext)
+    /**
+     * Return the default {@link WebSocketUpgradeFilter} if present on the {@link ServletContext}.
+     *
+     * @param servletContext the {@link ServletContext} to use.
+     * @return the configured default {@link WebSocketUpgradeFilter} instance.
+     */
+    public static FilterHolder getFilter(ServletContext servletContext)
     {
         ContextHandler contextHandler = Objects.requireNonNull(ContextHandler.getContextHandler(servletContext));
         ServletHandler servletHandler = contextHandler.getChildHandlerByClass(ServletHandler.class);
-
-        for (FilterHolder holder : servletHandler.getFilters())
-        {
-            if (holder.getInitParameter(MAPPING_ATTRIBUTE_INIT_PARAM) != null)
-                return holder;
-        }
-
-        return null;
+        return servletHandler.getFilter(WebSocketUpgradeFilter.class.getName());
     }
 
     /**
-     * Configure the default WebSocketUpgradeFilter.
-     *
-     * <p>
-     * This will return the default {@link WebSocketUpgradeFilter} on the
-     * provided {@link ServletContext}, creating the filter if necessary.
-     * </p>
+     * Ensure a {@link WebSocketUpgradeFilter} is available on the provided {@link ServletContext},
+     * a new filter will added if one does not already exist.
      * <p>
      * The default {@link WebSocketUpgradeFilter} is also available via
      * the {@link ServletContext} attribute named {@code org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter}
      * </p>
      *
-     * @param servletContext the {@link ServletContext} to use
-     * @return the configured default {@link WebSocketUpgradeFilter} instance
+     * @param servletContext the {@link ServletContext} to use.
+     * @return the configured default {@link WebSocketUpgradeFilter} instance.
      */
     public static FilterHolder ensureFilter(ServletContext servletContext)
     {
@@ -116,26 +111,31 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
             if (existingFilter != null)
                 return existingFilter;
 
-            final String name = "WebSocketUpgradeFilter";
-            final String pathSpec = "/*";
-            FilterHolder holder = new FilterHolder(new WebSocketUpgradeFilter());
-            holder.setName(name);
-            holder.setInitParameter(MAPPING_ATTRIBUTE_INIT_PARAM, WebSocketMapping.DEFAULT_KEY);
-
-            holder.setAsyncSupported(true);
             ContextHandler contextHandler = Objects.requireNonNull(ContextHandler.getContextHandler(servletContext));
             ServletHandler servletHandler = contextHandler.getChildHandlerByClass(ServletHandler.class);
-            servletHandler.addFilterWithMapping(holder, pathSpec, EnumSet.of(DispatcherType.REQUEST));
+
+            final String pathSpec = "/*";
+            FilterHolder holder = new FilterHolder(new WebSocketUpgradeFilter());
+            holder.setName(WebSocketUpgradeFilter.class.getName());
+            holder.setAsyncSupported(true);
+
+            FilterMapping mapping = new FilterMapping();
+            mapping.setFilterName(holder.getName());
+            mapping.setPathSpec(pathSpec);
+            mapping.setDispatcherTypes(EnumSet.of(DispatcherType.REQUEST));
+
+            // Add the default WebSocketUpgradeFilter as the first filter in the list.
+            servletHandler.prependFilter(holder);
+            servletHandler.prependFilterMapping(mapping);
+
             if (LOG.isDebugEnabled())
                 LOG.debug("Adding {} mapped to {} in {}", holder, pathSpec, servletContext);
             return holder;
         }
     }
 
-    public static final String MAPPING_ATTRIBUTE_INIT_PARAM = "org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping.key";
-
     private final Configuration.ConfigurationCustomizer defaultCustomizer = new Configuration.ConfigurationCustomizer();
-    private WebSocketMapping mapping;
+    private WebSocketMappings mapping;
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
@@ -171,13 +171,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     @Override
     public void init(FilterConfig config) throws ServletException
     {
-        final ServletContext context = config.getServletContext();
-
-        String mappingKey = config.getInitParameter(MAPPING_ATTRIBUTE_INIT_PARAM);
-        if (mappingKey != null)
-            mapping = WebSocketMapping.ensureMapping(context, mappingKey);
-        else
-            mapping = new WebSocketMapping(WebSocketServerComponents.getWebSocketComponents(context));
+        mapping = WebSocketMappings.ensureMapping(config.getServletContext());
 
         String max = config.getInitParameter("idleTimeout");
         if (max == null)

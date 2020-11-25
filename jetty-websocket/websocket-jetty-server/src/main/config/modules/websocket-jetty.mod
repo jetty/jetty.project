@@ -7,12 +7,10 @@ Enable the Jetty WebSocket API for deployed web applications.
 websocket
 
 [depend]
-client
 annotations
 
 [lib]
 lib/websocket/websocket-core-common-${jetty.version}.jar
-lib/websocket/websocket-core-client-${jetty.version}.jar
 lib/websocket/websocket-core-server-${jetty.version}.jar
 lib/websocket/websocket-util-${jetty.version}.jar
 lib/websocket/websocket-util-server-${jetty.version}.jar

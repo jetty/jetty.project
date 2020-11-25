@@ -30,6 +30,8 @@ public class HTTP2Cipher
     private static final Trie<Boolean> __blackProtocols = new ArrayTrie<>(6 * 5);
     private static final Trie<Boolean> __blackCiphers = new ArrayTrie<>(275 * 40);
 
+    static String[] _xxx;
+
     static
     {
         String[] protocols = {"TLSv1.2", "TLSv1.1", "TLSv1", "SSL", "SSLv2", "SSLv3"};
@@ -41,9 +43,9 @@ public class HTTP2Cipher
         String[] ciphers =
         {
             "TLS_NULL_WITH_NULL_NULL",
-            "TLS_RSA_WITH_NULL_MD5",
+            // "TLS_RSA_WITH_NULL_MD5",
             "TLS_RSA_WITH_NULL_SHA",
-            "TLS_RSA_EXPORT_WITH_RC4_40_MD5",
+            "TLS_RSA_EXPORT_WITH_RC4_40_MD5"/*,
             "TLS_RSA_WITH_RC4_128_MD5",
             "TLS_RSA_WITH_RC4_128_SHA",
             "TLS_RSA_EXPORT_WITH_RC2_CBC_40_MD5",
@@ -316,7 +318,9 @@ public class HTTP2Cipher
             "TLS_PSK_WITH_AES_256_CCM",
             "TLS_PSK_WITH_AES_128_CCM_8",
             "TLS_PSK_WITH_AES_256_CCM_8"
+            */
         };
+        _xxx = ciphers;
         for (String c : ciphers)
         {
             __blackCiphers.put(c, Boolean.TRUE);

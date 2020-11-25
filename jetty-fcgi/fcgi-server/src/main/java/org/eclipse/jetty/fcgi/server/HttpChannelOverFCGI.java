@@ -18,7 +18,11 @@
 
 package org.eclipse.jetty.fcgi.server;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Locale;
+import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -34,8 +38,10 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +49,9 @@ public class HttpChannelOverFCGI extends HttpChannel
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelOverFCGI.class);
 
+    private final Queue<HttpInput.Content> _contentQueue = new LinkedList<>();
+    private final AutoLock _lock = new AutoLock();
+    private HttpInput.Content _specialContent;
     private final HttpFields.Mutable fields = HttpFields.build();
     private final Dispatcher dispatcher;
     private String method;
@@ -55,6 +64,104 @@ public class HttpChannelOverFCGI extends HttpChannel
     {
         super(connector, configuration, endPoint, transport);
         this.dispatcher = new Dispatcher(connector.getServer().getThreadPool(), this);
+    }
+
+    @Override
+    public boolean onContent(HttpInput.Content content)
+    {
+        boolean b = super.onContent(content);
+
+        Throwable failure;
+        try (AutoLock l = _lock.lock())
+        {
+            failure = _specialContent == null ? null : _specialContent.getError();
+            if (failure == null)
+                _contentQueue.offer(content);
+        }
+        if (failure != null)
+            content.failed(failure);
+
+        return b;
+    }
+
+    @Override
+    public boolean needContent()
+    {
+        try (AutoLock l = _lock.lock())
+        {
+            boolean hasContent = _specialContent != null || !_contentQueue.isEmpty();
+            if (LOG.isDebugEnabled())
+                LOG.debug("needContent has content? {}", hasContent);
+            return hasContent;
+        }
+    }
+
+    @Override
+    public HttpInput.Content produceContent()
+    {
+        HttpInput.Content content;
+        try (AutoLock l = _lock.lock())
+        {
+            content = _contentQueue.poll();
+            if (content == null)
+                content = _specialContent;
+        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("produceContent has produced {}", content);
+        return content;
+    }
+
+    @Override
+    public boolean failAllContent(Throwable failure)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("failing all content with {}", (Object)failure);
+        List<HttpInput.Content> copy;
+        try (AutoLock l = _lock.lock())
+        {
+            copy = new ArrayList<>(_contentQueue);
+            _contentQueue.clear();
+        }
+        copy.forEach(c -> c.failed(failure));
+        boolean atEof;
+        try (AutoLock l = _lock.lock())
+        {
+            atEof = _specialContent != null && _specialContent.isEof();
+        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("failed all content, EOF = {}", atEof);
+        return atEof;
+    }
+
+    @Override
+    public boolean failed(Throwable x)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("failed " + x);
+
+        try (AutoLock l = _lock.lock())
+        {
+            Throwable error = _specialContent == null ? null : _specialContent.getError();
+
+            if (error != null && error != x)
+                error.addSuppressed(x);
+            else
+                _specialContent = new HttpInput.ErrorContent(x);
+        }
+
+        return getRequest().getHttpInput().onContentProducible();
+    }
+
+    @Override
+    protected boolean eof()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("received EOF");
+        try (AutoLock l = _lock.lock())
+        {
+            _specialContent = new HttpInput.EofContent();
+        }
+        return getRequest().getHttpInput().onContentProducible();
     }
 
     protected void header(HttpField field)
@@ -127,10 +234,44 @@ public class HttpChannelOverFCGI extends HttpChannel
 
     public boolean onIdleTimeout(Throwable timeout)
     {
-        boolean handle = getRequest().getHttpInput().onIdleTimeout(timeout);
+        boolean handle = doOnIdleTimeout(timeout);
         if (handle)
             execute(this);
         return !handle;
+    }
+
+    private boolean doOnIdleTimeout(Throwable x)
+    {
+        boolean neverDispatched = getState().isIdle();
+        boolean waitingForContent;
+        HttpInput.Content specialContent;
+        try (AutoLock l = _lock.lock())
+        {
+            waitingForContent = _contentQueue.isEmpty() || _contentQueue.peek().remaining() == 0;
+            specialContent = _specialContent;
+        }
+        if ((waitingForContent || neverDispatched) && specialContent == null)
+        {
+            x.addSuppressed(new Throwable("HttpInput idle timeout"));
+            try (AutoLock l = _lock.lock())
+            {
+                _specialContent = new HttpInput.ErrorContent(x);
+            }
+            return getRequest().getHttpInput().onContentProducible();
+        }
+        return false;
+    }
+
+    @Override
+    public void recycle()
+    {
+        try (AutoLock l = _lock.lock())
+        {
+            if (!_contentQueue.isEmpty())
+                throw new AssertionError("unconsumed content: " + _contentQueue);
+            _specialContent = null;
+        }
+        super.recycle();
     }
 
     private static class Dispatcher implements Runnable

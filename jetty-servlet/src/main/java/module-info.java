@@ -27,6 +27,7 @@ module org.eclipse.jetty.servlet
 
     // Only required if using StatisticsServlet.
     requires static java.management;
+    requires static org.eclipse.jetty.util.ajax;
     // Only required if using IntrospectorCleaner.
     requires static java.desktop;
     // Only required if using JMX.

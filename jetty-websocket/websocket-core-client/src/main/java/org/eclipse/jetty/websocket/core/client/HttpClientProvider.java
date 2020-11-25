@@ -20,23 +20,15 @@ package org.eclipse.jetty.websocket.core.client;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.slf4j.LoggerFactory;
 
 public interface HttpClientProvider
 {
     static HttpClient get()
     {
-        try
-        {
-            HttpClientProvider xmlProvider = new XmlHttpClientProvider();
-            HttpClient client = xmlProvider.newHttpClient();
-            if (client != null)
-                return client;
-        }
-        catch (Throwable x)
-        {
-            LoggerFactory.getLogger(HttpClientProvider.class).trace("IGNORED", x);
-        }
+        HttpClientProvider xmlProvider = new XmlHttpClientProvider();
+        HttpClient client = xmlProvider.newHttpClient();
+        if (client != null)
+            return client;
 
         return HttpClientProvider.newDefaultHttpClient();
     }

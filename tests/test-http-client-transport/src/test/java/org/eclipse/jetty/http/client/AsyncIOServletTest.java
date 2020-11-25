@@ -36,6 +36,8 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.zip.GZIPOutputStream;
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
 import javax.servlet.ReadListener;
@@ -71,8 +73,11 @@ import org.eclipse.jetty.server.HttpInput.Content;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
+import org.eclipse.jetty.server.handler.gzip.GzipHttpInputInterceptor;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.compression.CompressionPool;
+import org.eclipse.jetty.util.compression.InflaterPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Disabled;
@@ -87,6 +92,7 @@ import static org.eclipse.jetty.http.client.Transport.HTTP;
 import static org.eclipse.jetty.util.BufferUtil.toArray;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -776,10 +782,18 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
                                     throw new IllegalStateException();
                                 if (input.read() != 'X')
                                     throw new IllegalStateException();
-                                if (!input.isReady())
-                                    throw new IllegalStateException();
-                                if (input.read() != -1)
-                                    throw new IllegalStateException();
+                                if (input.isReady())
+                                {
+                                    try
+                                    {
+                                        if (input.read() != -1)
+                                            throw new IllegalStateException();
+                                    }
+                                    catch (IOException e)
+                                    {
+                                        // ignore
+                                    }
+                                }
                             }
                             catch (IOException x)
                             {
@@ -1204,8 +1218,8 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
                         {
                             case 0:
                                 // null transform
-                                if (content.isEmpty())
-                                    state++;
+                                content.skip(content.remaining());
+                                state++;
                                 return null;
 
                             case 1:
@@ -1254,7 +1268,7 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
                             }
 
                             default:
-                                return null;
+                                return content;
                         }
                     }
                 });
@@ -1300,7 +1314,6 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
         CountDownLatch clientLatch = new CountDownLatch(1);
 
         String expected =
-            "S0" +
                 "S1" +
                 "S2" +
                 "S3S3" +
@@ -1347,6 +1360,316 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
+    public void testAsyncEcho(Transport transport) throws Exception
+    {
+        init(transport);
+        scenario.start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                System.err.println("Service " + request);
+
+                AsyncContext asyncContext = request.startAsync();
+                ServletInputStream input = request.getInputStream();
+                input.setReadListener(new ReadListener()
+                {
+                    @Override
+                    public void onDataAvailable() throws IOException
+                    {
+                        while (input.isReady())
+                        {
+                            int b = input.read();
+                            if (b >= 0)
+                            {
+                                // System.err.printf("0x%2x %s %n", b, Character.isISOControl(b)?"?":(""+(char)b));
+                                response.getOutputStream().write(b);
+                            }
+                            else
+                                return;
+                        }
+                    }
+
+                    @Override
+                    public void onAllDataRead() throws IOException
+                    {
+                        asyncContext.complete();
+                    }
+
+                    @Override
+                    public void onError(Throwable x)
+                    {
+                    }
+                });
+            }
+        });
+
+        AsyncRequestContent contentProvider = new AsyncRequestContent();
+        CountDownLatch clientLatch = new CountDownLatch(1);
+
+        AtomicReference<Result> resultRef = new AtomicReference<>();
+        scenario.client.newRequest(scenario.newURI())
+            .method(HttpMethod.POST)
+            .path(scenario.servletPath)
+            .body(contentProvider)
+            .send(new BufferingResponseListener(16 * 1024 * 1024)
+            {
+                @Override
+                public void onComplete(Result result)
+                {
+                    resultRef.set(result);
+                    clientLatch.countDown();
+                }
+            });
+
+        for (int i = 0; i < 1_000_000; i++)
+        {
+            contentProvider.offer(BufferUtil.toBuffer("S" + i));
+        }
+        contentProvider.close();
+
+        assertTrue(clientLatch.await(30, TimeUnit.SECONDS));
+        assertThat(resultRef.get().isSucceeded(), Matchers.is(true));
+        assertThat(resultRef.get().getResponse().getStatus(), Matchers.equalTo(HttpStatus.OK_200));
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testAsyncInterceptedTwice(Transport transport) throws Exception
+    {
+        init(transport);
+        scenario.start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                System.err.println("Service " + request);
+
+                final HttpInput httpInput = ((Request)request).getHttpInput();
+                httpInput.addInterceptor(new GzipHttpInputInterceptor(new InflaterPool(-1, true), ((Request)request).getHttpChannel().getByteBufferPool(), 1024));
+                httpInput.addInterceptor(content ->
+                {
+                    ByteBuffer byteBuffer = content.getByteBuffer();
+                    byte[] bytes = new byte[2];
+                    bytes[1] = byteBuffer.get();
+                    bytes[0] = byteBuffer.get();
+                    return new Content(wrap(bytes));
+                });
+
+                AsyncContext asyncContext = request.startAsync();
+                ServletInputStream input = request.getInputStream();
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+                input.setReadListener(new ReadListener()
+                {
+                    @Override
+                    public void onDataAvailable() throws IOException
+                    {
+                        while (input.isReady())
+                        {
+                            int b = input.read();
+                            if (b > 0)
+                            {
+                                // System.err.printf("0x%2x %s %n", b, Character.isISOControl(b)?"?":(""+(char)b));
+                                out.write(b);
+                            }
+                            else if (b < 0)
+                                return;
+                        }
+                    }
+
+                    @Override
+                    public void onAllDataRead() throws IOException
+                    {
+                        response.getOutputStream().write(out.toByteArray());
+                        asyncContext.complete();
+                    }
+
+                    @Override
+                    public void onError(Throwable x)
+                    {
+                    }
+                });
+            }
+        });
+
+        AsyncRequestContent contentProvider = new AsyncRequestContent();
+        CountDownLatch clientLatch = new CountDownLatch(1);
+
+        String expected =
+                "0S" +
+                "1S" +
+                "2S" +
+                "3S" +
+                "4S" +
+                "5S" +
+                "6S";
+
+        scenario.client.newRequest(scenario.newURI())
+            .method(HttpMethod.POST)
+            .path(scenario.servletPath)
+            .body(contentProvider)
+            .send(new BufferingResponseListener()
+            {
+                @Override
+                public void onComplete(Result result)
+                {
+                    if (result.isSucceeded())
+                    {
+                        Response response = result.getResponse();
+                        assertThat(response.getStatus(), Matchers.equalTo(HttpStatus.OK_200));
+                        assertThat(getContentAsString(), Matchers.equalTo(expected));
+                        clientLatch.countDown();
+                    }
+                }
+            });
+
+        for (int i = 0; i < 7; i++)
+        {
+            contentProvider.offer(gzipToBuffer("S" + i));
+            contentProvider.flush();
+        }
+        contentProvider.close();
+
+        assertTrue(clientLatch.await(10, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testAsyncInterceptedTwiceWithNulls(Transport transport) throws Exception
+    {
+        init(transport);
+        scenario.start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                System.err.println("Service " + request);
+
+                final HttpInput httpInput = ((Request)request).getHttpInput();
+                httpInput.addInterceptor(content ->
+                {
+                    if (content.isEmpty())
+                        return content;
+
+                    // skip contents with odd numbers
+                    ByteBuffer duplicate = content.getByteBuffer().duplicate();
+                    duplicate.get();
+                    byte integer = duplicate.get();
+                    int idx = Character.getNumericValue(integer);
+                    Content contentCopy = new Content(content.getByteBuffer().duplicate());
+                    content.skip(content.remaining());
+                    if (idx % 2 == 0)
+                        return contentCopy;
+                    return null;
+                });
+                httpInput.addInterceptor(content ->
+                {
+                    if (content.isEmpty())
+                        return content;
+
+                    // reverse the bytes
+                    ByteBuffer byteBuffer = content.getByteBuffer();
+                    byte[] bytes = new byte[2];
+                    bytes[1] = byteBuffer.get();
+                    bytes[0] = byteBuffer.get();
+                    return new Content(wrap(bytes));
+                });
+
+                AsyncContext asyncContext = request.startAsync();
+                ServletInputStream input = request.getInputStream();
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+                input.setReadListener(new ReadListener()
+                {
+                    @Override
+                    public void onDataAvailable() throws IOException
+                    {
+                        while (input.isReady())
+                        {
+                            int b = input.read();
+                            if (b > 0)
+                            {
+                                // System.err.printf("0x%2x %s %n", b, Character.isISOControl(b)?"?":(""+(char)b));
+                                out.write(b);
+                            }
+                            else if (b < 0)
+                                return;
+                        }
+                    }
+
+                    @Override
+                    public void onAllDataRead() throws IOException
+                    {
+                        response.getOutputStream().write(out.toByteArray());
+                        asyncContext.complete();
+                    }
+
+                    @Override
+                    public void onError(Throwable x)
+                    {
+                    }
+                });
+            }
+        });
+
+        AsyncRequestContent contentProvider = new AsyncRequestContent();
+        CountDownLatch clientLatch = new CountDownLatch(1);
+
+        String expected =
+                "0S" +
+                "2S" +
+                "4S" +
+                "6S";
+
+        scenario.client.newRequest(scenario.newURI())
+            .method(HttpMethod.POST)
+            .path(scenario.servletPath)
+            .body(contentProvider)
+            .send(new BufferingResponseListener()
+            {
+                @Override
+                public void onComplete(Result result)
+                {
+                    if (result.isSucceeded())
+                    {
+                        Response response = result.getResponse();
+                        assertThat(response.getStatus(), Matchers.equalTo(HttpStatus.OK_200));
+                        assertThat(getContentAsString(), Matchers.equalTo(expected));
+                        clientLatch.countDown();
+                    }
+                }
+            });
+
+        contentProvider.offer(BufferUtil.toBuffer("S0"));
+        contentProvider.flush();
+        contentProvider.offer(BufferUtil.toBuffer("S1"));
+        contentProvider.flush();
+        contentProvider.offer(BufferUtil.toBuffer("S2"));
+        contentProvider.flush();
+        contentProvider.offer(BufferUtil.toBuffer("S3"));
+        contentProvider.flush();
+        contentProvider.offer(BufferUtil.toBuffer("S4"));
+        contentProvider.flush();
+        contentProvider.offer(BufferUtil.toBuffer("S5"));
+        contentProvider.flush();
+        contentProvider.offer(BufferUtil.toBuffer("S6"));
+        contentProvider.close();
+
+        assertTrue(clientLatch.await(10, TimeUnit.SECONDS));
+    }
+
+    private ByteBuffer gzipToBuffer(String s) throws IOException
+    {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        GZIPOutputStream gzos = new GZIPOutputStream(baos);
+        gzos.write(s.getBytes(StandardCharsets.ISO_8859_1));
+        gzos.close();
+        return BufferUtil.toBuffer(baos.toByteArray());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
     public void testWriteListenerFromOtherThread(Transport transport) throws Exception
     {
         init(transport);
@@ -1387,18 +1710,21 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
                             }))
                             .send();
                         assertEquals(HttpStatus.OK_200, response.getStatus());
-                        latch.countDown();
                     }
                     catch (Throwable x)
                     {
                         failures.offer(x);
+                    }
+                    finally
+                    {
+                        latch.countDown();
                     }
                 }
             });
         }
 
         assertTrue(latch.await(30, TimeUnit.SECONDS));
-        assertTrue(failures.isEmpty());
+        assertThat(failures, empty());
     }
 
     private static class Listener implements ReadListener, WriteListener
@@ -1527,10 +1853,11 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
         }
 
         @Override
-        public void stopServer()
+        public void stopServer() throws Exception
         {
             checkScope();
             scope.set(null);
+            super.stopServer();
         }
     }
 }

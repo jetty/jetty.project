@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -234,16 +235,26 @@ public class Slf4jEffort
         {
             return Stream.empty();
         }
-        return Files.walk(src)
-            .filter(Files::isRegularFile)
-            .filter((path) -> path.getFileName().toString().endsWith(".java"));
+        try (Stream<Path> s = Files.walk(src))
+        {
+            return s
+                .filter(Files::isRegularFile)
+                .filter((path) -> path.getFileName().toString().endsWith(".java"))
+                .collect(Collectors.toList())
+                .stream();
+        }
     }
 
     private Stream<Path> getProjectsStream(Path root) throws IOException
     {
-        return Files.walk(root)
-            .filter(notInTargetDirectory)
-            .filter(Files::isRegularFile)
-            .filter((path) -> path.getFileName().toString().equals("pom.xml"));
+        try (Stream<Path> s = Files.walk(root))
+        {
+            return s
+                .filter(notInTargetDirectory)
+                .filter(Files::isRegularFile)
+                .filter((path) -> path.getFileName().toString().equals("pom.xml"))
+                .collect(Collectors.toList())
+                .stream();
+        }
     }
 }

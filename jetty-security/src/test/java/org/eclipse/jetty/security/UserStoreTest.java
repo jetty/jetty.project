@@ -19,10 +19,7 @@
 package org.eclipse.jetty.security;
 
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.security.Credential;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,30 +41,21 @@ public class UserStoreTest
     @Test
     public void addUser()
     {
-        this.userStore.addUser("foo", Credential.getCredential("beer"), new String[]{"pub"});
-        assertEquals(1, this.userStore.getKnownUserIdentities().size());
-        UserIdentity userIdentity = this.userStore.getUserIdentity("foo");
-        assertNotNull(userIdentity);
-        assertEquals("foo", userIdentity.getUserPrincipal().getName());
-        Set<AbstractLoginService.RolePrincipal>
-            roles = userIdentity.getSubject().getPrincipals(AbstractLoginService.RolePrincipal.class);
-        List<String> list = roles.stream()
-            .map(rolePrincipal -> rolePrincipal.getName())
-            .collect(Collectors.toList());
-        assertEquals(1, list.size());
-        assertEquals("pub", list.get(0));
+        userStore.addUser("foo", Credential.getCredential("beer"), new String[]{"pub"});
+        assertNotNull(userStore.getUserPrincipal("foo"));
+
+        List<RolePrincipal> rps = userStore.getRolePrincipals("foo");
+        assertNotNull(rps);
+        assertNotNull(rps.get(0));
+        assertEquals("pub", rps.get(0).getName());
     }
 
     @Test
     public void removeUser()
     {
         this.userStore.addUser("foo", Credential.getCredential("beer"), new String[]{"pub"});
-        assertEquals(1, this.userStore.getKnownUserIdentities().size());
-        UserIdentity userIdentity = this.userStore.getUserIdentity("foo");
-        assertNotNull(userIdentity);
-        assertEquals("foo", userIdentity.getUserPrincipal().getName());
+        assertNotNull(userStore.getUserPrincipal("foo"));
         userStore.removeUser("foo");
-        userIdentity = this.userStore.getUserIdentity("foo");
-        assertNull(userIdentity);
+        assertNull(userStore.getUserPrincipal("foo"));
     }
 }

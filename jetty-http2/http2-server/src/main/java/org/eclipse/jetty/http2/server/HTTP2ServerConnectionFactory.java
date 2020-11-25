@@ -157,7 +157,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         }
 
         @Override
-        public void onData(Stream stream, DataFrame frame, Callback callback)
+        public void onDataDemanded(Stream stream, DataFrame frame, Callback callback)
         {
             getConnection().onData((IStream)stream, frame, callback);
         }

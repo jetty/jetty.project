@@ -128,7 +128,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 Path quickstartWebXml = webInf.resolve("quickstart-web.xml");
                 assertTrue(Files.exists(quickstartWebXml));
                 assertNotEquals(0, Files.size(quickstartWebXml));
-                
+
                 int port = distribution.freePort();
 
                 try (JettyHomeTester.Run run3 = distribution.start("jetty.http.port=" + port, "jetty.quickstart.mode=QUICKSTART"))
@@ -144,7 +144,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             }
         }
     }
-    
+
     @Test
     public void testSimpleWebAppWithJSP() throws Exception
     {
@@ -375,6 +375,104 @@ public class DistributionTests extends AbstractJettyHomeTest
         }
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"http", "https"})
+    public void testWebsocketClientInWebappProvidedByServer(String scheme) throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        String module = "https".equals(scheme) ? "test-keystore," + scheme : scheme;
+        String[] args1 = {
+            "--create-startd",
+            "--approve-all-licenses",
+            "--add-to-start=resources,server,webapp,deploy,jsp,jmx,servlet,servlets,websocket,websocket-jetty-client," + module,
+            };
+        try (JettyHomeTester.Run run1 = distribution.start(args1))
+        {
+            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            File webApp = distribution.resolveArtifact("org.eclipse.jetty.tests:test-websocket-client-provided-webapp:war:" + jettyVersion);
+            distribution.installWarFile(webApp, "test");
+
+            int port = distribution.freePort();
+            String[] args2 = {
+                "jetty.http.port=" + port,
+                "jetty.ssl.port=" + port,
+                // "jetty.server.dumpAfterStart=true",
+            };
+
+            try (JettyHomeTester.Run run2 = distribution.start(args2))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+
+                // We should get the correct configuration from the jetty-websocket-httpclient.xml file.
+                startHttpClient(scheme.equals("https"));
+                URI serverUri = URI.create(scheme + "://localhost:" + port + "/test");
+                ContentResponse response = client.GET(serverUri);
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                String content = response.getContentAsString();
+                assertThat(content, containsString("WebSocketEcho: success"));
+                assertThat(content, containsString("ConnectTimeout: 4999"));
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"http", "https"})
+    public void testWebsocketClientInWebapp(String scheme) throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        String module = "https".equals(scheme) ? "test-keystore," + scheme : scheme;
+        String[] args1 = {
+            "--create-startd",
+            "--approve-all-licenses",
+            "--add-to-start=resources,server,webapp,deploy,jsp,jmx,servlet,servlets,websocket," + module
+        };
+        try (JettyHomeTester.Run run1 = distribution.start(args1))
+        {
+            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            File webApp = distribution.resolveArtifact("org.eclipse.jetty.tests:test-websocket-client-webapp:war:" + jettyVersion);
+            distribution.installWarFile(webApp, "test");
+
+            int port = distribution.freePort();
+            String[] args2 = {
+                "jetty.http.port=" + port,
+                "jetty.ssl.port=" + port,
+                // "jetty.server.dumpAfterStart=true",
+            };
+
+            try (JettyHomeTester.Run run2 = distribution.start(args2))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+
+                // We should get the correct configuration from the jetty-websocket-httpclient.xml file.
+                startHttpClient(scheme.equals("https"));
+                URI serverUri = URI.create(scheme + "://localhost:" + port + "/test");
+                ContentResponse response = client.GET(serverUri);
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                String content = response.getContentAsString();
+                assertThat(content, containsString("WebSocketEcho: success"));
+                assertThat(content, containsString("ConnectTimeout: 4999"));
+            }
+        }
+    }
+
     @Test
     public void testWebAppWithProxyAndJPMS() throws Exception
     {
@@ -415,8 +513,8 @@ public class DistributionTests extends AbstractJettyHomeTest
 
     /**
      * This reproduces some classloading issue with MethodHandles in JDK14-15, this has been fixed in JDK16.
-     * @see <a href="https://bugs.openjdk.java.net/browse/JDK-8244090">JDK-8244090</a>
      * @throws Exception if there is an error during the test.
+     * @see <a href="https://bugs.openjdk.java.net/browse/JDK-8244090">JDK-8244090</a>
      */
     @ParameterizedTest
     @ValueSource(strings = {"", "--jpms"})
@@ -541,5 +639,4 @@ public class DistributionTests extends AbstractJettyHomeTest
             }
         }
     }
-
 }

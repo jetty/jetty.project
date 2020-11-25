@@ -163,8 +163,14 @@ public abstract class HttpConnection implements IConnection, Attachable
         HttpFields headers = request.getHeaders();
         if (version.getVersion() <= 11)
         {
-            if (!headers.contains(HttpHeader.HOST))
-                request.addHeader(getHttpDestination().getHostField());
+            if (!headers.contains(HttpHeader.HOST.asString()))
+            {
+                URI uri = request.getURI();
+                if (uri != null)
+                    request.addHeader(new HttpField(HttpHeader.HOST, uri.getAuthority()));
+                else
+                    request.addHeader(getHttpDestination().getHostField());
+            }
         }
 
         // Add content headers

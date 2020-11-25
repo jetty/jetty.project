@@ -63,7 +63,18 @@ public class ResourceCollection extends Resource
      */
     public ResourceCollection(Resource... resources)
     {
+        this(Arrays.asList(resources));
+    }
+
+    /**
+     * Instantiates a new resource collection.
+     *
+     * @param resources the resources to be added to collection
+     */
+    public ResourceCollection(Collection<Resource> resources)
+    {
         _resources = new ArrayList<>();
+
         for (Resource r : resources)
         {
             if (r == null)
@@ -80,17 +91,6 @@ public class ResourceCollection extends Resource
                 _resources.add(r);
             }
         }
-    }
-
-    /**
-     * Instantiates a new resource collection.
-     *
-     * @param resources the resources to be added to collection
-     */
-    public ResourceCollection(Collection<Resource> resources)
-    {
-        _resources = new ArrayList<>();
-        _resources.addAll(resources);
     }
 
     /**
@@ -226,8 +226,16 @@ public class ResourceCollection extends Resource
     }
 
     /**
+     * Add a path to the resource collection.
      * @param path The path segment to add
-     * @return The contained resource (found first) in the collection of resources
+     * @return The resulting resource(s) :
+     * <ul>
+     *   <li>is a file that exists in at least one of the collection, then the first one found is returned</li>
+     *   <li>is a directory that exists in at exactly one of the collection, then that directory resource is returned </li>
+     *   <li>is a directory that exists in several of the collection, then a ResourceCollection of those directories is returned</li>
+     *   <li>do not exist in any of the collection, then a new non existent resource relative to the first in the collection is returned.</li>
+     * </ul>
+     * @throws MalformedURLException if the resolution of the path fails because the input path parameter is malformed against any of the collection
      */
     @Override
     public Resource addPath(String path) throws IOException
@@ -247,27 +255,28 @@ public class ResourceCollection extends Resource
         ArrayList<Resource> resources = null;
 
         // Attempt a simple (single) Resource lookup that exists
+        Resource addedResource = null;
         for (Resource res : _resources)
         {
-            Resource r = res.addPath(path);
-            if (!r.isDirectory() && r.exists())
-            {
-                // Return simple (non-directory) Resource
-                return r;
-            }
-
+            addedResource = res.addPath(path);
+            if (!addedResource.exists())
+                continue;
+            if (!addedResource.isDirectory())
+                return addedResource; // Return simple (non-directory) Resource
             if (resources == null)
-            {
                 resources = new ArrayList<>();
-            }
+            resources.add(addedResource);
+        }
 
-            resources.add(r);
+        if (resources == null)
+        {
+            if (addedResource != null)
+                return addedResource; // This will not exist
+            return EmptyResource.INSTANCE;
         }
 
         if (resources.size() == 1)
-        {
             return resources.get(0);
-        }
 
         return new ResourceCollection(resources);
     }
@@ -384,7 +393,6 @@ public class ResourceCollection extends Resource
     public boolean isDirectory()
     {
         assertResourcesSet();
-
         return true;
     }
 

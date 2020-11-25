@@ -175,7 +175,38 @@ public class ResponseTest
             {
                 _channelError = failure;
             }
-        });
+        })
+        {
+            @Override
+            public boolean needContent()
+            {
+                return false;
+            }
+
+            @Override
+            public HttpInput.Content produceContent()
+            {
+                return null;
+            }
+
+            @Override
+            public boolean failAllContent(Throwable failure)
+            {
+                return false;
+            }
+
+            @Override
+            public boolean failed(Throwable x)
+            {
+                return false;
+            }
+
+            @Override
+            protected boolean eof()
+            {
+                return false;
+            }
+        };
     }
 
     @AfterEach
@@ -1440,10 +1471,77 @@ public class ResponseTest
         output.flush();
     }
 
+    @Test
+    public void testEnsureConsumeAllOrNotPersistentHttp10() throws Exception
+    {
+        Response response = getResponse(HttpVersion.HTTP_1_0);
+        response.getHttpChannel().ensureConsumeAllOrNotPersistent();
+        assertThat(response.getHttpFields().get(HttpHeader.CONNECTION), nullValue());
+
+        response = getResponse(HttpVersion.HTTP_1_0);
+        response.setHeader(HttpHeader.CONNECTION, "keep-alive");
+        response.getHttpChannel().ensureConsumeAllOrNotPersistent();
+        assertThat(response.getHttpFields().get(HttpHeader.CONNECTION), nullValue());
+
+        response = getResponse(HttpVersion.HTTP_1_0);
+        response.setHeader(HttpHeader.CONNECTION, "before");
+        response.getHttpFields().add(HttpHeader.CONNECTION, "foo, keep-alive, bar");
+        response.getHttpFields().add(HttpHeader.CONNECTION, "after");
+        response.getHttpChannel().ensureConsumeAllOrNotPersistent();
+        assertThat(response.getHttpFields().get(HttpHeader.CONNECTION), is("before, foo, bar, after"));
+
+        response = getResponse(HttpVersion.HTTP_1_0);
+        response.setHeader(HttpHeader.CONNECTION, "close");
+        response.getHttpChannel().ensureConsumeAllOrNotPersistent();
+        assertThat(response.getHttpFields().get(HttpHeader.CONNECTION), is("close"));
+    }
+
+    @Test
+    public void testEnsureConsumeAllOrNotPersistentHttp11() throws Exception
+    {
+        Response response = getResponse(HttpVersion.HTTP_1_1);
+        response.getHttpChannel().ensureConsumeAllOrNotPersistent();
+        assertThat(response.getHttpFields().get(HttpHeader.CONNECTION), is("close"));
+
+        response = getResponse(HttpVersion.HTTP_1_1);
+        response.setHeader(HttpHeader.CONNECTION, "keep-alive");
+        response.getHttpChannel().ensureConsumeAllOrNotPersistent();
+        assertThat(response.getHttpFields().get(HttpHeader.CONNECTION), is("close"));
+
+        response = getResponse(HttpVersion.HTTP_1_1);
+        response.setHeader(HttpHeader.CONNECTION, "close");
+        response.getHttpChannel().ensureConsumeAllOrNotPersistent();
+        assertThat(response.getHttpFields().get(HttpHeader.CONNECTION), is("close"));
+
+        response = getResponse(HttpVersion.HTTP_1_1);
+        response.setHeader(HttpHeader.CONNECTION, "before, close, after");
+        response.getHttpChannel().ensureConsumeAllOrNotPersistent();
+        assertThat(response.getHttpFields().get(HttpHeader.CONNECTION), is("before, close, after"));
+
+        response = getResponse(HttpVersion.HTTP_1_1);
+        response.setHeader(HttpHeader.CONNECTION, "before");
+        response.getHttpFields().add(HttpHeader.CONNECTION, "middle, close");
+        response.getHttpFields().add(HttpHeader.CONNECTION, "after");
+        response.getHttpChannel().ensureConsumeAllOrNotPersistent();
+        assertThat(response.getHttpFields().get(HttpHeader.CONNECTION), is("before, middle, close, after"));
+
+        response = getResponse(HttpVersion.HTTP_1_1);
+        response.setHeader(HttpHeader.CONNECTION, "one");
+        response.getHttpFields().add(HttpHeader.CONNECTION, "two");
+        response.getHttpFields().add(HttpHeader.CONNECTION, "three");
+        response.getHttpChannel().ensureConsumeAllOrNotPersistent();
+        assertThat(response.getHttpFields().get(HttpHeader.CONNECTION), is("one, two, three, close"));
+    }
+
     private Response getResponse()
     {
+        return getResponse(HttpVersion.HTTP_1_0);
+    }
+
+    private Response getResponse(HttpVersion version)
+    {
         _channel.recycle();
-        _channel.getRequest().setMetaData(new MetaData.Request("GET", HttpURI.from("/path/info"), HttpVersion.HTTP_1_0, HttpFields.EMPTY));
+        _channel.getRequest().setMetaData(new MetaData.Request("GET", HttpURI.from("/path/info"), version, HttpFields.EMPTY));
         BufferUtil.clear(_content);
         return _channel.getResponse();
     }

@@ -29,13 +29,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * JDBCLoginModule
- * <p>
- * JAAS LoginModule to retrieve user information from
- * a database and authenticate the user.
- * <h1>Notes</h1>
- * <p>This version uses plain old JDBC connections NOT
- * Datasources.
+ * <p>JAAS LoginModule to retrieve user information from
+ * a database and authenticate the user.</p>
+ * <p>Notes</p>
+ * <p>This version uses plain old JDBC connections NOT DataSources.</p>
  */
 public class JDBCLoginModule extends AbstractDatabaseLoginModule
 {
@@ -51,7 +48,6 @@ public class JDBCLoginModule extends AbstractDatabaseLoginModule
      *
      * @return the connection for this datasource
      * @throws Exception if unable to get the connection
-     * @see AbstractDatabaseLoginModule#getConnection()
      */
     @Override
     public Connection getConnection()

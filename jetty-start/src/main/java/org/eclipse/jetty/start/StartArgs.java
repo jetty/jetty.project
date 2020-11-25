@@ -347,8 +347,6 @@ public class StartArgs
             }
             System.out.println();
         }
-
-        System.out.println();
     }
 
     public void dumpJvmArgs()

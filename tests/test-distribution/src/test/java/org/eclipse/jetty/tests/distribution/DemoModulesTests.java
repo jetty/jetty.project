@@ -228,8 +228,11 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                 assertTrue(runStart.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
                 startHttpClient();
-                ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/hello");
-                assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
+                ContentResponse helloResponse = client.GET("http://localhost:" + httpPort + "/test/hello");
+                assertEquals(HttpStatus.OK_200, helloResponse.getStatus());
+
+                ContentResponse cssResponse = client.GET("http://localhost:" + httpPort + "/jetty-dir.css");
+                assertEquals(HttpStatus.OK_200, cssResponse.getStatus());
             }
         }
     }

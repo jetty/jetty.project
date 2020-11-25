@@ -107,12 +107,9 @@ public class HttpChannelState
      */
     private enum InputState
     {
-        IDLE,        // No isReady; No data
-        REGISTER,    // isReady()==false handling; No data
-        REGISTERED,  // isReady()==false !handling; No data
-        POSSIBLE,    // isReady()==false async read callback called (http/1 only)
-        PRODUCING,   // isReady()==false READ_PRODUCE action is being handled (http/1 only)
-        READY        // isReady() was false, onContentAdded has been called
+        IDLE,       // No isReady; No data
+        UNREADY,    // isReady()==false; No data
+        READY       // isReady() was false; data is available
     }
 
     /*
@@ -137,8 +134,6 @@ public class HttpChannelState
         ASYNC_ERROR,      // handle an async error
         ASYNC_TIMEOUT,    // call asyncContext onTimeout
         WRITE_CALLBACK,   // handle an IO write callback
-        READ_REGISTER,    // Register for fill interest
-        READ_PRODUCE,     // Check is a read is possible by parsing/filling
         READ_CALLBACK,    // handle an IO read callback
         COMPLETE,         // Complete the response by closing output
         TERMINATED,       // No further actions
@@ -465,19 +460,12 @@ public class HttpChannelState
             case ASYNC:
                 switch (_inputState)
                 {
-                    case POSSIBLE:
-                        _inputState = InputState.PRODUCING;
-                        return Action.READ_PRODUCE;
+                    case IDLE:
+                    case UNREADY:
+                        break;
                     case READY:
                         _inputState = InputState.IDLE;
                         return Action.READ_CALLBACK;
-                    case REGISTER:
-                    case PRODUCING:
-                        _inputState = InputState.REGISTERED;
-                        return Action.READ_REGISTER;
-                    case IDLE:
-                    case REGISTERED:
-                        break;
 
                     default:
                         throw new IllegalStateException(getStatusStringLocked());
@@ -916,8 +904,6 @@ public class HttpChannelState
                 default:
                     throw new IllegalStateException(getStatusStringLocked());
             }
-            if (_outputState != OutputState.OPEN)
-                throw new IllegalStateException("Response is " + _outputState);
 
             response.setStatus(code);
             response.errorClose();
@@ -1223,98 +1209,7 @@ public class HttpChannelState
     }
 
     /**
-     * Called to signal async read isReady() has returned false.
-     * This indicates that there is no content available to be consumed
-     * and that once the channel enters the ASYNC_WAIT state it will
-     * register for read interest by calling {@link HttpChannel#onAsyncWaitForContent()}
-     * either from this method or from a subsequent call to {@link #unhandle()}.
-     */
-    public void onReadUnready()
-    {
-        boolean interested = false;
-        try (AutoLock l = lock())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("onReadUnready {}", toStringLocked());
-
-            switch (_inputState)
-            {
-                case IDLE:
-                case READY:
-                    if (_state == State.WAITING)
-                    {
-                        interested = true;
-                        _inputState = InputState.REGISTERED;
-                    }
-                    else
-                    {
-                        _inputState = InputState.REGISTER;
-                    }
-                    break;
-
-                case REGISTER:
-                case REGISTERED:
-                case POSSIBLE:
-                case PRODUCING:
-                    break;
-
-                default:
-                    throw new IllegalStateException(toStringLocked());
-            }
-        }
-
-        if (interested)
-            _channel.onAsyncWaitForContent();
-    }
-
-    /**
-     * Called to signal that content is now available to read.
-     * If the channel is in ASYNC_WAIT state and unready (ie isReady() has
-     * returned false), then the state is changed to ASYNC_WOKEN and true
-     * is returned.
-     *
-     * @return True IFF the channel was unready and in ASYNC_WAIT state
-     */
-    public boolean onContentAdded()
-    {
-        boolean woken = false;
-        try (AutoLock l = lock())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("onContentAdded {}", toStringLocked());
-
-            switch (_inputState)
-            {
-                case IDLE:
-                case READY:
-                    break;
-
-                case PRODUCING:
-                    _inputState = InputState.READY;
-                    break;
-
-                case REGISTER:
-                case REGISTERED:
-                    _inputState = InputState.READY;
-                    if (_state == State.WAITING)
-                    {
-                        woken = true;
-                        _state = State.WOKEN;
-                    }
-                    break;
-
-                default:
-                    throw new IllegalStateException(toStringLocked());
-            }
-        }
-        return woken;
-    }
-
-    /**
      * Called to signal that the channel is ready for a callback.
-     * This is similar to calling {@link #onReadUnready()} followed by
-     * {@link #onContentAdded()}, except that as content is already
-     * available, read interest is never set.
      *
      * @return true if woken
      */
@@ -1328,7 +1223,11 @@ public class HttpChannelState
 
             switch (_inputState)
             {
+                case READY:
+                    _inputState = InputState.READY;
+                    break;
                 case IDLE:
+                case UNREADY:
                     _inputState = InputState.READY;
                     if (_state == State.WAITING)
                     {
@@ -1344,25 +1243,20 @@ public class HttpChannelState
         return woken;
     }
 
-    /**
-     * Called to indicate that more content may be available,
-     * but that a handling thread may need to produce (fill/parse)
-     * it.  Typically called by the async read success callback.
-     *
-     * @return {@code true} if more content may be available
-     */
-    public boolean onReadPossible()
+    public boolean onReadEof()
     {
         boolean woken = false;
         try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onReadPossible {}", toStringLocked());
+                LOG.debug("onReadEof {}", toStringLocked());
 
             switch (_inputState)
             {
-                case REGISTERED:
-                    _inputState = InputState.POSSIBLE;
+                case IDLE:
+                case READY:
+                case UNREADY:
+                    _inputState = InputState.READY;
                     if (_state == State.WAITING)
                     {
                         woken = true;
@@ -1377,29 +1271,72 @@ public class HttpChannelState
         return woken;
     }
 
-    /**
-     * Called to signal that a read has read -1.
-     * Will wake if the read was called while in ASYNC_WAIT state
-     *
-     * @return {@code true} if woken
-     */
-    public boolean onReadEof()
+    public void onContentAdded()
     {
-        boolean woken = false;
         try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onEof {}", toStringLocked());
+                LOG.debug("onContentAdded {}", toStringLocked());
 
-            // Force read ready so onAllDataRead can be called
-            _inputState = InputState.READY;
-            if (_state == State.WAITING)
+            switch (_inputState)
             {
-                woken = true;
-                _state = State.WOKEN;
+                case IDLE:
+                case UNREADY:
+                case READY:
+                    _inputState = InputState.READY;
+                    break;
+
+                default:
+                    throw new IllegalStateException(toStringLocked());
             }
         }
-        return woken;
+    }
+
+    public void onReadIdle()
+    {
+        try (AutoLock l = lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("onReadIdle {}", toStringLocked());
+
+            switch (_inputState)
+            {
+                case UNREADY:
+                case READY:
+                case IDLE:
+                    _inputState = InputState.IDLE;
+                    break;
+
+                default:
+                    throw new IllegalStateException(toStringLocked());
+            }
+        }
+    }
+
+    /**
+     * Called to indicate that more content may be available,
+     * but that a handling thread may need to produce (fill/parse)
+     * it.  Typically called by the async read success callback.
+     */
+    public void onReadUnready()
+    {
+        try (AutoLock l = lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("onReadUnready {}", toStringLocked());
+
+            switch (_inputState)
+            {
+                case IDLE:
+                case UNREADY:
+                case READY:  // READY->UNREADY is needed by AsyncServletIOTest.testStolenAsyncRead
+                    _inputState = InputState.UNREADY;
+                    break;
+
+                default:
+                    throw new IllegalStateException(toStringLocked());
+            }
+        }
     }
 
     public boolean onWritePossible()
