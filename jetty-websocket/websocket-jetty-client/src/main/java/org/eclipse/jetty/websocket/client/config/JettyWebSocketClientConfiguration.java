@@ -24,8 +24,6 @@ import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppConfiguration;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * <p>Websocket Configuration</p>
@@ -34,8 +32,6 @@ import org.slf4j.LoggerFactory;
  */
 public class JettyWebSocketClientConfiguration extends AbstractConfiguration
 {
-    private static final Logger LOG = LoggerFactory.getLogger(JettyWebSocketClientConfiguration.class);
-
     public JettyWebSocketClientConfiguration()
     {
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
@@ -43,7 +39,7 @@ public class JettyWebSocketClientConfiguration extends AbstractConfiguration
 
         protectAndExpose("org.eclipse.jetty.websocket.api.");
         protectAndExpose("org.eclipse.jetty.websocket.client.");
-        hide("org.eclipse.jetty.client.impl.");
-        hide("org.eclipse.jetty.client.config.");
+        hide("org.eclipse.jetty.websocket.client.impl.");
+        hide("org.eclipse.jetty.websocket.client.config.");
     }
 }
