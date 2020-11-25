@@ -13,7 +13,7 @@ pipeline {
             container('jetty-build') {
               timeout( time: 120, unit: 'MINUTES' ) {
                 mavenBuild( "jdk11", "-T3 clean install", "maven3",
-                            [[parserName: 'Maven'], [parserName: 'Java']] )
+                            [[parserName: 'Maven'], [parserName: 'Java'], [parserName: 'JavaDoc']] )
                 // Collect up the jacoco execution results (only on main build)
                 jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
                        exclusionPattern: '' +
@@ -41,8 +41,8 @@ pipeline {
           steps {
             container( 'jetty-build' ) {
               timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk15", "clean install -T3 -Djacoco.skip=true -Djacoco.skip=true", "maven3",
-                            [[parserName: 'Maven'], [parserName: 'Java']] )
+                mavenBuild( "jdk15", "clean install -T3 -Djacoco.skip=true", "maven3",
+                            [[parserName: 'Maven'], [parserName: 'Java'], [parserName: 'JavaDoc']])
               }
             }
           }
@@ -98,7 +98,7 @@ def mavenBuild(jdk, cmdline, mvnName, consoleParsers) {
                "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
         configFileProvider(
                 [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
-          sh "mvn -s $GLOBAL_MVN_SETTINGS -DsettingsPath=$GLOBAL_MVN_SETTINGS -Pci -V -B -e -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" +
+          sh "mvn -s $GLOBAL_MVN_SETTINGS -DsettingsPath=$GLOBAL_MVN_SETTINGS -Pci -V -B -e -Djetty.testtracker.log=true $cmdline javadoc:jar -Dunix.socket.tmp=" +
                      env.JENKINS_HOME
         }
       }
