@@ -503,6 +503,6 @@ public abstract class IteratingCallback implements Callback
     @Override
     public String toString()
     {
-        return String.format("%s[%s]", super.toString(), _state);
+        return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), _state);
     }
 }
