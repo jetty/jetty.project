@@ -176,7 +176,7 @@ public class WebSocketProxy
             {
                 // If we have sent out a ping then we have already responded with automatic pong.
                 // If this is an unsolicited pong we still need to forward it to the server.
-                int valueBeforeUpdate = pingsReceived.getAndUpdate(i -> i > 0 ? i - 1 : i);
+                int valueBeforeUpdate = proxyToServer.pingsReceived.getAndUpdate(i -> i > 0 ? i - 1 : i);
                 if (valueBeforeUpdate == 0)
                     proxyToServer.getSession().getRemote().sendPong(BufferUtil.copy(payload));
             }
@@ -297,7 +297,7 @@ public class WebSocketProxy
             {
                 // If we have sent out a ping then we have already responded with automatic pong.
                 // If this is an unsolicited pong we still need to forward it to the client.
-                int valueBeforeUpdate = pingsReceived.getAndUpdate(i -> i > 0 ? i - 1 : i);
+                int valueBeforeUpdate = clientToProxy.pingsReceived.getAndUpdate(i -> i > 0 ? i - 1 : i);
                 if (valueBeforeUpdate == 0)
                     clientToProxy.getSession().getRemote().sendPong(BufferUtil.copy(payload));
             }
