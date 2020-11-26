@@ -76,7 +76,7 @@ public class WebSocketProxy
 
     public class ClientToProxy implements WebSocketPartialListener, WebSocketPingPongListener
     {
-        private Session session;
+        private volatile Session session;
         private final CountDownLatch closeLatch = new CountDownLatch(1);
         private final AtomicInteger pingsReceived = new AtomicInteger();
 
@@ -211,7 +211,7 @@ public class WebSocketProxy
 
     public class ProxyToServer implements WebSocketPartialListener, WebSocketPingPongListener
     {
-        private Session session;
+        private volatile Session session;
         private final CountDownLatch closeLatch = new CountDownLatch(1);
         private final AtomicInteger pingsReceived = new AtomicInteger();
 
@@ -223,6 +223,7 @@ public class WebSocketProxy
         public void fail(Throwable failure)
         {
             // Only ProxyToServer can be failed before it is opened (if ClientToProxy fails before the connect completes).
+            Session session = this.session;
             if (session != null)
                 session.close(StatusCode.SERVER_ERROR, failure.getMessage());
         }

@@ -49,6 +49,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -203,7 +204,7 @@ public class WebSocketProxyTest
     }
 
     @Test
-    public void testServerErrorClientNoResponse() throws Exception
+    public void testServerThrowsOnMessage() throws Exception
     {
         serverSocket = new OnTextThrowingSocket();
 
@@ -228,6 +229,37 @@ public class WebSocketProxyTest
 
         assertNull(clientSocket.textMessages.poll(1, TimeUnit.SECONDS));
         assertTrue(webSocketProxy.awaitClose(5000));
+    }
+
+    @Test
+    public void timeoutTest() throws Exception
+    {
+        long clientSessionIdleTimeout = 2000;
+
+        EventSocket clientSocket = new EventSocket();
+        client.connect(clientSocket, proxyUri);
+        assertTrue(clientSocket.openLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverSocket.openLatch.await(5, TimeUnit.SECONDS));
+
+        // Configure infinite idleTimeout on the server session and short timeout on the client session.
+        clientSocket.session.setIdleTimeout(clientSessionIdleTimeout);
+        serverSocket.session.setIdleTimeout(-1);
+
+        // Send and receive an echo message.
+        clientSocket.session.getRemote().sendString("test echo message");
+        assertThat(clientSocket.textMessages.poll(clientSessionIdleTimeout, TimeUnit.SECONDS), is("test echo message"));
+
+        // Wait more than the idleTimeout period, the clientToProxy connection should fail which should fail the proxyToServer.
+        assertTrue(clientSocket.closeLatch.await(clientSessionIdleTimeout * 2, TimeUnit.MILLISECONDS));
+        assertTrue(serverSocket.closeLatch.await(clientSessionIdleTimeout * 2, TimeUnit.MILLISECONDS));
+
+        // Check errors and close status.
+        assertThat(clientSocket.error.getMessage(), containsString("Idle timeout expired"));
+        assertThat(clientSocket.closeCode, is(StatusCode.SHUTDOWN));
+        assertThat(clientSocket.closeReason, containsString("Idle timeout expired"));
+        assertNull(serverSocket.error);
+        assertThat(serverSocket.closeCode, is(StatusCode.SHUTDOWN));
+        assertThat(serverSocket.closeReason, containsString("Idle timeout expired"));
     }
 
     @Test
