@@ -19,19 +19,21 @@
 package org.eclipse.jetty.websocket.jakarta.tests.server;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import jakarta.websocket.OnError;
 import jakarta.websocket.OnMessage;
+import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.jakarta.tests.Fuzzer;
+import org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketClientContainer;
+import org.eclipse.jetty.websocket.jakarta.tests.EventSocket;
 import org.eclipse.jetty.websocket.jakarta.tests.LocalServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -40,6 +42,10 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test various {@link jakarta.websocket.Decoder.Binary Decoder.Binary} / {@link jakarta.websocket.Encoder.Binary Encoder.Binary} echo behavior of Java Primitives
@@ -86,7 +92,7 @@ public class PrimitivesBinaryEchoTest
 
     private static void addCase(List<Arguments> data, Class<?> endpointClass, String sendHex, String expectHex)
     {
-        data.add(Arguments.of(endpointClass.getSimpleName(), endpointClass, sendHex, expectHex));
+        data.add(Arguments.of(endpointClass, sendHex, expectHex));
     }
 
     public static Stream<Arguments> data()
@@ -105,6 +111,7 @@ public class PrimitivesBinaryEchoTest
     }
 
     private static LocalServer server;
+    private static JakartaWebSocketClientContainer client;
 
     @BeforeAll
     public static void startServer() throws Exception
@@ -113,32 +120,32 @@ public class PrimitivesBinaryEchoTest
         server.start();
         server.getServerContainer().addEndpoint(ByteBufferEchoSocket.class);
         server.getServerContainer().addEndpoint(ByteArrayEchoSocket.class);
+
+        client = new JakartaWebSocketClientContainer();
+        client.start();
     }
 
     @AfterAll
     public static void stopServer() throws Exception
     {
+        client.stop();
         server.stop();
     }
 
     @ParameterizedTest(name = "{0}: {2}")
     @MethodSource("data")
-    public void testPrimitiveEcho(String endpointClassname, Class<?> endpointClass, String sendHex, String expectHex) throws Exception
+    public void testPrimitiveEcho(Class<?> endpointClass, String sendHex, String expectHex) throws Exception
     {
         String requestPath = endpointClass.getAnnotation(ServerEndpoint.class).value();
-
-        List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.BINARY).setPayload(Hex.asByteBuffer(sendHex)));
-        send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-
-        List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.BINARY).setPayload(Hex.asByteBuffer(expectHex)));
-        expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-
-        try (Fuzzer session = server.newNetworkFuzzer(requestPath))
+        EventSocket clientSocket = new EventSocket();
+        URI uri = server.getWsUri().resolve(requestPath);
+        try (Session session = client.connectToServer(clientSocket, uri))
         {
-            session.sendBulk(send);
-            session.expect(expect);
+            session.getBasicRemote().sendBinary(Hex.asByteBuffer(sendHex));
+            assertThat(clientSocket.binaryMessages.poll(5, TimeUnit.SECONDS), is(Hex.asByteBuffer(expectHex)));
         }
+
+        assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(clientSocket.closeReason.getCloseCode().getCode(), is(CloseStatus.NORMAL));
     }
 }
