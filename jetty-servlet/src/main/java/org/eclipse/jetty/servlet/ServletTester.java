@@ -41,7 +41,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>ServletTester should not be used.</p>
+ * <p>ServletTester is not best practice and may be deprecated and eventually
+ * removed in future Jetty versions.</p>
  * <p>ServletTester is a just a wrapper around a {@link ServletContextHandler},
  * with a {@link LocalConnector} to accept HTTP/1.1 requests, so there is no
  * value that this class adds to already existing classes.</p>
@@ -83,7 +84,6 @@ import org.slf4j.LoggerFactory;
  * String rawResponse = connector.getResponse(rawRequest);
  * HttpTester.Response response = HttpTester.parseResponse(rawResponse);
  * </pre>
- * <p>This class will be deprecated and eventually removed in future Jetty versions.</p>
  */
 public class ServletTester extends ContainerLifeCycle
 {
