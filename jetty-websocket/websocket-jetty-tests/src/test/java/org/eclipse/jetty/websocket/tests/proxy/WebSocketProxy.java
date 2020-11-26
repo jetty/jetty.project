@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
@@ -78,7 +77,6 @@ public class WebSocketProxy
     {
         private volatile Session session;
         private final CountDownLatch closeLatch = new CountDownLatch(1);
-        private final AtomicInteger pingsReceived = new AtomicInteger();
 
         public Session getSession()
         {
@@ -156,9 +154,7 @@ public class WebSocketProxy
 
             try
             {
-                // The implementation automatically sends pong response.
-                pingsReceived.incrementAndGet();
-                proxyToServer.getSession().getRemote().sendPing(BufferUtil.copy(payload));
+                proxyToServer.getSession().getRemote().sendPing(payload);
             }
             catch (Exception e)
             {
@@ -174,11 +170,7 @@ public class WebSocketProxy
 
             try
             {
-                // If we have sent out a ping then we have already responded with automatic pong.
-                // If this is an unsolicited pong we still need to forward it to the server.
-                int valueBeforeUpdate = pingsReceived.getAndUpdate(i -> i > 0 ? i - 1 : i);
-                if (valueBeforeUpdate == 0)
-                    proxyToServer.getSession().getRemote().sendPong(BufferUtil.copy(payload));
+                proxyToServer.getSession().getRemote().sendPong(payload);
             }
             catch (Exception e)
             {
@@ -213,7 +205,6 @@ public class WebSocketProxy
     {
         private volatile Session session;
         private final CountDownLatch closeLatch = new CountDownLatch(1);
-        private final AtomicInteger pingsReceived = new AtomicInteger();
 
         public Session getSession()
         {
@@ -277,9 +268,7 @@ public class WebSocketProxy
 
             try
             {
-                // The implementation automatically sends pong response.
-                pingsReceived.incrementAndGet();
-                clientToProxy.getSession().getRemote().sendPing(BufferUtil.copy(payload));
+                clientToProxy.getSession().getRemote().sendPing(payload);
             }
             catch (Exception e)
             {
@@ -295,11 +284,7 @@ public class WebSocketProxy
 
             try
             {
-                // If we have sent out a ping then we have already responded with automatic pong.
-                // If this is an unsolicited pong we still need to forward it to the client.
-                int valueBeforeUpdate = pingsReceived.getAndUpdate(i -> i > 0 ? i - 1 : i);
-                if (valueBeforeUpdate == 0)
-                    clientToProxy.getSession().getRemote().sendPong(BufferUtil.copy(payload));
+                clientToProxy.getSession().getRemote().sendPong(payload);
             }
             catch (Exception e)
             {
