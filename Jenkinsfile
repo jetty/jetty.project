@@ -11,7 +11,7 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             container('jetty-build') {
-              timeout( time: 120, unit: 'MINUTES' ) {
+              timeout( time: 240, unit: 'MINUTES' ) {
                 mavenBuild( "jdk11", "clean install", "maven3",
                             [[parserName: 'Maven'], [parserName: 'Java'], [parserName: 'JavaDoc']] )
                 // Collect up the jacoco execution results (only on main build)
@@ -40,7 +40,7 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             container( 'jetty-build' ) {
-              timeout( time: 120, unit: 'MINUTES' ) {
+              timeout( time: 240, unit: 'MINUTES' ) {
                 mavenBuild( "jdk15", "clean install -Djacoco.skip=true", "maven3",
                             [[parserName: 'Maven'], [parserName: 'Java'], [parserName: 'JavaDoc']])
               }
