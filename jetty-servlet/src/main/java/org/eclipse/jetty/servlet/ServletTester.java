@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -39,6 +40,51 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * <p>ServletTester is not best practice and may be deprecated and eventually
+ * removed in future Jetty versions.</p>
+ * <p>ServletTester is a just a wrapper around a {@link ServletContextHandler},
+ * with a {@link LocalConnector} to accept HTTP/1.1 requests, so there is no
+ * value that this class adds to already existing classes.</p>
+ * <p>Replace its usages with:</p>
+ * <pre>
+ * Server server = new Server();
+ * LocalConnector connector = new LocalConnector(server);
+ * server.addConnector(connector);
+ * ServletContextHandler context = new ServletContextHandler(server, "/contextPath");
+ * // Configure the context here.
+ * server.start();
+ * </pre>
+ * <p>You can configure the context by adding Servlets and Filters, attributes,
+ * etc. even after it has been started.
+ * Use {@link HttpTester} and {@link LocalConnector} to make HTTP/1.1 requests,
+ * in this way:</p>
+ * <pre>
+ * // Generate the request.
+ * HttpTester.Request request = HttpTester.newRequest();
+ * request.setMethod("GET");
+ * request.setURI("/contextPath/servletPath");
+ * request.put(HttpHeader.HOST, "localhost");
+ * ByteBuffer requestBuffer = request.generate();
+ *
+ * // Send the request buffer and get the response buffer.
+ * ByteBuffer responseBuffer = connector.getResponse(requestBuffer);
+ *
+ * // Parse the response buffer.
+ * HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+ * assert response.getStatus() == HttpStatus.OK_200;
+ * </pre>
+ * <p>Alternatively, you can use <em>raw</em> strings for requests and responses,
+ * but you must be sure the request strings are in the correct HTTP/1.1 format:</p>
+ * <pre>
+ * String rawRequest = "" +
+ *         "GET /contextPath/servletPath HTTP/1.1\r\n" +
+ *         "Host: localhost\r\n" +
+ *         "\r\n";
+ * String rawResponse = connector.getResponse(rawRequest);
+ * HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+ * </pre>
+ */
 public class ServletTester extends ContainerLifeCycle
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletTester.class);

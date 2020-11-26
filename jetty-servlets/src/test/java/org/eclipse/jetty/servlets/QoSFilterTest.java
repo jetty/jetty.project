@@ -37,9 +37,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ServletTester;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,8 +59,9 @@ public class QoSFilterTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(QoSFilterTest.class);
 
-    private ServletTester _tester;
+    private Server server;
     private LocalConnector[] _connectors;
+    private ServletContextHandler context;
     private final int numConnections = 8;
     private final int numLoops = 6;
     private final int maxQos = 4;
@@ -65,25 +69,26 @@ public class QoSFilterTest
     @BeforeEach
     public void setUp() throws Exception
     {
-        _tester = new ServletTester();
-        _tester.setContextPath("/context");
-        _tester.addServlet(TestServlet.class, "/test");
+        server = new Server();
+        context = new ServletContextHandler(server, "/context");
+        context.addServlet(TestServlet.class, "/test");
         TestServlet.__maxSleepers = 0;
         TestServlet.__sleepers = 0;
 
         _connectors = new LocalConnector[numConnections];
         for (int i = 0; i < _connectors.length; ++i)
         {
-            _connectors[i] = _tester.createLocalConnector();
+            _connectors[i] = new LocalConnector(server);
+            server.addConnector(_connectors[i]);
         }
 
-        _tester.start();
+        server.start();
     }
 
     @AfterEach
-    public void tearDown() throws Exception
+    public void tearDown()
     {
-        _tester.stop();
+        LifeCycle.stop(server);
     }
 
     @Test
@@ -113,7 +118,7 @@ public class QoSFilterTest
         FilterHolder holder = new FilterHolder(QoSFilter2.class);
         holder.setAsyncSupported(true);
         holder.setInitParameter(QoSFilter.MAX_REQUESTS_INIT_PARAM, "" + maxQos);
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+        context.getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
 
         List<Worker> workers = new ArrayList<>();
         for (int i = 0; i < numConnections; ++i)
@@ -138,7 +143,7 @@ public class QoSFilterTest
         FilterHolder holder = new FilterHolder(QoSFilter2.class);
         holder.setAsyncSupported(true);
         holder.setInitParameter(QoSFilter.MAX_REQUESTS_INIT_PARAM, String.valueOf(maxQos));
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+        context.getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
 
         List<Worker2> workers = new ArrayList<>();
         for (int i = 0; i < numConnections; ++i)
@@ -167,7 +172,7 @@ public class QoSFilterTest
 
     class Worker implements Callable<Void>
     {
-        private int _num;
+        private final int _num;
 
         public Worker(int num)
         {
@@ -195,11 +200,11 @@ public class QoSFilterTest
         }
     }
 
-    class Worker2 implements Callable<Void>
+    private class Worker2 implements Callable<Void>
     {
-        private int _num;
+        private final int _num;
 
-        public Worker2(int num)
+        private Worker2(int num)
         {
             _num = num;
         }
@@ -208,9 +213,14 @@ public class QoSFilterTest
         public Void call() throws Exception
         {
             URL url = null;
+            ServerConnector connector = null;
             try
             {
-                String addr = _tester.createConnector(true);
+                connector = new ServerConnector(server);
+                server.addConnector(connector);
+                connector.start();
+
+                String addr = "http://localhost:" + connector.getLocalPort();
                 for (int i = 0; i < numLoops; i++)
                 {
                     url = new URL(addr + "/context/test?priority=" + (_num % QoSFilter.__DEFAULT_MAX_PRIORITY) + "&n=" + _num + "&l=" + i);
@@ -221,7 +231,14 @@ public class QoSFilterTest
             {
                 LOG.debug("Request " + url + " failed", e);
             }
-
+            finally
+            {
+                if (connector != null)
+                {
+                    connector.stop();
+                    server.removeConnector(connector);
+                }
+            }
             return null;
         }
     }
