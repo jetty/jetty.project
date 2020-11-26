@@ -27,7 +27,18 @@
             </goals>
             <configuration>
               <includes>**</includes>
-              <excludes>**/MANIFEST.MF,META-INF/LICENSE,META-INF/*.RSA,META-INF/*.DSA,META-INF/*.SF,module-info.class</excludes>
+              <excludes>
+                **/MANIFEST.MF,
+                META-INF/LICENSE,
+                META-INF/*.RSA,
+                META-INF/*.DSA,
+                META-INF/*.SF,
+                module-info.class,
+                readme.txt,
+                MANIFEST.MF,
+                about.html,
+                ecj.1
+              </excludes>
               <outputDirectory>${project.build.directory}/classes</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>
@@ -84,10 +95,12 @@
           <artifactId>maven-jar-plugin</artifactId>
           <configuration>
             <archive>
-              <manifestFile>src/main/resources/MANIFEST.MF</manifestFile>
               <manifest>
                 <mainClass>org.eclipse.jetty.runner.Runner</mainClass>
               </manifest>
+              <manifestEntries>
+                <Comment>Jetty Runner</Comment>
+              </manifestEntries>
             </archive>
           </configuration>
         </plugin>
