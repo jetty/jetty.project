@@ -134,7 +134,7 @@ public class AsyncServletTest extends AbstractTest
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
         CountDownLatch responseLatch = new CountDownLatch(1);
-        CountDownLatch resetLatch = new CountDownLatch(1);
+        CountDownLatch failLatch = new CountDownLatch(1);
         session.newStream(frame, promise, new Stream.Listener.Adapter()
         {
             @Override
@@ -144,9 +144,10 @@ public class AsyncServletTest extends AbstractTest
             }
 
             @Override
-            public void onReset(Stream stream, ResetFrame frame)
+            public void onFailure(Stream stream, int error, String reason, Throwable failure, Callback callback)
             {
-                resetLatch.countDown();
+                failLatch.countDown();
+                callback.succeeded();
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);
@@ -154,7 +155,7 @@ public class AsyncServletTest extends AbstractTest
 
         assertTrue(serverLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
         assertFalse(responseLatch.await(idleTimeout + 1000, TimeUnit.MILLISECONDS));
-        assertTrue(resetLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+        assertTrue(failLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
     @Test

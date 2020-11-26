@@ -508,38 +508,27 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
                     if (HttpVersion.HTTP_1_1.equals(_requestBuilder.version()))
                     {
                         HttpHeaderValue expect = HttpHeaderValue.CACHE.get(value);
-                        switch (expect == null ? HttpHeaderValue.UNKNOWN : expect)
+                        if (expect == HttpHeaderValue.CONTINUE)
                         {
-                            case CONTINUE:
-                                _expect100Continue = true;
-                                break;
-
-                            case PROCESSING:
-                                _expect102Processing = true;
-                                break;
-
-                            default:
-                                String[] values = field.getValues();
-                                for (int i = 0; values != null && i < values.length; i++)
-                                {
-                                    expect = HttpHeaderValue.CACHE.get(values[i].trim());
-                                    if (expect == null)
-                                        _unknownExpectation = true;
-                                    else
-                                    {
-                                        switch (expect)
-                                        {
-                                            case CONTINUE:
-                                                _expect100Continue = true;
-                                                break;
-                                            case PROCESSING:
-                                                _expect102Processing = true;
-                                                break;
-                                            default:
-                                                _unknownExpectation = true;
-                                        }
-                                    }
-                                }
+                            _expect100Continue = true;
+                        }
+                        else if (expect == HttpHeaderValue.PROCESSING)
+                        {
+                            _expect102Processing = true;
+                        }
+                        else
+                        {
+                            String[] values = field.getValues();
+                            for (int i = 0; values != null && i < values.length; i++)
+                            {
+                                expect = HttpHeaderValue.CACHE.get(values[i].trim());
+                                if (expect == HttpHeaderValue.CONTINUE)
+                                    _expect100Continue = true;
+                                else if (expect == HttpHeaderValue.PROCESSING)
+                                    _expect102Processing = true;
+                                else
+                                    _unknownExpectation = true;
+                            }
                         }
                     }
                     break;

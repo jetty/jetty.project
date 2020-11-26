@@ -20,9 +20,8 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.ArrayTrie;
+import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.Trie;
 
 public enum HttpHeader
 {
@@ -133,21 +132,12 @@ public enum HttpHeader
     C_AUTHORITY(":authority", true),
     C_PATH(":path", true),
     C_STATUS(":status", true),
-    C_PROTOCOL(":protocol"),
+    C_PROTOCOL(":protocol");
 
-    UNKNOWN("::UNKNOWN::", true);
-
-    public static final Trie<HttpHeader> CACHE = new ArrayTrie<>(630);
-
-    static
-    {
-        for (HttpHeader header : HttpHeader.values())
-        {
-            if (header != UNKNOWN)
-                if (!CACHE.put(header.toString(), header))
-                    throw new IllegalStateException();
-        }
-    }
+    public static final Index<HttpHeader> CACHE = new Index.Builder<HttpHeader>()
+        .caseSensitive(false)
+        .withAll(HttpHeader.values(), HttpHeader::toString)
+        .build();
 
     private final String _string;
     private final String _lowerCase;

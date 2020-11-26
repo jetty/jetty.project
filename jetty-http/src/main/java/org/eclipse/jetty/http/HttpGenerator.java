@@ -26,10 +26,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
-import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.Trie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,13 +91,11 @@ public class HttpGenerator
     private final int _send;
     private static final int SEND_SERVER = 0x01;
     private static final int SEND_XPOWEREDBY = 0x02;
-    private static final Trie<Boolean> ASSUMED_CONTENT_METHODS = new ArrayTrie<>(8);
-
-    static
-    {
-        ASSUMED_CONTENT_METHODS.put(HttpMethod.POST.asString(), Boolean.TRUE);
-        ASSUMED_CONTENT_METHODS.put(HttpMethod.PUT.asString(), Boolean.TRUE);
-    }
+    private static final Index<Boolean> ASSUMED_CONTENT_METHODS = new Index.Builder<Boolean>()
+        .caseSensitive(false)
+        .with(HttpMethod.POST.asString(), Boolean.TRUE)
+        .with(HttpMethod.PUT.asString(), Boolean.TRUE)
+        .build();
 
     public static void setJettyVersion(String serverVersion)
     {
@@ -679,7 +676,7 @@ public class HttpGenerator
         // Calculate how to end _content and connection, _content length and transfer encoding
         // settings from http://tools.ietf.org/html/rfc7230#section-3.3.3
 
-        boolean assumedContentRequest = request != null && Boolean.TRUE.equals(ASSUMED_CONTENT_METHODS.get(request.getMethod()));
+        boolean assumedContentRequest = request != null && ASSUMED_CONTENT_METHODS.get(request.getMethod()) != null;
         boolean assumedContent = assumedContentRequest || contentType || chunkedHint;
         boolean noContentRequest = request != null && contentLength <= 0 && !assumedContent;
 

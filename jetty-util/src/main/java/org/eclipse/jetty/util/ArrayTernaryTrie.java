@@ -23,6 +23,7 @@ import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -57,17 +58,24 @@ import java.util.Set;
  *
  * @param <V> the Entry type
  */
-public class ArrayTernaryTrie<V> extends AbstractTrie<V>
+class ArrayTernaryTrie<V> extends AbstractTrie<V>
 {
-    private static int LO = 1;
-    private static int EQ = 2;
-    private static int HI = 3;
+    private static final int LO = 1;
+    private static final int EQ = 2;
+    private static final int HI = 3;
 
     /**
      * The Size of a Trie row is the char, and the low, equal and high
      * child pointers
      */
     private static final int ROW_SIZE = 4;
+
+    /**
+     * The maximum capacity of the implementation. Over that,
+     * the 16 bit indexes can overflow and the trie
+     * cannot find existing entries anymore.
+     */
+    private static final int MAX_CAPACITY = 21_000;
 
     /**
      * The Trie rows in a single array which allows a lookup of row,character
@@ -94,39 +102,6 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
     private char _rows;
 
     /**
-     * Create a case insensitive Trie of default capacity.
-     */
-    public ArrayTernaryTrie()
-    {
-        this(128);
-    }
-
-    /**
-     * Create a Trie of default capacity
-     *
-     * @param insensitive true if the Trie is insensitive to the case of the key.
-     */
-    public ArrayTernaryTrie(boolean insensitive)
-    {
-        this(insensitive, 128);
-    }
-
-    /**
-     * Create a case insensitive Trie
-     *
-     * @param capacity The capacity of the Trie, which is in the worst case
-     * is the total number of characters of all keys stored in the Trie.
-     * The capacity needed is dependent of the shared prefixes of the keys.
-     * For example, a capacity of 6 nodes is required to store keys "foo"
-     * and "bar", but a capacity of only 4 is required to
-     * store "bar" and "bat".
-     */
-    public ArrayTernaryTrie(int capacity)
-    {
-        this(true, capacity);
-    }
-
-    /**
      * Create a Trie
      *
      * @param insensitive true if the Trie is insensitive to the case of the key.
@@ -137,28 +112,37 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
      * and "bar", but a capacity of only 4 is required to
      * store "bar" and "bat".
      */
-    public ArrayTernaryTrie(boolean insensitive, int capacity)
+    @SuppressWarnings("unchecked")
+    ArrayTernaryTrie(boolean insensitive, int capacity)
     {
         super(insensitive);
+        if (capacity > MAX_CAPACITY)
+            throw new IllegalArgumentException("ArrayTernaryTrie maximum capacity overflow (" + capacity + " > " + MAX_CAPACITY + ")");
         _value = (V[])new Object[capacity];
         _tree = new char[capacity * ROW_SIZE];
         _key = new String[capacity];
     }
 
-    /**
-     * Copy Trie and change capacity by a factor
-     *
-     * @param trie the trie to copy from
-     * @param factor the factor to grow the capacity by
-     */
-    public ArrayTernaryTrie(ArrayTernaryTrie<V> trie, double factor)
+    @SuppressWarnings("unchecked")
+    ArrayTernaryTrie(boolean insensitive, Map<String, V> initialValues)
     {
-        super(trie.isCaseInsensitive());
-        int capacity = (int)(trie._value.length * factor);
-        _rows = trie._rows;
-        _value = Arrays.copyOf(trie._value, capacity);
-        _tree = Arrays.copyOf(trie._tree, capacity * ROW_SIZE);
-        _key = Arrays.copyOf(trie._key, capacity);
+        super(insensitive);
+        // The calculated requiredCapacity does not take into account the
+        // extra reserved slot for the empty string key, nor the slots
+        // required for 'terminating' the entry (1 slot per key) so we
+        // have to add those.
+        Set<String> keys = initialValues.keySet();
+        int capacity = AbstractTrie.requiredCapacity(keys, !insensitive) + keys.size() + 1;
+        if (capacity > MAX_CAPACITY)
+            throw new IllegalArgumentException("ArrayTernaryTrie maximum capacity overflow (" + capacity + " > " + MAX_CAPACITY + ")");
+        _value = (V[])new Object[capacity];
+        _tree = new char[capacity * ROW_SIZE];
+        _key = new String[capacity];
+        for (Map.Entry<String, V> entry : initialValues.entrySet())
+        {
+            if (!put(entry.getKey(), entry.getValue()))
+                throw new AssertionError("Invalid capacity calculated (" + capacity + ") at '" + entry + "' for " + initialValues);
+        }
     }
 
     @Override
@@ -527,12 +511,6 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         return entries;
     }
 
-    @Override
-    public boolean isFull()
-    {
-        return _rows + 1 == _key.length;
-    }
-
     public static int hilo(int diff)
     {
         // branchless equivalent to return ((diff<0)?LO:HI);
@@ -556,24 +534,14 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         }
     }
 
-    public static class Growing<V> implements Trie<V>
+    static class Growing<V> extends AbstractTrie<V>
     {
         private final int _growby;
         private ArrayTernaryTrie<V> _trie;
 
-        public Growing()
+        Growing(boolean insensitive, int capacity, int growby)
         {
-            this(1024, 1024);
-        }
-
-        public Growing(int capacity, int growby)
-        {
-            _growby = growby;
-            _trie = new ArrayTernaryTrie<>(capacity);
-        }
-
-        public Growing(boolean insensitive, int capacity, int growby)
-        {
+            super(insensitive);
             _growby = growby;
             _trie = new ArrayTernaryTrie<>(insensitive, capacity);
         }
@@ -591,15 +559,14 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         }
 
         @Override
-        public boolean isCaseInsensitive()
+        public boolean equals(Object o)
         {
-            return _trie.isCaseInsensitive();
-        }
-
-        @Override
-        public boolean equals(Object obj)
-        {
-            return _trie.equals(obj);
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+            Growing<?> growing = (Growing<?>)o;
+            return Objects.equals(_trie, growing._trie);
         }
 
         @Override
@@ -690,12 +657,6 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         public Set<String> keySet()
         {
             return _trie.keySet();
-        }
-
-        @Override
-        public boolean isFull()
-        {
-            return false;
         }
 
         public void dump()

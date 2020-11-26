@@ -20,9 +20,8 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.ArrayTrie;
+import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.Trie;
 
 public enum HttpVersion
 {
@@ -31,15 +30,10 @@ public enum HttpVersion
     HTTP_1_1("HTTP/1.1", 11),
     HTTP_2("HTTP/2.0", 20);
 
-    public static final Trie<HttpVersion> CACHE = new ArrayTrie<HttpVersion>();
-
-    static
-    {
-        for (HttpVersion version : HttpVersion.values())
-        {
-            CACHE.put(version.toString(), version);
-        }
-    }
+    public static final Index<HttpVersion> CACHE = new Index.Builder<HttpVersion>()
+        .caseSensitive(false)
+        .withAll(HttpVersion.values(), HttpVersion::toString)
+        .build();
 
     /**
      * Optimised lookup to find an Http Version and whitespace in a byte array.

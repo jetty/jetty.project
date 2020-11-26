@@ -24,8 +24,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
-import org.eclipse.jetty.util.ArrayTernaryTrie;
-import org.eclipse.jetty.util.Trie;
+import org.eclipse.jetty.util.Index;
 
 /**
  * MSIE (Microsoft Internet Explorer) SSL Rule.
@@ -37,17 +36,16 @@ public class MsieSslRule extends Rule
 {
     private static final int IEv5 = '5';
     private static final int IEv6 = '6';
-    private static Trie<Boolean> __IE6_BadOS = new ArrayTernaryTrie<>();
-
-    {
-        __IE6_BadOS.put("NT 5.01", Boolean.TRUE);
-        __IE6_BadOS.put("NT 5.0", Boolean.TRUE);
-        __IE6_BadOS.put("NT 4.0", Boolean.TRUE);
-        __IE6_BadOS.put("98", Boolean.TRUE);
-        __IE6_BadOS.put("98; Win 9x 4.90", Boolean.TRUE);
-        __IE6_BadOS.put("95", Boolean.TRUE);
-        __IE6_BadOS.put("CE", Boolean.TRUE);
-    }
+    private static final Index<Boolean> __IE6_BadOS = new Index.Builder<Boolean>()
+        .caseSensitive(false)
+        .with("NT 5.01", Boolean.TRUE)
+        .with("NT 5.0", Boolean.TRUE)
+        .with("NT 4.0", Boolean.TRUE)
+        .with("98", Boolean.TRUE)
+        .with("98; Win 9x 4.90", Boolean.TRUE)
+        .with("95", Boolean.TRUE)
+        .with("CE", Boolean.TRUE)
+        .build();
 
     public MsieSslRule()
     {
