@@ -283,21 +283,21 @@ public class WebSocketProxyTest
         assertThat(clientSocket.pongMessages.poll(5, TimeUnit.SECONDS), is(BufferUtil.toBuffer("unsolicited pong from server")));
 
         // Test pings from client.
-        for (int i = 0; i < 10; i++)
-            clientSocket.session.getRemote().sendPing(BufferUtil.toBuffer(i));
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 15; i++)
+            clientSocket.session.getRemote().sendPing(intToStringByteBuffer(i));
+        for (int i = 0; i < 15; i++)
         {
-            assertThat(serverEndpoint.pingMessages.poll(5, TimeUnit.SECONDS), is(BufferUtil.toBuffer(i)));
-            assertThat(clientSocket.pongMessages.poll(5, TimeUnit.SECONDS), is(BufferUtil.toBuffer(i)));
+            assertThat(serverEndpoint.pingMessages.poll(5, TimeUnit.SECONDS), is(intToStringByteBuffer(i)));
+            assertThat(clientSocket.pongMessages.poll(5, TimeUnit.SECONDS), is(intToStringByteBuffer(i)));
         }
 
         // Test pings from server.
-        for (int i = 0; i < 10; i++)
-            serverEndpoint.session.getRemote().sendPing(BufferUtil.toBuffer(i));
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 23; i++)
+            serverEndpoint.session.getRemote().sendPing(intToStringByteBuffer(i));
+        for (int i = 0; i < 23; i++)
         {
-            assertThat(clientSocket.pingMessages.poll(5, TimeUnit.SECONDS), is(BufferUtil.toBuffer(i)));
-            assertThat(serverEndpoint.pongMessages.poll(5, TimeUnit.SECONDS), is(BufferUtil.toBuffer(i)));
+            assertThat(clientSocket.pingMessages.poll(5, TimeUnit.SECONDS), is(intToStringByteBuffer(i)));
+            assertThat(serverEndpoint.pongMessages.poll(5, TimeUnit.SECONDS), is(intToStringByteBuffer(i)));
         }
 
         clientSocket.session.close(StatusCode.NORMAL, "closing from test");
@@ -320,6 +320,11 @@ public class WebSocketProxyTest
         // Check we had no unexpected pings or pongs sent.
         assertThat(clientSocket.pingMessages.size(), is(0));
         assertThat(serverEndpoint.pingMessages.size(), is(0));
+    }
+
+    private ByteBuffer intToStringByteBuffer(int i)
+    {
+        return BufferUtil.toBuffer(Integer.toString(i));
     }
 
     @WebSocket
