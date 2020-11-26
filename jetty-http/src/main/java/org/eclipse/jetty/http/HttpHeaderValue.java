@@ -21,9 +21,8 @@ package org.eclipse.jetty.http;
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
 
-import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Trie;
+import org.eclipse.jetty.util.Index;
 
 /**
  *
@@ -40,19 +39,12 @@ public enum HttpHeaderValue
     TE("TE"),
     BYTES("bytes"),
     NO_CACHE("no-cache"),
-    UPGRADE("Upgrade"),
-    UNKNOWN("::UNKNOWN::");
+    UPGRADE("Upgrade");
 
-    public static final Trie<HttpHeaderValue> CACHE = new ArrayTrie<HttpHeaderValue>();
-
-    static
-    {
-        for (HttpHeaderValue value : HttpHeaderValue.values())
-        {
-            if (value != UNKNOWN)
-                CACHE.put(value.toString(), value);
-        }
-    }
+    public static final Index<HttpHeaderValue> CACHE = new Index.Builder<HttpHeaderValue>()
+        .caseSensitive(false)
+        .withAll(HttpHeaderValue.values(), HttpHeaderValue::toString)
+        .build();
 
     private final String _string;
     private final ByteBuffer _buffer;

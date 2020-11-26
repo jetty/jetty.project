@@ -20,9 +20,8 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Trie;
+import org.eclipse.jetty.util.Index;
 
 /**
  * HTTP and WebSocket Schemes
@@ -34,15 +33,10 @@ public enum HttpScheme
     WS("ws", 80),
     WSS("wss", 443);
 
-    public static final Trie<HttpScheme> CACHE = new ArrayTrie<HttpScheme>();
-
-    static
-    {
-        for (HttpScheme version : HttpScheme.values())
-        {
-            CACHE.put(version.asString(), version);
-        }
-    }
+    public static final Index<HttpScheme> CACHE = new Index.Builder<HttpScheme>()
+        .caseSensitive(false)
+        .withAll(HttpScheme.values(), HttpScheme::asString)
+        .build();
 
     private final String _string;
     private final ByteBuffer _buffer;

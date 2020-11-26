@@ -38,8 +38,8 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.IncludeExcludeSet;
+import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -180,7 +180,10 @@ public class ClassMatcher extends AbstractSet<String>
 
     public static class ByPackage extends AbstractSet<Entry> implements Predicate<String>
     {
-        private final ArrayTernaryTrie.Growing<Entry> _entries = new ArrayTernaryTrie.Growing<>(false, 512, 512);
+        private final Index.Mutable<Entry> _entries = new Index.Builder<Entry>()
+            .caseSensitive(true)
+            .mutable()
+            .build();
 
         @Override
         public boolean test(String name)
@@ -383,7 +386,10 @@ public class ClassMatcher extends AbstractSet<String>
     @SuppressWarnings("serial")
     public static class ByModule extends HashSet<Entry> implements Predicate<URI>
     {
-        private final ArrayTernaryTrie.Growing<Entry> _entries = new ArrayTernaryTrie.Growing<>(false, 512, 512);
+        private final Index.Mutable<Entry> _entries = new Index.Builder<Entry>()
+            .caseSensitive(true)
+            .mutable()
+            .build();
 
         @Override
         public boolean test(URI uri)
