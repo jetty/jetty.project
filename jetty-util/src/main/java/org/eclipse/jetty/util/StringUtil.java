@@ -33,8 +33,6 @@ import java.util.List;
  */
 public class StringUtil
 {
-    private static final Trie<String> CHARSETS = new ArrayTrie<>(256);
-
     public static final String ALL_INTERFACES = "0.0.0.0";
     public static final String CRLF = "\r\n";
     public static final String DEFAULT_DELIMS = ",;";
@@ -43,15 +41,15 @@ public class StringUtil
     public static final String __UTF8 = "utf-8";
     public static final String __UTF16 = "utf-16";
 
-    static
-    {
-        CHARSETS.put("utf-8", __UTF8);
-        CHARSETS.put("utf8", __UTF8);
-        CHARSETS.put("utf-16", __UTF16);
-        CHARSETS.put("utf16", __UTF16);
-        CHARSETS.put("iso-8859-1", __ISO_8859_1);
-        CHARSETS.put("iso_8859_1", __ISO_8859_1);
-    }
+    private static final Index<String> CHARSETS = new Index.Builder<String>()
+        .caseSensitive(false)
+        .with("utf-8", __UTF8)
+        .with("utf8", __UTF8)
+        .with("utf-16", __UTF16)
+        .with("utf16", __UTF16)
+        .with("iso-8859-1", __ISO_8859_1)
+        .with("iso_8859_1", __ISO_8859_1)
+        .build();
 
     /**
      * Convert alternate charset names (eg utf8) to normalized

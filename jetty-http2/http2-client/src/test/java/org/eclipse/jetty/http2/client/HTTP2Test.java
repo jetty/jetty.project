@@ -930,9 +930,20 @@ public class HTTP2Test extends AbstractTest
         // Avoid aggressive idle timeout to allow the test verifications.
         connector.setShutdownIdleTimeout(connector.getIdleTimeout());
 
+        CountDownLatch clientGracefulGoAwayLatch = new CountDownLatch(1);
+        CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
         Session clientSession = newClient(new Session.Listener.Adapter()
         {
+            @Override
+            public void onGoAway(Session session, GoAwayFrame frame)
+            {
+                if (frame.isGraceful())
+                    clientGracefulGoAwayLatch.countDown();
+                else
+                    clientGoAwayLatch.countDown();
+            }
+
             @Override
             public void onClose(Session session, GoAwayFrame frame)
             {
@@ -977,26 +988,20 @@ public class HTTP2Test extends AbstractTest
         int port = connector.getLocalPort();
         CompletableFuture<Void> shutdown = Graceful.shutdown(server);
 
-        // GOAWAY should not arrive to the client yet.
-        assertFalse(clientCloseLatch.await(1, TimeUnit.SECONDS));
+        // Client should receive the graceful GOAWAY.
+        assertTrue(clientGracefulGoAwayLatch.await(5, TimeUnit.SECONDS));
+        // Client should not receive the non-graceful GOAWAY.
+        assertFalse(clientGoAwayLatch.await(500, TimeUnit.MILLISECONDS));
+        // Client should not be closed yet.
+        assertFalse(clientCloseLatch.await(500, TimeUnit.MILLISECONDS));
 
-        // New requests should be immediately rejected.
+        // Client cannot create new requests after receiving a GOAWAY.
         HostPortHttpField authority3 = new HostPortHttpField("localhost" + ":" + port);
         MetaData.Request metaData3 = new MetaData.Request("GET", HttpScheme.HTTP.asString(), authority3, servletPath, HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
-        HeadersFrame request3 = new HeadersFrame(metaData3, null, false);
+        HeadersFrame request3 = new HeadersFrame(metaData3, null, true);
         FuturePromise<Stream> promise3 = new FuturePromise<>();
-        CountDownLatch resetLatch = new CountDownLatch(1);
-        clientSession.newStream(request3, promise3, new Stream.Listener.Adapter()
-        {
-            @Override
-            public void onReset(Stream stream, ResetFrame frame)
-            {
-                resetLatch.countDown();
-            }
-        });
-        Stream stream3 = promise3.get(5, TimeUnit.SECONDS);
-        stream3.data(new DataFrame(stream3.getId(), ByteBuffer.allocate(1), true), Callback.NOOP);
-        assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
+        clientSession.newStream(request3, promise3, new Stream.Listener.Adapter());
+        assertThrows(ExecutionException.class, () -> promise3.get(5, TimeUnit.SECONDS));
 
         // Finish the previous requests and expect the responses.
         stream1.data(new DataFrame(stream1.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP);
@@ -1005,9 +1010,9 @@ public class HTTP2Test extends AbstractTest
         assertNull(shutdown.get(5, TimeUnit.SECONDS));
 
         // Now GOAWAY should arrive to the client.
+        assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientCloseLatch.await(5, TimeUnit.SECONDS));
-        // Wait to process the GOAWAY frames and close the EndPoints.
-        Thread.sleep(1000);
+
         assertFalse(((HTTP2Session)clientSession).getEndPoint().isOpen());
         assertFalse(((HTTP2Session)serverSession).getEndPoint().isOpen());
     }

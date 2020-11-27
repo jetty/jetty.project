@@ -475,7 +475,8 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
             },
             x ->
             {
-                LOG.warn("Error during OPEN", x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Error during OPEN", x);
                 processHandlerError(new CloseException(CloseStatus.SERVER_ERROR, x), NOOP);
             });
 

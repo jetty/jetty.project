@@ -28,8 +28,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.ArrayTernaryTrie;
-import org.eclipse.jetty.util.Trie;
+import org.eclipse.jetty.util.Index;
 
 /**
  * Special handling for MSIE (Microsoft Internet Explorer).
@@ -42,20 +41,18 @@ public class MsieRule extends Rule
 {
     private static final int IEv5 = '5';
     private static final int IEv6 = '6';
-    private static final Trie<Boolean> __IE6_BadOS = new ArrayTernaryTrie<>();
+    private static final Index<Boolean> __IE6_BadOS = new Index.Builder<Boolean>()
+        .caseSensitive(false)
+        .with("NT 5.01", Boolean.TRUE)
+        .with("NT 5.0", Boolean.TRUE)
+        .with("NT 4.0", Boolean.TRUE)
+        .with("98", Boolean.TRUE)
+        .with("98; Win 9x 4.90", Boolean.TRUE)
+        .with("95", Boolean.TRUE)
+        .with("CE", Boolean.TRUE)
+        .build();
     private static final HttpField CONNECTION_CLOSE = new HttpField(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
     private static final HttpField VARY_USER_AGENT = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.USER_AGENT.asString());
-
-    static
-    {
-        __IE6_BadOS.put("NT 5.01", Boolean.TRUE);
-        __IE6_BadOS.put("NT 5.0", Boolean.TRUE);
-        __IE6_BadOS.put("NT 4.0", Boolean.TRUE);
-        __IE6_BadOS.put("98", Boolean.TRUE);
-        __IE6_BadOS.put("98; Win 9x 4.90", Boolean.TRUE);
-        __IE6_BadOS.put("95", Boolean.TRUE);
-        __IE6_BadOS.put("CE", Boolean.TRUE);
-    }
 
     public MsieRule()
     {

@@ -42,7 +42,7 @@ import java.util.Set;
  *
  * @param <V> the entry type
  */
-public class TreeTrie<V> extends AbstractTrie<V>
+class TreeTrie<V> extends AbstractTrie<V>
 {
     private static final int[] LOOKUP =
         {
@@ -63,13 +63,15 @@ public class TreeTrie<V> extends AbstractTrie<V>
     private String _key;
     private V _value;
 
-    public TreeTrie()
+    @SuppressWarnings("unchecked")
+    TreeTrie()
     {
         super(true);
         _nextIndex = new TreeTrie[INDEX];
         _c = 0;
     }
 
+    @SuppressWarnings("unchecked")
     private TreeTrie(char c)
     {
         super(true);
@@ -229,6 +231,18 @@ public class TreeTrie<V> extends AbstractTrie<V>
             }
         }
         return t._value;
+    }
+
+    @Override
+    public boolean isEmpty()
+    {
+        return keySet().isEmpty();
+    }
+
+    @Override
+    public int size()
+    {
+        return keySet().size();
     }
 
     @Override
@@ -393,11 +407,5 @@ public class TreeTrie<V> extends AbstractTrie<V>
                 keySet(set, t._nextOther.get(i));
             }
         }
-    }
-
-    @Override
-    public boolean isFull()
-    {
-        return false;
     }
 }

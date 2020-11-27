@@ -32,10 +32,9 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 
-import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.Trie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +45,6 @@ public class MimeTypes
 {
 
     private static final Logger LOG = LoggerFactory.getLogger(MimeTypes.class);
-    private static final Trie<ByteBuffer> TYPES = new ArrayTrie<ByteBuffer>(512);
     private static final Map<String, String> __dftMimeMap = new HashMap<String, String>();
     private static final Map<String, String> __inferredEncodings = new HashMap<String, String>();
     private static final Map<String, String> __assumedEncodings = new HashMap<String, String>();
@@ -168,23 +166,30 @@ public class MimeTypes
         }
     }
 
-    public static final Trie<MimeTypes.Type> CACHE = new ArrayTrie<>(512);
+    public static final Index<Type> CACHE = new Index.Builder<Type>()
+        .caseSensitive(false)
+        .withAll(() ->
+        {
+            Map<String, Type> result = new HashMap<>();
+            for (Type type : Type.values())
+            {
+                String key1 = type.toString();
+                result.put(key1, type);
+
+                if (key1.indexOf(";charset=") > 0)
+                {
+                    String key2 = StringUtil.replace(key1, ";charset=", "; charset=");
+                    result.put(key2, type);
+                }
+            }
+            return result;
+        })
+        .build();
 
     static
     {
         for (MimeTypes.Type type : MimeTypes.Type.values())
         {
-            CACHE.put(type.toString(), type);
-            TYPES.put(type.toString(), type.asBuffer());
-
-            int charset = type.toString().indexOf(";charset=");
-            if (charset > 0)
-            {
-                String alt = StringUtil.replace(type.toString(), ";charset=", "; charset=");
-                CACHE.put(alt, type);
-                TYPES.put(alt, type.asBuffer());
-            }
-
             if (type.isCharsetAssumed())
                 __assumedEncodings.put(type.asString(), type.getCharsetString());
         }

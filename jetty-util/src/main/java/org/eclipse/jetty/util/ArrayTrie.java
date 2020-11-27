@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -47,7 +48,7 @@ import java.util.Set;
  *
  * @param <V> the entry type
  */
-public class ArrayTrie<V> extends AbstractTrie<V>
+class ArrayTrie<V> extends AbstractTrie<V>
 {
     /**
      * The Size of a Trie row is how many characters can be looked
@@ -112,11 +113,6 @@ public class ArrayTrie<V> extends AbstractTrie<V>
      */
     private char _rows;
 
-    public ArrayTrie()
-    {
-        this(128);
-    }
-
     /**
      * @param capacity The capacity of the trie, which at the worst case
      * is the total number of characters of all keys stored in the Trie.
@@ -126,12 +122,30 @@ public class ArrayTrie<V> extends AbstractTrie<V>
      * store "bar" and "bat".
      */
     @SuppressWarnings("unchecked")
-    public ArrayTrie(int capacity)
+    ArrayTrie(int capacity)
     {
         super(true);
+        capacity++;
         _value = (V[])new Object[capacity];
-        _rowIndex = new char[capacity * 32];
+        _rowIndex = new char[capacity * ROW_SIZE];
         _key = new String[capacity];
+    }
+
+    @SuppressWarnings("unchecked")
+    ArrayTrie(Map<String, V> initialValues)
+    {
+        super(true);
+        // The calculated requiredCapacity does not take into account the
+        // extra reserved slot for the empty string key, so we have to add 1.
+        int capacity = requiredCapacity(initialValues.keySet(), false) + 1;
+        _value = (V[])new Object[capacity];
+        _rowIndex = new char[capacity * ROW_SIZE];
+        _key = new String[capacity];
+        for (Map.Entry<String, V> entry : initialValues.entrySet())
+        {
+            if (!put(entry.getKey(), entry.getValue()))
+                throw new AssertionError("Invalid capacity calculated (" + capacity + ") at '" + entry + "' for " + initialValues);
+        }
     }
 
     @Override
@@ -446,6 +460,18 @@ public class ArrayTrie<V> extends AbstractTrie<V>
         return keys;
     }
 
+    @Override
+    public int size()
+    {
+        return keySet().size();
+    }
+
+    @Override
+    public boolean isEmpty()
+    {
+        return keySet().isEmpty();
+    }
+
     private void keySet(Set<String> set, int t)
     {
         if (t < _value.length && _value[t] != null)
@@ -467,11 +493,5 @@ public class ArrayTrie<V> extends AbstractTrie<V>
                     keySet(set, i);
             }
         }
-    }
-
-    @Override
-    public boolean isFull()
-    {
-        return _rows + 1 >= _key.length;
     }
 }

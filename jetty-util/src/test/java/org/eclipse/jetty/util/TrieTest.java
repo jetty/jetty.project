@@ -21,30 +21,32 @@ package org.eclipse.jetty.util;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.eclipse.jetty.util.AbstractTrie.requiredCapacity;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TrieTest
 {
     public static Stream<Arguments> implementations()
     {
-        List<Trie> impls = new ArrayList<>();
+        List<AbstractTrie<Integer>> impls = new ArrayList<>();
 
         impls.add(new ArrayTrie<Integer>(128));
-        impls.add(new TreeTrie<Integer>());
-        impls.add(new ArrayTernaryTrie<Integer>(128));
+        impls.add(new ArrayTernaryTrie<Integer>(true, 128));
+        impls.add(new ArrayTernaryTrie.Growing<Integer>(true, 128, 128));
 
-        for (Trie<Integer> trie : impls)
+        for (AbstractTrie<Integer> trie : impls)
         {
             trie.put("hello", 1);
             trie.put("He", 2);
@@ -62,26 +64,7 @@ public class TrieTest
 
     @ParameterizedTest
     @MethodSource("implementations")
-    public void testOverflow(Trie<Integer> trie) throws Exception
-    {
-        int i = 0;
-        while (true)
-        {
-            if (++i > 10000)
-                break; // must not be fixed size
-            if (!trie.put("prefix" + i, i))
-            {
-                assertTrue(trie.isFull());
-                break;
-            }
-        }
-
-        assertTrue(!trie.isFull() || !trie.put("overflow", 0));
-    }
-
-    @ParameterizedTest
-    @MethodSource("implementations")
-    public void testKeySet(Trie<Integer> trie) throws Exception
+    public void testKeySet(AbstractTrie<Integer> trie) throws Exception
     {
         String[] values = new String[]{
             "hello",
@@ -103,7 +86,7 @@ public class TrieTest
 
     @ParameterizedTest
     @MethodSource("implementations")
-    public void testGetString(Trie<Integer> trie) throws Exception
+    public void testGetString(AbstractTrie<Integer> trie) throws Exception
     {
         assertEquals(1, trie.get("hello").intValue());
         assertEquals(2, trie.get("He").intValue());
@@ -130,7 +113,7 @@ public class TrieTest
 
     @ParameterizedTest
     @MethodSource("implementations")
-    public void testGetBuffer(Trie<Integer> trie) throws Exception
+    public void testGetBuffer(AbstractTrie<Integer> trie) throws Exception
     {
         assertEquals(1, trie.get(BufferUtil.toBuffer("xhellox"), 1, 5).intValue());
         assertEquals(2, trie.get(BufferUtil.toBuffer("xhellox"), 1, 2).intValue());
@@ -155,7 +138,7 @@ public class TrieTest
 
     @ParameterizedTest
     @MethodSource("implementations")
-    public void testGetDirectBuffer(Trie<Integer> trie) throws Exception
+    public void testGetDirectBuffer(AbstractTrie<Integer> trie) throws Exception
     {
         assertEquals(1, trie.get(BufferUtil.toDirectBuffer("xhellox"), 1, 5).intValue());
         assertEquals(2, trie.get(BufferUtil.toDirectBuffer("xhellox"), 1, 2).intValue());
@@ -180,7 +163,7 @@ public class TrieTest
 
     @ParameterizedTest
     @MethodSource("implementations")
-    public void testGetBestArray(Trie<Integer> trie) throws Exception
+    public void testGetBestArray(AbstractTrie<Integer> trie) throws Exception
     {
         assertEquals(1, trie.getBest(StringUtil.getUtf8Bytes("xhelloxxxx"), 1, 8).intValue());
         assertEquals(2, trie.getBest(StringUtil.getUtf8Bytes("xhelxoxxxx"), 1, 8).intValue());
@@ -198,7 +181,7 @@ public class TrieTest
 
     @ParameterizedTest
     @MethodSource("implementations")
-    public void testGetBestBuffer(Trie<Integer> trie) throws Exception
+    public void testGetBestBuffer(AbstractTrie<Integer> trie) throws Exception
     {
         assertEquals(1, trie.getBest(BufferUtil.toBuffer("xhelloxxxx"), 1, 8).intValue());
         assertEquals(2, trie.getBest(BufferUtil.toBuffer("xhelxoxxxx"), 1, 8).intValue());
@@ -219,7 +202,7 @@ public class TrieTest
 
     @ParameterizedTest
     @MethodSource("implementations")
-    public void testGetBestDirectBuffer(Trie<Integer> trie) throws Exception
+    public void testGetBestDirectBuffer(AbstractTrie<Integer> trie) throws Exception
     {
         assertEquals(1, trie.getBest(BufferUtil.toDirectBuffer("xhelloxxxx"), 1, 8).intValue());
         assertEquals(2, trie.getBest(BufferUtil.toDirectBuffer("xhelxoxxxx"), 1, 8).intValue());
@@ -240,7 +223,7 @@ public class TrieTest
 
     @ParameterizedTest
     @MethodSource("implementations")
-    public void testFull(Trie<Integer> trie) throws Exception
+    public void testFull(AbstractTrie<Integer> trie) throws Exception
     {
         if (!(trie instanceof ArrayTrie<?> || trie instanceof ArrayTernaryTrie<?>))
             return;
@@ -249,5 +232,34 @@ public class TrieTest
         testGetString(trie);
         testGetBestArray(trie);
         testGetBestBuffer(trie);
+    }
+
+    @Test
+    public void testRequiredCapacity()
+    {
+        assertThat(requiredCapacity(Set.of("ABC", "abc"), true), is(6));
+        assertThat(requiredCapacity(Set.of("ABC", "abc"), false), is(3));
+        assertThat(requiredCapacity(Set.of(""), false), is(0));
+        assertThat(requiredCapacity(Set.of("ABC", ""), false), is(3));
+        assertThat(requiredCapacity(Set.of("ABC"), false), is(3));
+        assertThat(requiredCapacity(Set.of("ABC", "XYZ"), false), is(6));
+        assertThat(requiredCapacity(Set.of("A00", "A11"), false), is(5));
+        assertThat(requiredCapacity(Set.of("A00", "A01", "A10", "A11"), false), is(7));
+        assertThat(requiredCapacity(Set.of("A", "AB"), false), is(2));
+        assertThat(requiredCapacity(Set.of("A", "ABC"), false), is(3));
+        assertThat(requiredCapacity(Set.of("A", "ABCD"), false), is(4));
+        assertThat(requiredCapacity(Set.of("AB", "ABC"), false), is(3));
+        assertThat(requiredCapacity(Set.of("ABC", "ABCD"), false), is(4));
+        assertThat(requiredCapacity(Set.of("ABC", "ABCDEF"), false), is(6));
+        assertThat(requiredCapacity(Set.of("AB", "A"), false), is(2));
+        assertThat(requiredCapacity(Set.of("ABC", "ABCDEF"), false), is(6));
+        assertThat(requiredCapacity(Set.of("ABCDEF", "ABC"), false), is(6));
+        assertThat(requiredCapacity(Set.of("ABC", "ABCDEF", "ABX"), false), is(7));
+        assertThat(requiredCapacity(Set.of("ABCDEF", "ABC", "ABX"), false), is(7));
+        assertThat(requiredCapacity(Set.of("ADEF", "AQPR4", "AQZ"), false), is(9));
+        assertThat(requiredCapacity(Set.of("111", "ADEF", "AQPR4", "AQZ", "999"), false), is(15));
+        assertThat(requiredCapacity(Set.of("utf-16", "utf-8"), false), is(7));
+        assertThat(requiredCapacity(Set.of("utf-16", "utf-8", "utf16", "utf8"), false), is(10));
+        assertThat(requiredCapacity(Set.of("utf-8", "utf8", "utf-16", "utf16", "iso-8859-1", "iso_8859_1"), false), is(27));
     }
 }

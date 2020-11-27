@@ -26,10 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.ajax.JSON.Convertible;
@@ -79,7 +78,7 @@ public class AsyncJSON
      */
     public static class Factory
     {
-        private Trie<CachedString> cache;
+        private Index.Mutable<CachedString> cache;
         private Map<String, Convertor> convertors;
         private boolean detailedParseException;
 
@@ -106,7 +105,10 @@ public class AsyncJSON
         public boolean cache(String value)
         {
             if (cache == null)
-                cache = new ArrayTernaryTrie.Growing<>(false, 64, 64);
+                cache = new Index.Builder<CachedString>()
+                    .caseSensitive(true)
+                    .mutable()
+                    .build();
 
             CachedString cached = new CachedString(value);
             if (cached.isCacheable())
