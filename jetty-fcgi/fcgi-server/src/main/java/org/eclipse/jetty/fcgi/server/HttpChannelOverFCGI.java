@@ -115,7 +115,7 @@ public class HttpChannelOverFCGI extends HttpChannel
     public boolean failAllContent(Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("failing all content with {}", (Object)failure);
+            LOG.debug("failing all content with {} {}", failure, this);
         List<HttpInput.Content> copy;
         try (AutoLock l = _lock.lock())
         {

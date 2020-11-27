@@ -142,7 +142,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             BufferUtil.put(networkBuffer.getBuffer(), upgradeBuffer);
             BufferUtil.flipToFlush(upgradeBuffer, 0);
         }
-
         releaseNetworkBuffer();
         return upgradeBuffer;
     }
