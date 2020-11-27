@@ -142,7 +142,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             BufferUtil.put(networkBuffer.getBuffer(), upgradeBuffer);
             BufferUtil.flipToFlush(upgradeBuffer, 0);
         }
-
         releaseNetworkBuffer();
         return upgradeBuffer;
     }
@@ -372,7 +371,10 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             complete = true;
         }
 
-        return !responseSuccess(exchange);
+        boolean stopParsing = !responseSuccess(exchange);
+        if (status == HttpStatus.SWITCHING_PROTOCOLS_101)
+            stopParsing = true;
+        return stopParsing;
     }
 
     @Override

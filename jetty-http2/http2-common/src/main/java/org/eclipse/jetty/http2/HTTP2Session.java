@@ -611,20 +611,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
      * allocated stream id, or null if not interested in the modified headers frame
      * @param listener the listener that gets notified of stream events
      */
-    public void newUpgradeStream(HeadersFrame frame, Stream.Listener listener, Promise<Stream> promise)
+    public Stream newUpgradeStream(HeadersFrame frame, Stream.Listener listener, Consumer<Throwable> failFn)
     {
-        streamsState.newUpgradeStream(frame, listener, promise);
-/*
-        // TODO: cannot do this, we need to call StreamsState.
-        HeadersFrame frame = frame;
-        int streamId = frame.getStreamId();
-        if (streamId <= 0)
-        {
-            streamId = localStreamIds.getAndAdd(2);
-            frame = frame.withStreamId(streamId);
-        }
-        return createLocalStream(streamId, (MetaData.Request)frame.getMetaData());
- */
+        return streamsState.newUpgradeStream(frame, listener, failFn);
     }
 
     protected IStream newStream(int streamId, MetaData.Request request, boolean local)
@@ -790,7 +779,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
     }
 
-    protected IStream createLocalStream(int streamId, MetaData.Request request, Promise<Stream> promise)
+    protected IStream createLocalStream(int streamId, MetaData.Request request, Consumer<Throwable> failFn)
     {
         while (true)
         {
@@ -798,7 +787,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             int maxCount = getMaxLocalStreams();
             if (maxCount >= 0 && localCount >= maxCount)
             {
-                promise.failed(new IllegalStateException("Max local stream count " + maxCount + " exceeded"));
+                failFn.accept(new IllegalStateException("Max local stream count " + maxCount + " exceeded"));
                 return null;
             }
             if (localStreamCount.compareAndSet(localCount, localCount + 1))
@@ -817,7 +806,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         else
         {
             localStreamCount.decrementAndGet();
-            promise.failed(new IllegalStateException("Duplicate stream " + streamId));
+            failFn.accept(new IllegalStateException("Duplicate stream " + streamId));
             return null;
         }
     }
@@ -2110,7 +2099,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             }
         }
 
-        private void newUpgradeStream(HeadersFrame frame, Stream.Listener listener, Promise<Stream> promise)
+        private Stream newUpgradeStream(HeadersFrame frame, Stream.Listener listener, Consumer<Throwable> failFn)
         {
             int streamId;
             try (AutoLock l = lock.lock())
@@ -2118,20 +2107,17 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 streamId = localStreamIds.getAndAdd(2);
                 HTTP2Session.this.onStreamCreated(streamId);
             }
-            IStream stream = HTTP2Session.this.createLocalStream(streamId, (MetaData.Request)frame.getMetaData(), new Promise<>()
+            IStream stream = HTTP2Session.this.createLocalStream(streamId, (MetaData.Request)frame.getMetaData(), x ->
             {
-                @Override
-                public void failed(Throwable x)
-                {
-                    HTTP2Session.this.onStreamDestroyed(streamId);
-                    promise.failed(x);
-                }
+                HTTP2Session.this.onStreamDestroyed(streamId);
+                failFn.accept(x);
             });
             if (stream != null)
             {
                 stream.setListener(listener);
                 stream.updateClose(frame.isEndStream(), CloseState.Event.AFTER_SEND);
             }
+            return stream;
         }
 
         private boolean newRemoteStream(int streamId)
@@ -2180,7 +2166,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             MetaData.Request request = extractMetaDataRequest(frames.get(0));
             if (request == null)
                 return false;
-            IStream stream = HTTP2Session.this.createLocalStream(streamId, request, promise);
+            IStream stream = HTTP2Session.this.createLocalStream(streamId, request, promise::failed);
             if (stream == null)
                 return false;
 

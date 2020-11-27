@@ -129,7 +129,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     public boolean failAllContent(Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("failing all content with {}", (Object)failure);
+            LOG.debug("failing all content with {} {}", failure, this);
         if (_content != null)
         {
             if (_content.isSpecial())

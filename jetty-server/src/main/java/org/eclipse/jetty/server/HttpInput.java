@@ -130,9 +130,10 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     public boolean consumeAll()
     {
+        IOException failure = new IOException("Unconsumed content");
         if (LOG.isDebugEnabled())
-            LOG.debug("consumeAll {}", this);
-        boolean atEof = _contentProducer.consumeAll(new IOException("Unconsumed content"));
+            LOG.debug("consumeAll {}", this, failure);
+        boolean atEof = _contentProducer.consumeAll(failure);
         if (atEof)
             _consumedEof = true;
 
