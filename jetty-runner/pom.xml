@@ -42,6 +42,8 @@
               <outputDirectory>${project.build.directory}/classes</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>
+              <excludeScope>test</excludeScope>
+              <includeScope>runtime</includeScope>
             </configuration>
           </execution>
         </executions>
