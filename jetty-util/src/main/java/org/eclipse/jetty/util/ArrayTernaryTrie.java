@@ -101,6 +101,20 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
      */
     private char _rows;
 
+    public static <V> AbstractTrie<V> from(int capacity, int maxCapacity, boolean caseSensitive, Set<Character> alphabet, Map<String, V> contents)
+    {
+        if (capacity > MAX_CAPACITY)
+            return null;
+
+        AbstractTrie<V> trie = maxCapacity < 0
+            ? new ArrayTernaryTrie.Growing<V>(caseSensitive, capacity, 512)
+            : new ArrayTernaryTrie<V>(caseSensitive, Math.max(capacity, maxCapacity));
+
+        if (contents != null && !trie.putAll(contents))
+            return null;
+        return trie;
+    }
+
     /**
      * Create a Trie
      *
@@ -132,7 +146,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
         // required for 'terminating' the entry (1 slot per key) so we
         // have to add those.
         Set<String> keys = initialValues.keySet();
-        int capacity = AbstractTrie.requiredCapacity(keys, !insensitive) + keys.size() + 1;
+        int capacity = AbstractTrie.requiredCapacity(keys, !insensitive, null) + keys.size() + 1;
         if (capacity > MAX_CAPACITY)
             throw new IllegalArgumentException("ArrayTernaryTrie maximum capacity overflow (" + capacity + " > " + MAX_CAPACITY + ")");
         _value = (V[])new Object[capacity];

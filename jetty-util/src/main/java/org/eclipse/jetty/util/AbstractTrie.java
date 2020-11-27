@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -101,15 +102,16 @@ abstract class AbstractTrie<V> implements Index.Mutable<V>
      * </pre>
      * @param keys The keys to be put in a Trie
      * @param caseSensitive true if the capacity should be calculated with case-sensitive keys
+     * @param alphabet A set of characters which will be updated with all characters found (or null if not needed)
      * @return The capacity in nodes of a tree decomposition
      */
-    protected static int requiredCapacity(Set<String> keys, boolean caseSensitive)
+    protected static int requiredCapacity(Set<String> keys, boolean caseSensitive, Set<Character> alphabet)
     {
         List<String> list = caseSensitive
             ? new ArrayList<>(keys)
             : keys.stream().map(String::toLowerCase).collect(Collectors.toList());
         Collections.sort(list);
-        return AbstractTrie.requiredCapacity(list, 0, list.size(), 0);
+        return AbstractTrie.requiredCapacity(list, 0, list.size(), 0, alphabet);
     }
 
     /**
@@ -120,7 +122,7 @@ abstract class AbstractTrie<V> implements Index.Mutable<V>
      * @param index The character to be considered
      * @return The capacity in tree nodes of the substree
      */
-    private static int requiredCapacity(List<String> keys, int offset, int length, int index)
+    private static int requiredCapacity(List<String> keys, int offset, int length, int index, Set<Character> alphabet)
     {
         int required = 0;
 
@@ -136,6 +138,8 @@ abstract class AbstractTrie<V> implements Index.Mutable<V>
 
             // Get the character at the index of the current key
             char c = k.charAt(index);
+            if (alphabet != null)
+                alphabet.add(c);
 
             // If the character is the same as the current node, then we are
             // still in the current node and need to continue searching for the
@@ -148,7 +152,7 @@ abstract class AbstractTrie<V> implements Index.Mutable<V>
 
             // if we had a previous node, then add the required nodes for the subtree under it.
             if (nodeChar != null)
-                required +=  AbstractTrie.requiredCapacity(keys, offset, i, index + 1);
+                required +=  AbstractTrie.requiredCapacity(keys, offset, i, index + 1, alphabet);
 
             // set the char for the new node
             nodeChar = c;
@@ -161,8 +165,18 @@ abstract class AbstractTrie<V> implements Index.Mutable<V>
 
         // If we finish the iteration with a nodeChar, then we must add the required nodes for the subtree under it.
         if (nodeChar != null)
-            required += AbstractTrie.requiredCapacity(keys, offset, length, index + 1);
+            required += AbstractTrie.requiredCapacity(keys, offset, length, index + 1, alphabet);
 
         return required;
+    }
+
+    protected boolean putAll(Map<String, V> contents)
+    {
+        for (Map.Entry<String, V> entry : contents.entrySet())
+        {
+            if (!put(entry.getKey(), entry.getValue()))
+                return false;
+        }
+        return true;
     }
 }

@@ -20,6 +20,7 @@ package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -31,11 +32,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.eclipse.jetty.util.AbstractTrie.requiredCapacity;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class TrieTest
 {
     public static Stream<Arguments> implementations()
@@ -237,29 +240,48 @@ public class TrieTest
     @Test
     public void testRequiredCapacity()
     {
-        assertThat(requiredCapacity(Set.of("ABC", "abc"), true), is(6));
-        assertThat(requiredCapacity(Set.of("ABC", "abc"), false), is(3));
-        assertThat(requiredCapacity(Set.of(""), false), is(0));
-        assertThat(requiredCapacity(Set.of("ABC", ""), false), is(3));
-        assertThat(requiredCapacity(Set.of("ABC"), false), is(3));
-        assertThat(requiredCapacity(Set.of("ABC", "XYZ"), false), is(6));
-        assertThat(requiredCapacity(Set.of("A00", "A11"), false), is(5));
-        assertThat(requiredCapacity(Set.of("A00", "A01", "A10", "A11"), false), is(7));
-        assertThat(requiredCapacity(Set.of("A", "AB"), false), is(2));
-        assertThat(requiredCapacity(Set.of("A", "ABC"), false), is(3));
-        assertThat(requiredCapacity(Set.of("A", "ABCD"), false), is(4));
-        assertThat(requiredCapacity(Set.of("AB", "ABC"), false), is(3));
-        assertThat(requiredCapacity(Set.of("ABC", "ABCD"), false), is(4));
-        assertThat(requiredCapacity(Set.of("ABC", "ABCDEF"), false), is(6));
-        assertThat(requiredCapacity(Set.of("AB", "A"), false), is(2));
-        assertThat(requiredCapacity(Set.of("ABC", "ABCDEF"), false), is(6));
-        assertThat(requiredCapacity(Set.of("ABCDEF", "ABC"), false), is(6));
-        assertThat(requiredCapacity(Set.of("ABC", "ABCDEF", "ABX"), false), is(7));
-        assertThat(requiredCapacity(Set.of("ABCDEF", "ABC", "ABX"), false), is(7));
-        assertThat(requiredCapacity(Set.of("ADEF", "AQPR4", "AQZ"), false), is(9));
-        assertThat(requiredCapacity(Set.of("111", "ADEF", "AQPR4", "AQZ", "999"), false), is(15));
-        assertThat(requiredCapacity(Set.of("utf-16", "utf-8"), false), is(7));
-        assertThat(requiredCapacity(Set.of("utf-16", "utf-8", "utf16", "utf8"), false), is(10));
-        assertThat(requiredCapacity(Set.of("utf-8", "utf8", "utf-16", "utf16", "iso-8859-1", "iso_8859_1"), false), is(27));
+        assertThat(requiredCapacity(Set.of("ABC", "abc"), true, null), is(6));
+        assertThat(requiredCapacity(Set.of("ABC", "abc"), false, null), is(3));
+        assertThat(requiredCapacity(Set.of(""), false, null), is(0));
+        assertThat(requiredCapacity(Set.of("ABC", ""), false, null), is(3));
+        assertThat(requiredCapacity(Set.of("ABC"), false, null), is(3));
+        assertThat(requiredCapacity(Set.of("ABC", "XYZ"), false, null), is(6));
+        assertThat(requiredCapacity(Set.of("A00", "A11"), false, null), is(5));
+        assertThat(requiredCapacity(Set.of("A00", "A01", "A10", "A11"), false, null), is(7));
+        assertThat(requiredCapacity(Set.of("A", "AB"), false, null), is(2));
+        assertThat(requiredCapacity(Set.of("A", "ABC"), false, null), is(3));
+        assertThat(requiredCapacity(Set.of("A", "ABCD"), false, null), is(4));
+        assertThat(requiredCapacity(Set.of("AB", "ABC"), false, null), is(3));
+        assertThat(requiredCapacity(Set.of("ABC", "ABCD"), false, null), is(4));
+        assertThat(requiredCapacity(Set.of("ABC", "ABCDEF"), false, null), is(6));
+        assertThat(requiredCapacity(Set.of("AB", "A"), false, null), is(2));
+        assertThat(requiredCapacity(Set.of("ABC", "ABCDEF"), false, null), is(6));
+        assertThat(requiredCapacity(Set.of("ABCDEF", "ABC"), false, null), is(6));
+        assertThat(requiredCapacity(Set.of("ABC", "ABCDEF", "ABX"), false, null), is(7));
+        assertThat(requiredCapacity(Set.of("ABCDEF", "ABC", "ABX"), false, null), is(7));
+        assertThat(requiredCapacity(Set.of("ADEF", "AQPR4", "AQZ"), false, null), is(9));
+        assertThat(requiredCapacity(Set.of("111", "ADEF", "AQPR4", "AQZ", "999"), false, null), is(15));
+        assertThat(requiredCapacity(Set.of("utf-16", "utf-8"), false, null), is(7));
+        assertThat(requiredCapacity(Set.of("utf-16", "utf-8", "utf16", "utf8"), false, null), is(10));
+        assertThat(requiredCapacity(Set.of("utf-8", "utf8", "utf-16", "utf16", "iso-8859-1", "iso_8859_1"), false, null), is(27));
+    }
+
+    @Test
+    @SuppressWarnings("checkstyle:AvoidEscapedUnicodeCharacters")
+    public void testRequiredCapacityAlphabet()
+    {
+        Set<Character> alphabet = new HashSet<>();
+
+        requiredCapacity(Set.of("ABC", "abc"), true, alphabet);
+        assertThat(alphabet, containsInAnyOrder('a', 'b', 'c', 'A', 'B', 'C'));
+
+        alphabet.clear();
+        requiredCapacity(Set.of("ABCDEF", "abc"), false, alphabet);
+        assertThat(alphabet, containsInAnyOrder('a', 'b', 'c', 'd', 'e', 'f'));
+
+        alphabet.clear();
+        String difficult = "!\"%\n\r\u0000\u00a4\u10fb\ufffd";
+        requiredCapacity(Set.of("ABCDEF", "abc", difficult), false, alphabet);
+        assertThat(alphabet, containsInAnyOrder('a', 'b', 'c', 'd', 'e', 'f', '!','\"', '%', '\r', '\n', '\u00a4', '\u10fb', '\ufffd', '\u0000'));
     }
 }

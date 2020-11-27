@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -44,6 +45,8 @@ import java.util.Set;
  */
 class TreeTrie<V> extends AbstractTrie<V>
 {
+    // TODO see comments in ArrayTrie for ideas about better space efficiency and
+    // TODO case sensitivity
     private static final int[] LOOKUP =
         {
             // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
@@ -62,6 +65,17 @@ class TreeTrie<V> extends AbstractTrie<V>
     private final char _c;
     private String _key;
     private V _value;
+
+    public static <V> AbstractTrie<V> from(int capacity, int maxCapacity, boolean caseSensitive, Set<Character> alphabet, Map<String, V> contents)
+    {
+        if (caseSensitive)
+            return null;
+
+        TreeTrie<V> trie = new TreeTrie<>();
+        if (contents != null && !trie.putAll(contents))
+            return null;
+        return trie;
+    }
 
     @SuppressWarnings("unchecked")
     TreeTrie()
@@ -106,6 +120,9 @@ class TreeTrie<V> extends AbstractTrie<V>
             }
             else
             {
+                // TODO If the LOOKUP misses, we immediately go to a linear list.
+                // TODO maybe better to goto a bigIndex like ArrayTrie... specially
+                // TODO if we have a case sensitive version of LOOKUP.
                 TreeTrie<V> n = null;
                 for (int i = t._nextOther.size(); i-- > 0; )
                 {
@@ -134,7 +151,7 @@ class TreeTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < len; i++)
         {
             char c = s.charAt(offset + i);
-            int index = c >= 0 && c < 0x7f ? LOOKUP[c] : -1;
+            int index = c < 0x7f ? LOOKUP[c] : -1;
             if (index >= 0)
             {
                 if (t._nextIndex[index] == null)

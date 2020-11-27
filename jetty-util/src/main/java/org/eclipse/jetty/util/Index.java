@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -173,6 +174,7 @@ public interface Index<V>
         class Builder<V> extends Index.Builder<V>
         {
             private int maxCapacity = -1;
+            private Set<Character> alphabet;
 
             Builder(boolean caseSensitive, Map<String, V> contents)
             {
@@ -193,42 +195,49 @@ public interface Index<V>
                 return this;
             }
 
+            public Builder<V> alphabet(String alphabetString)
+            {
+                alphabet = new HashSet<>();
+                alphabetString.chars().forEach(c -> alphabet.add((char)c));
+                return this;
+            }
+
             /**
              * Build a {@link Mutable} instance.
              * @return a {@link Mutable} instance.
              */
             public Mutable<V> build()
             {
-                if (contents != null && maxCapacity == 0)
-                    throw new IllegalStateException("Cannot create a mutable index with maxCapacity=0 and some contents");
+                if (maxCapacity == 0)
+                    return EmptyTrie.instance(caseSensitive);
 
-                // TODO we need to consider large size and alphabet when picking a trie impl
-                Mutable<V> result;
-                if (maxCapacity > 0)
+                if (alphabet == null)
                 {
-                    result = new ArrayTernaryTrie<>(!caseSensitive, maxCapacity);
-                }
-                else if (maxCapacity < 0)
-                {
-                    if (caseSensitive)
-                        result = new ArrayTernaryTrie.Growing<>(false, 512, 512);
-                    else
-                        result = new TreeTrie<>();
-                }
-                else
-                {
-                    result = EmptyTrie.instance(caseSensitive);
+                    if (contents != null)
+                        throw new IllegalStateException("Cannot create a mutable index without alphabet or some contents");
+                    alphabet = new HashSet<>();
                 }
 
-                if (contents != null)
-                {
-                    for (Map.Entry<String, V> entry : contents.entrySet())
-                    {
-                        if (!result.put(entry.getKey(), entry.getValue()))
-                            throw new AssertionError("Index capacity exceeded at " + entry.getKey());
-                    }
-                }
-                return result;
+                // Work out needed capacity and alphabet
+                int capacity = (contents == null) ? 0 : AbstractTrie.requiredCapacity(contents.keySet(), caseSensitive, alphabet);
+
+                // check capacities
+                if (maxCapacity >= 0 && capacity > maxCapacity)
+                    throw new IllegalStateException("Insufficient maxCapacity for contents");
+
+                // try all the tries
+                AbstractTrie<V> trie = ArrayTrie.from(capacity, maxCapacity, caseSensitive, alphabet, contents);
+                if (trie != null)
+                    return trie;
+                trie = ArrayTernaryTrie.from(capacity, maxCapacity, caseSensitive, alphabet, contents);
+                if (trie != null)
+                    return trie;
+                trie = TreeTrie.from(capacity, maxCapacity, caseSensitive, alphabet, contents);
+                if (trie != null)
+                    return trie;
+
+                // Nothing suitable
+                throw new IllegalStateException("No suitable Trie implementation: " + this);
             }
         }
     }
@@ -354,11 +363,26 @@ public interface Index<V>
             if (contents == null)
                 return EmptyTrie.instance(caseSensitive);
 
-            // TODO we need to consider large size and alphabet when picking a trie impl
-            if (caseSensitive)
-                return new ArrayTernaryTrie<>(false, contents);
-            else
-                return new ArrayTrie<>(contents);
+            Set<Character> alphabet = new HashSet<>();
+            int capacity = AbstractTrie.requiredCapacity(contents.keySet(), caseSensitive, alphabet);
+
+            AbstractTrie<V> trie = ArrayTrie.from(capacity, capacity, caseSensitive, alphabet, contents);
+            if (trie != null)
+                return trie;
+            trie = ArrayTernaryTrie.from(capacity, capacity, caseSensitive, alphabet, contents);
+            if (trie != null)
+                return trie;
+            trie = TreeTrie.from(capacity, capacity, caseSensitive, alphabet, contents);
+            if (trie != null)
+                return trie;
+
+            throw new UnsupportedOperationException("No suitable Trie implementation : " + this);
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s{c=%d,cs=%b}", super.toString(), contents == null ? 0 : contents.size(), caseSensitive);
         }
     }
 }

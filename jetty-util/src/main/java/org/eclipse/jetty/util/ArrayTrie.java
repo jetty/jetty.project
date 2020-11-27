@@ -35,7 +35,7 @@ import java.util.Set;
  * must use a big character table.
  * </p>
  * <p>This Trie is very space efficient if the key characters are
- * from ' ', '+', '-', ':', ';', '.', 'A' to 'Z' or 'a' to 'z'.
+ * from ' ', '+', '-', ':', ';', '.', '0' - '9', A' to 'Z' or 'a' to 'z'
  * Other ISO-8859-1 characters can be used by the key, but less space
  * efficiently.
  * </p>
@@ -62,6 +62,9 @@ class ArrayTrie<V> extends AbstractTrie<V>
      * The index lookup table, this maps a character as a byte
      * (ISO-8859-1 or UTF8) to an index within a Trie row
      */
+    // TODO if we expanded ROW_SIZE to 48 we could include 0-9, _ and a few other chars
+    // TODO Also We could have a case sensitive table with a larger row size, 58 without digits, 69 with digits and _
+    // TODO Also see idea bleow in put for making big index more space efficient
     private static final int[] LOOKUP =
         {
             // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
@@ -113,6 +116,32 @@ class ArrayTrie<V> extends AbstractTrie<V>
      */
     private char _rows;
 
+    public static <V> ArrayTrie<V> from(int capacity, int maxCapacity, boolean caseSensitive, Set<Character> alphabet, Map<String, V> contents)
+    {
+        // can't do case sensitive or infinite capacity
+        if (caseSensitive || maxCapacity < 0)
+            return null;
+
+        // TODO is this the correct capacity check?
+        // TODO can we increase capacity by dividing by ROW_SIZE?
+        if ((maxCapacity * ROW_SIZE) > Character.MAX_VALUE)
+            return null;
+
+        // check alphabet
+        for (Character c : alphabet)
+        {
+            // TODO cannot exclude the LOOKUP misses here because they include 0-9 and _
+            // TODO which are moderately frequently used, but handled anyway by the lookup.
+            if (c > 127 /* || LOOKUP[c & 0x7f] < 0 */)
+                return null;
+        }
+
+        ArrayTrie<V> trie = new ArrayTrie<>(maxCapacity);
+        if (contents != null && !trie.putAll(contents))
+            return null;
+        return trie;
+    }
+
     /**
      * @param capacity The capacity of the trie, which at the worst case
      * is the total number of characters of all keys stored in the Trie.
@@ -137,7 +166,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
         super(true);
         // The calculated requiredCapacity does not take into account the
         // extra reserved slot for the empty string key, so we have to add 1.
-        int capacity = requiredCapacity(initialValues.keySet(), false) + 1;
+        int capacity = requiredCapacity(initialValues.keySet(), false, null) + 1;
         _value = (V[])new Object[capacity];
         _rowIndex = new char[capacity * ROW_SIZE];
         _key = new String[capacity];
@@ -183,6 +212,10 @@ class ArrayTrie<V> extends AbstractTrie<V>
                 throw new IllegalArgumentException("non ascii character");
             else
             {
+                // TODO we could make the big index more space efficient by instead of having -1 in the LOOKUP, have
+                // TODO different negative numbers that match to indexes in the bigIndex.  This will allows the big index
+                // TODO array to be 128-ROWSIZE instead of 128.   Would also allows case senstive to be handled with an alt
+                // TODO LOOKUP with uppercase always mapping to a bigIndex slot.
                 if (_bigIndex == null)
                     _bigIndex = new char[_value.length][];
                 if (t >= _bigIndex.length)
