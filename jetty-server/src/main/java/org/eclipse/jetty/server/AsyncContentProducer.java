@@ -162,12 +162,12 @@ class AsyncContentProducer implements ContentProducer
 
     private void failCurrentContent(Throwable x)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("failing currently held content {}", this, x);
         if (_transformedContent != null && !_transformedContent.isSpecial())
         {
             if (_transformedContent != _rawContent)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("failing currently held transformed content {} {}", x, this);
                 _transformedContent.skip(_transformedContent.remaining());
                 _transformedContent.failed(x);
             }
@@ -176,6 +176,8 @@ class AsyncContentProducer implements ContentProducer
 
         if (_rawContent != null && !_rawContent.isSpecial())
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failing currently held raw content {} {}", x, this);
             _rawContent.skip(_rawContent.remaining());
             _rawContent.failed(x);
             _rawContent = null;

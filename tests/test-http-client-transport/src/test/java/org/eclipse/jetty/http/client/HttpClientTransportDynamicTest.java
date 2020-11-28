@@ -718,7 +718,7 @@ public class HttpClientTransportDynamicTest
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                jettyRequest.getHttpChannel().getEndPoint().getConnection().close();
+                jettyRequest.getHttpChannel().getEndPoint().close();
             }
         });
         ClientConnector clientConnector = new ClientConnector();

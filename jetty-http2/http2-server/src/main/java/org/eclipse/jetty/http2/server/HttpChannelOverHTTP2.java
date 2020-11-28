@@ -545,7 +545,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
             {
                 HttpInput.Content c = _content.get();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("failing current content: {} with failure: {}", c, failure);
+                    LOG.debug("failing current content {} with {} {}", c, failure, this);
                 if (c == null)
                     return false;
                 if (c.isSpecial())
@@ -591,7 +591,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
     public boolean failAllContent(Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("failing all content with {}", (Object)failure);
+            LOG.debug("failing all content with {} {}", failure, this);
         boolean atEof = getStream().failAllData(failure);
         atEof |= _contentDemander.failContent(failure);
         if (LOG.isDebugEnabled())
