@@ -49,6 +49,11 @@ abstract class AbstractTrie<V> implements Index.Mutable<V>
         return _caseInsensitive;
     }
 
+    public boolean isCaseSensitive()
+    {
+        return !_caseInsensitive;
+    }
+
     public boolean put(V v)
     {
         return put(v.toString(), v);

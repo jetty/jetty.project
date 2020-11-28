@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.util;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -33,33 +33,81 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.eclipse.jetty.util.AbstractTrie.requiredCapacity;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class TrieTest
 {
+    private static final String[] KEYS =
+    {
+        "hello",
+        "helloHello",
+        "He",
+        "HELL",
+        "wibble",
+        "Wobble",
+        "foo-bar",
+        "foo+bar",
+        "HELL4",
+        // TODO ""  Empty string appears to not work in all implementations
+    };
+    private static final String[] X_KEYS = Arrays.stream(KEYS).map(s -> "%" + s + "%").toArray(String[]::new);
+    private static final String[] NOT_KEYS =
+    {
+        "h",
+        "helloHell",
+        "helloHelloHELLO",
+        "wibble0",
+        "foo_bar",
+        "foo-bar-bob",
+        "HELL5",
+        "\u0000"
+    };
+
+    private static final String[] BEST_NOT_KEYS =
+    {
+        null, // TODO "",
+        "hello",
+        "helloHello",
+        "wibble",
+        null, // TODO "",
+        "foo-bar",
+        "HELL",
+        null, // TODO "",
+    };
+
+    private static final String[] BEST_NOT_KEYS_LOWER =
+    {
+        null, // TODO "",
+        "hello",
+        "hello",
+        "wibble",
+        null, // TODO "",
+        "foo-bar",
+        null, // TODO "",
+        null, // TODO "",
+    };
+
+    private static final String[] X_NOT_KEYS = Arrays.stream(NOT_KEYS).map(s -> "%" + s + "%%%%").toArray(String[]::new);
+
     public static Stream<Arguments> implementations()
     {
         List<AbstractTrie<Integer>> impls = new ArrayList<>();
 
-        impls.add(new ArrayTrie<Integer>(128));
-        impls.add(new ArrayTernaryTrie<Integer>(true, 128));
-        impls.add(new ArrayTernaryTrie.Growing<Integer>(true, 128, 128));
+        for (boolean caseSensitive : new boolean[] {true, false})
+        {
+            impls.add(new ArrayTrie<Integer>(caseSensitive,128));
+            impls.add(new ArrayTernaryTrie<Integer>(caseSensitive, 128));
+            impls.add(new ArrayTernaryTrie.Growing<Integer>(caseSensitive, 128, 128));
+        }
+        impls.add(new TreeTrie<>());
 
         for (AbstractTrie<Integer> trie : impls)
         {
-            trie.put("hello", 1);
-            trie.put("He", 2);
-            trie.put("HELL", 3);
-            trie.put("wibble", 4);
-            trie.put("Wobble", 5);
-            trie.put("foo-bar", 6);
-            trie.put("foo+bar", 7);
-            trie.put("HELL4", 8);
-            trie.put("", 9);
+            for (int i = 0; i < KEYS.length; i++)
+                trie.put(KEYS[i], i);
         }
 
         return impls.stream().map(Arguments::of);
@@ -69,159 +117,160 @@ public class TrieTest
     @MethodSource("implementations")
     public void testKeySet(AbstractTrie<Integer> trie) throws Exception
     {
-        String[] values = new String[]{
-            "hello",
-            "He",
-            "HELL",
-            "wibble",
-            "Wobble",
-            "foo-bar",
-            "foo+bar",
-            "HELL4",
-            ""
-        };
-
-        for (String value : values)
-        {
-            assertThat(value, is(in(trie.keySet())));
-        }
+        for (String value : KEYS)
+            assertThat(value, trie.keySet().contains(value), is(true));
+        for (String value : NOT_KEYS)
+            assertThat(value, trie.keySet().contains(value), is(false));
     }
 
     @ParameterizedTest
     @MethodSource("implementations")
     public void testGetString(AbstractTrie<Integer> trie) throws Exception
     {
-        assertEquals(1, trie.get("hello").intValue());
-        assertEquals(2, trie.get("He").intValue());
-        assertEquals(3, trie.get("HELL").intValue());
-        assertEquals(4, trie.get("wibble").intValue());
-        assertEquals(5, trie.get("Wobble").intValue());
-        assertEquals(6, trie.get("foo-bar").intValue());
-        assertEquals(7, trie.get("foo+bar").intValue());
-
-        assertEquals(1, trie.get("Hello").intValue());
-        assertEquals(2, trie.get("HE").intValue());
-        assertEquals(3, trie.get("heLL").intValue());
-        assertEquals(4, trie.get("Wibble").intValue());
-        assertEquals(5, trie.get("wobble").intValue());
-        assertEquals(6, trie.get("Foo-bar").intValue());
-        assertEquals(7, trie.get("FOO+bar").intValue());
-        assertEquals(8, trie.get("HELL4").intValue());
-        assertEquals(9, trie.get("").intValue());
-
-        assertEquals(null, trie.get("helloworld"));
-        assertEquals(null, trie.get("Help"));
-        assertEquals(null, trie.get("Blah"));
+        for (int i = 0; i < KEYS.length; i++)
+            assertThat(Integer.toString(i), trie.get(KEYS[i]), is(i));
+        for (int i = 0; i < NOT_KEYS.length; i++)
+            assertThat(Integer.toString(i), trie.get(NOT_KEYS[i]), nullValue());
+        for (int i = 0; i < KEYS.length; i++)
+        {
+            String k = KEYS[i].toLowerCase();
+            Integer actual = trie.get(k);
+            if (k.equals(KEYS[i]) || trie.isCaseInsensitive())
+                assertThat(k, actual, is(i));
+            else
+                assertThat(k, actual, nullValue());
+        }
+        for (int i = 0; i < KEYS.length; i++)
+        {
+            String k = KEYS[i].toUpperCase();
+            Integer actual = trie.get(k);
+            if (k.equals(KEYS[i]) || trie.isCaseInsensitive())
+                assertThat(k, actual, is(i));
+            else
+                assertThat(k, actual, nullValue());
+        }
     }
 
     @ParameterizedTest
     @MethodSource("implementations")
     public void testGetBuffer(AbstractTrie<Integer> trie) throws Exception
     {
-        assertEquals(1, trie.get(BufferUtil.toBuffer("xhellox"), 1, 5).intValue());
-        assertEquals(2, trie.get(BufferUtil.toBuffer("xhellox"), 1, 2).intValue());
-        assertEquals(3, trie.get(BufferUtil.toBuffer("xhellox"), 1, 4).intValue());
-        assertEquals(4, trie.get(BufferUtil.toBuffer("wibble"), 0, 6).intValue());
-        assertEquals(5, trie.get(BufferUtil.toBuffer("xWobble"), 1, 6).intValue());
-        assertEquals(6, trie.get(BufferUtil.toBuffer("xfoo-barx"), 1, 7).intValue());
-        assertEquals(7, trie.get(BufferUtil.toBuffer("xfoo+barx"), 1, 7).intValue());
-
-        assertEquals(1, trie.get(BufferUtil.toBuffer("xhellox"), 1, 5).intValue());
-        assertEquals(2, trie.get(BufferUtil.toBuffer("xHELLox"), 1, 2).intValue());
-        assertEquals(3, trie.get(BufferUtil.toBuffer("xhellox"), 1, 4).intValue());
-        assertEquals(4, trie.get(BufferUtil.toBuffer("Wibble"), 0, 6).intValue());
-        assertEquals(5, trie.get(BufferUtil.toBuffer("xwobble"), 1, 6).intValue());
-        assertEquals(6, trie.get(BufferUtil.toBuffer("xFOO-barx"), 1, 7).intValue());
-        assertEquals(7, trie.get(BufferUtil.toBuffer("xFOO+barx"), 1, 7).intValue());
-
-        assertEquals(null, trie.get(BufferUtil.toBuffer("xHelloworldx"), 1, 10));
-        assertEquals(null, trie.get(BufferUtil.toBuffer("xHelpx"), 1, 4));
-        assertEquals(null, trie.get(BufferUtil.toBuffer("xBlahx"), 1, 4));
+        for (int i = 0; i < KEYS.length; i++)
+            assertThat(Integer.toString(i), trie.get(BufferUtil.toBuffer(X_KEYS[i]), 1, KEYS[i].length()), is(i));
+        for (int i = 0; i < NOT_KEYS.length; i++)
+            assertThat(Integer.toString(i), trie.get(BufferUtil.toBuffer(X_NOT_KEYS[i]), 1, NOT_KEYS[i].length()), nullValue());
+        for (int i = 0; i < KEYS.length; i++)
+        {
+            String k = X_KEYS[i].toLowerCase();
+            Integer actual = trie.get(BufferUtil.toBuffer(k), 1, KEYS[i].length());
+            if (k.equals(X_KEYS[i]) || trie.isCaseInsensitive())
+                assertThat(k, actual, is(i));
+            else
+                assertThat(k, actual, nullValue());
+        }
+        for (int i = 0; i < KEYS.length; i++)
+        {
+            String k = X_KEYS[i].toUpperCase();
+            Integer actual = trie.get(BufferUtil.toBuffer(k), 1, KEYS[i].length());
+            if (k.equals(X_KEYS[i]) || trie.isCaseInsensitive())
+                assertThat(k, actual, is(i));
+            else
+                assertThat(k, actual, nullValue());
+        }
     }
 
     @ParameterizedTest
     @MethodSource("implementations")
     public void testGetDirectBuffer(AbstractTrie<Integer> trie) throws Exception
     {
-        assertEquals(1, trie.get(BufferUtil.toDirectBuffer("xhellox"), 1, 5).intValue());
-        assertEquals(2, trie.get(BufferUtil.toDirectBuffer("xhellox"), 1, 2).intValue());
-        assertEquals(3, trie.get(BufferUtil.toDirectBuffer("xhellox"), 1, 4).intValue());
-        assertEquals(4, trie.get(BufferUtil.toDirectBuffer("wibble"), 0, 6).intValue());
-        assertEquals(5, trie.get(BufferUtil.toDirectBuffer("xWobble"), 1, 6).intValue());
-        assertEquals(6, trie.get(BufferUtil.toDirectBuffer("xfoo-barx"), 1, 7).intValue());
-        assertEquals(7, trie.get(BufferUtil.toDirectBuffer("xfoo+barx"), 1, 7).intValue());
-
-        assertEquals(1, trie.get(BufferUtil.toDirectBuffer("xhellox"), 1, 5).intValue());
-        assertEquals(2, trie.get(BufferUtil.toDirectBuffer("xHELLox"), 1, 2).intValue());
-        assertEquals(3, trie.get(BufferUtil.toDirectBuffer("xhellox"), 1, 4).intValue());
-        assertEquals(4, trie.get(BufferUtil.toDirectBuffer("Wibble"), 0, 6).intValue());
-        assertEquals(5, trie.get(BufferUtil.toDirectBuffer("xwobble"), 1, 6).intValue());
-        assertEquals(6, trie.get(BufferUtil.toDirectBuffer("xFOO-barx"), 1, 7).intValue());
-        assertEquals(7, trie.get(BufferUtil.toDirectBuffer("xFOO+barx"), 1, 7).intValue());
-
-        assertEquals(null, trie.get(BufferUtil.toDirectBuffer("xHelloworldx"), 1, 10));
-        assertEquals(null, trie.get(BufferUtil.toDirectBuffer("xHelpx"), 1, 4));
-        assertEquals(null, trie.get(BufferUtil.toDirectBuffer("xBlahx"), 1, 4));
+        for (int i = 0; i < KEYS.length; i++)
+            assertThat(Integer.toString(i), trie.get(BufferUtil.toDirectBuffer(X_KEYS[i]), 1, KEYS[i].length()), is(i));
+        for (int i = 0; i < NOT_KEYS.length; i++)
+            assertThat(Integer.toString(i), trie.get(BufferUtil.toDirectBuffer(X_NOT_KEYS[i]), 1, NOT_KEYS[i].length()), nullValue());
+        for (int i = 0; i < KEYS.length; i++)
+        {
+            String k = X_KEYS[i].toLowerCase();
+            Integer actual = trie.get(BufferUtil.toDirectBuffer(k), 1, KEYS[i].length());
+            if (k.equals(X_KEYS[i]) || trie.isCaseInsensitive())
+                assertThat(k, actual, is(i));
+            else
+                assertThat(k, actual, nullValue());
+        }
+        for (int i = 0; i < KEYS.length; i++)
+        {
+            String k = X_KEYS[i].toUpperCase();
+            Integer actual = trie.get(BufferUtil.toDirectBuffer(k), 1, KEYS[i].length());
+            if (k.equals(X_KEYS[i]) || trie.isCaseInsensitive())
+                assertThat(k, actual, is(i));
+            else
+                assertThat(k, actual, nullValue());
+        }
     }
 
     @ParameterizedTest
     @MethodSource("implementations")
     public void testGetBestArray(AbstractTrie<Integer> trie) throws Exception
     {
-        assertEquals(1, trie.getBest(StringUtil.getUtf8Bytes("xhelloxxxx"), 1, 8).intValue());
-        assertEquals(2, trie.getBest(StringUtil.getUtf8Bytes("xhelxoxxxx"), 1, 8).intValue());
-        assertEquals(3, trie.getBest(StringUtil.getUtf8Bytes("xhellxxxxx"), 1, 8).intValue());
-        assertEquals(6, trie.getBest(StringUtil.getUtf8Bytes("xfoo-barxx"), 1, 8).intValue());
-        assertEquals(8, trie.getBest(StringUtil.getUtf8Bytes("xhell4xxxx"), 1, 8).intValue());
+        for (int i = 0; i < NOT_KEYS.length; i++)
+        {
+            String k = X_NOT_KEYS[i];
+            Integer actual = trie.getBest(StringUtil.getUtf8Bytes(k), 1, X_NOT_KEYS[i].length() - 1);
+            Integer expected = BEST_NOT_KEYS[i] == null ? null : trie.get(BEST_NOT_KEYS[i]);
+            assertThat(k, actual, is(expected));
+        }
 
-        assertEquals(1, trie.getBest(StringUtil.getUtf8Bytes("xHELLOxxxx"), 1, 8).intValue());
-        assertEquals(2, trie.getBest(StringUtil.getUtf8Bytes("xHELxoxxxx"), 1, 8).intValue());
-        assertEquals(3, trie.getBest(StringUtil.getUtf8Bytes("xHELLxxxxx"), 1, 8).intValue());
-        assertEquals(6, trie.getBest(StringUtil.getUtf8Bytes("xfoo-BARxx"), 1, 8).intValue());
-        assertEquals(8, trie.getBest(StringUtil.getUtf8Bytes("xHELL4xxxx"), 1, 8).intValue());
-        assertEquals(9, trie.getBest(StringUtil.getUtf8Bytes("xZZZZZxxxx"), 1, 8).intValue());
+        for (int i = 0; i < NOT_KEYS.length; i++)
+        {
+            String k = X_NOT_KEYS[i].toLowerCase();
+            Integer actual = trie.getBest(StringUtil.getUtf8Bytes(k), 1, X_NOT_KEYS[i].length() - 1);
+            String[] expectations = trie.isCaseSensitive() ? BEST_NOT_KEYS_LOWER : BEST_NOT_KEYS;
+            Integer expected = expectations[i] == null ? null : trie.get(expectations[i]);
+            assertThat(k, actual, is(expected));
+        }
     }
 
     @ParameterizedTest
     @MethodSource("implementations")
     public void testGetBestBuffer(AbstractTrie<Integer> trie) throws Exception
     {
-        assertEquals(1, trie.getBest(BufferUtil.toBuffer("xhelloxxxx"), 1, 8).intValue());
-        assertEquals(2, trie.getBest(BufferUtil.toBuffer("xhelxoxxxx"), 1, 8).intValue());
-        assertEquals(3, trie.getBest(BufferUtil.toBuffer("xhellxxxxx"), 1, 8).intValue());
-        assertEquals(6, trie.getBest(BufferUtil.toBuffer("xfoo-barxx"), 1, 8).intValue());
-        assertEquals(8, trie.getBest(BufferUtil.toBuffer("xhell4xxxx"), 1, 8).intValue());
+        for (int i = 0; i < NOT_KEYS.length; i++)
+        {
+            String k = X_NOT_KEYS[i];
+            Integer actual = trie.getBest(BufferUtil.toBuffer(k), 1, X_NOT_KEYS[i].length() - 1);
+            Integer expected = BEST_NOT_KEYS[i] == null ? null : trie.get(BEST_NOT_KEYS[i]);
+            assertThat(k, actual, is(expected));
+        }
 
-        assertEquals(1, trie.getBest(BufferUtil.toBuffer("xHELLOxxxx"), 1, 8).intValue());
-        assertEquals(2, trie.getBest(BufferUtil.toBuffer("xHELxoxxxx"), 1, 8).intValue());
-        assertEquals(3, trie.getBest(BufferUtil.toBuffer("xHELLxxxxx"), 1, 8).intValue());
-        assertEquals(6, trie.getBest(BufferUtil.toBuffer("xfoo-BARxx"), 1, 8).intValue());
-        assertEquals(8, trie.getBest(BufferUtil.toBuffer("xHELL4xxxx"), 1, 8).intValue());
-        assertEquals(9, trie.getBest(BufferUtil.toBuffer("xZZZZZxxxx"), 1, 8).intValue());
-
-        ByteBuffer buffer = (ByteBuffer)BufferUtil.toBuffer("xhelloxxxxxxx").position(2);
-        assertEquals(1, trie.getBest(buffer, -1, 10).intValue());
+        for (int i = 0; i < NOT_KEYS.length; i++)
+        {
+            String k = X_NOT_KEYS[i].toLowerCase();
+            Integer actual = trie.getBest(BufferUtil.toBuffer(k), 1, X_NOT_KEYS[i].length() - 1);
+            String[] expectations = trie.isCaseSensitive() ? BEST_NOT_KEYS_LOWER : BEST_NOT_KEYS;
+            Integer expected = expectations[i] == null ? null : trie.get(expectations[i]);
+            assertThat(k, actual, is(expected));
+        }
     }
 
     @ParameterizedTest
     @MethodSource("implementations")
     public void testGetBestDirectBuffer(AbstractTrie<Integer> trie) throws Exception
     {
-        assertEquals(1, trie.getBest(BufferUtil.toDirectBuffer("xhelloxxxx"), 1, 8).intValue());
-        assertEquals(2, trie.getBest(BufferUtil.toDirectBuffer("xhelxoxxxx"), 1, 8).intValue());
-        assertEquals(3, trie.getBest(BufferUtil.toDirectBuffer("xhellxxxxx"), 1, 8).intValue());
-        assertEquals(6, trie.getBest(BufferUtil.toDirectBuffer("xfoo-barxx"), 1, 8).intValue());
-        assertEquals(8, trie.getBest(BufferUtil.toDirectBuffer("xhell4xxxx"), 1, 8).intValue());
+        for (int i = 0; i < NOT_KEYS.length; i++)
+        {
+            String k = X_NOT_KEYS[i];
+            Integer actual = trie.getBest(BufferUtil.toDirectBuffer(k), 1, X_NOT_KEYS[i].length() - 1);
+            Integer expected = BEST_NOT_KEYS[i] == null ? null : trie.get(BEST_NOT_KEYS[i]);
+            assertThat(k, actual, is(expected));
+        }
 
-        assertEquals(1, trie.getBest(BufferUtil.toDirectBuffer("xHELLOxxxx"), 1, 8).intValue());
-        assertEquals(2, trie.getBest(BufferUtil.toDirectBuffer("xHELxoxxxx"), 1, 8).intValue());
-        assertEquals(3, trie.getBest(BufferUtil.toDirectBuffer("xHELLxxxxx"), 1, 8).intValue());
-        assertEquals(6, trie.getBest(BufferUtil.toDirectBuffer("xfoo-BARxx"), 1, 8).intValue());
-        assertEquals(8, trie.getBest(BufferUtil.toDirectBuffer("xHELL4xxxx"), 1, 8).intValue());
-        assertEquals(9, trie.getBest(BufferUtil.toDirectBuffer("xZZZZZxxxx"), 1, 8).intValue());
-
-        ByteBuffer buffer = (ByteBuffer)BufferUtil.toDirectBuffer("xhelloxxxxxxx").position(2);
-        assertEquals(1, trie.getBest(buffer, -1, 10).intValue());
+        for (int i = 0; i < NOT_KEYS.length; i++)
+        {
+            String k = X_NOT_KEYS[i].toLowerCase();
+            Integer actual = trie.getBest(BufferUtil.toDirectBuffer(k), 1, X_NOT_KEYS[i].length() - 1);
+            String[] expectations = trie.isCaseSensitive() ? BEST_NOT_KEYS_LOWER : BEST_NOT_KEYS;
+            Integer expected = expectations[i] == null ? null : trie.get(expectations[i]);
+            assertThat(k, actual, is(expected));
+        }
     }
 
     @ParameterizedTest

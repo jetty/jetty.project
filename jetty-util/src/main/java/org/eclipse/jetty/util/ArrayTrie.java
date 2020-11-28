@@ -56,7 +56,8 @@ class ArrayTrie<V> extends AbstractTrie<V>
      * 32 to cover case insensitive alphabet and a few other common
      * characters.
      */
-    private static final int ROW_SIZE = 32;
+    private static final int ROW_SIZE = 48;
+    private static final int BIG_ROW = 22;
 
     /**
      * The index lookup table, this maps a character as a byte
@@ -65,18 +66,34 @@ class ArrayTrie<V> extends AbstractTrie<V>
     // TODO if we expanded ROW_SIZE to 48 we could include 0-9, _ and a few other chars
     // TODO Also We could have a case sensitive table with a larger row size, 58 without digits, 69 with digits and _
     // TODO Also see idea bleow in put for making big index more space efficient
-    private static final int[] LOOKUP =
+    private static final int X = Integer.MIN_VALUE;
+    private static final int[] LOOKUP_INSENSITIVE =
         {
-            // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
-            /*0*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            /*1*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            /*2*/31, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 26, -1, 27, 30, -1,
-            /*3*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 28, 29, -1, -1, -1, -1,
-            /*4*/-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-            /*5*/15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,
-            /*6*/-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-            /*7*/15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1
+            //     0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
+            /*0*/  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,
+            /*1*/  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,
+            /*2*/ -1, -2, -3, -4, -5, -6, -7, -8, -9,-10,-11, 43, 44, 45, 46, 47,
+            /*3*/  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 37, 38, 39, 40, 41, 42,
+            /*4*/-12, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+            /*5*/ 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,-13,-14,-15,-16, 36,
+            /*6*/-17, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+            /*7*/ 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,-18,-19,-20,-21,  X,
         };
+
+    private static final int[] LOOKUP_SENSITIVE =
+        {
+            //     0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
+            /*0*/  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,
+            /*1*/  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,
+            /*2*/ -1, -2, -3, -4, -5, -6, -7, -8, -9,-10,-11, 43, 44, 45, 46, 47,
+            /*3*/  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 37, 38, 39, 40, 41, 42,
+            /*4*/-12,-22,-23,-24,-25,-26,-27,-28,-29,-30,-31,-32,-33,-34,-35,-36,
+            /*5*/-37,-38,-39,-40,-41,-42,-43,-44,-45,-46,-47,-13,-14,-15,-16, 36,
+            /*6*/-17, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+            /*7*/ 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,-18,-19,-20,-21,  X,
+        };
+
+    private final int[] _lookup;
 
     /**
      * The Trie rows in a single array which allows a lookup of row,character
@@ -119,24 +136,23 @@ class ArrayTrie<V> extends AbstractTrie<V>
     public static <V> ArrayTrie<V> from(int capacity, int maxCapacity, boolean caseSensitive, Set<Character> alphabet, Map<String, V> contents)
     {
         // can't do case sensitive or infinite capacity
-        if (caseSensitive || maxCapacity < 0)
+        if (maxCapacity < 0)
             return null;
 
-        // TODO is this the correct capacity check?
         // TODO can we increase capacity by dividing by ROW_SIZE?
         if ((maxCapacity * ROW_SIZE) > Character.MAX_VALUE)
             return null;
 
         // check alphabet
+        int[] lookup = caseSensitive ? LOOKUP_SENSITIVE : LOOKUP_INSENSITIVE;
         for (Character c : alphabet)
         {
-            // TODO cannot exclude the LOOKUP misses here because they include 0-9 and _
-            // TODO which are moderately frequently used, but handled anyway by the lookup.
-            if (c > 127 /* || LOOKUP[c & 0x7f] < 0 */)
+            if (c > 0x7F  || lookup[c & 0x7f] == Integer.MIN_VALUE)
                 return null;
         }
 
-        ArrayTrie<V> trie = new ArrayTrie<>(maxCapacity);
+        // TODO it would be possible to do a frequency analysis on the contents and come up with a custom LOOKUP table!
+        ArrayTrie<V> trie = new ArrayTrie<>(!caseSensitive, maxCapacity);
         if (contents != null && !trie.putAll(contents))
             return null;
         return trie;
@@ -153,28 +169,17 @@ class ArrayTrie<V> extends AbstractTrie<V>
     @SuppressWarnings("unchecked")
     ArrayTrie(int capacity)
     {
-        super(true);
+        this(true, capacity);
+    }
+
+    ArrayTrie(boolean caseInsensitive, int capacity)
+    {
+        super(caseInsensitive);
+        _lookup = caseInsensitive ? LOOKUP_INSENSITIVE : LOOKUP_SENSITIVE;
         capacity++;
         _value = (V[])new Object[capacity];
         _rowIndex = new char[capacity * ROW_SIZE];
         _key = new String[capacity];
-    }
-
-    @SuppressWarnings("unchecked")
-    ArrayTrie(Map<String, V> initialValues)
-    {
-        super(true);
-        // The calculated requiredCapacity does not take into account the
-        // extra reserved slot for the empty string key, so we have to add 1.
-        int capacity = requiredCapacity(initialValues.keySet(), false, null) + 1;
-        _value = (V[])new Object[capacity];
-        _rowIndex = new char[capacity * ROW_SIZE];
-        _key = new String[capacity];
-        for (Map.Entry<String, V> entry : initialValues.entrySet())
-        {
-            if (!put(entry.getKey(), entry.getValue()))
-                throw new AssertionError("Invalid capacity calculated (" + capacity + ") at '" + entry + "' for " + initialValues);
-        }
     }
 
     @Override
@@ -195,11 +200,17 @@ class ArrayTrie<V> extends AbstractTrie<V>
         for (k = 0; k < limit; k++)
         {
             char c = s.charAt(k);
+            if (c > 0x7f)
+                throw new IllegalArgumentException("non ascii character");
 
-            int index = LOOKUP[c & 0x7f];
+            int index = _lookup[c & 0x7f];
+            if (index == Integer.MIN_VALUE)
+                throw new IllegalArgumentException("unsupported character");
             if (index >= 0)
             {
                 int idx = t * ROW_SIZE + index;
+                if (idx >= _rowIndex.length)
+                    return false;
                 t = _rowIndex[idx];
                 if (t == 0)
                 {
@@ -208,27 +219,21 @@ class ArrayTrie<V> extends AbstractTrie<V>
                     t = _rowIndex[idx] = _rows;
                 }
             }
-            else if (c > 127)
-                throw new IllegalArgumentException("non ascii character");
             else
             {
-                // TODO we could make the big index more space efficient by instead of having -1 in the LOOKUP, have
-                // TODO different negative numbers that match to indexes in the bigIndex.  This will allows the big index
-                // TODO array to be 128-ROWSIZE instead of 128.   Would also allows case senstive to be handled with an alt
-                // TODO LOOKUP with uppercase always mapping to a bigIndex slot.
                 if (_bigIndex == null)
                     _bigIndex = new char[_value.length][];
                 if (t >= _bigIndex.length)
                     return false;
                 char[] big = _bigIndex[t];
                 if (big == null)
-                    big = _bigIndex[t] = new char[128];
-                t = big[c];
+                    big = _bigIndex[t] = new char[_lookup == LOOKUP_INSENSITIVE ? BIG_ROW : ROW_SIZE];
+                t = big[-index];
                 if (t == 0)
                 {
                     if (_rows == _value.length)
                         return false;
-                    t = big[c] = ++_rows;
+                    t = big[-index] = ++_rows;
                 }
             }
         }
@@ -251,7 +256,11 @@ class ArrayTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < len; i++)
         {
             char c = s.charAt(offset + i);
-            int index = LOOKUP[c & 0x7f];
+            if (c > 0x7f)
+                return null;
+            int index = _lookup[c & 0x7f];
+            if (index == Integer.MIN_VALUE)
+                return null;
             if (index >= 0)
             {
                 int idx = t * ROW_SIZE + index;
@@ -264,7 +273,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
                 char[] big = _bigIndex == null ? null : _bigIndex[t];
                 if (big == null)
                     return null;
-                t = big[c];
+                t = big[-index];
                 if (t == 0)
                     return null;
             }
@@ -279,7 +288,11 @@ class ArrayTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < len; i++)
         {
             byte c = b.get(offset + i);
-            int index = LOOKUP[c & 0x7f];
+            if (c < 0)
+                return null;
+            int index = _lookup[c & 0x7f];
+            if (index == Integer.MIN_VALUE)
+                return null;
             if (index >= 0)
             {
                 int idx = t * ROW_SIZE + index;
@@ -292,12 +305,12 @@ class ArrayTrie<V> extends AbstractTrie<V>
                 char[] big = _bigIndex == null ? null : _bigIndex[t];
                 if (big == null)
                     return null;
-                t = big[c];
+                t = big[-index];
                 if (t == 0)
                     return null;
             }
         }
-        return (V)_value[t];
+        return _value[t];
     }
 
     @Override
@@ -326,7 +339,11 @@ class ArrayTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < len; i++)
         {
             char c = s.charAt(pos++);
-            int index = LOOKUP[c & 0x7f];
+            if (c > 0x7f)
+                break;
+            int index = _lookup[c & 0x7f];
+            if (index == Integer.MIN_VALUE)
+                break;
             if (index >= 0)
             {
                 int idx = t * ROW_SIZE + index;
@@ -340,7 +357,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
                 char[] big = _bigIndex == null ? null : _bigIndex[t];
                 if (big == null)
                     return null;
-                int nt = big[c];
+                int nt = big[-index];
                 if (nt == 0)
                     break;
                 t = nt;
@@ -353,10 +370,10 @@ class ArrayTrie<V> extends AbstractTrie<V>
                 V best = getBest(t, s, offset + i + 1, len - i - 1);
                 if (best != null)
                     return best;
-                return (V)_value[t];
+                return _value[t];
             }
         }
-        return (V)_value[t];
+        return _value[t];
     }
 
     private V getBest(int t, byte[] b, int offset, int len)
@@ -364,7 +381,11 @@ class ArrayTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < len; i++)
         {
             byte c = b[offset + i];
-            int index = LOOKUP[c & 0x7f];
+            if (c < 0)
+                break;
+            int index = _lookup[c & 0x7f];
+            if (index == Integer.MIN_VALUE)
+                break;
             if (index >= 0)
             {
                 int idx = t * ROW_SIZE + index;
@@ -378,7 +399,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
                 char[] big = _bigIndex == null ? null : _bigIndex[t];
                 if (big == null)
                     return null;
-                int nt = big[c];
+                int nt = big[-index];
                 if (nt == 0)
                     break;
                 t = nt;
@@ -394,7 +415,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
                 break;
             }
         }
-        return (V)_value[t];
+        return _value[t];
     }
 
     private V getBest(int t, ByteBuffer b, int offset, int len)
@@ -403,7 +424,11 @@ class ArrayTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < len; i++)
         {
             byte c = b.get(pos++);
-            int index = LOOKUP[c & 0x7f];
+            if (c < 0)
+                break;
+            int index = _lookup[c & 0x7f];
+            if (index == Integer.MIN_VALUE)
+                break;
             if (index >= 0)
             {
                 int idx = t * ROW_SIZE + index;
@@ -417,7 +442,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
                 char[] big = _bigIndex == null ? null : _bigIndex[t];
                 if (big == null)
                     return null;
-                int nt = big[c];
+                int nt = big[-index];
                 if (nt == 0)
                     break;
                 t = nt;
@@ -433,19 +458,17 @@ class ArrayTrie<V> extends AbstractTrie<V>
                 break;
             }
         }
-        return (V)_value[t];
+        return _value[t];
     }
 
     @Override
     public String toString()
     {
         StringBuilder buf = new StringBuilder();
+        buf.append("AT@").append(Integer.toHexString(hashCode())).append('{');
+        buf.append("ci=").append(isCaseInsensitive()).append(';');
+        buf.append("c=").append(_rowIndex.length / ROW_SIZE).append(';');
         toString(buf, 0);
-
-        if (buf.length() == 0)
-            return "{}";
-
-        buf.setCharAt(0, '{');
         buf.append('}');
         return buf.toString();
     }
@@ -456,7 +479,8 @@ class ArrayTrie<V> extends AbstractTrie<V>
         {
             try
             {
-                out.append(',');
+                if (t != 0)
+                    out.append(',');
                 out.append(_key[t]);
                 out.append('=');
                 out.append(_value[t].toString());

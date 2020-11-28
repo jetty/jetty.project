@@ -107,8 +107,8 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
             return null;
 
         AbstractTrie<V> trie = maxCapacity < 0
-            ? new ArrayTernaryTrie.Growing<V>(caseSensitive, capacity, 512)
-            : new ArrayTernaryTrie<V>(caseSensitive, Math.max(capacity, maxCapacity));
+            ? new ArrayTernaryTrie.Growing<V>(!caseSensitive, capacity, 512)
+            : new ArrayTernaryTrie<V>(!caseSensitive, Math.max(capacity, maxCapacity));
 
         if (contents != null && !trie.putAll(contents))
             return null;
@@ -462,20 +462,20 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
     public String toString()
     {
         StringBuilder buf = new StringBuilder();
+        buf.append("ATT@").append(Integer.toHexString(hashCode())).append('{');
+        buf.append("ci=").append(isCaseInsensitive()).append(';');
+        buf.append("c=").append(_tree.length / ROW_SIZE).append(';');
         for (int r = 0; r <= _rows; r++)
         {
             if (_key[r] != null && _value[r] != null)
             {
-                buf.append(',');
+                if (r != 0)
+                    buf.append(',');
                 buf.append(_key[r]);
                 buf.append('=');
-                buf.append(_value[r].toString());
+                buf.append(String.valueOf(_value[r]));
             }
         }
-        if (buf.length() == 0)
-            return "{}";
-
-        buf.setCharAt(0, '{');
         buf.append('}');
         return buf.toString();
     }
@@ -664,7 +664,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
         @Override
         public String toString()
         {
-            return _trie.toString();
+            return "G" + _trie.toString();
         }
 
         @Override

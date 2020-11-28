@@ -358,12 +358,9 @@ class TreeTrie<V> extends AbstractTrie<V>
     public String toString()
     {
         StringBuilder buf = new StringBuilder();
+        buf.append("TT@").append(Integer.toHexString(hashCode())).append('{');
+        buf.append("ci=").append(isCaseInsensitive()).append(';');
         toString(buf, this);
-
-        if (buf.length() == 0)
-            return "{}";
-
-        buf.setCharAt(0, '{');
         buf.append('}');
         return buf.toString();
     }
