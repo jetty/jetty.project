@@ -54,6 +54,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -756,6 +757,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
+    @Disabled // TODO #5737
     public void testBlockingReadInOtherThreadThenComplete(Transport transport) throws Exception
     {
         init(transport);
