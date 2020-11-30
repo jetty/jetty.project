@@ -147,7 +147,7 @@ etc/jetty.xml,etc/jetty-http.xml,etc/jetty-deployer.xml
 Note that the paths can either be relative or absolute, or a mixture.
 If the path is relative, it is resolved against either *jetty.home* or **jetty.home.bundle**, whichever was specified.
 You can use this ability to mix and match jetty configuration files to add functionality, such as adding in a https connector.
-Here's an example of adding a HTTPS connector, using the relevant files from the jetty-distribution:
+Here's an example of adding a HTTPS connector, using the relevant files from the jetty-home:
 +
 ....
 etc/jetty.xml, etc/jetty-http.xml, /opt/jetty/etc/jetty-ssl.xml, /opt/jetty/etc/jetty-https.xml, etc/jetty-deployer.xml

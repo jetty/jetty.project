@@ -106,18 +106,18 @@ public class MavenLocalRepoFileInitializerTest
     public void testGetCoordinateZip()
     {
         MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer(baseHome);
-        String ref = "maven://org.eclipse.jetty/jetty-distribution/9.3.x/zip";
+        String ref = "maven://org.eclipse.jetty/jetty-home/9.3.x/zip";
         Coordinates coords = repo.getCoordinates(URI.create(ref));
         assertThat("Coordinates", coords, notNullValue());
 
         assertThat("coords.groupId", coords.groupId, is("org.eclipse.jetty"));
-        assertThat("coords.artifactId", coords.artifactId, is("jetty-distribution"));
+        assertThat("coords.artifactId", coords.artifactId, is("jetty-home"));
         assertThat("coords.version", coords.version, is("9.3.x"));
         assertThat("coords.type", coords.type, is("zip"));
         assertThat("coords.classifier", coords.classifier, nullValue());
 
         assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(),
-            is("https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-distribution/9.3.x/jetty-distribution-9.3.x.zip"));
+            is("https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-home/9.3.x/jetty-home-9.3.x.zip"));
     }
 
     @Test

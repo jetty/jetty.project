@@ -119,7 +119,7 @@ $
 This replacement `centralized-webapp-logging.mod` performs a number of tasks.
 
 . `mybase` is a `${jetty.base}` directory.
-. The jetty-distribution is unpacked (and untouched) into `/opt/jetty-dist/` and becomes the `${jetty.home}` directory for this demonstration.
+. The jetty-home is unpacked (and untouched) into `/opt/jetty-home/` and becomes the `${jetty.home}` directory for this demonstration.
 . The `curl` command downloads the replacement config overlay for the `${jetty.base}/modules/` directory to use.
 . The `start.jar --add-to-start=centralized-webapp-logging` command performs a number of steps to make the centralized-webapp-logging module available to the `${jetty.base}` configuration.
 .. A new `${jetty.base}/start.d/centralized-webapp-logging.ini` configuration was created.

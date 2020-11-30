@@ -28,7 +28,7 @@ This is easily accomplished.
 
 ____
 [NOTE]
-This example assumes you are deploying your web application into the jetty-distribution.
+This example assumes you are deploying your web application into a jetty-base.
 ____
 
 ===== Starting Jetty
@@ -47,7 +47,7 @@ $ java -Xdebug -agentlib:jdwp=transport=dt_socket,address=9999,server=y,suspend=
 ....
 
 Via `start.ini`::
-  This approach is best used if you want to debug a particular jetty-distribution and not have to remember the commandline incantations.
+  This approach is best used if you want to debug a particular jetty-base and not have to remember the commandline incantations.
 +
 1.  Edit the `start.ini` and uncomment the --exec line, this is required if you are adding jvm options to the start.ini file as jetty-start must generate the classpath required and fork a new jvm.
 2.  Add the parameters mentioned above in the Command Line option so your start.ini looks like this:
@@ -84,7 +84,7 @@ Via `start.ini`::
 +
 Uncomment any other jvm environmental options you so desire for your debugging session.
 
-3.  Regardless of the option chosen, you should see the following lines at the top of your jetty-distribution startup.
+3.  Regardless of the option chosen, you should see the following lines at the top of your jetty startup.
 +
 [source, plain, subs="{sub-order}"]
 ----

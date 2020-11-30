@@ -216,8 +216,8 @@ At this point the server has been configured with connectors for both HTTP and H
 2017-08-31 10:19:58.855:INFO::main: Logging initialized @372ms to org.eclipse.jetty.util.log.StdErrLog
 2017-08-31 10:19:59.076:INFO:oejs.Server:main: jetty-{VERSION}
 2017-08-31 10:19:59.125:INFO:oejs.AbstractConnector:main: Started ServerConnector@421e98e0{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
-2017-08-31 10:19:59.150:INFO:oejus.SslContextFactory:main: x509=X509@5315b42e(jetty,h=[jetty.eclipse.org],w=[]) for SslContextFactory@2ef9b8bc(file:///Users/staff/installs/repository/jetty-distribution-{VERSION}/mybase/etc/keystore,file:///Users/staff/installs/repository/jetty-distribution-{VERSION}/mybase/etc/keystore)
-2017-08-31 10:19:59.151:INFO:oejus.SslContextFactory:main: x509=X509@5d624da6(mykey,h=[],w=[]) for SslContextFactory@2ef9b8bc(file:///Users/staff/installs/repository/jetty-distribution-{VERSION}/mybase/etc/keystore,file:///Users/staff/installs/repository/jetty-distribution-{VERSION}/mybase/etc/keystore)
+2017-08-31 10:19:59.150:INFO:oejus.SslContextFactory:main: x509=X509@5315b42e(jetty,h=[jetty.eclipse.org],w=[]) for SslContextFactory@2ef9b8bc(file:///var/my-jetty-base/etc/keystore,file:///var/my-jetty-base/etc/keystore)
+2017-08-31 10:19:59.151:INFO:oejus.SslContextFactory:main: x509=X509@5d624da6(mykey,h=[],w=[]) for SslContextFactory@2ef9b8bc(file:///var/my-jetty-base/etc/keystore,file:///var/my-jetty-base/etc/keystore)
 2017-08-31 10:19:59.273:INFO:oejs.AbstractConnector:main: Started ServerConnector@2b98378d{SSL,[ssl, http/1.1]}{0.0.0.0:8443}
 2017-08-31 10:19:59.274:INFO:oejs.Server:main: Started @791ms
 ....

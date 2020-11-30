@@ -24,7 +24,7 @@ TODO: review in light of Jetty 10
 The most basic way of starting the Jetty standalone server is to execute the `start.jar`, which is a bootstrap for starting Jetty with the configuration you want.
 
 ----
-[jetty-distribution-{VERSION}]$ java -jar start.jar
+[jetty-home-{VERSION}]$ java -jar start.jar
 2013-09-23 11:27:06.654:INFO:oejs.Server:main: jetty-{VERSION}
 ...
 ----

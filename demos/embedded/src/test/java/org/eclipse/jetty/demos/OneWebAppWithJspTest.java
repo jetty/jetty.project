@@ -42,7 +42,7 @@ public class OneWebAppWithJspTest extends AbstractEmbeddedTest
     @BeforeEach
     public void startServer() throws Exception
     {
-        assumeTrue(JettyHome.JETTY_HOME != null, "jetty-distribution not found");
+        assumeTrue(JettyHome.JETTY_HOME != null, "jetty-home not found");
 
         server = OneWebAppWithJsp.createServer(0);
         server.start();
