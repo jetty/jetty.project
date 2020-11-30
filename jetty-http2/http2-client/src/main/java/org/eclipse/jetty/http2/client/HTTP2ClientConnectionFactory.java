@@ -93,20 +93,6 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         }
 
         @Override
-        public long getMessagesIn()
-        {
-            HTTP2ClientSession session = (HTTP2ClientSession)getSession();
-            return session.getStreamsOpened();
-        }
-
-        @Override
-        public long getMessagesOut()
-        {
-            HTTP2ClientSession session = (HTTP2ClientSession)getSession();
-            return session.getStreamsClosed();
-        }
-
-        @Override
         public void onOpen()
         {
             Map<Integer, Integer> settings = listener.onPreface(getSession());
@@ -125,15 +111,11 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
             ISession session = getSession();
 
             int windowDelta = client.getInitialSessionRecvWindow() - FlowControlStrategy.DEFAULT_WINDOW_SIZE;
+            session.updateRecvWindow(windowDelta);
             if (windowDelta > 0)
-            {
-                session.updateRecvWindow(windowDelta);
                 session.frames(null, Arrays.asList(prefaceFrame, settingsFrame, new WindowUpdateFrame(0, windowDelta)), this);
-            }
             else
-            {
                 session.frames(null, Arrays.asList(prefaceFrame, settingsFrame), this);
-            }
         }
 
         @Override
