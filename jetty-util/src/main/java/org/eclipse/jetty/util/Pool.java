@@ -449,6 +449,12 @@ public class Pool<T> implements AutoCloseable, Dumpable
             this.state = new AtomicBiInteger(Integer.MIN_VALUE, 0);
         }
 
+        // for testing only
+        void setUsageCount(int usageCount)
+        {
+            this.state.getAndSetHi(usageCount);
+        }
+
         /** Enable a reserved entry {@link Entry}.
          * An entry returned from the {@link #reserve(int)} method must be enabled with this method,
          * once and only once, before it is usable by the pool.
@@ -527,7 +533,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
                 if (closed || multiplexingCount >= maxMultiplex || (currentMaxUsageCount > 0 && usageCount >= currentMaxUsageCount))
                     return false;
 
-                if (state.compareAndSet(encoded, usageCount + 1, multiplexingCount + 1))
+                // Prevent overflowing the usage counter by capping it at Integer.MAX_VALUE.
+                int newUsageCount = usageCount == Integer.MAX_VALUE ? Integer.MAX_VALUE : usageCount + 1;
+                if (state.compareAndSet(encoded, newUsageCount, multiplexingCount + 1))
                     return true;
             }
         }
