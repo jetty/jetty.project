@@ -59,7 +59,7 @@ public class ByteBufferAccumulator implements AutoCloseable
     {
         int length = 0;
         for (ByteBuffer buffer : _buffers)
-            length += buffer.remaining();
+            length = Math.addExact(length, buffer.remaining());
         return length;
     }
 
