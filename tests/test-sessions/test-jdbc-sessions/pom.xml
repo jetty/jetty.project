@@ -92,7 +92,7 @@
     <dependency>
       <groupId>org.mariadb.jdbc</groupId>
       <artifactId>mariadb-java-client</artifactId>
-      <version>2.7.0</version>
+      <version>${maria.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

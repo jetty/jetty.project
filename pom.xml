@@ -74,7 +74,7 @@
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
     <testcontainers.version>1.15.0</testcontainers.version>
-    <derby.version>10.14.2.0</derby.version>
+    <maria.version>2.7.0</maria.version>
   </properties>
 
   <licenses>
@@ -1187,16 +1187,6 @@
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-unixsocket</artifactId>
         <version>0.38.3</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.derby</groupId>
-        <artifactId>derby</artifactId>
-        <version>${derby.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.derby</groupId>
-        <artifactId>derbytools</artifactId>
-        <version>${derby.version}</version>
       </dependency>
       <!-- avoid depending on a range dependency from a transitive dependency -->
       <dependency>
