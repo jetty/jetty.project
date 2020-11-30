@@ -27,8 +27,8 @@ The techniques outlined here are based on Windows 7 (64-bit), using JDK 8 (64-bi
 
 Prepare some empty directories to work with.
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 C:\> mkdir opt
 C:\> cd opt
 C:\opt> mkdir jetty
@@ -48,7 +48,7 @@ C:\opt> dir
 11/21/2013  04:06 PM    <DIR>          myappbase
 11/21/2013  04:06 PM    <DIR>          temp
                0 File(s)              0 bytes
-....
+----
 
 The directory purposes are as follows:
 
@@ -69,13 +69,13 @@ This is intentionally kept separate from the standard temp directories of Window
 
 Or download Java 8 from: http://www.oracle.com/technetwork/java/javase/downloads/index.html
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 C:\opt>java -version
 java version "1.7.0_45"
 Java(TM) SE Runtime Environment (build 1.7.0_45-b18)
 Java HotSpot(TM) 64-Bit Server VM (build 24.45-b08, mixed mode)
-....
+----
 
 Download a copy of the ZIP distribution from the link:#jetty-downloading[Official Eclipse Download Site]
 
@@ -83,8 +83,8 @@ Extract the contents of the `jetty-distribution-{VERSION}` directory to `C:\opt\
 
 Once complete, the contents of the `C:\opt\jetty` directory should look like this:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 C:\opt\jetty>dir
  Volume in drive C has no label.
  Volume Serial Number is C8CF-820B
@@ -110,7 +110,7 @@ C:\opt\jetty>dir
 11/21/2013  12:13 PM    <DIR>          webapps
                6 File(s)        453,659 bytes
               11 Dir(s)  306,711,420,928 bytes free
-....
+----
 
 Download a copy of the https://commons.apache.org/proper/commons-daemon/binaries.html[Apache ProcRun] native binaries.
 
@@ -122,8 +122,8 @@ The ZIP file has both 32 bit and 64 bit versions of this file.
 
 Once you are complete, the contents of `C:\opt` directory should look like this:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 C:\opt> dir
  Volume in drive C has no label.
  Volume Serial Number is DEAD-BEEF
@@ -139,14 +139,14 @@ C:\opt> dir
 11/21/2013  04:11 PM           104,448 prunmgr.exe
 11/21/2013  04:11 PM            80,896 prunsrv.exe
                2 File(s)        185,344 bytes
-....
+----
 
 Now it's time to setup your new `${jetty.base}` directory to have all of your WebApps and the configurations that they need.
 
 We'll start by specifying which modules we want to use (this will create a start.ini file and also create a few empty directories for you)
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 C:\opt\myappbase>java -jar ..\jetty\start.jar --add-to-start=deploy,http,console-capture
 
 WARNING: deploy          initialised in ${jetty.base}\start.ini (appended)
@@ -174,7 +174,7 @@ C:\opt\myappbase>dir
 11/21/2013  12:49 PM    <DIR>          webapps
                1 File(s)          1,355 bytes
                4 Dir(s)  306,711,064,576 bytes free
-....
+----
 
 At this point you have configured your `C:\opt\myappbase` to enable the following modules:
 
@@ -192,10 +192,10 @@ See the section on xref:start-jar[] for more details and options on setting up a
 
 At this point you merely have to copy your WAR files into the `{$jetty.base}/webapps` directory.
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 C:\opt\myappbase> copy C:\projects\mywebsite.war webapps\
-....
+----
 
 At this point you should have your directories, Java, the Jetty distribution, and your webapp specifics setup and ready for operation.
 
@@ -295,4 +295,4 @@ Once you have run `prunsrv.exe //IS/<service-name>` (done for you in the above b
 
 Open the Service View and start your service.
 
-image:images/windows-service-jetty.png[image,width=576]
+image:administration/strartup/images/windows-service-jetty.png[image,width=576]

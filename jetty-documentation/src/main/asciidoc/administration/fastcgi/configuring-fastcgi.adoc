@@ -31,12 +31,12 @@ Refer to xref:jetty-downloading[] for more information about how to install Jett
 
 The fourth step is to create a Jetty base directory (see xref:startup-base-and-home[]), called in the following `$JETTY_BASE`, where you setup the configuration needed to support FastCGI in Jetty, and configure the `fcgi`, `http` and `deploy` modules, so that Jetty will be able to accept HTTP requests from browsers, convert them in FastCGI, and proxy them to `php-fpm`:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 $ mkdir -p /usr/jetty/wordpress
 $ cd /usr/jetty/wordpress
 $ java -jar $JETTY_HOME/start.jar --add-to-start=fcgi,http,deploy
-....
+----
 
 Therefore `$JETTY_BASE=/usr/jetty/wordpress`.
 
@@ -46,7 +46,7 @@ For FastCGI there is no web application that needs developed - all the work has 
 As such you only need to deploy a Jetty context XML file that configures the web application directly.
 Copy and paste the following content as `$JETTY_BASE/webapps/jetty-wordpress.xml`:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
@@ -138,11 +138,11 @@ Refer to the link:{JDURL}/org/eclipse/jetty/fcgi/server/proxy/FastCGIProxyServle
 
 The last step is to start Jetty (see xref:startup[]) and navigate to `http://localhost:8080` with your browser and enjoy WordPress:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 $ cd $JETTY_BASE
 $ java -jar /opt/jetty/start.jar
-....
+----
 
 [[configuring-fastcgi-http2]]
 ==== Configuring Jetty to Proxy HTTP/2 to FastCGI
@@ -151,11 +151,11 @@ In order to configure Jetty to listen for HTTP/2 requests from clients that are 
 
 Enabling the `http2` is easy; in additions to the modules you have enabled above, add the `http2` module:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 $ cd $JETTY_BASE
 $ java -jar $JETTY_HOME/start.jar --add-to-start=http2
-....
+----
 
 The command above adds the `http2` module (and its dependencies) to the existing modules and uses the default Jetty keystore to provide the key material required by TLS.
 You will want to use your own keystore with your own private key and certificate for your own domain.
@@ -171,10 +171,10 @@ These will setup a clear text connector on port 8080 for HTTP/1.1 and a TLS conn
 
 At this point, you can start Jetty (see xref:startup[]), hit `http://localhost:8080` with your browser and enjoy WordPress via HTTP/2 using a HTTP/2 enabled browser:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 $ cd $JETTY_BASE
 $ java -jar $JETTY_HOME/start.jar
-....
+----
 
 If you don't have a HTTP/2 enabled browser, WordPress will still be available over HTTP/1.1.

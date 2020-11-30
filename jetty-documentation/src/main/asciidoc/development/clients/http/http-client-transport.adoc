@@ -30,7 +30,7 @@ This allows them to write their logic against a high-level API that hides the de
 
 The most common protocol format is HTTP/1.1, a text-based protocol with lines separated by `\r\n`:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 GET /index.html HTTP/1.1\r\n
 Host: domain.com\r\n
@@ -40,7 +40,7 @@ Host: domain.com\r\n
 
 However, the same request can be made using FastCGI, a binary protocol:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 x01 x01 x00 x01 x00 x08 x00 x00
 x00 x01 x01 x00 x00 x00 x00 x00
@@ -58,7 +58,7 @@ Similarly, HTTP/2 is a binary protocol that transports the same information in a
 
 HTTP/1.1 is the default transport.
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 // No transport specified, using default.
 HttpClient client = new HttpClient();
@@ -67,7 +67,7 @@ client.start();
 
 If you want to customize the HTTP/1.1 transport, you can explicitly configure `HttpClient` in this way:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 int selectors = 1;
 HttpClientTransportOverHTTP transport = new HttpClientTransportOverHTTP(selectors);
@@ -82,7 +82,7 @@ The example above allows you to customize the number of NIO selectors that `Http
 
 The HTTP/2 transport can be configured in this way:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 HTTP2Client h2Client = new HTTP2Client();
 h2Client.setSelectors(1);
@@ -100,7 +100,7 @@ client.start();
 
 The FastCGI transport can be configured in this way:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 int selectors = 1;
 String scriptRoot = "/var/www/wordpress";

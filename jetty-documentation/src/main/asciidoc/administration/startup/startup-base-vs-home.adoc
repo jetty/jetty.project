@@ -30,12 +30,11 @@ Jetty Home::
   * Also known as the `${jetty.home}` property.
   * This is the location for the Jetty distribution binaries, default XML IoC configurations, and default module definitions.
 
-____
 [IMPORTANT]
+====
 Jetty Home should always be treated as a standard of truth.
 All configuration modifications, changes and additions should be made in the appropriate Jetty Base directory.
-____
-
+====
 [[base-vs-home-resolution]]
 
 Potential configuration is resolved from these 2 directory locations.
@@ -55,8 +54,8 @@ For more details on how startup with start.jar works, see link:#executing-startj
 
 The Jetty Distribution comes with an example `${jetty.base}` which enables the various demonstration webapps and server configurations.
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [jetty-distribution-{VERSION}]$ ls -la
 
 total 496
@@ -86,12 +85,12 @@ drwxrwxr-x  2 user group   4096 Oct  8 06:54 webapps/
 2013-10-16 09:08:47.817:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/jetty-distribution-{VERSION}/demo-base/webapps/] at interval 1
 2013-10-16 09:08:48.072:WARN::main: async-rest webapp is deployed. DO NOT USE IN PRODUCTION!
 ...
-....
+----
 
 If you want to see what the Jetty base looks like without executing Jetty, you can simply list the configuration by using the `--list-config` command.
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [demo-base]$ java -jar $JETTY_HOME/start.jar --list-config
 
 Java Environment:
@@ -213,7 +212,7 @@ Jetty Active XMLs:
  ${jetty.home}/etc/jetty-rewrite.xml
  ${jetty.base}/etc/demo-rewrite-rules.xml
  ${jetty.base}/etc/test-realm.xml
-....
+----
 
 The `--list-config` command line option displays what the configuration will look like when starting Jetty.
 This includes information on the Java environment to the system properties, the classpath and the Active Jetty IoC XML used to build up the Jetty server configuration.
@@ -222,8 +221,8 @@ Of note, is that the output will make it known where the configuration elements 
 
 If you look at the `${jetty.base}/start.ini` you will see a layout similar to below.
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [my-base]$ cat start.ini
 
 # Enable security via jaas, and configure it
@@ -257,7 +256,7 @@ jetty.dump.stop=false
 --module=resources
 --module=client
 --module=annotations
-....
+----
 
 In this example, `${jetty.base}/start.ini` is the main startup configuration entry point for Jetty.
 You will see that we are enabling a few modules for Jetty, specifying some properties, and also referencing some Jetty IoC XML files (namely the `etc/demo-rewrite-rules.xml` and `etc/test-realm.xml` files)
@@ -274,8 +273,8 @@ The Jetty `start.jar` and XML files always assume that both `${jetty.home}` and 
 
 You can opt to manually define the `${jetty.home}` and `${jetty.base}` directories, such as this:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [jetty-distribution-{VERSION}]$ pwd
 /home/user/jetty-distribution-{VERSION}
 
@@ -286,14 +285,14 @@ You can opt to manually define the `${jetty.home}` and `${jetty.base}` directori
 2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-{VERSION}
 2013-10-16 09:08:47.817:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/my-base/webapps/] at interval 1
 ...
-....
+----
 
 Alternately, you can declare one directory and let the other one be discovered.
 
 The following example uses default discovery of `${jetty.home}` by using the parent directory of wherever `start.jar` itself is, and a manual declaration of `${jetty.base}`.
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [jetty-distribution-{VERSION}]$ pwd
 /home/user/jetty-distribution-{VERSION}
 
@@ -302,15 +301,15 @@ The following example uses default discovery of `${jetty.home}` by using the par
 2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-{VERSION}
 2013-10-16 09:08:47.817:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/my-base/webapps/] at interval 1
 ...
-....
+----
 
 But Jetty recommends that you always start Jetty from the directory that is your `${jetty.base}` and starting Jetty by referencing
 the `start.jar` in your `{$jetty.home}` remotely.
 
 The following demonstrates this by allowing default discovery of `${jetty.home}` via locating the `start.jar`, and using the `user.dir` System Property for `${jetty.base}`.
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [jetty-distribution-{VERSION}]$ pwd
 /home/user/jetty-distribution-{VERSION}
 
@@ -320,10 +319,10 @@ The following demonstrates this by allowing default discovery of `${jetty.home}`
 2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-{VERSION}
 2013-10-16 09:08:47.817:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/my-base/webapps/] at interval 1
 ...
-....
+----
 
-____
 [IMPORTANT]
+====
 Be aware of the `user.dir` system property, as it can only be safely set when the JVM starts and many 3rd party libraries (especially logging) use this system property.
 It is strongly recommended that you sit in the directory that is your desired `${jetty.base}` when starting Jetty to have consistent behavior and use of the `user.dir` system property.
-____
+====

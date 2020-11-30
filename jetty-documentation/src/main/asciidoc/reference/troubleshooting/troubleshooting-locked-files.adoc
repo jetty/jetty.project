@@ -35,7 +35,7 @@ Use one of the following options to configure the switch.
 An <<override-web-xml, override-web.xml>> file can be placed in your webapp's `WEB-INF` directory to change the default setting of the `DefaultServlet` for memory-mapped file buffers. 
 Create an `override-web.xml` file with appropriate headers for your version of the servlet specification, and place the following inside the `<web-app>` element:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
  <servlet>
    <servlet-name>default</servlet-name>
@@ -51,7 +51,7 @@ Create an `override-web.xml` file with appropriate headers for your version of t
 You can create or update a context xml file that configures your webapp to apply the setting to disable memory-mapped file buffers.
 Add the following to your context xml file:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <Call name="setInitParameter">
       <Arg>org.eclipse.jetty.servlet.Default.useFileMappedBuffer</Arg>
@@ -65,7 +65,7 @@ Add the following to your context xml file:
 If you don't want to use either of the other two solutions, you can configure the plugin directly to disable memory-mapped file buffers.
 Add the following to the plugin's configuration under the `<webApp>` element:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <_initParams>
           <org.eclipse.jetty.servlet.Default.useFileMappedBuffer>false</org.eclipse.jetty.servlet.Default.useFileMappedBuffer>
@@ -80,7 +80,7 @@ You can force a `WebAppContext` to always copy a web app directory on deployment
 The base directory of your web app (i.e. the root directory where your static content exists) will be copied to the link:#ref-temporary-directories[temp directory].
 Configure this in an xml file like so:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <New id="myWebAppContext"  class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/</Set>
@@ -91,7 +91,7 @@ Configure this in an xml file like so:
 </New>
 ----
 
-____
 [NOTE]
+====
 Be careful with this option when using an explicitly setlink:#ref-temp-directories[temp directory] name - as the name of the temp directory will not unique across redeployments, copying the static content into the same directory name each time may not avoid the locking problem.
-____
+====

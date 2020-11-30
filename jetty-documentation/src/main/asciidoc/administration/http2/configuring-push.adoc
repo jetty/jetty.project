@@ -24,7 +24,7 @@ This will reduce the amount of round-trips necessary to retrieve all the resourc
 
 HTTP/2 Push can be automated in your application by configuring a link:{JDURL}/org/eclipse/jetty/servlets/PushCacheFilter.html[`PushCacheFilter`] in the `web.xml`, in this way:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app

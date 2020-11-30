@@ -194,8 +194,8 @@ public class Request implements HttpServletRequest
     private String _contextPath;
     private String _servletPath;
     private String _pathInfo;
-    private boolean _secure;
     private Object _asyncNotSupportedSource = null;
+    private boolean _secure;
     private boolean _newContext;
     private boolean _cookiesExtracted = false;
     private boolean _handled = false;
@@ -210,12 +210,12 @@ public class Request implements HttpServletRequest
     private CookieCutter _cookies;
     private DispatcherType _dispatcherType;
     private int _inputState = INPUT_NONE;
+    private BufferedReader _reader;
+    private String _readerEncoding;
     private MultiMap<String> _queryParameters;
     private MultiMap<String> _contentParameters;
     private MultiMap<String> _parameters;
     private String _queryEncoding;
-    private BufferedReader _reader;
-    private String _readerEncoding;
     private InetSocketAddress _remote;
     private String _requestedSessionId;
     private UserIdentity.Scope _scope;
@@ -1857,13 +1857,9 @@ public class Request implements HttpServletRequest
 
     protected void recycle()
     {
-        _metaData = null;
-        _originalURI = null;
-
         if (_context != null)
             throw new IllegalStateException("Request in context!");
-
-        if (_inputState == INPUT_READER)
+        if (_reader != null && _inputState == INPUT_READER)
         {
             try
             {
@@ -1877,17 +1873,25 @@ public class Request implements HttpServletRequest
             {
                 LOG.ignore(e);
                 _reader = null;
+                _readerEncoding = null;
             }
         }
 
-        _dispatcherType = null;
-        setAuthentication(Authentication.NOT_CHECKED);
         getHttpChannelState().recycle();
-        if (_async != null)
-            _async.reset();
-        _async = null;
+        _requestAttributeListeners.clear();
+        _input.recycle();
+        _metaData = null;
+        _originalURI = null;
+        _contextPath = null;
+        _servletPath = null;
+        _pathInfo = null;
         _asyncNotSupportedSource = null;
+        _secure = false;
+        _newContext = false;
+        _cookiesExtracted = false;
         _handled = false;
+        _contentParamsExtracted = false;
+        _requestedSessionIdFromCookie = false;
         _attributes = Attributes.unwrap(_attributes);
         if (_attributes != null)
         {
@@ -1896,35 +1900,31 @@ public class Request implements HttpServletRequest
             else
                 _attributes = null;
         }
+        setAuthentication(Authentication.NOT_CHECKED);
         _contentType = null;
         _characterEncoding = null;
-        _contextPath = null;
-        if (_cookies != null)
-            _cookies.reset();
-        _cookiesExtracted = false;
         _context = null;
         _errorContext = null;
-        _newContext = false;
-        _pathInfo = null;
-        _queryEncoding = null;
-        _requestedSessionId = null;
-        _requestedSessionIdFromCookie = false;
-        _secure = false;
-        _session = null;
-        _sessionHandler = null;
-        _scope = null;
-        _servletPath = null;
-        _timeStamp = 0;
+        if (_cookies != null)
+            _cookies.reset();
+        _dispatcherType = null;
+        _inputState = INPUT_NONE;
+        // _reader can be reused
         _queryParameters = null;
         _contentParameters = null;
         _parameters = null;
-        _contentParamsExtracted = false;
-        _inputState = INPUT_NONE;
-        _multiParts = null;
+        _queryEncoding = null;
         _remote = null;
+        _requestedSessionId = null;
+        _scope = null;
+        _session = null;
+        _sessionHandler = null;
+        _timeStamp = 0;
+        _multiParts = null;
+        if (_async != null)
+            _async.reset();
+        _async = null;
         _sessions = null;
-        _input.recycle();
-        _requestAttributeListeners.clear();
     }
 
     /*

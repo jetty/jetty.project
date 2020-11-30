@@ -24,7 +24,7 @@
 You can configure naming resources to reference in a `web.xml` file and access from within the `java:comp/env` naming environment of the webapp during execution.
 Specifically, you can configure support for the following `web.xml` elements:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <env-entry/>
 <resource-ref/>
@@ -52,7 +52,7 @@ For the link between a `web.xml` resource name and a naming entry
 
 Declarations of each of these types follow the same general pattern:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <New class="org.eclipse.jetty.plus.jndi.xxxx">
   <Arg><!-- scope --></Arg>
@@ -91,7 +91,7 @@ The name is unique across the JVM instance, and is visible to all application co
 You represent this scope by a `null` first parameter to the resource declaration.
 For example:
 +
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 
 <New id="cf" class="org.eclipse.jetty.plus.jndi.Resource">
@@ -109,7 +109,7 @@ The name is unique to a Server instance, and is only visible to code associated 
 You represent this scope by referencing the Server instance as the first parameter to the resource declaration.
 For example:
 +
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure id="Server" class="org.eclipse.jetty.Server">
   <New id="cf" class="org.eclipse.jetty.plus.jndi.Resource">
@@ -128,7 +128,7 @@ The name is unique to the WebAppContext instance, and is only visible to code as
 You represent this scope by referencing the `WebAppContext` instance as the first parameter to the resource declaration.
 For example:
 +
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
   <New id="cf" class="org.eclipse.jetty.plus.jndi.Resource">

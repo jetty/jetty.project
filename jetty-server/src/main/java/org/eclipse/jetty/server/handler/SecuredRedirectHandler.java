@@ -62,7 +62,7 @@ public class SecuredRedirectHandler extends AbstractHandler
 
             String url = URIUtil.newURI(scheme, baseRequest.getServerName(), port, baseRequest.getRequestURI(), baseRequest.getQueryString());
             response.setContentLength(0);
-            response.sendRedirect(url);
+            baseRequest.getResponse().sendRedirect(HttpServletResponse.SC_MOVED_TEMPORARILY, url, true);
         }
         else
         {

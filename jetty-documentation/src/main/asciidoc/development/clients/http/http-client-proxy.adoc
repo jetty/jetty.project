@@ -26,7 +26,7 @@ Other implementations may be written by subclassing `ProxyConfiguration.Proxy`.
 
 The following is a typical configuration:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 ProxyConfiguration proxyConfig = httpClient.getProxyConfiguration();
 HttpProxy proxy = new HttpProxy("proxyHost", proxyPort);
@@ -51,7 +51,7 @@ Jetty's HTTP client support proxy authentication in the same way it supports lin
 
 In the example below, the proxy requires Basic authentication, but the server requires Digest authentication, and therefore:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 URI proxyURI = new URI("http://proxy.net:8080");
 URI serverURI = new URI("http://domain.com/secure");

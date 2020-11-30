@@ -21,7 +21,7 @@
 
 A basic adapter for managing the Session object on the WebSocketListener.
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 include::{SRCDIR}/jetty-websocket/websocket-common/src/test/java/examples/echo/AdapterEchoSocket.java[]
 ----

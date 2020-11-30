@@ -90,19 +90,18 @@ or alternatively you need the link:#alpn-openjdk8-agent[Jetty ALPN agent].
 
 In the case of the Jetty ALPN boot library, start the JVM as follows:
 
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 java -Xbootclasspath/p:<path_to_alpn_boot_jar> ...
 ----
 
 Where `path_to_alpn_boot_jar` is the path on the file system for the `alpn-boot` artifact, such as the one at the Maven coordinates `org.mortbay.jetty.alpn:alpn-boot`.
 
-____
 [IMPORTANT]
+====
 Be certain to get the
 link:#alpn-versions[ALPN boot artifact version that matches the version of your JRE].
-____
-
+====
 [[alpn-openjdk8-agent]]
 ==== ALPN agent and OpenJDK 8
 
@@ -121,13 +120,13 @@ transforms, if necessary, the relevant OpenJDK classes to provide the ALPN suppo
 
 To use the Jetty ALPN agent, start the JVM as follows:
 
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 java -javaagent:<path_to_alpn_agent_jar> ...
 ----
 
-____
 [NOTE]
+====
 The Jetty ALPN agent works with any Java 8 version. It is _required_ if you use
 an OpenJDK version up to `1.8.0_242` included, and it is _optional_ if you use an
 OpenJDK version equal or greater than `1.8.0_252`.
@@ -135,8 +134,7 @@ OpenJDK version equal or greater than `1.8.0_252`.
 The Jetty ALPN agent can be left on the command line even when using an OpenJDK version
 equal or greater than `1.8.0_252` but we recommend to remove it from the command line
 when you use OpenJDK `1.8.0_252` or later.
-____
-
+====
 [[alpn-conscrypt]]
 ==== ALPN and Conscrypt
 
@@ -166,19 +164,18 @@ This jar contains a `Fragment-Host` directive that ensures the ALPN classes will
 
 You can download the https://repo1.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-alpn/[jetty-osgi-alpn jar] from Maven Central.
 
-____
 [NOTE]
+====
 OSGi *requires* a `ServiceLoader` implementation for Jetty to function properly.
 OSGi leverages http://aries.apache.org/modules/spi-fly.html[Apache Aries SPI Fly] for this functionality.
 You can read more about OSGi and `ServiceLoader` http://blog.osgi.org/2013/02/javautilserviceloader-in-osgi.html[here.]
-____
-
+====
 [[alpn-troubleshooting]]
 ==== ALPN Troubleshooting
 
 When starting the Jetty server, especially when using Jetty embedded, it may be possible that you see an error similar to this:
 
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 IllegalStateException: no ALPN processor
 ----
@@ -217,7 +214,7 @@ Refer to `ALPN` Javadocs and to the examples below for further details about cli
 [[alpn-openjdk8-client-example]]
 ==== Client Example
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 SSLContext sslContext = ...;
 SSLSocket sslSocket = (SSLSocket)context.getSocketFactory().createSocket("localhost", server.getLocalPort());
@@ -257,7 +254,7 @@ The ALPN implementation calls `ALPN.ClientProvider` methods `protocols()`, `unsu
 
 The example for `SSLEngine` is identical, and you just need to replace the `SSLSocket` instance with an `SSLEngine` instance.
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 SSLEngine sslEngine = ...;
 ALPN.put(sslEngine, new ALPN.ServerProvider()
@@ -294,7 +291,7 @@ Failing to do so will cause a memory leak.
 You can write and run unit tests that use the ALPN implementation.
 The solution that we use with Maven is to specify an additional command line argument to the Surefire plugin:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <project>
 
@@ -328,9 +325,9 @@ The solution that we use with Maven is to specify an additional command line arg
 
 You can enable debug logging for the ALPN implementation in this way:
 
-....
+----
 ALPN.debug = true;
-....
+----
 
 Since the ALPN class is in the boot classpath, we chose not to use logging libraries because we do not want to override application logging library choices; therefore the logging is performed directly on `System.err`.
 
@@ -427,20 +424,20 @@ This section is for Jetty developers that need to update the ALPN implementation
 
 Clone the OpenJDK repository with the following command:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 $ hg clone https://hg.openjdk.java.net/jdk8u/jdk8u jdk8u
 $ cd !$
 $ ./get_source.sh
-....
+----
 
 To update the source to a specific tag, use the following command:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 $ ./make/scripts/hgforest.sh update <tag-name>
 
-....
+----
 
 The list of OpenJDK tags can be obtained from this page:
 https://hg.openjdk.java.net/jdk8u/jdk8u/tags[OpenJDK 8 Tags].

@@ -16,8 +16,8 @@
 //  ========================================================================
 //
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [mybase]$ java -jar $JETTY_HOME/start.jar --list-config
 
 Java Environment:
@@ -67,4 +67,4 @@ No classpath entries and/or version information available show.
 Jetty Active XMLs:
 ------------------
  (no xml files specified)
-....
+----

@@ -22,10 +22,12 @@ import org.eclipse.jetty.server.session.AbstractClusteredInvalidationSessionTest
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * InvalidationSessionTest
  */
+@Testcontainers(disabledWithoutDocker = true)
 public class InvalidationSessionTest extends AbstractClusteredInvalidationSessionTest
 {
 

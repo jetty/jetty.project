@@ -16,8 +16,8 @@
 //  ========================================================================
 //
 
-Jetty : The Definitive Reference
-================================
+= Jetty : The Definitive Reference
+
 :docinfo:
 :revnumber: {VERSION}
 

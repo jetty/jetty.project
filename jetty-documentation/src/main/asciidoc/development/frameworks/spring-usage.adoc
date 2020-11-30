@@ -28,10 +28,10 @@ If you want to replace the jetty-xml being used to start the normal Jetty distri
 The skeleton of a jetty spring module can be enabled from the jetty-distribution via the link:#startup-modules[module mechanism].
 For example:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 $ java -jar start.jar --add-to-start=spring
-....
+----
 
 This (or the alternative link:#start-jar[--add-to-start]=spring command) creates a `${jetty.home}/lib/spring` directory and populates it with the jetty-spring integration jar.
 It does NOT supply the spring jars and their dependencies.
@@ -42,7 +42,7 @@ You will need to download these and place them into jetty's classpath - you can 
 Configuring Jetty via Spring is simply a matter of calling the API as Spring beans.
 The following is an example mimicking the default jetty startup configuration.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 
 <?xml version="1.0" encoding="UTF-8"?>

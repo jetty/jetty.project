@@ -36,7 +36,7 @@ Classes that implement this interface are used to coordinate requests, filter re
 
 The core API of the Handler interface is:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
     throws IOException, ServletException
@@ -69,7 +69,7 @@ More often than not, access to the Jetty implementations of these classes is req
 However, as the request and response may be wrapped by handlers, filters and servlets, it is not possible to pass the implementation directly.
 The following mantra retrieves the core implementation objects from under any wrappers:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 Request base_request = request instanceof Request ? (Request)request : HttpConnection.getCurrentConnection().getHttpChannel().getRequest();
 Response base_response = response instanceof Response ? (Response)response : HttpConnection.getCurrentConnection().getHttpChannel().getResponse();
@@ -107,7 +107,7 @@ The link:{JDURL}/org/eclipse/jetty/embedded/OneHandler.html[`OneHandler`] embedd
 
 You can use the standard servlet response API, which will typically set some status, content headers and then write out the content:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
  response.setContentType("text/html");
  response.setStatus(HttpServletResponse.SC_OK);
@@ -116,7 +116,7 @@ You can use the standard servlet response API, which will typically set some sta
 
 It is also very important that a handler indicate that it has completed handling the request and that the request should not be passed to other handlers:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
  Request base_request = (request instanceof Request) ? (Request)request:HttpConnection.getCurrentConnection().getHttpChannel().getRequest();
  base_request.setHandled(true);
@@ -141,7 +141,7 @@ You can also update the context of the request:
 
 Typically Jetty passes a modified request to another handler and undoes modifications in a finally block afterwards:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
  try
  {

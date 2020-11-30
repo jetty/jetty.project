@@ -23,7 +23,7 @@ Jetty's HTTP client supports the `BASIC` and `DIGEST` authentication mechanisms 
 
 You can configure authentication credentials in the HTTP client instance as follows:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 URI uri = new URI("http://domain.com/secure");
 String realm = "MyRealm";
@@ -61,14 +61,14 @@ The application does not receive events related to the response with code 401, t
 
 Successful authentications are cached, but it is possible to clear them in order to force authentication again:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 httpClient.getAuthenticationStore().clearAuthenticationResults();
 ----
 
 Authentications may be preempted to avoid the additional roundtrip due to the server challenge in this way:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 AuthenticationStore auth = httpClient.getAuthenticationStore();
 URI uri = URI.create("http://domain.com/secure");
@@ -79,7 +79,7 @@ In this way, requests for the given URI are enriched by `HttpClient` immediately
 
 It is also possible to preempt the authentication for a single request only, in this way:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 URI uri = URI.create("http://domain.com/secure");
 Authentication.Result authn = new BasicAuthentication.BasicResult(uri, "username", "password")

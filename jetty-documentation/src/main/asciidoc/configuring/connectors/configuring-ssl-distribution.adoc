@@ -27,7 +27,7 @@ provider and the https://github.com/google/conscrypt/[Conscrypt] provider as SSL
 
 For the default SSL support, simply activate the `ssl` link:#startup-modules[module]:
 
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 $ cd /path/to/mybase
 $ java -jar ${JETTY_HOME}/start.jar --add-to-startd=ssl
@@ -63,7 +63,7 @@ jetty.sslContext.keyStorePassword::
 
 Enabling Conscrypt SSL is just as easy as default SSL - enable both the `conscrypt` and `ssl` link:#startup-modules[modules]:
 
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 $ cd ${JETTY_HOME}
 $ java -jar ../start.jar --add-to-start=ssl,conscrypt
@@ -98,7 +98,7 @@ SSL-specific parameters, like `keyStorePath` and `keyStorePassword` can still co
 
 To enable client certificate authentication in the Jetty Distribution, you need to enable the both the `ssl` and `https` modules.
 
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 $ cd /path/to/mybase
 $ java -jar /path/to/jetty-dist/start.jar --add-to-startd=ssl,https

@@ -37,6 +37,7 @@ import org.eclipse.jetty.client.AbstractConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpResponseException;
+import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
@@ -338,12 +339,28 @@ public class MaxConcurrentStreamsTest extends AbstractTest
             }
         });
 
+        int parallelism = 4;
+        int runs = 1;
+        int iterations = 32;
+
         client.setMaxConnectionsPerDestination(32768);
         client.setMaxRequestsQueuedPerDestination(1024 * 1024);
+        client.getTransport().setConnectionPoolFactory(destination ->
+        {
+            try
+            {
+                MultiplexConnectionPool pool = new MultiplexConnectionPool(destination, client.getMaxConnectionsPerDestination(), false, destination, 1);
+                pool.preCreateConnections(parallelism * 2).get();
+                return pool;
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        });
+        // Prime the destination to pre-create connections.
+        client.GET("http://localhost:" + connector.getLocalPort());
 
-        int parallelism = 16;
-        int runs = 1;
-        int iterations = 256;
         int total = parallelism * runs * iterations;
         CountDownLatch latch = new CountDownLatch(total);
         Queue<Result> failures = new ConcurrentLinkedQueue<>();

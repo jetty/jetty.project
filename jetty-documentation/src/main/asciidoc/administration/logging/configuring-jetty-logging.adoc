@@ -34,11 +34,10 @@ DEBUG::
 IGNORE::
   Exception events that you can safely ignore, but useful for some people.
   You might see this level as DEBUG under some Java logging framework configurations, where it retains the _ignore_ phrase somewhere in the logging.
-____
 [NOTE]
+====
 Jetty logging produces no FATAL or SEVERE events.
-____
-
+====
 [[selecting-log-framework]]
 ==== Selecting the Log Framework
 
@@ -51,12 +50,11 @@ Configure the Jetty logging layer via the `org.eclipse.jetty.util.log.Log` class
 * If property `org.eclipse.jetty.util.log.class` is defined, load the class it defines as the logger implementation from the server `classpath`.
 * If the class `org.slf4j.Logger` exists in server classpath, the Jetty implementation becomes `org.eclipse.jetty.util.log.Slf4jLog`.
 * If no logger implementation is specified, default to `org.eclipse.jetty.util.log.StdErrLog`.
-____
 [NOTE]
+====
 You can create your own custom logging by providing an implementation of the link:{JDURL}org/eclipse/jetty/util/log/Logger.html[Jetty Logger API].
 For an example of a custom logger, see link:{GITBROWSEURL}/jetty-util/src/main/java/org/eclipse/jetty/util/log/JavaUtilLog.java[JavaUtilLog.java].
-____
-
+====
 [[configuring-jetty-stderrlog]]
 ==== The jetty-logging.properties file
 

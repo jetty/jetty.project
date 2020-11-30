@@ -34,7 +34,7 @@ This is defined on a per-webapp basis, using the xref:jetty-xml-syntax[].
 You can specify the `override-web.xml` to use for an individual web application in a deployable xml file located in Jetty webapps folder .
 For example, if you had a webapp named MyApp, you would place a deployable xml file named `myapp.xml` in `${jetty.base}/webapps` which includes an `overrideDescriptor` entry for the `override-web.xml` file.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   ...
@@ -47,7 +47,7 @@ For example, if you had a webapp named MyApp, you would place a deployable xml f
 
 The equivalent in code is:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -67,7 +67,7 @@ Alternatively, you can use the classloader (xref:jetty-classloading[]) to get th
 
 Use the `<overrideDescriptor>` tag as follows:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <project>
     ...

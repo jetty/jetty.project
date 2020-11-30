@@ -22,29 +22,29 @@
 This section is written assuming that a link:#startup-base-and-home[Jetty base directory] is being used.
 A demo Jetty base that supports HTTP/1, HTTPS/1 and deployment from a webapps directory can be created with the commands:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 $ JETTY_BASE=http2-demo
 $ mkdir $JETTY_BASE
 $ cd $JETTY_BASE
 $ java -jar $JETTY_HOME/start.jar --add-to-start=http,https,deploy
-....
+----
 
 The commands above create a `$JETTY_BASE` directory called `http2-demo`, and initializes the `http,` `https` and `deploy` modules (and their dependencies) to run a typical Jetty Server on port 8080 (for HTTP/1) and 8443 (for HTTPS/1).
 Note that the HTTPS module downloads a demo keystore file with a self signed certificate, which needs to be replaced by a Certificate Authority issued certificate for real deployment.
 
 To add HTTP/2 to this demo base, it is just a matter of enabling the `http2` module with the following command:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 $ java -jar $JETTY_HOME/start.jar --add-to-start=http2
-....
+----
 
 This command does not create a new connector, but instead simply adds the HTTP/2 protocol to the existing HTTPS/1 connector, so that it now supports both protocols on port 8443.
 To do this, it also transitively enables the ALPN module for protocol negotiation.
 The support for each protocol can be seen in the info logging when the server is started:
 
-[source,screen, subs="{sub-order}"]
+[source,screen]
 ----
 $ java -jar $JETTY_HOME/start.jar
 ...
@@ -62,13 +62,13 @@ Note that a browser pointed at this server with URL starting with `http://localh
 HTTP/2 can be enabled on the plain text connector and the server restarted with the following command:
 
 [source,screen]
-....
+----
 $ java -jar $JETTY_HOME/start.jar --add-to-start=http2c
 $ java -jar $JETTY_HOME/start.jar
 ..
 2015-06-17 14:16:12.549:INFO:oejs.ServerConnector:main: Started ServerConnector@6f32cd1e{HTTP/1.1,[http/1.1, h2c, h2c-17]}{0.0.0.0:8080}
 2015-06-17 14:16:12.782:INFO:oejs.ServerConnector:main: Started ServerConnector@711f39f9{SSL,[ssl, alpn, h2, h2-17, http/1.1]}{0.0.0.0:8443}
 ..
-....
+----
 
 No major browser currently supports plain text HTTP/2, so the 8080 port will only be able to use HTTP/2 with specific clients (eg `curl`) that use the upgrade mechanism or assume HTTP/2.

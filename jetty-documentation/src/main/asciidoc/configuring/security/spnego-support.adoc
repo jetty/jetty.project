@@ -29,7 +29,7 @@ There is a substantial amount of configuration and testing required to enable th
 
 To run with SPNEGO enabled the following command line options are required:
 
-[source,screen, subs="{sub-order}"]
+[source,screen]
 ----
 -Djava.security.krb5.conf=/path/to/jetty/etc/krb5.ini \
 -Djava.security.auth.login.config=/path/to/jetty/etc/spnego.conf \
@@ -38,7 +38,7 @@ To run with SPNEGO enabled the following command line options are required:
 
 For debugging the SPNEGO authentication the following options are very helpful:
 
-[source,screen, subs="{sub-order}"]
+[source,screen]
 ----
 -Dorg.eclipse.jetty.LEVEL=debug \
 -Dsun.security.spnego.debug=all
@@ -47,7 +47,7 @@ For debugging the SPNEGO authentication the following options are very helpful:
 SPNEGO Authentication must be enabled in the webapp in the following way.
 The name of the role will be different for your network.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 
  <security-constraint>
@@ -75,7 +75,7 @@ A corresponding `UserRealm` needs to be created either programmatically if embed
 
 This is what the configuration within a Jetty xml file would look like.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 
   <Call name="addBean">
@@ -91,7 +91,7 @@ This is what the configuration within a Jetty xml file would look like.
 
 This is what the configuration within a context xml file would look like.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 
  <Get name="securityHandler">
@@ -124,14 +124,14 @@ To do this use a process similar to this:
 
 On the Windows Active Domain Controller run:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 $ setspn -A HTTP/linux.mortbay.org ADUser
 ----
 
 To create the keytab file use the following process:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 $ ktpass -out c:\dir\krb5.keytab -princ HTTP/linux.mortbay.org@MORTBAY.ORG -mapUser ADUser -mapOp set -pass ADUserPWD -crypto RC4-HMAC-NT -pType KRB5_NT_PRINCIPAL
 ----

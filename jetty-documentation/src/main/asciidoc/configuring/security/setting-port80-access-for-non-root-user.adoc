@@ -27,7 +27,7 @@ This page presents several options to access port 80 as a non-root user, includi
 
 On some Linux systems you can use the _ipchains REDIRECT_ mechanism to redirect from one port to another inside the kernel (if `ipchains` is not available, then `iptables` usually is):
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 # /sbin/ipchains -I input --proto TCP --dport 80 -j REDIRECT 8080
 ----
@@ -44,7 +44,7 @@ On many Linux systems you can use the `iptables` REDIRECT mechanism to redirect 
 
 You need to add something like the following to the startup scripts or your firewall rules:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 # /sbin/iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080
 ----
@@ -70,43 +70,41 @@ The `http.mod` is enabled by default in the distribution, while the link:#quicks
 .  Ensure that you have link:#quickstart-changing-jetty-port[changed the http port] to 80 (and link:#quickstart-changing-https-port[changed the https port] to 443 if you are using SSL).
 .  Enable the `setuid.mod` module:
 +
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 # java -jar start.jar --add-to-start=setuid
 ----
 +
-____
 [NOTE]
+====
 The --add-to-start command will enable the setuid module for this and all subsequent executions of jetty.
 There are other ways to enable the module, such as for a single execution.
 For more information on the alternatives see the section on link:#startup-modules[Managing Startup Modules].
-____
-
+====
 .  Edit the configuration for the `setuid` module to substitute the `userid` and `groupid` of the user to switch to after starting.
 If your server instance has a `${jetty.base/start.d}` directory, this configuration is in the `start.d/setuid.ini` file instead.
 Otherwise. this configuration is in the `${jetty.base}start.ini` file.
 
-  Below are the lines to configure:
-+
-[source, text, subs="{sub-order}"]]
+Below are the lines to configure:
+
+[source, text]
 ----
 jetty.startServerAsPrivileged=false
 jetty.username=foo
 jetty.groupname=bar
 jetty.umask=002
 ----
-+
-____
-[NOTE]
-As well as opening the connectors as `root`, you can also have Jetty start the Server as `root` before changing to the non-`root` user.
-____
 
+[NOTE]
+====
+As well as opening the connectors as `root`, you can also have Jetty start the Server as `root` before changing to the non-`root` user.
+====
 .  A native code library is required to perform user switching.
 This code is hosted as part of the https://github.com/eclipse/jetty.toolchain[Jetty ToolChain] project and is released independently from Jetty itself.
 You can find the source code in the https://github.com/eclipse/jetty.toolchain/tree/master/jetty-setuid[eclipse/jetty.toolchain/jetty-setuid] project.
 Build it locally, which will produce a native library appropriate for the operating system:
 +
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 # mvn clean install
 ----
@@ -118,7 +116,7 @@ You may want copy this file into your Jetty distribution's lib directory.
 .  Start Jetty as the `root` user in your base directory, providing the location of the native library to Java.
 Below is an example of how to do it from the command line, assuming you are in the link:#demo-webapps-base[demo-base] directory:
 +
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 # sudo java -Djava.library.path=libsetuid-linux -jar $JETTY_HOME/start.jar
 ----
@@ -129,7 +127,7 @@ Below is an example of how to do it from the command line, assuming you are in t
 
 Solaris 10 provides a User Rights Management framework that can permit users and processes superuser-like abilities:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 usermod -K defaultpriv=basic,net_privaddr myself
 ----

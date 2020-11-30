@@ -21,14 +21,13 @@
 
 Here are examples of configuring a JNDI datasource for various databases.
 
-____
 [NOTE]
+====
 Read xref:configuring-datasources[] in xref:jndi-configuration[] for more information about configuring datasources.
-____
-
+====
 All of these examples correspond to a `resource-ref` in `web.xml`.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <resource-ref>
      <description>My DataSource Reference</description>
@@ -42,11 +41,10 @@ These examples assume that all of the datasources are declared at the JVM scope,
 You can configure all JNDI resources in a `jetty.xml` file, a `WEB-INF/jetty-env.xml` file, or a context XML file.
 See the section xref:jndi-where-to-declare[] for more information.
 
-____
 [IMPORTANT]
+====
 You must provide Jetty with the libraries necessary to instantiate the datasource you have configured by putting the corresponding Jar in `JETTY_HOME/lib/ext`.
-____
-
+====
 [[pooling-datasources]]
 ==== Pooling DataSources
 
@@ -71,7 +69,7 @@ The following is a list of the pooled datasource examples we have worked with in
 Connection pooling, available at http://search.maven.org/remotecontent?filepath=com/zaxxer/HikariCP/1.4.0/HikariCP-1.4.0.jar[HikariCP Download].
 All configuration options for HikariCP are described here: https://github.com/brettwooldridge/HikariCP[HikariCP documentation].
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <New id="DSTest" class="org.eclipse.jetty.plus.jndi.Resource">
      <Arg></Arg>
@@ -102,7 +100,7 @@ All configuration options for HikariCP are described here: https://github.com/br
 Connection pooling, available at http://jolbox.com/index.html?page=http://jolbox.com/download.html[BoneCP Download].
 All configuration options for BoneCP are described here: http://jolbox.com/bonecp/downloads/site/apidocs/com/jolbox/bonecp/BoneCPDataSource.html[BoneCP API].
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 
   <New id="DSTest" class="org.eclipse.jetty.plus.jndi.Resource">
@@ -128,7 +126,7 @@ All configuration options for BoneCP are described here: http://jolbox.com/bonec
 
 Connection pooling, available at https://repo1.maven.org/maven2/c3p0/c3p0/0.9.1.2/c3p0-0.9.1.2.jar[c3p0 Jar].
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <New id="DSTest" class="org.eclipse.jetty.plus.jndi.Resource">
      <Arg></Arg>
@@ -149,7 +147,7 @@ Connection pooling, available at https://repo1.maven.org/maven2/c3p0/c3p0/0.9.1.
 
 Connection pooling, available at https://repo1.maven.org/maven2/commons-dbcp/commons-dbcp/1.2/commons-dbcp-1.2.jar[dbcp Jar].
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <New id="DSTest" class="org.eclipse.jetty.plus.jndi.Resource">
      <Arg></Arg>
@@ -171,7 +169,7 @@ Connection pooling, available at https://repo1.maven.org/maven2/commons-dbcp/com
 
 Connection pooling + XA transactions.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
    <New id="DSTest" class="org.eclipse.jetty.plus.jndi.Resource">
       <Arg></Arg>
@@ -206,7 +204,7 @@ Connection pooling + XA transactions.
 
 Implements `javax.sql.DataSource` and `javax.sql.ConnectionPoolDataSource`.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <New id="DSTest" class="org.eclipse.jetty.plus.jndi.Resource">
      <Arg></Arg>
@@ -226,7 +224,7 @@ Implements `javax.sql.DataSource` and `javax.sql.ConnectionPoolDataSource`.
 
 Implements `javax.sql.ConnectionPoolDataSource`.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 
   <New id="DSTest" class="org.eclipse.jetty.plus.jndi.Resource">
@@ -252,7 +250,7 @@ Implements `javax.sql.ConnectionPoolDataSource`.
 
 Implements `javax.sql.ConnectionPoolDataSource`.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <New id="DSTest" class="org.eclipse.jetty.plus.jndi.Resource">
      <Arg></Arg>
@@ -288,7 +286,7 @@ The following is a list of the non-pooled datasource examples:
 
 Implements `javax.sql.DataSource` and `javax.sql.ConnectionPoolDataSource`.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <New id="DSTest" class="org.eclipse.jetty.plus.jndi.Resource">
      <Arg></Arg>
@@ -310,7 +308,7 @@ Implements `javax.sql.DataSource` and `javax.sql.ConnectionPoolDataSource`.
 
 Implements `javax.sql.DataSource` and `javax.sql.ConnectionPoolDataSource`.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <New id="DSTest" class="org.eclipse.jetty.plus.jndi.Resource">
     <Arg></Arg>
@@ -343,7 +341,7 @@ For more information, refer to: http://docs.oracle.com/cd/B14117_01/java.101/b10
 
 Implements `javax.sql.DataSource`.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <New id="DSTest" class="org.eclipse.jetty.plus.jndi.Resource">
      <Arg></Arg>
@@ -365,7 +363,7 @@ Implements `javax.sql.DataSource`.
 
 Implements `javax.sql.DataSource`.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <New id="DSTest" class="org.eclipse.jetty.plus.jndi.Resource">
      <Arg></Arg>
@@ -387,7 +385,7 @@ Implements `javax.sql.DataSource`.
 
 Implements `javax.sql.DataSource`.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <New id="DSTest" class="org.eclipse.jetty.plus.jndi.Resource">
      <Arg></Arg>

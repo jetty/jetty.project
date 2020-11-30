@@ -42,11 +42,10 @@ Of special note, there are 2 structural modules defined to ease some of this for
   +
   Logging libraries often have classpath lookup of their configuration files (eg: `log4j.properties`, `log4j.xml`, `logging.properties`, and `logback.xml`), so this would be the ideal setup for this sort of configuration demand.
 
-____
 [NOTE]
+====
 Both the `ext` and `resources` modules declare relative paths that follow link:#base-vs-home-resolution[Jetty Base and Jetty Home path resolution rules].
-____
-
+====
 ==== Interrogating the Server Classpath
 
 The Jetty `start.jar` has the ability to resolve the classpath from the command line, modules and configuration, and to list the classpath entries it will use to start jetty.
@@ -55,8 +54,8 @@ The `--list-classpath` command line option is used as such.
 
 (Demonstrated with the link:#demo-base[demo-base from the Jetty Distribution])
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [demo-base]$ java -jar $JETTY_HOME/start.jar --list-classpath
 
 Jetty Server Classpath:
@@ -106,6 +105,6 @@ Note: order presented here is how they would appear on the classpath.
 39:               {VERSION} | ${jetty.home}/lib/websocket/websocket-common-{VERSION}.jar
 40:               {VERSION} | ${jetty.home}/lib/websocket/websocket-server-{VERSION}.jar
 41:               {VERSION} | ${jetty.home}/lib/websocket/websocket-servlet-{VERSION}.jar
-....
+----
 
 Of note is that an attempt is made to list the internally declared version of each artifact on the Server Classpath, which can potentially help when diagnosing classpath issues.

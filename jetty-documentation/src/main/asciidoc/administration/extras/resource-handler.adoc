@@ -31,16 +31,14 @@
 
 This handler will serve static content and handle If-Modified-Since headers and is suitable for simple serving of static content.
 
-____
 [IMPORTANT]
+====
 There is no caching done with this handler, so if you are looking for a more fully featured way of serving static content look to the xref:default-servlet[].
-____
-
-____
+====
 [NOTE]
+====
 Requests for resources that do not exist are let pass (Eg no 404's).
-____
-
+====
 ==== Improving the Look and Feel
 
 The resource handler has a default stylesheet which you can change by calling `setStyleSheet(String location)` with the location of a file on the system that it can locate through the resource loading system.
@@ -51,7 +49,7 @@ The default css is called `jetty-dir.css` and is located in the `jetty-util` pac
 The following is an example of a split fileserver, able to serve static content from multiple directory locations.
 Since this handler does not return 404's on content you are able to iteratively try multiple resource handlers to resolve content.
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/SplitFileServer.java[]
 ----

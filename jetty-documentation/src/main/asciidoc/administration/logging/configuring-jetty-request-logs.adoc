@@ -28,12 +28,12 @@ There is one entry per request received, and commonly in the standard NCSA forma
 A standard request log entry includes the client IP address, date, method, URL, result, size, referrer, user agent and latency.
 For example:
 
-....
+----
 123.4.5.6 - - [20/Jul/2016:10:16:17 +0000]
   "GET /jetty/tut/XmlConfiguration.html HTTP/1.1"
   200 76793 "http://localhost:8080/jetty/tut/logging.html"
   "Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.6) Gecko/20040614 Firefox/0.8" 342
-....
+----
 
 [[implementing-request-log]]
 ==== Implementing a Request Log
@@ -49,7 +49,7 @@ If neither of these options meets your needs, you can implement a custom request
 
 To enable the Request Log module for the entire server via the Jetty distribution, it first needs to be enabled on the command line:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 $ java -jar ../start.jar --add-to-start=requestlog
 
@@ -60,15 +60,14 @@ INFO: Base directory was modified
 
 The above command will add a new `requestlog.ini` file to your link:#start-vs-startd[`{$jetty.base}/start.d` directory].
 
-____
 [NOTE]
+====
 By default, request logs are not set to be appended, meaning a the log file is wiped clean upon sever restart.
 You can change this setting by editing the `requestlog.ini` and un-commenting the line that reads `jetty.requestlog.append=true`.
-____
-
+====
 The equivalent code for embedded usages of Jetty is:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 NCSARequestLog requestLog = new NCSARequestLog("/var/logs/jetty/jetty-yyyy_mm_dd.request.log");
 requestLog.setAppend(true);
@@ -120,7 +119,7 @@ Both timezones are set to GMT by default.
 
 To configure a separate request log for specific a web application, add the following to the context XML file.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   ...

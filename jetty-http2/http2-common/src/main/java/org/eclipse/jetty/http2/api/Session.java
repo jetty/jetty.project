@@ -97,8 +97,6 @@ public interface Session
     /**
      * <p>Closes the session by sending a GOAWAY frame with the given error code
      * and payload.</p>
-     * <p>The GOAWAY frame is sent only once; subsequent or concurrent attempts to
-     * close the session will have no effect.</p>
      *
      * @param error the error code
      * @param payload an optional payload (may be null)
@@ -197,6 +195,16 @@ public interface Session
          *
          * @param session the session
          * @param frame the GOAWAY frame received
+         */
+        default void onGoAway(Session session, GoAwayFrame frame)
+        {
+        }
+
+        /**
+         * <p>Callback method invoked when a GOAWAY frame caused the session to be closed.</p>
+         *
+         * @param session the session
+         * @param frame the GOAWAY frame that caused the session to be closed
          * @param callback the callback to notify of the GOAWAY processing
          */
         default void onClose(Session session, GoAwayFrame frame, Callback callback)

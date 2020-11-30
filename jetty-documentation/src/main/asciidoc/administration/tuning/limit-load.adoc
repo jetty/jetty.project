@@ -26,7 +26,7 @@ To achieve optimal fair handling for all users of a server, it can be necessary 
 An instance of link:{JDURL}/org/eclipse/jetty/server/LowResourceMonitor.html[LowResourceMonitor] may be added to a Jetty server to monitor for low resources situations and to take action to limit the number of idle connections on the server.
 To configure the low resources monitor, you can enable the the `lowresources.mod` on the command line, which has the effect of including the following XML configuration:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 include::{SRCDIR}/jetty-server/src/main/config/etc/jetty-lowresources.xml[]
 ----

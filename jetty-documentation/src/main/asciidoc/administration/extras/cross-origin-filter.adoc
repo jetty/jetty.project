@@ -79,7 +79,7 @@ Default value is the empty list.
 
 A typical configuration could be:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <web-app>
 

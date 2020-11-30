@@ -146,9 +146,8 @@ public class CustomResourcesMonitorTest
         @Override
         public boolean isLowOnResources()
         {
-            try
+            try (Stream<Path> paths = Files.list(_pathToMonitor))
             {
-                Stream<Path> paths = Files.list(_pathToMonitor);
                 List<Path> content = paths.collect(Collectors.toList());
                 if (!content.isEmpty())
                 {

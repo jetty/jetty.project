@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.4.35-SNAPSHOT</version>
+    <version>9.4.36-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -15,7 +15,7 @@
     <assembly-directory>target/distribution</assembly-directory>
     <exam.version>4.13.1</exam.version>
     <url.version>2.6.1</url.version>
-    <injection.bundle.version>1.0</injection.bundle.version>
+    <injection.bundle.version>1.2</injection.bundle.version>
   </properties>
   <dependencies>
     <!-- Pax Exam Dependencies -->
@@ -176,7 +176,7 @@
     <dependency>
       <groupId>org.glassfish.web</groupId>
       <artifactId>javax.servlet.jsp.jstl</artifactId>
-      <version>1.2.2</version>
+      <version>1.2.5</version>
       <exclusions>
         <exclusion>
           <groupId>javax.servlet.jsp.jstl</groupId>

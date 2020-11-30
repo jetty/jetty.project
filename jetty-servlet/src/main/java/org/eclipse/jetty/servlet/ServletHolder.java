@@ -1262,7 +1262,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
         {
             if (LOG.isDebugEnabled())
-               LOG.debug("Unavailable {}", req, _unavailableException);
+                LOG.debug("Unavailable {}", req, _unavailableException);
             if (_unavailableStart == null)
             {
                 ((HttpServletResponse)res).sendError(HttpServletResponse.SC_NOT_FOUND);

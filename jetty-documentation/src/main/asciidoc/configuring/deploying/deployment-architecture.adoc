@@ -27,7 +27,7 @@ The Jetty distribution contains example `DeploymentManager` configurations to de
 
 The `DeploymentManager` is the heart of the typical webapp deployment mechanism; it operates as a combination of an Application LifeCycle Graph, Application Providers that find and provide Applications into the Application LifeCycle Graph, and a set of bindings in the graph that control the deployment process.
 
-image:images/Jetty_DeployManager_DeploymentManager_Roles.png[image,width=195]
+image:configuring/deploying/images/Jetty_DeployManager_DeploymentManager_Roles.png[image,width=195]
 
 [[udm-application-providers]]
 ==== Application Providers
@@ -40,7 +40,7 @@ The main `AppProvider` with the Jetty distribution is the link:{JDURL}/org/eclip
 
 The core feature of the `DeploymentManager` is the link:{JDURL}/org/eclipse/jetty/deploy/AppLifeCycle.html[Application LifeCycle Graph].
 
-image:images/Jetty_DeployManager_AppLifeCycle-1.png[image,width=340]
+image:configuring/deploying/images/Jetty_DeployManager_AppLifeCycle-1.png[image,width=340]
 
 The nodes and edges of this graph are pre-defined in Jetty along the most common actions and states found.
 These nodes and edges are not hardcoded; they can be adjusted and added to depending on need (for example, any complex requirements for added workflow, approvals, staging, distribution, coordinated deploys for a cluster or cloud, etc.).
@@ -68,7 +68,7 @@ There are four default bindings:
 * link:{JDURL}/org/eclipse/jetty/deploy/bindings/StandardStopper.html[`StandardStopper`] — Stops the ContextHandler and stops accepting incoming requests.
 * link:{JDURL}/org/eclipse/jetty/deploy/bindings/StandardUndeployer.html[`StandardUndeployer`] — Removes the ContextHandler from Jetty.
 
-image:images/Jetty_DeployManager_DefaultAppLifeCycleBindings.png[image,width=851]
+image:configuring/deploying/images/Jetty_DeployManager_DefaultAppLifeCycleBindings.png[image,width=851]
 
 A fifth, non-standard binding, called link:{JDURL}/org/eclipse/jetty/deploy/bindings/DebugBinding.html[DebugBinding], is also available for debugging reasons; it logs the various transitions through the Application LifeCycle.
 
@@ -81,7 +81,7 @@ The format for the  XML file is the same as any context XML file and can be used
 
 To use this binding, you can either modify the existing `jetty-deploy.xml` which comes with the Jetty distribution (be sure to link:#startup-base-and-home[copy it to your $JETTY_BASE/etc directory first]), or by link:#custom-modules[creating a new module] file which calls to an additional XML file.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
         <Call name="addLifeCycleBinding">
           <Arg>
@@ -101,7 +101,7 @@ It supports hot (re)deployment.
 The basic operation of the `WebAppProvider` is to periodically scan a directory for deployables.
 In the standard Jetty Distribution, this is configured in the `${jetty.home}/etc/jetty-deploy.xml` file.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">

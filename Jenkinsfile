@@ -11,8 +11,8 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             container('jetty-build') {
-              timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk8", "clean install -T3", "maven3",
+              timeout( time: 240, unit: 'MINUTES' ) {
+                mavenBuild( "jdk8", "clean install", "maven3",
                             [[parserName: 'Maven'], [parserName: 'Java']])
                 // Collect up the jacoco execution results (only on main build)
                 jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
@@ -41,8 +41,8 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             container( 'jetty-build' ) {
-              timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk11", "clean install -T3 -Djacoco.skip=true ", "maven3",
+              timeout( time: 240, unit: 'MINUTES' ) {
+                mavenBuild( "jdk11", "clean install -Djacoco.skip=true", "maven3",
                             [[parserName: 'Maven'], [parserName: 'Java']])
               }
             }
@@ -53,8 +53,8 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             container( 'jetty-build' ) {
-              timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk15", "clean install -T3 -Djacoco.skip=true ", "maven3",
+              timeout( time: 240, unit: 'MINUTES' ) {
+                mavenBuild( "jdk15", "clean install -Djacoco.skip=true", "maven3",
                             [[parserName: 'Maven'], [parserName: 'Java']])
               }
             }
@@ -65,7 +65,7 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             container( 'jetty-build' ) {
-              timeout( time: 40, unit: 'MINUTES' ) {
+              timeout( time: 60, unit: 'MINUTES' ) {
                 mavenBuild( "jdk11",
                             "install javadoc:javadoc javadoc:aggregate-jar -DskipTests -Dpmd.skip=true -Dcheckstyle.skip=true",
                             "maven3", [[parserName: 'Maven'], [parserName: 'JavaDoc'], [parserName: 'Java']])
@@ -78,8 +78,8 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             container( 'jetty-build' ) {
-              timeout( time: 30, unit: 'MINUTES' ) {
-                mavenBuild( "jdk8", "-T3 -Pcompact3 clean install -DskipTests", "maven3",
+              timeout( time: 60, unit: 'MINUTES' ) {
+                mavenBuild( "jdk8", "-Pcompact3 clean install -DskipTests", "maven3",
                             [[parserName: 'Maven'], [parserName: 'Java']])
               }
             }
@@ -138,14 +138,14 @@ def mavenBuild(jdk, cmdline, mvnName, consoleParsers) {
                "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
         configFileProvider(
                 [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
-          sh "mvn -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Premote-session-tests -Pci -fae -V -B -e -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" +
+          sh "mvn -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" +
                      env.JENKINS_HOME
         }
       }
     }
     finally
     {
-      junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
+      junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
       if(consoleParsers!=null){
         warnings consoleParsers: consoleParsers
       }

@@ -128,13 +128,13 @@ public enum HttpHeader
     /**
      * HTTP2 Fields.
      */
-    C_METHOD(":method"),
-    C_SCHEME(":scheme"),
-    C_AUTHORITY(":authority"),
-    C_PATH(":path"),
-    C_STATUS(":status"),
+    C_METHOD(":method", true),
+    C_SCHEME(":scheme", true),
+    C_AUTHORITY(":authority", true),
+    C_PATH(":path", true),
+    C_STATUS(":status", true),
 
-    UNKNOWN("::UNKNOWN::");
+    UNKNOWN("::UNKNOWN::", true);
 
     public static final Trie<HttpHeader> CACHE = new ArrayTrie<>(630);
 
@@ -153,14 +153,21 @@ public enum HttpHeader
     private final byte[] _bytes;
     private final byte[] _bytesColonSpace;
     private final ByteBuffer _buffer;
+    private final boolean _pseudo;
 
     HttpHeader(String s)
+    {
+        this(s, false);
+    }
+
+    HttpHeader(String s, boolean pseudo)
     {
         _string = s;
         _lowerCase = StringUtil.asciiToLowerCase(s);
         _bytes = StringUtil.getBytes(s);
         _bytesColonSpace = StringUtil.getBytes(s + ": ");
         _buffer = ByteBuffer.wrap(_bytes);
+        _pseudo = pseudo;
     }
 
     public String lowerCaseName()
@@ -186,6 +193,14 @@ public enum HttpHeader
     public boolean is(String s)
     {
         return _string.equalsIgnoreCase(s);
+    }
+
+    /**
+     * @return True if the header is a HTTP2 Pseudo header (eg ':path')
+     */
+    public boolean isPseudo()
+    {
+        return _pseudo;
     }
 
     public String asString()

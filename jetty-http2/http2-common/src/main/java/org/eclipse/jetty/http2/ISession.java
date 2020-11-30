@@ -44,8 +44,9 @@ public interface ISession extends Session
      * <p>Removes the given {@code stream}.</p>
      *
      * @param stream the stream to remove
+     * @return whether the stream was removed
      */
-    void removeStream(IStream stream);
+    boolean removeStream(IStream stream);
 
     /**
      * <p>Sends the given list of frames to create a new {@link Stream}.</p>

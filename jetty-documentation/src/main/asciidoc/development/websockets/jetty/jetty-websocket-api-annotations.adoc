@@ -22,7 +22,7 @@
 The most basic form of WebSocket is a marked up POJO with annotations
 provided by the Jetty WebSocket API.
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 include::{SRCDIR}/jetty-websocket/websocket-common/src/test/java/examples/echo/AnnotatedEchoSocket.java[]
 ----
