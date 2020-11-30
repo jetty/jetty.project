@@ -11,7 +11,7 @@
   <name>Jetty :: Websocket :: org.eclipse.jetty.websocket :: Util-Server</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.util.server</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.servlet</bundle-symbolic-name>
   </properties>
 
   <build>
