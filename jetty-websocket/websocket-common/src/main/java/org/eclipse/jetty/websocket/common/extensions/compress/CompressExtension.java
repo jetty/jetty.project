@@ -492,7 +492,7 @@ public abstract class CompressExtension extends AbstractExtension
             if (!deflater.needsInput() || supplyInput(deflater, data))
             {
                 ByteBufferPool bufferPool = getBufferPool();
-                try (ByteBufferAccumulator accumulator = new ByteBufferAccumulator(bufferPool))
+                try (ByteBufferAccumulator accumulator = new ByteBufferAccumulator(bufferPool, false))
                 {
                     while (true)
                     {

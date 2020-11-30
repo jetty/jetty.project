@@ -42,7 +42,7 @@ public class ByteBufferAccumulatorTest
     public void before()
     {
         byteBufferPool = new CountingBufferPool();
-        accumulator = new ByteBufferAccumulator(byteBufferPool);
+        accumulator = new ByteBufferAccumulator(byteBufferPool, false);
     }
 
     @Test

@@ -45,7 +45,7 @@ public class ByteAccumulator implements AutoCloseable
     public ByteAccumulator(int maxOverallBufferSize, ByteBufferPool byteBufferPool)
     {
         this.maxSize = maxOverallBufferSize;
-        this.accumulator = new ByteBufferAccumulator(byteBufferPool);
+        this.accumulator = new ByteBufferAccumulator(byteBufferPool, false);
     }
 
     public int getLength()

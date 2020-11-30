@@ -39,15 +39,17 @@ public class ByteBufferAccumulator implements AutoCloseable
 {
     private final List<ByteBuffer> _buffers = new ArrayList<>();
     private final ByteBufferPool _bufferPool;
+    private final boolean _direct;
 
     public ByteBufferAccumulator()
     {
-        this(null);
+        this(null, false);
     }
 
-    public ByteBufferAccumulator(ByteBufferPool bufferPool)
+    public ByteBufferAccumulator(ByteBufferPool bufferPool, boolean direct)
     {
         _bufferPool = (bufferPool == null) ? new NullByteBufferPool() : bufferPool;
+        _direct = direct;
     }
 
     /**
@@ -129,7 +131,7 @@ public class ByteBufferAccumulator implements AutoCloseable
         }
 
         int length = getLength();
-        combinedBuffer = _bufferPool.acquire(length, false);
+        combinedBuffer = _bufferPool.acquire(length, _direct);
         BufferUtil.clearToFill(combinedBuffer);
         for (ByteBuffer buffer : _buffers)
         {

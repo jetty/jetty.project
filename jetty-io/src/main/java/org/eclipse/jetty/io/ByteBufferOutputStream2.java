@@ -36,12 +36,12 @@ public class ByteBufferOutputStream2 extends OutputStream
 
     public ByteBufferOutputStream2()
     {
-        this(null);
+        this(null, false);
     }
 
-    public ByteBufferOutputStream2(ByteBufferPool bufferPool)
+    public ByteBufferOutputStream2(ByteBufferPool bufferPool, boolean direct)
     {
-        _accumulator = new ByteBufferAccumulator((bufferPool == null) ? new NullByteBufferPool() : bufferPool);
+        _accumulator = new ByteBufferAccumulator((bufferPool == null) ? new NullByteBufferPool() : bufferPool, direct);
     }
 
     public ByteBufferPool getByteBufferPool()
