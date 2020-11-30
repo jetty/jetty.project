@@ -538,6 +538,24 @@ public class PoolTest
         assertThat(e1.getUsageCount(), is(2));
     }
 
+    @ParameterizedTest
+    @MethodSource(value = "strategy")
+    public void testDynamicMaxUsageCountChangeOverflowMaxInt(Factory factory)
+    {
+        Pool<String> pool = factory.getPool(1);
+        Pool<String>.Entry entry = pool.reserve(-1);
+        entry.enable("aaa", false);
+        entry.setUsageCount(Integer.MAX_VALUE);
+
+        Pool<String>.Entry acquired1 = pool.acquire();
+        assertThat(acquired1, notNullValue());
+        assertThat(pool.release(acquired1), is(true));
+
+        pool.setMaxUsageCount(1);
+        Pool<String>.Entry acquired2 = pool.acquire();
+        assertThat(acquired2, nullValue());
+    }
+
     @Test
     public void testConfigLimits()
     {
