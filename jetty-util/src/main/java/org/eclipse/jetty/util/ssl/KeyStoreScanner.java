@@ -20,7 +20,6 @@ package org.eclipse.jetty.util.ssl;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.Scanner;
@@ -122,8 +121,8 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
         if (LOG.isDebugEnabled())
             LOG.debug("scanning");
 
-        _scanner.scan();
-        _scanner.scan();
+        _scanner.nudge();
+        _scanner.nudge();
     }
 
     @ManagedOperation(value = "Reload the SSL Keystore", impact = "ACTION")

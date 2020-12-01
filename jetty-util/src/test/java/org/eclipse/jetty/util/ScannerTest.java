@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -127,6 +128,12 @@ public class ScannerTest
         public boolean equals(Object obj)
         {
             return ((Event)obj)._filename.equals(_filename) && ((Event)obj)._notification == _notification;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash(_filename, _notification);
         }
 
         @Override
@@ -278,8 +285,10 @@ public class ScannerTest
         scanner.scan();
         scanner.scan(); //2 scans for file to be considered settled
 
-        assertThat(queue.size(), Matchers.equalTo(2));
-        for (Event e : queue)
+        List<Event> results = new ArrayList<>();
+        queue.drainTo(results);
+        assertThat(results.size(), Matchers.equalTo(2));
+        for (Event e : results)
         {
             assertTrue(e._filename.endsWith("ttt.txt") || e._filename.endsWith("xxx.txt"));
         }
@@ -295,7 +304,7 @@ public class ScannerTest
         _scanner.scan();
         _scanner.scan();
 
-        Event event = _queue.poll();
+        Event event = _queue.poll(5, TimeUnit.SECONDS);
         assertNotNull(event, "Event should not be null");
         assertEquals(_directory + "/a0", event._filename);
         assertEquals(Notification.ADDED, event._notification);
@@ -325,7 +334,7 @@ public class ScannerTest
         Event a3 = new Event(_directory + "/a3", Notification.REMOVED);
         assertThat(actualEvents, Matchers.containsInAnyOrder(a1, a3));
         assertTrue(_queue.isEmpty());
-        
+
         // Now a2 is stable
         _scanner.scan();
         event = _queue.poll();
@@ -366,7 +375,7 @@ public class ScannerTest
         // delete a1 and a2
         delete("a1");
         delete("a2");
-        
+
         //Immediate notification of deletes.
         _scanner.scan();
         a1 = new Event(_directory + "/a1", Notification.REMOVED);
@@ -376,7 +385,7 @@ public class ScannerTest
         assertEquals(2, actualEvents.size());
         assertThat(actualEvents, Matchers.containsInAnyOrder(a1, a2));
         assertTrue(_queue.isEmpty());
-        
+
         // recreate a2
         touch("a2");
 
@@ -389,7 +398,7 @@ public class ScannerTest
         //Now a2 is reported as ADDED.
         _scanner.scan();
         event = _queue.poll();
-        assertTrue(event != null);
+        assertNotNull(event);
         assertEquals(_directory + "/a2", event._filename);
         assertEquals(Notification.ADDED, event._notification);
         assertTrue(_queue.isEmpty());

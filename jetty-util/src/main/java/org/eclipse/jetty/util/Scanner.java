@@ -35,14 +35,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,15 +68,15 @@ public class Scanner extends AbstractLifeCycle
     private static int __scannerId = 0;
 
     private int _scanInterval;
-    private AtomicInteger _scanCount = new AtomicInteger(0);
+    private final AtomicInteger _scanCount = new AtomicInteger(0);
     private final List<Listener> _listeners = new CopyOnWriteArrayList<>();
     private Map<String, MetaData> _prevScan;
     private FilenameFilter _filter;
     private final Map<Path, IncludeExcludeSet<PathMatcher, Path>> _scannables = new ConcurrentHashMap<>();
     private boolean _reportExisting = true;
     private boolean _reportDirs = true;
-    private Timer _timer;
-    private TimerTask _task;
+    private Scheduler.Task _task;
+    private ScheduledExecutorScheduler _scheduler;
     private int _scanDepth = DEFAULT_SCAN_DEPTH;
 
     public enum Status
@@ -114,7 +115,7 @@ public class Scanner extends AbstractLifeCycle
      * Metadata about a file: Last modified time, file size and
      * last file status (ADDED, CHANGED, DELETED, STABLE)
      */
-    static class MetaData
+    private static class MetaData
     {
         final long _lastModified;
         final long _size;
@@ -124,11 +125,6 @@ public class Scanner extends AbstractLifeCycle
         {
             _lastModified = lastModified;
             _size = size;
-        }
-        
-        public void setStatus(Status status)
-        {
-            _status = status;
         }
 
         @Override
@@ -146,6 +142,16 @@ public class Scanner extends AbstractLifeCycle
         public String toString()
         {
             return "[lm=" + _lastModified + ",sz=" + _size + ",s=" + _status + "]";
+        }
+    }
+    
+    private class ScanTask implements Runnable
+    {
+        @Override
+        public void run()
+        {
+            scan();
+            schedule();
         }
     }
 
@@ -183,9 +189,7 @@ public class Scanner extends AbstractLifeCycle
                 if (rootIncludesExcludes != null && !rootIncludesExcludes.isEmpty())
                 { 
                     //accepted if not explicitly excluded and either is explicitly included or there are no explicit inclusions
-                    Boolean result = rootIncludesExcludes.test(dir);
-                    if (Boolean.TRUE == result)
-                        accepted = true;
+                    accepted = rootIncludesExcludes.test(dir);
                 }
                 else
                 {
@@ -217,9 +221,7 @@ public class Scanner extends AbstractLifeCycle
                 if (rootIncludesExcludes != null && !rootIncludesExcludes.isEmpty())
                 {
                     //accepted if not explicitly excluded and either is explicitly included or there are no explicit inclusions
-                    Boolean result = rootIncludesExcludes.test(file);
-                    if (Boolean.TRUE == result)
-                        accepted = true;
+                    accepted = rootIncludesExcludes.test(file);
                 }
                 else if (_filter == null || _filter.accept(f.getParentFile(), f.getName()))
                     accepted = true;
@@ -259,7 +261,6 @@ public class Scanner extends AbstractLifeCycle
 
     /**
      * Notification of exact file changes in the last scan.
-     *
      */
     public interface DiscreteListener extends Listener
     {
@@ -272,7 +273,6 @@ public class Scanner extends AbstractLifeCycle
 
     /**
      * Notification of files that changed in the last scan.
-     *
      */
     public interface BulkListener extends Listener
     {
@@ -312,12 +312,11 @@ public class Scanner extends AbstractLifeCycle
      * @param scanInterval pause between scans in seconds, or 0 for no scan after the initial scan.
      */
     public void setScanInterval(int scanInterval)
-    {        
+    {
         if (isRunning())
             throw new IllegalStateException("Scanner started");
         
         _scanInterval = scanInterval;
-        schedule();
     }
 
     public void setScanDirs(List<File> dirs)
@@ -506,7 +505,7 @@ public class Scanner extends AbstractLifeCycle
      * Start the scanning action.
      */
     @Override
-    public void doStart()
+    public void doStart() throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Scanner start: rprtExists={}, depth={}, rprtDirs={}, interval={}, filter={}, scannables={}",
@@ -523,40 +522,21 @@ public class Scanner extends AbstractLifeCycle
             //just register the list of existing files and only report changes
             _prevScan = scanFiles();
         }
+        
+        
+        //Create the scheduler and start it
+        _scheduler = new ScheduledExecutorScheduler("Scanner-" + __scannerId++, true, 1);
+        _scheduler.start();
+        
+        //schedule the scan
         schedule();
     }
 
-    public TimerTask newTimerTask()
+    private void schedule()
     {
-        return new TimerTask()
+        if (isRunning() && getScanInterval() > 0)
         {
-            @Override
-            public void run()
-            {
-                scan();
-            }
-        };
-    }
-
-    public Timer newTimer()
-    {
-        return new Timer("Scanner-" + __scannerId++, true);
-    }
-
-    public void schedule()
-    {
-        if (isRunning())
-        {
-            if (_timer != null)
-                _timer.cancel();
-            if (_task != null)
-                _task.cancel();
-            if (getScanInterval() > 0)
-            {
-                _timer = newTimer();
-                _task = newTimerTask();
-                _timer.schedule(_task, 1010L * getScanInterval(), 1010L * getScanInterval());
-            }
+            _task = _scheduler.schedule(new ScanTask(), 1010L * getScanInterval(), TimeUnit.MILLISECONDS);
         }
     }
 
@@ -566,12 +546,20 @@ public class Scanner extends AbstractLifeCycle
     @Override
     public void doStop()
     {
-        if (_timer != null)
-            _timer.cancel();
+        try
+        {
+            if (_scheduler != null)
+                _scheduler.stop();
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Error stopping scheduler", e);
+        }
+        
         if (_task != null)
             _task.cancel();
+        _scheduler = null;
         _task = null;
-        _timer = null;
     }
 
     /**
@@ -605,9 +593,26 @@ public class Scanner extends AbstractLifeCycle
     }
 
     /**
+     * Hint to the scanner to perform a scan cycle as soon as possible. 
+     * NOTE that the scan is not guaranteed to have happened by the
+     * time this method returns.
+     */
+    public void nudge()
+    {
+        if (!isRunning())
+            throw new IllegalStateException("Scanner not running");
+
+        _scheduler.schedule(() ->
+        {
+            scan();
+
+        }, 0, TimeUnit.MILLISECONDS);  
+    }
+
+    /**
      * Perform a pass of the scanner and report changes
      */
-    public void scan()
+    void scan()
     {
         int cycle = _scanCount.incrementAndGet();
         reportScanStart(cycle);
@@ -620,7 +625,7 @@ public class Scanner extends AbstractLifeCycle
     /**
      * Scan all of the given paths.
      */
-    public Map<String, MetaData> scanFiles()
+    private Map<String, MetaData> scanFiles()
     {
         Map<String, MetaData> currentScan = new HashMap<>();
         for (Path p : _scannables.keySet())

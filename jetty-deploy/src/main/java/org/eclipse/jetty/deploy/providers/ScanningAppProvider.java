@@ -54,7 +54,6 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
     private DeploymentManager _deploymentManager;
     protected FilenameFilter _filenameFilter;
     private final List<Resource> _monitored = new CopyOnWriteArrayList<>();
-    private boolean _recursive = false;
     private int _scanInterval = 10;
     private Scanner _scanner;
 
@@ -236,12 +235,6 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         return _scanInterval;
     }
 
-    @ManagedAttribute("recursive scanning supported")
-    public boolean isRecursive()
-    {
-        return _recursive;
-    }
-
     @Override
     public void setDeploymentManager(DeploymentManager deploymentManager)
     {
@@ -294,11 +287,6 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         }
     }
 
-    protected void setRecursive(boolean recursive)
-    {
-        _recursive = recursive;
-    }
-
     public void setScanInterval(int scanInterval)
     {
         _scanInterval = scanInterval;
@@ -311,7 +299,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
             getMonitoredResources().stream().map((r) -> r.getURI().toASCIIString())
                 .collect(Collectors.joining(", ", "[", "]"))
         );
-        _scanner.scan();
+        _scanner.nudge();
     }
 
     @Override
