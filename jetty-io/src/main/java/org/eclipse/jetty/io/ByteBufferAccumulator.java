@@ -91,7 +91,7 @@ public class ByteBufferAccumulator implements AutoCloseable
         ByteBuffer buffer = _buffers.isEmpty() ? BufferUtil.EMPTY_BUFFER : _buffers.get(_buffers.size() - 1);
         if (BufferUtil.space(buffer) < minSize)
         {
-            buffer = _bufferPool.acquire(minAllocationSize, false);
+            buffer = _bufferPool.acquire(minAllocationSize, _direct);
             _buffers.add(buffer);
         }
 
