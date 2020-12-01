@@ -99,7 +99,7 @@ class WebSocketProxy
                         break;
 
                     default:
-                        failure = new IllegalStateException();
+                        failure = new IllegalStateException(state.name());
                         break;
                 }
             }
@@ -129,7 +129,7 @@ class WebSocketProxy
                         break;
 
                     default:
-                        failure = new IllegalStateException();
+                        failure = new IllegalStateException(state.name());
                         break;
                 }
             }
@@ -161,7 +161,7 @@ class WebSocketProxy
                         break;
 
                     default:
-                        failure = new IllegalStateException();
+                        failure = new IllegalStateException(state.name());
                         break;
                 }
             }
@@ -189,7 +189,8 @@ class WebSocketProxy
                             // the callback is saved until a close response comes in sendFrame from Server2Proxy
                             // if the callback was completed here then core would send its own close response
                             closeCallback = callback;
-                            sendCallback = Callback.from(() -> {}, callback::failed);
+                            sendCallback = Callback.from(() ->
+                            {}, callback::failed);
                         }
                         break;
 
@@ -203,7 +204,7 @@ class WebSocketProxy
                         break;
 
                     default:
-                        failure = new IllegalStateException();
+                        failure = new IllegalStateException(state.name());
                         break;
                 }
             }
@@ -239,7 +240,7 @@ class WebSocketProxy
             }
 
             if (failServer2Proxy)
-                server2Proxy.fail(failure,callback);
+                server2Proxy.fail(failure, callback);
             else
                 callback.failed(failure);
         }
@@ -333,7 +334,7 @@ class WebSocketProxy
                         break;
 
                     default:
-                        failure = new IllegalStateException();
+                        failure = new IllegalStateException(state.name());
                         break;
                 }
             }
@@ -384,7 +385,7 @@ class WebSocketProxy
                         try
                         {
                             state = State.CONNECTING;
-                            client.connect(this, serverUri).whenComplete((s,t) ->
+                            client.connect(this, serverUri).whenComplete((s, t) ->
                             {
                                 if (t != null)
                                     onConnectFailure(t, callback);
@@ -406,7 +407,7 @@ class WebSocketProxy
 
                     default:
                         state = State.FAILED;
-                        error = new IllegalStateException();
+                        error = new IllegalStateException(state.name());
                         failure = error;
                         break;
                 }
@@ -435,7 +436,7 @@ class WebSocketProxy
 
                     default:
                         state = State.FAILED;
-                        error = new IllegalStateException();
+                        error = new IllegalStateException(state.name());
                         failure = error;
                         break;
                 }
@@ -468,7 +469,7 @@ class WebSocketProxy
 
                     default:
                         state = State.FAILED;
-                        error = new IllegalStateException();
+                        error = new IllegalStateException(state.name());
                         failure = error;
                         break;
                 }
@@ -498,7 +499,7 @@ class WebSocketProxy
                         break;
 
                     default:
-                        failure = new IllegalStateException();
+                        failure = new IllegalStateException(state.name());
                         break;
                 }
             }
@@ -527,7 +528,8 @@ class WebSocketProxy
                         {
                             state = State.ISHUT;
                             closeCallback = callback;
-                            sendCallback = Callback.from(() -> {}, callback::failed);
+                            sendCallback = Callback.from(() ->
+                            {}, callback::failed);
                         }
                         break;
 
@@ -541,7 +543,7 @@ class WebSocketProxy
                         break;
 
                     default:
-                        failure = new IllegalStateException();
+                        failure = new IllegalStateException(state.name());
                         break;
                 }
             }
@@ -550,7 +552,6 @@ class WebSocketProxy
                 callback.failed(failure);
             else
                 client2Proxy.send(frame, sendCallback);
-
         }
 
         @Override
@@ -577,7 +578,7 @@ class WebSocketProxy
             }
 
             if (failClient2Proxy)
-                client2Proxy.fail(failure,callback);
+                client2Proxy.fail(failure, callback);
             else
                 callback.failed(failure);
         }
@@ -627,7 +628,7 @@ class WebSocketProxy
                     case ISHUT:
                         state = State.FAILED;
                         Callback doubleCallback = Callback.from(callback, closeCallback);
-                        sendCallback =  Callback.from(doubleCallback, failure);
+                        sendCallback = Callback.from(doubleCallback, failure);
                         break;
 
                     default:
@@ -671,7 +672,7 @@ class WebSocketProxy
                         break;
 
                     default:
-                        failure = new IllegalStateException();
+                        failure = new IllegalStateException(state.name());
                         break;
                 }
             }
