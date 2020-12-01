@@ -120,7 +120,7 @@ public class WebSocketProxyTest
         handlers.addHandler(serverContext);
 
         ContextHandler proxyContext = new ContextHandler("/proxy");
-        negotiator = new TestWebSocketNegotiator(proxy.client2Proxy, defaultCustomizer);
+        negotiator = WebSocketNegotiator.from(negotiation -> proxy.client2Proxy, defaultCustomizer);
         upgradeHandler = new WebSocketUpgradeHandler();
         upgradeHandler.addMapping("/*", negotiator);
         proxyContext.setHandler(upgradeHandler);

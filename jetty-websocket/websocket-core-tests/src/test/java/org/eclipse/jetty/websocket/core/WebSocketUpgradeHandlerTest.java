@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class UpgradeHandlerTest
+public class WebSocketUpgradeHandlerTest
 {
     private Server server;
     private WebSocketCoreClient client;
@@ -65,7 +65,7 @@ public class UpgradeHandlerTest
     }
 
     @Test
-    public void test() throws Exception
+    public void testUpgradeByWebSocketUpgradeHandler() throws Exception
     {
         TestMessageHandler clientEndpoint = new TestMessageHandler();
         CoreSession coreSession = client.connect(clientEndpoint, serverUri.resolve("/path/echo")).get(5, TimeUnit.SECONDS);

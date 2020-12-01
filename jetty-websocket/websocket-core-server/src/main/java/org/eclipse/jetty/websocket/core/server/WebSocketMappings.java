@@ -59,14 +59,14 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketMappings.class);
     public static final String WEBSOCKET_MAPPING_ATTRIBUTE = WebSocketMappings.class.getName();
 
-    public static WebSocketMappings getMappings(ServletContext servletContext)
+    public static WebSocketMappings getWebSocketNegotiator(ServletContext servletContext)
     {
         return (WebSocketMappings)servletContext.getAttribute(WEBSOCKET_MAPPING_ATTRIBUTE);
     }
 
     public static WebSocketMappings ensureMappings(ServletContext servletContext)
     {
-        WebSocketMappings mapping = getMappings(servletContext);
+        WebSocketMappings mapping = getWebSocketNegotiator(servletContext);
         if (mapping == null)
         {
             mapping = new WebSocketMappings(WebSocketServerComponents.getWebSocketComponents(servletContext));
@@ -153,14 +153,14 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
         Dumpable.dumpObjects(out, indent, this, mappings);
     }
 
-    public WebSocketNegotiator getMappings(PathSpec pathSpec)
+    public WebSocketNegotiator getWebSocketNegotiator(PathSpec pathSpec)
     {
         return mappings.get(pathSpec);
     }
 
-    public WebSocketCreator getCreator(PathSpec pathSpec)
+    public WebSocketCreator getWebSocketCreator(PathSpec pathSpec)
     {
-        WebSocketNegotiator negotiator = getMappings(pathSpec);
+        WebSocketNegotiator negotiator = getWebSocketNegotiator(pathSpec);
         if (negotiator instanceof CreatorNegotiator)
             return  ((CreatorNegotiator)negotiator).getWebSocketCreator();
         return null;

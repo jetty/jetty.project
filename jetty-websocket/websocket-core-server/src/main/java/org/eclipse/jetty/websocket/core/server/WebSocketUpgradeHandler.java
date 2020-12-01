@@ -29,13 +29,9 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class WebSocketUpgradeHandler extends HandlerWrapper
 {
-    private static final Logger LOG = LoggerFactory.getLogger(WebSocketUpgradeHandler.class);
-
     private final WebSocketMappings mappings;
     private final Configuration.ConfigurationCustomizer customizer = new Configuration.ConfigurationCustomizer();
 

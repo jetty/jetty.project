@@ -123,7 +123,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
     public void addMapping(String pathSpec, JettyWebSocketCreator creator)
     {
         PathSpec ps = WebSocketMappings.parsePathSpec(pathSpec);
-        if (webSocketMappings.getMappings(ps) != null)
+        if (webSocketMappings.getWebSocketNegotiator(ps) != null)
             throw new WebSocketException("Duplicate WebSocket Mapping for PathSpec");
 
         WebSocketUpgradeFilter.ensureFilter(contextHandler.getServletContext());
