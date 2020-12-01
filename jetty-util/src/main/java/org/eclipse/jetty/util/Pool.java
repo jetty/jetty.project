@@ -190,7 +190,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
         // Iterate the entries, remove overused ones and collect a list of the closeable removed ones.
         List<Closeable> copy;
-        try (Locker.Lock l = locker.lock())
+        try (AutoLock l = lock.lock())
         {
             if (closed)
                 return;
