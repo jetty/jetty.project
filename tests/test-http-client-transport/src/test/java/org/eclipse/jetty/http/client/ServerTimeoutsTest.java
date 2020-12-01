@@ -21,7 +21,6 @@ package org.eclipse.jetty.http.client;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
-import java.rmi.ServerException;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -751,102 +750,6 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
             // Complete the request.
             contentProvider.close();
             assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
-        }
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
-    public void testBlockingReadInOtherThreadThenComplete(Transport transport) throws Exception
-    {
-        init(transport);
-        BlockingReadAndCompleteHandler handler = new BlockingReadAndCompleteHandler();
-        scenario.start(handler);
-
-        try /*(StacklessLogging ignore = new StacklessLogging(HttpChannel.class))*/
-        {
-            DeferredContentProvider contentProvider = new DeferredContentProvider(ByteBuffer.allocate(1));
-            CountDownLatch resultLatch = new CountDownLatch(1);
-            scenario.client.POST(scenario.newURI())
-                .content(contentProvider)
-                .send(result ->
-                {
-                    if (result.getResponse().getStatus() == 299)
-                        resultLatch.countDown();
-                });
-
-            // Blocking read should error.
-            assertTrue(handler.readErrorLatch.await(5, TimeUnit.SECONDS));
-
-            // request should complete without waiting for content.
-            assertTrue(handler.readErrorLatch.await(1, TimeUnit.SECONDS));
-
-            // Complete the request.
-            contentProvider.close();
-            assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
-        }
-        catch (Exception e)
-        {
-            throw e;
-        }
-    }
-
-    private static class BlockingReadAndCompleteHandler extends AbstractHandler
-    {
-        CountDownLatch readErrorLatch;
-        CountDownLatch completeLatch;
-
-        public BlockingReadAndCompleteHandler()
-        {
-            this.readErrorLatch = new CountDownLatch(1);
-            this.completeLatch = new CountDownLatch(1);
-        }
-
-        @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-        {
-            baseRequest.setHandled(true);
-            AsyncContext asyncContext = baseRequest.startAsync();
-            ServletInputStream input = request.getInputStream();
-            CountDownLatch reading = new CountDownLatch(1);
-            new Thread(() ->
-            {
-                try
-                {
-                    response.setStatus(289);
-                    while (input.read() >= 0)
-                    {
-                        reading.countDown();
-                    }
-                }
-                catch (IOException x)
-                {
-                    readErrorLatch.countDown();
-                }
-            }).start();
-
-            try
-            {
-                reading.await();
-            }
-            catch (Exception e)
-            {
-                throw new ServletException(e);
-            }
-
-            new Thread(() ->
-            {
-                try
-                {
-                    Thread.sleep(500);
-                    response.setStatus(299);
-                    asyncContext.complete();
-                    completeLatch.countDown();
-                }
-                catch (InterruptedException x)
-                {
-                    throw new IllegalStateException(x);
-                }
-            }).start();
         }
     }
 
