@@ -112,7 +112,7 @@ public class Scanner extends AbstractLifeCycle
      * MetaData
      * 
      * Metadata about a file: Last modified time, file size and
-     * last file status (ADDED, CHANGED, DELETED)
+     * last file status (ADDED, CHANGED, DELETED, STABLE)
      */
     static class MetaData
     {
@@ -320,7 +320,7 @@ public class Scanner extends AbstractLifeCycle
         schedule();
     }
 
-    public void setScanDirs(List<File> dirs) throws IOException
+    public void setScanDirs(List<File> dirs)
     {
         if (isRunning())
             throw new IllegalStateException("Scanner started");
@@ -341,9 +341,8 @@ public class Scanner extends AbstractLifeCycle
      * Add a file to be scanned. The file must not be null, and must exist.
      * 
      * @param p the Path of the file to scan.
-     * @throws IOException 
      */
-    public void addFile(Path p) throws IOException
+    public void addFile(Path p)
     {
         if (isRunning())
             throw new IllegalStateException("Scanner started");
@@ -353,7 +352,7 @@ public class Scanner extends AbstractLifeCycle
 
         File f = p.toFile();
         if (!f.exists() || f.isDirectory())
-            throw new IllegalStateException("Not file or doesn't exist: " + f.getCanonicalPath());
+            throw new IllegalStateException("Not file or doesn't exist: " + p);
 
         _scannables.putIfAbsent(p, null);
     }
@@ -363,7 +362,6 @@ public class Scanner extends AbstractLifeCycle
      * 
      * @param p the directory to scan.
      * @return an IncludeExcludeSet to which the caller can add PathMatcher patterns to match
-     * @throws IOException
      */
     public IncludeExcludeSet<PathMatcher, Path> addDirectory(Path p)
     {
@@ -820,6 +818,8 @@ public class Scanner extends AbstractLifeCycle
 
     /**
      * Call ScanCycleListeners with start of scan
+     * 
+     * @param cycle scan count
      */
     private void reportScanStart(int cycle)
     {
@@ -839,6 +839,8 @@ public class Scanner extends AbstractLifeCycle
 
     /**
      * Call ScanCycleListeners with end of scan.
+     * 
+     * @param cycle scan count
      */
     private void reportScanEnd(int cycle)
     {
