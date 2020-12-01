@@ -57,8 +57,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WebSocketProxyTest
 {
-    private static final int PORT = 49998;
-
     private Server server;
     private EventSocket serverSocket;
     private WebSocketProxy webSocketProxy;
@@ -70,14 +68,7 @@ public class WebSocketProxyTest
     {
         server = new Server();
         ServerConnector connector = new ServerConnector(server);
-        connector.setPort(PORT);
         server.addConnector(connector);
-
-        client = new WebSocketClient();
-        client.start();
-        proxyUri = URI.create("ws://localhost:" + PORT + "/proxy");
-        URI echoUri = URI.create("ws://localhost:" + PORT + "/echo");
-        webSocketProxy = new WebSocketProxy(client, echoUri);
 
         ServletContextHandler contextHandler = new ServletContextHandler();
         WebSocketUpgradeFilter.configure(contextHandler);
@@ -95,6 +86,14 @@ public class WebSocketProxyTest
 
         server.setHandler(contextHandler);
         server.start();
+
+        int port = connector.getLocalPort();
+
+        client = new WebSocketClient();
+        client.start();
+        proxyUri = URI.create("ws://localhost:" + port + "/proxy");
+        URI echoUri = URI.create("ws://localhost:" + port + "/echo");
+        webSocketProxy = new WebSocketProxy(client, echoUri);
     }
 
     @AfterEach
