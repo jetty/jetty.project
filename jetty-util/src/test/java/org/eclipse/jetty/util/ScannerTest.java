@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -121,6 +123,20 @@ public class ScannerTest
             _filename = filename;
             _notification = notification;
         }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+           return ((Event)obj)._filename.equals(_filename) && ((Event)obj)._notification == _notification;
+        }
+
+        @Override
+        public String toString()
+        {
+            return ("File: " + _filename + ":" + _notification);
+        }
+        
+        
     }
 
     @Test
@@ -274,7 +290,6 @@ public class ScannerTest
 
     @Test
     @DisabledOnOs(WINDOWS) // TODO: needs review
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testAddedChangeRemove() throws Exception
     {
         touch("a0");
@@ -304,19 +319,14 @@ public class ScannerTest
         touch("a2");
         delete("a3");
 
-        // only a1 is stable so it should be seen.
+        // only a1 is stable so it should be seen, a3 is deleted
         _scanner.scan();
-        event = _queue.poll();
-        assertNotNull(event);
-        assertEquals(_directory + "/a1", event._filename);
-        assertEquals(Notification.ADDED, event._notification);
-
-        //TODO: behaviour change, we should see an immediate
-        //delete for a3
-        event = _queue.poll();
-        assertNotNull(event);
-        assertEquals(_directory + "/a3", event._filename);
-        assertEquals(Notification.REMOVED, event._notification);
+        List<Event> actualEvents = new ArrayList<>();
+        _queue.drainTo(actualEvents);
+        assertEquals(2, actualEvents.size());
+        Event a1 = new Event(_directory + "/a1", Notification.ADDED);
+        Event a3 = new Event(_directory + "/a3", Notification.REMOVED);
+        assertThat(actualEvents, Matchers.containsInAnyOrder(a1, a3));
         assertTrue(_queue.isEmpty());
         
         // Now a2 is stable
@@ -360,18 +370,14 @@ public class ScannerTest
         delete("a1");
         delete("a2");
         
-        //TODO: behaviour change, now we get immediate notification of
-        //deletes.
+        //Immediate notification of deletes.
         _scanner.scan();
-        
-        event = _queue.poll();
-        assertNotNull(event);
-        assertEquals(_directory + "/a1", event._filename);
-        assertEquals(Notification.REMOVED, event._notification);
-        event = _queue.poll();
-        assertNotNull(event);
-        assertEquals(_directory + "/a2", event._filename);
-        assertEquals(Notification.REMOVED, event._notification);
+        a1 = new Event(_directory + "/a1", Notification.REMOVED);
+        Event a2 = new Event(_directory + "/a2", Notification.REMOVED);
+        actualEvents = new ArrayList<>();
+        _queue.drainTo(actualEvents);
+        assertEquals(2, actualEvents.size());
+        assertThat(actualEvents, Matchers.containsInAnyOrder(a1, a2));
         assertTrue(_queue.isEmpty());
         
         // recreate a2
@@ -383,8 +389,7 @@ public class ScannerTest
         assertNull(event);
         assertTrue(_queue.isEmpty());
 
-        //TODO: behaviour change, now a2 is reported as ADDED. Previously, a2
-        //delete was not reported, but was reported as CHANGED when re-added. 
+        //Now a2 is reported as ADDED.
         _scanner.scan();
         event = _queue.poll();
         assertTrue(event != null);
