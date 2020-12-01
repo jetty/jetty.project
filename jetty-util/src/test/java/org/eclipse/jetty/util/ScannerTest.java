@@ -38,7 +38,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -127,7 +126,7 @@ public class ScannerTest
         @Override
         public boolean equals(Object obj)
         {
-           return ((Event)obj)._filename.equals(_filename) && ((Event)obj)._notification == _notification;
+            return ((Event)obj)._filename.equals(_filename) && ((Event)obj)._notification == _notification;
         }
 
         @Override
@@ -135,8 +134,6 @@ public class ScannerTest
         {
             return ("File: " + _filename + ":" + _notification);
         }
-        
-        
     }
 
     @Test
