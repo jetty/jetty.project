@@ -24,6 +24,7 @@ import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.jetty.ant.types.Connector;
 import org.eclipse.jetty.ant.types.ContextHandlers;
@@ -135,7 +136,7 @@ public class ServerProxyImpl implements ServerProxy
         }
 
         @Override
-        public void filesChanged(List<String> changedFileNames)
+        public void filesChanged(Set<String> changedFileNames)
         {
             boolean isScanned = false;
             try

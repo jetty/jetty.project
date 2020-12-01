@@ -77,7 +77,7 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
             throw new IllegalArgumentException("error obtaining keystore dir");
 
         _scanner = new Scanner();
-        _scanner.setScanDirs(Collections.singletonList(parentFile));
+        _scanner.addDirectory(parentFile.toPath());
         _scanner.setScanInterval(1);
         _scanner.setReportDirs(false);
         _scanner.setReportExistingFilesOnStartup(false);
