@@ -25,7 +25,7 @@
       <artifactId>servlet</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.osgi</groupId>
+      <groupId>org.eclipse.platform</groupId>
       <artifactId>org.eclipse.osgi</artifactId>
       <scope>provided</scope>
     </dependency>
