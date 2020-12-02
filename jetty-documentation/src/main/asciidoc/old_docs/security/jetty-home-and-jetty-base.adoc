@@ -48,7 +48,7 @@ This page describes how to configure SSL in Jetty with modules.
 It provides an example of using the `${jetty.home}` and `${jetty.base}` to maximum effect.
 It also includes a detailed explanation of how modules work.
 
-This example assumes you have the jetty-distribution unpacked in `/home/user/jetty-distribution-{VERSION}`.
+This example assumes you have the jetty-home unpacked in `/home/user/jetty-home-{VERSION}`.
 It also assumes you are using `start.ini` to configure your server features.
 
 1. Create a base directory anywhere.
@@ -177,7 +177,7 @@ Java Environment:
 
 Jetty Environment:
 -----------------
- jetty.home=/home/user/jetty-distribution-{VERSION}
+ jetty.home=/home/user/jetty-home-{VERSION}
  jetty.base=/home/user/my-base
  jetty.version={VERSION}
 
@@ -188,7 +188,7 @@ JVM Arguments:
 System Properties:
 ------------------
  jetty.base = /home/user/my-base
- jetty.home = /home/user/jetty-distribution-{VERSION}
+ jetty.home = /home/user/jetty-home-{VERSION}
 
 Properties:
 -----------
@@ -448,7 +448,7 @@ If you want to start using a new module:
 
 [source, screen, subs="{sub-order}"]
 ....
-[my-base] $ java -jar ../jetty-distribution-{VERSION}/start.jar --add-to-start=https
+[my-base] $ java -jar ../jetty-home-{VERSION}/start.jar --add-to-start=https
 ....
 
 This adds the `--module=` lines and associated properties (the parameterized values mentioned above), to your `start.ini`.
@@ -477,7 +477,7 @@ For more information on the `start.jar` in 9.1, see xref:start-jar[].
 [[summary-configuring-SSL-Jetty]]
 ==== Summary of Configuring SSL
 
-1. Download and unpack Jetty into `/home/user/jetty-distribution-{VERSION}`.
+1. Download and unpack Jetty into `/home/user/jetty-home-{VERSION}`.
 2. Go to your base directory and just use the distribution, no editing.
 +
 [source, screen, subs="{sub-order}"]
@@ -506,7 +506,7 @@ You can see what the configuration looks like, after all of the modules are reso
 
 [source, screen, subs="{sub-order}"]
 ....
-[my-base] $ java -jar ../jetty-distribution-{VERSION}/start.jar --list-config
+[my-base] $ java -jar ../jetty-home-{VERSION}/start.jar --list-config
 ....
 
 Just because the JARs exist on disk does not mean that they are in use.

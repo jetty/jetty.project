@@ -1,7 +1,7 @@
 <!-- =======================================================================================-->
 <!-- Build file for running the test-jetty-webapp from the jetty distro.                    -->
 <!--                                                                                        -->
-<!-- You will need to have a full jetty-distribution available unpacked on your local file  -->
+<!-- You will need to have a full jetty-home available unpacked on your local file          -->
 <!-- system. We will refer to the top level directory of this distribution as $JETTY_HOME.  -->
 <!--                                                                                        -->
 <!-- To use:                                                                                -->

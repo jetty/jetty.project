@@ -19,9 +19,9 @@
 [[og-begin-install]]
 ==== Installing Eclipse Jetty
 
-After the download, unpacking the Eclipse Jetty distribution will extract the files into a directory called `jetty-distribution-VERSION`, where `VERSION` is the version that you downloaded, for example `10.0.0`, so that the directory is called `jetty-distribution-10.0.0`.
+After the download, unpacking Eclipse Jetty will extract the files into a directory called `jetty-home-VERSION`, where `VERSION` is the version that you downloaded, for example `10.0.0`, so that the directory is called `jetty-home-10.0.0`.
 
-Unpack the Eclipse Jetty distribution compressed file in a convenient location, for example under `/opt`.
+Unpack Eclipse Jetty compressed file in a convenient location, for example under `/opt`.
 
 NOTE: For Windows users, you should unpack Jetty to a path that does not contain spaces.
 

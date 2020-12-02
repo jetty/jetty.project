@@ -29,23 +29,23 @@ The minimum steps to get Jetty to run as a Service include:
 
 [source, screen, subs="{sub-order}"]
 ....
-[/opt/jetty]# tar -zxf /home/user/downloads/jetty-distribution-{VERSION}.tar.gz
-[/opt/jetty]# cd jetty-distribution-{VERSION}/
-[/opt/jetty/jetty-distribution-{VERSION}]# ls
+[/opt/jetty]# tar -zxf /home/user/downloads/jetty-home-{VERSION}.tar.gz
+[/opt/jetty]# cd jetty-home-{VERSION}/
+[/opt/jetty/jetty-home-{VERSION}]# ls
 bin        lib                         modules      resources  start.jar
 demo-base  license-eplv10-aslv20.html  notice.html  start.d    VERSION.txt
 etc        logs                        README.TXT   start.ini  webapps
 
-[/opt/jetty/jetty-distribution-{VERSION}]# cp bin/jetty.sh /etc/init.d/jetty
-[/opt/jetty/jetty-distribution-{VERSION}]# echo JETTY_HOME=`pwd` > /etc/default/jetty
-[/opt/jetty/jetty-distribution-{VERSION}]# cat /etc/default/jetty
-JETTY_HOME=/opt/jetty/jetty-distribution-{VERSION}
+[/opt/jetty/jetty-home-{VERSION}]# cp bin/jetty.sh /etc/init.d/jetty
+[/opt/jetty/jetty-home-{VERSION}]# echo JETTY_HOME=`pwd` > /etc/default/jetty
+[/opt/jetty/jetty-home-{VERSION}]# cat /etc/default/jetty
+JETTY_HOME=/opt/jetty/jetty-home-{VERSION}
 
-[/opt/jetty/jetty-distribution-{VERSION}]# service jetty start
+[/opt/jetty/jetty-home-{VERSION}]# service jetty start
 Starting Jetty: OK Wed Nov 20 10:26:53 MST 2013
 ....
 
-From this demonstration we can see that Jetty started successfully as a Unix Service from the `/opt/jetty/jetty-distribution-{VERSION}` directory.
+From this demonstration we can see that Jetty started successfully as a Unix Service from the `/opt/jetty/jetty-home-{VERSION}` directory.
 
 This configuration works well but it is running Jetty as the root user.
 
@@ -131,13 +131,13 @@ Unpack it into place.
 
 [source, screen, subs="{sub-order}"]
 ....
-[/opt/jetty]# tar -zxf /home/user/Downloads/jetty-distribution-{VERSION}.tar.gz
+[/opt/jetty]# tar -zxf /home/user/Downloads/jetty-home-{VERSION}.tar.gz
 [/opt/jetty]# ls -F
-jetty-distribution-{VERSION}/
+jetty-home-{VERSION}/
 [/opt/jetty]# mkdir /opt/jetty/temp
 ....
 
-It might seem strange or undesirable to unpack the first portion of the jetty-distribution directory name too.
+It might seem strange or undesirable to unpack the first portion of the jetty-home directory name too.
 But starting with Jetty 9 the split between `${jetty.home}` and `${jetty.base}` allows for easier upgrades of Jetty itself while isolating your webapp specific configuration.
 For more information on the Jetty home and base concepts see the section on managing a Jetty installation link:#startup-base-and-home[earlier in this Chapter.]
 
@@ -149,15 +149,15 @@ The directory at `/opt/web/mybase` is going to be a `${jetty.base}`, so lets con
 
 [TIP]
 --
-In past versions of Jetty, you would configure / modify / add to the `jetty-distribution` directory directly.
-While this is still supported, we encourage you to setup a proper `${jetty.base}` directory, as it will benefit you with easier `jetty-distribution` upgrades in the future.
+In past versions of Jetty, you would configure / modify / add to the `jetty-home` directory directly.
+While this is still supported, we encourage you to setup a proper `${jetty.base}` directory, as it will benefit you with easier `jetty-home` upgrades in the future.
 --
 
 [source, screen, subs="{sub-order}"]
 ....
 # cd /opt/web/mybase/
 [/opt/web/mybase]# ls
-[/opt/web/mybase]# java -jar /opt/jetty/jetty-distribution-{VERSION}/start.jar \
+[/opt/web/mybase]# java -jar /opt/jetty/jetty-home-{VERSION}/start.jar \
    --add-to-start=deploy,http,console-capture
    INFO  : webapp          transitively enabled, ini template available with --add-to-start=webapp
    INFO  : server          transitively enabled, ini template available with --add-to-start=server
@@ -218,8 +218,8 @@ Next we need to make the Unix System aware that we have a new Jetty Service that
 
 [source, screen, subs="{sub-order}"]
 ....
-# cp /opt/jetty/jetty-distribution-{VERSION}/bin/jetty.sh /etc/init.d/jetty
-# echo "JETTY_HOME=/opt/jetty/jetty-distribution-{VERSION}" > /etc/default/jetty
+# cp /opt/jetty/jetty-home-{VERSION}/bin/jetty.sh /etc/init.d/jetty
+# echo "JETTY_HOME=/opt/jetty/jetty-home-{VERSION}" > /etc/default/jetty
 # echo "JETTY_BASE=/opt/web/mybase" >> /etc/default/jetty
 # echo "TMPDIR=/opt/jetty/temp" >> /etc/default/jetty
 ....
@@ -231,31 +231,31 @@ Test out the configuration:
 # service jetty status
 Checking arguments to Jetty:
 START_INI      =  /opt/web/mybase/start.ini
-JETTY_HOME     =  /opt/jetty/jetty-distribution-{VERSION}
+JETTY_HOME     =  /opt/jetty/jetty-home-{VERSION}
 JETTY_BASE     =  /opt/web/mybase
-JETTY_CONF     =  /opt/jetty/jetty-distribution-{VERSION}/etc/jetty.conf
+JETTY_CONF     =  /opt/jetty/jetty-home-{VERSION}/etc/jetty.conf
 JETTY_PID      =  /var/run/jetty.pid
-JETTY_START    =  /opt/jetty/jetty-distribution-{VERSION}/start.jar
+JETTY_START    =  /opt/jetty/jetty-home-{VERSION}/start.jar
 CLASSPATH      =
 JAVA           =  /usr/bin/java
 JAVA_OPTIONS   =  -Djetty.state=/opt/web/mybase/jetty.state
        -Djetty.logs=/opt/web/mybase/logs
-       -Djetty.home=/opt/jetty/jetty-distribution-{VERSION}
+       -Djetty.home=/opt/jetty/jetty-home-{VERSION}
        -Djetty.base=/opt/web/mybase
        -Djava.io.tmpdir=/opt/jetty/temp
 JETTY_ARGS     =  console-capture.xml jetty-started.xml
 RUN_CMD        =  /usr/bin/java
        -Djetty.state=/opt/web/mybase/jetty.state
        -Djetty.logs=/opt/web/mybase/logs
-       -Djetty.home=/opt/jetty/jetty-distribution-{VERSION}
+       -Djetty.home=/opt/jetty/jetty-home-{VERSION}
        -Djetty.base=/opt/web/mybase
        -Djava.io.tmpdir=/opt/jetty/temp
-       -jar /opt/jetty/jetty-distribution-{VERSION}/start.jar
+       -jar /opt/jetty/jetty-home-{VERSION}/start.jar
        console-capture.xml
        jetty-started.xml
 ....
 
-You now have a configured `${jetty.base}` in `/opt/web/mybase` and a `${jetty.home}` in `/opt/jetty/jetty-distribution-{VERSION}`, along with the service level files necessary to start the service.
+You now have a configured `${jetty.base}` in `/opt/web/mybase` and a `${jetty.home}` in `/opt/jetty/jetty-home-{VERSION}`, along with the service level files necessary to start the service.
 
 Test the service to make sure it starts up and runs successfully.
 
