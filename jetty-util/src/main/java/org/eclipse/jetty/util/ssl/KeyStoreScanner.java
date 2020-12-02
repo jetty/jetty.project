@@ -20,7 +20,7 @@ package org.eclipse.jetty.util.ssl;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -119,23 +119,18 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
     }
 
     @ManagedOperation(value = "Scan for changes in the SSL Keystore", impact = "ACTION")
-    public boolean scan()
+    public boolean scan(long waitMillis)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("scanning");
 
+        CompletableFuture<Boolean> cf = new CompletableFuture<>();
         try
         {
-            CountDownLatch complete = new CountDownLatch(2);
-            Callback callback = Callback.from(complete::countDown, t -> 
-            {
-                LOG.warn("Scan fail", t);
-                complete.countDown();
-            });
-
-            _scanner.scan(callback);
-            _scanner.scan(callback);
-            return complete.await(10, TimeUnit.SECONDS);
+            // Perform 2 scans to be sure that the scan is stable.
+            _scanner.scan(Callback.from(() ->
+                _scanner.scan(Callback.from(() -> cf.complete(true), cf::completeExceptionally)), cf::completeExceptionally));
+            return cf.get(waitMillis, TimeUnit.MILLISECONDS);
         }
         catch (Exception e)
         {
@@ -152,7 +147,8 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
         try
         {
             sslContextFactory.reload(scf ->
-            {});
+            {
+            });
         }
         catch (Throwable t)
         {
