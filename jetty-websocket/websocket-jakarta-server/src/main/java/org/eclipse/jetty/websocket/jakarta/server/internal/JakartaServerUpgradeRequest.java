@@ -21,8 +21,8 @@ package org.eclipse.jetty.websocket.jakarta.server.internal;
 import java.net.URI;
 import java.security.Principal;
 
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 import org.eclipse.jetty.websocket.jakarta.common.UpgradeRequest;
-import org.eclipse.jetty.websocket.util.server.internal.ServerUpgradeRequest;
 
 public class JakartaServerUpgradeRequest implements UpgradeRequest
 {

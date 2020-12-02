@@ -22,7 +22,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-util-server</artifactId>
+      <artifactId>websocket-servlet</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

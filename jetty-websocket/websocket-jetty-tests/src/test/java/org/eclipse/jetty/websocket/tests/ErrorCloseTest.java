@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.servlet.DispatcherType;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -258,6 +257,7 @@ public class ErrorCloseTest
         serverSocket.methodsToThrow.add(methodToThrow);
         EventSocket clientSocket = new EventSocket();
         client.connect(clientSocket, serverUri).get(5, TimeUnit.SECONDS);
+        assertTrue(serverSocket.openLatch.await(5, TimeUnit.SECONDS));
 
         try (StacklessLogging ignored = new StacklessLogging(WebSocketSession.class))
         {

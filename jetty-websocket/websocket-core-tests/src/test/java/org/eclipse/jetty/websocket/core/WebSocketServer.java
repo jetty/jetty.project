@@ -27,7 +27,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 
@@ -74,6 +74,11 @@ public class WebSocketServer
 
     public WebSocketServer(WebSocketNegotiator negotiator, boolean tls)
     {
+        this(new WebSocketComponents(), negotiator, tls);
+    }
+
+    public WebSocketServer(WebSocketComponents components, WebSocketNegotiator negotiator, boolean tls)
+    {
         ServerConnector connector;
         if (tls)
             connector = new ServerConnector(server, createServerSslContextFactory());
@@ -84,7 +89,8 @@ public class WebSocketServer
         ContextHandler context = new ContextHandler("/");
         server.setHandler(context);
 
-        WebSocketUpgradeHandler upgradeHandler = new WebSocketUpgradeHandler(negotiator);
+        WebSocketUpgradeHandler upgradeHandler = new WebSocketUpgradeHandler(components);
+        upgradeHandler.addMapping("/*", negotiator);
         context.setHandler(upgradeHandler);
     }
 
@@ -111,7 +117,7 @@ public class WebSocketServer
         }
 
         @Override
-        public FrameHandler negotiate(Negotiation negotiation) throws IOException
+        public FrameHandler negotiate(WebSocketNegotiation negotiation) throws IOException
         {
             List<String> offeredSubprotocols = negotiation.getOfferedSubprotocols();
             if (!offeredSubprotocols.isEmpty())

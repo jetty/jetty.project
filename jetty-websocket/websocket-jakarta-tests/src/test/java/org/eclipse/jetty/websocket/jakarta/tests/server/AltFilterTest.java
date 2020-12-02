@@ -30,7 +30,7 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.jakarta.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jakarta.tests.WSServer;
 import org.eclipse.jetty.websocket.jakarta.tests.server.sockets.echo.BasicEchoSocket;
-import org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter;
+import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 

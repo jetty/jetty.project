@@ -43,9 +43,9 @@ import jakarta.websocket.WebSocketContainer;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
 import org.eclipse.jetty.websocket.jakarta.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jakarta.common.encoders.AvailableEncoders;
-import org.eclipse.jetty.websocket.util.ReflectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

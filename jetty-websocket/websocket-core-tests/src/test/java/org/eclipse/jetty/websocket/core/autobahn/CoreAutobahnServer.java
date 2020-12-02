@@ -21,6 +21,8 @@ package org.eclipse.jetty.websocket.core.autobahn;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.websocket.core.TestWebSocketNegotiator;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 
 /**
@@ -78,9 +80,11 @@ public class CoreAutobahnServer
         ContextHandler context = new ContextHandler("/");
         server.setHandler(context);
 
-        WebSocketUpgradeHandler handler = new WebSocketUpgradeHandler((neg) -> new AutobahnFrameHandler());
-        context.setHandler(handler);
+        WebSocketComponents components = new WebSocketComponents();
+        WebSocketUpgradeHandler handler = new WebSocketUpgradeHandler(components);
+        handler.addMapping("/*", new TestWebSocketNegotiator(new AutobahnFrameHandler()));
 
+        context.setHandler(handler);
         server.start();
         return server;
     }

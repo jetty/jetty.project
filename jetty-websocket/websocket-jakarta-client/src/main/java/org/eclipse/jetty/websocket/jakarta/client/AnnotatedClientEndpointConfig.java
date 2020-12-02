@@ -23,8 +23,8 @@ import java.util.List;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.ClientEndpointConfig;
+import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.jakarta.common.ClientEndpointConfigWrapper;
-import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
 
 public class AnnotatedClientEndpointConfig extends ClientEndpointConfigWrapper
 {

@@ -31,10 +31,10 @@ import jakarta.websocket.DecodeException;
 import jakarta.websocket.Decoder;
 import jakarta.websocket.EndpointConfig;
 import org.eclipse.jetty.toolchain.test.Hex;
+import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.jakarta.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jakarta.common.decoders.IntegerDecoder;
 import org.eclipse.jetty.websocket.jakarta.common.decoders.RegisteredDecoder;
-import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;

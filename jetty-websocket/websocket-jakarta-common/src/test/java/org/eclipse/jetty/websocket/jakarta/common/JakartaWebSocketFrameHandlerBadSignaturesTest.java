@@ -24,7 +24,7 @@ import jakarta.websocket.OnClose;
 import jakarta.websocket.OnError;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
-import org.eclipse.jetty.websocket.util.InvalidSignatureException;
+import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;

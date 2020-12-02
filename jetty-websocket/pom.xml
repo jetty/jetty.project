@@ -28,9 +28,8 @@
     <module>websocket-jakarta-client</module>
     <module>websocket-jakarta-server</module>
     <module>websocket-jakarta-tests</module>
-    <!-- Common WebSocket Implementation -->
-    <module>websocket-util</module>
-    <module>websocket-util-server</module>
+    <!-- Common Servlet WebSocket Implementation -->
+    <module>websocket-servlet</module>
   </modules>
   <build>
     <plugins>

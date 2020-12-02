@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.jakarta.common;
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.EndpointConfig;
-import org.eclipse.jetty.websocket.util.InvokerUtils;
+import org.eclipse.jetty.websocket.core.internal.util.InvokerUtils;
 
 public class DummyFrameHandlerFactory extends JakartaWebSocketFrameHandlerFactory
 {

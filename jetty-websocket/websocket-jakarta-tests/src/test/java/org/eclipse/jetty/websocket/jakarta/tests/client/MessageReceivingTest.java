@@ -39,15 +39,15 @@ import jakarta.websocket.WebSocketContainer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.MessageHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.core.internal.MessageHandler;
+import org.eclipse.jetty.websocket.core.internal.util.TextUtils;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.jakarta.tests.CoreServer;
 import org.eclipse.jetty.websocket.jakarta.tests.DataUtils;
-import org.eclipse.jetty.websocket.util.TextUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -342,17 +342,18 @@ public class MessageReceivingTest
         }
     }
 
-    public static class ServerMessageNegotiator extends CoreServer.BaseNegotiator
+    public static class ServerMessageNegotiator extends WebSocketNegotiator.AbstractNegotiator
     {
         private static final int MAX_MESSAGE_SIZE = (1024 * 1024) + 2;
 
         public ServerMessageNegotiator()
         {
-            super();
+            setMaxBinaryMessageSize(MAX_MESSAGE_SIZE);
+            setMaxTextMessageSize(MAX_MESSAGE_SIZE);
         }
 
         @Override
-        public FrameHandler negotiate(Negotiation negotiation) throws IOException
+        public FrameHandler negotiate(WebSocketNegotiation negotiation) throws IOException
         {
             List<String> offeredSubProtocols = negotiation.getOfferedSubprotocols();
 
@@ -377,13 +378,6 @@ public class MessageReceivingTest
             }
 
             return null;
-        }
-
-        @Override
-        public void customize(Configuration configurable)
-        {
-            configurable.setMaxBinaryMessageSize(MAX_MESSAGE_SIZE);
-            configurable.setMaxTextMessageSize(MAX_MESSAGE_SIZE);
         }
     }
 

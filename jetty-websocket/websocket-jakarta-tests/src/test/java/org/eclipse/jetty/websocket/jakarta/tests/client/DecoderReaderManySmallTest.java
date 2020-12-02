@@ -36,7 +36,7 @@ import jakarta.websocket.OnMessage;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.MessageHandler;
+import org.eclipse.jetty.websocket.core.internal.MessageHandler;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.jakarta.tests.CoreServer;
 import org.eclipse.jetty.websocket.jakarta.tests.WSEventTracker;

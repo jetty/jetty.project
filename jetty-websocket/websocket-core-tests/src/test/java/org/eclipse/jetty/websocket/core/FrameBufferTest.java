@@ -47,7 +47,7 @@ public class FrameBufferTest extends WebSocketTester
     @BeforeEach
     public void startup() throws Exception
     {
-        WebSocketNegotiator negotiator = WebSocketNegotiator.from((negotiation) -> serverHandler);
+        WebSocketNegotiator negotiator = new TestWebSocketNegotiator(serverHandler);
         server = new WebSocketServer(negotiator);
         client = new WebSocketCoreClient(null, components);
 

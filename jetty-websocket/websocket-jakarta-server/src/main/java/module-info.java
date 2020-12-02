@@ -27,13 +27,14 @@ module org.eclipse.jetty.websocket.jakarta.server
 {
     exports org.eclipse.jetty.websocket.jakarta.server.config;
 
+    requires org.eclipse.jetty.websocket.core.server;
     requires org.eclipse.jetty.websocket.jakarta.common;
-    requires org.eclipse.jetty.websocket.util.server;
+    requires org.eclipse.jetty.websocket.servlet;
     requires org.slf4j;
     requires transitive org.eclipse.jetty.webapp;
     requires transitive org.eclipse.jetty.websocket.jakarta.client;
 
-    provides ServletContainerInitializer with JakartaWebSocketServletContainerInitializer;
-    provides ServerEndpointConfig.Configurator with ContainerDefaultConfigurator;
     provides Configuration with JakartaWebSocketConfiguration;
+    provides ServerEndpointConfig.Configurator with ContainerDefaultConfigurator;
+    provides ServletContainerInitializer with JakartaWebSocketServletContainerInitializer;
 }

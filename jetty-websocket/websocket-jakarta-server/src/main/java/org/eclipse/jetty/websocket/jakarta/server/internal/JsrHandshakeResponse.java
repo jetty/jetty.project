@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import jakarta.websocket.HandshakeResponse;
-import org.eclipse.jetty.websocket.util.server.internal.ServerUpgradeResponse;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 
 public class JsrHandshakeResponse implements HandshakeResponse
 {

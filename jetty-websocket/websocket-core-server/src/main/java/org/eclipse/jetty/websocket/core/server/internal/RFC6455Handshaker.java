@@ -36,7 +36,7 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 
 public final class RFC6455Handshaker extends AbstractHandshaker
 {
@@ -64,13 +64,13 @@ public final class RFC6455Handshaker extends AbstractHandshaker
     }
 
     @Override
-    protected Negotiation newNegotiation(HttpServletRequest request, HttpServletResponse response, WebSocketComponents webSocketComponents)
+    protected WebSocketNegotiation newNegotiation(HttpServletRequest request, HttpServletResponse response, WebSocketComponents webSocketComponents)
     {
         return new RFC6455Negotiation(Request.getBaseRequest(request), request, response, webSocketComponents);
     }
 
     @Override
-    protected boolean validateNegotiation(Negotiation negotiation)
+    protected boolean validateNegotiation(WebSocketNegotiation negotiation)
     {
         boolean result = super.validateNegotiation(negotiation);
         if (!result)
@@ -102,7 +102,7 @@ public final class RFC6455Handshaker extends AbstractHandshaker
     }
 
     @Override
-    protected void prepareResponse(Response response, Negotiation negotiation)
+    protected void prepareResponse(Response response, WebSocketNegotiation negotiation)
     {
         response.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
         HttpFields.Mutable responseFields = response.getHttpFields();

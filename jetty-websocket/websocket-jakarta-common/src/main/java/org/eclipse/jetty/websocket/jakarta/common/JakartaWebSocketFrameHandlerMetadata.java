@@ -23,9 +23,9 @@ import java.lang.invoke.MethodHandle;
 import jakarta.websocket.Encoder;
 import jakarta.websocket.EndpointConfig;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
+import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.jakarta.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jakarta.common.encoders.AvailableEncoders;
-import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
 
 public class JakartaWebSocketFrameHandlerMetadata
 {

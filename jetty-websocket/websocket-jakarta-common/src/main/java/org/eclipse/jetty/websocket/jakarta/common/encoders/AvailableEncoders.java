@@ -29,10 +29,10 @@ import java.util.stream.Collectors;
 
 import jakarta.websocket.Encoder;
 import jakarta.websocket.EndpointConfig;
+import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
+import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
 import org.eclipse.jetty.websocket.jakarta.common.InitException;
-import org.eclipse.jetty.websocket.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.util.ReflectUtils;
 
 public class AvailableEncoders implements Predicate<Class<?>>
 {

@@ -52,14 +52,12 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.DockerStatus;
 import org.testcontainers.utility.MountableFile;
-import org.testcontainers.utility.TestcontainersConfiguration;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Testcontainers
 public class AutobahnTests
 {
-    
     private static final Logger LOG = LoggerFactory.getLogger(AutobahnTests.class);
     private static final Path USER_DIR = Paths.get(System.getProperty("user.dir"));
 

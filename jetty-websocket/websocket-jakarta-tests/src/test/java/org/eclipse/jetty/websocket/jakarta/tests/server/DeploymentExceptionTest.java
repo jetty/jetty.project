@@ -29,6 +29,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.jakarta.tests.server.sockets.InvalidCloseIntSocket;
 import org.eclipse.jetty.websocket.jakarta.tests.server.sockets.InvalidErrorErrorSocket;
@@ -36,7 +37,6 @@ import org.eclipse.jetty.websocket.jakarta.tests.server.sockets.InvalidErrorIntS
 import org.eclipse.jetty.websocket.jakarta.tests.server.sockets.InvalidOpenCloseReasonSocket;
 import org.eclipse.jetty.websocket.jakarta.tests.server.sockets.InvalidOpenIntSocket;
 import org.eclipse.jetty.websocket.jakarta.tests.server.sockets.InvalidOpenSessionIntSocket;
-import org.eclipse.jetty.websocket.util.InvalidSignatureException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;

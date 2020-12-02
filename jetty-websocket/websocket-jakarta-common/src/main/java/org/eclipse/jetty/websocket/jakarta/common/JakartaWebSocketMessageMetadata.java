@@ -21,8 +21,8 @@ package org.eclipse.jetty.websocket.jakarta.common;
 import java.lang.invoke.MethodHandle;
 import java.util.List;
 
+import org.eclipse.jetty.websocket.core.internal.messages.MessageSink;
 import org.eclipse.jetty.websocket.jakarta.common.decoders.RegisteredDecoder;
-import org.eclipse.jetty.websocket.util.messages.MessageSink;
 
 public class JakartaWebSocketMessageMetadata
 {

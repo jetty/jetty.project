@@ -41,7 +41,7 @@ import org.eclipse.jetty.websocket.core.WebSocketServer;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,7 +69,7 @@ public class PerMessageDeflaterBufferSizeTest
         int inflateBufferSize = -1;
 
         @Override
-        public FrameHandler negotiate(Negotiation negotiation) throws IOException
+        public FrameHandler negotiate(WebSocketNegotiation negotiation) throws IOException
         {
             for (ExtensionConfig extensionConfig : negotiation.getOfferedExtensions())
             {

@@ -26,9 +26,9 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 
-public class RFC6455Negotiation extends Negotiation
+public class RFC6455Negotiation extends WebSocketNegotiation
 {
     private boolean successful;
     private String key;

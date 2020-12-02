@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.jakarta.tests.framehandlers;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.MessageHandler;
+import org.eclipse.jetty.websocket.core.internal.MessageHandler;
 
 public class StaticText extends MessageHandler
 {

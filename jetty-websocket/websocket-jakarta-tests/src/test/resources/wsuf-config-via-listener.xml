@@ -16,7 +16,7 @@
 
   <filter>
     <filter-name>wsuf</filter-name>
-    <filter-class>org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter</filter-class>
+    <filter-class>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-class>
   </filter>
 
   <filter-mapping>

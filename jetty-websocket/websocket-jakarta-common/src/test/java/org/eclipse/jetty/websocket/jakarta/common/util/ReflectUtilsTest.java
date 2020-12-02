@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.jakarta.common.util;
 
-import org.eclipse.jetty.websocket.util.ReflectUtils;
+import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;

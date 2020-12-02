@@ -43,20 +43,20 @@ import jakarta.websocket.PongMessage;
 import jakarta.websocket.Session;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.websocket.core.CoreSession;
+import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
+import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.core.internal.messages.MessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.PartialByteArrayMessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.PartialByteBufferMessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.PartialStringMessageSink;
+import org.eclipse.jetty.websocket.core.internal.util.InvokerUtils;
+import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
 import org.eclipse.jetty.websocket.jakarta.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.jakarta.common.messages.AbstractDecodedMessageSink;
 import org.eclipse.jetty.websocket.jakarta.common.messages.DecodedBinaryMessageSink;
 import org.eclipse.jetty.websocket.jakarta.common.messages.DecodedBinaryStreamMessageSink;
 import org.eclipse.jetty.websocket.jakarta.common.messages.DecodedTextMessageSink;
 import org.eclipse.jetty.websocket.jakarta.common.messages.DecodedTextStreamMessageSink;
-import org.eclipse.jetty.websocket.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.util.InvokerUtils;
-import org.eclipse.jetty.websocket.util.ReflectUtils;
-import org.eclipse.jetty.websocket.util.messages.MessageSink;
-import org.eclipse.jetty.websocket.util.messages.PartialByteArrayMessageSink;
-import org.eclipse.jetty.websocket.util.messages.PartialByteBufferMessageSink;
-import org.eclipse.jetty.websocket.util.messages.PartialStringMessageSink;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
