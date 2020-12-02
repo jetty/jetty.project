@@ -59,13 +59,11 @@ public class Scanner extends AbstractLifeCycle
      * When walking a directory, a depth of 1 ensures that
      * the directory's descendants are visited, not just the
      * directory itself (as a file).
-     * 
-     * @see Visitor#preVisitDirectory
      */
     public static final int DEFAULT_SCAN_DEPTH = 1;
     public static final int MAX_SCAN_DEPTH = Integer.MAX_VALUE;
     private static final Logger LOG = LoggerFactory.getLogger(Scanner.class);
-    private static int __scannerId = 0;
+    private static final AtomicInteger __scannerId = new AtomicInteger();
 
     private int _scanInterval;
     private final AtomicInteger _scanCount = new AtomicInteger(0);
@@ -76,15 +74,15 @@ public class Scanner extends AbstractLifeCycle
     private boolean _reportExisting = true;
     private boolean _reportDirs = true;
     private Scheduler.Task _task;
-    private ScheduledExecutorScheduler _scheduler;
+    private Scheduler _scheduler;
     private int _scanDepth = DEFAULT_SCAN_DEPTH;
 
-    public enum Status
+    private enum Status
     {
         ADDED, CHANGED, REMOVED, STABLE
     }
     
-    public enum Notification
+    enum Notification
     {
         ADDED, CHANGED, REMOVED
     }
@@ -127,12 +125,6 @@ public class Scanner extends AbstractLifeCycle
             _size = size;
         }
 
-        @Override
-        public int hashCode()
-        {
-            return (int)_lastModified ^ (int)_size;
-        }
-        
         public boolean isModified(MetaData m)
         {
             return m._lastModified != _lastModified || m._size != _size;
@@ -161,7 +153,7 @@ public class Scanner extends AbstractLifeCycle
      * A FileVisitor for walking a subtree of paths. The Scanner uses
      * this to examine the dirs and files it has been asked to scan.
      */
-    class Visitor implements FileVisitor<Path>
+    private class Visitor implements FileVisitor<Path>
     {
         Map<String, MetaData> scanInfoMap;
         IncludeExcludeSet<PathMatcher,Path> rootIncludesExcludes;
@@ -284,14 +276,15 @@ public class Scanner extends AbstractLifeCycle
      */
     public interface ScanCycleListener extends Listener
     {
-        public void scanStarted(int cycle) throws Exception;
+        public default void scanStarted(int cycle) throws Exception
+        {
+        }
 
-        public void scanEnded(int cycle) throws Exception;
+        public default void scanEnded(int cycle) throws Exception
+        {
+        }
     }
 
-    /**
-     *
-     */
     public Scanner()
     {
     }
@@ -528,7 +521,7 @@ public class Scanner extends AbstractLifeCycle
         
         
         //Create the scheduler and start it
-        _scheduler = new ScheduledExecutorScheduler("Scanner-" + __scannerId++, true, 1);
+        _scheduler = new ScheduledExecutorScheduler("Scanner-" + __scannerId.getAndIncrement(), true, 1);
         _scheduler.start();
         
         //schedule the scan
@@ -538,31 +531,23 @@ public class Scanner extends AbstractLifeCycle
     private void schedule()
     {
         if (isRunning() && getScanInterval() > 0)
-        {
             _task = _scheduler.schedule(new ScanTask(), 1010L * getScanInterval(), TimeUnit.MILLISECONDS);
-        }
     }
 
     /**
      * Stop the scanning.
      */
     @Override
-    public void doStop()
+    public void doStop() throws Exception
     {
-        try
-        {
-            if (_scheduler != null)
-                _scheduler.stop();
-        }
-        catch (Exception e)
-        {
-            LOG.warn("Error stopping scheduler", e);
-        }
-        
-        if (_task != null)
-            _task.cancel();
-        _scheduler = null;
+        Scheduler.Task task = _task;
         _task = null;
+        if (task != null)
+            task.cancel();
+        Scheduler scheduler = _scheduler;
+        _scheduler = null;
+        if (scheduler != null)
+            scheduler.stop();
     }
 
     /**
@@ -604,12 +589,7 @@ public class Scanner extends AbstractLifeCycle
     {
         if (!isRunning())
             throw new IllegalStateException("Scanner not running");
-
-        _scheduler.schedule(() ->
-        {
-            scan();
-
-        }, 0, TimeUnit.MILLISECONDS);  
+        scan(Callback.NOOP);
     }
     
     /**
@@ -620,12 +600,15 @@ public class Scanner extends AbstractLifeCycle
      */
     public void scan(Callback complete)
     {
-        Scheduler s = _scheduler;
+        Scheduler scheduler = _scheduler;
         
-        if (!isRunning() || s == null)
+        if (!isRunning() || scheduler == null)
+        {
             complete.failed(new IllegalStateException("Scanner not running"));
+            return;
+        }
 
-        s.schedule(() ->
+        scheduler.schedule(() ->
         {
             try
             {
@@ -636,11 +619,9 @@ public class Scanner extends AbstractLifeCycle
             {
                 complete.failed(t);
             }
-
-        }, 0, TimeUnit.MILLISECONDS);   
+        }, 0, TimeUnit.MILLISECONDS);
     }
-    
-    
+
     /**
      * Perform a pass of the scanner and report changes
      */

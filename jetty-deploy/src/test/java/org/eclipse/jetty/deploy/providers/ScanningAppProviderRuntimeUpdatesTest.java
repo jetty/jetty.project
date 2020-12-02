@@ -79,11 +79,6 @@ public class ScanningAppProviderRuntimeUpdatesTest
                 ((ScanningAppProvider)provider).addScannerListener(new Scanner.ScanCycleListener()
                 {
                     @Override
-                    public void scanStarted(int cycle)
-                    {
-                    }
-                    
-                    @Override
                     public void scanEnded(int cycle)
                     {
                         _scans.incrementAndGet();

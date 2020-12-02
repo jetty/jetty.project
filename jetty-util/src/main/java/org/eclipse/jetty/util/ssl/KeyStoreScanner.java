@@ -119,7 +119,7 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
     }
 
     @ManagedOperation(value = "Scan for changes in the SSL Keystore", impact = "ACTION")
-    public void scan()
+    public boolean scan()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("scanning");
@@ -135,8 +135,7 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
 
             _scanner.scan(callback);
             _scanner.scan(callback);
-            complete.await(10, TimeUnit.SECONDS);
-
+            return complete.await(10, TimeUnit.SECONDS);
         }
         catch (Exception e)
         {

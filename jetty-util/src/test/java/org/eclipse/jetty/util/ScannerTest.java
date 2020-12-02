@@ -73,31 +73,24 @@ public class ScannerTest
         _scanner.addListener(new Scanner.DiscreteListener()
         {
             @Override
-            public void fileRemoved(String filename) throws Exception
+            public void fileRemoved(String filename)
             {
                 _queue.add(new Event(filename, Notification.REMOVED));
             }
 
             @Override
-            public void fileChanged(String filename) throws Exception
+            public void fileChanged(String filename)
             {
                 _queue.add(new Event(filename, Notification.CHANGED));
             }
 
             @Override
-            public void fileAdded(String filename) throws Exception
+            public void fileAdded(String filename)
             {
                 _queue.add(new Event(filename, Notification.ADDED));
             }
         });
-        _scanner.addListener(new Scanner.BulkListener()
-        {
-            @Override
-            public void filesChanged(Set<String> filenames) throws Exception
-            {
-                _bulk.add(filenames);
-            }
-        });
+        _scanner.addListener((Scanner.BulkListener)filenames -> _bulk.add(filenames));
 
         _scanner.start();
         _scanner.scan();
@@ -127,7 +120,12 @@ public class ScannerTest
         @Override
         public boolean equals(Object obj)
         {
-            return ((Event)obj)._filename.equals(_filename) && ((Event)obj)._notification == _notification;
+            if (this == obj)
+                return true;
+            if (obj == null || getClass() != obj.getClass())
+                return false;
+            Event that = (Event)obj;
+            return _filename.equals(that._filename) && _notification == that._notification;
         }
 
         @Override
@@ -163,7 +161,7 @@ public class ScannerTest
         File y2 = new File(dir2, "yyy2.foo");
         FS.touch(y2);
 
-        BlockingQueue<Event> queue = new LinkedBlockingQueue<Event>();
+        BlockingQueue<Event> queue = new LinkedBlockingQueue<>();
         Scanner scanner = new Scanner();
         scanner.setScanInterval(0);
         scanner.setScanDepth(0);
@@ -173,19 +171,19 @@ public class ScannerTest
         scanner.addListener(new Scanner.DiscreteListener()
         {
             @Override
-            public void fileRemoved(String filename) throws Exception
+            public void fileRemoved(String filename)
             {
                 queue.add(new Event(filename, Notification.REMOVED));
             }
 
             @Override
-            public void fileChanged(String filename) throws Exception
+            public void fileChanged(String filename)
             {
                 queue.add(new Event(filename, Notification.CHANGED));
             }
 
             @Override
-            public void fileAdded(String filename) throws Exception
+            public void fileAdded(String filename)
             {
                 queue.add(new Event(filename, Notification.ADDED));
             }
@@ -243,7 +241,7 @@ public class ScannerTest
         File y2 = new File(dir2, "yyy.txt");
         FS.touch(y2);
 
-        BlockingQueue<Event> queue = new LinkedBlockingQueue<Event>();
+        BlockingQueue<Event> queue = new LinkedBlockingQueue<>();
         //only scan the *.txt files for changes
         Scanner scanner = new Scanner();
         IncludeExcludeSet<PathMatcher, Path> pattern = scanner.addDirectory(root.toPath());
@@ -256,19 +254,19 @@ public class ScannerTest
         scanner.addListener(new Scanner.DiscreteListener()
         {
             @Override
-            public void fileRemoved(String filename) throws Exception
+            public void fileRemoved(String filename)
             {
                 queue.add(new Event(filename, Notification.REMOVED));
             }
 
             @Override
-            public void fileChanged(String filename) throws Exception
+            public void fileChanged(String filename)
             {
                 queue.add(new Event(filename, Notification.CHANGED));
             }
 
             @Override
-            public void fileAdded(String filename) throws Exception
+            public void fileAdded(String filename)
             {
                 queue.add(new Event(filename, Notification.ADDED));
             }
@@ -350,7 +348,7 @@ public class ScannerTest
         // not stable after 1scan so nothing should not be seen yet.
         _scanner.scan();
         event = _queue.poll();
-        assertTrue(event == null);
+        assertNull(event);
 
         // Keep a2 unstable
         Thread.sleep(1100); // make sure time in seconds changes
@@ -468,7 +466,7 @@ public class ScannerTest
         }
     }
 
-    private void delete(String string) throws IOException
+    private void delete(String string)
     {
         File file = new File(_directory, string);
         if (file.exists())

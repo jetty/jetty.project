@@ -41,18 +41,14 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- *
- */
 @ManagedObject("Abstract Provider for loading webapps")
 public abstract class ScanningAppProvider extends ContainerLifeCycle implements AppProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(ScanningAppProvider.class);
 
-    private Map<String, App> _appMap = new HashMap<String, App>();
-
+    private final Map<String, App> _appMap = new HashMap<>();
     private DeploymentManager _deploymentManager;
-    protected FilenameFilter _filenameFilter;
+    private FilenameFilter _filenameFilter;
     private final List<Resource> _monitored = new CopyOnWriteArrayList<>();
     private int _scanInterval = 10;
     private Scanner _scanner;

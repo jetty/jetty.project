@@ -126,7 +126,7 @@ public class KeyStoreScannerTest
 
         // Switch to use newKeystore which has a later expiry date.
         useKeystore("newKeystore");
-        keystoreScanner.scan();
+        assertTrue(keystoreScanner.scan());
 
         // The scanner should have detected the updated keystore, expiry should be renewed.
         X509Certificate cert2 = getCertificateFromServer();
