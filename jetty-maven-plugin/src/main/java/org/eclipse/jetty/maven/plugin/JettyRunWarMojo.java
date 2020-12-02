@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
-import java.util.List;
+import java.util.Set;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Execute;
@@ -197,7 +197,7 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
             configureScanTargetPatterns(scanner);
             scanner.addListener(new Scanner.BulkListener()
             {
-                public void filesChanged(List<String> changes)
+                public void filesChanged(Set<String> changes)
                 {
                     try
                     {

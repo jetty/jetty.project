@@ -41,20 +41,15 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- *
- */
 @ManagedObject("Abstract Provider for loading webapps")
 public abstract class ScanningAppProvider extends ContainerLifeCycle implements AppProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(ScanningAppProvider.class);
 
-    private Map<String, App> _appMap = new HashMap<String, App>();
-
+    private final Map<String, App> _appMap = new HashMap<>();
     private DeploymentManager _deploymentManager;
-    protected FilenameFilter _filenameFilter;
+    private FilenameFilter _filenameFilter;
     private final List<Resource> _monitored = new CopyOnWriteArrayList<>();
-    private boolean _recursive = false;
     private int _scanInterval = 10;
     private Scanner _scanner;
 
@@ -140,7 +135,6 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         _scanner = new Scanner();
         _scanner.setScanDirs(files);
         _scanner.setScanInterval(_scanInterval);
-        _scanner.setRecursive(_recursive);
         _scanner.setFilenameFilter(_filenameFilter);
         _scanner.setReportDirs(true);
         _scanner.setScanDepth(1); //consider direct dir children of monitored dir
@@ -237,12 +231,6 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         return _scanInterval;
     }
 
-    @ManagedAttribute("recursive scanning supported")
-    public boolean isRecursive()
-    {
-        return _recursive;
-    }
-
     @Override
     public void setDeploymentManager(DeploymentManager deploymentManager)
     {
@@ -295,11 +283,6 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         }
     }
 
-    protected void setRecursive(boolean recursive)
-    {
-        _recursive = recursive;
-    }
-
     public void setScanInterval(int scanInterval)
     {
         _scanInterval = scanInterval;
@@ -312,7 +295,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
             getMonitoredResources().stream().map((r) -> r.getURI().toASCIIString())
                 .collect(Collectors.joining(", ", "[", "]"))
         );
-        _scanner.scan();
+        _scanner.nudge();
     }
 
     @Override

@@ -24,7 +24,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -36,12 +39,12 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
@@ -49,8 +52,8 @@ public class ScannerTest
 {
     static File _directory;
     static Scanner _scanner;
-    static BlockingQueue<Event> _queue = new LinkedBlockingQueue<Event>();
-    static BlockingQueue<List<String>> _bulk = new LinkedBlockingQueue<List<String>>();
+    static BlockingQueue<Event> _queue = new LinkedBlockingQueue<>();
+    static BlockingQueue<Set<String>> _bulk = new LinkedBlockingQueue<>();
 
     @BeforeAll
     public static void setUpBeforeClass() throws Exception
@@ -63,38 +66,31 @@ public class ScannerTest
         _directory = testDir.toPath().toRealPath().toFile();
 
         _scanner = new Scanner();
-        _scanner.addScanDir(_directory);
+        _scanner.addDirectory(_directory.toPath());
         _scanner.setScanInterval(0);
         _scanner.setReportDirs(false);
         _scanner.setReportExistingFilesOnStartup(false);
         _scanner.addListener(new Scanner.DiscreteListener()
         {
             @Override
-            public void fileRemoved(String filename) throws Exception
+            public void fileRemoved(String filename)
             {
                 _queue.add(new Event(filename, Notification.REMOVED));
             }
 
             @Override
-            public void fileChanged(String filename) throws Exception
+            public void fileChanged(String filename)
             {
                 _queue.add(new Event(filename, Notification.CHANGED));
             }
 
             @Override
-            public void fileAdded(String filename) throws Exception
+            public void fileAdded(String filename)
             {
                 _queue.add(new Event(filename, Notification.ADDED));
             }
         });
-        _scanner.addListener(new Scanner.BulkListener()
-        {
-            @Override
-            public void filesChanged(List<String> filenames) throws Exception
-            {
-                _bulk.add(filenames);
-            }
-        });
+        _scanner.addListener((Scanner.BulkListener)filenames -> _bulk.add(filenames));
 
         _scanner.start();
         _scanner.scan();
@@ -120,6 +116,29 @@ public class ScannerTest
             _filename = filename;
             _notification = notification;
         }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            if (this == obj)
+                return true;
+            if (obj == null || getClass() != obj.getClass())
+                return false;
+            Event that = (Event)obj;
+            return _filename.equals(that._filename) && _notification == that._notification;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash(_filename, _notification);
+        }
+
+        @Override
+        public String toString()
+        {
+            return ("File: " + _filename + ":" + _notification);
+        }
     }
 
     @Test
@@ -142,7 +161,7 @@ public class ScannerTest
         File y2 = new File(dir2, "yyy2.foo");
         FS.touch(y2);
 
-        BlockingQueue<Event> queue = new LinkedBlockingQueue<Event>();
+        BlockingQueue<Event> queue = new LinkedBlockingQueue<>();
         Scanner scanner = new Scanner();
         scanner.setScanInterval(0);
         scanner.setScanDepth(0);
@@ -152,19 +171,19 @@ public class ScannerTest
         scanner.addListener(new Scanner.DiscreteListener()
         {
             @Override
-            public void fileRemoved(String filename) throws Exception
+            public void fileRemoved(String filename)
             {
                 queue.add(new Event(filename, Notification.REMOVED));
             }
 
             @Override
-            public void fileChanged(String filename) throws Exception
+            public void fileChanged(String filename)
             {
                 queue.add(new Event(filename, Notification.CHANGED));
             }
 
             @Override
-            public void fileAdded(String filename) throws Exception
+            public void fileAdded(String filename)
             {
                 queue.add(new Event(filename, Notification.ADDED));
             }
@@ -222,7 +241,7 @@ public class ScannerTest
         File y2 = new File(dir2, "yyy.txt");
         FS.touch(y2);
 
-        BlockingQueue<Event> queue = new LinkedBlockingQueue<Event>();
+        BlockingQueue<Event> queue = new LinkedBlockingQueue<>();
         //only scan the *.txt files for changes
         Scanner scanner = new Scanner();
         IncludeExcludeSet<PathMatcher, Path> pattern = scanner.addDirectory(root.toPath());
@@ -235,19 +254,19 @@ public class ScannerTest
         scanner.addListener(new Scanner.DiscreteListener()
         {
             @Override
-            public void fileRemoved(String filename) throws Exception
+            public void fileRemoved(String filename)
             {
                 queue.add(new Event(filename, Notification.REMOVED));
             }
 
             @Override
-            public void fileChanged(String filename) throws Exception
+            public void fileChanged(String filename)
             {
                 queue.add(new Event(filename, Notification.CHANGED));
             }
 
             @Override
-            public void fileAdded(String filename) throws Exception
+            public void fileAdded(String filename)
             {
                 queue.add(new Event(filename, Notification.ADDED));
             }
@@ -264,8 +283,10 @@ public class ScannerTest
         scanner.scan();
         scanner.scan(); //2 scans for file to be considered settled
 
-        assertThat(queue.size(), Matchers.equalTo(2));
-        for (Event e : queue)
+        List<Event> results = new ArrayList<>();
+        queue.drainTo(results);
+        assertThat(results.size(), Matchers.equalTo(2));
+        for (Event e : results)
         {
             assertTrue(e._filename.endsWith("ttt.txt") || e._filename.endsWith("xxx.txt"));
         }
@@ -273,7 +294,6 @@ public class ScannerTest
 
     @Test
     @DisabledOnOs(WINDOWS) // TODO: needs review
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testAddedChangeRemove() throws Exception
     {
         touch("a0");
@@ -282,7 +302,7 @@ public class ScannerTest
         _scanner.scan();
         _scanner.scan();
 
-        Event event = _queue.poll();
+        Event event = _queue.poll(5, TimeUnit.SECONDS);
         assertNotNull(event, "Event should not be null");
         assertEquals(_directory + "/a0", event._filename);
         assertEquals(Notification.ADDED, event._notification);
@@ -296,30 +316,30 @@ public class ScannerTest
         // not stable after 1 scan so should not be seen yet.
         _scanner.scan();
         event = _queue.poll();
-        assertTrue(event == null);
+        assertNull(event);
 
-        // Keep a2 unstable and remove a3 before it stabalized
+        // Keep a2 unstable and remove a3 before it stabilized
         Thread.sleep(1100); // make sure time in seconds changes
         touch("a2");
         delete("a3");
 
-        // only a1 is stable so it should be seen.
+        // only a1 is stable so it should be seen, a3 is deleted
         _scanner.scan();
-        event = _queue.poll();
-        assertTrue(event != null);
-        assertEquals(_directory + "/a1", event._filename);
-        assertEquals(Notification.ADDED, event._notification);
+        List<Event> actualEvents = new ArrayList<>();
+        _queue.drainTo(actualEvents);
+        assertEquals(2, actualEvents.size());
+        Event a1 = new Event(_directory + "/a1", Notification.ADDED);
+        Event a3 = new Event(_directory + "/a3", Notification.REMOVED);
+        assertThat(actualEvents, Matchers.containsInAnyOrder(a1, a3));
         assertTrue(_queue.isEmpty());
 
         // Now a2 is stable
         _scanner.scan();
         event = _queue.poll();
-        assertTrue(event != null);
+        assertNotNull(event);
         assertEquals(_directory + "/a2", event._filename);
         assertEquals(Notification.ADDED, event._notification);
         assertTrue(_queue.isEmpty());
-
-        // We never see a3 as it was deleted before it stabalised
 
         // touch a1 and a2
         Thread.sleep(1100); // make sure time in seconds changes
@@ -328,7 +348,7 @@ public class ScannerTest
         // not stable after 1scan so nothing should not be seen yet.
         _scanner.scan();
         event = _queue.poll();
-        assertTrue(event == null);
+        assertNull(event);
 
         // Keep a2 unstable
         Thread.sleep(1100); // make sure time in seconds changes
@@ -337,7 +357,7 @@ public class ScannerTest
         // only a1 is stable so it should be seen.
         _scanner.scan();
         event = _queue.poll();
-        assertTrue(event != null);
+        assertNotNull(event);
         assertEquals(_directory + "/a1", event._filename);
         assertEquals(Notification.CHANGED, event._notification);
         assertTrue(_queue.isEmpty());
@@ -345,7 +365,7 @@ public class ScannerTest
         // Now a2 is stable
         _scanner.scan();
         event = _queue.poll();
-        assertTrue(event != null);
+        assertNotNull(event);
         assertEquals(_directory + "/a2", event._filename);
         assertEquals(Notification.CHANGED, event._notification);
         assertTrue(_queue.isEmpty());
@@ -353,28 +373,32 @@ public class ScannerTest
         // delete a1 and a2
         delete("a1");
         delete("a2");
-        // not stable after 1scan so nothing should not be seen yet.
-        _scanner.scan();
-        event = _queue.poll();
-        assertTrue(event == null);
 
-        // readd a2
-        touch("a2");
-
-        // only a1 is stable so it should be seen.
+        //Immediate notification of deletes.
         _scanner.scan();
-        event = _queue.poll();
-        assertTrue(event != null);
-        assertEquals(_directory + "/a1", event._filename);
-        assertEquals(Notification.REMOVED, event._notification);
+        a1 = new Event(_directory + "/a1", Notification.REMOVED);
+        Event a2 = new Event(_directory + "/a2", Notification.REMOVED);
+        actualEvents = new ArrayList<>();
+        _queue.drainTo(actualEvents);
+        assertEquals(2, actualEvents.size());
+        assertThat(actualEvents, Matchers.containsInAnyOrder(a1, a2));
         assertTrue(_queue.isEmpty());
 
-        // Now a2 is stable and is a changed file rather than a remove
+        // recreate a2
+        touch("a2");
+
+        // a2 not stable yet, shouldn't be seen
         _scanner.scan();
         event = _queue.poll();
-        assertTrue(event != null);
+        assertNull(event);
+        assertTrue(_queue.isEmpty());
+
+        //Now a2 is reported as ADDED.
+        _scanner.scan();
+        event = _queue.poll();
+        assertNotNull(event);
         assertEquals(_directory + "/a2", event._filename);
-        assertEquals(Notification.CHANGED, event._notification);
+        assertEquals(Notification.ADDED, event._notification);
         assertTrue(_queue.isEmpty());
     }
 
@@ -386,9 +410,9 @@ public class ScannerTest
         _scanner.scan();
         _scanner.scan();
 
-        // takes 2s to notice tsc0 and check that it is stable.  This syncs us with the scan
+        // takes 2 scans to notice tsc0 and check that it is stable.
         Event event = _queue.poll();
-        assertTrue(event != null);
+        assertNotNull(event);
         assertEquals(_directory + "/tsc0", event._filename);
         assertEquals(Notification.ADDED, event._notification);
 
@@ -404,7 +428,7 @@ public class ScannerTest
             // Not stable yet so no notification.
             _scanner.scan();
             event = _queue.poll();
-            assertTrue(event == null);
+            assertNull(event);
 
             // Modify size only
             out.write('x');
@@ -414,12 +438,12 @@ public class ScannerTest
             // Still not stable yet so no notification.
             _scanner.scan();
             event = _queue.poll();
-            assertTrue(event == null);
+            assertNull(event);
 
             // now stable so finally see the ADDED
             _scanner.scan();
             event = _queue.poll();
-            assertTrue(event != null);
+            assertNotNull(event);
             assertEquals(_directory + "/st", event._filename);
             assertEquals(Notification.ADDED, event._notification);
 
@@ -431,18 +455,18 @@ public class ScannerTest
             // Still not stable yet so no notification.
             _scanner.scan();
             event = _queue.poll();
-            assertTrue(event == null);
+            assertNull(event);
 
             // now stable so finally see the ADDED
             _scanner.scan();
             event = _queue.poll();
-            assertTrue(event != null);
+            assertNotNull(event);
             assertEquals(_directory + "/st", event._filename);
             assertEquals(Notification.CHANGED, event._notification);
         }
     }
 
-    private void delete(String string) throws IOException
+    private void delete(String string)
     {
         File file = new File(_directory, string);
         if (file.exists())
