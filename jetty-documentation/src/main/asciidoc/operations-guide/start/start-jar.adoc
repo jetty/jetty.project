@@ -21,16 +21,30 @@
 
 TODO: review in light of Jetty 10
 
-The most basic way of starting the Jetty standalone server is to execute the `start.jar`, which is a bootstrap for starting Jetty with the configuration you want.
+The most basic way of starting the Jetty standalone server is to execute the `start.jar` from a base directory containing
+the configuration of jetty:
 
 ----
-[jetty-home-{VERSION}]$ java -jar start.jar
-2013-09-23 11:27:06.654:INFO:oejs.Server:main: jetty-{VERSION}
+[] mkdir /var/jetty-base
+[] cd /var/jetty-base
+[] java -jar $JETTY_HOME/start.jar
+ERROR : No enabled jetty modules found!
 ...
 ----
 
-Jetty is a highly modularized web server container.
-Very little is mandatory and required, and most components are optional; you enable or disable them according to the needs of your environment.
+Jetty is a highly modularized web server container. Very little is mandatory and required, and most components are optional; you enable or disable them according to the needs of your environment. You use start.jar to configure the modules:
+
+----
+[] java -jar $JETTY_HOME/start.jar --add-module=http
+...
+INFO  : http            initialized in ${jetty.base}/start.d/http.ini
+...
+
+[] java -jar $JETTY_HOME/start.jar
+2020-12-02 09:31:45.563:INFO :oejs.Server:main: jetty-10.0.0; built: 2020-11-30T14:38:10.953Z; git: cac070fdb134df192252e99653d99d7c3fb91b87; jvm 15.0.1+9
+2020-12-02 09:31:45.601:INFO :oejs.AbstractConnector:main: Started ServerConnector@3eb7fc54{HTTP/1.1, (http/1.1)}{0.0.0.0:8080}
+2020-12-02 09:31:45.615:INFO :oejs.Server:main: Started Server@55a561cf{STARTING}[10.0.0,sto=5000] @760ms
+----
 
 At its most basic, you configure Jetty from two elements:
 
