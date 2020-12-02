@@ -21,63 +21,31 @@ package org.eclipse.jetty.websocket.core;
 import java.io.IOException;
 import java.util.List;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 
-public class TestWebSocketNegotiator implements WebSocketNegotiator
+public class TestWebSocketNegotiator extends WebSocketNegotiator.AbstractNegotiator
 {
-    final WebSocketComponents components;
     private final FrameHandler frameHandler;
 
     public TestWebSocketNegotiator(FrameHandler frameHandler)
     {
-        this (frameHandler, new WebSocketComponents());
+        this(frameHandler, null);
     }
 
-    public TestWebSocketNegotiator(FrameHandler frameHandler, WebSocketComponents components)
+    public TestWebSocketNegotiator(FrameHandler frameHandler, Configuration.Customizer customizer)
     {
-        this.components = components;
+        super(customizer);
         this.frameHandler = frameHandler;
     }
 
     @Override
-    public FrameHandler negotiate(Negotiation negotiation) throws IOException
+    public FrameHandler negotiate(WebSocketNegotiation negotiation) throws IOException
     {
         List<String> offeredSubprotocols = negotiation.getOfferedSubprotocols();
         if (!offeredSubprotocols.isEmpty())
             negotiation.setSubprotocol(offeredSubprotocols.get(0));
 
         return frameHandler;
-    }
-
-    @Override
-    public void customize(Configuration configurable)
-    {
-    }
-
-    @Override
-    public WebSocketExtensionRegistry getExtensionRegistry()
-    {
-        return components.getExtensionRegistry();
-    }
-
-    @Override
-    public DecoratedObjectFactory getObjectFactory()
-    {
-        return components.getObjectFactory();
-    }
-
-    @Override
-    public ByteBufferPool getByteBufferPool()
-    {
-        return components.getBufferPool();
-    }
-
-    @Override
-    public WebSocketComponents getWebSocketComponents()
-    {
-        return components;
     }
 }

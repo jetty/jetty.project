@@ -35,7 +35,7 @@ import org.eclipse.jetty.websocket.core.TestFrameHandler;
 import org.eclipse.jetty.websocket.core.TestWebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.WebSocketServer;
 import org.eclipse.jetty.websocket.core.WebSocketTester;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,7 +58,7 @@ public class ValidationExtensionTest extends WebSocketTester
         WebSocketNegotiator negotiator = new TestWebSocketNegotiator(serverHandler)
         {
             @Override
-            public FrameHandler negotiate(Negotiation negotiation) throws IOException
+            public FrameHandler negotiate(WebSocketNegotiation negotiation) throws IOException
             {
                 List<ExtensionConfig> negotiatedExtensions = new ArrayList<>();
                 negotiatedExtensions.add(ExtensionConfig.parse(

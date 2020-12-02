@@ -35,7 +35,7 @@ import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 import org.eclipse.jetty.websocket.javax.tests.CoreServer;
 import org.eclipse.jetty.websocket.javax.tests.DummyEndpoint;
 import org.eclipse.jetty.websocket.javax.tests.framehandlers.StaticText;
@@ -54,7 +54,7 @@ public class CookiesTest
 {
     private CoreServer server;
 
-    protected void startServer(Function<Negotiation, FrameHandler> negotiationFunction) throws Exception
+    protected void startServer(Function<WebSocketNegotiation, FrameHandler> negotiationFunction) throws Exception
     {
         server = new CoreServer(negotiationFunction);
         server.start();

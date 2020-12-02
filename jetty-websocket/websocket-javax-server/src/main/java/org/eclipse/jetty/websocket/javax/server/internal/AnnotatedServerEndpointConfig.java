@@ -120,9 +120,9 @@ public class AnnotatedServerEndpointConfig extends ServerEndpointConfigWrapper
             // Instantiate the provided configurator
             try
             {
-                return anno.configurator().newInstance();
+                return anno.configurator().getConstructor().newInstance();
             }
-            catch (InstantiationException | IllegalAccessException e)
+            catch (Exception e)
             {
                 StringBuilder err = new StringBuilder();
                 err.append("Unable to instantiate ServerEndpoint.configurator() of ");
