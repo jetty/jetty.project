@@ -52,6 +52,8 @@ import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.client.internal.HttpUpgraderOverHTTP;
+import org.eclipse.jetty.websocket.core.client.internal.HttpUpgraderOverHTTP2;
 import org.eclipse.jetty.websocket.core.exception.UpgradeException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
@@ -281,7 +283,7 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
 
     public abstract FrameHandler getFrameHandler();
 
-    void requestComplete()
+    public void requestComplete()
     {
         // Add extensions header filtering out internal extensions and internal parameters.
         String extensionString = requestedExtensions.stream()

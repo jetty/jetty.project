@@ -25,9 +25,9 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 
-public class RFC8441Negotiation extends Negotiation
+public class RFC8441Negotiation extends WebSocketNegotiation
 {
     public RFC8441Negotiation(Request baseRequest, HttpServletRequest request, HttpServletResponse response, WebSocketComponents components) throws BadMessageException
     {

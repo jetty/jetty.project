@@ -22,7 +22,10 @@ import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.client.HttpRequest;
+import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Server;
@@ -30,11 +33,14 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.JettyUpgradeListener;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -109,5 +115,42 @@ public class JettyWebSocketNegotiationTest
             assertThat(t.getMessage(), containsString("Failed to upgrade to websocket:"));
             assertThat(t.getMessage(), containsString("500 Server Error"));
         }
+    }
+
+    @Disabled("Work in progress; ServerUpgradeResponse in websocket-core throws NPEs")
+    @Test
+    public void testManualNegotiationInCreator() throws Exception
+    {
+        JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(contextHandler.getServletContext());
+        container.addMapping("/", (req, resp) ->
+        {
+            long matchedExts = req.getExtensions().stream()
+                .filter(ec -> "permessage-deflate".equals(ec.getName()))
+                .filter(ec -> ec.getParameters().containsKey("client_no_context_takeover"))
+                .count();
+            assertThat(matchedExts, Matchers.is(1L));
+
+            // Manually drop the param so it is not negotiated in the extension stack.
+            resp.setHeader("Sec-WebSocket-Extensions", "permessage-deflate");
+            return new EchoSocket();
+        });
+
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/filterPath");
+        EventSocket socket = new EventSocket();
+        AtomicReference<HttpResponse> responseReference = new AtomicReference<>();
+        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
+        upgradeRequest.addExtensions("permessage-deflate;client_no_context_takeover");
+        JettyUpgradeListener upgradeListener = new JettyUpgradeListener()
+        {
+            @Override
+            public void onHandshakeResponse(HttpRequest request, HttpResponse response)
+            {
+                responseReference.set(response);
+            }
+        };
+
+        client.connect(socket, uri, upgradeRequest, upgradeListener).get(5, TimeUnit.SECONDS);
+        HttpResponse httpResponse = responseReference.get();
+        System.err.println(httpResponse.getHeaders());
     }
 }

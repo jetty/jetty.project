@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
-import org.eclipse.jetty.websocket.core.MessageHandler;
+import org.eclipse.jetty.websocket.core.internal.MessageHandler;
 
 public class FrameHandlerTracker extends MessageHandler
 {

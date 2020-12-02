@@ -37,10 +37,10 @@ import org.eclipse.jetty.servlet.listener.ContainerInitializer;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.javax.server.internal.JavaxWebSocketServerContainer;
-import org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter;
-import org.eclipse.jetty.websocket.util.server.internal.WebSocketMappings;
+import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -153,7 +153,7 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
         {
             WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(context.getServer(), context.getServletContext());
             FilterHolder filterHolder = WebSocketUpgradeFilter.ensureFilter(context.getServletContext());
-            WebSocketMappings mapping = WebSocketMappings.ensureMapping(context.getServletContext());
+            WebSocketMappings mapping = WebSocketMappings.ensureMappings(context.getServletContext());
             serverContainer = JavaxWebSocketServerContainer.ensureContainer(context.getServletContext());
 
             if (LOG.isDebugEnabled())
