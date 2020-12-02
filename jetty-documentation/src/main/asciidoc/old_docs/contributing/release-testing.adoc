@@ -26,7 +26,7 @@ To test a Jetty release, complete the following steps for each release you want 
 [source, screen, subs="{sub-order}"]
 ....
 
- wget https://oss.sonatype.org/content/repositories/jetty-[reponumber]/org/eclipse/jetty/jetty-distribution/[jetty-version]/jetty-distribution-9.[jetty-minor-version].tar.gz
+ wget https://oss.sonatype.org/content/repositories/jetty-[reponumber]/org/eclipse/jetty/jetty-home/[jetty-version]/jetty-home-9.[jetty-minor-version].tar.gz
 
       
 ....
@@ -200,12 +200,12 @@ Thread Pool - Concurrent Threads max = 239 | Queue Size max = 1002 | Queue Laten
 
         
 ....
-7.  Deploy `cometd.war` to the `webapps` directory of the jetty-distribution tested above.
+7.  Deploy `cometd.war` to the `webapps` directory of the jetty-home tested above.
 +
 [source, screen, subs="{sub-order}"]
 ....
 
- cp cometd-demo/target/cometd-demo-[version].war [pathToJetty]/jetty-distribution-[jetty-version]/webapps/
+ cp cometd-demo/target/cometd-demo-[version].war [pathToJetty]/jetty-home-[jetty-version]/webapps/
  
         
 ....

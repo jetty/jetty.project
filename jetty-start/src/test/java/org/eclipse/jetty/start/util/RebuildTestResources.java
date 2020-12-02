@@ -34,7 +34,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
  * Utility class to rebuild the src/test/resources/dist-home from the active build tree.
  * <p>
  * Not really meant to be run with each build. Nor is it a good idea to attempt to do that (as this would introduce a dependency from jetty-start ->
- * jetty-distribution which is a circular dependency)
+ * jetty-home which is a circular dependency)
  */
 public class RebuildTestResources
 {
@@ -42,7 +42,7 @@ public class RebuildTestResources
 
     public static void main(String[] args)
     {
-        File realDistHome = MavenTestingUtils.getProjectDir("../jetty-distribution/target/distribution");
+        File realDistHome = MavenTestingUtils.getProjectDir("../jetty-home/target/jetty-home");
         File outputDir = MavenTestingUtils.getTestResourceDir("dist-home");
         try
         {

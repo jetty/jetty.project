@@ -34,7 +34,7 @@ To build, use:
   mvn clean install
 ```
 
-The Jetty distribution will be built in `jetty-distribution/target/distribution`.
+Eclipse Jetty will be built in `jetty-home/target/jetty-home`.
 
 The first build may take a longer than expected as Maven downloads all the dependencies.
 

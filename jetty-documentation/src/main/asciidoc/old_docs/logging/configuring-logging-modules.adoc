@@ -490,5 +490,5 @@ After enabling `console-capture`, the output is as follows, which displays the l
 ....
 [my-base]$ java -jar /path/to/jetty-home/start.jar
 151  [main] INFO  org.eclipse.jetty.util.log - Logging initialized @238ms to org.eclipse.jetty.util.log.Slf4jLog
-196  [main] INFO  org.eclipse.jetty.util.log - Console stderr/stdout captured to /installs/jetty-distribution/mybase/logs/2016_10_21.jetty.log
+196  [main] INFO  org.eclipse.jetty.util.log - Console stderr/stdout captured to /installs/my-jetty-base/logs/2016_10_21.jetty.log
 ....
