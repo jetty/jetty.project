@@ -349,11 +349,16 @@ public class Scanner extends AbstractLifeCycle
         if (p == null)
             throw new IllegalStateException("Null path");
 
-        File f = p.toFile();
-        if (!f.exists() || f.isDirectory())
+        if (!Files.exists(p) || Files.isDirectory(p))
             throw new IllegalStateException("Not file or doesn't exist: " + p);
-
-        _scannables.putIfAbsent(p, null);
+        try
+        {
+            _scannables.putIfAbsent(p.toRealPath(), new IncludeExcludeSet<>(PathMatcherSet.class));
+        }
+        catch (IOException e)
+        {
+            throw new IllegalStateException(e);
+        }
     }
 
     /**
@@ -370,15 +375,13 @@ public class Scanner extends AbstractLifeCycle
         if (p == null)
             throw new IllegalStateException("Null path");
 
-        File f = p.toFile();
-        if (!f.exists() || !f.isDirectory())
+        if (!Files.exists(p) || !Files.isDirectory(p))
             throw new IllegalStateException("Not directory or doesn't exist: " + p);
 
         try
         {
-            Path real = p.toRealPath();
             IncludeExcludeSet<PathMatcher, Path> includesExcludes = new IncludeExcludeSet<>(PathMatcherSet.class);
-            IncludeExcludeSet<PathMatcher, Path> prev = _scannables.putIfAbsent(real, includesExcludes);
+            IncludeExcludeSet<PathMatcher, Path> prev = _scannables.putIfAbsent(p.toRealPath(), includesExcludes);
             if (prev != null)
                 includesExcludes = prev;
             return includesExcludes;
