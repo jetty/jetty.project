@@ -63,7 +63,7 @@ public class Scanner extends AbstractLifeCycle
     public static final int DEFAULT_SCAN_DEPTH = 1;
     public static final int MAX_SCAN_DEPTH = Integer.MAX_VALUE;
     private static final Logger LOG = LoggerFactory.getLogger(Scanner.class);
-    private static final AtomicInteger __scannerId = new AtomicInteger();
+    private static final AtomicInteger SCANNER_IDS = new AtomicInteger();
 
     private int _scanInterval;
     private final AtomicInteger _scanCount = new AtomicInteger(0);
@@ -521,7 +521,7 @@ public class Scanner extends AbstractLifeCycle
         
         
         //Create the scheduler and start it
-        _scheduler = new ScheduledExecutorScheduler("Scanner-" + __scannerId.getAndIncrement(), true, 1);
+        _scheduler = new ScheduledExecutorScheduler("Scanner-" + SCANNER_IDS.getAndIncrement(), true, 1);
         _scheduler.start();
         
         //schedule the scan
