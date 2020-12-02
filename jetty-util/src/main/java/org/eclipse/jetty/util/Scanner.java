@@ -611,7 +611,36 @@ public class Scanner extends AbstractLifeCycle
 
         }, 0, TimeUnit.MILLISECONDS);  
     }
+    
+    /**
+     * Get the scanner to perform a scan cycle as soon as possible
+     * and call the Callback when the scan is finished or failed.
+     * 
+     * @param complete called when the scan cycle finishes or fails.
+     */
+    public void scan(Callback complete)
+    {
+        Scheduler s = _scheduler;
+        
+        if (!isRunning() || s == null)
+            complete.failed(new IllegalStateException("Scanner not running"));
 
+        s.schedule(() ->
+        {
+            try
+            {
+                scan();
+                complete.succeeded();
+            }
+            catch (Throwable t)
+            {
+                complete.failed(t);
+            }
+
+        }, 0, TimeUnit.MILLISECONDS);   
+    }
+    
+    
     /**
      * Perform a pass of the scanner and report changes
      */
