@@ -1,0 +1,110 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-websocket]]
+=== WebSocket
+
+WebSocket is a protocol for bidirectional communications initiated via HTTP/1.1 upgrade which provides basic message framing, layered over TCP.
+It is based on a low-level framing protocol that delivers messages in either UTF-8 TEXT or BINARY format.
+
+A single message in WebSocket can be of any size (the underlying framing however has a maximum size limit of 2^63 bytes).
+There can be an unlimited number of messages sent.
+Messages are sent sequentially, the base protocol does not support interleaved messages.
+
+A WebSocket connection goes through some basic state changes:
+
+.WebSocket connection states
+[width="50%",cols=",",options="header",]
+|=======================================================================
+|State |Description
+|CONNECTING |A HTTP Upgrade to WebSocket is in progress.
+|OPEN |The HTTP Upgrade succeeded and the socket is now open and ready to read / write.
+|CLOSING |A WebSocket Close Handshake has been started.
+|CLOSED |WebSocket is now closed, no more read/write possible.
+|=======================================================================
+
+When a WebSocket is closed, a link:{JDURL}/org/eclipse/jetty/websocket/api/StatusCode.html[status code] and short reason string is provided.
+
+[[og-ws-intro-provides]]
+==== What Jetty Provides
+
+Jetty provides an implementation of the following standards and specs.
+
+http://tools.ietf.org/html/rfc6455[RFC-6455] - The WebSocket Protocol::
++
+We support the version 13 of the released and final spec. +
+Jetty tests its WebSocket protocol implementation using the https://github.com/crossbario/autobahn-testsuite[autobahn testsuite].
+
+____
+[IMPORTANT]
+The early drafts of WebSocket were supported in Jetty 7 and Jetty 8, but this support has been removed in later versions of Jetty.
+This means that Jetty will no longer not support the old browsers that implemented the early drafts of WebSocket. (such as Safari 5.0 or Opera 12)
+____
+
+____
+[TIP]
+Want to know if the browser you are targeting supports WebSocket?
+Use http://caniuse.com/websockets[caniuse.com/websockets] to find out.
+____
+
+http://www.jcp.org/en/jsr/detail?id=356[JSR-356] - The Java WebSocket API (`javax.websocket`)::
++
+This is the official Java API for working with WebSockets.
+
+https://tools.ietf.org/html/rfc7692[RFC-7692] - WebSocket Per-Message Deflate Extension.::
++
+This is the replacement for perframe-compression, switching the compression to being based on the entire message, not the individual frames.
+
+https://tools.ietf.org/html/rfc8441[RFC-8441] - Bootstrapping WebSockets with HTTP/2::
++
+Allows a single stream of an HTTP/2 connection to be upgraded to WebSocket.
+This allows one TCP connection to be shared by both protocols and extends HTTP/2's more efficient use of the network to WebSockets.
+
+[[og-ws-jetty-api]]
+==== Jetty Native WebSocket API
+
+Jetty provides its own more powerful WebSocket API, with shared API interfaces for both server and client use of WebSockets.
+Here are the different APIs and libraries to implement your WebSockets using Jetty.
+
+Jetty WebSocket API::
+The basic common API for creating and working with WebSockets using Jetty.
+Jetty WebSocket Server API::
+Write WebSocket Server Endpoints for Jetty.
+Jetty WebSocket Client API::
+Connect to WebSocket servers with Jetty.
+
+[[og-ws-enabling-websocket]]
+==== Enabling WebSocket
+
+To use WebSockets on a Jetty server, you need to enable one of the websocket modules link:#enabling-modules[module].
+Add the `websocket` module to enable both Jetty and Javax WebSocket modules for deployed web applications.
+The `websocket-jetty` and `websocket-javax` modules can be used to only enable the specific API to use.
+
+To use the Jetty WebSocket Client API in a webapp, the required jars should be include in the WEB-INF/lib directory.
+Alternatively the `websocket-jetty-client` module can be enabled to allow a webapp to use provided WebSocket client dependencies from the server.
+
+Once this module is enabled for your Jetty base, it will apply to all webapps deployed to that base. If you want to be more selective about which webapps use Websocket, then you can:
+
+Disable Websocket for a particular webapp:::
+You can disable jsr-356 for a particular webapp by setting the link:#context_attributes[context attribute] `org.eclipse.jetty.websocket.javax` to `false`.
+This will mean that websockets are not available to your webapp, however deployment time scanning for websocket-related classes such as endpoints will still occur.
+This can be a significant impost if your webapp contains a lot of classes and/or jar files.
+Completely disable Websocket for a particular webapp:::
+To completely disable websockets and avoid all setup costs associated with it for a particular webapp, use the context attribute `org.eclipse.jetty.containerInitializerExclusionPattern`.
+This allows you to exclude the websocket ServletContainerInitializer that causes the scanning.
+For example the `org.eclipse.jetty.containerInitializerExclusionPattern` link:#context_attributes[context attribute] can be set to `org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer`.
