@@ -115,15 +115,19 @@ public class WebDescriptor extends Descriptor
                 final URL webapp30xsd = Loader.getResource("jakarta/servlet/resources/web-app_3_0.xsd");
                 final URL webapp31xsd = Loader.getResource("jakarta/servlet/resources/web-app_3_1.xsd");
                 final URL webapp40xsd = Loader.getResource("jakarta/servlet/resources/web-app_4_0.xsd");
-
+                final URL webapp50xsd = Loader.getResource("jakarta/servlet/resources/web-app_5_0.xsd");
+                
+                
                 final URL webcommon30xsd = Loader.getResource("jakarta/servlet/resources/web-common_3_0.xsd");
                 final URL webcommon31xsd = Loader.getResource("jakarta/servlet/resources/web-common_3_1.xsd");
                 final URL webcommon40xsd = Loader.getResource("jakarta/servlet/resources/web-common_4_0.xsd");
-
+                final URL webcommon50xsd = Loader.getResource("jakarta/servlet/resources/web-common_5_0.xsd");
+                
                 final URL webfragment30xsd = Loader.getResource("jakarta/servlet/resources/web-fragment_3_0.xsd");
                 final URL webfragment31xsd = Loader.getResource("jakarta/servlet/resources/web-fragment_3_1.xsd");
                 final URL webfragment40xsd = Loader.getResource("jakarta/servlet/resources/web-fragment_4_0.xsd");
-
+                final URL webfragment50xsd = Loader.getResource("jakarta/servlet/resources/web-fragment_5_0.xsd");
+                
                 final URL schemadtd = Loader.getResource("jakarta/servlet/resources/XMLSchema.dtd");
                 final URL xmlxsd = Loader.getResource("jakarta/servlet/resources/xml.xsd");
                 final URL webservice11xsd = Loader.getResource("jakarta/servlet/resources/j2ee_web_services_client_1_1.xsd");
@@ -136,7 +140,7 @@ public class WebDescriptor extends Descriptor
                 URL jsp21xsd = null;
                 URL jsp22xsd = null;
                 URL jsp23xsd = null;
-
+                URL jsp30xsd = null;
                 try
                 {
                     //try both jakarta/servlet/resources and jakarta/servlet/jsp/resources to load 
@@ -144,6 +148,7 @@ public class WebDescriptor extends Descriptor
                     jsp21xsd = Loader.getResource("jakarta/servlet/resources/jsp_2_1.xsd");
                     jsp22xsd = Loader.getResource("jakarta/servlet/resources/jsp_2_2.xsd");
                     jsp23xsd = Loader.getResource("jakarta/servlet/resources/jsp_2_3.xsd");
+                    jsp30xsd = Loader.getResource("jakarta/servlet/resources/jsp_3_0.xsd");
                 }
                 catch (Exception e)
                 {
@@ -159,6 +164,8 @@ public class WebDescriptor extends Descriptor
                         jsp22xsd = Loader.getResource("jakarta/servlet/jsp/resources/jsp_2_2.xsd");
                     if (jsp23xsd == null)
                         jsp23xsd = Loader.getResource("jakarta/servlet/jsp/resources/jsp_2_3.xsd");
+                    if (jsp30xsd == null)
+                        jsp30xsd = Loader.getResource("jakarta/servlet/jsp/resources/jsp_3_0.xsd");
                 }
 
                 redirectEntity("web-app_2_2.dtd", dtd22);
@@ -177,7 +184,9 @@ public class WebDescriptor extends Descriptor
                 redirectEntity("http://java.sun.com/xml/ns/javaee/jsp_2_2.xsd", jsp22xsd);
                 redirectEntity("jsp_2_3.xsd", jsp23xsd);
                 redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/jsp_2_3.xsd", jsp23xsd);
-
+                redirectEntity("jsp_3_0.xsd", jsp23xsd);
+                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/jsp_3_0.xsd", jsp30xsd);
+                
                 redirectEntity("j2ee_1_4.xsd", j2ee14xsd);
                 redirectEntity("http://java.sun.com/xml/ns/j2ee/j2ee_1_4.xsd", j2ee14xsd);
                 redirectEntity("http://java.sun.com/xml/ns/javaee/javaee_5.xsd", javaee5);
@@ -191,7 +200,9 @@ public class WebDescriptor extends Descriptor
                 redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-common_3_1.xsd", webcommon31xsd);
                 redirectEntity("web-common_4_0.xsd", webcommon40xsd);
                 redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-common_4_0.xsd", webcommon40xsd);
-
+                redirectEntity("web-common_5_0.xsd", webcommon40xsd);
+                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-common_5_0.xsd", webcommon50xsd);
+                
                 redirectEntity("web-app_2_4.xsd", webapp24xsd);
                 redirectEntity("http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd", webapp24xsd);
                 redirectEntity("web-app_2_5.xsd", webapp25xsd);
@@ -202,21 +213,28 @@ public class WebDescriptor extends Descriptor
                 redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd", webapp31xsd);
                 redirectEntity("web-app_4_0.xsd", webapp40xsd);
                 redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd", webapp40xsd);
-
-                // Handle linewrap hyphon error in PDF spec
+                redirectEntity("web-app_5_0.xsd", webapp50xsd);
+                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-app_5_0.xsd", webapp50xsd);
+                
+                // Handle linewrap hyphen error in PDF spec
                 redirectEntity("webapp_4_0.xsd", webapp40xsd);
                 redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/webapp_4_0.xsd", webapp40xsd);
-
+                redirectEntity("webapp_5_0.xsd", webapp50xsd);
+                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/webapp_5_0.xsd", webapp50xsd);
+                
                 // handle jakartaee coordinates
                 redirectEntity("http://xmlns.eclipse.org/xml/ns/jakartaee/web-app_4_0.xsd", webapp40xsd);
-
+                redirectEntity("http://xmlns.eclipse.org/xml/ns/jakartaee/web-app_5_0.xsd", webapp50xsd);
+                
                 redirectEntity("web-fragment_3_0.xsd", webfragment30xsd);
                 redirectEntity("http://java.sun.com/xml/ns/javaee/web-fragment_3_0.xsd", webfragment30xsd);
                 redirectEntity("web-fragment_3_1.xsd", webfragment31xsd);
                 redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-fragment_3_1.xsd", webfragment31xsd);
                 redirectEntity("web-fragment_4_0.xsd", webfragment40xsd);
                 redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-fragment_4_0.xsd", webfragment40xsd);
-
+                redirectEntity("web-fragment_5_0.xsd", webfragment50xsd);
+                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-fragment_5_0.xsd", webfragment50xsd);
+                
                 redirectEntity("xml.xsd", xmlxsd);
                 redirectEntity("http://www.w3.org/2001/xml.xsd", xmlxsd);
                 redirectEntity("datatypes.dtd", datatypesdtd);
