@@ -139,8 +139,6 @@ def mavenBuild(jdk, cmdline, mvnName, consoleParsers) {
         configFileProvider(
                 [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
           sh "mvn -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=/tmp/unixsocket"
-          //  +
-          //                     env.JENKINS_HOME
         }
       }
     }
