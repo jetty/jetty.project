@@ -154,9 +154,13 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         Map<String, String> webappAttr = new HashMap<>();
         int major = context.getServletContext().getEffectiveMajorVersion();
         int minor = context.getServletContext().getEffectiveMinorVersion();
-        webappAttr.put("xmlns", "http://xmlns.jcp.org/xml/ns/javaee");
+        String ns = "https://jakarta.ee/xml/ns/jakartaee";
+        if (major < 5)
+            ns = "http://xmlns.jcp.org/xml/ns/javaee";
+
+        webappAttr.put("xmlns", ns);
         webappAttr.put("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
-        webappAttr.put("xsi:schemaLocation", "http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_" + (major + "_" + minor) + ".xsd");
+        webappAttr.put("xsi:schemaLocation", ns + " " + ns + "/web-app_" + (major + "_" + minor) + ".xsd");
         webappAttr.put("metadata-complete", Boolean.toString(context.getMetaData().isMetaDataComplete()));
         webappAttr.put("version", major + "." + minor);
 
