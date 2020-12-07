@@ -103,7 +103,31 @@ public class Response implements HttpServletResponse
 
     private enum EncodingFrom
     {
-        NOT_SET, INFERRED, SET_LOCALE, SET_CONTENT_TYPE, SET_CHARACTER_ENCODING
+        /**
+         * Character encoding was not set, or the encoding was cleared with {@code setCharacterEncoding(null)}.
+         */
+        NOT_SET,
+
+        /**
+         * Character encoding was not explicitly set but has a default value defined by the {@code encoding.properties} file.
+         * @see MimeTypes#getInferredEncodings().
+         */
+        INFERRED,
+
+        /**
+         * The default character encoding of the locale was used after a call to {@link #setLocale(Locale)}.
+         */
+        SET_LOCALE,
+
+        /**
+         * The character encoding has been explicitly set using the Content-Type charset parameter with {@link #setContentType(String)}.
+         */
+        SET_CONTENT_TYPE,
+
+        /**
+         * The character encoding has been explicitly set using {@link #setCharacterEncoding(String)}.
+         */
+        SET_CHARACTER_ENCODING
     }
 
     private static final EnumSet<EncodingFrom> __localeOverride = EnumSet.of(EncodingFrom.NOT_SET, EncodingFrom.INFERRED, EncodingFrom.SET_LOCALE);
@@ -814,30 +838,30 @@ public class Response implements HttpServletResponse
 
         if (_outputType == OutputType.NONE)
         {
-            //first try explicit char encoding
+            // First try explicit char encoding.
             String encoding = _characterEncoding;
 
-            //try char set from mime type
+            // Try charset from mime type.
             if (encoding == null)
             {
                 if (_mimeType != null && _mimeType.isCharsetAssumed())
                     encoding = _mimeType.getCharsetString();
             }
 
-            //try char set assumed from content type
+            // Try charset assumed from content type.
             if (encoding == null)
             {
                 encoding = MimeTypes.getCharsetAssumedFromContentType(_contentType);
             }
             
-            //try char set inferred from content type
+            // Try char set inferred from content type.
             if (encoding == null)
             {
                 encoding = MimeTypes.getCharsetInferredFromContentType(_contentType);
                 setCharacterEncoding(encoding, EncodingFrom.INFERRED);
             }
             
-            //try any default char encoding for the context
+            // Try any default char encoding for the context.
             if (encoding == null)
             {
                 Context context = _channel.getRequest().getContext();
@@ -845,7 +869,7 @@ public class Response implements HttpServletResponse
                     encoding = context.getResponseCharacterEncoding();
             }
             
-            //fallback to last resort iso-8859-1
+            // Fallback to last resort iso-8859-1.
             if (encoding == null)
             {
                 encoding = StringUtil.__ISO_8859_1;
@@ -853,7 +877,6 @@ public class Response implements HttpServletResponse
             }
 
             Locale locale = getLocale();
-
             if (_writer != null && _writer.isFor(locale, encoding))
                 _writer.reopen();
             else
@@ -866,7 +889,7 @@ public class Response implements HttpServletResponse
                     _writer = new ResponseWriter(new EncodingHttpWriter(_out, encoding), locale, encoding);
             }
 
-            // Set the output type at the end, because setCharacterEncoding() checks for it
+            // Set the output type at the end, because setCharacterEncoding() checks for it.
             _outputType = OutputType.WRITER;
         }
         return _writer;
@@ -988,52 +1011,45 @@ public class Response implements HttpServletResponse
 
     private void setCharacterEncoding(String encoding, EncodingFrom from)
     {
-        if (!isMutable() || isWriting())
+        if (!isMutable() || isWriting() || isCommitted())
             return;
 
-        if (_outputType != OutputType.WRITER && !isCommitted())
+        if (encoding == null)
         {
-            if (encoding == null)
+            _encodingFrom = EncodingFrom.NOT_SET;
+            if (_characterEncoding != null)
             {
-                _encodingFrom = EncodingFrom.NOT_SET;
-
-                // Clear any encoding.
-                if (_characterEncoding != null)
-                {
-                    _characterEncoding = null;
-
-                    if (_mimeType != null)
-                    {
-                        _mimeType = _mimeType.getBaseType();
-                        _contentType = _mimeType.asString();
-                        _fields.put(_mimeType.getContentTypeField());
-                    }
-                    else if (_contentType != null)
-                    {
-                        _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType);
-                        _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
-                    }
-                }
-            }
-            else
-            {
-                // No, so just add this one to the mimetype
-                _encodingFrom = from;
-                _characterEncoding = HttpGenerator.__STRICT ? encoding : StringUtil.normalizeCharset(encoding);
+                _characterEncoding = null;
                 if (_mimeType != null)
                 {
-                    _contentType = _mimeType.getBaseType().asString() + ";charset=" + _characterEncoding;
-                    _mimeType = MimeTypes.CACHE.get(_contentType);
-                    if (_mimeType == null || HttpGenerator.__STRICT)
-                        _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
-                    else
-                        _fields.put(_mimeType.getContentTypeField());
+                    _mimeType = _mimeType.getBaseType();
+                    _contentType = _mimeType.asString();
+                    _fields.put(_mimeType.getContentTypeField());
                 }
                 else if (_contentType != null)
                 {
-                    _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType) + ";charset=" + _characterEncoding;
+                    _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType);
                     _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
                 }
+            }
+        }
+        else
+        {
+            _encodingFrom = from;
+            _characterEncoding = HttpGenerator.__STRICT ? encoding : StringUtil.normalizeCharset(encoding);
+            if (_mimeType != null)
+            {
+                _contentType = _mimeType.getBaseType().asString() + ";charset=" + _characterEncoding;
+                _mimeType = MimeTypes.CACHE.get(_contentType);
+                if (_mimeType == null || HttpGenerator.__STRICT)
+                    _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
+                else
+                    _fields.put(_mimeType.getContentTypeField());
+            }
+            else if (_contentType != null)
+            {
+                _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType) + ";charset=" + _characterEncoding;
+                _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
             }
         }
     }
@@ -1328,7 +1344,6 @@ public class Response implements HttpServletResponse
             return;
 
         String charset = _channel.getRequest().getContext().getContextHandler().getLocaleEncoding(locale);
-
         if (charset != null && charset.length() > 0 && __localeOverride.contains(_encodingFrom))
             setCharacterEncoding(charset, EncodingFrom.SET_LOCALE);
     }
