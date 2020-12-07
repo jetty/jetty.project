@@ -19,12 +19,15 @@
 package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * An immutable String lookup data structure.
@@ -32,6 +35,10 @@ import java.util.function.Supplier;
  */
 public interface Index<V>
 {
+    Set<Character> VISIBLE_ASCII_ALPHABET = Collections.unmodifiableSet(IntStream.range(0x20, 0x7f)
+        .mapToObj(i -> (char)i)
+        .collect(Collectors.toSet()));
+
     /**
      * Get an exact match from a String key
      *
@@ -223,6 +230,12 @@ public interface Index<V>
             {
                 alphabet = new HashSet<>();
                 alphabetString.chars().forEach(c -> alphabet.add((char)c));
+                return this;
+            }
+
+            public Builder<V> alphabet(Set<Character> alphabet)
+            {
+                this.alphabet = alphabet;
                 return this;
             }
 

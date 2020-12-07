@@ -316,25 +316,6 @@ public class TrieTest
         assertThat(requiredCapacity(Set.of("utf-8", "utf8", "utf-16", "utf16", "iso-8859-1", "iso_8859_1"), false, null), is(27));
     }
 
-    @Test
-    @SuppressWarnings("checkstyle:AvoidEscapedUnicodeCharacters")
-    public void testRequiredCapacityAlphabet()
-    {
-        Set<Character> alphabet = new HashSet<>();
-
-        requiredCapacity(Set.of("ABC", "abc"), true, alphabet);
-        assertThat(alphabet, containsInAnyOrder('a', 'b', 'c', 'A', 'B', 'C'));
-
-        alphabet.clear();
-        requiredCapacity(Set.of("ABCDEF", "abc"), false, alphabet);
-        assertThat(alphabet, containsInAnyOrder('a', 'b', 'c', 'd', 'e', 'f'));
-
-        alphabet.clear();
-        String difficult = "!\"%\n\r\u0000\u00a4\u10fb\ufffd";
-        requiredCapacity(Set.of("ABCDEF", "abc", difficult), false, alphabet);
-        assertThat(alphabet, containsInAnyOrder('a', 'b', 'c', 'd', 'e', 'f', '!','\"', '%', '\r', '\n', '\u00a4', '\u10fb', '\ufffd', '\u0000'));
-    }
-
     @ParameterizedTest
     @MethodSource("implementations")
     public void testEmptyKey(AbstractTrie<Integer> trie) throws Exception
@@ -369,5 +350,35 @@ public class TrieTest
     public void testNullValue(AbstractTrie<Integer> trie) throws Exception
     {
         assertThrows(IllegalArgumentException.class, () -> trie.put("null", null));
+    }
+
+    @Test
+    @SuppressWarnings("checkstyle:AvoidEscapedUnicodeCharacters")
+    public void testRequiredCapacityAlphabet()
+    {
+        Set<Character> alphabet = new HashSet<>();
+
+        assertThat(requiredCapacity(Set.of("ABC", "abc"), true, alphabet), is(6));
+        assertThat(alphabet, containsInAnyOrder('a', 'b', 'c', 'A', 'B', 'C'));
+
+        alphabet.clear();
+        assertThat(requiredCapacity(Set.of("ABCDEF", "abc"), false, alphabet), is(6));
+        assertThat(alphabet, containsInAnyOrder('a', 'b', 'c', 'd', 'e', 'f'));
+
+        alphabet.clear();
+        String difficult = "!\"%\n\r\u0000\u00a4\u10fb\ufffd";
+        assertThat(requiredCapacity(Set.of("ABCDEF", "abc", difficult), false, alphabet), is(15));
+        assertThat(alphabet, containsInAnyOrder('a', 'b', 'c', 'd', 'e', 'f', '!','\"', '%', '\r', '\n', '\u00a4', '\u10fb', '\ufffd', '\u0000'));
+    }
+
+    @Test
+    public void testArrayTrieCapacity()
+    {
+        ArrayTrie<String> trie = new ArrayTrie<>(Character.MAX_VALUE);
+        String huge = "X".repeat(Character.MAX_VALUE);
+        assertTrue(trie.put(huge, "wow"));
+        assertThat(trie.get(huge), is("wow"));
+
+        assertThrows(IllegalArgumentException.class, () -> new ArrayTrie<String>(Character.MAX_VALUE + 1));
     }
 }

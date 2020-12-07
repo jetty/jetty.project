@@ -50,6 +50,7 @@ import java.util.Set;
  */
 class ArrayTrie<V> extends AbstractTrie<V>
 {
+    public static int MAX_CAPACITY = Character.MAX_VALUE;
     /**
      * The Size of a Trie row is how many characters can be looked
      * up directly without going to a big index.  This is set at
@@ -63,9 +64,6 @@ class ArrayTrie<V> extends AbstractTrie<V>
      * The index lookup table, this maps a character as a byte
      * (ISO-8859-1 or UTF8) to an index within a Trie row
      */
-    // TODO if we expanded ROW_SIZE to 48 we could include 0-9, _ and a few other chars
-    // TODO Also We could have a case sensitive table with a larger row size, 58 without digits, 69 with digits and _
-    // TODO Also see idea bleow in put for making big index more space efficient
     private static final int X = Integer.MIN_VALUE;
     private static final int[] LOOKUP_INSENSITIVE =
         {
@@ -140,18 +138,20 @@ class ArrayTrie<V> extends AbstractTrie<V>
             return null;
 
         // TODO can we increase capacity by dividing by ROW_SIZE?
-        if ((maxCapacity * ROW_SIZE) > Character.MAX_VALUE)
+        if (maxCapacity > MAX_CAPACITY)
             return null;
 
         // check alphabet
-        int[] lookup = caseSensitive ? LOOKUP_SENSITIVE : LOOKUP_INSENSITIVE;
-        for (Character c : alphabet)
+        if (alphabet != Index.VISIBLE_ASCII_ALPHABET)
         {
-            if (c > 0x7F  || lookup[c & 0x7f] == Integer.MIN_VALUE)
-                return null;
+            int[] lookup = caseSensitive ? LOOKUP_SENSITIVE : LOOKUP_INSENSITIVE;
+            for (Character c : alphabet)
+            {
+                if (c > 0x7F || lookup[c & 0x7f] == Integer.MIN_VALUE)
+                    return null;
+            }
         }
 
-        // TODO it would be possible to do a frequency analysis on the contents and come up with a custom LOOKUP table!
         ArrayTrie<V> trie = new ArrayTrie<>(!caseSensitive, maxCapacity);
         if (contents != null && !trie.putAll(contents))
             return null;
@@ -166,15 +166,17 @@ class ArrayTrie<V> extends AbstractTrie<V>
      * and "bar", but a capacity of only 4 is required to
      * store "bar" and "bat".
      */
-    @SuppressWarnings("unchecked")
     ArrayTrie(int capacity)
     {
         this(true, capacity);
     }
 
+    @SuppressWarnings("unchecked")
     ArrayTrie(boolean caseInsensitive, int capacity)
     {
         super(caseInsensitive);
+        if (capacity > MAX_CAPACITY)
+            throw new IllegalArgumentException("Capacity " + capacity + " > " + MAX_CAPACITY);
         _lookup = caseInsensitive ? LOOKUP_INSENSITIVE : LOOKUP_SENSITIVE;
         capacity++;
         _value = (V[])new Object[capacity];
@@ -192,128 +194,117 @@ class ArrayTrie<V> extends AbstractTrie<V>
     }
 
     @Override
-    public boolean put(String s, V v)
+    public boolean put(String key, V value)
     {
-        if (v == null)
+        if (value == null)
             throw new IllegalArgumentException("Value cannot be null");
 
-        int t = 0;
-        int k;
-        int limit = s.length();
-        for (k = 0; k < limit; k++)
+        int row = 0;
+        int limit = key.length();
+        for (int i = 0; i < limit; i++)
         {
-            char c = s.charAt(k);
+            char c = key.charAt(i);
             if (c > 0x7f)
                 throw new IllegalArgumentException("non ascii character");
 
-            int index = _lookup[c & 0x7f];
-            if (index == Integer.MIN_VALUE)
+            int column = _lookup[c & 0x7f];
+            if (column == Integer.MIN_VALUE)
                 throw new IllegalArgumentException("unsupported character");
-            if (index >= 0)
+            if (column >= 0)
             {
-                int idx = t * ROW_SIZE + index;
+                int idx = row * ROW_SIZE + column;
                 if (idx >= _rowIndex.length)
                     return false;
-                t = _rowIndex[idx];
-                if (t == 0)
+                row = _rowIndex[idx];
+                if (row == 0)
                 {
                     if (++_rows >= _value.length)
                         return false;
-                    t = _rowIndex[idx] = _rows;
+                    row = _rowIndex[idx] = _rows;
                 }
             }
             else
             {
                 if (_bigIndex == null)
                     _bigIndex = new char[_value.length][];
-                if (t >= _bigIndex.length)
+                if (row >= _bigIndex.length)
                     return false;
-                char[] big = _bigIndex[t];
+                char[] big = _bigIndex[row];
                 if (big == null)
-                    big = _bigIndex[t] = new char[_lookup == LOOKUP_INSENSITIVE ? BIG_ROW : ROW_SIZE];
-                t = big[-index];
-                if (t == 0)
+                    big = _bigIndex[row] = new char[_lookup == LOOKUP_INSENSITIVE ? BIG_ROW : ROW_SIZE];
+                row = big[-column];
+                if (row == 0)
                 {
                     if (_rows == _value.length)
                         return false;
-                    t = big[-index] = ++_rows;
+                    row = big[-column] = ++_rows;
                 }
             }
         }
 
-        if (t >= _key.length)
+        if (row >= _key.length)
         {
             _rows = (char)_key.length;
             return false;
         }
 
-        _key[t] = v == null ? null : s;
-        _value[t] = v;
+        _key[row] = key;
+        _value[row] = value;
         return true;
+    }
+
+    private int lookup(int row, int c)
+    {
+        int column = _lookup[c];
+        if (column == Integer.MIN_VALUE)
+            return -1;
+        if (column >= 0)
+        {
+            int idx = row * ROW_SIZE + column;
+            row = _rowIndex[idx];
+        }
+        else
+        {
+            char[] big = _bigIndex == null ? null : _bigIndex[row];
+            if (big == null)
+                return -1;
+            row = big[-column];
+        }
+        if (row == 0)
+            return -1;
+        return row;
     }
 
     @Override
     public V get(String s, int offset, int len)
     {
-        int t = 0;
+        int row = 0;
         for (int i = 0; i < len; i++)
         {
             char c = s.charAt(offset + i);
             if (c > 0x7f)
                 return null;
-            int index = _lookup[c & 0x7f];
-            if (index == Integer.MIN_VALUE)
+            row = lookup(row, c & 0x7f);
+            if (row < 0)
                 return null;
-            if (index >= 0)
-            {
-                int idx = t * ROW_SIZE + index;
-                t = _rowIndex[idx];
-                if (t == 0)
-                    return null;
-            }
-            else
-            {
-                char[] big = _bigIndex == null ? null : _bigIndex[t];
-                if (big == null)
-                    return null;
-                t = big[-index];
-                if (t == 0)
-                    return null;
-            }
         }
-        return _value[t];
+        return _value[row];
     }
 
     @Override
     public V get(ByteBuffer b, int offset, int len)
     {
-        int t = 0;
+        int row = 0;
         for (int i = 0; i < len; i++)
         {
             byte c = b.get(offset + i);
             if (c < 0)
                 return null;
-            int index = _lookup[c & 0x7f];
-            if (index == Integer.MIN_VALUE)
+            row = lookup(row, c & 0x7f);
+            if (row < 0)
                 return null;
-            if (index >= 0)
-            {
-                int idx = t * ROW_SIZE + index;
-                t = _rowIndex[idx];
-                if (t == 0)
-                    return null;
-            }
-            else
-            {
-                char[] big = _bigIndex == null ? null : _bigIndex[t];
-                if (big == null)
-                    return null;
-                t = big[-index];
-                if (t == 0)
-                    return null;
-            }
         }
-        return _value[t];
+        return _value[row];
     }
 
     @Override
@@ -336,7 +327,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
         return getBest(0, s, offset, len);
     }
 
-    private V getBest(int t, String s, int offset, int len)
+    private V getBest(int row, String s, int offset, int len)
     {
         int pos = offset;
         for (int i = 0; i < len; i++)
@@ -344,84 +335,53 @@ class ArrayTrie<V> extends AbstractTrie<V>
             char c = s.charAt(pos++);
             if (c > 0x7f)
                 break;
-            int index = _lookup[c & 0x7f];
-            if (index == Integer.MIN_VALUE)
+
+            int next = lookup(row, c & 0x7f);
+            if (next < 0)
                 break;
-            if (index >= 0)
-            {
-                int idx = t * ROW_SIZE + index;
-                int nt = _rowIndex[idx];
-                if (nt == 0)
-                    break;
-                t = nt;
-            }
-            else
-            {
-                char[] big = _bigIndex == null ? null : _bigIndex[t];
-                if (big == null)
-                    return null;
-                int nt = big[-index];
-                if (nt == 0)
-                    break;
-                t = nt;
-            }
 
             // Is the next Trie is a match
-            if (_key[t] != null)
+            if (_key[next] != null)
             {
                 // Recurse so we can remember this possibility
-                V best = getBest(t, s, offset + i + 1, len - i - 1);
+                V best = getBest(next, s, offset + i + 1, len - i - 1);
                 if (best != null)
                     return best;
-                return _value[t];
+                return _value[next];
             }
+
+            row = next;
         }
-        return _value[t];
+        return _value[row];
     }
 
-    private V getBest(int t, byte[] b, int offset, int len)
+    private V getBest(int row, byte[] b, int offset, int len)
     {
         for (int i = 0; i < len; i++)
         {
             byte c = b[offset + i];
             if (c < 0)
                 break;
-            int index = _lookup[c & 0x7f];
-            if (index == Integer.MIN_VALUE)
+            int next = lookup(row, c & 0x7f);
+            if (next < 0)
                 break;
-            if (index >= 0)
-            {
-                int idx = t * ROW_SIZE + index;
-                int nt = _rowIndex[idx];
-                if (nt == 0)
-                    break;
-                t = nt;
-            }
-            else
-            {
-                char[] big = _bigIndex == null ? null : _bigIndex[t];
-                if (big == null)
-                    return null;
-                int nt = big[-index];
-                if (nt == 0)
-                    break;
-                t = nt;
-            }
 
             // Is the next Trie is a match
-            if (_key[t] != null)
+            if (_key[next] != null)
             {
                 // Recurse so we can remember this possibility
-                V best = getBest(t, b, offset + i + 1, len - i - 1);
+                V best = getBest(next, b, offset + i + 1, len - i - 1);
                 if (best != null)
                     return best;
-                break;
+                return _value[next];
             }
+
+            row = next;
         }
-        return _value[t];
+        return _value[row];
     }
 
-    private V getBest(int t, ByteBuffer b, int offset, int len)
+    private V getBest(int row, ByteBuffer b, int offset, int len)
     {
         int pos = b.position() + offset;
         for (int i = 0; i < len; i++)
@@ -429,39 +389,23 @@ class ArrayTrie<V> extends AbstractTrie<V>
             byte c = b.get(pos++);
             if (c < 0)
                 break;
-            int index = _lookup[c & 0x7f];
-            if (index == Integer.MIN_VALUE)
+            int next = lookup(row, c & 0x7f);
+            if (next < 0)
                 break;
-            if (index >= 0)
-            {
-                int idx = t * ROW_SIZE + index;
-                int nt = _rowIndex[idx];
-                if (nt == 0)
-                    break;
-                t = nt;
-            }
-            else
-            {
-                char[] big = _bigIndex == null ? null : _bigIndex[t];
-                if (big == null)
-                    return null;
-                int nt = big[-index];
-                if (nt == 0)
-                    break;
-                t = nt;
-            }
 
             // Is the next Trie is a match
-            if (_key[t] != null)
+            if (_key[next] != null)
             {
                 // Recurse so we can remember this possibility
-                V best = getBest(t, b, offset + i + 1, len - i - 1);
+                V best = getBest(next, b, offset + i + 1, len - i - 1);
                 if (best != null)
                     return best;
-                break;
+                return _value[next];
             }
+
+            row = next;
         }
-        return _value[t];
+        return _value[row];
     }
 
     @Override
