@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.maven.plugin;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,7 +42,10 @@ public class TestJettyEmbedder
     @Test
     public void testJettyEmbedderFromDefaults() throws Exception
     {
+        Path baseResource = MavenTestingUtils.getTargetTestingPath("embed-defaults");
+        Files.createDirectories(baseResource);
         MavenWebAppContext webApp = new MavenWebAppContext();
+        webApp.setBaseResource(Resource.newResource(baseResource));
         MavenServerConnector connector = new MavenServerConnector();
         connector.setPort(0);
         
@@ -59,7 +65,7 @@ public class TestJettyEmbedder
         {
             jetty.start();
             assertEquals("/embedder", webApp.getContextPath());
-            assertTrue(webApp.isStarted());
+            assertTrue(webApp.isAvailable());
             assertNotNull(jetty.getServer());
             assertTrue(jetty.getServer().isStarted());
             assertNotNull(jetty.getServer().getConnectors());
@@ -76,6 +82,9 @@ public class TestJettyEmbedder
         throws Exception
     {
         MavenWebAppContext webApp = new MavenWebAppContext();
+        Path baseResource = MavenTestingUtils.getTargetTestingPath("embed-test");
+        Files.createDirectories(baseResource);
+        webApp.setBaseResource(Resource.newResource(baseResource));
         Server server = new Server();
         Map<String,String> jettyProperties = new HashMap<>();
         jettyProperties.put("jetty.server.dumpAfterStart", "false");
@@ -103,7 +112,7 @@ public class TestJettyEmbedder
         {
             jetty.start();
             assertEquals("/embedder", webApp.getContextPath());
-            assertTrue(webApp.isStarted());
+            assertTrue(webApp.isAvailable());
             assertNotNull(jetty.getServer());
             assertTrue(jetty.getServer().isStarted());
             assertNotNull(jetty.getServer().getConnectors());
