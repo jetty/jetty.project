@@ -36,6 +36,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
@@ -354,5 +355,19 @@ public class TrieTest
             assertThat(trie.getBest(BufferUtil.toBuffer(KEYS[i] + "XYZ")), is(i));
             assertThat(trie.getBest(BufferUtil.toBuffer(KEYS[i] + "XYZ").array()), is(i));
         }
+    }
+
+    @ParameterizedTest
+    @MethodSource("implementations")
+    public void testNullKey(AbstractTrie<Integer> trie) throws Exception
+    {
+        assertThrows(NullPointerException.class, () -> trie.put(null, -1));
+    }
+
+    @ParameterizedTest
+    @MethodSource("implementations")
+    public void testNullValue(AbstractTrie<Integer> trie) throws Exception
+    {
+        assertThrows(IllegalArgumentException.class, () -> trie.put("null", null));
     }
 }

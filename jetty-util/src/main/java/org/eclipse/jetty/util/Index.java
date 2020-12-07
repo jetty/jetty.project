@@ -163,8 +163,8 @@ public interface Index<V>
         /**
          * Put an entry into the index.
          *
-         * @param s The key for the entry
-         * @param v The value of the entry
+         * @param s The key for the entry. Must be non null, but can be empty.
+         * @param v The value of the entry. Must be non null.
          * @return True if the index had capacity to add the field.
          */
         boolean put(String s, V v);

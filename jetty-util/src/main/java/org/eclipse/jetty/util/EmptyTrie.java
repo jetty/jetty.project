@@ -20,6 +20,7 @@ package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -47,6 +48,9 @@ class EmptyTrie<V> extends AbstractTrie<V>
     @Override
     public boolean put(String s, V v)
     {
+        Objects.requireNonNull(s);
+        if (v == null)
+            throw new IllegalArgumentException("Value cannot be null");
         return false;
     }
 

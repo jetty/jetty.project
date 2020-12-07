@@ -105,6 +105,8 @@ class TreeTrie<V> extends AbstractTrie<V>
     @Override
     public boolean put(String s, V v)
     {
+        if (v == null)
+            throw new IllegalArgumentException("Value cannot be null");
         TreeTrie<V> t = this;
         int limit = s.length();
         for (int k = 0; k < limit; k++)
