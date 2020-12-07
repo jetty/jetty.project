@@ -40,7 +40,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.javax.tests.WSURI;
 import org.eclipse.jetty.websocket.javax.tests.client.samples.CloseSocket;
-import org.eclipse.jetty.websocket.javax.tests.server.sockets.BasicOpenCloseSocket;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -32,6 +32,7 @@ import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.client.internal.HttpClientProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

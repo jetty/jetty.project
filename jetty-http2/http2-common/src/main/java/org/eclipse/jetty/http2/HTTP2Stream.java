@@ -248,7 +248,9 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         }
         copy.forEach(dataEntry -> dataEntry.callback.failed(x));
         DataEntry lastDataEntry = copy.isEmpty() ? null : copy.get(copy.size() - 1);
-        return lastDataEntry != null && lastDataEntry.frame.isEndStream();
+        if (lastDataEntry == null)
+            return isRemotelyClosed();
+        return lastDataEntry.frame.isEndStream();
     }
 
     public boolean isLocallyClosed()
@@ -470,10 +472,9 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
                 dataEntry = dataQueue.poll();
             }
             DataFrame frame = dataEntry.frame;
-            boolean closed = updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
-            notifyDataDemanded(this, frame, dataEntry.callback);
-            if (closed)
+            if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
                 session.removeStream(this);
+            notifyDataDemanded(this, frame, dataEntry.callback);
         }
     }
 

@@ -99,7 +99,7 @@ class WebSocketProxy
                         break;
 
                     default:
-                        failure = new IllegalStateException();
+                        failure = new IllegalStateException(state.name());
                         break;
                 }
             }
@@ -129,7 +129,7 @@ class WebSocketProxy
                         break;
 
                     default:
-                        failure = new IllegalStateException();
+                        failure = new IllegalStateException(state.name());
                         break;
                 }
             }
@@ -161,7 +161,7 @@ class WebSocketProxy
                         break;
 
                     default:
-                        failure = new IllegalStateException();
+                        failure = new IllegalStateException(state.name());
                         break;
                 }
             }
@@ -203,7 +203,7 @@ class WebSocketProxy
                         break;
 
                     default:
-                        failure = new IllegalStateException();
+                        failure = new IllegalStateException(state.name());
                         break;
                 }
             }
@@ -333,7 +333,7 @@ class WebSocketProxy
                         break;
 
                     default:
-                        failure = new IllegalStateException();
+                        failure = new IllegalStateException(state.name());
                         break;
                 }
             }
@@ -406,7 +406,7 @@ class WebSocketProxy
 
                     default:
                         state = State.FAILED;
-                        error = new IllegalStateException();
+                        error = new IllegalStateException(state.name());
                         failure = error;
                         break;
                 }
@@ -435,7 +435,7 @@ class WebSocketProxy
 
                     default:
                         state = State.FAILED;
-                        error = new IllegalStateException();
+                        error = new IllegalStateException(state.name());
                         failure = error;
                         break;
                 }
@@ -468,7 +468,7 @@ class WebSocketProxy
 
                     default:
                         state = State.FAILED;
-                        error = new IllegalStateException();
+                        error = new IllegalStateException(state.name());
                         failure = error;
                         break;
                 }
@@ -498,7 +498,7 @@ class WebSocketProxy
                         break;
 
                     default:
-                        failure = new IllegalStateException();
+                        failure = new IllegalStateException(state.name());
                         break;
                 }
             }
@@ -541,7 +541,7 @@ class WebSocketProxy
                         break;
 
                     default:
-                        failure = new IllegalStateException();
+                        failure = new IllegalStateException(state.name());
                         break;
                 }
             }
@@ -671,7 +671,7 @@ class WebSocketProxy
                         break;
 
                     default:
-                        failure = new IllegalStateException();
+                        failure = new IllegalStateException(state.name());
                         break;
                 }
             }

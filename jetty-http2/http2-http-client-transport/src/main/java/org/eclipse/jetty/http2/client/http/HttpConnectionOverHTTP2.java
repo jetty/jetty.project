@@ -46,7 +46,6 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.Sweeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,27 +114,21 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         MetaData.Request metaData = new MetaData.Request(request.getMethod(), HttpURI.from(request.getURI()), HttpVersion.HTTP_2, request.getHeaders());
         // We do not support upgrade requests with content, so endStream=true.
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
-        ((HTTP2Session)session).newUpgradeStream(frame, http2Channel.getStreamListener(), new Promise<>()
+        Stream stream = ((HTTP2Session)session).newUpgradeStream(frame, http2Channel.getStreamListener(), failure ->
         {
-            @Override
-            public void succeeded(Stream stream)
-            {
-                http2Channel.setStream(stream);
-                newExchange.requestComplete(null);
-                newExchange.terminateRequest();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Upgrade succeeded for {}", HttpConnectionOverHTTP2.this);
-            }
-
-            @Override
-            public void failed(Throwable failure)
-            {
-                newExchange.requestComplete(failure);
-                newExchange.terminateRequest();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Upgrade failed for {}", HttpConnectionOverHTTP2.this);
-            }
+            newExchange.requestComplete(failure);
+            newExchange.terminateRequest();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Upgrade failed for {}", HttpConnectionOverHTTP2.this);
         });
+        if (stream != null)
+        {
+            http2Channel.setStream(stream);
+            newExchange.requestComplete(null);
+            newExchange.terminateRequest();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Upgrade succeeded for {}", HttpConnectionOverHTTP2.this);
+        }
     }
 
     @Override

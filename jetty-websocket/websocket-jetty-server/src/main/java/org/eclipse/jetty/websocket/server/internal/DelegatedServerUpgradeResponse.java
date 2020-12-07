@@ -26,8 +26,8 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
-import org.eclipse.jetty.websocket.util.server.internal.ServerUpgradeResponse;
 
 public class DelegatedServerUpgradeResponse implements JettyServerUpgradeResponse
 {

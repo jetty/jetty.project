@@ -25,9 +25,9 @@ import javax.servlet.ServletContext;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.listener.ContainerInitializer;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
-import org.eclipse.jetty.websocket.util.server.internal.WebSocketMappings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

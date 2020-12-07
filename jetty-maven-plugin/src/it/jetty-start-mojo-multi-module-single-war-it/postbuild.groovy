@@ -21,7 +21,7 @@ assert buildLog.text.contains( 'Started Server' )
 
 assert buildLog.text.contains( '(1a) >> javax.servlet.ServletContextListener loaded from jar:' )
 
-assert buildLog.text.contains( '/org/eclipse/jetty/toolchain/jetty-servlet-api/4.0.4/jetty-servlet-api-4.0.4.jar!/javax/servlet/ServletContextListener.class << (1b)' )
+assert buildLog.text.contains( '/org/eclipse/jetty/toolchain/jetty-servlet-api/'+servletApiVersion+'/jetty-servlet-api-'+servletApiVersion+'.jar!/javax/servlet/ServletContextListener.class << (1b)' )
 
 assert buildLog.text.contains( '(2a) >> mca.common.CommonService loaded from file:' )
 assert buildLog.text.contains( 'common/target/classes/mca/common/CommonService.class << (2b)' )

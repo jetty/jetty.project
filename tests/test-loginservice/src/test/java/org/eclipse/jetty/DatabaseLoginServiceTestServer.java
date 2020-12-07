@@ -20,14 +20,11 @@ package org.eclipse.jetty;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URLDecoder;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -36,7 +33,6 @@ import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.derby.tools.ij;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.LoginService;
@@ -48,49 +44,61 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.security.Constraint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.MariaDBContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 
 /**
  * DatabaseLoginServiceTestServer
  */
 public class DatabaseLoginServiceTestServer
 {
-    protected static String __dbURL = "jdbc:derby:loginservice;create=true";
+    private static final Logger LOG = LoggerFactory.getLogger(DatabaseLoginServiceTestServer.class);
+    private static final Logger MARIADB_LOG = LoggerFactory.getLogger("org.eclipse.jetty.security.MariaDbLogs");
+    
+    static MariaDBContainer MARIA_DB;
+
+    protected static final String MARIA_DB_NAME = "lstest";
+    protected static final String MARIA_DB_USER = "beer";
+    protected static final String MARIA_DB_PASSWORD = "pacific_ale";
+    public static String MARIA_DB_DRIVER_CLASS;
+    public static String MARIA_DB_URL;
+    public static String MARIA_DB_FULL_URL;
+    
     protected Server _server;
     protected static String _protocol;
     protected static URI _baseUri;
     protected LoginService _loginService;
     protected String _resourceBase;
     protected TestHandler _handler;
-    private static File commonDerbySystemHome;
     protected static String _requestContent;
 
     protected static File _dbRoot;
 
     static
     {
-        _dbRoot = new File(MavenTestingUtils.getTargetTestingDir("loginservice-test"), "derby");
-        FS.ensureDirExists(_dbRoot);
-        System.setProperty("derby.system.home", _dbRoot.getAbsolutePath());
-    }
-
-    public static File getDbRoot()
-    {
-        return _dbRoot;
-    }
-
-    public static int runscript(File scriptFile) throws Exception
-    {
-        //System.err.println("Running script:"+scriptFile.getAbsolutePath());
-        try (FileInputStream fileStream = new FileInputStream(scriptFile))
+        try
         {
-            Loader.loadClass("org.apache.derby.jdbc.EmbeddedDriver").getDeclaredConstructor().newInstance();
-            Connection connection = DriverManager.getConnection(__dbURL, "", "");
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            return ij.runScript(connection, fileStream, "UTF-8", out, "UTF-8");
+            MARIA_DB =
+                new MariaDBContainer("mariadb:" + System.getProperty("mariadb.docker.version", "10.3.6"))
+                .withUsername(MARIA_DB_USER)
+                .withPassword(MARIA_DB_PASSWORD)
+                .withDatabaseName(MARIA_DB_NAME);
+            MARIA_DB = (MariaDBContainer)MARIA_DB.withInitScript("createdb.sql");
+            MARIA_DB = (MariaDBContainer)MARIA_DB.withLogConsumer(new Slf4jLogConsumer(MARIADB_LOG));
+            MARIA_DB.start();
+            String containerIpAddress =  MARIA_DB.getContainerIpAddress();
+            int mariadbPort = MARIA_DB.getMappedPort(3306);
+            MARIA_DB_URL = MARIA_DB.getJdbcUrl();
+            MARIA_DB_FULL_URL = MARIA_DB_URL + "?user=" + MARIA_DB_USER + "&password=" + MARIA_DB_PASSWORD;
+            MARIA_DB_DRIVER_CLASS = MARIA_DB.getDriverClassName();
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e.getMessage(), e);
         }
     }
 

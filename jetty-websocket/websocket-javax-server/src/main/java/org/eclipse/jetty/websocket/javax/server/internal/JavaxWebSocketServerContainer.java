@@ -37,13 +37,13 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
+import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
+import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.javax.server.config.ContainerDefaultConfigurator;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.util.ReflectUtils;
-import org.eclipse.jetty.websocket.util.server.internal.WebSocketMappings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,7 +98,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
 
             // Create the Jetty ServerContainer implementation
             container = new JavaxWebSocketServerContainer(
-                WebSocketMappings.ensureMapping(servletContext),
+                WebSocketMappings.ensureMappings(servletContext),
                 WebSocketServerComponents.getWebSocketComponents(servletContext),
                 coreClientSupplier);
             contextHandler.addManaged(container);

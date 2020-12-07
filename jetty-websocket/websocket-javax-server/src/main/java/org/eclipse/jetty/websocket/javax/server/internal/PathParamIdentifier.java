@@ -22,8 +22,8 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import javax.websocket.server.PathParam;
 
-import org.eclipse.jetty.websocket.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.util.InvokerUtils;
+import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
+import org.eclipse.jetty.websocket.core.internal.util.InvokerUtils;
 
 /**
  * Method argument identifier for {@link javax.websocket.server.PathParam} annotations.

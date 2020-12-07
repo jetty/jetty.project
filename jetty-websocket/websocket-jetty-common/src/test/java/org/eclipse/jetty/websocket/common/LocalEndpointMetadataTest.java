@@ -19,12 +19,12 @@
 package org.eclipse.jetty.websocket.common;
 
 import org.eclipse.jetty.websocket.api.exceptions.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.util.DuplicateAnnotationException;
-import org.eclipse.jetty.websocket.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.util.messages.ByteArrayMessageSink;
-import org.eclipse.jetty.websocket.util.messages.InputStreamMessageSink;
-import org.eclipse.jetty.websocket.util.messages.ReaderMessageSink;
-import org.eclipse.jetty.websocket.util.messages.StringMessageSink;
+import org.eclipse.jetty.websocket.core.exception.DuplicateAnnotationException;
+import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
+import org.eclipse.jetty.websocket.core.internal.messages.ByteArrayMessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.InputStreamMessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.ReaderMessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.StringMessageSink;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

@@ -29,6 +29,11 @@ public class EchoFrameHandler extends TestAsyncFrameHandler
         throwOnFrame = true;
     }
 
+    public EchoFrameHandler()
+    {
+        super(EchoFrameHandler.class.getName());
+    }
+
     public EchoFrameHandler(String name)
     {
         super(name);
@@ -48,7 +53,7 @@ public class EchoFrameHandler extends TestAsyncFrameHandler
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("[{}] echoDataFrame {}", name, frame);
-            Frame echo = Frame.copy(frame).setMask(null);
+            Frame echo = new Frame(frame.getOpCode(), frame.isFin(), frame.getPayload());
             coreSession.sendFrame(echo, callback, false);
         }
         else
