@@ -79,6 +79,14 @@ public interface Index<V>
     V getBest(String s, int offset, int len);
 
     /**
+     * Get the best match from key in a String.
+     *
+     * @param s The string
+     * @return The value or null if not found
+     */
+    V getBest(String s);
+
+    /**
      * Get the best match from key in a byte buffer.
      * The key is assumed to by ISO_8859_1 characters.
      *
@@ -90,12 +98,16 @@ public interface Index<V>
     V getBest(ByteBuffer b, int offset, int len);
 
     /**
-     * Get the best match from key in a String.
+     * Get the best match from key in a byte buffer.
+     * The key is assumed to by ISO_8859_1 characters.
      *
-     * @param s The string
+     * @param b The buffer
      * @return The value or null if not found
      */
-    V getBest(String s);
+    default V getBest(ByteBuffer b)
+    {
+        return getBest(b, 0, b.remaining());
+    }
 
     /**
      * Get the best match from key in a byte array.
@@ -107,6 +119,18 @@ public interface Index<V>
      * @return The value or null if not found
      */
     V getBest(byte[] b, int offset, int len);
+
+    /**
+     * Get the best match from key in a byte array.
+     * The key is assumed to by ISO_8859_1 characters.
+     *
+     * @param b The buffer
+     * @return The value or null if not found
+     */
+    default V getBest(byte[] b)
+    {
+        return getBest(b, 0, b.length);
+    }
 
     /**
      * Check if the index contains any entry.

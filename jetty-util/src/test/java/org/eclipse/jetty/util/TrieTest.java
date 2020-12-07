@@ -36,6 +36,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class TrieTest
@@ -50,8 +51,7 @@ public class TrieTest
         "Wobble",
         "foo-bar",
         "foo+bar",
-        "HELL4",
-        // TODO ""  Empty string appears to not work in all implementations
+        "HELL4"
     };
     private static final String[] X_KEYS = Arrays.stream(KEYS).map(s -> "%" + s + "%").toArray(String[]::new);
     private static final String[] NOT_KEYS =
@@ -68,26 +68,26 @@ public class TrieTest
 
     private static final String[] BEST_NOT_KEYS =
     {
-        null, // TODO "",
+        null,
         "hello",
         "helloHello",
         "wibble",
-        null, // TODO "",
+        null,
         "foo-bar",
         "HELL",
-        null, // TODO "",
+        null,
     };
 
     private static final String[] BEST_NOT_KEYS_LOWER =
     {
-        null, // TODO "",
+        null,
         "hello",
         "hello",
         "wibble",
-        null, // TODO "",
+        null,
         "foo-bar",
-        null, // TODO "",
-        null, // TODO "",
+        null,
+        null,
     };
 
     private static final String[] X_NOT_KEYS = Arrays.stream(NOT_KEYS).map(s -> "%" + s + "%%%%").toArray(String[]::new);
@@ -332,5 +332,27 @@ public class TrieTest
         String difficult = "!\"%\n\r\u0000\u00a4\u10fb\ufffd";
         requiredCapacity(Set.of("ABCDEF", "abc", difficult), false, alphabet);
         assertThat(alphabet, containsInAnyOrder('a', 'b', 'c', 'd', 'e', 'f', '!','\"', '%', '\r', '\n', '\u00a4', '\u10fb', '\ufffd', '\u0000'));
+    }
+
+    @ParameterizedTest
+    @MethodSource("implementations")
+    public void testEmptyKey(AbstractTrie<Integer> trie) throws Exception
+    {
+        assertTrue(trie.put("", -1));
+        assertThat(trie.get(""), is(-1));
+        assertThat(trie.getBest(""), is(-1));
+        assertThat(trie.getBest("anything"), is(-1));
+        assertThat(trie.getBest(BufferUtil.toBuffer("")), is(-1));
+        assertThat(trie.getBest(BufferUtil.toBuffer("anything")), is(-1));
+        assertThat(trie.getBest(BufferUtil.toBuffer("").array()), is(-1));
+        assertThat(trie.getBest(BufferUtil.toBuffer("anything").array()), is(-1));
+
+        for (int i = 0; i < KEYS.length; i++)
+        {
+            assertThat(trie.get(KEYS[i]), is(i));
+            assertThat(trie.getBest(KEYS[i] + "XYZ"), is(i));
+            assertThat(trie.getBest(BufferUtil.toBuffer(KEYS[i] + "XYZ")), is(i));
+            assertThat(trie.getBest(BufferUtil.toBuffer(KEYS[i] + "XYZ").array()), is(i));
+        }
     }
 }
