@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class IndexTest
 {
     @Test
-    public void testTrieSelection()
+    public void testImmutableTrieSelection()
     {
         // empty immutable index is always empty
         assertThat(new Index.Builder<String>().build(), instanceOf(EmptyTrie.class));
@@ -36,17 +36,30 @@ public class IndexTest
         assertThat(new Index.Builder<String>().caseSensitive(false).with("name", "value").build(), instanceOf(ArrayTrie.class));
         assertThat(new Index.Builder<String>().caseSensitive(true).with("name", "value").build(), instanceOf(ArrayTrie.class));
 
-        // index of ISO_8859 characters uses ArrayTernaryTrie
-        assertThat(new Index.Builder<String>().caseSensitive(false).with("næme", "value").build(), instanceOf(TreeTrie.class));
+        // index of non visible ASCII characters uses ArrayTernaryTrie
+        assertThat(new Index.Builder<String>().caseSensitive(false).with("name\r\n", "value").build(), instanceOf(TreeTrie.class));
         // TODO No case sensitive tree trie!
-        // TODO assertThat(new Index.Builder<String>().caseSensitive(true).with("næme", "value").build(), instanceOf(TreeTrie.class));
+        // TODO assertThat(new Index.Builder<String>().caseSensitive(true).with("name\r\n", "value").build(), instanceOf(TreeTrie.class));
+
+        // index of non ASCII characters uses ArrayTernaryTrie
+        assertThat(new Index.Builder<String>().caseSensitive(false).with("name\u0629!", "value").build(), instanceOf(TreeTrie.class));
+        // TODO No case sensitive tree trie!
+        // TODO assertThat(new Index.Builder<String>().caseSensitive(true).with("name\u0629!", "value").build(), instanceOf(TreeTrie.class));
 
         String hugekey = "x".repeat(Character.MAX_VALUE + 1);
         assertTrue(new Index.Builder<String>().caseSensitive(false).with(hugekey, "value").build() instanceof TreeTrie);
         // TODO No case sensitive tree trie!
         // TODO assertTrue(new Index.Builder<String>().caseSensitive(true).with(hugekey, "value").build() instanceof TreeTrie);
-
-        // empty mutable index is a growing ArrayTernaryTrie
+    }
+    @Test
+    public void testMutableTrieSelection()
+    {
         assertThat(new Index.Builder<String>().mutable().build(), instanceOf(ArrayTernaryTrie.Growing.class));
+        assertThat(new Index.Builder<String>().mutable().alphabet("visible").build(), instanceOf(ArrayTernaryTrie.Growing.class));
+        assertThat(new Index.Builder<String>().mutable().alphabet("invisible\r\n").build(), instanceOf(ArrayTernaryTrie.Growing.class));
+        assertThat(new Index.Builder<String>().mutable().alphabet("utf8\u0629").build(), instanceOf(ArrayTernaryTrie.Growing.class));
+
+        assertThat(new Index.Builder<String>().mutable().maxCapacity(256).build(), instanceOf(ArrayTrie.class));
+        assertThat(new Index.Builder<String>().mutable().maxCapacity(ArrayTrie.MAX_CAPACITY + 1).build(), instanceOf(TreeTrie.class));
     }
 }

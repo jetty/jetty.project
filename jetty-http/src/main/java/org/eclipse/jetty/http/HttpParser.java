@@ -114,7 +114,6 @@ public class HttpParser
         .with(new HttpField(HttpHeader.ACCEPT_ENCODING, "gzip"))
         .with(new HttpField(HttpHeader.ACCEPT_ENCODING, "gzip, deflate"))
         .with(new HttpField(HttpHeader.ACCEPT_ENCODING, "gzip, deflate, br"))
-        .with(new HttpField(HttpHeader.ACCEPT_ENCODING, "gzip,deflate,sdch"))
         .with(new HttpField(HttpHeader.ACCEPT_LANGUAGE, "en-US,enq=0.5"))
         .with(new HttpField(HttpHeader.ACCEPT_LANGUAGE, "en-GB,en-USq=0.8,enq=0.6"))
         .with(new HttpField(HttpHeader.ACCEPT_LANGUAGE, "en-AU,enq=0.9,it-ITq=0.8,itq=0.7,en-GBq=0.6,en-USq=0.5"))
