@@ -131,48 +131,55 @@ abstract class AbstractTrie<V> implements Index.Mutable<V>
     {
         int required = 0;
 
-        // Examine all the keys in the subtree
-        Character nodeChar = null;
-        for (int i = 0; i < length; i++)
+        while (true)
         {
-            String k = keys.get(offset + i);
+            // Examine all the keys in the subtree
+            Character nodeChar = null;
+            for (int i = 0; i < length; i++)
+            {
+                String k = keys.get(offset + i);
 
-            // If the key is shorter than our current index then ignore it
-            if (k.length() <= index)
-                continue;
+                // If the key is shorter than our current index then ignore it
+                if (k.length() <= index)
+                    continue;
 
-            // Get the character at the index of the current key
-            char c = k.charAt(index);
-            if (alphabet != null)
-                alphabet.add(c);
+                // Get the character at the index of the current key
+                char c = k.charAt(index);
+                if (alphabet != null)
+                    alphabet.add(c);
 
-            // If the character is the same as the current node, then we are
-            // still in the current node and need to continue searching for the
-            // next node or the end of the keys
-            if (nodeChar != null && c == nodeChar)
-                continue;
+                // If the character is the same as the current node, then we are
+                // still in the current node and need to continue searching for the
+                // next node or the end of the keys
+                if (nodeChar != null && c == nodeChar)
+                    continue;
 
-            // The character is a new node, so increase required by 1
-            required++;
+                // The character is a new node, so increase required by 1
+                required++;
 
-            // if we had a previous node, then add the required nodes for the subtree under it.
+                // if we had a previous node, then add the required nodes for the subtree under it.
+                if (nodeChar != null)
+                    required += AbstractTrie.requiredCapacity(keys, offset, i, index + 1, alphabet);
+
+                // set the char for the new node
+                nodeChar = c;
+
+                // reset the offset, length and index to continue iteration from the start of the new node
+                offset += i;
+                length -= i;
+                i = 0;
+            }
+
+            // If we finish the iteration with a nodeChar, then we must add the required nodes for the subtree under it.
             if (nodeChar != null)
-                required +=  AbstractTrie.requiredCapacity(keys, offset, i, index + 1, alphabet);
+            {
+                // instead of recursion here, we loop to avoid tail recursion
+                index++;
+                continue;
+            }
 
-            // set the char for the new node
-            nodeChar = c;
-
-            // reset the offset, length and index to continue iteration from the start of the new node
-            offset += i;
-            length -= i;
-            i = 0;
+            return required;
         }
-
-        // If we finish the iteration with a nodeChar, then we must add the required nodes for the subtree under it.
-        if (nodeChar != null)
-            required += AbstractTrie.requiredCapacity(keys, offset, length, index + 1, alphabet);
-
-        return required;
     }
 
     protected boolean putAll(Map<String, V> contents)

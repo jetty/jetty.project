@@ -122,11 +122,11 @@ class ArrayTrie<V> extends AbstractTrie<V>
 
     public static <V> ArrayTrie<V> from(int capacity, int maxCapacity, boolean caseSensitive, Set<Character> alphabet, Map<String, V> contents)
     {
-        // can't do case sensitive or infinite capacity
+        // can't do infinite capacity
         if (maxCapacity < 0)
             return null;
 
-        if (maxCapacity > MAX_CAPACITY)
+        if (maxCapacity > MAX_CAPACITY || capacity > MAX_CAPACITY)
             return null;
 
         // check alphabet
@@ -261,9 +261,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
                 return -1;
             row = big[-column];
         }
-        if (row == 0)
-            return -1;
-        return row;
+        return row == 0 ? -1 : row;
     }
 
     @Override
@@ -333,7 +331,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
             if (next < 0)
                 break;
 
-            // Is the next Trie is a match
+            // Is the row a match?
             Node<V> node = _node[row];
             if (node != null && node._key != null)
             {
@@ -361,7 +359,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
             if (next < 0)
                 break;
 
-            // Is the next Trie is a match
+            // Is the next row a match?
             Node<V> node = _node[row];
             if (node != null && node._key != null)
             {
@@ -390,7 +388,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
             if (next < 0)
                 break;
 
-            // Is the next Trie is a match
+            // Is the next row a match?
             Node<V> node = _node[row];
             if (node != null && node._key != null)
             {

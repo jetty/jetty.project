@@ -293,7 +293,8 @@ public interface Index<V>
          */
         public Builder()
         {
-            this(false, null);
+            this.caseSensitive = false;
+            this.contents = null;
         }
 
         Builder(boolean caseSensitive, Map<String, V> contents)

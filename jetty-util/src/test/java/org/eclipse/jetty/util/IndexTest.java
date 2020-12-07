@@ -20,46 +20,33 @@ package org.eclipse.jetty.util;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class IndexTest
 {
     @Test
-    public void belowMaxCapacityTest()
+    public void testTrieSelection()
     {
-        int size = 10_450;
+        // empty immutable index is always empty
+        assertThat(new Index.Builder<String>().build(), instanceOf(EmptyTrie.class));
 
-        Index.Builder<Integer> builder = new Index.Builder<>();
-        builder.caseSensitive(true);
-        for (int i = 0; i < size; i++)
-        {
-            builder.with("/test/group" + i, i);
-        }
-        Index<Integer> index = builder.build();
+        // index of ascii characters uses ArrayTrie
+        assertThat(new Index.Builder<String>().caseSensitive(false).with("name", "value").build(), instanceOf(ArrayTrie.class));
+        assertThat(new Index.Builder<String>().caseSensitive(true).with("name", "value").build(), instanceOf(ArrayTrie.class));
 
-        for (int i = 0; i < size; i++)
-        {
-            Integer integer = index.get("/test/group" + i);
-            if (integer == null)
-                fail("missing entry for '/test/group" + i + "'");
-            else if (integer != i)
-                fail("incorrect value for '/test/group" + i + "' (" + integer + ")");
-        }
-    }
+        // index of ISO_8859 characters uses ArrayTernaryTrie
+        assertThat(new Index.Builder<String>().caseSensitive(false).with("næme", "value").build(), instanceOf(TreeTrie.class));
+        // TODO No case sensitive tree trie!
+        // TODO assertThat(new Index.Builder<String>().caseSensitive(true).with("næme", "value").build(), instanceOf(TreeTrie.class));
 
-    @Test
-    public void overMaxCapacityTest()
-    {
-        int size = 11_000;
+        String hugekey = "x".repeat(Character.MAX_VALUE + 1);
+        assertTrue(new Index.Builder<String>().caseSensitive(false).with(hugekey, "value").build() instanceof TreeTrie);
+        // TODO No case sensitive tree trie!
+        // TODO assertTrue(new Index.Builder<String>().caseSensitive(true).with(hugekey, "value").build() instanceof TreeTrie);
 
-        Index.Builder<Integer> builder = new Index.Builder<>();
-        builder.caseSensitive(true);
-        for (int i = 0; i < size; i++)
-        {
-            builder.with("/test/group" + i, i);
-        }
-
-        assertThrows(IllegalArgumentException.class, builder::build);
+        // empty mutable index is a growing ArrayTernaryTrie
+        assertThat(new Index.Builder<String>().mutable().build(), instanceOf(ArrayTernaryTrie.Growing.class));
     }
 }

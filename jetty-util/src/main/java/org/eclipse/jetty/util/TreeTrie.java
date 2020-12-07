@@ -389,10 +389,12 @@ class TreeTrie<V> extends AbstractTrie<V>
             for (int i = 0; i < INDEX; i++)
             {
                 if (t._nextIndex[i] != null)
+                    // TODO need to tail iterate to avoid stack overflow on long keys
                     toString(out, t._nextIndex[i]);
             }
             for (int i = t._nextOther.size(); i-- > 0; )
             {
+                // TODO need to tail iterate to avoid stack overflow on long keys
                 toString(out, t._nextOther.get(i));
             }
         }

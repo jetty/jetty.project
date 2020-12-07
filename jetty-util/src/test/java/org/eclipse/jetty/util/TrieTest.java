@@ -316,6 +316,15 @@ public class TrieTest
         assertThat(requiredCapacity(Set.of("utf-8", "utf8", "utf-16", "utf16", "iso-8859-1", "iso_8859_1"), false, null), is(27));
     }
 
+    @Test
+    public void testLargeRequiredCapacity()
+    {
+        String x = "x".repeat(Character.MAX_VALUE / 2);
+        String y = "y".repeat(Character.MAX_VALUE / 2);
+        String z = "z".repeat(Character.MAX_VALUE / 2);
+        assertThat(requiredCapacity(Set.of(x, y, z), true, null), is(3 * (Character.MAX_VALUE / 2)));
+    }
+
     @ParameterizedTest
     @MethodSource("implementations")
     public void testEmptyKey(AbstractTrie<Integer> trie) throws Exception

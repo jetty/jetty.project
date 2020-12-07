@@ -103,7 +103,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
 
     public static <V> AbstractTrie<V> from(int capacity, int maxCapacity, boolean caseSensitive, Set<Character> alphabet, Map<String, V> contents)
     {
-        if (capacity > MAX_CAPACITY)
+        if (capacity > MAX_CAPACITY || maxCapacity > MAX_CAPACITY)
             return null;
 
         AbstractTrie<V> trie = maxCapacity < 0
