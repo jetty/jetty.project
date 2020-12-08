@@ -43,6 +43,7 @@ import java.util.Set;
  *
  * @param <V> the entry type
  */
+@Deprecated
 class TreeTrie<V> extends AbstractTrie<V>
 {
     // TODO see comments in ArrayTrie for ideas about better space efficiency and

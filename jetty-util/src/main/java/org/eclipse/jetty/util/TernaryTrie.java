@@ -149,16 +149,25 @@ class TernaryTrie<V> extends AbstractTrie<V>
     /**
      * The number of rows allocated
      */
+    private int _maxCapacity;
+    private int _growBy;
     private final Table<V> _root;
     private final List<Table<V>> _tables = new ArrayList<>();
     private Table<V> _tail;
+    private int _nodes;
 
     public static <V> AbstractTrie<V> from(int capacity, int maxCapacity, boolean caseSensitive, Set<Character> alphabet, Map<String, V> contents)
     {
-        if (capacity > MAX_CAPACITY || maxCapacity < 0)
-            return null;
+        if (capacity > MAX_CAPACITY)
+            capacity = MAX_CAPACITY;
 
-        AbstractTrie<V> trie = new TernaryTrie<V>(!caseSensitive, Math.max(capacity, maxCapacity));
+        AbstractTrie<V> trie;
+        if (maxCapacity <= 0)
+            trie = new TernaryTrie<V>(!caseSensitive, capacity, Math.max(capacity, 256), -1);
+        else if (capacity < maxCapacity)
+            trie = new TernaryTrie<V>(!caseSensitive, capacity, Math.min(256, maxCapacity - capacity), maxCapacity);
+        else
+            trie = new TernaryTrie<V>(!caseSensitive, capacity, 0, maxCapacity);
 
         if (contents != null && !trie.putAll(contents))
             return null;
@@ -175,16 +184,21 @@ class TernaryTrie<V> extends AbstractTrie<V>
      * For example, a capacity of 6 nodes is required to store keys "foo"
      * and "bar", but a capacity of only 4 is required to
      * store "bar" and "bat".
+     * @param growBy The size to grow the try by, or 0 for non growing Trie
+     * @param maxCapacity The maximum capacity the Trie can grow to, or &lt;= 0 for no limit
+     *
      */
     @SuppressWarnings("unchecked")
-    TernaryTrie(boolean insensitive, int capacity)
+    TernaryTrie(boolean insensitive, int capacity, int growBy, int maxCapacity)
     {
         super(insensitive);
         if (capacity > MAX_CAPACITY)
             throw new IllegalArgumentException("ArrayTernaryTrie maximum capacity overflow (" + capacity + " > " + MAX_CAPACITY + ")");
-        _root = new Table<V>(capacity);
+        _root = new Table<V>(capacity + 1);
         _tail = _root;
         _tables.add(_root);
+        _growBy = growBy;
+        _maxCapacity = _growBy > 0 ? maxCapacity : (capacity + 1);
     }
 
     @Override
@@ -194,6 +208,7 @@ class TernaryTrie<V> extends AbstractTrie<V>
         _tables.clear();
         _tables.add(_root);
         _tail = _root;
+        _nodes = 0;
     }
 
     @Override
@@ -224,7 +239,10 @@ class TernaryTrie<V> extends AbstractTrie<V>
                 {
                     nc = table._tree[idx] = c;
                     if (row == table._rows)
+                    {
                         table._rows++;
+                        _nodes++;
+                    }
                 }
 
                 Node<V> node = table._nodes[row];
@@ -261,17 +279,22 @@ class TernaryTrie<V> extends AbstractTrie<V>
                     node._next[branch - 1] = _tail;
                     table = _tail;
                 }
-                else
+                else if (_growBy > 0 && (_maxCapacity <= 0 || _nodes < _maxCapacity))
                 {
                     // point to a new row in a new table;
                     if (node == null)
                         node = table._nodes[row] = new Node<V>();
                     if (node._next == null)
                         node._next = new Table[3];
-                    table = _tail = new Table<>(table._nodes.length);
+                    int growBy = _maxCapacity < 0 ? _growBy : Math.min(_growBy, _maxCapacity - _nodes);
+                    table = _tail = new Table<>(growBy);
                     _tables.add(table);
                     row = 0;
                     node._next[branch - 1] = table;
+                }
+                else
+                {
+                    return false;
                 }
 
                 if (diff == 0)
@@ -280,7 +303,10 @@ class TernaryTrie<V> extends AbstractTrie<V>
         }
 
         if (row == table._rows)
+        {
             table._rows++;
+            _nodes++;
+        }
 
         // Put the key and value
         Node<V> node = table._nodes[row];
@@ -583,16 +609,14 @@ class TernaryTrie<V> extends AbstractTrie<V>
     @Override
     public String toString()
     {
-        StringBuilder buf = new StringBuilder();
-        buf.append("TT@").append(Integer.toHexString(hashCode())).append('{');
-        buf.append("ci=").append(isCaseInsensitive()).append(';');
-        buf.append(_tables.stream().flatMap(t -> Arrays.stream(t._nodes))
-            .filter(Objects::nonNull)
-            .filter(n -> n._key != null)
-            .map(Node::toString)
-            .collect(Collectors.joining(",")));
-        buf.append('}');
-        return buf.toString();
+        return "TT@" + Integer.toHexString(hashCode()) + '{' +
+            "ci=" + isCaseInsensitive() + ';' +
+            _tables.stream().flatMap(t -> Arrays.stream(t._nodes))
+                .filter(Objects::nonNull)
+                .filter(n -> n._key != null)
+                .map(Node::toString)
+                .collect(Collectors.joining(",")) +
+            '}';
     }
 
     @Override
@@ -657,7 +681,7 @@ class TernaryTrie<V> extends AbstractTrie<V>
 
     public static void main(String... arg)
     {
-        TernaryTrie<String> trie = new TernaryTrie<>(false, 8);
+        TernaryTrie<String> trie = new TernaryTrie<>(false, 8, 4, 200);
         trie.put("hi", "hi");
         trie.put("hip", "hip");
         trie.put("hell", "hell");

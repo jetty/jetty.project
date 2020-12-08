@@ -200,6 +200,9 @@ public interface Index<V>
          */
         class Builder<V> extends Index.Builder<V>
         {
+            static Set<Character> ISO_8859_ALPHABET = Collections.unmodifiableSet(IntStream.range(0x01, 0x80)
+                .mapToObj(i -> (char)i)
+                .collect(Collectors.toSet()));
             static Set<Character> VISIBLE_ASCII_ALPHABET = Collections.unmodifiableSet(IntStream.range(0x20, 0x7f)
                 .mapToObj(i -> (char)i)
                 .collect(Collectors.toSet()));
@@ -249,11 +252,7 @@ public interface Index<V>
                     return EmptyTrie.instance(caseSensitive);
 
                 if (alphabet == null)
-                {
-                    if (contents != null)
-                        throw new IllegalStateException("Cannot create a mutable index without alphabet or some contents");
-                    alphabet = new HashSet<>();
-                }
+                    alphabet = (contents == null) ? ISO_8859_ALPHABET : new HashSet<>();
 
                 // Work out needed capacity and alphabet
                 int capacity = (contents == null) ? 0 : AbstractTrie.requiredCapacity(contents.keySet(), caseSensitive, alphabet);
@@ -266,10 +265,7 @@ public interface Index<V>
                 AbstractTrie<V> trie = ArrayTrie.from(capacity, maxCapacity, caseSensitive, alphabet, contents);
                 if (trie != null)
                     return trie;
-                trie = ArrayTernaryTrie.from(capacity, maxCapacity, caseSensitive, alphabet, contents);
-                if (trie != null)
-                    return trie;
-                trie = TreeTrie.from(capacity, maxCapacity, caseSensitive, alphabet, contents);
+                trie = TernaryTrie.from(capacity, maxCapacity, caseSensitive, alphabet, contents);
                 if (trie != null)
                     return trie;
 
@@ -407,10 +403,7 @@ public interface Index<V>
             AbstractTrie<V> trie = ArrayTrie.from(capacity, capacity, caseSensitive, alphabet, contents);
             if (trie != null)
                 return trie;
-            trie = ArrayTernaryTrie.from(capacity, capacity, caseSensitive, alphabet, contents);
-            if (trie != null)
-                return trie;
-            trie = TreeTrie.from(capacity, capacity, caseSensitive, alphabet, contents);
+            trie = TernaryTrie.from(capacity, capacity, caseSensitive, alphabet, contents);
             if (trie != null)
                 return trie;
 

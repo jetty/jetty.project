@@ -58,6 +58,7 @@ import java.util.Set;
  *
  * @param <V> the Entry type
  */
+@Deprecated
 class ArrayTernaryTrie<V> extends AbstractTrie<V>
 {
     private static final int LO = 1;
@@ -551,6 +552,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
         }
     }
 
+    @Deprecated
     static class Growing<V> extends AbstractTrie<V>
     {
         private final int _growby;
