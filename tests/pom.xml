@@ -46,14 +46,6 @@
             <skip>true</skip>
           </configuration>
         </plugin>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>clirr-maven-plugin</artifactId>
-          <configuration>
-            <!-- No point running clirr on test projects -->
-            <skip>true</skip>
-          </configuration>
-        </plugin>
       </plugins>
     </pluginManagement>
   </build>
