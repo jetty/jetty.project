@@ -407,7 +407,7 @@ public interface Index<V>
             if (trie != null)
                 return trie;
 
-            throw new UnsupportedOperationException("No suitable Trie implementation : " + this);
+            throw new IllegalStateException("No suitable Trie implementation : " + this);
         }
 
         @Override
