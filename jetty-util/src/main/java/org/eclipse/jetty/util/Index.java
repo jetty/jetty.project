@@ -44,7 +44,7 @@ public interface Index<V>
     V get(String s);
 
     /**
-     * Get an exact match from a segment of a ByteBuufer as key
+     * Get an exact match from a segment of a ByteBuffer as key
      *
      * @param b The buffer
      * @return The value or null if not found
@@ -62,7 +62,7 @@ public interface Index<V>
     V get(String s, int offset, int len);
 
     /**
-     * Get an exact match from a segment of a ByteBuufer as key
+     * Get an exact match from a segment of a ByteBuffer as key
      *
      * @param b The buffer
      * @param offset The offset within the buffer of the key

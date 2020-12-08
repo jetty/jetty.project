@@ -31,22 +31,19 @@ import java.util.stream.Collectors;
 /**
  * <p>A Ternary Trie String lookup data structure.</p>
  * <p>
- * This Trie is of a fixed size and cannot grow (which can be a good thing with regards to DOS when used as a cache).
- * </p>
- * <p>
- * The Trie is stored in 3 arrays:
+ * This Trie is stored in one or more tables and can grow if necessary by adding more tables.
+ * Each table contains two arrays:
  * </p>
  * <dl>
  * <dt>char[] _tree</dt><dd>This is semantically 2 dimensional array flattened into a 1 dimensional char array. The second dimension
  * is that every 4 sequential elements represents a row of: character; hi index; eq index; low index, used to build a
  * ternary trie of key strings.</dd>
- * <dt>String[] _key</dt><dd>An array of key values where each element matches a row in the _tree array. A non zero key element
- * indicates that the _tree row is a complete key rather than an intermediate character of a longer key.</dd>
- * <dt>V[] _value</dt><dd>An array of values corresponding to the _key array</dd>
+ * <dt>Node[] _nodes</dt><dd>An array of key and values where each element matches a row in the _tree array. A non zero key element
+ * indicates that the _tree row is a complete key rather than an intermediate character of a longer key.
+ * A node can also contain links to other tables</dd>
  * </dl>
  * <p>The lookup of a value will iterate through the _tree array matching characters. If the equal tree branch is followed,
- * then the _key array is looked up to see if this is a complete match.  If a match is found then the _value array is looked up
- * to return the matching value.
+ * then the _nodes array is looked up to see if this is a complete match.
  * </p>
  * <p>
  * This Trie may be instantiated either as case sensitive or insensitive.
