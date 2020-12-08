@@ -154,10 +154,35 @@
         <artifactId>maven-enforcer-plugin</artifactId>
         <executions>
           <execution>
+            <id>ban-javax-servlet-api</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <phase>validate</phase>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <excludes>
+                    <exclude>javax.servlet:*</exclude>
+                    <exclude>servletapi</exclude>
+                    <exclude>org.eclipse.jetty.orbit:javax.servlet</exclude>
+                    <exclude>*:javax.servlet</exclude>
+                    <exclude>org.mortbay.jetty:servlet-api</exclude>
+                    <exclude>jetty:servlet-api</exclude>
+                    <exclude>jetty-servlet-api</exclude>
+                    <exclude>javax.websocket</exclude>
+                  </excludes>
+                  <searchTransitive>true</searchTransitive>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+          <execution>
             <id>enforce-java</id>
             <goals>
               <goal>enforce</goal>
             </goals>
+            <phase>validate</phase>
             <configuration>
               <rules>
                 <requireMavenVersion>

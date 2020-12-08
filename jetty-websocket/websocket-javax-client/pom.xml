@@ -70,32 +70,6 @@
           </execution>
         </executions>
       </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-enforcer-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>ban-java-servlet-api</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <configuration>
-              <rules>
-                <bannedDependencies>
-                  <includes>
-                    <include>javax.servlet</include>
-                    <include>servletapi</include>
-                    <include>org.eclipse.jetty.orbit:javax.servlet</include>
-                    <include>org.mortbay.jetty:servlet-api</include>
-                    <include>jetty:servlet-api</include>
-                    <include>jetty-servlet-api</include>
-                  </includes>
-                </bannedDependencies>
-              </rules>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
   </build>
 </project>
