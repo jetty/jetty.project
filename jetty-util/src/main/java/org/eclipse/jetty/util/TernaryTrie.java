@@ -58,7 +58,7 @@ import java.util.Set;
  *
  * @param <V> the Entry type
  */
-class ArrayTernaryTrie<V> extends AbstractTrie<V>
+class TernaryTrie<V> extends AbstractTrie<V>
 {
     private static final int LO = 1;
     private static final int EQ = 2;
@@ -84,17 +84,25 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
      */
     private final char[] _tree;
 
-    /**
-     * The key (if any) for a Trie row.
-     * A row may be a leaf, a node or both in the Trie tree.
-     */
-    private final String[] _key;
+    private static class Node<V>
+    {
+        String _key;
+        V _value;
 
-    /**
-     * The value (if any) for a Trie row.
-     * A row may be a leaf, a node or both in the Trie tree.
-     */
-    private final V[] _value;
+        public Node(String s, V v)
+        {
+            _key = s;
+            _value = v;
+        }
+
+        @Override
+        public String toString()
+        {
+            return _key + "=" + _value;
+        }
+    }
+
+    private final Node[] _nodes;
 
     /**
      * The number of rows allocated
@@ -107,8 +115,8 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
             return null;
 
         AbstractTrie<V> trie = maxCapacity < 0
-            ? new ArrayTernaryTrie.Growing<V>(!caseSensitive, capacity, 512)
-            : new ArrayTernaryTrie<V>(!caseSensitive, Math.max(capacity, maxCapacity));
+            ? new TernaryTrie.Growing<V>(!caseSensitive, capacity, 512)
+            : new TernaryTrie<V>(!caseSensitive, Math.max(capacity, maxCapacity));
 
         if (contents != null && !trie.putAll(contents))
             return null;
@@ -127,18 +135,17 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
      * store "bar" and "bat".
      */
     @SuppressWarnings("unchecked")
-    ArrayTernaryTrie(boolean insensitive, int capacity)
+    TernaryTrie(boolean insensitive, int capacity)
     {
         super(insensitive);
         if (capacity > MAX_CAPACITY)
             throw new IllegalArgumentException("ArrayTernaryTrie maximum capacity overflow (" + capacity + " > " + MAX_CAPACITY + ")");
-        _value = (V[])new Object[capacity];
         _tree = new char[capacity * ROW_SIZE];
-        _key = new String[capacity];
+        _nodes = new Node[capacity];
     }
 
     @SuppressWarnings("unchecked")
-    ArrayTernaryTrie(boolean insensitive, Map<String, V> initialValues)
+    TernaryTrie(boolean insensitive, Map<String, V> initialValues)
     {
         super(insensitive);
         // The calculated requiredCapacity does not take into account the
@@ -149,9 +156,8 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
         int capacity = AbstractTrie.requiredCapacity(keys, !insensitive, null) + keys.size() + 1;
         if (capacity > MAX_CAPACITY)
             throw new IllegalArgumentException("ArrayTernaryTrie maximum capacity overflow (" + capacity + " > " + MAX_CAPACITY + ")");
-        _value = (V[])new Object[capacity];
         _tree = new char[capacity * ROW_SIZE];
-        _key = new String[capacity];
+        _nodes = new Node[capacity];
         for (Map.Entry<String, V> entry : initialValues.entrySet())
         {
             if (!put(entry.getKey(), entry.getValue()))
@@ -163,9 +169,8 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
     public void clear()
     {
         _rows = 0;
-        Arrays.fill(_value, null);
+        Arrays.fill(_nodes, null);
         Arrays.fill(_tree, (char)0);
-        Arrays.fill(_key, null);
     }
 
     @Override
@@ -174,7 +179,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
         if (v == null)
             throw new IllegalArgumentException("Value cannot be null");
 
-        int t = 0;
+        int row = 0;
         int limit = s.length();
         int last = 0;
         for (int k = 0; k < limit; k++)
@@ -185,34 +190,34 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
 
             while (true)
             {
-                int row = ROW_SIZE * t;
+                int idx = ROW_SIZE * row;
 
                 // Do we need to create the new row?
-                if (t == _rows)
+                if (row == _rows)
                 {
                     _rows++;
-                    if (_rows >= _key.length)
+                    if (_rows >= _nodes.length)
                     {
                         _rows--;
                         return false;
                     }
-                    _tree[row] = c;
+                    _tree[idx] = c;
                 }
 
-                char n = _tree[row];
+                char n = _tree[idx];
                 int diff = n - c;
                 if (diff == 0)
-                    t = _tree[last = (row + EQ)];
+                    row = _tree[last = (idx + EQ)];
                 else if (diff < 0)
-                    t = _tree[last = (row + LO)];
+                    row = _tree[last = (idx + LO)];
                 else
-                    t = _tree[last = (row + HI)];
+                    row = _tree[last = (idx + HI)];
 
                 // do we need a new row?
-                if (t == 0)
+                if (row == 0)
                 {
-                    t = _rows;
-                    _tree[last] = (char)t;
+                    row = _rows;
+                    _tree[last] = (char)row;
                 }
 
                 if (diff == 0)
@@ -221,10 +226,10 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
         }
 
         // Do we need to create the new row?
-        if (t == _rows)
+        if (row == _rows)
         {
             _rows++;
-            if (_rows >= _key.length)
+            if (_rows >= _nodes.length)
             {
                 _rows--;
                 return false;
@@ -232,8 +237,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
         }
 
         // Put the key and value
-        _key[t] = v == null ? null : s;
-        _value[t] = v;
+        _nodes[row] = new Node<V>(s, v);
 
         return true;
     }
@@ -241,7 +245,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
     @Override
     public V get(String s, int offset, int len)
     {
-        int t = 0;
+        int row = 0;
         for (int i = 0; i < len; )
         {
             char c = s.charAt(offset + i++);
@@ -250,31 +254,32 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
 
             while (true)
             {
-                int row = ROW_SIZE * t;
-                char n = _tree[row];
+                int idx = ROW_SIZE * row;
+                char n = _tree[idx];
                 int diff = n - c;
 
                 if (diff == 0)
                 {
-                    t = _tree[row + EQ];
-                    if (t == 0)
+                    row = _tree[idx + EQ];
+                    if (row == 0)
                         return null;
                     break;
                 }
 
-                t = _tree[row + hilo(diff)];
-                if (t == 0)
+                row = _tree[idx + hilo(diff)];
+                if (row == 0)
                     return null;
             }
         }
 
-        return _value[t];
+        Node<V> node = _nodes[row];
+        return node == null ? null : node._value;
     }
 
     @Override
     public V get(ByteBuffer b, int offset, int len)
     {
-        int t = 0;
+        int row = 0;
         offset += b.position();
 
         for (int i = 0; i < len; )
@@ -285,25 +290,26 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
 
             while (true)
             {
-                int row = ROW_SIZE * t;
-                char n = _tree[row];
+                int idx = ROW_SIZE * row;
+                char n = _tree[idx];
                 int diff = n - c;
 
                 if (diff == 0)
                 {
-                    t = _tree[row + EQ];
-                    if (t == 0)
+                    row = _tree[idx + EQ];
+                    if (row == 0)
                         return null;
                     break;
                 }
 
-                t = _tree[row + hilo(diff)];
-                if (t == 0)
+                row = _tree[idx + hilo(diff)];
+                if (row == 0)
                     return null;
             }
         }
 
-        return (V)_value[t];
+        Node<V> node = _nodes[row];
+        return node == null ? null : node._value;
     }
 
     @Override
@@ -318,9 +324,9 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
         return getBest(0, s, offset, length);
     }
 
-    private V getBest(int t, String s, int offset, int len)
+    private V getBest(int row, String s, int offset, int len)
     {
-        int node = t;
+        int cursor = row;
         int end = offset + len;
         loop:
         while (offset < end)
@@ -332,33 +338,35 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
 
             while (true)
             {
-                int row = ROW_SIZE * t;
-                char n = _tree[row];
+                int idx = ROW_SIZE * row;
+                char n = _tree[idx];
                 int diff = n - c;
 
                 if (diff == 0)
                 {
-                    t = _tree[row + EQ];
-                    if (t == 0)
+                    row = _tree[idx + EQ];
+                    if (row == 0)
                         break loop;
 
-                    // if this node is a match, recurse to remember 
-                    if (_key[t] != null)
+                    // if this node is a match, recurse to remember
+
+                    Node<V> node = _nodes[row];
+                    if (node != null && node._key != null)
                     {
-                        node = t;
-                        V better = getBest(t, s, offset, len);
+                        cursor = row;
+                        V better = getBest(row, s, offset, len);
                         if (better != null)
                             return better;
                     }
                     break;
                 }
 
-                t = _tree[row + hilo(diff)];
-                if (t == 0)
+                row = _tree[idx + hilo(diff)];
+                if (row == 0)
                     break loop;
             }
         }
-        return (V)_value[node];
+        return (V)_value[cursor];
     }
 
     @Override
@@ -554,13 +562,13 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
     static class Growing<V> extends AbstractTrie<V>
     {
         private final int _growby;
-        private ArrayTernaryTrie<V> _trie;
+        private TernaryTrie<V> _trie;
 
         Growing(boolean insensitive, int capacity, int growby)
         {
             super(insensitive);
             _growby = growby;
-            _trie = new ArrayTernaryTrie<>(insensitive, capacity);
+            _trie = new TernaryTrie<>(insensitive, capacity);
         }
 
         @Override
@@ -604,7 +612,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
             boolean added = _trie.put(s, v);
             while (!added && _growby > 0)
             {
-                ArrayTernaryTrie<V> bigger = new ArrayTernaryTrie<>(_trie.isCaseInsensitive(), _trie._key.length + _growby);
+                TernaryTrie<V> bigger = new TernaryTrie<>(_trie.isCaseInsensitive(), _trie._nodes.length + _growby);
                 for (Map.Entry<String, V> entry : _trie.entrySet())
                 {
                     bigger.put(entry.getKey(), entry.getValue());
