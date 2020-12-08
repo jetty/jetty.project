@@ -20,11 +20,13 @@ package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * <p>A Ternary Trie String lookup data structure.</p>
@@ -77,19 +79,24 @@ class TernaryTrie<V> extends AbstractTrie<V>
      */
     private static final int MAX_CAPACITY = Character.MAX_VALUE;
 
-    /**
-     * The Trie rows in a single array which allows a lookup of row,character
-     * to the next row in the Trie.  This is actually a 2 dimensional
-     * array that has been flattened to achieve locality of reference.
-     */
-    private final char[] _tree;
-
+    @SuppressWarnings("unchecked")
     private static class Node<V>
     {
         String _key;
         V _value;
+        Table<V>[] _next;
+
+        public Node()
+        {
+        }
 
         public Node(String s, V v)
+        {
+            _key = s;
+            _value = v;
+        }
+
+        public void set(String s, V v)
         {
             _key = s;
             _value = v;
@@ -100,23 +107,58 @@ class TernaryTrie<V> extends AbstractTrie<V>
         {
             return _key + "=" + _value;
         }
+
+        public String dump()
+        {
+            return String.format("'%s'='%s' [%x,%x,%x]",
+                _key,
+                _value,
+                _next == null ? null : Objects.hashCode(_next[0]),
+                _next == null ? null : Objects.hashCode(_next[1]),
+                _next == null ? null : Objects.hashCode(_next[2])
+                );
+        }
     }
 
-    private final Node[] _nodes;
+    private static class Table<V>
+    {
+        /**
+         * The Trie rows in a single array which allows a lookup of row,character
+         * to the next row in the Trie.  This is actually a 2 dimensional
+         * array that has been flattened to achieve locality of reference.
+         */
+        final char[] _tree;
+        final Node<V>[] _nodes;
+        char _rows;
+
+        @SuppressWarnings("unchecked")
+        Table(int capacity)
+        {
+            _tree = new char[capacity * ROW_SIZE];
+            _nodes = new Node[capacity];
+        }
+
+        public void clear()
+        {
+            _rows = 0;
+            Arrays.fill(_nodes, null);
+            Arrays.fill(_tree, (char)0);
+        }
+    }
 
     /**
      * The number of rows allocated
      */
-    private char _rows;
+    private final Table<V> _root;
+    private final List<Table<V>> _tables = new ArrayList<>();
+    private Table<V> _tail;
 
     public static <V> AbstractTrie<V> from(int capacity, int maxCapacity, boolean caseSensitive, Set<Character> alphabet, Map<String, V> contents)
     {
-        if (capacity > MAX_CAPACITY || maxCapacity > MAX_CAPACITY)
+        if (capacity > MAX_CAPACITY || maxCapacity < 0)
             return null;
 
-        AbstractTrie<V> trie = maxCapacity < 0
-            ? new TernaryTrie.Growing<V>(!caseSensitive, capacity, 512)
-            : new TernaryTrie<V>(!caseSensitive, Math.max(capacity, maxCapacity));
+        AbstractTrie<V> trie = new TernaryTrie<V>(!caseSensitive, Math.max(capacity, maxCapacity));
 
         if (contents != null && !trie.putAll(contents))
             return null;
@@ -140,52 +182,36 @@ class TernaryTrie<V> extends AbstractTrie<V>
         super(insensitive);
         if (capacity > MAX_CAPACITY)
             throw new IllegalArgumentException("ArrayTernaryTrie maximum capacity overflow (" + capacity + " > " + MAX_CAPACITY + ")");
-        _tree = new char[capacity * ROW_SIZE];
-        _nodes = new Node[capacity];
-    }
-
-    @SuppressWarnings("unchecked")
-    TernaryTrie(boolean insensitive, Map<String, V> initialValues)
-    {
-        super(insensitive);
-        // The calculated requiredCapacity does not take into account the
-        // extra reserved slot for the empty string key, nor the slots
-        // required for 'terminating' the entry (1 slot per key) so we
-        // have to add those.
-        Set<String> keys = initialValues.keySet();
-        int capacity = AbstractTrie.requiredCapacity(keys, !insensitive, null) + keys.size() + 1;
-        if (capacity > MAX_CAPACITY)
-            throw new IllegalArgumentException("ArrayTernaryTrie maximum capacity overflow (" + capacity + " > " + MAX_CAPACITY + ")");
-        _tree = new char[capacity * ROW_SIZE];
-        _nodes = new Node[capacity];
-        for (Map.Entry<String, V> entry : initialValues.entrySet())
-        {
-            if (!put(entry.getKey(), entry.getValue()))
-                throw new AssertionError("Invalid capacity calculated (" + capacity + ") at '" + entry + "' for " + initialValues);
-        }
+        _root = new Table<V>(capacity);
+        _tail = _root;
+        _tables.add(_root);
     }
 
     @Override
     public void clear()
     {
-        _rows = 0;
-        Arrays.fill(_nodes, null);
-        Arrays.fill(_tree, (char)0);
+        _root.clear();
+        _tables.clear();
+        _tables.add(_root);
+        _tail = _root;
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public boolean put(String s, V v)
     {
         if (v == null)
             throw new IllegalArgumentException("Value cannot be null");
 
+        Table<V> table = _root;
         int row = 0;
-        int limit = s.length();
-        int last = 0;
-        for (int k = 0; k < limit; k++)
+        int end = s.length();
+        for (int i = 0; i < end; i++)
         {
-            char c = s.charAt(k);
-            if (isCaseInsensitive() && c < 128)
+            char c = s.charAt(i);
+            if (c > 0xff)
+                throw new IllegalArgumentException("Not ISO-8859-1");
+            if (isCaseInsensitive() && c < 0x80)
                 c = StringUtil.lowercases[c];
 
             while (true)
@@ -193,31 +219,59 @@ class TernaryTrie<V> extends AbstractTrie<V>
                 int idx = ROW_SIZE * row;
 
                 // Do we need to create the new row?
-                if (row == _rows)
+                char nc = table._tree[idx];
+                if (nc == 0)
                 {
-                    _rows++;
-                    if (_rows >= _nodes.length)
-                    {
-                        _rows--;
-                        return false;
-                    }
-                    _tree[idx] = c;
+                    nc = table._tree[idx] = c;
+                    if (row == table._rows)
+                        table._rows++;
                 }
 
-                char n = _tree[idx];
-                int diff = n - c;
-                if (diff == 0)
-                    row = _tree[last = (idx + EQ)];
-                else if (diff < 0)
-                    row = _tree[last = (idx + LO)];
-                else
-                    row = _tree[last = (idx + HI)];
+                Node<V> node = table._nodes[row];
+                int diff = (int)c - nc;
+                int branch = diff == 0 ? EQ : hilo(diff);
 
-                // do we need a new row?
-                if (row == 0)
+                char next = table._tree[idx + branch];
+                if (node != null && node._next != null && node._next[branch - 1] != null)
                 {
-                    row = _rows;
-                    _tree[last] = (char)row;
+                    // The branch is to a different table;
+                    table = node._next[branch - 1];
+                    row = next;
+                }
+                else if (next != 0)
+                {
+                    // The branch is to this table
+                    row = next;
+                }
+                else if (table._rows < table._nodes.length)
+                {
+                    // point to a new row in this table;
+                    row = table._rows;
+                    table._tree[idx + branch] = (char)row;
+                }
+                else if (table != _tail && _tail._rows < _tail._nodes.length)
+                {
+                    // point to a new row in the tail table;
+                    if (node == null)
+                        node = table._nodes[row] = new Node<V>();
+                    if (node._next == null)
+                        node._next = new Table[3];
+                    row = _tail._rows;
+                    table._tree[idx + branch] = (char)row;
+                    node._next[branch - 1] = _tail;
+                    table = _tail;
+                }
+                else
+                {
+                    // point to a new row in a new table;
+                    if (node == null)
+                        node = table._nodes[row] = new Node<V>();
+                    if (node._next == null)
+                        node._next = new Table[3];
+                    table = _tail = new Table<>(table._nodes.length);
+                    _tables.add(table);
+                    row = 0;
+                    node._next[branch - 1] = table;
                 }
 
                 if (diff == 0)
@@ -225,19 +279,15 @@ class TernaryTrie<V> extends AbstractTrie<V>
             }
         }
 
-        // Do we need to create the new row?
-        if (row == _rows)
-        {
-            _rows++;
-            if (_rows >= _nodes.length)
-            {
-                _rows--;
-                return false;
-            }
-        }
+        if (row == table._rows)
+            table._rows++;
 
         // Put the key and value
-        _nodes[row] = new Node<V>(s, v);
+        Node<V> node = table._nodes[row];
+        if (node == null)
+            table._nodes[row] = new Node<V>(s, v);
+        else
+            node.set(s, v);
 
         return true;
     }
@@ -245,248 +295,302 @@ class TernaryTrie<V> extends AbstractTrie<V>
     @Override
     public V get(String s, int offset, int len)
     {
+        Table<V> table = _root;
         int row = 0;
-        for (int i = 0; i < len; )
+        if (table._rows == 0)
+            return null;
+        for (int i = 0; i < len; i++)
         {
-            char c = s.charAt(offset + i++);
-            if (isCaseInsensitive() && c < 128)
+            char c = s.charAt(offset + i);
+            if (c > 0xff)
+                return null;
+            if (isCaseInsensitive() && c < 0x80)
                 c = StringUtil.lowercases[c];
 
             while (true)
             {
                 int idx = ROW_SIZE * row;
-                char n = _tree[idx];
-                int diff = n - c;
 
-                if (diff == 0)
+                Node<V> node = table._nodes[row];
+                char nc = table._tree[idx];
+                int diff = (int)c - nc;
+                int branch = diff == 0 ? EQ : hilo(diff);
+
+                char next = table._tree[idx + branch];
+                if (node != null && node._next != null && node._next[branch - 1] != null)
                 {
-                    row = _tree[idx + EQ];
-                    if (row == 0)
-                        return null;
-                    break;
+                    // The branch is to a different table;
+                    table = node._next[branch - 1];
+                    row = next;
+                }
+                else if (next != 0)
+                {
+                    // The branch is to this table
+                    row = next;
+                }
+                else
+                {
+                    return null;
                 }
 
-                row = _tree[idx + hilo(diff)];
-                if (row == 0)
-                    return null;
+                if (diff == 0)
+                    break;
             }
         }
 
-        Node<V> node = _nodes[row];
-        return node == null ? null : node._value;
+        // Put the key and value
+        Node<V> node = table._nodes[row];
+        return node != null && node._key != null ? node._value : null;
     }
 
     @Override
     public V get(ByteBuffer b, int offset, int len)
     {
+        Table<V> table = _root;
         int row = 0;
-        offset += b.position();
-
-        for (int i = 0; i < len; )
+        if (table._rows == 0)
+            return null;
+        for (int i = 0; i < len; i++)
         {
-            byte c = (byte)(b.get(offset + i++) & 0x7f);
-            if (isCaseInsensitive())
+            byte c = b.get(b.position() + offset + i);
+            if (isCaseInsensitive() && c > 0)
                 c = (byte)StringUtil.lowercases[c];
 
             while (true)
             {
                 int idx = ROW_SIZE * row;
-                char n = _tree[idx];
-                int diff = n - c;
 
-                if (diff == 0)
+                Node<V> node = table._nodes[row];
+                char nc = table._tree[idx];
+                int diff = (int)c - nc;
+                int branch = diff == 0 ? EQ : hilo(diff);
+
+                char next = table._tree[idx + branch];
+                if (node != null && node._next != null && node._next[branch - 1] != null)
                 {
-                    row = _tree[idx + EQ];
-                    if (row == 0)
-                        return null;
-                    break;
+                    // The branch is to a different table;
+                    table = node._next[branch - 1];
+                    row = next;
+                }
+                else if (next != 0)
+                {
+                    // The branch is to this table
+                    row = next;
+                }
+                else
+                {
+                    return null;
                 }
 
-                row = _tree[idx + hilo(diff)];
-                if (row == 0)
-                    return null;
+                if (diff == 0)
+                    break;
             }
         }
 
-        Node<V> node = _nodes[row];
-        return node == null ? null : node._value;
+        Node<V> node = table._nodes[row];
+        return node != null && node._key != null ? node._value : null;
     }
 
     @Override
     public V getBest(String s)
     {
-        return getBest(0, s, 0, s.length());
+        return getBest(s, 0, s.length());
     }
 
     @Override
-    public V getBest(String s, int offset, int length)
+    public V getBest(String s, int offset, int len)
     {
-        return getBest(0, s, offset, length);
+        return getBest(_root, 0, s, offset, len);
     }
 
-    private V getBest(int row, String s, int offset, int len)
+    private V getBest(Table<V> table, int row, String s, int offset, int len)
     {
-        int cursor = row;
-        int end = offset + len;
-        loop:
-        while (offset < end)
+        Node<V> match = table == _root && row == 0 && table._nodes[0] != null ? table._nodes[0] : null;
+        loop : for (int i = 0; i < len; i++)
         {
-            char c = s.charAt(offset++);
-            len--;
-            if (isCaseInsensitive() && c < 128)
+            char c = s.charAt(offset + i);
+            if (c > 0xFF)
+                break;
+            if (isCaseInsensitive() && c < 0x7f)
                 c = StringUtil.lowercases[c];
 
+            Node<V> node = table._nodes[row];
             while (true)
             {
                 int idx = ROW_SIZE * row;
-                char n = _tree[idx];
-                int diff = n - c;
+                char nc = table._tree[idx];
+                int diff = (int)c - nc;
+                int branch = diff == 0 ? EQ : hilo(diff);
 
+                char next = table._tree[idx + branch];
+                if (node != null && node._next != null && node._next[branch - 1] != null)
+                {
+                    // The branch is to a different table;
+                    table = node._next[branch - 1];
+                    row = next;
+                }
+                else if (next != 0)
+                {
+                    // The branch is to this table
+                    row = next;
+                }
+                else
+                {
+                    break loop;
+                }
+
+                node = table._nodes[row];
                 if (diff == 0)
                 {
-                    row = _tree[idx + EQ];
-                    if (row == 0)
-                        break loop;
-
-                    // if this node is a match, recurse to remember
-
-                    Node<V> node = _nodes[row];
                     if (node != null && node._key != null)
                     {
-                        cursor = row;
-                        V better = getBest(row, s, offset, len);
+                        // found a match, recurse looking for a better one.
+                        match = node;
+                        V better = getBest(table, row, s, offset + i + 1, len - i - 1);
                         if (better != null)
                             return better;
                     }
                     break;
                 }
-
-                row = _tree[idx + hilo(diff)];
-                if (row == 0)
-                    break loop;
             }
         }
-        return (V)_value[cursor];
+
+        return (match != null && match._key != null) ? match._value : null;
     }
 
     @Override
     public V getBest(ByteBuffer b, int offset, int len)
     {
+        if (_root._rows == 0)
+            return null;
         if (b.hasArray())
-            return getBest(0, b.array(), b.arrayOffset() + b.position() + offset, len);
-        return getBest(0, b, offset, len);
+            return getBest(_root, 0, b.array(), b.arrayOffset() + b.position() + offset, len);
+        return getBest(_root, 0, b, offset, len);
     }
 
     @Override
     public V getBest(byte[] b, int offset, int len)
     {
-        return getBest(0, b, offset, len);
+        return getBest(_root, 0, b, offset, len);
     }
 
-    private V getBest(int t, byte[] b, int offset, int len)
+    private V getBest(Table<V> table, int row, byte[] b, int offset, int len)
     {
-        int node = t;
-        int end = offset + len;
-        loop:
-        while (offset < end)
+        Node<V> match = table == _root && row == 0 && table._nodes[0] != null ? table._nodes[0] : null;
+        loop : for (int i = 0; i < len; i++)
         {
-            byte c = (byte)(b[offset++] & 0x7f);
-            len--;
-            if (isCaseInsensitive())
+            byte c = b[offset + i];
+            if (isCaseInsensitive() && c > 0)
                 c = (byte)StringUtil.lowercases[c];
 
+            Node<V> node = table._nodes[row];
             while (true)
             {
-                int row = ROW_SIZE * t;
-                char n = _tree[row];
-                int diff = n - c;
+                int idx = ROW_SIZE * row;
+                char nc = table._tree[idx];
+                int diff = (int)c - nc;
+                int branch = diff == 0 ? EQ : hilo(diff);
 
+                char next = table._tree[idx + branch];
+                if (node != null && node._next != null && node._next[branch - 1] != null)
+                {
+                    // The branch is to a different table;
+                    table = node._next[branch - 1];
+                    row = next;
+                }
+                else if (next != 0)
+                {
+                    // The branch is to this table
+                    row = next;
+                }
+                else
+                {
+                    break loop;
+                }
+
+                node = table._nodes[row];
                 if (diff == 0)
                 {
-                    t = _tree[row + EQ];
-                    if (t == 0)
-                        break loop;
-
-                    // if this node is a match, recurse to remember 
-                    if (_key[t] != null)
+                    if (node != null && node._key != null)
                     {
-                        node = t;
-                        V better = getBest(t, b, offset, len);
+                        // found a match, recurse looking for a better one.
+                        match = node;
+                        V better = getBest(table, row, b, offset + i + 1, len - i - 1);
                         if (better != null)
                             return better;
                     }
                     break;
                 }
-
-                t = _tree[row + hilo(diff)];
-                if (t == 0)
-                    break loop;
             }
         }
-        return (V)_value[node];
+
+        return (match != null && match._key != null) ? match._value : null;
     }
 
-    private V getBest(int t, ByteBuffer b, int offset, int len)
+    private V getBest(Table<V> table, int row, ByteBuffer b, int offset, int len)
     {
-        int node = t;
-        int o = offset + b.position();
-
-        loop:
-        for (int i = 0; i < len; i++)
+        Node<V> match = table == _root && row == 0 && table._nodes[0] != null ? table._nodes[0] : null;
+        loop : for (int i = 0; i < len; i++)
         {
-            byte c = (byte)(b.get(o + i) & 0x7f);
-            if (isCaseInsensitive())
+            byte c = b.get(b.position() + offset + i);
+            if (isCaseInsensitive() && c > 0)
                 c = (byte)StringUtil.lowercases[c];
 
+            Node<V> node = table._nodes[row];
             while (true)
             {
-                int row = ROW_SIZE * t;
-                char n = _tree[row];
-                int diff = n - c;
+                int idx = ROW_SIZE * row;
+                char nc = table._tree[idx];
+                int diff = (int)c - nc;
+                int branch = diff == 0 ? EQ : hilo(diff);
 
+                char next = table._tree[idx + branch];
+                if (node != null && node._next != null && node._next[branch - 1] != null)
+                {
+                    // The branch is to a different table;
+                    table = node._next[branch - 1];
+                    row = next;
+                }
+                else if (next != 0)
+                {
+                    // The branch is to this table
+                    row = next;
+                }
+                else
+                {
+                    break loop;
+                }
+
+                node = table._nodes[row];
                 if (diff == 0)
                 {
-                    t = _tree[row + EQ];
-                    if (t == 0)
-                        break loop;
-
-                    // if this node is a match, recurse to remember 
-                    if (_key[t] != null)
+                    if (node != null && node._key != null)
                     {
-                        node = t;
-                        V best = getBest(t, b, offset + i + 1, len - i - 1);
-                        if (best != null)
-                            return best;
+                        // found a match, recurse looking for a better one.
+                        match = node;
+                        V better = getBest(table, row, b, offset + i + 1, len - i - 1);
+                        if (better != null)
+                            return better;
                     }
                     break;
                 }
-
-                t = _tree[row + hilo(diff)];
-                if (t == 0)
-                    break loop;
             }
         }
-        return (V)_value[node];
+
+        return (match != null && match._key != null) ? match._value : null;
     }
 
     @Override
     public String toString()
     {
         StringBuilder buf = new StringBuilder();
-        buf.append("ATT@").append(Integer.toHexString(hashCode())).append('{');
+        buf.append("TT@").append(Integer.toHexString(hashCode())).append('{');
         buf.append("ci=").append(isCaseInsensitive()).append(';');
-        buf.append("c=").append(_tree.length / ROW_SIZE).append(';');
-        for (int r = 0; r <= _rows; r++)
-        {
-            if (_key[r] != null && _value[r] != null)
-            {
-                if (r != 0)
-                    buf.append(',');
-                buf.append(_key[r]);
-                buf.append('=');
-                buf.append(String.valueOf(_value[r]));
-            }
-        }
+        buf.append(_tables.stream().flatMap(t -> Arrays.stream(t._nodes))
+            .filter(Objects::nonNull)
+            .filter(n -> n._key != null)
+            .map(Node::toString)
+            .collect(Collectors.joining(",")));
         buf.append('}');
         return buf.toString();
     }
@@ -494,46 +598,35 @@ class TernaryTrie<V> extends AbstractTrie<V>
     @Override
     public Set<String> keySet()
     {
-        Set<String> keys = new HashSet<>();
-
-        for (int r = 0; r <= _rows; r++)
-        {
-            if (_key[r] != null && _value[r] != null)
-                keys.add(_key[r]);
-        }
-        return keys;
+        return _tables.stream().flatMap(t -> Arrays.stream(t._nodes))
+            .filter(Objects::nonNull)
+            .filter(n -> n._key != null)
+            .map(n -> n._key)
+            .collect(Collectors.toSet());
     }
 
     public int size()
     {
-        int s = 0;
-        for (int r = 0; r <= _rows; r++)
-        {
-            if (_key[r] != null && _value[r] != null)
-                s++;
-        }
-        return s;
+        return (int)_tables.stream().flatMap(t -> Arrays.stream(t._nodes))
+            .filter(Objects::nonNull)
+            .filter(n -> n._key != null)
+            .count();
     }
 
     public boolean isEmpty()
     {
-        for (int r = 0; r <= _rows; r++)
-        {
-            if (_key[r] != null && _value[r] != null)
-                return false;
-        }
-        return true;
+        return _tables.stream().flatMap(t -> Arrays.stream(t._nodes))
+            .filter(Objects::nonNull)
+            .anyMatch(n -> n._key != null);
     }
 
     public Set<Map.Entry<String, V>> entrySet()
     {
-        Set<Map.Entry<String, V>> entries = new HashSet<>();
-        for (int r = 0; r <= _rows; r++)
-        {
-            if (_key[r] != null && _value[r] != null)
-                entries.add(new AbstractMap.SimpleEntry<>(_key[r], _value[r]));
-        }
-        return entries;
+        return _tables.stream().flatMap(t -> Arrays.stream(t._nodes))
+            .filter(Objects::nonNull)
+            .filter(n -> n._key != null)
+            .map(n -> new AbstractMap.SimpleEntry<>(n._key, n._value))
+            .collect(Collectors.toSet());
     }
 
     public static int hilo(int diff)
@@ -545,158 +638,53 @@ class TernaryTrie<V> extends AbstractTrie<V>
 
     public void dump()
     {
-        for (int r = 0; r < _rows; r++)
+        for (Table<V> table : _tables)
         {
-            char c = _tree[r * ROW_SIZE + 0];
-            System.err.printf("%4d [%s,%d,%d,%d] '%s':%s%n",
-                r,
-                (c < ' ' || c > 127) ? ("" + (int)c) : "'" + c + "'",
-                (int)_tree[r * ROW_SIZE + LO],
-                (int)_tree[r * ROW_SIZE + EQ],
-                (int)_tree[r * ROW_SIZE + HI],
-                _key[r],
-                _value[r]);
+            System.err.println(Integer.toHexString(Objects.hashCode(table)));
+            for (int r = 0; r < table._rows; r++)
+            {
+                char c = table._tree[r * ROW_SIZE];
+                System.err.printf("%4d [%s,%d,%d,%d] : %s%n",
+                    r,
+                    (c < ' ' || c > 127) ? Integer.toHexString(c) : ("'" + c + "'"),
+                    (int)table._tree[r * ROW_SIZE + LO],
+                    (int)table._tree[r * ROW_SIZE + EQ],
+                    (int)table._tree[r * ROW_SIZE + HI],
+                    table._nodes[r] == null ? null : table._nodes[r].dump());
+            }
         }
     }
 
-    static class Growing<V> extends AbstractTrie<V>
+    public static void main(String... arg)
     {
-        private final int _growby;
-        private TernaryTrie<V> _trie;
-
-        Growing(boolean insensitive, int capacity, int growby)
-        {
-            super(insensitive);
-            _growby = growby;
-            _trie = new TernaryTrie<>(insensitive, capacity);
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return _trie.hashCode();
-        }
-
-        @Override
-        public V remove(String s)
-        {
-            return _trie.remove(s);
-        }
-
-        @Override
-        public boolean equals(Object o)
-        {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-            Growing<?> growing = (Growing<?>)o;
-            return Objects.equals(_trie, growing._trie);
-        }
-
-        @Override
-        public void clear()
-        {
-            _trie.clear();
-        }
-
-        @Override
-        public boolean put(V v)
-        {
-            return put(v.toString(), v);
-        }
-
-        @Override
-        public boolean put(String s, V v)
-        {
-            boolean added = _trie.put(s, v);
-            while (!added && _growby > 0)
-            {
-                TernaryTrie<V> bigger = new TernaryTrie<>(_trie.isCaseInsensitive(), _trie._nodes.length + _growby);
-                for (Map.Entry<String, V> entry : _trie.entrySet())
-                {
-                    bigger.put(entry.getKey(), entry.getValue());
-                }
-                _trie = bigger;
-                added = _trie.put(s, v);
-            }
-
-            return added;
-        }
-
-        @Override
-        public V get(String s)
-        {
-            return _trie.get(s);
-        }
-
-        @Override
-        public V get(ByteBuffer b)
-        {
-            return _trie.get(b);
-        }
-
-        @Override
-        public V get(String s, int offset, int len)
-        {
-            return _trie.get(s, offset, len);
-        }
-
-        @Override
-        public V get(ByteBuffer b, int offset, int len)
-        {
-            return _trie.get(b, offset, len);
-        }
-
-        @Override
-        public V getBest(byte[] b, int offset, int len)
-        {
-            return _trie.getBest(b, offset, len);
-        }
-
-        @Override
-        public V getBest(String s)
-        {
-            return _trie.getBest(s);
-        }
-
-        @Override
-        public V getBest(String s, int offset, int length)
-        {
-            return _trie.getBest(s, offset, length);
-        }
-
-        @Override
-        public V getBest(ByteBuffer b, int offset, int len)
-        {
-            return _trie.getBest(b, offset, len);
-        }
-
-        @Override
-        public String toString()
-        {
-            return "G" + _trie.toString();
-        }
-
-        @Override
-        public Set<String> keySet()
-        {
-            return _trie.keySet();
-        }
-
-        public void dump()
-        {
-            _trie.dump();
-        }
-
-        public boolean isEmpty()
-        {
-            return _trie.isEmpty();
-        }
-
-        public int size()
-        {
-            return _trie.size();
-        }
+        TernaryTrie<String> trie = new TernaryTrie<>(false, 8);
+        trie.put("hi", "hi");
+        trie.put("hip", "hip");
+        trie.put("hell", "hell");
+        trie.put("foo", "foo");
+        trie.put("foobar", "foobar");
+        trie.put("fop", "fop");
+        trie.put("hit", "hit");
+        trie.put("zip", "zip");
+        trie.dump();
+        System.err.println(trie.get("hi"));
+        System.err.println(trie.get("hip"));
+        System.err.println(trie.get("hell"));
+        System.err.println(trie.get("foo"));
+        System.err.println(trie.get("foobar"));
+        System.err.println(trie.get("fop"));
+        System.err.println(trie.get("hit"));
+        System.err.println(trie.get("zip"));
+        System.err.println("---");
+        System.err.println(trie.getBest("hi"));
+        System.err.println(trie.getBest("hixxx"));
+        System.err.println(trie.getBest("foobar"));
+        System.err.println(trie.getBest("foobarxxx"));
+        System.err.println(trie.getBest("xxxfoobarxxx", 3, 9));
+        System.err.println(trie.getBest("foobor"));
+        System.err.println("---");
+        trie.put("", "empty");
+        trie.dump();
+        System.err.println(trie.getBest("whatever"));
     }
 }

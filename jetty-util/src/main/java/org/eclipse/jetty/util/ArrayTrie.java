@@ -130,7 +130,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
             return null;
 
         // check alphabet
-        if (alphabet != Index.VISIBLE_ASCII_ALPHABET)
+        if (alphabet != Index.Mutable.Builder.VISIBLE_ASCII_ALPHABET)
         {
             int[] lookup = caseSensitive ? LOOKUP_SENSITIVE : LOOKUP_INSENSITIVE;
             for (Character c : alphabet)

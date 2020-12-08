@@ -35,10 +35,6 @@ import java.util.stream.IntStream;
  */
 public interface Index<V>
 {
-    Set<Character> VISIBLE_ASCII_ALPHABET = Collections.unmodifiableSet(IntStream.range(0x20, 0x7f)
-        .mapToObj(i -> (char)i)
-        .collect(Collectors.toSet()));
-
     /**
      * Get an exact match from a String key
      *
@@ -204,6 +200,10 @@ public interface Index<V>
          */
         class Builder<V> extends Index.Builder<V>
         {
+            static Set<Character> VISIBLE_ASCII_ALPHABET = Collections.unmodifiableSet(IntStream.range(0x20, 0x7f)
+                .mapToObj(i -> (char)i)
+                .collect(Collectors.toSet()));
+
             private int maxCapacity = -1;
             private Set<Character> alphabet;
 
