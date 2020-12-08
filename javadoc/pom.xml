@@ -400,7 +400,7 @@
     </dependency>
     <dependency>
       <groupId>com.sun.mail</groupId>
-      <artifactId>mailapi</artifactId>
+      <artifactId>jakarta.mail</artifactId>
       <version>${mail-api.version}</version>
       <scope>provided</scope>
     </dependency>

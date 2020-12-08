@@ -69,5 +69,6 @@
     <module>test-http-client-transport</module>
     <module>test-distribution</module>
     <module>test-cdi</module>
+    <module>test-jndi</module>
   </modules>
 </project>
