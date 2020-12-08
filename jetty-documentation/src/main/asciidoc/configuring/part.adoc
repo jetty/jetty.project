@@ -18,7 +18,7 @@
 
 [[jetty-config-guide]]
 
-= Jetty Configuration Guide
+== Jetty Configuration Guide
 
 include::deploying/chapter.adoc[]
 include::contexts/chapter.adoc[]

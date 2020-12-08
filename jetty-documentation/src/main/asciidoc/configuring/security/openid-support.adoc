@@ -37,7 +37,7 @@ These may look like
 ===== OpenID Provider Configuration
 To enable OpenID support, you first need to activate the `openid` module in your implementation.
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 java -jar {JETTY_HOME}/start.jar --add-to-start=openid
 ----
@@ -55,7 +55,7 @@ To set the error page, an init param is set at `"org.eclipse.jetty.security.open
 
 Example:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <login-config>
   <auth-method>OPENID</auth-method>
@@ -73,27 +73,27 @@ Example:
 
 If the OpenID Provider allows metadata discovery then you can use.
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 OpenIdConfiguration openIdConfig = new OpenIdConfiguration(ISSUER, CLIENT_ID, CLIENT_SECRET);
 ----
 
 Otherwise you can manually enter the necessary information:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 OpenIdConfiguration openIdConfig = new OpenIdConfiguration(ISSUER, TOKEN_ENDPOINT, AUTH_ENDPOINT, CLIENT_ID, CLIENT_SECRET);
 ----
 
 ===== Configuring an `OpenIdLoginService`
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 LoginService loginService = new OpenIdLoginService(openIdConfig);
 securityHandler.setLoginService(loginService);
 ----
 
 ===== Configuring an `OpenIdAuthenticator` with `OpenIdConfiguration` and Error Page Redirect
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 Authenticator authenticator = new OpenIdAuthenticator(openIdConfig, "/error");
 securityHandler.setAuthenticator(authenticator);
@@ -106,7 +106,7 @@ servletContextHandler.setSecurityHandler(securityHandler);
 Claims about the user can be found using attributes on the session attribute `"org.eclipse.jetty.security.openid.claims"`, and the full response containing the OAuth 2.0 Access Token can be found with the session attribute `"org.eclipse.jetty.security.openid.response"`.
 
 Example:
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 Map<String, Object> claims = (Map)request.getSession().getAttribute("org.eclipse.jetty.security.openid.claims");
 String userId = claims.get("sub");
@@ -127,7 +127,7 @@ If security roles are required they can be configured through a wrapped `LoginSe
 
 This can be configured in XML through `etc/openid-baseloginservice.xml` in the Distribution, or in embedded code using the constructor for the `OpenIdLoginService`.
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 LoginService wrappedLoginService = ...; // Optional LoginService for Roles
 LoginService loginService = new OpenIdLoginService(openIdConfig, wrappedLoginService);

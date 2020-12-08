@@ -59,11 +59,10 @@ You *must also install the Apache Aries SPI Fly bundles* as  many parts of Jetty
 |https://repo1.maven.org/maven2/org/apache/aries/spifly/org.apache.aries.spifly.dynamic.bundle/[Maven central]
 |=======================================================================
 
-____
 [NOTE]
+====
 We strongly recommend that you also deploy the link:#osgi-annotations[annotation-related] jars also, as the Servlet Specification increasingly relies on annotations for functionality.
-____
-
+====
 You will also need the **OSGi Event Management service** and the **OSGi Configuration Management service**.
 If your OSGi container does not automatically make these available, you will need to add them in a way appropriate to your container.
 
@@ -93,7 +92,7 @@ Either this property _or_ the *jetty.home.bundle* _must_ be specified.
 This property should point to a file system location that has an `etc/` directory containing xml files to configure the Jetty container on startup.
 For example:
 +
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 jetty.home=/opt/custom/jetty
 
@@ -102,7 +101,7 @@ jetty.home=/opt/custom/jetty
 +
 Where `/opt/custom/jetty` contains:
 +
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 
 etc/jetty.xml
@@ -118,7 +117,7 @@ The `jettyhome/` directory should have a subdirectory called `etc/` that contain
 The jetty-osgi-boot.jar contains a `jettyhome/` directory with a default set of xml configuration files.
 Here's how you would specify it:
 +
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 jetty.home.bundle=org.eclipse.jetty.osgi.boot
 ----
@@ -126,7 +125,7 @@ jetty.home.bundle=org.eclipse.jetty.osgi.boot
 +
 Here's a partial listing of that jar that shows you the names of the xml files contained within it:
 +
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 META-INF/MANIFEST.MF
 jettyhome/etc/jetty.xml
@@ -138,7 +137,7 @@ jetty.etc.config.urls::
 This specifies the paths of the xml files that are to be used.
 If not specified, they default to:
 +
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 etc/jetty.xml,etc/jetty-http.xml,etc/jetty-deploy.xml
 ----
@@ -149,9 +148,9 @@ If the path is relative, it is resolved against either *jetty.home* or **jetty.h
 You can use this ability to mix and match jetty configuration files to add functionality, such as adding in a https connector.
 Here's an example of adding a HTTPS connector, using the relevant files from the jetty-distribution:
 +
-....
+----
 etc/jetty.xml, etc/jetty-http.xml, /opt/jetty/etc/jetty-ssl.xml, /opt/jetty/etc/jetty-https.xml, etc/jetty-deploy.xml
-....
+----
 +
 
 Note that regardless of whether you set the *jetty.home* or *jetty.home.bundle* property, when Jetty executes the configuration files, it will set an appropriate value for *jetty.home* so that references in xml files to `<property name="jetty.home">` will work.
@@ -163,7 +162,7 @@ You can now go ahead and deploy the jetty-osgi-boot.jar into your OSGi container
 A Jetty server instance will be created, the xml config files applied to it, and then published as an OSGi service.
 Normally, you will not need to interact with this service instance, however you can retrieve a reference to it using the usual OSGi API:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 org.osgi.framework.BundleContext bc;
 org.osgi.framework.ServiceReference ref = bc.getServiceReference("org.eclipse.jetty.server.Server");
@@ -187,7 +186,7 @@ the Server's name.
 
 Here's an example of how to create a new Server instance and register it with OSGi so that the jetty-osgi-boot code will find it and configure it so it can be a deployment target:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 public class Activator implements BundleActivator
 {
@@ -213,7 +212,7 @@ public class Activator implements BundleActivator
 
 Now that we have created a new Server called "fooServer", we can deploy webapps and `ContextHandlers` as Bundles or Services to it (see below for more information on this). Here's an example of deploying a webapp as a Service and targeting it to the "fooServer" Server we created above:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 public class Activator implements BundleActivator
 {
@@ -248,7 +247,7 @@ Here's an example of a bundle where the resources of the webapp are not located 
 +
 `MANIFEST`:
 +
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 Bundle-Name: Web
 Jetty-WarResourcePath: web
@@ -260,7 +259,7 @@ Bundle-SymbolicName: com.acme.sample.web
 +
 Bundle contents:
 +
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 META-INF/MANIFEST.MF
 web/index.html
@@ -277,7 +276,7 @@ Here's an example based on the previous one where we use the `Web-ContextPath` h
 +
 `MANIFEST`:
 +
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 Bundle-Name: Web
 Jetty-WarResourcePath: web
@@ -324,14 +323,14 @@ If the `MANIFEST` does not contain that header, then Jetty will concoct a contex
 
 For example, suppose we have a bundle whose location is:
 
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 file://some/where/over/the/rainbow/oz.war
 ----
 
 The corresponding synthesized context path would be:
 
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 /oz
 ----
@@ -343,7 +342,7 @@ This xml file must be placed in `META-INF` of the bundle, and must be called `je
 
 Here's an example of a webapp bundle listing containing such a file:
 
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 META-INF/MANIFEST.MF
 META-INF/jetty-webapp-context.xml
@@ -356,7 +355,7 @@ com/acme/sample/web/MyOtherStuff.class
 
 Here's an example of the contents of a `META-INF/jetty-webapp-context.xml` file:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 
@@ -388,28 +387,28 @@ The context files can be inside the bundle, external to the bundle somewhere on 
 +
 A context file that is inside the bundle:
 +
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 Jetty-ContextFilePath: ./a/b/c/d/foo.xml
 ----
 +
 A context file that is on the file system:
 +
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 Jetty-ContextFilePath: /opt/app/contexts/foo.xml
 ----
 +
 A context file that is relative to jetty.home:
 +
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 Jetty-ContextFilePath: contexts/foo.xml
 ----
 +
 A number of different context files:
 +
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 Jetty-ContextFilePath: ./a/b/c/d/foo.xml,/opt/app/contexts/foo.xml,contexts/foo.xml
 ----
@@ -437,7 +436,7 @@ Note that this could be either a directory in the file system if the OSGi contai
 
 Here's an example of a context xml file that makes use of these properties:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 include::{SRCDIR}/jetty-osgi/test-jetty-osgi-context/src/main/context/acme.xml[]
 ----
@@ -452,7 +451,7 @@ Here's an example of doing that with a simple bundle that serves static content,
 
 The bundle contents:
 
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 META-INF/MANIFEST.MF
 index.html
@@ -461,7 +460,7 @@ com/acme/osgi/Activator.class
 
 The `MANIFEST.MF`:
 
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 Bundle-Classpath: .
 Bundle-Name: Jetty OSGi Test WebApp
@@ -481,7 +480,7 @@ Bundle-SymbolicName: com.acme.testwebapp
 
 The Activator code:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 public void start(BundleContext context) throws Exception
 {
@@ -532,7 +531,7 @@ Here's an example of doing that with a simple bundle that serves static content 
 
 The bundle contents:
 
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 META-INF/MANIFEST.MF
 static/index.html
@@ -543,7 +542,7 @@ com/acme/osgi/Activator$1.class
 
 The `MANIFEST`:
 
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 Bundle-Classpath: .
 Bundle-Name: Jetty OSGi Test Context
@@ -564,7 +563,7 @@ Bundle-SymbolicName: com.acme.testcontext
 
 The Activator code:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 public void start(final BundleContext context) throws Exception
 {
@@ -593,7 +592,7 @@ public void start(final BundleContext context) throws Exception
 
 The contents of the `acme.xml` context file:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 include::{SRCDIR}/jetty-osgi/test-jetty-osgi-context/src/main/context/acme.xml[]
 ----
@@ -688,15 +687,14 @@ Here is the list of recommended jars (NOTE the version numbers may change in fut
 |https://repo1.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-boot-jsp[Maven central]
 |=======================================================================
 
-____
 [NOTE]
+====
 1. As of Jetty 9.2.3 the jetty-osgi-boot-jsp bundle changed to using Apache Jasper as the JSP implementation.
 Prior to this the Glassfish Jasper implementation was used, which had a different set of dependencies - pay careful attention to the jars listed both at the top of this page and in this section, as deployment of other jars can cause incomplete or incorrect package resolution in the OSGi container.
 2.  The order of deployment is important.
 Deploy these bundles in the order shown or you may experience strange failures in the compilation of jsps.
 This can be hard to diagnose but is almost always caused by the `ServletContainerInitializer` in the `org.eclipse.jetty.apache-jsp` bundle for the jsp container not being invoked due to incorrect startup of the annotation jars.
-____
-
+====
 For the JSTL library, we recommend the use of the implementation from Glassfish, as it has fewer dependencies:
 
 .Jars Required for Glassfish JSTL
@@ -751,7 +749,7 @@ This is necessary because the classloading regime used by the OSGi container is 
 Firstly, lets look at an example of a web bundle's modified `MANIFEST` file so you get an idea of what is required.
 This example is a web bundle that uses the Spring servlet framework:
 
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 Bundle-SymbolicName: com.acme.sample
 Bundle-Name: WebSample
@@ -782,7 +780,7 @@ org.eclipse.jetty.osgi.tldbundles::
 System property defined on the OSGi environment that is a comma separated list of symbolic names of bundles containing taglibs that will be treated as if they are on the container's classpath for web bundles.
 For example:
 +
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 org.eclipse.jetty.osgi.tldbundles=com.acme.special.tags,com.foo.web,org.bar.web.framework
 ----
@@ -798,7 +796,7 @@ In that case, it can be specified on the `org.eclipse.jetty.deploy.DeploymentMan
 The `jetty-osgi-boot.jar` contains the default `jettyhome/etc/jetty-deploy.xml` file where the `DeploymentManager` is defined.
 To set the pattern, you will need to provide your own etc files - see the section on link:#customize-jetty-container[customizing the jetty container] for how to do this. Here's how the `jetty-deploy.xml` file would look if we defined a pattern that matched all bundle symbolic names ending in "tag" and "web":
 +
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
@@ -860,16 +858,14 @@ org.eclipse.jetty.orbit:javax.mail.glassfish-1.4.1.v201005082020.jar)^*^
 |jetty-annotations |org.eclipse.jetty.annotations |Distribution lib/
 |=======================================================================
 
-____
 [IMPORTANT]
+====
 If you wish to use JSPs you will need to deploy these annotation-related jars.
-____
-
-____
+====
 [NOTE]
+====
 You may be able to deploy later versions or other providers of these specifications, however these particular versions are known to have correct manifests and have been tested and known to work with OSGi.
-____
-
+====
 Even if your webapp itself does not not use annotations, you may need to deploy these jars because your webapp depends on a Jetty module or a 3rd party library that uses a http://docs.oracle.com/javaee/6/api/javax/servlet/ServletContainerInitializer.html[javax.servlet.ServletContainerInitializer].
 This interface requires annotation support.
 It is implemented by providers of code that extend the capabilities of the container.
@@ -1093,7 +1089,7 @@ org.osgi.framework.system.packages=org.osgi.framework;version=1.7.0, org.osgi.fr
 You should now be able to start Felix, and deploy all the jars listed on this page.
 You should see output similar to this on the console, using the `felix:lb` command:
 
-....
+----
     ID|State      |Level|Name
     0|Active     |    0|System Bundle (4.4.1)
     1|Active     |    1|ASM (7.0)
@@ -1132,7 +1128,7 @@ You should see output similar to this on the console, using the `felix:lb` comma
    35|Active     |    1|Eclipse Compiler for Java(TM) (3.8.2.v20130121-145325)
    36|Active     |    1|Mortbay EL API and Implementation (8.5.33.1)
    37|Active     |    1|Mortbay Jasper (8.5.33.1)
-....
+----
 
 ===== Eclipse
 
@@ -1157,6 +1153,6 @@ In addition, as the feature group includes websocket, you will need to download 
 |=======================================================================
 |Jar |Bundle Symbolic Name |Location
 |javax.websocket-api |javax.websocket-api
-|https://repo1.maven.org/maven2/javax/websocket/websocket-api[Maven
+|https://repo1.maven.org/maven2/javax/websocket/[Maven
 central]
 |=======================================================================

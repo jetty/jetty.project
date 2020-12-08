@@ -93,8 +93,9 @@ public class TestJettyOSGiBootWithJavaxWebSocket
     public static List<Option> extraDependencies()
     {
         List<Option> res = new ArrayList<>();
-        res.add(mavenBundle().groupId("biz.aQute.bnd").artifactId("bndlib").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.ops4j.pax.tinybundles").artifactId("tinybundles").version("2.1.1").start());
+        //Need an earlier version of bndlib because of tinybundles
+        res.add(mavenBundle().groupId("biz.aQute.bnd").artifactId("biz.aQute.bndlib").version("3.5.0").start());
+        res.add(mavenBundle().groupId("org.ops4j.pax.tinybundles").artifactId("tinybundles").versionAsInProject().start());
         return res;
     }
 

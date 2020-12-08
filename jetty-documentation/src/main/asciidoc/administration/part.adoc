@@ -18,7 +18,7 @@
 
 [[jetty-admin-guide]]
 
-= Jetty Administration Guide
+== Jetty Administration Guide
 
 include::startup/chapter.adoc[]
 include::sessions/chapter.adoc[]

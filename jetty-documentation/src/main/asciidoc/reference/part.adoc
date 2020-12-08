@@ -18,7 +18,7 @@
 
 [[jetty-ref-guide]]
 
-= Jetty Reference Guide
+== Jetty Reference Guide
 
 include::architecture/chapter.adoc[]
 include::platforms/chapter.adoc[]

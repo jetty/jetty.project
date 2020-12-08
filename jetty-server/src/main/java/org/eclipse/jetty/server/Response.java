@@ -123,17 +123,20 @@ public class Response implements HttpServletResponse
 
     protected void recycle()
     {
+        // _channel need not be recycled
+        _fields.clear();
+        _errorSentAndIncludes.set(0);
+        _out.recycle();
         _status = HttpStatus.OK_200;
         _reason = null;
         _locale = null;
         _mimeType = null;
         _characterEncoding = null;
+        _encodingFrom = EncodingFrom.NOT_SET;
         _contentType = null;
         _outputType = OutputType.NONE;
+        // _writer does not need to be recycled
         _contentLength = -1;
-        _out.recycle();
-        _fields.clear();
-        _encodingFrom = EncodingFrom.NOT_SET;
         _trailers = null;
     }
 
@@ -497,7 +500,37 @@ public class Response implements HttpServletResponse
      */
     public void sendRedirect(int code, String location) throws IOException
     {
-        if ((code < HttpServletResponse.SC_MULTIPLE_CHOICES) || (code >= HttpServletResponse.SC_BAD_REQUEST))
+        sendRedirect(code, location, false);
+    }
+
+    /**
+     * Sends a response with a HTTP version appropriate 30x redirection.
+     *
+     * @param location the location to send in {@code Location} headers
+     * @param consumeAll if True, consume any HTTP/1 request input before doing the redirection. If the input cannot
+     * be consumed without blocking, then add a `Connection: close` header to the response.
+     * @throws IOException if unable to send the redirect
+     */
+    public void sendRedirect(String location, boolean consumeAll) throws IOException
+    {
+        sendRedirect(getHttpChannel().getRequest().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
+            ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER, location, consumeAll);
+    }
+
+    /**
+     * Sends a response with a given redirection code.
+     *
+     * @param code the redirect status code
+     * @param location the location to send in {@code Location} headers
+     * @param consumeAll if True, consume any HTTP/1 request input before doing the redirection. If the input cannot
+     * be consumed without blocking, then add a `Connection: close` header to the response.
+     * @throws IOException if unable to send the redirect
+     */
+    public void sendRedirect(int code, String location, boolean consumeAll) throws IOException
+    {
+        if (consumeAll)
+            getHttpChannel().ensureConsumeAllOrNotPersistent();
+        if (!HttpStatus.isRedirection(code))
             throw new IllegalArgumentException("Not a 3xx redirect code");
 
         if (!isMutable())

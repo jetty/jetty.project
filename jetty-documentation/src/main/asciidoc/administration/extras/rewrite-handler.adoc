@@ -31,21 +31,21 @@ The most common use is to rewrite request URIs, but it is capable of much more: 
 
 The standard Jetty distribution bundle contains the `jetty-rewrite` link:#startup-modules[module], so all you need to do is to enable it using one of the link:#start-jar[module commands], eg:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 $ java -jar start.jar --add-to-start=rewrite
-....
+----
 
-_____
 [NOTE]
+====
 If you are running the standard Jetty distribution with the sample test webapp, there will be a demo of the rewrite module at http://localhost:8080/test/rewrite/
-_____
+====
 
 ==== Usage
 
 The rewrite module enables the following Jetty xml config file on the execution path:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 include::{SRCDIR}/jetty-rewrite/src/main/config/etc/jetty-rewrite.xml[]
 ----
@@ -54,7 +54,7 @@ As the commented out code shows, you configure the `RewriteHandler` by adding va
 
 There is an example of link:#rewrite-rules[rules] configuration in the standard distribution in the `demo-base/etc/demo-rewrite-rules.xml` file:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 include::{SRCDIR}/tests/test-webapps/test-jetty-webapp/src/main/config/demo-base/etc/demo-rewrite-rules.xml[]
 ----
@@ -63,7 +63,7 @@ include::{SRCDIR}/tests/test-webapps/test-jetty-webapp/src/main/config/demo-base
 
 This is an example for embedded Jetty, which does something similar to the configuration file example above:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
   Server server = new Server();
 

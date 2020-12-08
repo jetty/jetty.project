@@ -198,7 +198,7 @@ public class HttpConfiguration implements Dumpable
         return _responseHeaderSize;
     }
 
-    @ManagedAttribute("The maximum allowed size in bytes for an HTTP header field cache")
+    @ManagedAttribute("The maximum allowed size in Trie nodes for an HTTP header field cache")
     public int getHeaderCacheSize()
     {
         return _headerCacheSize;
@@ -423,7 +423,8 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @param headerCacheSize The size in bytes of the header field cache.
+     * @param headerCacheSize The size of the header field cache, in terms of unique characters branches
+     * in the lookup {@link Trie} and associated data structures.
      */
     public void setHeaderCacheSize(int headerCacheSize)
     {

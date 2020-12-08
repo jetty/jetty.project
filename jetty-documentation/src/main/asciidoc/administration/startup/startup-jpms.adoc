@@ -36,8 +36,8 @@ or greater, and explicitly referencing the "enterprise" classes as dependencies,
 
 To start Jetty on the module-path rather than the class-path, it is enough to add the `--jpms` option to the command line, for example:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 $ mkdir my-jetty-base
 $ cd my-jetty-base
 $ java -jar $JETTY_HOME/start.jar --add-to-start=http
@@ -46,7 +46,7 @@ INFO  : http            initialized in ${jetty.base}/start.ini
 INFO  : threadpool      transitively enabled, ini template available with --add-to-start=threadpool
 INFO  : Base directory was modified
 $ java -jar $JETTY_HOME/start.jar --jpms
-....
+----
 
 The example above creates a link:#startup-base-and-home[Jetty base directory] and enables the `http` module using the `--add-to-start` command.
 The server then starts Jetty on the module-path using the `--jpms` option.
@@ -59,20 +59,20 @@ You will have two JVMs running: one that runs `start.jar` and one that runs Jett
 
 If you are interested in the details of how the command line to run Jetty on the module-path looks like, you can add the `--dry-run` option:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 $ java -jar $JETTY_HOME/start.jar --jpms --dry-run
-....
+----
 
 This will give an output looking something like this (broken in sections for clarity):
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 /opt/openjdk-11+28/bin/java
 --module-path /opt/jetty/lib/servlet-api-3.1.jar:/opt/jetty/lib/jetty-schemas-3.1.jar:/opt/jetty/lib/jetty-http-9.4.13-SNAPSHOT.jar:...
 --patch-module servlet.api=/opt/jetty/lib/jetty-schemas-3.1.jar
 --module org.eclipse.jetty.xml/org.eclipse.jetty.xml.XmlConfiguration /opt/jetty/etc/jetty-threadpool.xml /opt/jetty/etc/jetty.xml ...
-....
+----
 
 The `--module-path` option specifies the list of Jetty jars. 
 This list depends on the Jetty modules that have been enabled via the link:#startup-modules[`--add-to-start`] command.
@@ -94,15 +94,15 @@ Jetty needs to be able to instantiate those classes and therefore needs to be ab
 
 When Jetty runs on the class-path, this is easily achieved by using a link:#custom-modules[custom module]:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 .mysql.mod
-....
+----
 [description]
 MySQL module
 
 [lib]
 lib/mysql/mysql-connector-java-*.jar
-....
+----
 
 However, when running on the module-path, things are quite different.
 
@@ -111,9 +111,9 @@ Because it is not an automatic module, it is not added to the module graph, and 
 
 To add the JPMS module `java.sql` to the module graph, you need to modify your custom module in the following way, using our `mysql.mod` as an example:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 .mysql.mod
-....
+----
 [description]
 MySQL module
 
@@ -122,7 +122,7 @@ lib/mysql/mysql-connector-java-*.jar
 
 [jpms]
 add-modules: java.sql
-....
+----
 
 The new `[jpms]` section is only used when Jetty is started on the module-path via the `--jpms` command line option.
 
@@ -130,9 +130,9 @@ Assuming that `mysql-connector-java-*.jar` is a non JPMS modular jar, or an auto
 
 If `mysql-connector-java-*.jar` were a proper JPMS modular jar with name (for example) `com.mysql.jdbc`, then it would need to be explicitly added to the module graph, in this way:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 .mysql.mod
-....
+----
 [description]
 MySQL module
 
@@ -141,21 +141,21 @@ lib/mysql/mysql-connector-java-*.jar
 
 [jpms]
 add-modules: com.mysql.jdbc
-....
+----
 
 The JPMS module `java.sql` does not need to be explicitly added because it would be a dependency of the `com.mysql.jdbc` module and therefore automatically added to the module graph.
 
 The `[jpms]` section has the following format:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [jpms]
 add-modules: <module name>(,<module name>)*
 patch-module: <module>=<file>(:<file>)*
 add-opens: <module>/<package>=<target-module>(,<target-module>)*
 add-exports: <module>/<package>=<target-module>(,<target-module>)*
 add-reads: <module>=<target-module>(,<target-module>)*
-....
+----
 
 [[jpms-module-path-alternative]]
 ==== Alternative way to start Jetty on the module-path
@@ -164,22 +164,22 @@ The section above uses the `--jpms` command line option to start Jetty on the mo
 An alternative way of achieving the same result is to use a Jetty module, `$JETTY_BASE/modules/jpms.mod`,
 that specifies that you want to run using JPMS (and possibly add some JPMS specific configuration).
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 .jpms.mod
-....
+----
 [ini]
 --jpms
 
 [jpms]
 # Additional JPMS configuration.
-....
+----
 
 The `[ini]` section is equivalent to passing the `--jpms` option to the command line.
 The `[jpms]` section (see also the link:#jpms-advanced-config[advanced JPMS configuration section])
 allows you specify additional JPMS configuration.
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 $ mkdir jetty-base-jpms
 $ cd jetty-base-jpms
 $ mkdir modules
@@ -189,4 +189,4 @@ $ cp /tmp/jpms.mod modules/
 $ java -jar $JETTY_HOME/start.jar --add-to-start=http,jpms
 # Jetty will start on the module-path.
 $ java -jar $JETTY_HOME/start.jar
-....
+----

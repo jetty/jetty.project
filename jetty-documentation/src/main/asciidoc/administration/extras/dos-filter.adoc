@@ -55,7 +55,7 @@ Place the configuration in a webapp's `web.xml` or `jetty-web.xml`.
 The default configuration allows 25 requests per connection at a time, servicing more important requests first, and queuing up the rest.
 This example allow 30 requests at a time:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <filter>
    <filter-name>DoSFilter</filter-name>

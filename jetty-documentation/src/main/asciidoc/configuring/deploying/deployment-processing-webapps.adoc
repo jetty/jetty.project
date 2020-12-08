@@ -132,7 +132,7 @@ If you have only one webapp that you wish to affect, this may be the easiest opt
 You will, however, either need to have a context xml file that represents your web app, or you need to call the equivalent in code.
 Let's see an example of how we would add in the Configurations for both JNDI _and_ annotations:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
@@ -164,7 +164,7 @@ Of course, you can also use this method to reduce the Configurations applied to 
 If you use the link:#deployment-architecture[deployer], you can set up the list of Configuration classes on the link:#default-web-app-provider[WebAppProvider].
 They will then be applied to each `WebAppContext` deployed by the deployer:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
@@ -208,7 +208,7 @@ Instead of having to enumerate the list in its entirety, you can simply nominate
 Let's look at an example of using this method to add in Configuration support for JNDI - as usual you can either do this in an xml file, or via equivalent code.
 This example uses an xml file, in fact it is the `$JETTY_HOME/etc/jetty-plus.xml` file from the Jetty distribution:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
@@ -258,7 +258,7 @@ The value of this attribute is a regexp that defines which _jars_ and _class dir
 
 Here's an example from a context xml file (although as always, you could have accomplished the same in code), which would match any jar whose name starts with "foo-" or "bar-", or a directory named "classes":
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
@@ -284,7 +284,7 @@ This can be particularly useful when you have dozens of jars in `WEB-INF/lib`, b
 
 Here's an example in a xml file of a pattern that matches any jar that starts with `spring-`:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">

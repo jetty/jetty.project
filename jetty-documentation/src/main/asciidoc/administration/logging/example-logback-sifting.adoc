@@ -23,9 +23,9 @@ This page describes how to create log files at the server level and name them ba
 This can be done with SLF4J + Logback + Jetty Webapp Logging in the mix. 
 Find example projects for this feature at github:
 
-....
+----
 https://github.com/jetty-project/jetty-and-logback-example
-....
+----
 
 .GitHub Example Project
 [cols=",",options="header",]

@@ -52,18 +52,16 @@ We support the version 13 of the released and final spec.
 +
 Jetty tests its WebSocket protocol implementation using the http://autobahn.ws/testsuite[autobahn testsuite].
 
-____
 [IMPORTANT]
+====
 The early drafts of WebSocket were supported in Jetty 7 and Jetty 8,   but this support has been removed in Jetty 9.
 This means that Jetty 9 will not support the old browsers that implemented the early drafts of WebSocket. (such as Safari 5.0 or Opera 12)
-____
-
-____
+====
 [TIP]
+====
 Want to know if the browser you are targeting supports WebSocket?
 Use http://caniuse.com/websockets[caniuse.com/websockets] to find out.
-____
-
+====
 http://www.jcp.org/en/jsr/detail?id=356[JSR-356]::
   The Java WebSocket API (`javax.websocket`)
 +
@@ -116,7 +114,7 @@ Completely disable jsr-356 for a particular webapp:::
   Set the `org.eclipse.jetty.containerInitializerExclusionPattern` link:#context_attributes[context attribute] to include `org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer`.
   Here's an example of doing this in code, although you can do the link:#intro-jetty-configuration-webapps[same in xml]:
 +
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 WebAppContext context = new WebAppContext();
 context.setAttribute("org.eclipse.jetty.containerInitializerExclusionPattern", 

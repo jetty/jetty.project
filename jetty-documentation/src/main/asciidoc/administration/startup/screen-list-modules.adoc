@@ -16,8 +16,8 @@
 //  ========================================================================
 //
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [mybase]$ java -jar ../start.jar --list-modules
 
 Available Modules:
@@ -728,4 +728,4 @@ Modules for tag 'session':
        Tags: session
      Depend: server
         XML: etc/sessions/id-manager.xml
-....
+----

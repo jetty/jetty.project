@@ -89,7 +89,7 @@ It is trivial to write the synchronous version in terms of the asynchronous vers
 
 You can use `EndPoint.write(Callback, ByteBuffer...)` in a blocking way as follows:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 FutureCallback callback = new FutureCallback();
 endPoint.write(callback, buffers);

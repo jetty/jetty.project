@@ -781,7 +781,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                 if (e.isRetryable())
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Datastore put retry {} waiting {}ms", attempts, backoff);
+                        LOG.debug(String.format("Datastore put retry=%s backoff=%s", attempts, backoff), e);
 
                     try
                     {

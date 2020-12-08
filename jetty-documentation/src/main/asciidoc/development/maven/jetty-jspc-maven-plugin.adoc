@@ -26,7 +26,7 @@ This plugin will help you pre-compile your jsps and works in conjunction with th
 
 Here's the basic setup required to put the jspc plugin into your build:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <plugin>
   <groupId>org.eclipse.jetty</groupId>
@@ -117,7 +117,7 @@ You can download the javadoc https://repo1.maven.org/maven2/org/glassfish/web/ja
 
 Taking all the default settings, here's how to configure the war plugin to use the generated `web.xml` that includes all of the jsp servlet declarations:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <plugin>
   <groupId>org.apache.maven.plugins</groupId>
@@ -135,7 +135,7 @@ As compiling jsps is usually done during preparation for a production release an
 
 For example, the following profile will only be invoked if the flag `-Dprod` is present on the run line:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <profiles>
     <profile>
@@ -164,10 +164,10 @@ For example, the following profile will only be invoked if the flag `-Dprod` is 
 
 The following invocation would cause your code to be compiled, the jsps to be compiled, the <servlet> and <servlet-mapping>s inserted in the `web.xml` and your webapp assembled into a war:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 $ mvn -Dprod package
-....
+----
 
 [[jspc-overlay-precompile]]
 ==== Precompiling Jsps with Overlaid Wars
@@ -181,7 +181,7 @@ We will unpack the overlaid war file, compile the jsps and merge their servlet d
 
 Here's an example configuration of the war plugin that separate those phases into an unpack phase, and then a packing phase:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <plugin>
     <artifactId>maven-war-plugin</artifactId>
@@ -218,7 +218,7 @@ Now you also need to configure the `jetty-jspc-maven-plugin` so that it can use 
 This is in `target/foo/WEB-INF/web.xml`.
 Using the default settings, the `web.xml` merged with the jsp servlet definitions will be put into `target/web.xml`.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <plugin>
     <groupId>org.eclipse.jetty</groupId>

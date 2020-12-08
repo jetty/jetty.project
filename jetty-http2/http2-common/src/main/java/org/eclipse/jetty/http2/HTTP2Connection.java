@@ -239,7 +239,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         {
             Runnable task = pollTask();
             if (LOG.isDebugEnabled())
-                LOG.debug("Dequeued task {}", task);
+                LOG.debug("Dequeued task {}", String.valueOf(task));
             if (task != null)
                 return task;
 

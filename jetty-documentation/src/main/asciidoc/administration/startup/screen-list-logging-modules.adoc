@@ -16,8 +16,8 @@
 //  ========================================================================
 //
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [mybase]$ java -jar $JETTY_HOME/start.jar --list-modules=logging,-internal
 
 Available Modules:
@@ -91,4 +91,4 @@ Modules for tag 'requestlog':
      Depend: server, logback-core, resources
         LIB: lib/logback/logback-access-${logback.version}.jar
         XML: etc/jetty-logback-access.xml
-....
+----

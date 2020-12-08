@@ -43,17 +43,16 @@ All CBC based ciphers are supported since Java 7, the new GCM modes are supporte
 
 TLS v1.0, v1.1 and SSL v3 are no longer supported by default. If your Jetty implementation requires these protocols for legacy support, they can be enabled manually.
 
-____
 [NOTE]
+====
 Once TLS v1.3 is released, there will be no workaround available for TLS v1.0 or v1.1.
 Plans for TLS v1.3 include banning ciphers with known vulnerabilities from being present at any level.
 It is recommended to upgrade any clients using these ciphers as soon as possible or face being locked into a outdated version of Jetty, Java or even OS.
-____
-
+====
 By default, Jetty excludes these ciphers in the link:{GITBROWSEURL}/jetty-util/src/main/java/org/eclipse/jetty/util/ssl/SslContextFactory.java#L249-L256[`SslContextFactory`.]
 You can re-enable these by re-declaring the ciphers you want excluded in code:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
 sslContextFactory.setExcludeCipherSuites("^.*_(MD5|SHA|SHA1)$");
@@ -110,23 +109,22 @@ You should read the full manuals of the tools you are using if you want to speci
 
 The following command generates a key pair and certificate directly into file `keystore`:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 $ keytool -keystore keystore -alias jetty -genkey -keyalg RSA
 ----
 
-____
 [NOTE]
+====
 The DSA key algorithm certificate produces an error after loading several pages.
 In a browser, it displays a message "Could not establish an encrypted connection because certificate presented by localhost as an invalid signature."
 The solution is to use RSA for the key algorithm.
-____
-
+====
 This command prompts for information about the certificate and for passwords to protect both the keystore and the keys within it.
 The only mandatory response is to provide the fully qualified host name of the server at the "first and last name" prompt.
 For example:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 $ keytool -keystore keystore -alias jetty -genkey -keyalg RSA -sigalg SHA256withRSA
  Enter keystore password:  password
@@ -159,7 +157,7 @@ If you want to use only a self signed certificate for some kind of internal admi
 
 If you are using Java 8 or later, then you may also use the SAN extension to set one or more names that the certificate applies to:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 $ keytool -keystore keystore -alias jetty -genkey -keyalg RSA -sigalg SHA256withRSA -ext 'SAN=dns:jetty.eclipse.org,dns:*.jetty.org'
  ...
@@ -170,7 +168,7 @@ $ keytool -keystore keystore -alias jetty -genkey -keyalg RSA -sigalg SHA256with
 
 The following command generates a key pair in the file `jetty.key`:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 $ openssl genrsa -aes128 -out jetty.key
 ----
@@ -179,7 +177,7 @@ You might also want to use the `-rand` file argument to provide an arbitrary fil
 
 The following command generates a certificate for the key into the file `jetty.crt`:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 $ openssl req -new -x509 -newkey rsa:2048 -sha256 -key jetty.key -out jetty.crt
 ----
@@ -190,7 +188,7 @@ For the those with heightened security in mind, add -b4096 to get a 4069 bit key
 The next command prompts for information about the certificate and for passwords to protect both the keystore and the keys within it.
 The only mandatory response is to provide the fully qualified host name of the server at the "Common Name" prompt. For example:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 $ openssl genrsa -aes128 -out jetty.key
 Generating RSA private key, 2048 bit long modulus
@@ -243,7 +241,7 @@ Each CA has its own instructions (look for JSSE or OpenSSL sections), but all in
 
 The following command generates the file `jetty.csr` using `keytool` for a key/cert already in the keystore:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 $ keytool -certreq -alias jetty -keystore keystore -file jetty.csr
 ----
@@ -253,7 +251,7 @@ $ keytool -certreq -alias jetty -keystore keystore -file jetty.csr
 
 The following command generates the file `jetty.csr` using OpenSSL for a key in the file `jetty.key`:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 $ openssl req -new -key jetty.key -out jetty.csr
 ----
@@ -266,13 +264,12 @@ You need to enter the details for the certificate again.
 
 Once a CA has sent you a certificate, or if you generated your own certificate without `keytool`, you need to load it into a JSSE keystore.
 
-____
 [NOTE]
+====
 You need both the private key and the certificate in the JSSE keystore.
 You should load the certificate into the keystore used to generate the CSR with `keytool`.
 If your key pair is not already in a keystore (for example, because it has been generated with OpenSSL), you need to use the PKCS12 format to load both key and certificate (see link:#loading-keys-and-certificates-via-pkcks12[PKCKS12 Keys &Certificates]).
-____
-
+====
 [[loading-certificates-with-keytool]]
 ====== Loading Certificates with keytool
 
@@ -280,7 +277,7 @@ You can use `keytool` to load a certificate in PEM form directly into a keystore
 The PEM format is a text encoding of certificates; it is produced by OpenSSL, and is returned by some CAs.
 An example PEM file is:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 jetty.crt
 -----BEGIN CERTIFICATE-----
@@ -302,14 +299,14 @@ Rcz6oCRvCGCe5kDB
 
 The following command loads a PEM encoded certificate in the `jetty.crt` file into a JSSE keystore:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 $ keytool -keystore keystore -import -alias jetty -file jetty.crt -trustcacerts
 ----
 
 If the certificate you receive from the CA is not in a format that `keytool` understands, you can use the `openssl` command to convert formats:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 $ openssl x509 -in jetty.der -inform DER -outform PEM -out jetty.crt
 ----
@@ -322,29 +319,28 @@ The certificate can be one you generated yourself or one returned from a CA in r
 
 The following OpenSSL command combines the keys in `jetty.key` and the certificate in the `jetty.crt` file into the `jetty.pkcs12` file:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 $ openssl pkcs12 -inkey jetty.key -in jetty.crt -export -out jetty.pkcs12
 ----
 
 If you have a chain of certificates, because your CA is an intermediary, build the PKCS12 file as follows:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 $ cat example.crt intermediate.crt [intermediate2.crt] ... rootCA.crt > cert-chain.txt
 $ openssl pkcs12 -export -inkey example.key -in cert-chain.txt -out example.pkcs12
 ----
 
-____
 [NOTE]
+====
 The order of certificates must be from server to rootCA, as per link:https://www.ietf.org/rfc/rfc2246.txt[RFC2246 section 7.4.2.]
-____
-
+====
 OpenSSL asks for an __export password__.
 A non-empty password is required to make the next step work.
 Load the resulting PKCS12 file into a JSSE keystore with `keytool`:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 $ keytool -importkeystore -srckeystore jetty.pkcs12 -srcstoretype PKCS12 -destkeystore keystore
 ----
@@ -361,11 +357,11 @@ If you imported the key and certificate originally using the PKCS12 method, use 
 The `keystore` only contains the server's private key and certificate.
 
 [[img-certificate-chain]]
-image::images/certificate-chain.png[title="Certificate chain", alt="Certificate chain"]
+image::configuring/connectors/images/certificate-chain.png[title="Certificate chain", alt="Certificate chain"]
 
 [literal]
 .The structure of KeyStore file:
-....
+----
 ├── PrivateKeyEntry
 │   ├── PrivateKey
 │   ├── Certificate chain
@@ -376,13 +372,12 @@ image::images/certificate-chain.png[title="Certificate chain", alt="Certificate 
 │   └── Intermediary CA certificate
 └── TrustedCertEntry
     └── Root CA certificate
-....
+----
 
-____
 [NOTE]
+====
 Both the `Intermediary CA certificate` and `Root CA certificate` are optional.
-____
-
+====
 [source%nowrap,plain,linenums]
 ----
 $ cd $JETTY_BASE
@@ -644,21 +639,21 @@ the other is `$JETTY/etc/truststore` which contains intermediary CA and root CA.
 
 [literal]
 .The structure of `$JETTY/etc/keystore`
-....
+----
 └── PrivateKeyEntry
     ├── PrivateKey
     └── Certificate chain
         └── Server certificate (end entity)
-....
+----
 
 [literal]
 .The structure of `$JETTY/etc/truststore`
-....
+----
 ├── TrustedCertEntry
 │   └── Intermediary CA certificate
 └── TrustedCertEntry
     └── Root CA certificate
-....
+----
 
 [[configuring-sslcontextfactory]]
 ==== Configuring the Jetty SslContextFactory
@@ -686,11 +681,10 @@ While the `SslContextFactory` can operate without a keystore (this mode is most 
 
 setKeyStorePath::
   The configured keystore to use for all SSL/TLS in configured Jetty Connector (or Client).
-____
 [NOTE]
+====
 As a keystore is vital security information, it can be desirable to locate the file in a directory with *very* restricted access.
-____
-
+====
 setKeyStorePassword::
   The keystore password may be set here in plain text, or as some measure of protection from casual observation, it may be obfuscated using the link:{JDURL}/org/eclipse/jetty/util/security/Password.html[Password] class.
 setTrustStorePath::
@@ -704,26 +698,24 @@ setExcludeCipherSuites / setIncludeCipherSuites::
 setExcludeProtocols / setIncludeProtocols::
   This allows for the customization of the selected Protocols that will be used by SSL/TLS.
 
-____
 [NOTE]
+====
 When working with Includes / Excludes, it is important to know that *Excludes will always win.*
 The selection process is to process the JVM list of available Cipher Suites or Protocols against the include list, then remove the excluded ones.
 Be aware that each Include / Exclude list has a Set method (replace the list) or Add method (append the list).
-____
-
-____
+====
 [CAUTION]
+====
 The keystore and truststore passwords may also be set using the system properties: `org.eclipse.jetty.ssl.keypassword` `org.eclipse.jetty.ssl.password`.
 This is _not_ a recommended usage.
-____
-
+====
 [[conscrypt]]
 ==== Conscrypt SSL
 
 Jetty includes support for Google's https://github.com/google/conscrypt/[Conscrypt SSL], which is built on their fork of https://www.openssl.org/[OpenSSL], https://boringssl.googlesource.com/boringssl/[BoringSSL].
-Implementing Conscrypt for the link:{GITBROWSEURL}/jetty-alpn/jetty-alpn-conscrypt-server/src/test/java/org/eclipse/jetty/alpn/conscrypt/server/ConscryptHTTP2Server.java[server] or link:{GITBROWSEURL}/jetty-alpn/jetty-alpn-conscrypt-client/src/test/java/org/eclipse/jetty/alpn/java/client/ConscryptHTTP2Client.java[client] is very straightforward process - simply instantiate an instance of Conscrypt's `OpenSSLProvider` and set `Conscrypt` as a provider for Jetty's `SslContextFactory`:
+Implementing Conscrypt for the link:{GITBROWSEURL}/jetty-alpn/jetty-alpn-conscrypt-server/src/test/java/org/eclipse/jetty/alpn/conscrypt/server/ConscryptHTTP2ServerTest.java[server] or link:{GITBROWSEURL}/jetty-alpn/jetty-alpn-conscrypt-client/src/test/java/org/eclipse/jetty/alpn/java/client/ConscryptHTTP2ClientTest.java[client] is very straightforward process - simply instantiate an instance of Conscrypt's `OpenSSLProvider` and set `Conscrypt` as a provider for Jetty's `SslContextFactory`:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 ...
 Security.addProvider(new OpenSSLProvider());
@@ -760,31 +752,28 @@ It's crucial that you use the _exact_ names of the cipher suites as used/known b
 You can get them by obtaining an instance of SSLEngine and call `getSupportedCipherSuites()`.
 Tools like https://www.ssllabs.com/[ssllabs.com] might report slightly different names which will be ignored.
 
-____
 [IMPORTANT]
+====
 It is important to stay up-to-date with the latest supported cipher suites.
 Be sure to consult Oracle's link:https://java.com/en/jre-jdk-cryptoroadmap.html[JRE and JDK Cryptographic Roadmap] frequently for recent and upcoming changes to supported ciphers.
-____
-
-____
+====
 [IMPORTANT]
+====
 It's recommended to install the Java Cryptography Extension (JCE) Unlimited Strength policy files in your JRE to get full strength ciphers such as AES-256.
 The files can be found on the http://www.oracle.com/technetwork/java/javase/downloads/index.html[Java download page].
 Just overwrite the two present JAR files in `<JRE_HOME>/lib/security/`.
-____
-
+====
 Both `setIncludeCipherSuites` and `setExcludeCipherSuites` can be fed by the exact cipher suite name used in the JDK or by using regular expressions.
 If you have a need to adjust the Includes or Excludes, then this is best done with a custom XML that configures the `SslContextFactory` to suit your needs.
 
-____
 [NOTE]
+====
 Jetty *does* allow users to enable weak/deprecated cipher suites (or even no cipher suites at all).
 By default, if you have these suites enabled warning messages will appear in the server logs.
-____
-
+====
 To do this, first create a new `${jetty.base}/etc/tweak-ssl.xml` file (this can be any name, just avoid prefixing it with "jetty-").
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN"
           "http://www.eclipse.org/jetty/configure_9_3.dtd">
@@ -808,7 +797,7 @@ You can do anything you want with the `SslContextFactory` in use by the Jetty Di
 
 To make sure that your `${jetty.base}` uses this new XML, add it to the end of your `${jetty.base}/start.ini` or `${jetty.base}/start.d/server.ini`.
 
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 $ cd /path/to/mybase
 $ ls -l
@@ -821,23 +810,21 @@ etc/tweak-ssl.xml
 $
 ----
 
-____
 [NOTE]
+====
 The default `SslContextFactory` implementation applies the latest SSL/TLS recommendations surrounding vulnerabilities in SSL/TLS.
 Check the release notes (the `VERSION.txt` found in the root of the Jetty Distribution, or the http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.eclipse.jetty%22%20AND%20a%3A%22jetty-project%22[alternate (classified 'version') artifacts for the `jetty-project` component] on Maven Central) for updates.
 The Java JVM also applies exclusions at the JVM level and, as such, if you have a need to enable something that is generally accepted by the industry as being insecure or vulnerable you will likely have to enable it in *both* the Java JVM and your Jetty configuration.
-____
-
-____
+====
 [TIP]
+====
 You can enable the `org.eclipse.jetty.util.ssl` named logger at `DEBUG` level to see what the list of selected Protocols and Cipher suites are at startup of Jetty.
-____
-
+====
 Additional Include / Exclude examples:
 
 *Example*: Include all ciphers which support https://en.wikipedia.org/wiki/Forward_secrecy[Forward Secrecy] using regex:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <!-- Enable Forward Secrecy Ciphers.
        Note: this replaces the default Include Cipher list -->
@@ -851,7 +838,7 @@ Additional Include / Exclude examples:
 
 *Example*: Exclude all old, insecure or anonymous cipher suites:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <!-- Eliminate Old / Insecure / Anonymous Ciphers -->
   <Call name="addExcludeCipherSuites">
@@ -869,7 +856,7 @@ Additional Include / Exclude examples:
 
 *Example*: Since 2014 SSLv3 is considered insecure and should be disabled.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <!-- Eliminate Insecure Protocols -->
   <Call name="addExcludeProtocols">
@@ -884,14 +871,13 @@ Additional Include / Exclude examples:
   </Call>
 ----
 
-____
 [NOTE]
+====
 Note that disabling SSLv3 prevents very old browsers like Internet Explorer 6 on Windows XP from connecting.
-____
-
+====
 *Example*: TLS renegotiation could be disabled too to prevent an attack based on this feature.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <Set name="renegotiationAllowed">FALSE</Set>
 ----
@@ -905,7 +891,7 @@ You can also dump the server when shutting down the server instance by adding `j
 
 Specifically, you will want to look for the `SslConnectionFactory` portion of the dump.
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 [my-base]$ java -jar ${JETTY_HOME}/start.jar jetty.server.dumpAfterStart=true
 

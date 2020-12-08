@@ -75,30 +75,27 @@ SSL Context Factory::
   The TLS connector types (HTTPS and HTTP2) configure an SSL Context Factory with the location of the server keystore and truststore for obtaining server certificates.
 
 
-____
 [NOTE]
+====
 Virtual hosts are not configured on connectors. You must configure individual contexts with the virtual hosts to which they respond.
-____
-
-____
+====
 [NOTE]
+====
 Prior to Jetty 9, the type of the connector reflected both the protocol supported (HTTP, HTTPS, AJP, SPDY), and the nature of the implementation (NIO or BIO). 
 From Jetty 9 onwards there is only one prime Connector type (`ServerConnector`), which is NIO based and uses Connection Factories to handle one or more protocols.
-____
-
+====
 [[intro-jetty-configuration-contexts]]
 ==== Configuring Contexts
 
 A Jetty context is a handler that groups other handlers under a context path together with associated resources and is roughly equivalent to the standard ServletContext API. 
 A context may contain either standard Jetty handlers or a custom application handler.
 
-____
 [NOTE]
+====
 The servlet specification defines a web application. 
 In Jetty a standard web application is a specialized context that uses a standard layout and `WEB-INF/web.xml` to instantiate and configure classpath, resource base and handlers for sessions, security, and servlets, plus servlets for JSPs and static content. 
 Standard web applications often need little or no additional configuration, but you can also use the techniques for arbitrary contexts to refine or modify the configuration of standard web applications.
-____
-
+====
 Configuration values that are common to all contexts are:
 
 contextPath::
@@ -132,7 +129,7 @@ resourceBase::
 
 In an embedded server, you configure contexts by directly calling the link:{JDURL}/org/eclipse/jetty/server/handler/ContextHandler.html[ContextHandler] API as in the following example:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/OneContext.java[]
 ----
@@ -142,7 +139,7 @@ include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/One
 You can create and configure a context entirely by IoC XML (either Jetty's or Spring). 
 The deployer discovers and hot deploys context IoC descriptors like the following which creates a context to serve the Javadoc from the Jetty distribution:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0"  encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC
@@ -203,7 +200,7 @@ Jetty allows the context Path of a WAR file to be set internally (by the WAR its
 
 To set the contextPath from within the WAR file, you can include a `WEB-INF/jetty-web.xml` file which contains IoC XML to set the context path:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0"  encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC
@@ -218,7 +215,7 @@ To set the contextPath from within the WAR file, you can include a `WEB-INF/jett
 Alternately, you can configure the classpath externally without the need to modify the WAR file itself.
 Instead of allowing the WAR file to be discovered by the deployer, an IoC XML file may be deployed that both sets the context path and declares the WAR file that it applies to:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0"  encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC
@@ -255,11 +252,10 @@ The new WebAppProvider will attempt to avoid double deployments during the direc
 * If a directory and matching XML file exists (eg: `foo/` and `foo.xml`), then the directory is assumed to be an unpacked WAR and only the XML is deployed (which may use the directory in its own configuration)
 * If a WAR file and matching XML file exist (eg: `foo.war` and `foo.xml`), then the WAR is assumed to be configured by the XML and only the XML is deployed.
 
-____
 [NOTE]
+====
 In prior versions of Jetty there was a separate ContextDeployer that provided XML-based deployment. As of Jetty 9 the ContextDeployer no longer exists and its functionality has been merged with the new link:{JDURL}/org/eclipse/jetty/deploy/providers/WebAppProvider.html[WebAppProvider] to avoid double deployment scenarios.
-____
-
+====
 //A Context is an instance of ContextHandler that aggregates other handlers with common resources for handling HTTP requests (such as resource base, class loader, configuration attributes). 
 //A standard web application is a specialized instance of a context (called a WebAppContext) that uses standard layouts and `web.xml` deployment descriptors to configure the context.
 
@@ -267,7 +263,7 @@ ____
 
 The authentication method and realm name for a standard web application may be set in the `web.xml` deployment descriptor with elements like:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 ...
 <login-config>
@@ -283,7 +279,7 @@ In Jetty, there are several realm implementations (called LoginServices) and the
 
 To configure an instance of HashLoginService that matches the "Test Realm" configured above, the following `$JETTY_BASE/etc/test-realm.xml` IoC XML file should be passed on the command line or set in `start.ini` or `start.d/server.ini`.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 include::{SRCDIR}/tests/test-webapps/test-jetty-webapp/src/main/config/demo-base/etc/test-realm.xml[]
 ----

@@ -23,20 +23,20 @@ Jetty 9 is the most recent version of Jetty and has a great many improvements ov
 This documentation which focuses on Jetty 9.
 While many people continue to use older versions of Jetty, we generally recommend using Jetty 9 as it represents the version of Jetty that we will actively maintain and improve over the next few years.
 
-_____
 [IMPORTANT]
+====
 It is important that only stable releases are used in production environments.
 Versions that have been deprecated or are released as Milestones (M) or Release Candidates (RC) are not suitable for production as they may contain security flaws or incomplete/non-functioning feature sets.
-_____
+====
 
 .Jetty Versions
 [width="100%",cols="12%,9%,15%,6%,21%,10%,6%,21%",options="header",]
 |=======================================================================
 |Version |Year |Home |Min JVM |Protocols |Servlet |JSP |Status
-|11  |2020- |Eclipse |11 ^(2)^ |HTTP/1.1 (RFC 7230), HTTP/2 (RFC 7540), WebSocket (RFC 6455, JSR 356), FastCGI, *JakartaEE Namespace*^(1)^ |4.0.2 |2.3 |*UNSTABLE / Alpha*
-|10  |2019- |Eclipse |11 ^(2)^ |HTTP/1.1 (RFC 7230), HTTP/2 (RFC 7540), WebSocket (RFC 6455, JSR 356), FastCGI |4.0.2 |2.3 |*UNSTABLE / Beta*
+|11  |2020- |Eclipse |11 ^(2)^ |HTTP/1.1 (RFC 7230), HTTP/2 (RFC 7540), WebSocket (RFC 6455, JSR 356), FastCGI, *JakartaEE Namespace*^(1)^ |5.0.0 |3.0.0 |Stable
+|10  |2019- |Eclipse |11 ^(2)^ |HTTP/1.1 (RFC 7230), HTTP/2 (RFC 7540), WebSocket (RFC 6455, JSR 356), FastCGI |4.0.1 |2.2 |Stable
 |9.4 |2016- |Eclipse |1.8 |HTTP/1.1 (RFC 7230), HTTP/2 (RFC 7540), WebSocket (RFC 6455, JSR 356), FastCGI |3.1 |2.3 |Stable
-|9.3 |2015- |Eclipse |1.8 ^(3)^ |HTTP/1.1 (RFC 7230), HTTP/2 (RFC 7540), WebSocket (RFC 6455, JSR 356), FastCGI |3.1 |2.3 |Deprecated
+|9.3 |2015- |Eclipse |1.8 ^(3)^ |HTTP/1.1 (RFC 7230), HTTP/2 (RFC 7540), WebSocket (RFC 6455, JSR 356), FastCGI |3.1 |2.3 |Deprecated / *End of Life December 2020*
 |9.2 |2014-2018 |Eclipse |1.7 ^(3)^ |HTTP/1.1 RFC2616, javax.websocket, SPDY v3 |3.1 |2.3 |Deprecated / *End of Life January 2018*
 |9.1 |2013-2014 |Eclipse |1.7 ^(3)^ |HTTP/1.1 RFC2616 |3.1 |2.3 |Deprecated / *End of Life May 2014*
 |9.0 |2013-2013 |Eclipse |1.7 ^(3)^ |HTTP/1.1 RFC2616 |3.1-beta |2.3 |Deprecated / *End of Life November 2013*

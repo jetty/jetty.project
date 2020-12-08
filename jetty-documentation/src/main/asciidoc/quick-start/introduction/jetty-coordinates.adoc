@@ -19,11 +19,11 @@
 [[quickstart-jetty-coordinates]]
 === Finding Jetty in Maven
 
-_____
 [IMPORTANT]
+====
 It is important that only stable releases are used in production environments.
 Versions that have been deprecated or are released as Milestones (M) or Release Candidates (RC) are not suitable for production as they may contain security flaws or incomplete/non-functioning feature sets.
-_____
+====
 
 ==== Maven Coordinates
 
@@ -33,7 +33,7 @@ With Jetty 7 the project moved to the Eclipse foundation and to a new `groupId` 
 
 The top level Project Object Model (POM) for the Jetty project is located under the following coordinates.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <dependency>
   <groupId>org.eclipse.jetty</groupId>
@@ -49,7 +49,7 @@ Those generated files are also uploaded into Maven Central during the release of
 
 https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-project/
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <dependency>
   <groupId>org.eclipse.jetty</groupId>

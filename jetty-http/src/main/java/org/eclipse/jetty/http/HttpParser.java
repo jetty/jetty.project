@@ -103,6 +103,7 @@ public class HttpParser
      * </ul>
      */
     public static final Trie<HttpField> CACHE = new ArrayTrie<>(2048);
+    private static final Trie<HttpField> NO_CACHE = Trie.empty(true);
 
     // States
     public enum FieldState
@@ -152,6 +153,7 @@ public class HttpParser
     private final int _maxHeaderBytes;
     private final HttpCompliance _compliance;
     private final EnumSet<HttpComplianceSection> _compliances;
+    private final Utf8StringBuilder _uri = new Utf8StringBuilder(INITIAL_URI_LENGTH);
     private HttpField _field;
     private HttpHeader _header;
     private String _headerString;
@@ -167,7 +169,6 @@ public class HttpParser
     private HttpMethod _method;
     private String _methodString;
     private HttpVersion _version;
-    private Utf8StringBuilder _uri = new Utf8StringBuilder(INITIAL_URI_LENGTH); // Tune?
     private EndOfContent _endOfContent;
     private boolean _hasContentLength;
     private boolean _hasTransferEncoding;
@@ -231,7 +232,7 @@ public class HttpParser
         // Add headers with null values so HttpParser can avoid looking up name again for unknown values
         for (HttpHeader h : HttpHeader.values())
         {
-            if (!CACHE.put(new HttpField(h, (String)null)))
+            if (!h.isPseudo() && !CACHE.put(new HttpField(h, (String)null)))
                 throw new IllegalStateException("CACHE FULL");
         }
     }
@@ -884,11 +885,6 @@ public class HttpParser
                             }
                             checkVersion();
 
-                            // Should we try to cache header fields?
-                            int headerCache = _handler.getHeaderCacheSize();
-                            if (_fieldCache == null && _version.getVersion() >= HttpVersion.HTTP_1_1.getVersion() && headerCache > 0)
-                                _fieldCache = new ArrayTernaryTrie<>(headerCache);
-
                             setState(State.HEADER);
 
                             _requestHandler.startRequest(_methodString, _uri.toString(), _version);
@@ -961,7 +957,7 @@ public class HttpParser
             // Handle known headers
             if (_header != null)
             {
-                boolean addToConnectionTrie = false;
+                boolean addToFieldCache = false;
                 switch (_header)
                 {
                     case CONTENT_LENGTH:
@@ -1034,14 +1030,16 @@ public class HttpParser
                             _field = new HostPortHttpField(_header,
                                 _compliances.contains(HttpComplianceSection.FIELD_NAME_CASE_INSENSITIVE) ? _header.asString() : _headerString,
                                 _valueString);
-                            addToConnectionTrie = _fieldCache != null;
+                            addToFieldCache = true;
                         }
                         break;
 
                     case CONNECTION:
                         // Don't cache headers if not persistent
-                        if (HttpHeaderValue.CLOSE.is(_valueString) || new QuotedCSV(_valueString).getValues().stream().anyMatch(HttpHeaderValue.CLOSE::is))
-                            _fieldCache = null;
+                        if (_field == null)
+                            _field = new HttpField(_header, caseInsensitiveHeader(_headerString, _header.asString()), _valueString);
+                        if (_handler.getHeaderCacheSize() > 0 && _field.contains(HttpHeaderValue.CLOSE.asString()))
+                            _fieldCache = NO_CACHE;
                         break;
 
                     case AUTHORIZATION:
@@ -1052,18 +1050,29 @@ public class HttpParser
                     case COOKIE:
                     case CACHE_CONTROL:
                     case USER_AGENT:
-                        addToConnectionTrie = _fieldCache != null && _field == null;
+                        addToFieldCache = _field == null;
                         break;
 
                     default:
                         break;
                 }
 
-                if (addToConnectionTrie && !_fieldCache.isFull() && _header != null && _valueString != null)
+                // Cache field?
+                if (addToFieldCache && _header != null && _valueString != null)
                 {
-                    if (_field == null)
-                        _field = new HttpField(_header, caseInsensitiveHeader(_headerString, _header.asString()), _valueString);
-                    _fieldCache.put(_field);
+                    if (_fieldCache == null)
+                    {
+                        _fieldCache = (_handler.getHeaderCacheSize() > 0 && (_version != null && _version == HttpVersion.HTTP_1_1))
+                            ? new ArrayTernaryTrie<>(_handler.getHeaderCacheSize())
+                            : NO_CACHE;
+                    }
+
+                    if (!_fieldCache.isFull())
+                    {
+                        if (_field == null)
+                            _field = new HttpField(_header, caseInsensitiveHeader(_headerString, _header.asString()), _valueString);
+                        _fieldCache.put(_field);
+                    }
                 }
             }
             _handler.parsedHeader(_field != null ? _field : new HttpField(_header, _headerString, _valueString));

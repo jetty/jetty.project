@@ -61,7 +61,7 @@ You need to open your Jetty 9.3 `start.ini` and replace the references to the `l
 
 For example, in an existing Jetty 9.3 `start.ini` file the module declaration for logging would look like this:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 --module=logging
 jetty.logging.retainDays=7
@@ -69,7 +69,7 @@ jetty.logging.retainDays=7
 
 In 9.4, it should be replaced by:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 --module=console-capture
 jetty.console-capture.retainDays=7
@@ -170,13 +170,11 @@ Here is a comparison of file formats, note that the file contents are listed in 
 | `maxInactive (long)` |
 |===
 
-____
 [NOTE]
+====
 Session data is now only loaded when requested.
 Previous functionality such as `setLazyLoad` has been removed.
-____
-
-
+====
 ===== JDBC Sessions
 
 As with earlier versions of Jetty, sessions may be persisted to a relational database.

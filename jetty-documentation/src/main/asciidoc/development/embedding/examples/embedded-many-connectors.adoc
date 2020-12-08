@@ -22,7 +22,7 @@
 This example shows how to configure Jetty to use multiple connectors, specifically so it can process both http and https requests.
 Since the meat of this example is the server and connector configuration it only uses a simple HelloHandler but this example should be easily merged with other examples like those deploying servlets or webapps.
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/ManyConnectors.java[]
 
@@ -38,7 +38,7 @@ See link:http://docs.oracle.com/javase/1.5.0/docs/api/java/lang/Thread.html#join
 
 To use this example in your project you will need the following Maven dependencies declared.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
                 
 <dependency>

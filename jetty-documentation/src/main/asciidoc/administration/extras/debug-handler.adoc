@@ -38,7 +38,7 @@ The debug handler can be added to Jetty by activating the debug module.
 
 ==== Embedded usage
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 Server server = new Server(8080);
 RolloverFileOutputStream outputStream = new RolloverFileOutputStream("MeinLogPfad/yyyy_mm_dd.request.log", true,10);

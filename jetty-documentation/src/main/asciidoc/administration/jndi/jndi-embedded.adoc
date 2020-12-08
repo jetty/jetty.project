@@ -23,10 +23,10 @@
 
 In addition to the jars that you require for your application, and the jars needed for core Jetty, you will need to place the following jars onto your classpath:
 
-....
+----
 jetty-jndi.jar
 jetty-plus.jar
-....
+----
 
 If you are using transactions, you will also need the `javax.transaction` api.
 You can obtain this jar link:{MVNCENTRAL}/org/eclipse/jetty/orbit/javax.transaction/1.1.1.v201105210645/javax.transaction-1.1.1.v201105210645.jar[here.]
@@ -39,7 +39,7 @@ Note that this jar also requires the `javax.activation` classes, which is availa
 Here is an example class that sets up some JNDI entries and deploys a webapp that references these JNDI entries in code.
 We'll use some mocked up classes for the transaction manager and the DataSource in this example for simplicity:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 import java.util.Properties;
 import org.eclipse.jetty.server.Server;

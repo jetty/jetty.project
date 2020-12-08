@@ -68,7 +68,7 @@ That said, if a user wishes to configure sessions this way, it is possible using
 
 Below is an example of how you could configure a the link:#configuring-sessions-file-system[`FileSessionDataStore`], but the same concept would apply to any of the *SessionDataStores discussed in this chapter:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Call id="sh" name="getSessionHandler">
@@ -88,8 +88,8 @@ Below is an example of how you could configure a the link:#configuring-sessions-
 
 The example above functions in either a `jetty-web.xml` file or a link:#using-basic-descriptor-files[context xml descriptor file.]
 
-____
 [NOTE]
+====
 If you explicitly configure the `SessionCache` and `SessionDataStore` for a `SessionHandler` in a context xml file or `jetty-web.xml` file, any session modules you already have enabled are ignored.
 So, for example, if you had enabled the `session-store-gcloud module` for your sever, you could force a particular webapp to use the `FileSessionDataStore` by explicitly configuring it in either a context xml file or a `jetty-web.xml` file as shown above.
-____
+====

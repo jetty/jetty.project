@@ -36,6 +36,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.HttpDestination;
+import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Response;
@@ -44,7 +46,9 @@ import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -731,6 +735,46 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         assertThat(new String(response.getContent(), StandardCharsets.ISO_8859_1), Matchers.startsWith("[::1]:"));
 
         assertEquals(1, scenario.client.getDestinations().size());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testRequestWithDifferentDestination(Transport transport) throws Exception
+    {
+        init(transport);
+
+        String requestScheme = HttpScheme.HTTPS.is(scenario.getScheme()) ? "http" : "https";
+        String requestHost = "otherHost.com";
+        int requestPort = 8888;
+        scenario.start(new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            {
+                HttpURI uri = jettyRequest.getHttpURI();
+                assertEquals(requestHost, uri.getHost());
+                assertEquals(requestPort, uri.getPort());
+                if (scenario.transport == Transport.H2C || scenario.transport == Transport.H2)
+                    assertEquals(requestScheme, request.getScheme());
+            }
+        });
+
+        Origin origin = new Origin(scenario.getScheme(), "localhost", scenario.getNetworkConnectorLocalPortInt().get());
+        HttpDestination destination = scenario.client.resolveDestination(origin);
+
+        org.eclipse.jetty.client.api.Request request = scenario.client.newRequest(requestHost, requestPort)
+            .scheme(requestScheme)
+            .path("/path");
+
+        CountDownLatch resultLatch = new CountDownLatch(1);
+        destination.send(request, result ->
+        {
+            assertTrue(result.isSucceeded());
+            assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+            resultLatch.countDown();
+        });
+
+        assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }
 
     private void sleep(long time) throws IOException

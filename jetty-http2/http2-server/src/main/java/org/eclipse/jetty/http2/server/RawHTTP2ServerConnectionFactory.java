@@ -105,6 +105,12 @@ public class RawHTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnecti
         }
 
         @Override
+        public void onGoAway(Session session, GoAwayFrame frame)
+        {
+            delegate.onGoAway(session, frame);
+        }
+
+        @Override
         public void onClose(Session session, GoAwayFrame frame)
         {
             delegate.onClose(session, frame);
