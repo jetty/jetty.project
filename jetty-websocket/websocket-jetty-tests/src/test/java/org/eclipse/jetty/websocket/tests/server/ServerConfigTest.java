@@ -63,16 +63,16 @@ public class ServerConfigTest
     private Server server;
     private WebSocketClient client;
     private ServerConnector connector;
-    private ConnectionListener listener = new ConnectionListener();
+    private final ConnectionListener listener = new ConnectionListener();
 
-    private static String message = "this message is over 20 characters long";
+    private static final String message = "this message is over 20 characters long";
     private static final int inputBufferSize = 200;
     private static final int maxMessageSize = 20;
     private static final int idleTimeout = 500;
 
-    private EventSocket annotatedEndpoint = new AnnotatedConfigEndpoint();
-    private EventSocket sessionConfigEndpoint = new SessionConfigEndpoint();
-    private EventSocket standardEndpoint = new EventSocket();
+    private final EventSocket annotatedEndpoint = new AnnotatedConfigEndpoint();
+    private final EventSocket sessionConfigEndpoint = new SessionConfigEndpoint();
+    private final EventSocket standardEndpoint = new EventSocket();
 
     private EventSocket getServerEndpoint(String path)
     {
@@ -145,10 +145,10 @@ public class ServerConfigTest
         }
     }
 
-    public class ConnectionListener implements Connection.Listener
+    public static class ConnectionListener implements Connection.Listener
     {
-        private AtomicInteger opened = new AtomicInteger(0);
-        private CountDownLatch closed = new CountDownLatch(1);
+        private final AtomicInteger opened = new AtomicInteger(0);
+        private final CountDownLatch closed = new CountDownLatch(1);
 
         @Override
         public void onOpened(Connection connection)

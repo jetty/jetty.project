@@ -58,13 +58,12 @@ public class ClientConfigTest
     private Server server;
     private WebSocketClient client;
     private ServerConnector connector;
+    private final EchoSocket serverSocket = new EchoSocket();
 
-    private EchoSocket serverSocket = new EchoSocket();
-
-    private static String message = "this message is over 20 characters long";
-    private final int inputBufferSize = 200;
-    private final int maxMessageSize = 20;
-    private final int idleTimeout = 500;
+    private static final String message = "this message is over 20 characters long";
+    private static final int inputBufferSize = 200;
+    private static final int maxMessageSize = 20;
+    private static final int idleTimeout = 500;
 
     public static Stream<Arguments> data()
     {
@@ -99,12 +98,12 @@ public class ClientConfigTest
     }
 
     @WebSocket(idleTimeout = idleTimeout, maxTextMessageSize = maxMessageSize, maxBinaryMessageSize = maxMessageSize, inputBufferSize = inputBufferSize, batchMode = BatchMode.ON)
-    public class AnnotatedConfigEndpoint extends EventSocket
+    public static class AnnotatedConfigEndpoint extends EventSocket
     {
     }
 
     @WebSocket
-    public class SessionConfigEndpoint extends EventSocket
+    public static class SessionConfigEndpoint extends EventSocket
     {
         @Override
         public void onOpen(Session session)
