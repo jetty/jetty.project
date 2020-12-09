@@ -71,17 +71,17 @@ XML Files::
 
 The simplest way to start Jetty is via the `start.jar` mechanism using the following Java command line:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [user]$ cd jetty-distribution-{VERSION}
 [jetty-distribution-{VERSION}]$ java -jar start.jar --module=http jetty.http.port=8080
-....
+----
 
 This command uses the `start.jar` mechanism to bootstrap the classpath, properties, and XML files with the metadata obtained from the `http` module.
 Specifically the `http` module is defined in the `${jetty.home}/modules/http.mod` file, and includes the following:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [jetty-distribution-{VERSION}]$ cat modules/http.mod
 [depend]
 server
@@ -92,15 +92,15 @@ etc/jetty-http.xml
 [ini-template]
 jetty.http.port=8080
 http.timeout=30000
-....
+----
 
 The `http` module declares that `http` depends on the server module, uses the `jetty-http.xml` file, and can be parameterized with `jetty.http.port` and `http.timeout` parameters.
 The INI-template section is not actually used by the command above, so the `jetty.http.port` must still be defined on the command line.
 
 Following the server dependency, the `${jetty.home}/modules/server.mod` file includes:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [jetty-distribution-{VERSION}]$ cat modules/server.mod
 [lib]
 lib/servlet-api-3.1.jar
@@ -116,15 +116,15 @@ etc/jetty.xml
 [ini-template]
 threads.min=10
 threads.max=200
-....
+----
 
 The `server` module declares the libraries the server needs and to use `jetty.xml` file.
 The combined metadata of the `http` and `server` modules results in `start.jar` generating the effective Java command line required to start Jetty.
 
 Another way to see this is by asking Jetty what its configuration looks like by appending --list-config to the command line:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [jetty-distribution-{VERSION}]$ java -jar start.jar --module=http jetty.http.port=9099 --list-config
 
 Java Environment:
@@ -174,7 +174,7 @@ Jetty Active XMLs:
 ------------------
  ${jetty.home}/etc/jetty.xml
  ${jetty.home}/etc/jetty-http.xml
-....
+----
 
 This represents the entirety of the configuration that is applied to start Jetty.
 
@@ -182,8 +182,8 @@ If you don't want to use the `start.jar` bootstrap, you can start Jetty using a 
 
 The following is the equivalent Java command line for what the `start.jar` bootstrap above performs.
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [user]$ cd jetty-distribution-{VERSION}
 [jetty-distribution-{VERSION}]$ echo jetty.http.port=8080 > /tmp/jetty.properties
 [jetty-distribution-{VERSION}]$ export JETTY_HOME=`pwd`
@@ -203,14 +203,14 @@ org.eclipse.jetty.xml.XmlConfiguration \
 /tmp/jetty.properties \
 $JETTY_HOME/etc/jetty.xml \
 $JETTY_HOME/etc/jetty-http.xml
-....
+----
 
 The Java command line sets up the classpath with the core Jetty jars and the servlet API, executes the XmlConfiguration class and passes it some XML files that define the server and an HTTP connector running on the port defined in the `jetty.properties` file.
 
 You can further simplify the startup of this server by using the INI template defined by the modules to create a `start.ini` file with the command:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [user]$ cd jetty-distribution-{VERSION}
 [jetty-distribution-{VERSION}]$ mkdir example-base
 [example-base]$ cd example-base
@@ -231,11 +231,11 @@ total 12
 drwxrwxr-x  2 user webgroup 4096 Oct  4 11:55 ./
 drwxrwxr-x 12 user webgroup 4096 Oct  4 11:49 ../
 -rw-rw-r--  1 user webgroup  250 Oct  4 11:55 start.ini
-....
+----
 
 Once complete, you can edit the `start.ini` file to modify any parameters and you can run the server with the simple command:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [example-base]$ java -jar $JETTY_HOME/start.jar
-....
+----

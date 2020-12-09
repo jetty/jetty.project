@@ -25,13 +25,12 @@ Based on the concept of a project object model (POM), Maven can manage a project
 It is an ideal tool to build a web application project, and such projects can use the link:#jetty-maven-plugin[jetty-maven-plugin] to easily run the web application and save time in development.
 You can also use Maven to build, test and run a project which embeds Jetty.
 
-____
 [NOTE]
+====
 Use of Maven and the jetty-maven-plugin is *not* required.
 Using Maven for Jetty implementations is a popular choice, but users encouraged to manage their projects in whatever way suits their needs.
 Other popular tools include Ant and Gradle. 
-____
-
+====
 First we'll have a look at a very simple HelloWorld java application that embeds Jetty, then a simple webapp which makes use of the link:#jetty-maven-plugin[jetty-maven-plugin] to speed up the development cycle.
 
 [[configuring-embedded-jetty-with-maven]]
@@ -45,19 +44,19 @@ To understand the basic operations of building and running against Jetty, first 
 Maven uses convention over configuration, so it is best to use the project structure Maven recommends.
 You can use _link:#archetypes[http://maven.apache.org/guides/introduction/introduction-to-archetypes.html[archetypes]]_ to quickly setup Maven projects, but we will set up the structure manually for this simple tutorial example:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > mkdir JettyMavenHelloWorld
 > cd JettyMavenHelloWorld
 > mkdir -p src/main/java/org/example
-....
+----
 
 [[creating-helloworld-class]]
 ===== Creating the HelloWorld Class
 
 Use an editor to create the file `src/main/java/org/example/HelloWorld.java` with the following contents:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 package org.example;
 
@@ -100,7 +99,7 @@ public class HelloWorld extends AbstractHandler
 The `pom.xml` file declares the project name and its dependencies.
 Use an editor to create the file `pom.xml` in the `JettyMavenHelloWorld` directory with the following contents:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -151,16 +150,16 @@ Use an editor to create the file `pom.xml` in the `JettyMavenHelloWorld` directo
 
 You can now compile and execute the HelloWorld class by using these commands:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > mvn clean compile exec:java
-....
+----
 
 You can point your browser to `http://localhost:8080` to see the _Hello World_ page.
 You can observe what Maven is doing for you behind the scenes by using the `mvn dependency:tree` command, which reveals the transitive dependency resolved and downloaded as:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > mvn dependency:tree
 [INFO] Scanning for projects...
 ...
@@ -184,7 +183,7 @@ You can observe what Maven is doing for you behind the scenes by using the `mvn 
 [INFO] Finished at: 2016-08-01T13:46:42-04:00
 [INFO] Final Memory: 15M/209M
 [INFO] ------------------------------------------------------------------------
-....
+----
 
 [[developing-standard-webapp-with-jetty-and-maven]]
 ==== Developing a Standard WebApp with Jetty and Maven
@@ -193,20 +192,20 @@ The previous section demonstrated how to use Maven with an application that embe
 Now we will examine instead how to develop a standard webapp with Maven and Jetty.
 First create the Maven structure (you can use the maven webapp archetype instead if you prefer):
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > mkdir JettyMavenHelloWarApp
 > cd JettyMavenHelloWebApp
 > mkdir -p src/main/java/org/example
 > mkdir -p src/main/webapp/WEB-INF
-....
+----
 
 [[creating-servlet]]
 ===== Creating a Servlet
 
 Use an editor to create the file `src/main/java/org/example/HelloServlet.java` with the following contents:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 package org.example;
 
@@ -230,7 +229,7 @@ public class HelloServlet extends HttpServlet
 
 You need to declare this servlet in the deployment descriptor, so create the file `src/main/webapp/WEB-INF/web.xml` and add the following contents:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app
@@ -258,7 +257,7 @@ You need to declare this servlet in the deployment descriptor, so create the fil
 The `pom.xml` file declares the project name and its dependencies.
 Use an editor to create the file `pom.xml` with the following contents in the `JettyMavenHelloWarApp` directory, noting particularly the declaration of the link:#jetty-maven-plugin[jetty-maven-plugin]:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -302,10 +301,10 @@ Use an editor to create the file `pom.xml` with the following contents in the `J
 
 Now you can both build and run the web application without needing to assemble it into a war by using the link:#jetty-maven-plugin[jetty-maven-plugin] via the command:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > mvn jetty:run
-....
+----
 
 You can see the static and dynamic content at `http://localhost:8080/hello`
 
@@ -317,9 +316,9 @@ The full reference is at link:#jetty-maven-plugin[Configuring the Jetty Maven Pl
 
 You can create a Web Application Archive (WAR) file from the project with the command:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > mvn package
-....
+----
 
 The resulting war file is in the `target` directory and may be deployed on any standard servlet server, including link:#configuring-deployment[Jetty].

@@ -50,12 +50,11 @@ This filter will perform the following actions on each response:
 * Set the Expires header to approximately one year in the future.
 * Add a Date header with the current system time.
 
-____
 [NOTE]
+====
 Each action must be separated by a comma.
-____
-
-[source, xml, subs="{sub-order}"]
+====
+[source, xml]
 ----
 <filter>
    <filter-name>HeaderFilter</filter-name>

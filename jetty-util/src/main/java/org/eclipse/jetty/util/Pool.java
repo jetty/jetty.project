@@ -29,6 +29,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -166,16 +167,42 @@ public class Pool<T> implements AutoCloseable, Dumpable
         this.maxMultiplex = maxMultiplex;
     }
 
+    /**
+     * Get the maximum number of times the entries of the pool
+     * can be acquired.
+     * @return the max usage count.
+     */
     public int getMaxUsageCount()
     {
         return maxUsageCount;
     }
 
+    /**
+     * Change the max usage count of the pool's entries. All existing
+     * idle entries over this new max usage are removed and closed.
+     * @param maxUsageCount the max usage count.
+     */
     public final void setMaxUsageCount(int maxUsageCount)
     {
         if (maxUsageCount == 0)
             throw new IllegalArgumentException("Max usage count must be != 0");
         this.maxUsageCount = maxUsageCount;
+
+        // Iterate the entries, remove overused ones and collect a list of the closeable removed ones.
+        List<Closeable> copy;
+        try (Locker.Lock l = locker.lock())
+        {
+            if (closed)
+                return;
+
+            copy = entries.stream()
+                .filter(entry -> entry.isIdleAndOverUsed() && remove(entry) && entry.pooled instanceof Closeable)
+                .map(entry -> (Closeable)entry.pooled)
+                .collect(Collectors.toList());
+        }
+
+        // Iterate the copy and close the collected entries.
+        copy.forEach(IO::close);
     }
 
     /**
@@ -449,6 +476,12 @@ public class Pool<T> implements AutoCloseable, Dumpable
             this.state = new AtomicBiInteger(Integer.MIN_VALUE, 0);
         }
 
+        // for testing only
+        void setUsageCount(int usageCount)
+        {
+            this.state.getAndSetHi(usageCount);
+        }
+
         /** Enable a reserved entry {@link Entry}.
          * An entry returned from the {@link #reserve(int)} method must be enabled with this method,
          * once and only once, before it is usable by the pool.
@@ -527,7 +560,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
                 if (closed || multiplexingCount >= maxMultiplex || (currentMaxUsageCount > 0 && usageCount >= currentMaxUsageCount))
                     return false;
 
-                if (state.compareAndSet(encoded, usageCount + 1, multiplexingCount + 1))
+                // Prevent overflowing the usage counter by capping it at Integer.MAX_VALUE.
+                int newUsageCount = usageCount == Integer.MAX_VALUE ? Integer.MAX_VALUE : usageCount + 1;
+                if (state.compareAndSet(encoded, newUsageCount, multiplexingCount + 1))
                     return true;
             }
         }
@@ -561,13 +596,6 @@ public class Pool<T> implements AutoCloseable, Dumpable
             int currentMaxUsageCount = maxUsageCount;
             boolean overUsed = currentMaxUsageCount > 0 && usageCount >= currentMaxUsageCount;
             return !(overUsed && newMultiplexingCount == 0);
-        }
-
-        public boolean isOverUsed()
-        {
-            int currentMaxUsageCount = maxUsageCount;
-            int usageCount = state.getHi();
-            return currentMaxUsageCount > 0 && usageCount >= currentMaxUsageCount;
         }
 
         /**
@@ -608,6 +636,22 @@ public class Pool<T> implements AutoCloseable, Dumpable
         {
             long encoded = state.get();
             return AtomicBiInteger.getHi(encoded) >= 0 && AtomicBiInteger.getLo(encoded) > 0;
+        }
+
+        public boolean isOverUsed()
+        {
+            int currentMaxUsageCount = maxUsageCount;
+            int usageCount = state.getHi();
+            return currentMaxUsageCount > 0 && usageCount >= currentMaxUsageCount;
+        }
+
+        boolean isIdleAndOverUsed()
+        {
+            int currentMaxUsageCount = maxUsageCount;
+            long encoded = state.get();
+            int usageCount = AtomicBiInteger.getHi(encoded);
+            int multiplexCount = AtomicBiInteger.getLo(encoded);
+            return currentMaxUsageCount > 0 && usageCount >= currentMaxUsageCount && multiplexCount == 0;
         }
 
         public int getUsageCount()

@@ -80,7 +80,7 @@ The handler sets the response status, content-type, and marks the request as han
 To allow a Handler to handle HTTP requests, you must add it to a Server instance.
 The following code from OneHandler.java shows how a Jetty server can use the HelloWorld handler:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/OneHandler.java[]
 ----
@@ -117,14 +117,14 @@ For example, when a `ContextHandler` calls some application listeners to inform 
 The `HandlerWrapper` is specialized to the link:{JDURL}/org/eclipse/jetty/server/handler/ScopedHandler.html[`ScopedHandler`] abstract class, which supports a daisy chain of scopes.
 For example if a `ServletHandler` is nested within a `ContextHandler`, the order and nesting of execution of methods is:
 
-....
+----
 Server.handle(...)
   ContextHandler.doScope(...)
     ServletHandler.doScope(...)
       ContextHandler.doHandle(...)
         ServletHandler.doHandle(...)
           SomeServlet.service(...)
-....
+----
 
 Thus when the `ContextHandler` handles the request, it does so within the scope the `ServletHandler` has established.
 
@@ -132,7 +132,7 @@ Thus when the `ContextHandler` handles the request, it does so within the scope 
 
 The link:{JDURL}/org/eclipse/jetty/embedded/FileServer.html[FileServer example] shows how you can use a `ResourceHandler` to serve static content from the current working directory:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/FileServer.java[]
 ----
@@ -149,7 +149,7 @@ However, often when embedding Jetty it is desirable to explicitly instantiate an
 The following example, link:{JDURL}/org/eclipse/jetty/embedded/OneConnector.html[OneConnector.java],
 instantiates, configures, and adds a single HTTP connector instance to the server:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/OneConnector.java[]
 ----
@@ -173,7 +173,7 @@ It uses standard path mappings to match a Servlet to a request; sets the request
 
 The link:{JDURL}/org/eclipse/jetty/embedded/MinimalServlets.html[MinimalServlets example] creates a `ServletHandler` instance and configures a single HelloServlet:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/MinimalServlets.java[]
 ----
@@ -191,7 +191,7 @@ Requests that match the context path have their path methods updated accordingly
 
 The following link:{JDURL}/org/eclipse/jetty/embedded/OneContext.html[OneContext example] shows a context being established that wraps the link:{JDURL}/org/eclipse/jetty/embedded/HelloHandler.html[HelloHandler]:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/OneContext.java[]
 ----
@@ -199,7 +199,7 @@ include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/One
 When many contexts are present, you can embed a `ContextHandlerCollection` to efficiently examine a request URI to then select the matching `ContextHandler`(s) for the request.
 The link:{JDURL}/org/eclipse/jetty/embedded/ManyContexts.html[ManyContexts example] shows how many such contexts you can configure:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/ManyContexts.java[]
 ----
@@ -209,7 +209,7 @@ include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/Man
 A link:{JDURL}/org/eclipse/jetty/servlet/ServletContextHandler.html[`ServletContextHandler`] is a specialization of `ContextHandler` with support for standard sessions and Servlets.
 The following link:{JDURL}/org/eclipse/jetty/embedded/OneServletContext.html[OneServletContext example] instantiates a link:{JDURL}/org/eclipse/jetty/servlet/DefaultServlet.html[`DefaultServlet`] to server static content from /tmp/ and a `DumpServlet` that creates a session and dumps basic details about the request:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/OneServletContext.java[]
 ----
@@ -220,7 +220,7 @@ A link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`] is a
 The following link:{JDURL}/org/eclipse/jetty/embedded/OneWebApp.html[OneWebApp example] configures the Jetty test webapp.
 Web applications can use resources the container provides, and in this case a `LoginService` is needed and also configured:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/OneWebApp.java[]
 ----
@@ -239,9 +239,9 @@ The link:{GITBROWSEURL}/examples/embedded/src/main/java/org/eclipse/jetty/embedd
 * link:{GITBROWSEURL}/jetty-server/src/main/config/etc/jetty-stats.xml[jetty-stats.xml]
 * link:{GITBROWSEURL}/jetty-server/src/main/config/etc/jetty-requestlog.xml[jetty-requestlog.xml]
 * link:{GITBROWSEURL}/jetty-server/src/main/config/etc/jetty-lowresources.xml[jetty-lowresources.xml]
-* link:{GITBROWSEURL}/tests/test-webapps/test-jetty-webapp/src/main/config/etc/test-realm.xml[test-realm.xml]
+* link:{GITBROWSEURL}/tests/test-webapps/test-jetty-webapp/src/main/config/demo-base/etc/test-realm.xml[test-realm.xml]
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/LikeJettyXml.java[]
 ----

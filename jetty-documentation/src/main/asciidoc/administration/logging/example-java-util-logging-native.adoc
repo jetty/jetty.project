@@ -25,16 +25,15 @@ Jetty.
 This example demonstrates how to configuring Jetty for logging to
 `java.util.logging` via Jetty's own JavaUtilLog implementation.
 
-____
 [IMPORTANT]
+====
 While this is a valid setup, the Jetty project recommends always using the link:#example-logging-java-util-logging[slf4j to java.util.logging configuration] for memory and performance reasons.
 This native implementation is very non-performant and is not guaranteed to exist in the future.
-____
-
+====
 A convenient replacement `logging` module has been created to bootstrap your `${jetty.base}` directory for logging with `java.util.logging`.
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 [mybase]$ mkdir modules
 [mybase]$ cd modules
 
@@ -54,7 +53,7 @@ INFO: resources       initialised transitively
 INFO: resources       enabled in     ${jetty.base}/${jetty.base}
 
 [mybase]$ java -jar /opt/jetty-dist/start.jar
-....
+----
 
 The replacement `logging.mod` performs a number of tasks.
 
@@ -78,8 +77,8 @@ In essence, Jetty is now configured to use `org.eclipse.jetty.util.log.JavaUtilL
 
 If there any custom `java.util.logging` handlers to be used, put the implementation jar in the `${jetty.base}/lib/logging/` directory and reference them in the `${jetty.base}/resources/logging.properties` file.
 
-____
 [NOTE]
+====
 `java.util.logging` is configured via the `${jetty.base}/resources/logging.properties` file during a valid startup of Jetty.
 
 This means that if there is any startup errors that occur before `java.util.logging` is configured, they will likely be lost and/or not routed through your configuration.
@@ -88,4 +87,4 @@ Other logging frameworks are more reliable in that they always initialize and co
 
 * While it is possible to configure `java.util.logging` sooner, even at JVM startup, the example demonstrated here does not show this technique.
 For more information consult the official `java.util.logging.LogManager` javadoc http://docs.oracle.com/javase/7/docs/api/java/util/logging/LogManager.html[documentation from Oracle].
-____
+====

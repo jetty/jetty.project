@@ -39,7 +39,7 @@ Below is an example application that sets up the standard `test-spec.war` webapp
 It can also be found in the Jetty GitHub repository on the examples/embedded page as link:{GITBROWSEURL}/examples/embedded/src/main/java/org/eclipse/jetty/embedded[`ServerWithAnnotations.java`.]
 Note that the `test-spec.war` uses not only annotations, but also link:#jndi[JNDI], so this example also enables their processing (via the link:#jndi-configuration-classes[org.eclipse.jetty.plus.webapp.EnvConfiguration], link:#jndi-configuration-classes[org.eclipse.jetty.plus.webapp.PlusConfiguration] and their related jars).
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/ServerWithAnnotations.java[]
 ----

@@ -54,7 +54,7 @@ Let's look at an example.
 
 Configure a Jetty `org.eclipse.jetty.jaas.JAASLoginService` to match the `<realm-name>` in your `web.xml` file. For example, if the `web.xml` contains a realm called "Test JAAS Realm" like so:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <login-config>
   <auth-method>FORM</auth-method>
@@ -68,7 +68,7 @@ Configure a Jetty `org.eclipse.jetty.jaas.JAASLoginService` to match the `<realm
 
 then you need to create a `JAASLoginService` with the matching realm name of "Test JAAS Realm":
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <New class="org.eclipse.jetty.jaas.JAASLoginService">
   <Set name="Name">Test JAAS Realm</Set>
@@ -77,17 +77,16 @@ then you need to create a `JAASLoginService` with the matching realm name of "Te
 ----
 
 The `LoginModuleName` must match the name of your LoginModule as declared in your login module configuration file (see <<jaas-step-2,Step 2>>).
-____
 [CAUTION]
+====
 The name of the realm-name that you declare in `web.xml` must match *exactly* the `Name` field of your `JAASLoginService`.
-____
-
+====
 You can declare your `JAASLoginService` in a couple of different ways:
 
 1.  If you have more than one webapp that you would like to use the same security infrastructure, then you can declare your `JAASLoginService` in a top-level Jetty xml file as a bean that is added to the `org.eclipse.jetty.server.Server`.
 An example:
 +
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
@@ -104,7 +103,7 @@ An example:
 ----
 2.  Alternatively, you can use a `JAASLoginService` with just a specific webapp by creating a link:#deployable-descriptor-file[context xml] file for the webapp, and specifying the `JAASLoginService` in it:
 +
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
 
@@ -134,11 +133,10 @@ xyz {
     };
 ----
 
-____
 [CAUTION]
+====
 It is imperative that the application name on the first line is *exactly* the same as the `LoginModuleName` of your `JAASLoginService`.
-____
-
+====
 You may find it convenient to name this configuration file as `etc/login.conf` because, as we will see below, some of the wiring up for JAAS has been done for you.
 
 ===== Step 3
@@ -151,17 +149,16 @@ There are 2 aspects to this:
 
 To accomplish the above, use the Jetty link:#startup-overview[startup] link:#startup-modules[modules mechanism] to add the JAAS link:#startup-modules[module]:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 java -jar start.jar --add-to-start=jaas
-....
+----
 
-____
 [NOTE]
+====
 The top level of the distribution does not have the JAAS module enabled by default.
 However, there are several link:#demo-webapps-base[demo webapps] - including a JAAS webapp - available in the `demo-base` directory of the distribution which has pre-enabled the JAAS module.
-____
-
+====
 Now you will have a file named `start.d/jaas.ini`, which contains:
 
 [source,ini]
@@ -185,7 +182,7 @@ However, should you need to, you can configure:
 
 Here's an example of setting each of these (to their default values):
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <New class="org.eclipse.jetty.jaas.JAASLoginService">
   <Set name="Name">Test JAAS Realm</Set>
@@ -220,13 +217,12 @@ As `LoginModules` are free to use their own implementation of the JAAS Principal
 * link:{JDURL}/org/eclipse/jetty/jaas/spi/DataSourceLoginModule.html[`org.eclipse.jetty.jaas.spi.DataSourceLoginModule`]
 * link:{JDURL}/org/eclipse/jetty/jaas/spi/LdapLoginModule.html[`org.eclipse.jetty.jaas.ldap.LdapLoginModule`]
 
-____
 [NOTE]
+====
 Passwords can be stored in clear text, obfuscated or checksummed.
 The class link:{JDURL}/org/eclipse/jetty/util/security/Password.html[`org.eclipse.jetty.util.security.Password`] should be used to generate all varieties of passwords,the output from which can be put in to property files or entered into database tables.
 See more on this under the Configuration section on link:#configuring-security-secure-passwords[securing passwords].
-____
-
+====
 ===== JDBCLoginModule
 
 The `JDBCLoginModule` stores user passwords and roles in a database that are accessed via JDBC calls.
@@ -376,7 +372,7 @@ This callback gives you access to all parameters that were passed in the form su
 To use it, in the `login()` method of your custom login module, add the `RequestParameterCallback` to the list of callback handlers the login module uses, tell it which params you are interested in, and then get the value of the parameter back.
 Here is an example:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 
 public class FooLoginModule extends AbstractLoginModule

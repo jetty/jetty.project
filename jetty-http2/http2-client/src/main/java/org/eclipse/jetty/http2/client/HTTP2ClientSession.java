@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http2.client;
 
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.CloseState;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Session;
@@ -62,6 +63,8 @@ public class HTTP2ClientSession extends HTTP2Session
             else
             {
                 stream.process(frame, Callback.NOOP);
+                if (stream.updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
+                    removeStream(stream);
                 notifyHeaders(stream, frame);
             }
         }

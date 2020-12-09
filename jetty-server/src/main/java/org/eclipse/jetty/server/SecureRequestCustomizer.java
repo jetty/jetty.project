@@ -333,10 +333,11 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 
             try
             {
-                _certs = getSslSessionData().getCerts();
+                SslSessionData sslSessionData = getSslSessionData();
+                _certs = sslSessionData.getCerts();
                 _cipherSuite = _session.getCipherSuite();
-                _keySize = getSslSessionData().getKeySize();
-                _sessionId = getSslSessionData().getIdStr();
+                _keySize = sslSessionData.getKeySize();
+                _sessionId = sslSessionData.getIdStr();
                 _sessionAttribute = getSslSessionAttribute();
             }
             catch (Exception e)

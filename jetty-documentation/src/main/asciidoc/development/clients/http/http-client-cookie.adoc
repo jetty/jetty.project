@@ -25,7 +25,7 @@ When new requests are made, the cookie store is consulted and if there are match
 
 Applications can programmatically access the cookie store to find the cookies that have been set:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 CookieStore cookieStore = httpClient.getCookieStore();
 List<HttpCookie> cookies = cookieStore.get(URI.create("http://domain.com/path"));
@@ -33,7 +33,7 @@ List<HttpCookie> cookies = cookieStore.get(URI.create("http://domain.com/path"))
 
 Applications can also programmatically set cookies as if they were returned from a HTTP response:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 CookieStore cookieStore = httpClient.getCookieStore();
 HttpCookie cookie = new HttpCookie("foo", "bar");
@@ -45,7 +45,7 @@ cookieStore.add(URI.create("http://domain.com"), cookie);
 
 Cookies may be added only for a particular request:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 ContentResponse response = httpClient.newRequest("http://domain.com/path")
         .cookie(new HttpCookie("foo", "bar"))
@@ -54,7 +54,7 @@ ContentResponse response = httpClient.newRequest("http://domain.com/path")
 
 You can remove cookies that you do not want to be sent in future HTTP requests:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 CookieStore cookieStore = httpClient.getCookieStore();
 URI uri = URI.create("http://domain.com");
@@ -65,14 +65,14 @@ for (HttpCookie cookie : cookies)
 
 If you want to totally disable cookie handling, you can install a `HttpCookieStore.Empty` instance in this way:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 httpClient.setCookieStore(new HttpCookieStore.Empty());
 ----
 
 You can enable cookie filtering by installing a cookie store that performs the filtering logic in this way:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 httpClient.setCookieStore(new GoogleOnlyCookieStore());
 
@@ -94,14 +94,14 @@ Jetty is compliant with link:https://tools.ietf.org/html/rfc6265[RFC6265], and a
 
 Previously, Version=1 cookies defined in link:https://tools.ietf.org/html/rfc2109[RFC2109] (and continued in link:https://tools.ietf.org/html/rfc2965[RFC2965]) allowed for special/reserved characters to be enclosed within double quotes when declared in a `Set-Cookie` response header:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 Set-Cookie: foo="bar;baz";Version=1;Path="/secur"
 ----
 
 This was added to the HTTP Response header as follows:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 Cookie cookie = new Cookie("foo", "bar;baz");
 cookie.setPath("/secur");
@@ -111,7 +111,7 @@ response.addCookie(cookie);
 The introduction of RFC6265 has rendered this approach no longer possible; users are now required to encode cookie values that use these special characters.
 This can be done utilizing `javax.servlet.http.Cookie` as follows:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 Cookie cookie = new Cookie("foo", URLEncoder.encode("bar;baz", "utf-8"));
 ----

@@ -72,15 +72,14 @@ ApproveAliases::
 AllowSymLinkAliasChecker::
   Approve Aliases using the java-7 `Files.readSymbolicLink(path)` and `Path.toRealPath(...)` APIs to check that aliases are valid symbolic links.
 
-____
 [NOTE]
+====
 By default, Jetty serves aliased files for implementations running on UNIX as Contexts are created with both the {JDURL}/org/eclipse/jetty/server/handler/AllowSymLinkAliasChecker.html[`AllowSymLinkAliasChecker`] and {JDURL}/org/eclipse/jetty/server/handler/ContextHandler.ApproveNonExistentDirectoryAliases.html[`ApproveNonExistentDirectoryAliases`] alias checkers.
-____
-
+====
 An application is free to implement its own Alias checking.
 Alias Checkers can be installed in a context via the following XML used in a context deployer file or `WEB-INF/jetty-web.xml`:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <!-- Allow symbolic links  -->
   <Call name="addAliasCheck">

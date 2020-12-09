@@ -46,7 +46,7 @@ When using the jetty distribution, to enable jdbc session persistence, you will 
 
 You will also find the following properties, either in your base's start.d/jdbc-session.ini file or appended to your start.ini, depending on how you enabled the module:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 ## Unique identifier for this node in the cluster
 jetty.jdbcSession.workerName=node1
@@ -80,7 +80,7 @@ The jdbc-session module will have installed file called `$\{jetty.home}/etc/jett
 This file configures an instance of the `JDBCSessionIdManager` that will be shared across all webapps deployed on that server.
 It looks like this:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 include::{SRCDIR}/jetty-server/src/main/config/etc/jetty-jdbc-sessions.xml[]
 ----
@@ -89,7 +89,7 @@ As well as uncommenting and setting up appropriate values for the properties dis
 
 As Jetty configuration files are direct mappings of XML to Java, it is straight forward to do this in code:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 Server server = new Server();
      ...
@@ -129,7 +129,7 @@ These classes have getter/setter methods for the table name and all columns.
 Here's an example of changing the name of `JettySessionsId` table and its single column.
 This example will use java code, but as explained above, you may also do this via a Jetty xml configuration file:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 JDBCSessionIdManager idManager = new JDBCSessionIdManager(server);
 
@@ -142,7 +142,7 @@ idManager.setSessionIdTableSchema(idTableSchema);
 In a similar fashion, you can change the names of the table and columns for the `JettySessions` table.
 *Note* that both the `SessionIdTableSchema` and the `SessionTableSchema` instances are set on the `JDBCSessionIdManager` class.
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 JDBCSessionIdManager idManager = new JDBCSessionIdManager(server);
 
@@ -172,7 +172,7 @@ The basic difference is how you get a reference to the Jetty `org.eclipse.jetty.
 
 From a context xml file, you reference the Server instance as a Ref:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <Ref id="Server">
     <Call id="idMgr" name="getSessionIdManager"/>
@@ -192,7 +192,7 @@ From a context xml file, you reference the Server instance as a Ref:
 
 From a `WEB-INF/jetty-web.xml` file, you can reference the Server instance directly:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 
 <Get name="server">
@@ -213,7 +213,7 @@ From a `WEB-INF/jetty-web.xml` file, you can reference the Server instance direc
 
 If you're embedding this in code:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 
 //assuming you have already set up the JDBCSessionIdManager as shown earlier

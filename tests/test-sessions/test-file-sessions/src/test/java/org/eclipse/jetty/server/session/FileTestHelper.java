@@ -27,10 +27,10 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -49,23 +49,28 @@ public class FileTestHelper
 
     public static File getFile(WorkDir workDir, String sessionId) throws IOException
     {
-        Optional<Path> sessionPath = Files.list(workDir.getPath())
-            .filter((path) -> path.getFileName().toString().contains(sessionId))
-            .findFirst();
-        if (sessionPath.isPresent())
-            return sessionPath.get().toFile();
-        return null;
+        try (Stream<Path> s = Files.list(workDir.getPath()))
+        {
+            return s
+                .filter((path) -> path.getFileName().toString().contains(sessionId))
+                .findFirst()
+                .map(Path::toFile)
+                .orElse(null);
+        }
     }
 
     public static void assertSessionExists(WorkDir workDir, String sessionId, boolean exists) throws IOException
     {
-        Optional<Path> sessionPath = Files.list(workDir.getPath())
-            .filter((path) -> path.getFileName().toString().contains(sessionId))
-            .findFirst();
-        if (exists)
-            assertTrue(sessionPath.isPresent());
-        else
-            assertFalse(sessionPath.isPresent());
+        try (Stream<Path> s = Files.list(workDir.getPath()))
+        {
+            Optional<Path> sessionPath = s
+                .filter((path) -> path.getFileName().toString().contains(sessionId))
+                .findFirst();
+            if (exists)
+                assertTrue(sessionPath.isPresent());
+            else
+                assertFalse(sessionPath.isPresent());
+        }
     }
 
     public static void assertFileExists(WorkDir workDir, String filename, boolean exists)
@@ -170,14 +175,11 @@ public class FileTestHelper
     public static void deleteFile(WorkDir workDir, String sessionId) throws IOException
     {
         // Collect
-        List<Path> matches = Files.list(workDir.getPath())
-            .filter((path) -> path.getFileName().toString().contains(sessionId))
-            .collect(Collectors.toList());
-
-        // Delete outside of lambda
-        for (Path path : matches)
+        try (Stream<Path> s = Files.list(workDir.getPath()))
         {
-            FS.deleteFile(path);
+            s.filter((path) -> path.getFileName().toString().contains(sessionId))
+                .collect(Collectors.toList()) // Delete outside of list stream
+                .forEach(FS::deleteFile);
         }
     }
 

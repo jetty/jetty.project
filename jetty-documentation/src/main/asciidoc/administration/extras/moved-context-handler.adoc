@@ -45,7 +45,7 @@ You create a new xref:configuring-contexts[context xml] file in `{$jetty/.base}/
 Below is an example.
 This is a permanent redirection, which also preserves `pathinfo` and query strings on the redirect:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">

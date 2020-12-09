@@ -50,7 +50,7 @@ To do that, you can use `--skip-file-validation=glcoud-sessions` argument to sta
 The gcloud-sessions module will have installed file called `${jetty.home}/etc/jetty-gcloud-sessions.xml`.
 This file configures an instance of the `GCloudSessionIdManager` that will be shared across all webapps deployed on that server. It looks like this:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 include::{SRCDIR}/jetty-gcloud/jetty-gcloud-session-manager/src/main/config/etc/jetty-gcloud-sessions.xml[]
 ----
@@ -105,7 +105,7 @@ The basic difference is how you get a reference to the Jetty `org.eclipse.jetty.
 
 From a context xml file, you reference the Server instance as a Ref:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <!-- Get a reference to the GCloudSessionIdManager -->
   <Ref id="Server">
@@ -129,7 +129,7 @@ From a context xml file, you reference the Server instance as a Ref:
 
 From a `WEB-INF/jetty-web.xml` file, you can reference the Server instance directly:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <!-- Reference the server directly -->
 <Get name="server">
@@ -202,7 +202,7 @@ The basic difference is how you get a reference to the Jetty `org.eclipse.jetty.
 
 From a context xml file, you reference the Server instance as a Ref:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <!-- Get a reference to the GCloudSessionIdManager -->
   <Ref id="Server">
@@ -229,7 +229,7 @@ From a context xml file, you reference the Server instance as a Ref:
 
 From a `WEB-INF/jetty-web.xml` file, you can reference the Server instance directly:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <!-- Reference the server directly -->
 <Get name="server">

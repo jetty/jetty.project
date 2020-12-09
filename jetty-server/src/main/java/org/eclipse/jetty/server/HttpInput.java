@@ -154,13 +154,14 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         synchronized (_inputQ)
         {
-            if (_content != null)
-                _content.failed(null);
+            Throwable failure = fail(_intercepted, null);
+            _intercepted = null;
+            failure = fail(_content, failure);
             _content = null;
             Content item = _inputQ.poll();
             while (item != null)
             {
-                item.failed(null);
+                failure = fail(item, failure);
                 item = _inputQ.poll();
             }
             _listener = null;
@@ -174,6 +175,17 @@ public class HttpInput extends ServletInputStream implements Runnable
                 ((Destroyable)_interceptor).destroy();
             _interceptor = null;
         }
+    }
+
+    private Throwable fail(Content content, Throwable failure)
+    {
+        if (content != null)
+        {
+            if (failure == null)
+                failure = new IOException("unconsumed input");
+            content.failed(failure);
+        }
+        return failure;
     }
 
     /**
@@ -670,31 +682,52 @@ public class HttpInput extends ServletInputStream implements Runnable
         return addContent(EOF_CONTENT);
     }
 
+    /**
+     * Consume all available content without blocking.
+     * Raw content is counted in the {@link #getContentReceived()} statistics, but
+     * is not intercepted nor counted in the {@link #getContentConsumed()} statistics
+     * @return True if EOF was reached, false otherwise.
+     */
     public boolean consumeAll()
     {
-        synchronized (_inputQ)
+        while (true)
         {
-            try
+            synchronized (_inputQ)
             {
-                while (true)
+                if (_intercepted != null)
                 {
-                    Content item = nextContent();
-                    if (item == null)
-                        break; // Let's not bother blocking
-
-                    skip(item, item.remaining());
+                    _intercepted.skip(_intercepted.remaining());
+                    consume(_intercepted);
                 }
-                if (isFinished())
-                    return !isError();
 
-                _state = EARLY_EOF;
-                return false;
-            }
-            catch (Throwable e)
-            {
-                LOG.debug(e);
-                _state = new ErrorState(e);
-                return false;
+                if (_content != null)
+                {
+                    _content.skip(_content.remaining());
+                    consume(_content);
+                }
+
+                Content content = _inputQ.poll();
+                while (content != null)
+                {
+                    consume(content);
+                    content = _inputQ.poll();
+                }
+
+                if (_state instanceof EOFState)
+                    return !(_state instanceof ErrorState);
+
+                try
+                {
+                    produceContent();
+                    if (_content == null && _intercepted == null && _inputQ.isEmpty())
+                        return false;
+                }
+                catch (Throwable e)
+                {
+                    LOG.debug(e);
+                    _state = new ErrorState(e);
+                    return false;
+                }
             }
         }
     }

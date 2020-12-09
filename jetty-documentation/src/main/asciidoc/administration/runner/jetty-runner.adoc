@@ -34,33 +34,32 @@ You will need the `jetty-runner` jar:
 Let's assume we have a very simple webapp that does not need any resources from its environment, nor any configuration apart from the defaults.
 Starting it is as simple as performing the following:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > java -jar jetty-runner.jar simple.war
-....
+----
 
 This will start Jetty on port 8080, and deploy the webapp to `/`.
 
 Your webapp does not have to be packed into a war, you can deploy a webapp that is a directory instead in the same way:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > java -jar jetty-runner.jar simple
-....
+----
 
 In fact, the webapp does not have to be a war or even a directory, it can simply be a Jetty link:#using-context-provider[context xml] file that describes your webapp:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > java -jar jetty-runner.jar simple-context.xml
-....
+----
 
-____
 [NOTE]
+====
 When using a context xml file, the application being deployed is not even required to be a fully-fledged webapp.
 It can simply be a Jetty link:#what-is-a-context[context].
-____
-
+====
 By default, `jetty-runner` implements all Configuration Classes so that users can set up and deploy new instances with as little configuration as possible.
 If you wish to only implement certain Configuration Classes, they will need to be defined in the context xml for the webapp/context.
 The default Configuration Classes are:
@@ -82,60 +81,58 @@ If you have more than one webapp that must be deployed, simply provide them all 
 You can control the context paths for them using the `--path` parameter.
 Here's an example of deploying 2 wars (although either or both of them could be unpacked directories instead):
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > java -jar jetty-runner.jar --path /one my1.war --path /two my2.war
-....
+----
 
 If you have context xml files that describe your webapps, you can fully configure your webapps in them and hence you won't need to use the command line switches.
 Just provide the list of context files like so:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > java -jar jetty-runner.jar my-first-context.xml my-second-context.xml my-third-context.xml
-....
+----
 
-____
 [NOTE]
+====
 Switched used on the command line override configuration file settings.
 So, for example, you could set the context path for the webapp inside the context xml file, and use the `--path` switch to override it on the command line.
-____
-
-
+====
 ===== Changing the Default Port
 
 By default the `jetty-runner` will listen on port 8080.
 You can easily change this on the command line using the `--port` command.
 Here's an example that runs our simple.war on port 9090:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > java -jar jetty-runner.jar --port 9090 simple.war
-....
+----
 
 ===== Using jetty.xml Files
 
 Instead of, or in addition to, using command line switches, you can use one or more `jetty.xml` files to configure the environment for your webapps.
 Here's an example where we apply two different `jetty.xml` files:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > java -jar jetty-runner.jar --config jetty.xml --config jetty-https.xml simple.war
-....
+----
 
 [[runner-configuration-reference]]
 ==== Full Configuration Reference
 
 You can see the fill set of configuration options using the `--help` switch:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > java -jar jetty-runner.jar --help
-....
+----
 
 Here's what the output will look like:
 
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 
 Usage: java [-Djetty.home=dir] -jar jetty-runner.jar [--help|--version] [ server opts] [[ context opts] context ...]
@@ -159,66 +156,66 @@ Context opts:
 ===== Printing the Version
 Print out the version of Jetty and then exit immediately.
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > java -jar jetty-runner.jar --version
-....
+----
 
 ===== Configuring a Request Log
 Cause Jetty to write a request log with the given name.
 If the file is prefixed with `yyyy_mm_dd` then the file will be automatically rolled over.
 Note that for finer grained configuration of the link:{JDURL}/org/eclipse/jetty/server/NCSARequestLog.html[request log], you will need to use a Jetty xml file instead.
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > java -jar jetty-runner.jar --log yyyy_mm_dd-requests.log  my.war
-....
+----
 
 ===== Configuring the Output Log
 Redirect the output of jetty logging to the named file.
 If the file is prefixed with `yyyy_mm_dd` then the file will be automatically rolled over.
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > java -jar jetty-runner.jar --out yyyy_mm_dd-output.log my.war
-....
+----
 
 ===== Configuring the Interface for HTTP
 Like Jetty standalone, the default is for the connectors to listen on all interfaces on a machine.
 You can control that by specifying the name or ip address of the particular interface you wish to use with the `--host` argument:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > java -jar jetty-runner.jar --host 192.168.22.19 my.war
-....
+----
 
 ===== Configuring the Port for HTTP
 The default port number is 8080.
 To link:#how-to-configure-connectors[configure a https connector], use a Jetty xml config file instead.
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > java -jar jetty-runner.jar --port 9090  my.war
-....
+----
 
 ===== Configuring Stop
 You can configure a port number for Jetty to listen on for a stop command, so you are able to stop it from a different terminal.
 This requires the use of a "secret" key, to prevent malicious or accidental termination.
 Use the `--stop-port` and `--stop-key` (or `-DSTOP.PORT=`  and `-DSTOP.KEY=`, respectively) parameters as arguments to the `jetty-runner`:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > java -jar jetty-runner.jar --stop-port 8181 --stop-key abc123
-....
+----
 
 Then, to stop Jetty from a different terminal, you need to supply the same port and key information.
 For this you'll either need a local installation of Jetty, the link:#jetty-maven-plugin[jetty-maven-plugin], the link:#jetty-ant[jetty-ant plugin], or a custom class.
 Here's how to use a Jetty installation to perform a stop:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > java -jar start.jar -DSTOP.PORT=8181 -DSTOP.KEY=abc123 --stop
-....
+----
 
 ===== Configuring the Container Classpath
 With a local installation of Jetty, you add jars and classes to the container's classpath by putting them in the `{$jetty.base}/lib` directory.
@@ -228,52 +225,50 @@ With the `jetty-runner`, you can use the `--lib`, `--jar` and `--classes` argume
 You can add 1 or more.
 Here's an example of configuring 2 directories:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > java -jar jetty-runner.jar --lib /usr/local/external/lib --lib $HOME/external-other/lib my.war
-....
+----
 
 `--jar` adds a single jar file to the container classpath.
 You can add 1 or more.
 Here's an example of configuring 3 extra jars:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > java -jar jetty-runner.jar --jar /opt/stuff/jars/jar1.jar --jar $HOME/jars/jar2.jar --jar /usr/local/proj/jars/jar3.jar  my.war
-....
+----
 
 `--classes` add the location of a directory containing classes to add to the container classpath.
 You can add 1 or more.
 Here's an example of configuring a single extra classes dir:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > java -jar jetty-runner.jar --classes /opt/stuff/classes my.war
-....
+----
 
-____
 [NOTE]
+====
 When using the `--jar` and/or `--lib` arguments, by default these will *not* be inspected for `META-INF` information such as `META-INF/resources`, `META-INF/web-fragment.xml`, or `META-INF/taglib.tld`.
 If you require these jar files inspected you will need to define the link:https://www.eclipse.org/jetty/documentation/current/configuring-webapps.html#webapp-context-attributes[jar pattern in your context xml file].
 Jetty-Runner automatically provides and appends a suitable pattern for jtsl taglibs (this pattern is different than the one in the standard Jetty distribution).
-____
-
-
+====
 ===== Gathering Statistics
 If statistics gathering is enabled, then they are viewable by surfing to the context `/stats`.
 You may optionally protect access to that context with a password.
 Here's an example of enabling statistics, with no password protection:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > java -jar jetty-runner.jar --stats unsecure my.war
-....
+----
 
 If we wished to protect access to the `/stats` context, we would provide the location of a Jetty realm configuration file containing authentication and authorization information.
 For example, we could use the following example realm file from the Jetty distribution:
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 jetty: MD5:164c88b302622e17050af52c89945d44,user
 admin: CRYPT:adpexzg3FUZAk,server-administrator,content-administrator,admin
 other: OBF:1xmk1w261u9r1w1c1xmq,user
@@ -281,18 +276,18 @@ plain: plain,user
 user: password,user
 # This entry is for digest auth.  The credential is a MD5 hash of username:realmname:password
 digest: MD5:6e120743ad67abfbc385bc2bb754e297,user
-....
+----
 
 Assuming we've copied it into the local directory, we would apply it like so
 
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 > java -jar jetty-runner.jar --stats realm.properties my.war
-....
+----
 
 After navigating to http://localhost:8080/ a few times, we can point to the stats servlet on http://localhost:8080/stats to see the output:
 
-....
+----
 Statistics:
 Statistics gathering started 1490627ms ago
 
@@ -346,4 +341,4 @@ Total messages out: 7
 Memory:
 Heap memory usage: 49194840 bytes
 Non-heap memory usage: 12611696 bytes
-....
+----

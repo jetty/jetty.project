@@ -25,7 +25,7 @@
 Sometimes it is useful to pass configuration information to a webapp at runtime that you either cannot or cannot conveniently code into a `web.xml` env-entry.
 In such cases, you can use the `org.eclipse.jetty.plus.jndi.EnvEntry` class, and even override an entry of the same name in `web.xml`.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
   <Arg></Arg>
@@ -57,7 +57,7 @@ Be aware that if you take advantage of this feature, your web application is __n
 
 To use the `env-entry` configured above, use code in your `servlet/filter/etc.`, such as:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 import javax.naming.InitialContext;
 
@@ -103,7 +103,7 @@ Jetty can use any DataSource implementation available on its classpath.
 In this example, the DataSource is from the http://db.apache.org/derby[Derby] relational database, but you can use any implementation of a `javax.sql.DataSource`.
 This example configures it as scoped to a web app with the id of __wac__:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
   <New id="myds" class="org.eclipse.jetty.plus.jndi.Resource">
@@ -124,7 +124,7 @@ If you do not have the appropriate `resource-ref` set up in your `web.xml`, it i
 
 Here's an example `web.xml` declaration for the datasource above:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <resource-ref>
   <res-ref-name>jdbc/myds</res-ref-name>
@@ -135,7 +135,7 @@ Here's an example `web.xml` declaration for the datasource above:
 
 To look up your DataSource in your `servlet/filter/etc.`:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 import javax.naming.InitialContext;
 import javax.sql.DataSource;
@@ -152,12 +152,11 @@ public class MyClass {
 }
 ----
 
-____
 [NOTE]
+====
 Careful! When configuring Resources, ensure that the type of object you configure matches the type of object you expect to look up in `java:comp/env`.
 For database connection factories, this means that the object you register as a Resource _must_ implement the `javax.sql.DataSource` interface.
-____
-
+====
 For more examples of datasource configurations, see xref:jndi-datasource-examples[].
 
 [[configuring-jms-queues-topics-connectionfactories]]
@@ -167,7 +166,7 @@ Jetty can bind any implementation of the JMS destinations and connection factori
 You just need to ensure the implementation Jars are available on Jetty's classpath.
 Here is an example of binding an http://activemq.apache.org[ActiveMQ] in-JVM connection factory:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
   <New id="cf" class="org.eclipse.jetty.plus.jndi.Resource">
@@ -184,7 +183,7 @@ Here is an example of binding an http://activemq.apache.org[ActiveMQ] in-JVM con
 
 The entry in `web.xml` would be:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <resource-ref>
   <res-ref-name>jms/connectionFactory</res-ref-name>
@@ -200,7 +199,7 @@ TODO: put in an example of a QUEUE from progress demo
 
 Jetty also provides infrastructure for access to `javax.mail.Sessions` from within an application:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
   <New id="mail" class="org.eclipse.jetty.plus.jndi.Resource">
@@ -226,12 +225,11 @@ Jetty also provides infrastructure for access to `javax.mail.Sessions` from with
 This setup creates an instance of the `org.eclipse.jetty.jndi.factories.MailSessionReference` class, calls it's setter methods to set up the authentication for the mail system, and populates a set of Properties, setting them on the `MailSessionReference` instance.
 The result is that an application can look up `java:comp/env/mail/Session` at runtime and obtain access to a `javax.mail.Session` that has the necessary configuration to permit it to send email via SMTP.
 
-____
 [TIP]
+====
 You can set the password to be plain text, or use Jetty's link:#configuring-security-secure-passwords[Secure Password Obfuscation] (OBF:) mechanism to make the config file a little more secure from prying eyes.
 Remember that you cannot use the other Jetty encryption mechanisms of MD5 and Crypt because they do not allow you to recover the original password, which the mail system requires.
-____
-
+====
 [[configuring-xa-transactions]]
 ==== Configuring XA Transactions
 
@@ -240,7 +238,7 @@ Jetty does not ship with one as standard, but you can plug in the one you prefer
 You can configure a transaction manager using the link:{JDURL}/org/eclipse/jetty/plus/jndi/Transaction.html[JNDI Transaction] object in a Jetty config file.
 The following example configures the http://www.atomikos.com/[Atomikos] transaction manager:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <New id="tx" class="org.eclipse.jetty.plus.jndi.Transaction">
   <Arg>
@@ -257,7 +255,7 @@ For example:
 
 In a context xml file:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
   <New id="myds" class="org.eclipse.jetty.plus.jndi.Resource">
@@ -275,7 +273,7 @@ In a context xml file:
 
 In a `web.xml` file:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <resource-ref>
   <res-ref-name>jdbc/mydatasource</res-ref-name>
@@ -293,7 +291,7 @@ For the example above, you can refer to the `jdbc/mydatasource` resource as `jdb
 
 In a context xml file declare `jdbc/mydatasource`:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
   <New id="myds" class="org.eclipse.jetty.plus.jndi.Resource">
@@ -312,7 +310,7 @@ In a context xml file declare `jdbc/mydatasource`:
 Then in a `WEB-INF/jetty-env.xml` file, link the name `jdbc/mydatasource` to the name you want to reference it as in
 `web.xml`, which in this case is `jdbc/mydatasource1`:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <New id="map1" class="org.eclipse.jetty.plus.jndi.Link">
   <Arg><Ref refid='wac'/></Arg>
@@ -323,7 +321,7 @@ Then in a `WEB-INF/jetty-env.xml` file, link the name `jdbc/mydatasource` to the
 
 Now you can refer to `jdbc/mydatasource1` in the `web.xml` like this:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <resource-ref>
   <res-ref-name>jdbc/mydatasource1</res-ref-name>

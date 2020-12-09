@@ -24,7 +24,7 @@
 
 The simple way to perform a HTTP request is the following:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 ContentResponse response = httpClient.GET("http://domain.com/path?query");
 ----
@@ -36,7 +36,7 @@ The content length is limited by default to 2 MiB; for larger content see xref:h
 
 If you want to customize the request, for example by issuing a `HEAD` request instead of a `GET`, and simulating a browser user agent, you can do it in this way:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 ContentResponse response = httpClient.newRequest("http://domain.com/path?query")
         .method(HttpMethod.HEAD)
@@ -46,7 +46,7 @@ ContentResponse response = httpClient.newRequest("http://domain.com/path?query")
 
 This is a shorthand for:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 Request request = httpClient.newRequest("http://domain.com/path?query");
 request.method(HttpMethod.HEAD);
@@ -59,7 +59,7 @@ When the request object is customized, you call `request.send()` that produces t
 
 Simple `POST` requests also have a shortcut method:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 ContentResponse response = httpClient.POST("http://domain.com/entity/1")
         .param("p", "value")
@@ -73,7 +73,7 @@ Following redirects is a feature that you can enable/disable on a per-request ba
 
 File uploads also require one line, and make use of JDK 7′s `java.nio.file` classes:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 ContentResponse response = httpClient.newRequest("http://domain.com/upload")
         .method(HttpMethod.POST)
@@ -83,7 +83,7 @@ ContentResponse response = httpClient.newRequest("http://domain.com/upload")
 
 It is possible to impose a total timeout for the request/response conversation using the `Request.timeout(...)` method as follows:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 ContentResponse response = httpClient.newRequest("http://domain.com/path?query")
         .timeout(5, TimeUnit.SECONDS)
@@ -123,7 +123,7 @@ When the request and the response are both fully processed, the thread that fini
 
 A simple asynchronous `GET` request that discards the response content can be written in this way:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 httpClient.newRequest("http://domain.com/path")
         .send(new Response.CompleteListener()
@@ -140,7 +140,7 @@ Method `Request.send(Response.CompleteListener)` returns `void` and does not blo
 
 You can write the same code using JDK 8′s lambda expressions:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 httpClient.newRequest("http://domain.com/path")
         .send(result -> { /* Your logic here */ });
@@ -148,7 +148,7 @@ httpClient.newRequest("http://domain.com/path")
 
 You can impose a total timeout for the request/response conversation in the same way used by the synchronous API:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 httpClient.newRequest("http://domain.com/path")
         .timeout(3, TimeUnit.SECONDS)
@@ -159,7 +159,7 @@ The example above will impose a total timeout of 3 seconds on the request/respon
 
 The HTTP client APIs use listeners extensively to provide hooks for all possible request and response events, and with JDK 8′s lambda expressions they are even more fun to use:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 httpClient.newRequest("http://domain.com/path")
         // Add request hooks
@@ -191,7 +191,7 @@ Jetty's HTTP client provides a number of utility classes off the shelf to handle
 You can provide request content as `String`, `byte[]`, `ByteBuffer`, `java.nio.file.Path`, `InputStream`, and provide your own implementation of `org.eclipse.jetty.client.api.ContentProvider`.
 Here’s an example that provides the request content using `java.nio.file.Paths`:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 ContentResponse response = httpClient.newRequest("http://domain.com/upload")
         .method(HttpMethod.POST)
@@ -201,7 +201,7 @@ ContentResponse response = httpClient.newRequest("http://domain.com/upload")
 
 This is equivalent to using the `PathContentProvider` utility class:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 ContentResponse response = httpClient.newRequest("http://domain.com/upload")
         .method(HttpMethod.POST)
@@ -211,7 +211,7 @@ ContentResponse response = httpClient.newRequest("http://domain.com/upload")
 
 Alternatively, you can use `FileInputStream` via the `InputStreamContentProvider` utility class:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 ContentResponse response = httpClient.newRequest("http://domain.com/upload")
         .method(HttpMethod.POST)
@@ -223,7 +223,7 @@ Since `InputStream` is blocking, then also the send of the request will block if
 
 If you have already read the content in memory, you can pass it as a `byte[]` using the `BytesContentProvider` utility class:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 byte[] bytes = ...;
 ContentResponse response = httpClient.newRequest("http://domain.com/upload")
@@ -234,7 +234,7 @@ ContentResponse response = httpClient.newRequest("http://domain.com/upload")
 
 If the request content is not immediately available, but your application will be notified of the content to send, you can use `DeferredContentProvider` in this way:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 DeferredContentProvider content = new DeferredContentProvider();
 httpClient.newRequest("http://domain.com/upload")
@@ -270,7 +270,7 @@ This allows fine-grained control of the request/response conversation: for examp
 Another way to provide request content is by using an `OutputStreamContentProvider`,
 which allows applications to write request content when it is available to the `OutputStream` provided by `OutputStreamContentProvider`:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 OutputStreamContentProvider content = new OutputStreamContentProvider();
 
@@ -306,7 +306,7 @@ The first way is to buffer the response content in memory; this is done when usi
 
 If you want to control the length of the response content (for example limiting to values smaller than the default of 2 MiB), then you can use a `org.eclipse.jetty.client.util.FutureResponseListener` in this way:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 Request request = httpClient.newRequest("http://domain.com/path");
 
@@ -322,7 +322,7 @@ If the response content length is exceeded, the response will be aborted, and an
 
 If you are using the asynchronous APIs (see xref:http-client-async[]), you can use the `BufferingResponseListener` utility class:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 httpClient.newRequest("http://domain.com/path")
         // Buffer response content up to 8 MiB
@@ -344,7 +344,7 @@ The second way is the most efficient (because it avoids content copies) and allo
 In the example below, `Response.Listener.Adapter` is a class that implements both `Response.ContentListener` and `Response.CompleteListener` and can be passed to `Request.send()`.
 Jetty's HTTP client will invoke the `onContent()` method zero or more times (until there is content), and finally invoke the `onComplete()` method.
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 httpClient .newRequest("http://domain.com/path")
         .send(new Response.Listener.Adapter()
@@ -359,7 +359,7 @@ httpClient .newRequest("http://domain.com/path")
 
 The third way allows you to wait for the response and then stream the content using the `InputStreamResponseListener` utility class:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 
 InputStreamResponseListener listener = new InputStreamResponseListener();

@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.CloseState;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Session;
@@ -64,18 +65,12 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
             settings = Collections.emptyMap();
         SettingsFrame settingsFrame = new SettingsFrame(settings, false);
 
-        WindowUpdateFrame windowFrame = null;
         int sessionWindow = getInitialSessionRecvWindow() - FlowControlStrategy.DEFAULT_WINDOW_SIZE;
+        updateRecvWindow(sessionWindow);
         if (sessionWindow > 0)
-        {
-            updateRecvWindow(sessionWindow);
-            windowFrame = new WindowUpdateFrame(0, sessionWindow);
-        }
-
-        if (windowFrame == null)
-            frames(null, Collections.singletonList(settingsFrame), Callback.NOOP);
+            frames(null, Arrays.asList(settingsFrame, new WindowUpdateFrame(0, sessionWindow)), Callback.NOOP);
         else
-            frames(null, Arrays.asList(settingsFrame, windowFrame), Callback.NOOP);
+            frames(null, Collections.singletonList(settingsFrame), Callback.NOOP);
     }
 
     @Override
@@ -109,6 +104,8 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
                     {
                         onStreamOpened(stream);
                         stream.process(frame, Callback.NOOP);
+                        if (stream.updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
+                            removeStream(stream);
                         Stream.Listener listener = notifyNewStream(stream, frame);
                         stream.setListener(listener);
                     }
@@ -129,6 +126,8 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
             if (stream != null)
             {
                 stream.process(frame, Callback.NOOP);
+                if (stream.updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
+                    removeStream(stream);
                 notifyHeaders(stream, frame);
             }
             else

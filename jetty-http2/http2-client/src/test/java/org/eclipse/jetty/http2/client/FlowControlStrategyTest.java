@@ -137,10 +137,10 @@ public abstract class FlowControlStrategyTest
     @Test
     public void testWindowSizeUpdates() throws Exception
     {
-        final CountDownLatch prefaceLatch = new CountDownLatch(1);
-        final CountDownLatch stream1Latch = new CountDownLatch(1);
-        final CountDownLatch stream2Latch = new CountDownLatch(1);
-        final CountDownLatch settingsLatch = new CountDownLatch(1);
+        CountDownLatch prefaceLatch = new CountDownLatch(1);
+        CountDownLatch stream1Latch = new CountDownLatch(1);
+        CountDownLatch stream2Latch = new CountDownLatch(1);
+        CountDownLatch settingsLatch = new CountDownLatch(1);
         start(new ServerSessionListener.Adapter()
         {
             @Override
@@ -233,11 +233,11 @@ public abstract class FlowControlStrategyTest
         // then we change the window to 512 B. At this point, the client
         // must stop sending data (although the initial window allows it).
 
-        final int size = 512;
+        int size = 512;
         // We get 3 data frames: the first of 1024 and 2 of 512 each
         // after the flow control window has been reduced.
-        final CountDownLatch dataLatch = new CountDownLatch(3);
-        final AtomicReference<Callback> callbackRef = new AtomicReference<>();
+        CountDownLatch dataLatch = new CountDownLatch(3);
+        AtomicReference<Callback> callbackRef = new AtomicReference<>();
         start(new ServerSessionListener.Adapter()
         {
             @Override
@@ -276,7 +276,7 @@ public abstract class FlowControlStrategyTest
         });
 
         // Two SETTINGS frames, the initial one and the one we send from the server.
-        final CountDownLatch settingsLatch = new CountDownLatch(2);
+        CountDownLatch settingsLatch = new CountDownLatch(2);
         Session session = newClient(new Session.Listener.Adapter()
         {
             @Override
@@ -313,9 +313,9 @@ public abstract class FlowControlStrategyTest
     @Test
     public void testServerFlowControlOneBigWrite() throws Exception
     {
-        final int windowSize = 1536;
-        final int length = 5 * windowSize;
-        final CountDownLatch settingsLatch = new CountDownLatch(2);
+        int windowSize = 1536;
+        int length = 5 * windowSize;
+        CountDownLatch settingsLatch = new CountDownLatch(2);
         start(new ServerSessionListener.Adapter()
         {
             @Override
@@ -350,13 +350,13 @@ public abstract class FlowControlStrategyTest
 
         assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
-        final CountDownLatch dataLatch = new CountDownLatch(1);
-        final Exchanger<Callback> exchanger = new Exchanger<>();
+        CountDownLatch dataLatch = new CountDownLatch(1);
+        Exchanger<Callback> exchanger = new Exchanger<>();
         MetaData.Request metaData = newRequest("GET", new HttpFields());
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
         session.newStream(requestFrame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
-            private AtomicInteger dataFrames = new AtomicInteger();
+            private final AtomicInteger dataFrames = new AtomicInteger();
 
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -407,10 +407,10 @@ public abstract class FlowControlStrategyTest
     @Test
     public void testClientFlowControlOneBigWrite() throws Exception
     {
-        final int windowSize = 1536;
-        final Exchanger<Callback> exchanger = new Exchanger<>();
-        final CountDownLatch settingsLatch = new CountDownLatch(1);
-        final CountDownLatch dataLatch = new CountDownLatch(1);
+        int windowSize = 1536;
+        Exchanger<Callback> exchanger = new Exchanger<>();
+        CountDownLatch settingsLatch = new CountDownLatch(1);
+        CountDownLatch dataLatch = new CountDownLatch(1);
         start(new ServerSessionListener.Adapter()
         {
             @Override
@@ -429,7 +429,7 @@ public abstract class FlowControlStrategyTest
                 stream.headers(responseFrame, Callback.NOOP);
                 return new Stream.Listener.Adapter()
                 {
-                    private AtomicInteger dataFrames = new AtomicInteger();
+                    private final AtomicInteger dataFrames = new AtomicInteger();
 
                     @Override
                     public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -481,7 +481,7 @@ public abstract class FlowControlStrategyTest
         session.newStream(requestFrame, streamPromise, null);
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
 
-        final int length = 5 * windowSize;
+        int length = 5 * windowSize;
         DataFrame dataFrame = new DataFrame(stream.getId(), ByteBuffer.allocate(length), true);
         stream.data(dataFrame, Callback.NOOP);
 
@@ -500,7 +500,7 @@ public abstract class FlowControlStrategyTest
         assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 
-    private void checkThatWeAreFlowControlStalled(Exchanger<Callback> exchanger) throws Exception
+    private void checkThatWeAreFlowControlStalled(Exchanger<Callback> exchanger)
     {
         assertThrows(TimeoutException.class,
             () -> exchanger.exchange(null, 1, TimeUnit.SECONDS));
@@ -509,7 +509,7 @@ public abstract class FlowControlStrategyTest
     @Test
     public void testSessionStalledStallsNewStreams() throws Exception
     {
-        final int windowSize = 1024;
+        int windowSize = 1024;
         start(new ServerSessionListener.Adapter()
         {
             @Override
@@ -544,8 +544,8 @@ public abstract class FlowControlStrategyTest
         Session session = newClient(new Session.Listener.Adapter());
 
         // First request is just to consume most of the session window.
-        final List<Callback> callbacks1 = new ArrayList<>();
-        final CountDownLatch prepareLatch = new CountDownLatch(1);
+        List<Callback> callbacks1 = new ArrayList<>();
+        CountDownLatch prepareLatch = new CountDownLatch(1);
         MetaData.Request request1 = newRequest("POST", new HttpFields());
         session.newStream(new HeadersFrame(request1, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
@@ -584,7 +584,7 @@ public abstract class FlowControlStrategyTest
         });
 
         // Fourth request is now stalled.
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         MetaData.Request request4 = newRequest("GET", new HttpFields());
         session.newStream(new HeadersFrame(request4, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
@@ -613,7 +613,7 @@ public abstract class FlowControlStrategyTest
     @Test
     public void testServerSendsBigContent() throws Exception
     {
-        final byte[] data = new byte[1024 * 1024];
+        byte[] data = new byte[1024 * 1024];
         new Random().nextBytes(data);
 
         start(new ServerSessionListener.Adapter()
@@ -637,8 +637,8 @@ public abstract class FlowControlStrategyTest
         Session session = newClient(new Session.Listener.Adapter());
         MetaData.Request metaData = newRequest("GET", new HttpFields());
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
-        final byte[] bytes = new byte[data.length];
-        final CountDownLatch latch = new CountDownLatch(1);
+        byte[] bytes = new byte[data.length];
+        CountDownLatch latch = new CountDownLatch(1);
         session.newStream(requestFrame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             private int received;
@@ -682,7 +682,7 @@ public abstract class FlowControlStrategyTest
             }
         });
 
-        final int initialWindow = 16;
+        int initialWindow = 16;
         Session session = newClient(new Session.Listener.Adapter()
         {
             @Override
@@ -698,11 +698,11 @@ public abstract class FlowControlStrategyTest
         new Random().nextBytes(requestData);
 
         byte[] responseData = new byte[requestData.length];
-        final ByteBuffer responseContent = ByteBuffer.wrap(responseData);
+        ByteBuffer responseContent = ByteBuffer.wrap(responseData);
         MetaData.Request metaData = newRequest("GET", new HttpFields());
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, false);
         Promise.Completable<Stream> completable = new Promise.Completable<>();
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         session.newStream(requestFrame, completable, new Stream.Listener.Adapter()
         {
             @Override
@@ -731,6 +731,7 @@ public abstract class FlowControlStrategyTest
     public void testClientExceedingSessionWindow() throws Exception
     {
         // On server, we don't consume the data.
+        CountDownLatch serverCloseLatch = new CountDownLatch(1);
         start(new ServerSessionListener.Adapter()
         {
             @Override
@@ -745,16 +746,29 @@ public abstract class FlowControlStrategyTest
                     }
                 };
             }
-        });
 
-        final CountDownLatch closeLatch = new CountDownLatch(1);
-        Session session = newClient(new Session.Listener.Adapter()
-        {
             @Override
             public void onClose(Session session, GoAwayFrame frame)
             {
+                serverCloseLatch.countDown();
+            }
+        });
+
+        CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
+        CountDownLatch clientCloseLatch = new CountDownLatch(1);
+        Session session = newClient(new Session.Listener.Adapter()
+        {
+            @Override
+            public void onGoAway(Session session, GoAwayFrame frame)
+            {
                 if (frame.getError() == ErrorCode.FLOW_CONTROL_ERROR.code)
-                    closeLatch.countDown();
+                    clientGoAwayLatch.countDown();
+            }
+
+            @Override
+            public void onClose(Session session, GoAwayFrame frame)
+            {
+                clientCloseLatch.countDown();
             }
         });
 
@@ -765,7 +779,7 @@ public abstract class FlowControlStrategyTest
         session.newStream(requestFrame, Promise.from(completable), new Stream.Listener.Adapter());
         Stream stream = completable.get(5, TimeUnit.SECONDS);
         ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
-        final CountDownLatch dataLatch = new CountDownLatch(1);
+        CountDownLatch dataLatch = new CountDownLatch(1);
         stream.data(new DataFrame(stream.getId(), data, false), new Callback()
         {
             @Override
@@ -797,16 +811,19 @@ public abstract class FlowControlStrategyTest
         ByteBuffer extraData = ByteBuffer.allocate(1024);
         http2Session.getGenerator().data(lease, new DataFrame(stream.getId(), extraData, true), extraData.remaining());
         List<ByteBuffer> buffers = lease.getByteBuffers();
-        http2Session.getEndPoint().write(Callback.NOOP, buffers.toArray(new ByteBuffer[buffers.size()]));
+        http2Session.getEndPoint().write(Callback.NOOP, buffers.toArray(new ByteBuffer[0]));
 
         // Expect the connection to be closed.
-        assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientCloseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverCloseLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
     public void testClientExceedingStreamWindow() throws Exception
     {
         // On server, we don't consume the data.
+        CountDownLatch serverCloseLatch = new CountDownLatch(1);
         start(new ServerSessionListener.Adapter()
         {
             @Override
@@ -829,16 +846,29 @@ public abstract class FlowControlStrategyTest
                     }
                 };
             }
-        });
 
-        final CountDownLatch closeLatch = new CountDownLatch(1);
-        Session session = newClient(new Session.Listener.Adapter()
-        {
             @Override
             public void onClose(Session session, GoAwayFrame frame)
             {
+                serverCloseLatch.countDown();
+            }
+        });
+
+        CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
+        CountDownLatch clientCloseLatch = new CountDownLatch(1);
+        Session session = newClient(new Session.Listener.Adapter()
+        {
+            @Override
+            public void onGoAway(Session session, GoAwayFrame frame)
+            {
                 if (frame.getError() == ErrorCode.FLOW_CONTROL_ERROR.code)
-                    closeLatch.countDown();
+                    clientGoAwayLatch.countDown();
+            }
+
+            @Override
+            public void onClose(Session session, GoAwayFrame frame)
+            {
+                clientCloseLatch.countDown();
             }
         });
 
@@ -849,7 +879,7 @@ public abstract class FlowControlStrategyTest
         session.newStream(requestFrame, streamPromise, new Stream.Listener.Adapter());
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
         ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
-        final CountDownLatch dataLatch = new CountDownLatch(1);
+        CountDownLatch dataLatch = new CountDownLatch(1);
         stream.data(new DataFrame(stream.getId(), data, false), new Callback()
         {
             @Override
@@ -877,10 +907,12 @@ public abstract class FlowControlStrategyTest
         ByteBuffer extraData = ByteBuffer.allocate(1024);
         http2Session.getGenerator().data(lease, new DataFrame(stream.getId(), extraData, true), extraData.remaining());
         List<ByteBuffer> buffers = lease.getByteBuffers();
-        http2Session.getEndPoint().write(Callback.NOOP, buffers.toArray(new ByteBuffer[buffers.size()]));
+        http2Session.getEndPoint().write(Callback.NOOP, buffers.toArray(new ByteBuffer[0]));
 
         // Expect the connection to be closed.
-        assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientCloseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverCloseLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -917,7 +949,7 @@ public abstract class FlowControlStrategyTest
         MetaData.Request metaData = newRequest("POST", new HttpFields());
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
-        final CountDownLatch resetLatch = new CountDownLatch(1);
+        CountDownLatch resetLatch = new CountDownLatch(1);
         session.newStream(frame, streamPromise, new Stream.Listener.Adapter()
         {
             @Override
@@ -930,7 +962,7 @@ public abstract class FlowControlStrategyTest
 
         // Perform a big upload that will stall the flow control windows.
         ByteBuffer data = ByteBuffer.allocate(5 * FlowControlStrategy.DEFAULT_WINDOW_SIZE);
-        final CountDownLatch dataLatch = new CountDownLatch(1);
+        CountDownLatch dataLatch = new CountDownLatch(1);
         stream.data(new DataFrame(stream.getId(), data, true), new Callback()
         {
             @Override

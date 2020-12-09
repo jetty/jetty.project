@@ -245,7 +245,7 @@ public class TempDirTest
         File webappTempDir = MavenTestingUtils.getTargetTestingPath("webappTempDir").toFile();
         IO.delete(webappTempDir);
         if (!webappTempDir.exists())
-           assertTrue(webappTempDir.mkdir());
+            assertTrue(webappTempDir.mkdir());
         webapp.setTempDirectory(webappTempDir);
         assertThat(webapp.getTempDirectory(), is(webappTempDir));
         assertTrue(webappTempDir.exists());

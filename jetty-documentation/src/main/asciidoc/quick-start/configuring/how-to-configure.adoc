@@ -52,13 +52,12 @@ The Jetty distribution uses the following configuration files to instantiate, in
   * Other start.jar options (see `java -jar start.jar --help`)
   * Some JVM options in combination with `--exec`, such as `-Xbootclasspath`.
 
-____
 [NOTE]
+====
 --
 It is the `ini` files located in the Jetty base directory (if different from Jetty home) that are typically edited to change the configuration (e.g. change ports). 
 --
-____
-
+====
 `mod` files::
   The `$JETTY_HOME/modules/*.mod` files contain the definition of modules that can be activated by `--module=name`.
   Each `mod` file defines:
@@ -82,7 +81,7 @@ XML files::
 
 Below is an illustration of how the various Jetty configuration files (`ini`, `mod` and XML) are related:
 
-image:images/Jetty_Configuration_File_Relationships.png[image,width=693]
+image:quick-start/configuring/images/Jetty_Configuration_File_Relationships.png[image,width=693]
 
 ==== A Closer Look
 
@@ -105,7 +104,7 @@ We will work backwards from an ini file to the associated module and then the XM
 First up, the `http.ini` file.
 If we take a look at it's contents, we will see the following:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 $ cat start.d/http.ini
 # ---------------------------------------
@@ -156,7 +155,7 @@ When a module is enabled and an `ini` file is created, all of the properties you
 If you wanted to change one of the properties though, say `jetty.http.port`, you'd simply uncomment the line and change the value.
 For example:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 $ cat start.d/http.ini
 # ---------------------------------------
@@ -181,7 +180,7 @@ As seen before, these properties were populated in this ini file based on a rela
 Standard Jetty modules live in the Home of the Jetty Distribution in the aptly named `modules` directory.
 So let's take a quick look at the associated `$JETTY_HOME/modules/http.mod` file:
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 $ cat $JETTY_HOME/modules/http.mod
 [description]
@@ -221,7 +220,7 @@ It is important to note that not every module file will have the same sections, 
 
 Now that we know what XML file these properties relate to, we can navigate to it and have a look.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 $ cat $JETTY_HOME/etc/jetty-http.xml
 <?xml version="1.0"?>
@@ -279,13 +278,12 @@ $ cat $JETTY_HOME/etc/jetty-http.xml
 Now we can see where those properties in our `ini` and module files came from.
 In Jetty XML files, Jetty objects come to life; defined properties are set which link back to the jar libraries and run the server to a user's specification.
 
-____
 [IMPORTANT]
+====
 It is important to remember that you should *not* modify the XML files in your `$JETTY_HOME`.
 If you do for some reason feel you want to change the way an XML file operates, it is best to make a copy of it in your `$JETTY_BASE` in an `/etc` directory.
 Jetty will always look first to the `$JETTY_BASE` for configuration.
-____
-
+====
 ==== Other Configuration Files
 
 In addition to the configuration files described above, the configuration of the server can use the following file types:
@@ -316,14 +314,14 @@ Property Files::
 
 To understand the link:#jetty-xml-syntax[Jetty IoC XML format], consider the following example of an embedded Jetty server instantiated and configured in Java:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/ExampleServer.java[]
 ----
 
 link:#jetty-xml-syntax[Jetty IoC XML format] allows you to instantiate and configure the exact same server in XML without writing any java code:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 include::{SRCDIR}/examples/embedded/src/main/resources/exampleserver.xml[]
 ----

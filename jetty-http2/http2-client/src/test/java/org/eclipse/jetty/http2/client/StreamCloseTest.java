@@ -321,7 +321,9 @@ public class StreamCloseTest extends AbstractTest
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
                 if ("GET".equals(request.getMethod()))
                 {
-                    ((HTTP2Session)stream.getSession()).getEndPoint().close();
+                    // Only shutdown the output, since closing the EndPoint causes a call to
+                    // stop() on different thread which tries to concurrently fail the stream.
+                    ((HTTP2Session)stream.getSession()).getEndPoint().shutdownOutput();
                     // Try to write something to force an error.
                     stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1024), true), Callback.NOOP);
                 }

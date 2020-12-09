@@ -39,7 +39,7 @@ The selection of which configuration files to use is controlled by `start.jar` a
 
 `jetty.xml` configures an instance of the `Jetty org.eclipse.jetty.server.Server.`
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 
 <?xml version="1.0"?>

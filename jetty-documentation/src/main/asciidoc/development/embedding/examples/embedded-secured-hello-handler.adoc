@@ -24,7 +24,7 @@ We have a simple Hello Handler that just return a greeting but add on the restri
 Another thing to remember is that this example uses the `ConstraintSecurityHandler` which is what supports the security mappings inside of the servlet api, it could be easier to show just the `SecurityHandler` usage, but the constraint provides more configuration power.
 If you don't need that you can drop the Constraint bits and use just the `SecurityHandler`.
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/SecuredHelloHandler.java[]
 
@@ -46,7 +46,7 @@ include::{SRCDIR}/examples/embedded/src/test/resources/realm.properties[]
 
 To use this example in your project you will need the following Maven dependencies declared.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 
 <dependency>

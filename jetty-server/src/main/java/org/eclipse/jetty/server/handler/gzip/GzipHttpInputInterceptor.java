@@ -55,6 +55,12 @@ public class GzipHttpInputInterceptor implements HttpInput.Interceptor, Destroya
             {
                 _decoder.release(chunk);
             }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                _decoder.release(chunk);
+            }
         };
     }
 

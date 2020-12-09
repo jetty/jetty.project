@@ -862,4 +862,20 @@ public class HttpGeneratorServerTest
         assertThat(headers, containsString(HttpHeaderValue.KEEP_ALIVE.asString()));
         assertThat(headers, containsString(customValue));
     }
+
+    @Test
+    public void testKeepAliveWithClose() throws Exception
+    {
+        HttpGenerator generator = new HttpGenerator();
+        HttpFields fields = new HttpFields();
+        fields.put(HttpHeader.CONNECTION,
+            HttpHeaderValue.KEEP_ALIVE.asString() + ", other, " + HttpHeaderValue.CLOSE.asString());
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_0, 200, "OK", fields, -1);
+        ByteBuffer header = BufferUtil.allocate(4096);
+        HttpGenerator.Result result = generator.generateResponse(info, false, header, null, null, true);
+        assertSame(HttpGenerator.Result.FLUSH, result);
+        String headers = BufferUtil.toString(header);
+        assertThat(headers, containsString("Connection: other, close\r\n"));
+        assertThat(headers, not(containsString("keep-alive")));
+    }
 }

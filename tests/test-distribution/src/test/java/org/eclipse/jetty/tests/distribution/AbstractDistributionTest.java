@@ -21,6 +21,7 @@ package org.eclipse.jetty.tests.distribution;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 
 public class AbstractDistributionTest
@@ -29,7 +30,15 @@ public class AbstractDistributionTest
 
     protected void startHttpClient() throws Exception
     {
-        startHttpClient(HttpClient::new);
+        startHttpClient(false);
+    }
+
+    protected void startHttpClient(boolean secure) throws Exception
+    {
+        if (secure)
+            startHttpClient(() -> new HttpClient(new SslContextFactory.Client(true)));
+        else
+            startHttpClient(HttpClient::new);
     }
 
     protected void startHttpClient(Supplier<HttpClient> supplier) throws Exception

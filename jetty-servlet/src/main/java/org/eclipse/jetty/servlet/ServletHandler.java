@@ -521,21 +521,8 @@ public class ServletHandler extends ScopedHandler
         FilterChain chain = null;
 
         // find the servlet
-        if (target.startsWith("/"))
-        {
-            if (servletHolder != null && _filterMappings != null && _filterMappings.length > 0)
-                chain = getFilterChain(baseRequest, target, servletHolder);
-        }
-        else
-        {
-            if (servletHolder != null)
-            {
-                if (_filterMappings != null && _filterMappings.length > 0)
-                {
-                    chain = getFilterChain(baseRequest, null, servletHolder);
-                }
-            }
-        }
+        if (servletHolder != null && _filterMappings != null && _filterMappings.length > 0)
+            chain = getFilterChain(baseRequest, target.startsWith("/") ? target : null, servletHolder);
 
         if (LOG.isDebugEnabled())
             LOG.debug("chain={}", chain);
@@ -593,6 +580,7 @@ public class ServletHandler extends ScopedHandler
 
     protected FilterChain getFilterChain(Request baseRequest, String pathInContext, ServletHolder servletHolder)
     {
+        Objects.requireNonNull(servletHolder);
         String key = pathInContext == null ? servletHolder.getName() : pathInContext;
         int dispatch = FilterMapping.dispatch(baseRequest.getDispatcherType());
 
@@ -608,16 +596,20 @@ public class ServletHandler extends ScopedHandler
         // The mappings lists have been reversed to make this simple and fast.
         FilterChain chain = null;
 
-        if (servletHolder != null && _filterNameMappings != null && !_filterNameMappings.isEmpty())
+        if (_filterNameMappings != null && !_filterNameMappings.isEmpty())
         {
             if (_wildFilterNameMappings != null)
                 for (FilterMapping mapping : _wildFilterNameMappings)
                     chain = newFilterChain(mapping.getFilterHolder(), chain == null ? new ChainEnd(servletHolder) : chain);
 
-            for (FilterMapping mapping : _filterNameMappings.get(servletHolder.getName()))
+            List<FilterMapping> nameMappings = _filterNameMappings.get(servletHolder.getName());
+            if (nameMappings != null)
             {
-                if (mapping.appliesTo(dispatch))
-                    chain = newFilterChain(mapping.getFilterHolder(), chain == null ? new ChainEnd(servletHolder) : chain);
+                for (FilterMapping mapping : nameMappings)
+                {
+                    if (mapping.appliesTo(dispatch))
+                        chain = newFilterChain(mapping.getFilterHolder(), chain == null ? new ChainEnd(servletHolder) : chain);
+                }
             }
         }
 
@@ -1622,6 +1614,7 @@ public class ServletHandler extends ScopedHandler
 
         ChainEnd(ServletHolder holder)
         {
+            Objects.requireNonNull(holder);
             _servletHolder = holder;
         }
 

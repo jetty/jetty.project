@@ -43,7 +43,7 @@ contextPath::
 
 For example, here is a descriptor file that deploys the file `/opt/myapp/myapp.war` to the context path `/wiki`:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
@@ -57,7 +57,7 @@ For example, here is a descriptor file that deploys the file `/opt/myapp/myapp.w
 Both `SystemProperty` and `Property` elements can be used in the descriptor file.
 For example, if the system property is set to `myapp.home=/opt/myapp`, the previous example can be rewritten as:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
@@ -71,11 +71,10 @@ For example, if the system property is set to `myapp.home=/opt/myapp`, the previ
 If the home path for an application needs altered, only the system property needs changed.
 This is useful if the version of an app is frequently changed.
 
-____
 [NOTE]
+====
 To ensure your `web.xml` files are validated, you will need to set the `validateXml` attribute to true as described link:#jetty-xml-dtd[here.]
-____
-
+====
 [[configuring-advanced-descriptor-files]]
 ==== Configuring Advanced Descriptor Files
 
@@ -85,7 +84,7 @@ Here are some examples that configure advanced options in the descriptor file.
 This first example tells Jetty not to expand the WAR file when deploying it.
 This can help make it clear that users should not make changes to the temporary unpacked WAR because such changes do not persist, and therefore do not apply the next time the web application deploys.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
@@ -101,7 +100,7 @@ The next example retrieves the JavaEE Servlet context and sets an initialization
 The `setAttribute` method can also be used to set a Servlet context attribute.
 However, since the `web.xml` for the web application is processed after the deployment descriptor, the `web.xml` values overwrite identically named attributes from the deployment descriptor.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
@@ -122,7 +121,7 @@ The following example sets a special `web.xml` override descriptor.
 This descriptor is processed after the web application's `web.xml`, so it may override identically named attributes.
 This feature is useful when adding parameters or additional Servlet mappings without breaking open a packed WAR file.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
@@ -137,7 +136,7 @@ This feature is useful when adding parameters or additional Servlet mappings wit
 The next example configures not only the web application context, but also a database connection pool (see xref:jndi-datasource-examples[]) that the application can then use.
 If the `web.xml` does not include a reference to this data source, an override descriptor mechanism (as shown in the previous example) can be used to include it.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">

@@ -36,7 +36,7 @@ The default location for this configuration is in the `${jetty.home}/etc/jetty-d
 To modify it as part of the Jetty distribution, first enable the `deploy` module.
 Once it is enabled, you can edit these properties in either the `$JETTY_BASE/start.d/deploy.ini` or `$JETTY_BASE/start.ini` file, depending on link:#start-vs-startd[how your implementation is configured.]
 
-[source, screen, subs="{sub-order}"]
+[source, screen]
 ----
 <?xml version="1.0"?>
 # ---------------------------------------

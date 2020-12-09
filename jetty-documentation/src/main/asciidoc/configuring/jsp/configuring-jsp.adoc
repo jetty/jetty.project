@@ -28,7 +28,7 @@ Jetty uses Jasper from http://tomcat.apache.org/tomcat-8.0-doc/jasper-howto.html
 
 By default the Jetty distribution enables the JSP link:#startup-modules[module], and by default, this module is set to Apache Jasper.
 
-[source, plain, subs="{sub-order}"]
+[source, plain]
 ----
 include::{SRCDIR}/jetty-home/src/main/resources/modules/jsp.mod[]
 ----
@@ -55,7 +55,7 @@ You can do this using a servlet context init-param called `org.eclipse.jetty.ser
 
 For example, suppose you have precompiled your JSPs with the custom package prefix of `com.acme`, then you would add the following lines to your `web.xml` file:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <context-param>
     <param-name>org.eclipse.jetty.servlet.jspPackagePrefix</param-name>
@@ -63,11 +63,10 @@ For example, suppose you have precompiled your JSPs with the custom package pref
   </context-param>
 ----
 
-____
 [NOTE]
+====
 Both Jetty Maven plugins - link:#jetty-jspc-maven-plugin[jetty-jspc-maven-plugin] and the link:#jetty-maven-plugin[jetty-maven-plugin] - will only use Apache Jasper.
-____
-
+====
 [[compiling-jsps]]
 ===== Apache JSP Container
 
@@ -161,11 +160,10 @@ Parameters also differ among the various versions of the JSP engine.
 This page lists the configuration parameters, their meanings, and their default settings.
 Set all parameters on the `org.apache.jasper.servlet.JspServlet` instance defined in the link:#webdefault-xml[`webdefault.xml`] file.
 
-____
 [NOTE]
+====
 Be careful: for all of these parameters, if the value you set doesn't take effect, try using all lower case instead of camel case, or capitalizing only some of the words in the name, as JSP is inconsistent in its parameter naming strategy.
-____
-
+====
 [[modifying-configuration]]
 ==== Modifying Configuration
 
@@ -175,7 +173,7 @@ ____
 You can make a copy of the link:#webdefault-xml[{$jetty.home}/etc/webdefault.xml] that ships with Jetty, apply your changes, and use it instead of the shipped version.
 The example below shows how to do this when using the Jetty Maven plugin.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
   <plugin>
     <groupId>org.eclipse.jetty</groupId>
@@ -189,7 +187,7 @@ The example below shows how to do this when using the Jetty Maven plugin.
 
 If you are using the Jetty distribution, and you want to change the JSP settings for just one or a few of your webapps, copy the `{$jetty.home}/etc/webdefault.xml` file somewhere, modify it, and then use a link:#intro-jetty-configuration-contexts[context xml] file to set this file as the `defaultsDescriptor` for your webapp. Here's a snippet:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
  <Configure class="org.eclipse.jetty.webapp.WebAppContext">
    <Set name="contextPath">/foo</Set>
@@ -207,7 +205,7 @@ Another option is to add an entry for the JSPServlet to the `WEB-INF/web.xml` fi
 You may also add (but not remove) servlet-mappings.
 You can use the entry in link:#webdefault-xml[{$jetty.home}/etc/webdefault.xml] as a starting point.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
  <servlet id="jsp">
      <servlet-name>jsp</servlet-name>
@@ -253,7 +251,7 @@ You can use the entry in link:#webdefault-xml[{$jetty.home}/etc/webdefault.xml] 
 By default, Jetty does not enable async support for the JSP servlet.
 Configuring the JSP servlet for async is relatively easy - simply define the `async-supported` parameter as `true` in either your `webdefault.xml` or the `web.xml` for a specific context.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <servlet id="jsp">
   <servlet-name>jsp</servlet-name>
@@ -284,7 +282,7 @@ To take advantage of this efficiency enhancement, set up the link:#container-inc
 The link:#embedded-examples[Embedded Examples] section includes a link:#embedded-webapp-jsp[worked code example] of how to do this.
 Below is a snippet from the example:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
   webapp.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",".*/[^/]*taglibs.*\\.jar$");
 ----
@@ -306,7 +304,7 @@ You can either put them into the lib directory for Apache `{$jetty.home}/lib/apa
 You should make your JSF jars dependencies of the plugin and _not_ the webapp itself.
 For example:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
    <plugin>
     <groupId>org.eclipse.jetty</groupId>

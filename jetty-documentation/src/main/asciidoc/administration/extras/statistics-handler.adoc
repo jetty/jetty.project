@@ -35,18 +35,18 @@ Jetty currently has two main statistics collection mechanisms:
 * The `StatisticsHandler` class may be used to collect statistics for HTTP requests.
 
 The `StatisticsHandler` and `ConnectionStatistics` are not included in the default Jetty configuration, these need to be configured manually or enabled using the Jetty `stats` module on the command line.
-[source, screen, subs="{sub-order}"]
-....
+[source, screen]
+----
 $ java -jar {$jetty.home}/start.jar --add-to-start=stats
-....
+----
 
 In addition to these, the `SessionHandler` and `DefaultSessionCache` classes collect statistics for sessions.
 These statistics are enabled by default and are accessible via JMX interface.
 
-_____
 [NOTE]
+====
 To view statistics, you have to be able to connect to Jetty using either JConsole or some other JMX agent. See xref:using-jmx[] for more information.
-_____
+====
 
 [[request-statistics]]
 ==== Request Statistics
@@ -58,7 +58,7 @@ You can enable the `StatisticsHandler` by activating the `stats` modules on the 
 Alternately, if you are making multiple changes to the Jetty configuration, you could include statistics handler configuration into your own Jetty xml configuration.
 The following fragment shows how to configure a top level statistics handler:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call name="insertHandler">
@@ -77,7 +77,7 @@ The current and maximum number of connections are the only "live" statistics.
 
 The following example shows how to turn on connection statistics in the Jetty XML format.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call name="addBeanToAllConnectors">
@@ -91,7 +91,7 @@ The following example shows how to turn on connection statistics in the Jetty XM
 A special variant of `ConnectionStatistics` called `IncludeExcludeConnectionStatistics` allows you to refine which types of connection you want to collect statistics for.
 
 The following example shows how this can be used to record statistics only for WebSocket connections.
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call name="addBeanToAllConnectors">

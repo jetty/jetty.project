@@ -31,7 +31,7 @@ See configuration files for specific examples.
 
 The following XML configuration file creates some Java objects and sets some attributes:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
@@ -60,7 +60,7 @@ The following XML configuration file creates some Java objects and sets some att
 
 The XML above is equivalent to the following Java code:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 com.acme.Foo foo = new com.acme.Foo();
 foo.setName("demo");
@@ -86,7 +86,7 @@ The document type descriptor
 (link:{GITBROWSEURL}/jetty-xml/src/main/resources/org/eclipse/jetty/xml/configure_9_0.dtd?h=release-9[configure.dtd]) describes all valid elements in a Jetty XML configuration file using the Jetty IoC format.
 The first two lines of an XML must reference the DTD to be used to validate the XML like:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
@@ -101,7 +101,7 @@ Files that conform to the configure.dtd format are processed in Jetty by the `Xm
 
 To ensure your `web.xml`, `web-fragment.xml` and `webdefault.xml` files are validated, you will also need to set the `validateXml` attribute to true:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Call name="setAttribute">
      <Arg>org.eclipse.jetty.webapp.validateXml</Arg>
@@ -115,7 +115,7 @@ The configuration of object instances with Jetty IoC XML is done on a scoped bas
 The outer most scope is given by a Configure element and elements like Call, New and Get establish new scopes.
 The following example uses the name fields to explain the scope.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure class="com.example.Foo">
   <Set name="fieldOnFoo">value</Set>
@@ -157,14 +157,14 @@ The ID must be unique for each object you create.
 For XML elements that contain only other XML Elements, there is a choice of using attributes or elements style.
 The following is an example of attribute style:
 
-....
+----
   <Call id="result" class="org.example.SomeClass" name="someMethod" arg="value0,value1"/>
-....
+----
 
 Attribute style has the benefit of brevity, but is limited by: values can only be Strings; multivalued items can not contain ','; values may not be subject to property expansion or other elements that return values.
 Thus, the more verbose element style is available and the following is semantically equivalent to the attribute style above:
 
-....
+----
   <Call>
     <Id>result</Id>
     <Class>org.example.SomeClass</Class>
@@ -172,12 +172,12 @@ Thus, the more verbose element style is available and the following is semantica
     <Arg>value0</Arg>
     <Arg>value1</Arg>
   </Call>
-....
+----
 
 Note that multivalued elements like `Arg` must be repeated and may not be comma-separated like they are when provided as attributes.
 It is possible to use a mix of styles and the following example shows a moretypical example that uses property expansion as the reason for element style:
 
-....
+----
   <Call id="result" name="someMethod">
     <Class><Property name="which.class">
       <Default><Property name="default.class" default="org.example.SomeClass"/>
@@ -185,7 +185,7 @@ It is possible to use a mix of styles and the following example shows a moretypi
     <Arg>value0</Arg>
     <Arg>value1</Arg>
   </Call>
-....
+----
 
 Attributes may not be expressed as elements when their parent element is one that contains data.
 Thus `Arg`, `Item`, `Set`, `Put` and `Get` elements may not have their attributes expressed as elements.
@@ -222,7 +222,7 @@ link:#jetty-xml-property[Property element]
 
 ====== Basic Example
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure class="org.eclipse.jetty.server.Server">
   <Set name="port">8080</Set>
@@ -231,7 +231,7 @@ link:#jetty-xml-property[Property element]
 
 This is equivalent to:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 org.eclipse.jetty.server.Server server = new org.eclipse.jetty.server.Server();
 server.setPort(8080);
@@ -241,7 +241,7 @@ server.setPort(8080);
 
 In `etc/jetty.xml`:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <!-- basic configuration here -->
@@ -250,7 +250,7 @@ In `etc/jetty.xml`:
 
 In `etc/jetty-logging.xml`:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <!-- assumes that you have the basic server configuration set up; this file only contains additional configuration for logging -->
@@ -259,9 +259,9 @@ In `etc/jetty-logging.xml`:
 
 Then run the combined configuration using:
 
-....
+----
 java -jar start.jar etc/jetty.xml jetty-logging.xml
-....
+----
 
 [[jetty-xml-set]]
 ==== <Set>
@@ -298,7 +298,7 @@ link:#jetty-xml-property[Property element]
 
 ====== Basic Example
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure id="server" class="org.eclipse.jetty.server.Server">
   <Set name="port">8080</Set>
@@ -307,7 +307,7 @@ link:#jetty-xml-property[Property element]
 
 ====== Set via a System Property
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure id="server" class="org.eclipse.jetty.server.Server">
   <Set name="port"><SystemProperty name="jetty.http.port" /></Set>
@@ -316,7 +316,7 @@ link:#jetty-xml-property[Property element]
 
 ====== Creating a NewObject and Setting It on the Server
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure id="server" class="org.eclipse.jetty.server.Server">
   <Set name="threadPool">
@@ -330,7 +330,7 @@ link:#jetty-xml-property[Property element]
 
 This is equivalent to:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 org.eclipse.jetty.server.Server server = new org.eclipse.jetty.server.Server();
 
@@ -343,7 +343,7 @@ server.setThreadPool(threadPool);
 
 ====== Invoking a Static Setter
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure id="server" class="org.eclipse.jetty.server.Server">
   <Set class="org.eclipse.jetty.util.log.Log" name="logToParent">loggerName</Set>
@@ -385,7 +385,7 @@ link:#jetty-xml-property[Property element]
 This simple example doesn't do much on its own.
 You would normally use this in conjunction with a `<Ref id="Logger" />`.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure id="server" class="org.eclipse.jetty.server.Server">
   <Get id="Logger" class="org.eclipse.jetty.util.log.Log" name="log"/>
@@ -394,7 +394,7 @@ You would normally use this in conjunction with a `<Ref id="Logger" />`.
 
 ====== Invoking a Static Getter and Call Methods on the Returned Object
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure id="server" class="org.eclipse.jetty.server.Server">
     <Get class="java.lang.System" name="out">
@@ -432,7 +432,7 @@ link:#jetty-xml-property[Property element]
 
 ===== Example
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Get name="someKindOfMap">
    <Put name="keyName">objectValue</Put>
@@ -474,7 +474,7 @@ element], link:#jetty-xml-property[Property element]
 
 ====== Basic example
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Call name="doFoo">
   <Arg>bar</Arg>
@@ -484,7 +484,7 @@ element], link:#jetty-xml-property[Property element]
 
 This is equivalent to:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 Object o2 = o1.doFoo("bar");
 o2.setTest("1, 2, 3");
@@ -492,7 +492,7 @@ o2.setTest("1, 2, 3");
 
 ====== Invoking a static method
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Call class="com.acme.Foo" name="setString">
   <Arg>somestring</Arg>
@@ -501,14 +501,14 @@ o2.setTest("1, 2, 3");
 
 Which is equivalent to:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 com.acme.Foo.setString("somestring");
 ----
 
 ====== Invoking the Actual MethodInstead of Relying on Getter/Setter Magic
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call name="getPort" id="port" />
@@ -522,7 +522,7 @@ com.acme.Foo.setString("somestring");
 
 Which is equivalent to:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 org.mortbay.jetty.Server server = new org.mortbay.jetty.Server();
 com.acme.Environment.setPort( server.getPort() );
@@ -560,7 +560,7 @@ link:#jetty-xml-property[Property element]
 
 ====== Basic examples
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Arg>foo</Arg> <!-- String -->
 <Arg>true</Arg> <!-- Boolean -->
@@ -574,7 +574,7 @@ link:#jetty-xml-property[Property element]
 
 This explicitly coerces the type to a boolean:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Arg type="boolean">False</Arg>
 ----
@@ -583,7 +583,7 @@ This explicitly coerces the type to a boolean:
 
 Here are a couple of examples of link:#jetty-xml-arg[Arg element] being used as a parameter to methods and to constructors:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Call class="com.acme.Environment" name="setFoo">
   <Arg>
@@ -596,12 +596,12 @@ Here are a couple of examples of link:#jetty-xml-arg[Arg element] being used as 
 
 This is equivalent to:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 com.acme.Environment.setFoo(new com.acme.Foo("bar"));
 ----
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <New class="com.acme.Baz">
   <Arg>
@@ -614,7 +614,7 @@ com.acme.Environment.setFoo(new com.acme.Foo("bar"));
 
 This is equivalent to:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 new com.acme.Baz(com.acme.MyStaticObjectFactory.createObject(2));
 ----
@@ -654,7 +654,7 @@ element], link:#jetty-xml-property[Property element]
 
 ====== Basic example
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <New class="com.acme.Foo">
   <Arg>bar</Arg>
@@ -663,28 +663,28 @@ element], link:#jetty-xml-property[Property element]
 
 Which is equivalent to:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 com.acme.Foo foo = new com.acme.Foo("bar");
 ----
 
 ====== Instantiate with the Default Constructor
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <New class="com.acme.Foo" />
 ----
 
 Which is equivalent to:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 com.acme.Foo foo = new com.acme.Foo();
 ----
 
 ====== Instantiate with Multiple Arguments, Then Configuring Further
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <New id="foo" class="com.acme.Foo">
    <Arg>bar</Arg>
@@ -695,7 +695,7 @@ com.acme.Foo foo = new com.acme.Foo();
 
 Which is equivalent to:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 Object foo = new com.acme.Foo("bar", "baz");
 foo.setTest("1, 2, 3");
@@ -734,7 +734,7 @@ link:#jetty-xml-property[Property element]
 
 Use the referenced object as an argument to a method call or constructor:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Get id="foo" name="xFoo" />
 <Set name="test"><Ref refid="foo"/></Set>
@@ -742,7 +742,7 @@ Use the referenced object as an argument to a method call or constructor:
 
 This is equivalent to:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 foo = getXFoo();
 setSomeMethod(foo);
@@ -750,7 +750,7 @@ setSomeMethod(foo);
 
 ====== Manipulating the Object Returned by Ref
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Get id="foo" name="xFoo" />
 <Ref refid="foo">
@@ -760,7 +760,7 @@ setSomeMethod(foo);
 
 This is equivalent to:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 foo = getXFoo();
 foo.setTest("1, 2, 3");
@@ -771,7 +771,7 @@ foo.setTest("1, 2, 3");
 Here is an example of the difference in syntax between using the `Ref` element, and nesting method calls.
 They are exactly equivalent:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <!-- using Ref in conjunction with Get -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
@@ -790,7 +790,7 @@ They are exactly equivalent:
 
 Here is a more practical example, taken from the handler configuration section in `etc/jetty.xml`:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Set name="handler">
   <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
@@ -823,7 +823,7 @@ Here is a more practical example, taken from the handler configuration section i
 
 <!-- configure the RequestLogHandler object ("RequestLog") that we created earlier -->
 <Ref refid="RequestLog">
-  ....
+    ...
 </Ref>
 ----
 
@@ -845,7 +845,7 @@ link:#jetty-xml-item[Item element]
 
 ===== Example
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Array type="java.lang.String">
    <Item>value0</Item>
@@ -855,7 +855,7 @@ link:#jetty-xml-item[Item element]
 
 This is equivalent to:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 String[] a = new String[] { "value0", new String("value1") };
 ----
@@ -897,7 +897,7 @@ link:#jetty-xml-entry[Entry element]
 
 ===== Example
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Map>
   <Entry>
@@ -909,7 +909,7 @@ link:#jetty-xml-entry[Entry element]
 
 This is equivalent to:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 Map m = new HashMap();
 m.put("keyName", new String("value1"));
@@ -947,14 +947,14 @@ Only attributes as Elements (`Id`, `Name`, `Default`).
 
 ===== Example
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <SystemProperty name="jetty.http.port" default="8080"/>
 ----
 
 That is equivalent to:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 System.getProperty("jetty.http.port", "8080");
 ----
@@ -989,7 +989,7 @@ The attributes may be expressed as contained Elements (`Id`, `Name`, `Default`).
 
 ===== Example
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Property name="Server">
   <Call id="jdbcIdMgr" name="getAttribute">

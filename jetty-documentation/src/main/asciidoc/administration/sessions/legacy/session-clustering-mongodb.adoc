@@ -53,7 +53,7 @@ To do that, you can use `--skip-file-validation=nosql` argument to start.jar on 
 
 You will also find the following properties, either in your base's `start.d/nosql.ini` file or appended to your `start.ini`, depending on how you enabled the module:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 ## Unique identifier for this node in the cluster
 jetty.nosqlSession.workerName=node1
@@ -77,7 +77,7 @@ The nosql module will have installed file called `$\{jetty.home}/etc/jetty-nosql
 This file configures an instance of the `MongoSessionIdManager` that will be shared across all webapps deployed on that server.
 It looks like this:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 include::{SRCDIR}/jetty-nosql/src/main/config/etc/jetty-nosql.xml[]
 ----
@@ -86,7 +86,7 @@ The `MongoSessionIdManager` needs access to a MongoDB cluster, and the `jetty-no
 If you need to configure something else, you will need to edit this file.
 Here's an example of a more complex setup to use a remote MongoDB instance:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
     <New id="mongodb" class="com.mongodb.Mongo">
       <Arg>
@@ -130,7 +130,7 @@ Here's an example of a more complex setup to use a remote MongoDB instance:
 
 As Jetty configuration files are direct mappings of XML to Java, it is straight forward to do this in code:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 
  Server server = new Server();
@@ -186,7 +186,7 @@ The basic difference is how you get a reference to the Jetty `org.eclipse.jetty.
 
 From a context xml file, you reference the Server instance as a Ref:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Ref name="Server" id="Server">
     <Call id="mongoIdMgr" name="getSessionIdManager"/>
@@ -207,7 +207,7 @@ From a context xml file, you reference the Server instance as a Ref:
 
 From a `WEB-INF/jetty-web.xml` file, you can reference the Server instance directly:
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <Get name="server">
   <Get id="mongoIdMgr" name="sessionIdManager"/>
@@ -227,7 +227,7 @@ From a `WEB-INF/jetty-web.xml` file, you can reference the Server instance direc
 
 If you're embedding this in code:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 //assuming you have already set up the MongoSessionIdManager as shown earlier
  //and have a reference to the Server instance:
