@@ -360,7 +360,10 @@ public class TrieTest
     @MethodSource("implementations")
     public void testNullValue(AbstractTrie<Integer> trie) throws Exception
     {
-        assertThrows(IllegalArgumentException.class, () -> trie.put("null", null));
+        trie.put("null", 0);
+        assertTrue(trie.put("null", null));
+        assertThat(trie.get("null"), nullValue());
+        assertThat(trie.getBest("nullxxxx"), nullValue());
     }
 
     @Test
