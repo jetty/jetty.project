@@ -182,9 +182,6 @@ class ArrayTrie<V> extends AbstractTrie<V>
     @Override
     public boolean put(String key, V value)
     {
-        if (value == null)
-            throw new IllegalArgumentException("Value cannot be null");
-
         int row = 0;
         int limit = key.length();
         for (int i = 0; i < limit; i++)

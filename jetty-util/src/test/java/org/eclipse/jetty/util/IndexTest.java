@@ -49,19 +49,19 @@ public class IndexTest
     public void testUnlimitdMutableTrieSelection()
     {
         assertThat(new Index.Builder<String>().mutable().build(), instanceOf(TernaryTrie.class));
-        assertThat(new Index.Builder<String>().mutable().alphabet("visible").build(), instanceOf(TernaryTrie.class));
-        assertThat(new Index.Builder<String>().mutable().alphabet("invisible\r\n").build(), instanceOf(TernaryTrie.class));
+        assertThat(new Index.Builder<String>().mutable().useVisibleAsciiAlphabet().build(), instanceOf(TernaryTrie.class));
+        assertThat(new Index.Builder<String>().mutable().useIso8859Alphabet().build(), instanceOf(TernaryTrie.class));
     }
 
     @Test
     public void testLimitedMutableTrieSelection()
     {
         assertThat(new Index.Builder<String>().mutable().maxCapacity(500).build(), instanceOf(TernaryTrie.class));
-        assertThat(new Index.Builder<String>().mutable().maxCapacity(500).alphabet("visible").build(), instanceOf(ArrayTrie.class));
-        assertThat(new Index.Builder<String>().mutable().maxCapacity(500).alphabet("invisible\r\n").build(), instanceOf(TernaryTrie.class));
+        assertThat(new Index.Builder<String>().mutable().maxCapacity(500).useVisibleAsciiAlphabet().build(), instanceOf(ArrayTrie.class));
+        assertThat(new Index.Builder<String>().mutable().maxCapacity(500).useIso8859Alphabet().build(), instanceOf(TernaryTrie.class));
 
         assertThat(new Index.Builder<String>().mutable().maxCapacity(Character.MAX_VALUE + 1).build(), instanceOf(TernaryTrie.class));
-        assertThat(new Index.Builder<String>().mutable().maxCapacity(Character.MAX_VALUE + 1).alphabet("visible").build(), instanceOf(TernaryTrie.class));
-        assertThat(new Index.Builder<String>().mutable().maxCapacity(Character.MAX_VALUE + 1).alphabet("invisible\r\n").build(), instanceOf(TernaryTrie.class));
+        assertThat(new Index.Builder<String>().mutable().maxCapacity(Character.MAX_VALUE + 1).useVisibleAsciiAlphabet().build(), instanceOf(TernaryTrie.class));
+        assertThat(new Index.Builder<String>().mutable().maxCapacity(Character.MAX_VALUE + 1).useIso8859Alphabet().build(), instanceOf(TernaryTrie.class));
     }
 }

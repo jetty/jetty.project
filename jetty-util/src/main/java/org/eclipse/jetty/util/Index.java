@@ -210,6 +210,10 @@ public interface Index<V>
             private int maxCapacity = -1;
             private Set<Character> alphabet;
 
+            public Builder()
+            {
+            }
+
             Builder(boolean caseSensitive, Map<String, V> contents)
             {
                 super(caseSensitive, contents);
@@ -229,16 +233,25 @@ public interface Index<V>
                 return this;
             }
 
-            public Builder<V> alphabet(String alphabetString)
+            public Builder<V> useVisibleAsciiAlphabet()
             {
-                alphabet = new HashSet<>();
-                alphabetString.chars().forEach(c -> alphabet.add((char)c));
+                this.alphabet = VISIBLE_ASCII_ALPHABET;
                 return this;
             }
 
-            public Builder<V> alphabet(Set<Character> alphabet)
+            public Builder<V> useIso8859Alphabet()
             {
-                this.alphabet = alphabet;
+                this.alphabet = ISO_8859_ALPHABET;
+                return this;
+            }
+
+            /**
+             * Configure the index to be mutable.
+             *
+             * @return a {@link Mutable.Builder} configured like this builder.
+             */
+            public Mutable.Builder<V> mutable()
+            {
                 return this;
             }
 
@@ -252,7 +265,7 @@ public interface Index<V>
                     return EmptyTrie.instance(caseSensitive);
 
                 if (alphabet == null)
-                    alphabet = (contents == null) ? ISO_8859_ALPHABET : new HashSet<>();
+                    alphabet = (contents == null) ? null : new HashSet<>();
 
                 // Work out needed capacity and alphabet
                 int capacity = (contents == null) ? 0 : AbstractTrie.requiredCapacity(contents.keySet(), caseSensitive, alphabet);

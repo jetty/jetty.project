@@ -49,8 +49,6 @@ class EmptyTrie<V> extends AbstractTrie<V>
     public boolean put(String s, V v)
     {
         Objects.requireNonNull(s);
-        if (v == null)
-            throw new IllegalArgumentException("Value cannot be null");
         return false;
     }
 

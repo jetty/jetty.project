@@ -212,17 +212,12 @@ class TernaryTrie<V> extends AbstractTrie<V>
     @SuppressWarnings("unchecked")
     public boolean put(String s, V v)
     {
-        if (v == null)
-            throw new IllegalArgumentException("Value cannot be null");
-
         Table<V> table = _root;
         int row = 0;
         int end = s.length();
         for (int i = 0; i < end; i++)
         {
             char c = s.charAt(i);
-            if (c > 0xff)
-                throw new IllegalArgumentException("Not ISO-8859-1");
             if (isCaseInsensitive() && c < 0x80)
                 c = StringUtil.lowercases[c];
 
