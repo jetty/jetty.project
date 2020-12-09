@@ -1225,7 +1225,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         final Thread currentThread = Thread.currentThread();
         final ClassLoader oldClassloader = currentThread.getContextClassLoader();
         Context oldContext;
-        String oldPathInContext = null;
+        String oldPathInContext = baseRequest.getPathInContext();;
         String pathInContext = target;
 
         DispatcherType dispatch = baseRequest.getDispatcherType();
@@ -1267,14 +1267,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         try
         {
-            oldPathInContext = baseRequest.getPathInContext();
-
             // Update the paths
-            baseRequest.setContext(_scontext, pathInContext);
-            __context.set(_scontext);
+            baseRequest.setContext(_scontext,
+                (DispatcherType.INCLUDE.equals(dispatch) || !target.startsWith("/")) ? oldPathInContext : pathInContext);
 
             if (oldContext != _scontext)
+            {
+                __context.set(_scontext);
                 enterScope(baseRequest, dispatch);
+            }
 
             if (LOG.isDebugEnabled())
                 LOG.debug("context={}|{}|{} @ {}", baseRequest.getContextPath(), baseRequest.getServletPath(), baseRequest.getPathInfo(), this);
@@ -1291,10 +1292,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 if (_classLoader != null)
                     currentThread.setContextClassLoader(oldClassloader);
 
-                // reset the context and servlet path.
-                baseRequest.setContext(oldContext, oldPathInContext);
+                // reset the context
                 __context.set(oldContext);
             }
+
+            // reset pathInContext
+            baseRequest.setContext(oldContext, oldPathInContext);
         }
     }
 
