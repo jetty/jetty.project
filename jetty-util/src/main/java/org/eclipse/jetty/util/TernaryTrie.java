@@ -670,37 +670,4 @@ class TernaryTrie<V> extends AbstractTrie<V>
             }
         }
     }
-
-    public static void main(String... arg)
-    {
-        TernaryTrie<String> trie = new TernaryTrie<>(false, 8, 4, 200);
-        trie.put("hi", "hi");
-        trie.put("hip", "hip");
-        trie.put("hell", "hell");
-        trie.put("foo", "foo");
-        trie.put("foobar", "foobar");
-        trie.put("fop", "fop");
-        trie.put("hit", "hit");
-        trie.put("zip", "zip");
-        trie.dump();
-        System.err.println(trie.get("hi"));
-        System.err.println(trie.get("hip"));
-        System.err.println(trie.get("hell"));
-        System.err.println(trie.get("foo"));
-        System.err.println(trie.get("foobar"));
-        System.err.println(trie.get("fop"));
-        System.err.println(trie.get("hit"));
-        System.err.println(trie.get("zip"));
-        System.err.println("---");
-        System.err.println(trie.getBest("hi"));
-        System.err.println(trie.getBest("hixxx"));
-        System.err.println(trie.getBest("foobar"));
-        System.err.println(trie.getBest("foobarxxx"));
-        System.err.println(trie.getBest("xxxfoobarxxx", 3, 9));
-        System.err.println(trie.getBest("foobor"));
-        System.err.println("---");
-        trie.put("", "empty");
-        trie.dump();
-        System.err.println(trie.getBest("whatever"));
-    }
 }
