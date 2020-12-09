@@ -146,8 +146,8 @@ class TernaryTrie<V> extends AbstractTrie<V>
     /**
      * The number of rows allocated
      */
-    private int _maxCapacity;
-    private int _growBy;
+    private final int _maxCapacity;
+    private final int _growBy;
     private final Table<V> _root;
     private final List<Table<V>> _tables = new ArrayList<>();
     private Table<V> _tail;
@@ -160,11 +160,11 @@ class TernaryTrie<V> extends AbstractTrie<V>
 
         AbstractTrie<V> trie;
         if (maxCapacity <= 0)
-            trie = new TernaryTrie<V>(!caseSensitive, capacity, Math.max(capacity, 256), -1);
+            trie = new TernaryTrie<>(!caseSensitive, capacity, Math.max(capacity, 256), -1);
         else if (capacity < maxCapacity)
-            trie = new TernaryTrie<V>(!caseSensitive, capacity, Math.min(256, maxCapacity - capacity), maxCapacity);
+            trie = new TernaryTrie<>(!caseSensitive, capacity, Math.min(256, maxCapacity - capacity), maxCapacity);
         else
-            trie = new TernaryTrie<V>(!caseSensitive, capacity, 0, maxCapacity);
+            trie = new TernaryTrie<>(!caseSensitive, capacity, 0, maxCapacity);
 
         if (contents != null && !trie.putAll(contents))
             return null;
@@ -191,7 +191,7 @@ class TernaryTrie<V> extends AbstractTrie<V>
         super(insensitive);
         if (capacity > MAX_CAPACITY)
             throw new IllegalArgumentException("ArrayTernaryTrie maximum capacity overflow (" + capacity + " > " + MAX_CAPACITY + ")");
-        _root = new Table<V>(capacity + 1);
+        _root = new Table<>(capacity + 1);
         _tail = _root;
         _tables.add(_root);
         _growBy = growBy;
@@ -263,7 +263,7 @@ class TernaryTrie<V> extends AbstractTrie<V>
                 {
                     // point to a new row in the tail table;
                     if (node == null)
-                        node = table._nodes[row] = new Node<V>();
+                        node = table._nodes[row] = new Node<>();
                     if (node._next == null)
                         node._next = new Table[3];
                     row = _tail._rows;
@@ -275,7 +275,7 @@ class TernaryTrie<V> extends AbstractTrie<V>
                 {
                     // point to a new row in a new table;
                     if (node == null)
-                        node = table._nodes[row] = new Node<V>();
+                        node = table._nodes[row] = new Node<>();
                     if (node._next == null)
                         node._next = new Table[3];
                     int growBy = _maxCapacity < 0 ? _growBy : Math.min(_growBy, _maxCapacity - _nodes);
@@ -303,7 +303,7 @@ class TernaryTrie<V> extends AbstractTrie<V>
         // Put the key and value
         Node<V> node = table._nodes[row];
         if (node == null)
-            table._nodes[row] = new Node<V>(s, v);
+            table._nodes[row] = new Node<>(s, v);
         else
             node.set(s, v);
 
