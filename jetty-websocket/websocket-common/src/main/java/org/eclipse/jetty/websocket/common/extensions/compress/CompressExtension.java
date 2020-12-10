@@ -441,7 +441,6 @@ public abstract class CompressExtension extends AbstractExtension
             notifyCallbackFailure(current.callback, x);
             // If something went wrong, very likely the compression context
             // will be invalid, so we need to fail this IteratingCallback.
-            LOG.warn(x);
             super.failed(x);
         }
 
