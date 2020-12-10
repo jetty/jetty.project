@@ -30,7 +30,7 @@ public class RateCounter
 {
     private final LongAdder _total = new LongAdder();
     private final LongAdder _totalSinceRateCheck = new LongAdder();
-    private final AtomicLong _rateCheckTimeStamp = new AtomicLong();
+    private final AtomicLong _rateCheckTimeStamp = new AtomicLong(System.nanoTime());
 
     public long sum()
     {
