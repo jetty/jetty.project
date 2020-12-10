@@ -105,6 +105,15 @@ abstract class AbstractTrie<V> implements Index.Mutable<V>
      *               \
      *                 8
      * </pre>
+     * The count also applies to ternary trees as follows:
+     * <pre>
+     *     u - t - f - _ ----- 1 - 6
+     *                  \       \
+     *                   1 - 6   8
+     *                    \
+     *                     8
+     * </pre>
+     *
      * @param keys The keys to be put in a Trie
      * @param caseSensitive true if the capacity should be calculated with case-sensitive keys
      * @param alphabet A set of characters which will be updated with all characters found (or null if not needed)
