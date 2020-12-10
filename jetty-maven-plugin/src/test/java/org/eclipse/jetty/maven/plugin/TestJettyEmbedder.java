@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.maven.plugin;
 
-import java.io.File;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,26 +27,31 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class TestJettyEmbedder
 {
+    public WorkDir workDir;
 
     @Test
     public void testJettyEmbedderFromDefaults() throws Exception
     {
-        Path baseResource = MavenTestingUtils.getTargetTestingPath("embed-defaults");
-        Files.createDirectories(baseResource);
+        Path baseResource = workDir.getEmptyPathDir();
         MavenWebAppContext webApp = new MavenWebAppContext();
-        webApp.setBaseResource(Resource.newResource(baseResource));
+        webApp.setBaseResource(new PathResource(baseResource));
         MavenServerConnector connector = new MavenServerConnector();
         connector.setPort(0);
-        
+
         JettyEmbedder jetty = new JettyEmbedder();
         jetty.setHttpConnector(connector);
         jetty.setExitVm(false);
@@ -60,7 +63,7 @@ public class TestJettyEmbedder
         jetty.setLoginServices(null);
         jetty.setContextXml(MavenTestingUtils.getTestResourceFile("embedder-context.xml").getAbsolutePath());
         jetty.setWebApp(webApp);
-        
+
         try
         {
             jetty.start();
@@ -76,14 +79,13 @@ public class TestJettyEmbedder
             jetty.stop();
         }
     }
-    
+
     @Test
     public void testJettyEmbedder()
         throws Exception
     {
         MavenWebAppContext webApp = new MavenWebAppContext();
-        Path baseResource = MavenTestingUtils.getTargetTestingPath("embed-test");
-        Files.createDirectories(baseResource);
+        Path baseResource = workDir.getEmptyPathDir();
         webApp.setBaseResource(Resource.newResource(baseResource));
         Server server = new Server();
         Map<String,String> jettyProperties = new HashMap<>();
@@ -92,10 +94,10 @@ public class TestJettyEmbedder
         ContextHandler otherHandler = new ContextHandler();
         otherHandler.setContextPath("/other");
         otherHandler.setBaseResource(Resource.newResource(MavenTestingUtils.getTestResourceDir("root")));
-        
+
         MavenServerConnector connector = new MavenServerConnector();
         connector.setPort(0);
-        
+
         JettyEmbedder jetty = new JettyEmbedder();
         jetty.setHttpConnector(connector);
         jetty.setExitVm(false);
