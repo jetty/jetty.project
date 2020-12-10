@@ -41,9 +41,11 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.security.Constraint;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
 public class DynamicAuthenticationTest
@@ -140,38 +142,36 @@ public class DynamicAuthenticationTest
     }
 
     @Test
-    public void test() throws Exception
+    public void testOpenIdLogin() throws Exception
     {
-        server.join();
+        // TODO
     }
 
+    @Disabled("work in progress")
     @Test
-    public void testLoginLogout() throws Exception
+    public void testFormLogin() throws Exception
     {
         String appUriString = "http://localhost:" + connector.getLocalPort();
 
         // Initially not authenticated
         ContentResponse response = client.GET(appUriString + "/");
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        String[] content = response.getContentAsString().split("[\r\n]+");
-        assertThat(content.length, is(1));
-        assertThat(content[0], is("not authenticated"));
+        String content = response.getContentAsString();
+        assertThat(content, containsString("not authenticated"));
 
         // Request to login is success
         response = client.GET(appUriString + "/login");
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        content = response.getContentAsString().split("[\r\n]+");
-        assertThat(content.length, is(1));
-        assertThat(content[0], is("success"));
+        content = response.getContentAsString();
+        assertThat(content, containsString("success"));
 
         // Now authenticated we can get info
         response = client.GET(appUriString + "/");
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        content = response.getContentAsString().split("[\r\n]+");
-        assertThat(content.length, is(3));
-        assertThat(content[0], is("userId: 123456789"));
-        assertThat(content[1], is("name: Alice"));
-        assertThat(content[2], is("email: Alice@example.com"));
+        content = response.getContentAsString();
+        assertThat(content, containsString("userId: 123456789"));
+        assertThat(content, containsString("name: Alice"));
+        assertThat(content, containsString("email: Alice@example.com"));
 
         // Request to admin page gives 403 as we do not have admin role
         response = client.GET(appUriString + "/admin");
@@ -180,9 +180,8 @@ public class DynamicAuthenticationTest
         // We are no longer authenticated after logging out
         response = client.GET(appUriString + "/logout");
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        content = response.getContentAsString().split("[\r\n]+");
-        assertThat(content.length, is(1));
-        assertThat(content[0], is("not authenticated"));
+        content = response.getContentAsString();
+        assertThat(content, containsString("not authenticated"));
     }
 
     public static class OpenIdLoginPage extends HttpServlet
