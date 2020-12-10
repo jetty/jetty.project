@@ -60,10 +60,10 @@ public class ClientConfigTest
     private ServerConnector connector;
     private final EchoSocket serverSocket = new EchoSocket();
 
-    private static final String message = "this message is over 20 characters long";
-    private static final int inputBufferSize = 200;
-    private static final int maxMessageSize = 20;
-    private static final int idleTimeout = 500;
+    private static final String MESSAGE = "this message is over 20 characters long";
+    private static final int INPUT_BUFFER_SIZE = 200;
+    private static final int MAX_MESSAGE_SIZE = 20;
+    private static final int IDLE_TIMEOUT = 500;
 
     public static Stream<Arguments> data()
     {
@@ -97,7 +97,7 @@ public class ClientConfigTest
         server.stop();
     }
 
-    @WebSocket(idleTimeout = idleTimeout, maxTextMessageSize = maxMessageSize, maxBinaryMessageSize = maxMessageSize, inputBufferSize = inputBufferSize, batchMode = BatchMode.ON)
+    @WebSocket(idleTimeout = IDLE_TIMEOUT, maxTextMessageSize = MAX_MESSAGE_SIZE, maxBinaryMessageSize = MAX_MESSAGE_SIZE, inputBufferSize = INPUT_BUFFER_SIZE, batchMode = BatchMode.ON)
     public static class AnnotatedConfigEndpoint extends EventSocket
     {
     }
@@ -108,10 +108,10 @@ public class ClientConfigTest
         @Override
         public void onOpen(Session session)
         {
-            session.setIdleTimeout(Duration.ofMillis(idleTimeout));
-            session.setMaxTextMessageSize(maxMessageSize);
-            session.setMaxBinaryMessageSize(maxMessageSize);
-            session.setInputBufferSize(inputBufferSize);
+            session.setIdleTimeout(Duration.ofMillis(IDLE_TIMEOUT));
+            session.setMaxTextMessageSize(MAX_MESSAGE_SIZE);
+            session.setMaxBinaryMessageSize(MAX_MESSAGE_SIZE);
+            session.setInputBufferSize(INPUT_BUFFER_SIZE);
             super.onOpen(session);
         }
     }
@@ -121,10 +121,10 @@ public class ClientConfigTest
         switch (param)
         {
             case "clientConfig":
-                client.setInputBufferSize(inputBufferSize);
-                client.setMaxBinaryMessageSize(maxMessageSize);
-                client.setIdleTimeout(Duration.ofMillis(idleTimeout));
-                client.setMaxTextMessageSize(maxMessageSize);
+                client.setInputBufferSize(INPUT_BUFFER_SIZE);
+                client.setMaxBinaryMessageSize(MAX_MESSAGE_SIZE);
+                client.setIdleTimeout(Duration.ofMillis(IDLE_TIMEOUT));
+                client.setMaxTextMessageSize(MAX_MESSAGE_SIZE);
                 return new EventSocket();
 
             case "annotatedConfig":
@@ -151,7 +151,7 @@ public class ClientConfigTest
         WebSocketCoreSession coreSession = (WebSocketCoreSession)((WebSocketSession)clientEndpoint.session).getCoreSession();
         WebSocketConnection connection = coreSession.getConnection();
 
-        assertThat(connection.getInputBufferSize(), is(inputBufferSize));
+        assertThat(connection.getInputBufferSize(), is(INPUT_BUFFER_SIZE));
 
         clientEndpoint.session.close();
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
@@ -170,7 +170,7 @@ public class ClientConfigTest
         CompletableFuture<Session> connect = client.connect(clientEndpoint, uri);
 
         connect.get(5, TimeUnit.SECONDS);
-        clientEndpoint.session.getRemote().sendBytes(BufferUtil.toBuffer(message));
+        clientEndpoint.session.getRemote().sendBytes(BufferUtil.toBuffer(MESSAGE));
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
 
         assertThat(clientEndpoint.error, instanceOf(MessageTooLargeException.class));
@@ -189,7 +189,7 @@ public class ClientConfigTest
 
         connect.get(5, TimeUnit.SECONDS);
         clientEndpoint.session.getRemote().sendString("hello world");
-        Thread.sleep(idleTimeout + 500);
+        Thread.sleep(IDLE_TIMEOUT + 500);
 
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
         assertThat(clientEndpoint.error, instanceOf(WebSocketTimeoutException.class));
@@ -207,7 +207,7 @@ public class ClientConfigTest
         CompletableFuture<Session> connect = client.connect(clientEndpoint, uri);
 
         connect.get(5, TimeUnit.SECONDS);
-        clientEndpoint.session.getRemote().sendString(message);
+        clientEndpoint.session.getRemote().sendString(MESSAGE);
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
 
         assertThat(clientEndpoint.error, instanceOf(MessageTooLargeException.class));
