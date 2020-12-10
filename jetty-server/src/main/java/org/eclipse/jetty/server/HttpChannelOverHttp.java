@@ -41,6 +41,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.util.Index;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -505,31 +506,24 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
                 case EXPECT:
                 {
-                    if (HttpVersion.HTTP_1_1.equals(_requestBuilder.version()))
+                    if (!Index.parseCsvIndex(HttpHeaderValue.CACHE, value, t ->
                     {
-                        HttpHeaderValue expect = HttpHeaderValue.CACHE.get(value);
-                        if (expect == HttpHeaderValue.CONTINUE)
+                        switch (t)
                         {
-                            _expect100Continue = true;
+                            case CONTINUE:
+                                _expect100Continue = true;
+                                return true;
+                            case PROCESSING:
+                                _expect102Processing = true;
+                                return true;
+                            default:
+                                return false;
                         }
-                        else if (expect == HttpHeaderValue.PROCESSING)
-                        {
-                            _expect102Processing = true;
-                        }
-                        else
-                        {
-                            String[] values = field.getValues();
-                            for (int i = 0; values != null && i < values.length; i++)
-                            {
-                                expect = HttpHeaderValue.CACHE.get(values[i].trim());
-                                if (expect == HttpHeaderValue.CONTINUE)
-                                    _expect100Continue = true;
-                                else if (expect == HttpHeaderValue.PROCESSING)
-                                    _expect102Processing = true;
-                                else
-                                    _unknownExpectation = true;
-                            }
-                        }
+                    }))
+                    {
+                        _unknownExpectation = true;
+                        _expect100Continue = false;
+                        _expect102Processing = false;
                     }
                     break;
                 }

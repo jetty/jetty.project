@@ -156,8 +156,8 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
         for (int k = 0; k < limit; k++)
         {
             char c = s.charAt(k);
-            if (isCaseInsensitive() && c < 128)
-                c = StringUtil.lowercases[c];
+            if (isCaseInsensitive())
+                c = StringUtil.asciiToLowerCase(c);
 
             while (true)
             {
@@ -221,8 +221,8 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < len; )
         {
             char c = s.charAt(offset + i++);
-            if (isCaseInsensitive() && c < 128)
-                c = StringUtil.lowercases[c];
+            if (isCaseInsensitive())
+                c = StringUtil.asciiToLowerCase(c);
 
             while (true)
             {
@@ -257,7 +257,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
         {
             byte c = (byte)(b.get(offset + i++) & 0x7f);
             if (isCaseInsensitive())
-                c = (byte)StringUtil.lowercases[c];
+                c = StringUtil.asciiToLowerCase(c);
 
             while (true)
             {
@@ -303,8 +303,8 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
         {
             char c = s.charAt(offset++);
             len--;
-            if (isCaseInsensitive() && c < 128)
-                c = StringUtil.lowercases[c];
+            if (isCaseInsensitive())
+                c = StringUtil.asciiToLowerCase(c);
 
             while (true)
             {
@@ -361,7 +361,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
             byte c = (byte)(b[offset++] & 0x7f);
             len--;
             if (isCaseInsensitive())
-                c = (byte)StringUtil.lowercases[c];
+                c = StringUtil.asciiToLowerCase(c);
 
             while (true)
             {
@@ -404,7 +404,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
         {
             byte c = (byte)(b.get(o + i) & 0x7f);
             if (isCaseInsensitive())
-                c = (byte)StringUtil.lowercases[c];
+                c = StringUtil.asciiToLowerCase(c);
 
             while (true)
             {

@@ -218,8 +218,8 @@ class TernaryTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < end; i++)
         {
             char c = s.charAt(i);
-            if (isCaseInsensitive() && c < 0x80)
-                c = StringUtil.lowercases[c];
+            if (isCaseInsensitive())
+                c = StringUtil.asciiToLowerCase(c);
 
             while (true)
             {
@@ -322,8 +322,8 @@ class TernaryTrie<V> extends AbstractTrie<V>
             char c = s.charAt(offset + i);
             if (c > 0xff)
                 return null;
-            if (isCaseInsensitive() && c < 0x80)
-                c = StringUtil.lowercases[c];
+            if (isCaseInsensitive())
+                c = StringUtil.asciiToLowerCase(c);
 
             while (true)
             {
@@ -371,8 +371,8 @@ class TernaryTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < len; i++)
         {
             byte c = b.get(b.position() + offset + i);
-            if (isCaseInsensitive() && c > 0)
-                c = (byte)StringUtil.lowercases[c];
+            if (isCaseInsensitive())
+                c = StringUtil.asciiToLowerCase(c);
 
             while (true)
             {
@@ -429,8 +429,8 @@ class TernaryTrie<V> extends AbstractTrie<V>
             char c = s.charAt(offset + i);
             if (c > 0xFF)
                 break;
-            if (isCaseInsensitive() && c < 0x7f)
-                c = StringUtil.lowercases[c];
+            if (isCaseInsensitive())
+                c = StringUtil.asciiToLowerCase(c);
 
             Node<V> node = table._nodes[row];
             while (true)
@@ -498,8 +498,8 @@ class TernaryTrie<V> extends AbstractTrie<V>
         loop : for (int i = 0; i < len; i++)
         {
             byte c = b[offset + i];
-            if (isCaseInsensitive() && c > 0)
-                c = (byte)StringUtil.lowercases[c];
+            if (isCaseInsensitive())
+                c = StringUtil.asciiToLowerCase(c);
 
             Node<V> node = table._nodes[row];
             while (true)
@@ -551,8 +551,8 @@ class TernaryTrie<V> extends AbstractTrie<V>
         loop : for (int i = 0; i < len; i++)
         {
             byte c = b.get(b.position() + offset + i);
-            if (isCaseInsensitive() && c > 0)
-                c = (byte)StringUtil.lowercases[c];
+            if (isCaseInsensitive())
+                c = StringUtil.asciiToLowerCase(c);
 
             Node<V> node = table._nodes[row];
             while (true)

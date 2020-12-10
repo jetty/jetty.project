@@ -18,10 +18,16 @@
 
 package org.eclipse.jetty.util;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class IndexTest
@@ -63,5 +69,60 @@ public class IndexTest
         assertThat(new Index.Builder<String>().mutable().maxCapacity(Character.MAX_VALUE + 1).build(), instanceOf(TernaryTrie.class));
         assertThat(new Index.Builder<String>().mutable().maxCapacity(Character.MAX_VALUE + 1).useVisibleAsciiAlphabet().build(), instanceOf(TernaryTrie.class));
         assertThat(new Index.Builder<String>().mutable().maxCapacity(Character.MAX_VALUE + 1).useIso8859Alphabet().build(), instanceOf(TernaryTrie.class));
+    }
+
+    @Test
+    public void testParseCsv()
+    {
+        Index<String> index = new Index.Builder<String>()
+            .caseSensitive(false)
+            .with("aa", "aa")
+            .with("AAA", "AAA")
+            .with("Alt", "Alt")
+            .with("foo", "foo")
+            .with("FooBar", "FooBar")
+            .build();
+
+        final List<String> list = new ArrayList<>();
+
+        assertTrue(Index.parseCsvIndex(index, "", list::add));
+        assertThat(list, empty());
+
+        list.clear();
+        assertTrue(Index.parseCsvIndex(index, "aa", list::add));
+        assertThat(list, contains("aa"));
+
+        list.clear();
+        assertTrue(Index.parseCsvIndex(index, "aaa,alt, foo    , FOOBAR   ", list::add));
+        assertThat(list, contains("AAA", "Alt", "foo", "FooBar"));
+
+        list.clear();
+        assertTrue(Index.parseCsvIndex(index, "aaa,alt, foo    , FOOBAR   ", t ->
+        {
+            if (t.length() == 3)
+                list.add(t);
+            return true;
+        }));
+        assertThat(list, contains("AAA", "Alt", "foo"));
+
+        list.clear();
+        assertFalse(Index.parseCsvIndex(index, "aaa,alt, foo    , FOOBAR   ", t ->
+        {
+            list.add(t);
+            return !"foo".equalsIgnoreCase(t);
+        }));
+        assertThat(list, contains("AAA", "Alt", "foo"));
+
+        list.clear();
+        assertFalse(Index.parseCsvIndex(index, "aaa,alt, unknown, FOOBAR", list::add));
+        assertThat(list, contains("AAA", "Alt"));
+
+        list.clear();
+        assertFalse(Index.parseCsvIndex(index, "aaa,alt  ,   ", list::add));
+        assertThat(list, contains("AAA", "Alt"));
+
+        list.clear();
+        assertFalse(Index.parseCsvIndex(index, "aa, aaa, aaaa", list::add));
+        assertThat(list, contains("aa", "AAA"));
     }
 }

@@ -157,6 +157,53 @@ public interface Index<V>
     Set<String> keySet();
 
     /**
+     * Parse an unquoted comma separated list of index keys.
+     * @param index An Index with the length of the value in strings matches the key length
+     * @param value A string list of index keys, separated with commas and possible white space
+     * @param found The function to call for all found index entries. If the function returns false parsing is halted.
+     * @param <V> The type of the index
+     * @return true if parsing completed normally and all found index items returned true from the found function.
+     */
+    static <V> boolean parseCsvIndex(Index<V> index, String value, Function<V, Boolean> found)
+    {
+        if (StringUtil.isBlank(value))
+            return true;
+        int next = 0;
+        while (true)
+        {
+            // Look for the best fit next token
+            V token = index.getBest(value, next, value.length() - next);
+
+            // If nothing found parse failed
+            if (token == null)
+                return false;
+
+            next += token.toString().length();
+
+            boolean comma = false;
+            loop:
+            while (true)
+            {
+                if (next >= value.length())
+                    return !comma && found.apply(token);
+                switch (value.charAt(next))
+                {
+                    case ',':
+                        if (!found.apply(token))
+                            return false;
+                        comma = true;
+                        break;
+                    case ' ':
+                        break;
+                    default:
+                        break loop;
+                }
+                next++;
+            }
+        }
+    }
+
+    /**
      * A mutable String lookup data structure.
      * Implementations are not thread-safe.
      * @param <V> the entry type

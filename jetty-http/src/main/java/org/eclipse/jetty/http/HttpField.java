@@ -150,10 +150,8 @@ public class HttpField
             return false;
         if (_value == null)
             return false;
-        if (search.equals(_value))
+        if (search.equalsIgnoreCase(_value))
             return true;
-
-        search = StringUtil.asciiToLowerCase(search);
 
         int state = 0;
         int match = 0;
@@ -161,7 +159,7 @@ public class HttpField
 
         for (int i = 0; i < _value.length(); i++)
         {
-            char c = _value.charAt(i);
+            char c = StringUtil.asciiToLowerCase(_value.charAt(i));
             switch (state)
             {
                 case 0: // initial white space
@@ -186,7 +184,7 @@ public class HttpField
                             break;
 
                         default: // character
-                            match = Character.toLowerCase(c) == search.charAt(0) ? 1 : -1;
+                            match = c == StringUtil.asciiToLowerCase(search.charAt(0)) ? 1 : -1;
                             state = 1;
                             break;
                     }
@@ -211,7 +209,7 @@ public class HttpField
                             if (match > 0)
                             {
                                 if (match < search.length())
-                                    match = Character.toLowerCase(c) == search.charAt(match) ? (match + 1) : -1;
+                                    match = c == StringUtil.asciiToLowerCase(search.charAt(match)) ? (match + 1) : -1;
                                 else if (c != ' ' && c != '\t')
                                     match = -1;
                             }
@@ -234,7 +232,7 @@ public class HttpField
                             if (match >= 0)
                             {
                                 if (match < search.length())
-                                    match = Character.toLowerCase(c) == search.charAt(match) ? (match + 1) : -1;
+                                    match = c == StringUtil.asciiToLowerCase(search.charAt(match)) ? (match + 1) : -1;
                                 else
                                     match = -1;
                             }
@@ -245,7 +243,7 @@ public class HttpField
                     if (match >= 0)
                     {
                         if (match < search.length())
-                            match = Character.toLowerCase(c) == search.charAt(match) ? (match + 1) : -1;
+                            match = c == StringUtil.asciiToLowerCase(search.charAt(match)) ? (match + 1) : -1;
                         else
                             match = -1;
                     }
@@ -295,7 +293,7 @@ public class HttpField
                             if (param >= 0)
                             {
                                 if (param < __zeroquality.length())
-                                    param = Character.toLowerCase(c) == __zeroquality.charAt(param) ? (param + 1) : -1;
+                                    param = c == __zeroquality.charAt(param) ? (param + 1) : -1;
                                 else if (c != '0' && c != '.')
                                     param = -1;
                             }
