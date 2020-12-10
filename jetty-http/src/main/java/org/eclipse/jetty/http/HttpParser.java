@@ -1062,17 +1062,7 @@ public class HttpParser
                 if (addToFieldCache && _header != null && _valueString != null)
                 {
                     if (_fieldCache == null)
-                    {
-                        // TODO should we bypass the builder in this case?
-                        _fieldCache = (getHeaderCacheSize() > 0 && (_version != null && _version == HttpVersion.HTTP_1_1))
-                            ? new Index.Mutable.Builder<HttpField>()
-                            .caseSensitive(false)
-                            .mutable()
-                            .useVisibleAsciiAlphabet()
-                            .maxCapacity(getHeaderCacheSize())
-                            .build()
-                            : NO_CACHE;
-                    }
+                        _fieldCache = Index.Builder.buildCaseSensitiveMutableVisibleAsciiAlphabet(getHeaderCacheSize());
 
                     if (_field == null)
                         _field = new HttpField(_header, caseInsensitiveHeader(_headerString, _header.asString()), _valueString);

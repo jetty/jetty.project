@@ -108,8 +108,8 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
             return null;
 
         AbstractTrie<V> trie = maxCapacity < 0
-            ? new ArrayTernaryTrie.Growing<V>(!caseSensitive, capacity, 512)
-            : new ArrayTernaryTrie<V>(!caseSensitive, Math.max(capacity, maxCapacity));
+            ? new ArrayTernaryTrie.Growing<V>(caseSensitive, capacity, 512)
+            : new ArrayTernaryTrie<V>(caseSensitive, Math.max(capacity, maxCapacity));
 
         if (contents != null && !trie.putAll(contents))
             return null;
@@ -119,7 +119,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
     /**
      * Create a Trie
      *
-     * @param insensitive true if the Trie is insensitive to the case of the key.
+     * @param caseSensitive true if the Trie is insensitive to the case of the key.
      * @param capacity The capacity of the Trie, which is in the worst case
      * is the total number of characters of all keys stored in the Trie.
      * The capacity needed is dependent of the shared prefixes of the keys.
@@ -128,36 +128,14 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
      * store "bar" and "bat".
      */
     @SuppressWarnings("unchecked")
-    ArrayTernaryTrie(boolean insensitive, int capacity)
+    ArrayTernaryTrie(boolean caseSensitive, int capacity)
     {
-        super(insensitive);
+        super(caseSensitive);
         if (capacity > MAX_CAPACITY)
             throw new IllegalArgumentException("ArrayTernaryTrie maximum capacity overflow (" + capacity + " > " + MAX_CAPACITY + ")");
         _value = (V[])new Object[capacity];
         _tree = new char[capacity * ROW_SIZE];
         _key = new String[capacity];
-    }
-
-    @SuppressWarnings("unchecked")
-    ArrayTernaryTrie(boolean insensitive, Map<String, V> initialValues)
-    {
-        super(insensitive);
-        // The calculated requiredCapacity does not take into account the
-        // extra reserved slot for the empty string key, nor the slots
-        // required for 'terminating' the entry (1 slot per key) so we
-        // have to add those.
-        Set<String> keys = initialValues.keySet();
-        int capacity = AbstractTrie.requiredCapacity(keys, !insensitive, null) + keys.size() + 1;
-        if (capacity > MAX_CAPACITY)
-            throw new IllegalArgumentException("ArrayTernaryTrie maximum capacity overflow (" + capacity + " > " + MAX_CAPACITY + ")");
-        _value = (V[])new Object[capacity];
-        _tree = new char[capacity * ROW_SIZE];
-        _key = new String[capacity];
-        for (Map.Entry<String, V> entry : initialValues.entrySet())
-        {
-            if (!put(entry.getKey(), entry.getValue()))
-                throw new AssertionError("Invalid capacity calculated (" + capacity + ") at '" + entry + "' for " + initialValues);
-        }
     }
 
     @Override
@@ -555,11 +533,11 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
         private final int _growby;
         private ArrayTernaryTrie<V> _trie;
 
-        Growing(boolean insensitive, int capacity, int growby)
+        Growing(boolean caseSensitive, int capacity, int growby)
         {
-            super(insensitive);
+            super(caseSensitive);
             _growby = growby;
-            _trie = new ArrayTernaryTrie<>(insensitive, capacity);
+            _trie = new ArrayTernaryTrie<>(caseSensitive, capacity);
         }
 
         @Override
@@ -603,7 +581,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
             boolean added = _trie.put(s, v);
             while (!added && _growby > 0)
             {
-                ArrayTernaryTrie<V> bigger = new ArrayTernaryTrie<>(_trie.isCaseInsensitive(), _trie._key.length + _growby);
+                ArrayTernaryTrie<V> bigger = new ArrayTernaryTrie<>(!_trie.isCaseInsensitive(), _trie._key.length + _growby);
                 for (Map.Entry<String, V> entry : _trie.entrySet())
                 {
                     bigger.put(entry.getKey(), entry.getValue());

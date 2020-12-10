@@ -37,21 +37,21 @@ import java.util.stream.Collectors;
  */
 abstract class AbstractTrie<V> implements Index.Mutable<V>
 {
-    final boolean _caseInsensitive;
+    final boolean _caseSensitive;
 
-    protected AbstractTrie(boolean insensitive)
+    protected AbstractTrie(boolean caseSensitive)
     {
-        _caseInsensitive = insensitive;
+        _caseSensitive = caseSensitive;
     }
 
     public boolean isCaseInsensitive()
     {
-        return _caseInsensitive;
+        return !_caseSensitive;
     }
 
     public boolean isCaseSensitive()
     {
-        return !_caseInsensitive;
+        return _caseSensitive;
     }
 
     public boolean put(V v)

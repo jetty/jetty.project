@@ -30,9 +30,9 @@ import java.util.Set;
 class EmptyTrie<V> extends AbstractTrie<V>
 {
     @SuppressWarnings("rawtypes")
-    private static final EmptyTrie SENSITIVE = new EmptyTrie<>(false);
+    private static final EmptyTrie SENSITIVE = new EmptyTrie<>(true);
     @SuppressWarnings("rawtypes")
-    private static final EmptyTrie INSENSITIVE = new EmptyTrie<>(true);
+    private static final EmptyTrie INSENSITIVE = new EmptyTrie<>(false);
 
     @SuppressWarnings("unchecked")
     public static <V> EmptyTrie<V> instance(boolean caseSensitive)
@@ -40,9 +40,9 @@ class EmptyTrie<V> extends AbstractTrie<V>
         return caseSensitive ? SENSITIVE : INSENSITIVE;
     }
 
-    private EmptyTrie(boolean insensitive)
+    private EmptyTrie(boolean caseSensitive)
     {
-        super(insensitive);
+        super(caseSensitive);
     }
 
     @Override

@@ -188,7 +188,7 @@ class TernaryTrie<V> extends AbstractTrie<V>
     @SuppressWarnings("unchecked")
     TernaryTrie(boolean insensitive, int capacity, int growBy, int maxCapacity)
     {
-        super(insensitive);
+        super(!insensitive);
         if (capacity > MAX_CAPACITY)
             throw new IllegalArgumentException("ArrayTernaryTrie maximum capacity overflow (" + capacity + " > " + MAX_CAPACITY + ")");
         _root = new Table<>(capacity + 1);

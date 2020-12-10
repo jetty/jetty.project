@@ -81,7 +81,7 @@ class TreeTrie<V> extends AbstractTrie<V>
     @SuppressWarnings("unchecked")
     TreeTrie()
     {
-        super(true);
+        super(false);
         _nextIndex = new TreeTrie[INDEX];
         _c = 0;
     }
@@ -89,7 +89,7 @@ class TreeTrie<V> extends AbstractTrie<V>
     @SuppressWarnings("unchecked")
     private TreeTrie(char c)
     {
-        super(true);
+        super(false);
         _nextIndex = new TreeTrie[INDEX];
         this._c = c;
     }

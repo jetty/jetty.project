@@ -142,7 +142,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
             }
         }
 
-        ArrayTrie<V> trie = new ArrayTrie<>(!caseSensitive, maxCapacity);
+        ArrayTrie<V> trie = new ArrayTrie<>(caseSensitive, maxCapacity);
         if (contents != null && !trie.putAll(contents))
             return null;
         return trie;
@@ -158,16 +158,16 @@ class ArrayTrie<V> extends AbstractTrie<V>
      */
     ArrayTrie(int capacity)
     {
-        this(true, capacity);
+        this(false, capacity);
     }
 
     @SuppressWarnings("unchecked")
-    ArrayTrie(boolean caseInsensitive, int capacity)
+    ArrayTrie(boolean caseSensitive, int capacity)
     {
-        super(caseInsensitive);
+        super(caseSensitive);
         if (capacity > MAX_CAPACITY)
             throw new IllegalArgumentException("Capacity " + capacity + " > " + MAX_CAPACITY);
-        _lookup = caseInsensitive ? LOOKUP_INSENSITIVE : LOOKUP_SENSITIVE;
+        _lookup = !caseSensitive ? LOOKUP_INSENSITIVE : LOOKUP_SENSITIVE;
         capacity++;
         _table = new char[capacity * ROW_SIZE];
         _node = new Node[capacity];

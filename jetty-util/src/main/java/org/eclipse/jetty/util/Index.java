@@ -210,10 +210,6 @@ public interface Index<V>
             private int maxCapacity = -1;
             private Set<Character> alphabet;
 
-            public Builder()
-            {
-            }
-
             Builder(boolean caseSensitive, Map<String, V> contents)
             {
                 super(caseSensitive, contents);
@@ -310,6 +306,21 @@ public interface Index<V>
         {
             this.caseSensitive = caseSensitive;
             this.contents = contents;
+        }
+
+        /**
+         * A special purpose static builder for fast creation of specific Index type
+         * @param maxCapacity The max capacity of the index
+         * @param <V> The type of the index
+         * @return A case sensitive mutable Index tacking visible ASCII alphabet to a max capacity.
+         */
+        public static <V> Mutable<V> buildCaseSensitiveMutableVisibleAsciiAlphabet(int maxCapacity)
+        {
+            if (maxCapacity <= 0)
+                return EmptyTrie.instance(true);
+            if (maxCapacity <= ArrayTrie.MAX_CAPACITY)
+                return new ArrayTrie<>(true, maxCapacity);
+            return new TernaryTrie<>(false, Math.max(256, maxCapacity), 256, maxCapacity);
         }
 
         private Map<String, V> contents()
