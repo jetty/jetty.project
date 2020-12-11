@@ -10,18 +10,8 @@
   <description>JSON/Ajax Utility classes for Jetty</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.util.ajax</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.util.ajax.*</spotbugs.onlyAnalyze>
   </properties>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.util.ajax.*</onlyAnalyze>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

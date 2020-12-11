@@ -12,6 +12,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.http</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.http.*</spotbugs.onlyAnalyze>
   </properties>
 
   <dependencies>
@@ -55,13 +56,6 @@
             <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.http.HttpFieldPreEncoder
             </Provide-Capability>
           </instructions>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.http.*</onlyAnalyze>
         </configuration>
       </plugin>
       <plugin>

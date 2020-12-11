@@ -12,17 +12,11 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.openid</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.security.openid.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.security.openid.*</onlyAnalyze>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>

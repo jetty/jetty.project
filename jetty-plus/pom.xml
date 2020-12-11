@@ -12,6 +12,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.plus</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.plus.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>
@@ -30,13 +31,6 @@
               osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.webapp.Configuration
             </Provide-Capability>
           </instructions>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.plus.*</onlyAnalyze>
         </configuration>
       </plugin>
     </plugins>

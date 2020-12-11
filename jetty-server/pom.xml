@@ -12,17 +12,11 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.server.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.server.*</onlyAnalyze>
-        </configuration>
-      </plugin>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
