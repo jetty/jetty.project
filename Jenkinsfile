@@ -42,6 +42,7 @@ pipeline {
           steps {
             container( 'jetty-build' ) {
               timeout( time: 240, unit: 'MINUTES' ) {
+                mavenBuild( "jdk15", "clean install", "maven3")
                 recordIssues id: "jdk15", name: "Static Analysis jdk15", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser()]
               }
             }
