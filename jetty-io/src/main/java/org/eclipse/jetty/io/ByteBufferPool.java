@@ -179,7 +179,7 @@ public interface ByteBufferPool
 
         public void release(ByteBuffer buffer)
         {
-            _lastUpdate.setOpaque(System.nanoTime());
+            _lastUpdate.lazySet(System.nanoTime());
             BufferUtil.clear(buffer);
             if (_size == null)
                 queueOffer(buffer);
@@ -234,7 +234,7 @@ public interface ByteBufferPool
 
         long getLastUpdate()
         {
-            return _lastUpdate.getOpaque();
+            return _lastUpdate.get();
         }
 
         @Override

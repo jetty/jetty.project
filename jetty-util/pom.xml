@@ -10,6 +10,7 @@
   <description>Utility classes for Jetty</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.util</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.util.*</spotbugs.onlyAnalyze>
   </properties>
   <build>
     <resources>
@@ -19,13 +20,6 @@
       </resource>
     </resources>
     <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.util.*</onlyAnalyze>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>buildnumber-maven-plugin</artifactId>

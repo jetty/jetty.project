@@ -12,6 +12,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.jndi</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.jndi.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>
@@ -32,13 +33,6 @@
           <instructions>
             <Import-Package>javax.mail.*;resolution:=optional,*</Import-Package>
           </instructions>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.jndi.*</onlyAnalyze>
         </configuration>
       </plugin>
     </plugins>
