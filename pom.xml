@@ -352,11 +352,22 @@
                 <include>**/*.adoc</include>
               </includes>
               <excludes>
-                <exclude>jetty-ant/**</exclude>
-                <exclude>jetty-home/src/main/resources/README.adoc</exclude>
-                <exclude>jetty-infinispan/**</exclude>
+                <!-- Sabre Holdings -->
+                <exclude>jetty-ant/src/main/java/org/eclipse/jetty/ant/AntWebAppContext.java</exclude>
+                <exclude>jetty-ant/src/main/java/org/eclipse/jetty/ant/types/Connectors.java</exclude>
+                <exclude>jetty-ant/src/main/java/org/eclipse/jetty/ant/types/ContextHandlers.java</exclude>
+                <exclude>jetty-ant/src/main/java/org/eclipse/jetty/ant/types/FileMatchingConfiguration.java</exclude>
+                <exclude>jetty-ant/src/main/java/org/eclipse/jetty/ant/types/LoginServices.java</exclude>
+                <exclude>jetty-ant/src/main/java/org/eclipse/jetty/ant/types/SystemProperties.java</exclude>
+                <exclude>jetty-ant/src/main/java/org/eclipse/jetty/ant/utils/ServerProxy.java</exclude>
+                <exclude>jetty-ant/src/main/java/org/eclipse/jetty/ant/utils/TaskLog.java</exclude>
+                <exclude>jetty-ant/src/main/java/org/eclipse/jetty/ant/AntWebXmlConfiguration.java</exclude>
+                <exclude>jetty-ant/src/main/java/org/eclipse/jetty/ant/JettyRunTask.java</exclude>
+                <exclude>jetty-ant/src/main/java/org/eclipse/jetty/ant/ServerProxyImpl.java</exclude>
+                <!-- Aki Yoshida -->
                 <exclude>jetty-util/src/main/java/org/eclipse/jetty/util/security/UnixCrypt.java</exclude>
-                <exclude>tests/test-sessions/test-infinispan-sessions/**</exclude>
+                <!-- Distribution Text (no header, too noisy) -->
+                <exclude>jetty-home/src/main/resources/README.adoc</exclude>
               </excludes>
             </configuration>
           </execution>
