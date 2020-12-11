@@ -149,6 +149,11 @@ public class Pool<T> implements AutoCloseable, Dumpable
         return (int)entries.stream().filter(Entry::isInUse).count();
     }
 
+    public int getClosedCount()
+    {
+        return (int)entries.stream().filter(Entry::isClosed).count();
+    }
+
     public int getMaxEntries()
     {
         return maxEntries;
@@ -627,8 +632,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
 
         /**
-         * Try to mark the entry as removed.
-         * @return true if the entry has to be removed from the containing pool, false otherwise.
+         * Try to remove the entry by marking it as closed and decrementing the multiplexing counter.
+         * The multiplexing counter will never go below zero and if it reaches zero, the entry is considered removed.
+         * @return true if the entry can be removed from the containing pool, false otherwise.
          */
         boolean tryRemove()
         {

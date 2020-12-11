@@ -23,8 +23,10 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -32,6 +34,7 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -54,6 +57,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     private final Callback requester;
     private final Pool<Connection> pool;
     private boolean maximizeConnections;
+    private volatile long maxDurationNanos = 0L;
 
     /**
      * @deprecated use {@link #AbstractConnectionPool(HttpDestination, int, boolean, Callback)} instead
@@ -103,6 +107,27 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
             destination.newConnection(future);
         }
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+    }
+
+    /**
+     * <p>Get the max usage duration in milliseconds of the pool's connections.
+     * Values {@code 0} and negative mean that there is no limit.</p>
+     * <p>This only guarantees that a connection cannot be acquired after the configured
+     * duration elapses, so that is only enforced when {@link #acquire()} is called.
+     * If a pool stays completely idle for a duration longer than the value
+     * returned by this method, the max duration will not be enforced.
+     * It's up to the idle timeout mechanism (see {@link HttpClient#getIdleTimeout()})
+     * to handle closing idle connections.</p>
+     */
+    @ManagedAttribute(value = "The maximum duration in milliseconds a connection can be used for before it gets closed")
+    public long getMaxDuration()
+    {
+        return TimeUnit.NANOSECONDS.toMillis(maxDurationNanos);
+    }
+
+    public void setMaxDuration(long maxDurationInMs)
+    {
+        this.maxDurationNanos = TimeUnit.MILLISECONDS.toNanos(maxDurationInMs);
     }
 
     protected int getMaxMultiplex()
@@ -290,16 +315,35 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
 
     protected Connection activate()
     {
-        Pool<Connection>.Entry entry = pool.acquire();
-        if (entry != null)
+        while (true)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Activated {} {}", entry, pool);
-            Connection connection = entry.getPooled();
-            acquired(connection);
-            return connection;
+            Pool<Connection>.Entry entry = pool.acquire();
+            if (entry != null)
+            {
+                Connection connection = entry.getPooled();
+
+                long maxDurationNanos = this.maxDurationNanos;
+                if (maxDurationNanos > 0L)
+                {
+                    EntryHolder holder = (EntryHolder)((Attachable)connection).getAttachment();
+                    if (holder.isExpired(maxDurationNanos))
+                    {
+                        boolean canClose = remove(connection, true);
+                        if (canClose)
+                            IO.close(connection);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Connection removed{} due to expiration {} {}", (canClose ? " and closed" : ""), entry, pool);
+                        continue;
+                    }
+                }
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Activated {} {}", entry, pool);
+                acquired(connection);
+                return connection;
+            }
+            return null;
         }
-        return null;
     }
 
     @Override
@@ -308,11 +352,10 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         if (!(connection instanceof Attachable))
             throw new IllegalArgumentException("Invalid connection object: " + connection);
         Attachable attachable = (Attachable)connection;
-        @SuppressWarnings("unchecked")
-        Pool<Connection>.Entry entry = (Pool<Connection>.Entry)attachable.getAttachment();
-        if (entry == null)
+        EntryHolder holder = (EntryHolder)attachable.getAttachment();
+        if (holder == null)
             return false;
-        return !entry.isIdle();
+        return !holder.entry.isIdle();
     }
 
     @Override
@@ -329,13 +372,12 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         if (!(connection instanceof Attachable))
             throw new IllegalArgumentException("Invalid connection object: " + connection);
         Attachable attachable = (Attachable)connection;
-        @SuppressWarnings("unchecked")
-        Pool<Connection>.Entry entry = (Pool<Connection>.Entry)attachable.getAttachment();
-        if (entry == null)
+        EntryHolder holder = (EntryHolder)attachable.getAttachment();
+        if (holder == null)
             return true;
-        boolean reusable = pool.release(entry);
+        boolean reusable = pool.release(holder.entry);
         if (LOG.isDebugEnabled())
-            LOG.debug("Released ({}) {} {}", reusable, entry, pool);
+            LOG.debug("Released ({}) {} {}", reusable, holder.entry, pool);
         if (reusable)
             return true;
         remove(connection);
@@ -353,14 +395,14 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         if (!(connection instanceof Attachable))
             throw new IllegalArgumentException("Invalid connection object: " + connection);
         Attachable attachable = (Attachable)connection;
-        @SuppressWarnings("unchecked")
-        Pool<Connection>.Entry entry = (Pool<Connection>.Entry)attachable.getAttachment();
-        if (entry == null)
+        EntryHolder holder = (EntryHolder)attachable.getAttachment();
+        if (holder == null)
             return false;
-        attachable.setAttachment(null);
-        boolean removed = pool.remove(entry);
+        boolean removed = pool.remove(holder.entry);
+        if (removed)
+            attachable.setAttachment(null);
         if (LOG.isDebugEnabled())
-            LOG.debug("Removed ({}) {} {}", removed, entry, pool);
+            LOG.debug("Removed ({}) {} {}", removed, holder.entry, pool);
         if (removed || force)
         {
             released(connection);
@@ -433,20 +475,22 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     @Override
     public boolean sweep()
     {
-        pool.values().stream().filter(entry -> entry.getPooled() instanceof Sweeper.Sweepable).forEach(entry ->
-        {
-            Connection connection = entry.getPooled();
-            if (((Sweeper.Sweepable)connection).sweep())
+        pool.values().stream()
+            .map(Pool.Entry::getPooled)
+            .filter(connection -> connection instanceof Sweeper.Sweepable)
+            .forEach(connection ->
             {
-                boolean removed = remove(connection);
-                LOG.warn("Connection swept: {}{}{} from active connections{}{}",
-                    connection,
-                    System.lineSeparator(),
-                    removed ? "Removed" : "Not removed",
-                    System.lineSeparator(),
-                    dump());
-            }
-        });
+                if (((Sweeper.Sweepable)connection).sweep())
+                {
+                    boolean removed = remove(connection);
+                    LOG.warn("Connection swept: {}{}{} from active connections{}{}",
+                        connection,
+                        System.lineSeparator(),
+                        removed ? "Removed" : "Not removed",
+                        System.lineSeparator(),
+                        dump());
+                }
+            });
         return false;
     }
 
@@ -480,7 +524,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
                 LOG.debug("Connection creation succeeded {}: {}", reserved, connection);
             if (connection instanceof Attachable)
             {
-                ((Attachable)connection).setAttachment(reserved);
+                ((Attachable)connection).setAttachment(new EntryHolder(reserved));
                 onCreated(connection);
                 pending.decrementAndGet();
                 reserved.enable(connection, false);
@@ -505,6 +549,22 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
             reserved.remove();
             completeExceptionally(x);
             requester.failed(x);
+        }
+    }
+
+    private static class EntryHolder
+    {
+        private final Pool<Connection>.Entry entry;
+        private final long creationTimestamp = System.nanoTime();
+
+        private EntryHolder(Pool<Connection>.Entry entry)
+        {
+            this.entry = Objects.requireNonNull(entry);
+        }
+
+        private boolean isExpired(long timeoutNanos)
+        {
+            return System.nanoTime() - creationTimestamp >= timeoutNanos;
         }
     }
 }
