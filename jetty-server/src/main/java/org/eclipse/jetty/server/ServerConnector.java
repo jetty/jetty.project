@@ -346,6 +346,14 @@ public class ServerConnector extends AbstractNetworkConnector
             }
             catch (BindException e)
             {
+                try
+                {
+                    serverChannel.close();
+                }
+                catch (IOException ioe)
+                {
+                    LOG.warn(ioe);
+                }
                 throw new IOException("Failed to bind to " + bindAddress, e);
             }
         }
