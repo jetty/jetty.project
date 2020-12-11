@@ -21,15 +21,11 @@
     <module>javax-websocket-client-impl</module>
     <module>javax-websocket-server-impl</module>
   </modules>
+  <properties>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.websocket.*</spotbugs.onlyAnalyze>
+  </properties>
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.websocket.*</onlyAnalyze>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>

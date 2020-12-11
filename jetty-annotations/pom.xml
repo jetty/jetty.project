@@ -10,6 +10,7 @@
   <description>Annotation support for deploying servlets in jetty.</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.annotations</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.annotations.*</spotbugs.onlyAnalyze>
   </properties>
   <build>
     <plugins>
@@ -22,13 +23,6 @@
             <Import-Package>org.objectweb.asm;version="5",*</Import-Package>
             <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=javax.servlet.ServletContainerInitializer)";resolution:=optional;cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional</Require-Capability>
           </instructions>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.annotations.*</onlyAnalyze>
         </configuration>
       </plugin>
     </plugins>

@@ -10,16 +10,10 @@
   <description>Asynchronous API</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.continuation</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.continuation.*</spotbugs.onlyAnalyze>
   </properties>
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.continuation.*</onlyAnalyze>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
   <dependencies>

@@ -12,8 +12,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout( time: 240, unit: 'MINUTES' ) {
-                mavenBuild( "jdk8", "clean install", "maven3",
-                            [[parserName: 'Maven'], [parserName: 'Java']])
+                mavenBuild( "jdk8", "clean install", "maven3")
                 // Collect up the jacoco execution results (only on main build)
                 jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
                        exclusionPattern: '' +
@@ -32,6 +31,7 @@ pipeline {
                        execPattern: '**/target/jacoco.exec',
                        classPattern: '**/target/classes',
                        sourcePattern: '**/src/main/java'
+                recordIssues id: "jdk8", name: "Static Analysis jdk8", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser()]
               }
             }
           }
@@ -42,8 +42,8 @@ pipeline {
           steps {
             container( 'jetty-build' ) {
               timeout( time: 240, unit: 'MINUTES' ) {
-                mavenBuild( "jdk11", "clean install -Djacoco.skip=true", "maven3",
-                            [[parserName: 'Maven'], [parserName: 'Java']])
+                mavenBuild( "jdk11", "clean install -Djacoco.skip=true -Perrorprone", "maven3")
+                recordIssues id: "jdk11", name: "Static Analysis jdk11", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser(), errorProne()]
               }
             }
           }
@@ -54,8 +54,8 @@ pipeline {
           steps {
             container( 'jetty-build' ) {
               timeout( time: 240, unit: 'MINUTES' ) {
-                mavenBuild( "jdk15", "clean install -Djacoco.skip=true", "maven3",
-                            [[parserName: 'Maven'], [parserName: 'Java']])
+                mavenBuild( "jdk15", "clean install -Djacoco.skip=true", "maven3")
+                recordIssues id: "jdk15", name: "Static Analysis jdk15", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser()]
               }
             }
           }
@@ -65,10 +65,11 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             container( 'jetty-build' ) {
-              timeout( time: 60, unit: 'MINUTES' ) {
+              timeout( time: 120, unit: 'MINUTES' ) {
                 mavenBuild( "jdk11",
                             "install javadoc:javadoc javadoc:aggregate-jar -DskipTests -Dpmd.skip=true -Dcheckstyle.skip=true",
-                            "maven3", [[parserName: 'Maven'], [parserName: 'JavaDoc'], [parserName: 'Java']])
+                            "maven3")
+                recordIssues id: "javadoc", enabledForFailure: true, tools: [javaDoc()]
               }
             }
           }
@@ -78,9 +79,8 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             container( 'jetty-build' ) {
-              timeout( time: 60, unit: 'MINUTES' ) {
-                mavenBuild( "jdk8", "-Pcompact3 clean install -DskipTests", "maven3",
-                            [[parserName: 'Maven'], [parserName: 'Java']])
+              timeout( time: 120, unit: 'MINUTES' ) {
+                mavenBuild( "jdk8", "-Pcompact3 clean install -DskipTests", "maven3")
               }
             }
           }
@@ -130,7 +130,7 @@ def slackNotif() {
  * @param cmdline the command line in "<profiles> <goals> <properties>"`format.
  * @param consoleParsers array of console parsers to run
  */
-def mavenBuild(jdk, cmdline, mvnName, consoleParsers) {
+def mavenBuild(jdk, cmdline, mvnName) {
   script {
     try {
       withEnv(["JAVA_HOME=${ tool "$jdk" }",
@@ -138,16 +138,13 @@ def mavenBuild(jdk, cmdline, mvnName, consoleParsers) {
                "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
         configFileProvider(
                 [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
-          sh "mvn -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=/tmp/unixsocket"
+          sh "mvn --no-transfer-progress -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=/tmp/unixsocket"
         }
       }
     }
     finally
     {
       junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
-      if(consoleParsers!=null){
-        warnings consoleParsers: consoleParsers
-      }
     }
   }
 }

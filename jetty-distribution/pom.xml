@@ -12,6 +12,7 @@
   <properties>
     <assembly-directory>${basedir}/target/distribution</assembly-directory>
     <home-directory>${basedir}/target/home</home-directory>
+    <spotbugs.skip>true</spotbugs.skip>
   </properties>
 
   <build>
@@ -380,14 +381,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-pmd-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-      <!-- No point performing Findbugs in assembly project -->
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
         <configuration>
           <skip>true</skip>
         </configuration>

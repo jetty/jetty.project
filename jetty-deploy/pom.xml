@@ -10,18 +10,8 @@
   <description>Jetty deployers</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.deploy</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.deploy.*</spotbugs.onlyAnalyze>
   </properties>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.deploy.*</onlyAnalyze>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>

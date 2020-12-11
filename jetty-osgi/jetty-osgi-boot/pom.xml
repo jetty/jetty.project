@@ -10,6 +10,7 @@
   <description>Jetty OSGi Boot bundle</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.boot</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.osgi.boot.*</spotbugs.onlyAnalyze>
   </properties>
   <dependencies>
     <dependency>
@@ -97,13 +98,6 @@
             </Import-Package>
             <_nouses>true</_nouses>
           </instructions>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.osgi.boot.*</onlyAnalyze>
         </configuration>
       </plugin>
     </plugins>
