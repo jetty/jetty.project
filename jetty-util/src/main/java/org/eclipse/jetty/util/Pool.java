@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -71,6 +72,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
     private volatile boolean closed;
     private volatile int maxMultiplex = 1;
     private volatile int maxUsageCount = -1;
+    private volatile long maxDuration = 0;
 
     /**
      * The type of the strategy to use for the pool.
@@ -180,6 +182,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
     /**
      * Change the max usage count of the pool's entries. All existing
      * idle entries over this new max usage are removed and closed.
+     * 0 is illegal and a negative value means there is no limit.
      * @param maxUsageCount the max usage count.
      */
     public final void setMaxUsageCount(int maxUsageCount)
@@ -203,6 +206,27 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
         // Iterate the copy and close the collected entries.
         copy.forEach(IO::close);
+    }
+
+    /**
+     * Get the maximum time span during which the entries of the pool can be acquired.
+     * @param unit the time unit in which to report the time.
+     * @return the duration in the given unit.
+     */
+    public long getMaxDuration(TimeUnit unit)
+    {
+        return unit.convert(maxDuration, TimeUnit.NANOSECONDS);
+    }
+
+    /**
+     * Set the maximum time span during which the entries of the pool can be acquired.
+     * A value lower than 1 means there is no limit.
+     * @param time the duration in the given unit.
+     * @param unit the time unit in which to report the time.
+     */
+    public final void setMaxDuration(long time, TimeUnit unit)
+    {
+        this.maxDuration = unit.toNanos(time);
     }
 
     /**
@@ -256,8 +280,16 @@ public class Pool<T> implements AutoCloseable, Dumpable
         try
         {
             Entry entry = entries.get(idx);
-            if (entry.tryAcquire())
-                return entry;
+            switch (tryAcquireAndCheckValidity(entry))
+            {
+                case NOT_ACQUIRED:
+                    break;
+                case ACQUIRED:
+                    return entry;
+                case INVALID:
+                    removeAndClose(entry);
+                    return null;
+            }
         }
         catch (IndexOutOfBoundsException e)
         {
@@ -283,28 +315,78 @@ public class Pool<T> implements AutoCloseable, Dumpable
         if (cache != null)
         {
             Pool<T>.Entry entry = cache.get();
-            if (entry != null && entry.tryAcquire())
-                return entry;
+            if (entry != null)
+            {
+                switch (tryAcquireAndCheckValidity(entry))
+                {
+                    case NOT_ACQUIRED:
+                        break;
+                    case ACQUIRED:
+                        return entry;
+                    case INVALID:
+                        removeAndClose(entry);
+                        break;
+                }
+            }
         }
 
         int index = startIndex(size);
 
+        tries_loop:
         for (int tries = size; tries-- > 0;)
         {
             try
             {
                 Pool<T>.Entry entry = entries.get(index);
-                if (entry != null && entry.tryAcquire())
-                    return entry;
+                switch (tryAcquireAndCheckValidity(entry))
+                {
+                    case NOT_ACQUIRED:
+                        break;
+                    case ACQUIRED:
+                        return entry;
+                    case INVALID:
+                        removeAndClose(entry);
+                        size = entries.size();
+                        // Size can be 0 when the last entry
+                        // got removed here.
+                        if (size == 0)
+                            break tries_loop;
+                        break;
+                }
             }
             catch (IndexOutOfBoundsException e)
             {
                 LOGGER.ignore(e);
                 size = entries.size();
+                // Size can be 0 when the pool is in the middle of
+                // acquiring a connection while another thread
+                // removes the last one from the pool.
+                if (size == 0)
+                    break;
             }
             index = (index + 1) % size;
         }
         return null;
+    }
+
+    private enum AcquisitionState
+    {
+        ACQUIRED, NOT_ACQUIRED, INVALID
+    }
+
+    private AcquisitionState tryAcquireAndCheckValidity(Entry entry)
+    {
+        if (entry.tryAcquire())
+            return AcquisitionState.ACQUIRED;
+        if (entry.isExpired() && entry.isIdle())
+            return AcquisitionState.INVALID;
+        return AcquisitionState.NOT_ACQUIRED;
+    }
+
+    private void removeAndClose(Entry entry)
+    {
+        if (remove(entry) && entry.pooled instanceof Closeable)
+            IO.close((Closeable)entry.pooled);
     }
 
     private int startIndex(int size)
@@ -470,6 +552,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         // Other threads accessing must check the state field above first, so a good before/after
         // relationship exists to make a memory barrier.
         private T pooled;
+        private long creationTimestamp;
 
         Entry()
         {
@@ -512,6 +595,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
                     return false; // Pool has been closed
                 throw new IllegalStateException("Entry already enabled: " + this);
             }
+            creationTimestamp = System.nanoTime();
             pending.decrementAndGet();
             return true;
         }
@@ -557,7 +641,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
                 boolean closed = usageCount < 0;
                 int multiplexingCount = AtomicBiInteger.getLo(encoded);
                 int currentMaxUsageCount = maxUsageCount;
-                if (closed || multiplexingCount >= maxMultiplex || (currentMaxUsageCount > 0 && usageCount >= currentMaxUsageCount))
+                if (closed || isExpired() || multiplexingCount >= maxMultiplex || (currentMaxUsageCount > 0 && usageCount >= currentMaxUsageCount))
                     return false;
 
                 // Prevent overflowing the usage counter by capping it at Integer.MAX_VALUE.
@@ -593,6 +677,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
                     break;
             }
 
+            // Check for expiration only after the usage counter has been updated.
+            if (isExpired())
+                return false;
+
             int currentMaxUsageCount = maxUsageCount;
             boolean overUsed = currentMaxUsageCount > 0 && usageCount >= currentMaxUsageCount;
             return !(overUsed && newMultiplexingCount == 0);
@@ -600,7 +688,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
         /**
          * Try to mark the entry as removed.
-         * @return true if the entry has to be removed from the containing pool, false otherwise.
+         * @return true if the entry has been marked as removed, false otherwise.
          */
         boolean tryRemove()
         {
@@ -652,6 +740,13 @@ public class Pool<T> implements AutoCloseable, Dumpable
             int usageCount = AtomicBiInteger.getHi(encoded);
             int multiplexCount = AtomicBiInteger.getLo(encoded);
             return currentMaxUsageCount > 0 && usageCount >= currentMaxUsageCount && multiplexCount == 0;
+        }
+
+        public boolean isExpired()
+        {
+            if (pooled == null || maxDuration < 1)
+                return false;
+            return System.nanoTime() - creationTimestamp > maxDuration;
         }
 
         public int getUsageCount()

@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -598,6 +599,113 @@ public class PoolTest
         pool.setMaxUsageCount(1);
         assertThat(pool.size(), is(1));
         assertThat(entry1.getPooled().closed ^ entry2.getPooled().closed, is(true));
+    }
+
+    @ParameterizedTest
+    @MethodSource(value = "strategy")
+    public void testMaxDuration(Factory factory) throws Exception
+    {
+        Pool<CloseableHolder> pool = factory.getPool(2);
+        pool.setMaxDuration(50, TimeUnit.MILLISECONDS);
+        Pool<CloseableHolder>.Entry entry1 = pool.reserve(-1);
+        entry1.enable(new CloseableHolder("aaa"), false);
+
+        Pool<CloseableHolder>.Entry acquired1 = pool.acquire();
+        assertThat(acquired1, notNullValue());
+        assertThat(pool.release(acquired1), is(true));
+        assertThat(pool.size(), is(1));
+
+        // entry1 expires while acquired
+        Pool<CloseableHolder>.Entry acquired2 = pool.acquire();
+        assertThat(acquired1, notNullValue());
+        Thread.sleep(55);
+        assertThat(pool.release(acquired1), is(false));
+        assertThat(pool.size(), is(1)); // release does not remove expired objects
+
+        // entry2 expires before acquisition
+        Pool<CloseableHolder>.Entry entry2 = pool.reserve(-1);
+        entry2.enable(new CloseableHolder("bbb"), false);
+        assertThat(pool.size(), is(2));
+        Thread.sleep(55);
+        assertThat(pool.acquire(), nullValue());
+        assertThat(pool.size(), is(1)); // acquire removes & closes expired objects
+        assertThat(entry2.getPooled().closed, is(true));
+
+        // entry1 is manually removed
+        assertThat(pool.remove(acquired2), is(true));
+        assertThat(acquired2.getPooled().closed, is(false)); // remove does not close
+        assertThat(pool.size(), is(0));
+    }
+
+    @ParameterizedTest
+    @MethodSource(value = "strategy")
+    public void testMaxDurationBeginsAfterEnable(Factory factory) throws Exception
+    {
+        Pool<CloseableHolder> pool = factory.getPool(2);
+        pool.setMaxDuration(50, TimeUnit.MILLISECONDS);
+        Pool<CloseableHolder>.Entry entry1 = pool.reserve(-1);
+
+        Thread.sleep(55);
+
+        // expiration starts ticking only after the entry is enabled
+        entry1.enable(new CloseableHolder("aaa"), false);
+        Pool<CloseableHolder>.Entry acquired1 = pool.acquire();
+        assertThat(acquired1, notNullValue());
+    }
+
+    @ParameterizedTest
+    @MethodSource(value = "strategy")
+    public void testDynamicMaxDuration(Factory factory) throws Exception
+    {
+        Pool<CloseableHolder> pool = factory.getPool(2);
+        pool.setMaxDuration(50, TimeUnit.MILLISECONDS);
+        Pool<CloseableHolder>.Entry entry1 = pool.reserve(-1);
+        entry1.enable(new CloseableHolder("aaa"), false);
+
+        // changing the expiration between acquire and release expands the lifespan of pooled objects
+        Pool<CloseableHolder>.Entry acquired1 = pool.acquire();
+        assertThat(acquired1, notNullValue());
+        Thread.sleep(55);
+        pool.setMaxDuration(1000, TimeUnit.MILLISECONDS);
+        assertThat(pool.release(acquired1), is(true));
+        assertThat(pool.size(), is(1));
+    }
+
+    @ParameterizedTest
+    @MethodSource(value = "strategy")
+    public void testMaxDurationWithMultiplex(Factory factory) throws Exception
+    {
+        Pool<CloseableHolder> pool = factory.getPool(1);
+        pool.setMaxMultiplex(2);
+        pool.setMaxDuration(50, TimeUnit.MILLISECONDS);
+        Pool<CloseableHolder>.Entry entry1 = pool.reserve(-1);
+        entry1.enable(new CloseableHolder("aaa"), false);
+
+        // entry1 expires while acquired twice
+        Pool<CloseableHolder>.Entry acquired1 = pool.acquire();
+        assertThat(acquired1, notNullValue());
+        Pool<CloseableHolder>.Entry acquired2 = pool.acquire();
+        assertThat(acquired2, notNullValue());
+        Thread.sleep(55);
+        assertThat(pool.release(acquired1), is(false));
+        assertThat(pool.release(acquired2), is(false));
+        assertThat(pool.remove(acquired1), is(true));
+        assertThat(pool.remove(acquired2), is(false));
+        assertThat(pool.size(), is(0));
+
+        // entry2 expires while acquired
+        Pool<CloseableHolder>.Entry entry2 = pool.reserve(-1);
+        entry2.enable(new CloseableHolder("aaa"), false);
+        Pool<CloseableHolder>.Entry acquired3 = pool.acquire();
+        assertThat(acquired3, notNullValue());
+        Thread.sleep(55);
+        Pool<CloseableHolder>.Entry acquired4 = pool.acquire(); // still multiplex-acquirable, but expired
+        assertThat(acquired4, nullValue());
+        assertThat(acquired3.getPooled().closed, is(false)); // still in use, acquire does not close
+        assertThat(pool.size(), is(1));
+        assertThat(pool.release(acquired3), is(false));
+        assertThat(pool.remove(acquired3), is(true));
+        assertThat(pool.size(), is(0));
     }
 
     @Test
