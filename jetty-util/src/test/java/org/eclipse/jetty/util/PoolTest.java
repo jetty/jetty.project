@@ -628,13 +628,12 @@ public class PoolTest
         assertThat(pool.size(), is(2));
         Thread.sleep(55);
         assertThat(pool.acquire(), nullValue());
-        assertThat(pool.size(), is(1)); // acquire removes & closes expired objects
+        assertThat(pool.size(), is(0)); // acquire removes & closes expired objects
         assertThat(entry2.getPooled().closed, is(true));
+        assertThat(acquired1.getPooled().closed, is(true));
 
         // entry1 is manually removed
-        assertThat(pool.remove(acquired2), is(true));
-        assertThat(acquired2.getPooled().closed, is(false)); // remove does not close
-        assertThat(pool.size(), is(0));
+        assertThat(pool.remove(acquired2), is(false)); // was removed by above acquire
     }
 
     @ParameterizedTest
