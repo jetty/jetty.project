@@ -365,9 +365,6 @@
                 <exclude>jetty-util/src/main/java/org/eclipse/jetty/util/security/UnixCrypt.java</exclude>
                 <!-- Distribution Text (no header, too noisy) -->
                 <exclude>jetty-home/src/main/resources/README.adoc</exclude>
-                <!-- Infinispan -->
-                <exclude>jetty-infinispan/**</exclude>
-                <exclude>tests/test-sessions/test-infinispan-sessions/**</exclude>
               </excludes>
             </configuration>
           </execution>
