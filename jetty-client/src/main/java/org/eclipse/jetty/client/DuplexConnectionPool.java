@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.client;
 
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Pool;
@@ -53,5 +55,18 @@ public class DuplexConnectionPool extends AbstractConnectionPool
     public void setMaxUsageCount(int maxUsageCount)
     {
         super.setMaxUsageCount(maxUsageCount);
+    }
+
+    @Override
+    protected long getMaxDuration()
+    {
+        return super.getMaxDuration();
+    }
+
+    @Override
+    @ManagedAttribute(value = "The maximum duration in milliseconds a connection can be used for before it gets closed")
+    protected void setMaxDuration(long timeInMs)
+    {
+        super.setMaxDuration(timeInMs);
     }
 }

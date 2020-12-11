@@ -23,6 +23,7 @@ import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.api.Connection;
@@ -103,6 +104,16 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     protected int getMaxUsageCount()
     {
         return pool.getMaxUsageCount();
+    }
+
+    protected void setMaxDuration(long timeInMs)
+    {
+        pool.setMaxDuration(timeInMs, TimeUnit.MILLISECONDS);
+    }
+
+    protected long getMaxDuration()
+    {
+        return pool.getMaxDuration(TimeUnit.MILLISECONDS);
     }
 
     protected void setMaxUsageCount(int maxUsageCount)
