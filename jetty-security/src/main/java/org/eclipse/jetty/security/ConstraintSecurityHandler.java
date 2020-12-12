@@ -434,7 +434,13 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      */
     protected void processConstraintMapping(ConstraintMapping mapping)
     {
-        Map<String, RoleInfo> mappings = _constraintMap.computeIfAbsent(mapping.getPathSpec(), k -> new HashMap<>());
+        Map<String, RoleInfo> mappings = _constraintMap.get(mapping.getPathSpec());
+
+        if (mappings == null)
+        {
+            mappings = new HashMap<>();
+            _constraintMap.put(mapping.getPathSpec(), mappings);
+        }
         RoleInfo allMethodsRoleInfo = mappings.get(ALL_METHODS);
         if (allMethodsRoleInfo != null && allMethodsRoleInfo.isForbidden())
             return;
@@ -777,6 +783,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         for (Entry<String,Map<String, RoleInfo>> entry : _constraintMap.entrySet())
         {
             Map<String, RoleInfo> methodMappings = entry.getValue();
+
             //Each key is either:
             // : an exact method name
             // : * which means that the constraint applies to every method
