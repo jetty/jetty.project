@@ -163,7 +163,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         if (pathSpec == null || "".equals(pathSpec.trim()) || constraintMappings == null || constraintMappings.size() == 0)
             return Collections.emptyList();
 
-        List<ConstraintMapping> mappings = new ArrayList<ConstraintMapping>();
+        List<ConstraintMapping> mappings = new ArrayList<>();
         for (ConstraintMapping mapping : constraintMappings)
         {
             if (pathSpec.equals(mapping.getPathSpec()))
@@ -187,7 +187,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         if (pathSpec == null || "".equals(pathSpec.trim()) || constraintMappings == null || constraintMappings.size() == 0)
             return Collections.emptyList();
 
-        List<ConstraintMapping> mappings = new ArrayList<ConstraintMapping>();
+        List<ConstraintMapping> mappings = new ArrayList<>();
         for (ConstraintMapping mapping : constraintMappings)
         {
             //Remove the matching mappings by only copying in non-matching mappings
@@ -209,10 +209,10 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      */
     public static List<ConstraintMapping> createConstraintsWithMappingsForPath(String name, String pathSpec, ServletSecurityElement securityElement)
     {
-        List<ConstraintMapping> mappings = new ArrayList<ConstraintMapping>();
+        List<ConstraintMapping> mappings = new ArrayList<>();
 
         //Create a constraint that will describe the default case (ie if not overridden by specific HttpMethodConstraints)
-        Constraint httpConstraint = null;
+        Constraint httpConstraint;
         ConstraintMapping httpConstraintMapping = null;
 
         if (securityElement.getEmptyRoleSemantic() != EmptyRoleSemantic.PERMIT ||
@@ -229,7 +229,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         }
 
         //See Spec 13.4.1.2 p127
-        List<String> methodOmissions = new ArrayList<String>();
+        List<String> methodOmissions = new ArrayList<>();
 
         //make constraint mappings for this url for each of the HttpMethodConstraintElements
         Collection<HttpMethodConstraintElement> methodConstraintElements = securityElement.getHttpMethodConstraints();
@@ -254,7 +254,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         //See spec 13.4.1.2 p127 - add an omission for every method name to the default constraint
         //UNLESS the default constraint contains all default values. In that case, we won't add it. See Servlet Spec 3.1 pg 129
         if (methodOmissions.size() > 0 && httpConstraintMapping != null)
-            httpConstraintMapping.setMethodOmissions(methodOmissions.toArray(new String[methodOmissions.size()]));
+            httpConstraintMapping.setMethodOmissions(methodOmissions.toArray(new String[0]));
 
         return mappings;
     }
@@ -434,12 +434,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      */
     protected void processConstraintMapping(ConstraintMapping mapping)
     {
-        Map<String, RoleInfo> mappings = _constraintMap.get(mapping.getPathSpec());
-        if (mappings == null)
-        {
-            mappings = new HashMap<String, RoleInfo>();
-            _constraintMap.put(mapping.getPathSpec(), mappings);
-        }
+        Map<String, RoleInfo> mappings = _constraintMap.computeIfAbsent(mapping.getPathSpec(), k -> new HashMap<>());
         RoleInfo allMethodsRoleInfo = mappings.get(ALL_METHODS);
         if (allMethodsRoleInfo != null && allMethodsRoleInfo.isForbidden())
             return;
@@ -588,7 +583,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             if (roleInfo == null)
             {
                 //No specific http-method names matched
-                List<RoleInfo> applicableConstraints = new ArrayList<RoleInfo>();
+                List<RoleInfo> applicableConstraints = new ArrayList<>();
 
                 //Get info for constraint that matches all methods if it exists
                 RoleInfo all = mappings.get(ALL_METHODS);
@@ -778,11 +773,10 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         if (_denyUncoveredMethods)
             return Collections.emptySet();
 
-        Set<String> uncoveredPaths = new HashSet<String>();
-
-        for (String path : _constraintMap.keySet())
+        Set<String> uncoveredPaths = new HashSet<>();
+        for (Entry<String,Map<String, RoleInfo>> entry : _constraintMap.entrySet())
         {
-            Map<String, RoleInfo> methodMappings = _constraintMap.get(path);
+            Map<String, RoleInfo> methodMappings = entry.getValue();
             //Each key is either:
             // : an exact method name
             // : * which means that the constraint applies to every method
@@ -790,7 +784,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             if (methodMappings.get(ALL_METHODS) != null)
                 continue; //can't be any uncovered methods for this url path
 
-            boolean hasOmissions = omissionsExist(path, methodMappings);
+            boolean hasOmissions = omissionsExist(entry.getKey(), methodMappings);
 
             for (String method : methodMappings.keySet())
             {
@@ -800,7 +794,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                     for (String m : omittedMethods)
                     {
                         if (!methodMappings.containsKey(m))
-                            uncoveredPaths.add(path);
+                            uncoveredPaths.add(entry.getKey());
                     }
                 }
                 else
@@ -808,7 +802,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                     //an exact method name
                     if (!hasOmissions)
                         //an http-method does not have http-method-omission to cover the other method names
-                        uncoveredPaths.add(path);
+                        uncoveredPaths.add(entry.getKey());
                 }
             }
         }
@@ -849,7 +843,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             return Collections.emptySet();
 
         String[] strings = omission.split("\\.");
-        Set<String> methods = new HashSet<String>();
+        Set<String> methods = new HashSet<>();
         for (int i = 0; i < strings.length - 1; i++)
         {
             methods.add(strings[i]);
