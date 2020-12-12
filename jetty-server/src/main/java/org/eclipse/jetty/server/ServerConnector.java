@@ -20,7 +20,6 @@ package org.eclipse.jetty.server;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -41,6 +40,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
@@ -344,8 +344,9 @@ public class ServerConnector extends AbstractNetworkConnector
             {
                 serverChannel.socket().bind(bindAddress, getAcceptQueueSize());
             }
-            catch (BindException e)
+            catch (Throwable e)
             {
+                IO.close(serverChannel);
                 throw new IOException("Failed to bind to " + bindAddress, e);
             }
         }

@@ -176,7 +176,15 @@ public class DistributionTester
         try (ServerSocket server = new ServerSocket())
         {
             server.setReuseAddress(true);
-            server.bind(new InetSocketAddress("localhost", 0));
+            try
+            {
+                server.bind(new InetSocketAddress("localhost", 0));
+            }
+            catch (Throwable t)
+            {
+                IO.close(server);
+                throw t;
+            }
             return server.getLocalPort();
         }
     }

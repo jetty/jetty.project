@@ -272,7 +272,15 @@ public class ShutdownMonitor
         {
             ServerSocket serverSocket = new ServerSocket();
             serverSocket.setReuseAddress(true);
-            serverSocket.bind(new InetSocketAddress(InetAddress.getByName(host), port));
+            try
+            {
+                serverSocket.bind(new InetSocketAddress(InetAddress.getByName(host), port));
+            }
+            catch (Throwable e)
+            {
+                IO.close(serverSocket);
+                throw e;
+            }
             if (port == 0)
             {
                 port = serverSocket.getLocalPort();
