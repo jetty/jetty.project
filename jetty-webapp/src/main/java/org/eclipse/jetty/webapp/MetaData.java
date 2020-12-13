@@ -458,7 +458,7 @@ public class MetaData
         if (isOrdered())
         {
             orderedWebInfJars = getWebInfResources(true);
-            List<String> orderedLibs = new ArrayList<String>();
+            List<String> orderedLibs = new ArrayList<>();
             for (Resource webInfJar : orderedWebInfJars)
             {
                 //get just the name of the jar file
@@ -611,11 +611,11 @@ public class MetaData
      */
     public Resource getJarForFragmentName(String name)
     {
-        Resource jar = null;
-
         FragmentDescriptor f = getFragmentDescriptor(name);
         if (f == null)
             return null;
+
+        Resource jar = null;
 
         for (Map.Entry<Resource, FragmentDescriptor> entry : _webFragmentResourceMap.entrySet())
         {
