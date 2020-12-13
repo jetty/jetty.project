@@ -10,6 +10,7 @@
   <description>The start utility</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.start</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.start.*</spotbugs.onlyAnalyze>
   </properties>
   <build>
     <plugins>
@@ -21,13 +22,6 @@
               <mainClass>org.eclipse.jetty.start.Main</mainClass>
             </manifest>
           </archive>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.start.*</onlyAnalyze>
         </configuration>
       </plugin>
       <plugin>

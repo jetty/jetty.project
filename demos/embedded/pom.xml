@@ -160,6 +160,9 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
+          <environmentVariables>
+            <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
+          </environmentVariables>
           <useManifestOnlyJar>false</useManifestOnlyJar>
         </configuration>
       </plugin>

@@ -11,6 +11,7 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>
     <jetty.test.policy.loc>target/test-policy</jetty.test.policy.loc>
+    <spotbugs.onlyAnalyze>org.eclipse.client.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>
@@ -23,13 +24,6 @@
             --add-modules java.security.jgss
             --add-modules org.eclipse.jetty.jmx
           </argLine>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.client.*</onlyAnalyze>
         </configuration>
       </plugin>
       <plugin>

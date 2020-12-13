@@ -9,6 +9,7 @@
   <artifactId>jetty-unixsocket</artifactId>
   <packaging>pom</packaging>
   <name>Jetty :: UnixSocket</name>
+
   <description>Jetty UnixSocket Parent</description>
 
   <modules>
@@ -16,5 +17,9 @@
     <module>jetty-unixsocket-client</module>
     <module>jetty-unixsocket-server</module>
   </modules>
+
+  <properties>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.unixsocket.*</spotbugs.onlyAnalyze>
+  </properties>
 
 </project>

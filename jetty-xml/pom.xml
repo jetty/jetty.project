@@ -10,16 +10,10 @@
   <description>The jetty xml utilities.</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.xml</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.xml.*</spotbugs.onlyAnalyze>
   </properties>
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.xml.*</onlyAnalyze>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
