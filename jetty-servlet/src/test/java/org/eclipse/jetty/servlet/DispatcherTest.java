@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 
+import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -467,6 +468,17 @@ public class DispatcherTest
         // Add filter that wraps response, intercepts close and writes after doChain
         _contextHandler.addFilter(WrappingFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         testForward();
+    }
+
+    @Test
+    public void testDispatchMapping() throws Exception
+    {
+        _contextHandler.addServlet(new ServletHolder("TestServlet", MappingServlet.class), "/TestServlet");
+        _contextHandler.addServlet(new ServletHolder("DispatchServlet", AsyncDispatch2TestServlet.class), "/DispatchServlet");
+
+        String response = _connector.getResponse("GET /context/DispatchServlet HTTP/1.0\n\n");
+        // TODO This is to pass the current TCK.  This has been challenged in https://github.com/eclipse-ee4j/jakartaee-tck/issues/585
+        assertThat(response, containsString("matchValue=DispatchServlet, pattern=/DispatchServlet, servletName=DispatchServlet, mappingMatch=EXACT"));
     }
 
     public static class WrappingFilter implements Filter
@@ -1058,6 +1070,47 @@ public class DispatcherTest
             response.setContentType("text/html");
             response.setStatus(HttpServletResponse.SC_OK);
             response.getOutputStream().print(request.getDispatcherType().toString());
+        }
+    }
+
+    public static class MappingServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException
+        {
+            HttpServletMapping mapping = req.getHttpServletMapping();
+            if (mapping == null)
+            {
+                resp.getWriter().println("Get null HttpServletMapping");
+            }
+            else
+            {
+                StringBuilder sb = new StringBuilder();
+                sb.append("matchValue=" + mapping.getMatchValue())
+                    .append(", pattern=" + mapping.getPattern())
+                    .append(", servletName=" + mapping.getServletName())
+                    .append(", mappingMatch=" + mapping.getMappingMatch());
+                resp.getWriter().println(sb.toString());
+            }
+        }
+
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException
+        {
+            this.doGet(req, resp);
+        }
+    }
+
+    public static class AsyncDispatch2TestServlet extends HttpServlet
+    {
+        public void doGet(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException
+        {
+            AsyncContext asyncContext = req.startAsync();
+            asyncContext.setTimeout(0);
+            asyncContext.dispatch("/TestServlet");
         }
     }
 }
