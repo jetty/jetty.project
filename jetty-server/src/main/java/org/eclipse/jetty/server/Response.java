@@ -778,17 +778,30 @@ public class Response implements HttpServletResponse
     @Override
     public String getCharacterEncoding()
     {
+        return getCharacterEncoding(false);
+    }
+
+    /**
+     * Private utility method to get the character encoding.
+     * A standard call to {@link #getCharacterEncoding()} should not change the Content-Type header.
+     * But when {@link #getWriter()} is called we must decide what Content Type to use, so this will allow an inferred
+     * charset to be set in in the Content-Type.
+     * @param setContentType set the Content-Type header if this is set to true, otherwise just calculate what it should be.
+     * @return the character encoding for this response.
+     */
+    private String getCharacterEncoding(boolean setContentType)
+    {
         // First try explicit char encoding.
         if (_characterEncoding != null)
             return _characterEncoding;
 
         String encoding;
 
-        // Try charset from mime type.
+        // Try charset from mime type. TODO: should this be added to Content-Type header?
         if (_mimeType != null && _mimeType.isCharsetAssumed())
             return _mimeType.getCharsetString();
 
-        // Try charset assumed from content type.
+        // Try charset assumed from content type (assumed charsets are not added to content type header).
         encoding = MimeTypes.getCharsetAssumedFromContentType(_contentType);
         if (encoding != null)
             return encoding;
@@ -797,11 +810,12 @@ public class Response implements HttpServletResponse
         encoding = MimeTypes.getCharsetInferredFromContentType(_contentType);
         if (encoding != null)
         {
-            setCharacterEncoding(encoding, EncodingFrom.INFERRED);
+            if (setContentType)
+                setCharacterEncoding(encoding, EncodingFrom.INFERRED);
             return encoding;
         }
 
-        // Try any default char encoding for the context.
+        // Try any default char encoding for the context. TODO: should this be added to Content-Type header?
         Context context = _channel.getRequest().getContext();
         if (context != null)
         {
@@ -811,7 +825,10 @@ public class Response implements HttpServletResponse
         }
 
         // Fallback to last resort iso-8859-1.
-        return StringUtil.__ISO_8859_1;
+        encoding = StringUtil.__ISO_8859_1;
+        if (setContentType)
+            setCharacterEncoding(encoding, EncodingFrom.INFERRED);
+        return encoding;
     }
 
     @Override
@@ -852,7 +869,7 @@ public class Response implements HttpServletResponse
 
         if (_outputType == OutputType.NONE)
         {
-            String encoding = getCharacterEncoding();
+            String encoding = getCharacterEncoding(true);
             Locale locale = getLocale();
             if (_writer != null && _writer.isFor(locale, encoding))
                 _writer.reopen();
