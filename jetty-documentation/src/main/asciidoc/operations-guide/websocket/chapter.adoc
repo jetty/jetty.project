@@ -91,14 +91,14 @@ Connect to WebSocket servers with Jetty.
 [[og-ws-enabling-websocket]]
 ==== Enabling WebSocket
 
-To use WebSockets on a Jetty server, you need to enable one of the websocket modules link:#enabling-modules[module].
+To use WebSockets on a Jetty server, you need to enable one of the websocket modules (see link:#enabling-modules[Enabling Modules]).
 Add the `websocket` module to enable both Jetty and Javax WebSocket modules for deployed web applications.
 The `websocket-jetty` and `websocket-javax` modules can be used to only enable the specific API to use.
 
 To use the Jetty WebSocket Client API in a webapp, the required jars should be include in the WEB-INF/lib directory.
 Alternatively the `websocket-jetty-client` module can be enabled to allow a webapp to use provided WebSocket client dependencies from the server.
 
-Once this module is enabled for your Jetty base, it will apply to all webapps deployed to that base. If you want to be more selective about which webapps use Websocket, then you can:
+Once you have enabled one of these modules for your Jetty base, it will apply to all webapps deployed to that base. If you want to be more selective about which webapps use Websocket, then you can:
 
 Disable Websocket for a particular webapp:::
 You can disable jsr-356 for a particular webapp by setting the link:#context_attributes[context attribute] `org.eclipse.jetty.websocket.javax` to `false`.
