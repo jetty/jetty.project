@@ -109,6 +109,8 @@ public class HTTP2Client extends ContainerLifeCycle
     private int maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
     private int maxConcurrentPushedStreams = 32;
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
+    private int maxDynamicTableSize = 4096;
+    private int maxHeaderBlockFragment = 0;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
     private long streamIdleTimeout;
     private boolean useInputDirectByteBuffers = true;
@@ -310,6 +312,28 @@ public class HTTP2Client extends ContainerLifeCycle
     public void setMaxSettingsKeys(int maxSettingsKeys)
     {
         this.maxSettingsKeys = maxSettingsKeys;
+    }
+
+    @ManagedAttribute("The HPACK dynamic table maximum size")
+    public int getMaxDynamicTableSize()
+    {
+        return maxDynamicTableSize;
+    }
+
+    public void setMaxDynamicTableSize(int maxDynamicTableSize)
+    {
+        this.maxDynamicTableSize = maxDynamicTableSize;
+    }
+
+    @ManagedAttribute("The max size of header block fragments")
+    public int getMaxHeaderBlockFragment()
+    {
+        return maxHeaderBlockFragment;
+    }
+
+    public void setMaxHeaderBlockFragment(int maxHeaderBlockFragment)
+    {
+        this.maxHeaderBlockFragment = maxHeaderBlockFragment;
     }
 
     @ManagedAttribute("Whether to use direct ByteBuffers for reading")

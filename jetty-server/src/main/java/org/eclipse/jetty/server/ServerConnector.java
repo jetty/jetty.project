@@ -35,6 +35,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
@@ -338,6 +339,7 @@ public class ServerConnector extends AbstractNetworkConnector
             }
             catch (BindException e)
             {
+                IO.close(serverChannel);
                 throw new IOException("Failed to bind to " + bindAddress, e);
             }
         }
