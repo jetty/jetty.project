@@ -336,12 +336,11 @@ public class ServerConnector extends AbstractNetworkConnector
 
         if (serverChannel == null)
         {
-            serverChannel = ServerSocketChannel.open();
-
             InetSocketAddress bindAddress = getHost() == null ? new InetSocketAddress(getPort()) : new InetSocketAddress(getHost(), getPort());
-            serverChannel.socket().setReuseAddress(getReuseAddress());
+            serverChannel = ServerSocketChannel.open();
             try
             {
+                serverChannel.socket().setReuseAddress(getReuseAddress());
                 serverChannel.socket().bind(bindAddress, getAcceptQueueSize());
             }
             catch (Throwable e)

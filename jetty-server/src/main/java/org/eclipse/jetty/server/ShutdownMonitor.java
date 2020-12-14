@@ -271,9 +271,9 @@ public class ShutdownMonitor
         try
         {
             ServerSocket serverSocket = new ServerSocket();
-            serverSocket.setReuseAddress(true);
             try
             {
+                serverSocket.setReuseAddress(true);
                 serverSocket.bind(new InetSocketAddress(InetAddress.getByName(host), port));
             }
             catch (Throwable e)
