@@ -2,15 +2,10 @@
 // ========================================================================
 // Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -147,7 +142,7 @@ etc/jetty.xml,etc/jetty-http.xml,etc/jetty-deployer.xml
 Note that the paths can either be relative or absolute, or a mixture.
 If the path is relative, it is resolved against either *jetty.home* or **jetty.home.bundle**, whichever was specified.
 You can use this ability to mix and match jetty configuration files to add functionality, such as adding in a https connector.
-Here's an example of adding a HTTPS connector, using the relevant files from the jetty-distribution:
+Here's an example of adding a HTTPS connector, using the relevant files from the jetty-home:
 +
 ....
 etc/jetty.xml, etc/jetty-http.xml, /opt/jetty/etc/jetty-ssl.xml, /opt/jetty/etc/jetty-https.xml, etc/jetty-deployer.xml

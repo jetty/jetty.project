@@ -2,15 +2,10 @@
 // ========================================================================
 // Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -57,7 +52,7 @@ The Jetty Distribution comes with an example `${jetty.base}` which enables the v
 
 [source, screen, subs="{sub-order}"]
 ....
-[jetty-distribution-{VERSION}]$ ls -la
+[jetty-home-{VERSION}]$ ls -la
 
 total 496
 drwxrwxr-x 11 user group   4096 Oct  8 15:23 ./
@@ -78,12 +73,12 @@ drwxrwxr-x  2 user group   4096 Oct  8 06:54 start.d/
 -rw-rw-r--  1 user group 336468 Sep 30 19:55 VERSION.txt
 drwxrwxr-x  2 user group   4096 Oct  8 06:54 webapps/
 
-[jetty-distribution-{VERSION}]$ cd demo-base
+[jetty-home-{VERSION}]$ cd demo-base
 [my-base]$ java -jar /path/to/jetty-home/start.jar
 
 2013-10-16 09:08:47.800:WARN::main: demo test-realm is deployed. DO NOT USE IN PRODUCTION!
 2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-{VERSION}
-2013-10-16 09:08:47.817:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/jetty-distribution-{VERSION}/demo-base/webapps/] at interval 1
+2013-10-16 09:08:47.817:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/jetty-home-{VERSION}/demo-base/webapps/] at interval 1
 2013-10-16 09:08:48.072:WARN::main: async-rest webapp is deployed. DO NOT USE IN PRODUCTION!
 ...
 ....
@@ -104,22 +99,22 @@ Java Environment:
  java.runtime.name = Java(TM) SE Runtime Environment
  java.runtime.version = 1.8.0_92-b14
  java.io.tmpdir = /var/folders/h6/yb_lbnnn11g0y1jjlvqg631h0000gn/T/
- user.dir = /home/user/jetty-distribution-{VERSION}
+ user.dir = /home/user/jetty-home-{VERSION}
  user.language = en
  user.country = US
 
 Jetty Environment:
 -----------------
- jetty.home=/home/user/jetty-distribution-{VERSION}
+ jetty.home=/home/user/jetty-home-{VERSION}
  jetty.tag.version = master
- jetty.base=/home/user/jetty-distribution-{VERSION}/demo-base
+ jetty.base=/home/user/jetty-home-{VERSION}/demo-base
  jetty.version={VERSION}
 
  Config Search Order:
  --------------------
   <command-line>
-  ${jetty.base} -> /home/user/jetty-distribution-{VERSION}/demo-base
-  ${jetty.home} -> /home/user/Desktop/jetty-distribution-{VERSION}
+  ${jetty.base} -> /home/user/jetty-home-{VERSION}/demo-base
+  ${jetty.home} -> /home/user/Desktop/jetty-home-{VERSION}
 
 JVM Arguments:
 --------------
@@ -127,8 +122,8 @@ JVM Arguments:
 
 System Properties:
 ------------------
- jetty.base = /home/user/jetty-distribution-{VERSION}/demo-base
- jetty.home = /home/user/jetty-distribution-{VERSION}
+ jetty.base = /home/user/jetty-home-{VERSION}/demo-base
+ jetty.home = /home/user/jetty-home-{VERSION}
 
 Properties:
 -----------
@@ -275,11 +270,11 @@ You can opt to manually define the `${jetty.home}` and `${jetty.base}` directori
 
 [source, screen, subs="{sub-order}"]
 ....
-[jetty-distribution-{VERSION}]$ pwd
-/home/user/jetty-distribution-{VERSION}
+[jetty-home-{VERSION}]$ pwd
+/home/user/jetty-home-{VERSION}
 
-[jetty-distribution-{VERSION}]$ java -jar start.jar \
-    jetty.home=/home/user/jetty-distribution-{VERSION} \
+[jetty-home-{VERSION}]$ java -jar start.jar \
+    jetty.home=/home/user/jetty-home-{VERSION} \
     jetty.base=/home/user/my-base
 
 2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-{VERSION}
@@ -293,10 +288,10 @@ The following example uses default discovery of `${jetty.home}` by using the par
 
 [source, screen, subs="{sub-order}"]
 ....
-[jetty-distribution-{VERSION}]$ pwd
-/home/user/jetty-distribution-{VERSION}
+[jetty-home-{VERSION}]$ pwd
+/home/user/jetty-home-{VERSION}
 
-[jetty-distribution-{VERSION}]$ java -jar start.jar jetty.base=/home/user/my-base
+[jetty-home-{VERSION}]$ java -jar start.jar jetty.base=/home/user/my-base
 
 2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-{VERSION}
 2013-10-16 09:08:47.817:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/my-base/webapps/] at interval 1
@@ -310,10 +305,10 @@ The following demonstrates this by allowing default discovery of `${jetty.home}`
 
 [source,screen,subs="{sub-order}"]
 ....
-[jetty-distribution-{VERSION}]$ pwd
-/home/user/jetty-distribution-{VERSION}
+[jetty-home-{VERSION}]$ pwd
+/home/user/jetty-home-{VERSION}
 
-[jetty-distribution-{VERSION}]$ cd /home/user/my-base
+[jetty-home-{VERSION}]$ cd /home/user/my-base
 [my-base]$ java -jar /path/to/jetty-home/start.jar
 
 2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-{VERSION}

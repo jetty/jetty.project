@@ -2,15 +2,10 @@
 // ========================================================================
 // Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -256,6 +251,44 @@ public class DispatcherTest
 
         String responses = _connector.getResponse("GET /context/IncludeServlet?do=assertinclude&do=more&test=1 HTTP/1.0\n\n");
 
+        assertEquals(expected, responses);
+    }
+
+    @Test
+    public void testForwardExForwardEx() throws Exception
+    {
+        _contextHandler.addServlet(RelativeDispatch2Servlet.class, "/RelDispatchServlet/*");
+        _contextHandler.addServlet(ThrowServlet.class, "/include/throw/*");
+        String expected =
+            "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 56\r\n" +
+                "\r\n" +
+                "THROWING\r\n" +
+                "CAUGHT2 java.io.IOException: Expected\r\n" +
+                "AFTER\r\n";
+
+        String responses = _connector.getResponse("GET /context/RelDispatchServlet?path=include/throw HTTP/1.0\n\n");
+        assertEquals(expected, responses);
+    }
+
+    @Test
+    public void testIncludeExIncludeEx() throws Exception
+    {
+        _contextHandler.addServlet(RelativeDispatch2Servlet.class, "/RelDispatchServlet/*");
+        _contextHandler.addServlet(ThrowServlet.class, "/include/throw/*");
+        String expected =
+            "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 122\r\n" +
+                "\r\n" +
+                "BEFORE\r\n" +
+                "THROWING\r\n" +
+                "CAUGHT1 java.io.IOException: Expected\r\n" +
+                "BETWEEN\r\n" +
+                "THROWING\r\n" +
+                "CAUGHT2 java.io.IOException: Expected\r\n" +
+                "AFTER\r\n";
+
+        String responses = _connector.getResponse("GET /context/RelDispatchServlet?include=true&path=include/throw HTTP/1.0\n\n");
         assertEquals(expected, responses);
     }
 
@@ -670,12 +703,62 @@ public class DispatcherTest
         }
     }
 
+    public static class RelativeDispatch2Servlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            RequestDispatcher dispatcher = null;
+            String path = request.getParameter("path");
+            String include = request.getParameter("include");
+            ServletOutputStream out = response.getOutputStream();
+            try
+            {
+                out.println("BEFORE");
+                if (Boolean.parseBoolean(include))
+                    request.getRequestDispatcher(path).include(request, response);
+                else
+                    request.getRequestDispatcher(path).forward(request, response);
+                out.println("AFTER1");
+            }
+            catch (Throwable t)
+            {
+                out.println("CAUGHT1 " + t);
+            }
+
+            try
+            {
+                out.println("BETWEEN");
+                if (Boolean.parseBoolean(include))
+                    request.getRequestDispatcher(path).include(request, response);
+                else
+                    request.getRequestDispatcher(path).forward(request, response);
+                out.println("AFTER2");
+            }
+            catch (Throwable t)
+            {
+                out.println("CAUGHT2 " + t);
+            }
+            out.println("AFTER");
+        }
+    }
+
     public static class RogerThatServlet extends GenericServlet
     {
         @Override
         public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
         {
             res.getWriter().print("Roger That!");
+        }
+    }
+
+    public static class ThrowServlet extends GenericServlet
+    {
+        @Override
+        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
+        {
+            res.getOutputStream().println("THROWING");
+            throw new IOException("Expected");
         }
     }
 

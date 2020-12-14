@@ -2,15 +2,10 @@
 // ========================================================================
 // Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -45,6 +40,7 @@ import org.eclipse.jetty.websocket.core.EchoFrameHandler;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.TestAsyncFrameHandler;
+import org.eclipse.jetty.websocket.core.TestWebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
@@ -112,14 +108,16 @@ public class WebSocketProxyTest
 
         ContextHandler serverContext = new ContextHandler("/server");
         serverFrameHandler = new EchoFrameHandler("SERVER");
-        WebSocketNegotiator negotiator = WebSocketNegotiator.from((negotiation) -> serverFrameHandler, defaultCustomizer);
-        WebSocketUpgradeHandler upgradeHandler = new WebSocketUpgradeHandler(negotiator);
+        WebSocketNegotiator negotiator = new TestWebSocketNegotiator(serverFrameHandler, defaultCustomizer);
+        WebSocketUpgradeHandler upgradeHandler = new WebSocketUpgradeHandler();
+        upgradeHandler.addMapping("/*", negotiator);
         serverContext.setHandler(upgradeHandler);
         handlers.addHandler(serverContext);
 
         ContextHandler proxyContext = new ContextHandler("/proxy");
-        negotiator = WebSocketNegotiator.from((negotiation) -> proxy.client2Proxy, defaultCustomizer);
-        upgradeHandler = new WebSocketUpgradeHandler(negotiator);
+        negotiator = WebSocketNegotiator.from(negotiation -> proxy.client2Proxy, defaultCustomizer);
+        upgradeHandler = new WebSocketUpgradeHandler();
+        upgradeHandler.addMapping("/*", negotiator);
         proxyContext.setHandler(upgradeHandler);
         handlers.addHandler(proxyContext);
 

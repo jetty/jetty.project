@@ -2,15 +2,10 @@
 // ========================================================================
 // Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -26,7 +21,7 @@ To test a Jetty release, complete the following steps for each release you want 
 [source, screen, subs="{sub-order}"]
 ....
 
- wget https://oss.sonatype.org/content/repositories/jetty-[reponumber]/org/eclipse/jetty/jetty-distribution/[jetty-version]/jetty-distribution-9.[jetty-minor-version].tar.gz
+ wget https://oss.sonatype.org/content/repositories/jetty-[reponumber]/org/eclipse/jetty/jetty-home/[jetty-version]/jetty-home-9.[jetty-minor-version].tar.gz
 
       
 ....
@@ -200,12 +195,12 @@ Thread Pool - Concurrent Threads max = 239 | Queue Size max = 1002 | Queue Laten
 
         
 ....
-7.  Deploy `cometd.war` to the `webapps` directory of the jetty-distribution tested above.
+7.  Deploy `cometd.war` to the `webapps` directory of the jetty-home tested above.
 +
 [source, screen, subs="{sub-order}"]
 ....
 
- cp cometd-demo/target/cometd-demo-[version].war [pathToJetty]/jetty-distribution-[jetty-version]/webapps/
+ cp cometd-demo/target/cometd-demo-[version].war [pathToJetty]/jetty-home-[jetty-version]/webapps/
  
         
 ....

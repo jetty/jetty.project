@@ -2,15 +2,10 @@
 // ========================================================================
 // Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -73,8 +68,8 @@ The simplest way to start Jetty is via the `start.jar` mechanism using the follo
 
 [source, screen, subs="{sub-order}"]
 ....
-[user]$ cd jetty-distribution-{VERSION}
-[jetty-distribution-{VERSION}]$ java -jar start.jar --module=http jetty.http.port=8080
+[user]$ cd jetty-home-{VERSION}
+[jetty-home-{VERSION}]$ java -jar start.jar --module=http jetty.http.port=8080
 ....
 
 This command uses the `start.jar` mechanism to bootstrap the classpath, properties, and XML files with the metadata obtained from the `http` module.
@@ -82,7 +77,7 @@ Specifically the `http` module is defined in the `${jetty.home}/modules/http.mod
 
 [source, screen, subs="{sub-order}"]
 ....
-[jetty-distribution-{VERSION}]$ cat modules/http.mod
+[jetty-home-{VERSION}]$ cat modules/http.mod
 [depend]
 server
 
@@ -101,7 +96,7 @@ Following the server dependency, the `${jetty.home}/modules/server.mod` file inc
 
 [source, screen, subs="{sub-order}"]
 ....
-[jetty-distribution-{VERSION}]$ cat modules/server.mod
+[jetty-home-{VERSION}]$ cat modules/server.mod
 [lib]
 lib/jetty-servlet-api-4.0.2.jar
 lib/jetty-http-${jetty.version}.jar
@@ -125,7 +120,7 @@ Another way to see this is by asking Jetty what its configuration looks like by 
 
 [source, screen, subs="{sub-order}"]
 ....
-[jetty-distribution-{VERSION}]$ java -jar start.jar --module=http jetty.http.port=9099 --list-config
+[jetty-home-{VERSION}]$ java -jar start.jar --module=http jetty.http.port=9099 --list-config
 
 Java Environment:
 -----------------
@@ -140,8 +135,8 @@ Java Environment:
 
 Jetty Environment:
 -----------------
- jetty.home=/opt/jetty/jetty-distribution-{VERSION}
- jetty.base=/opt/jetty/jetty-distribution-{VERSION}
+ jetty.home=/opt/jetty/jetty-home-{VERSION}
+ jetty.base=/opt/jetty/jetty-home-{VERSION}
  jetty.version={VERSION}
 
 JVM Arguments:
@@ -150,8 +145,8 @@ JVM Arguments:
 
 System Properties:
 ------------------
- jetty.home = /opt/jetty/jetty-distribution-{VERSION}
- jetty.base = /opt/jetty/jetty-distribution-{VERSION}
+ jetty.home = /opt/jetty/jetty-home-{VERSION}
+ jetty.base = /opt/jetty/jetty-home-{VERSION}
 
 Properties:
 -----------
@@ -183,12 +178,12 @@ The following is the equivalent Java command line for what the `start.jar` boots
 
 [source, screen, subs="{sub-order}"]
 ....
-[user]$ cd jetty-distribution-{VERSION}
-[jetty-distribution-{VERSION}]$ echo jetty.http.port=8080 > /tmp/jetty.properties
-[jetty-distribution-{VERSION}]$ export JETTY_HOME=`pwd`
-[jetty-distribution-{VERSION}]$ export JETTY_BASE=`pwd`
-[jetty-distribution-{VERSION}]$ export JETTY_VERSION="${project.version}"
-[jetty-distribution-{VERSION}]$ java -Djetty.home=$JETTY_HOME \
+[user]$ cd jetty-home-{VERSION}
+[jetty-home-{VERSION}]$ echo jetty.http.port=8080 > /tmp/jetty.properties
+[jetty-home-{VERSION}]$ export JETTY_HOME=`pwd`
+[jetty-home-{VERSION}]$ export JETTY_BASE=`pwd`
+[jetty-home-{VERSION}]$ export JETTY_VERSION="${project.version}"
+[jetty-home-{VERSION}]$ java -Djetty.home=$JETTY_HOME \
 -Djetty.base=$JETTY_BASE \
 -cp \
  $JETTY_HOME/lib/jetty-servlet-api-4.0.2.jar\
@@ -209,8 +204,8 @@ You can further simplify the startup of this server by using the INI template de
 
 [source,screen,subs="{sub-order}"]
 ....
-[user]$ cd jetty-distribution-{VERSION}
-[jetty-distribution-{VERSION}]$ mkdir example-base
+[user]$ cd jetty-home-{VERSION}
+[jetty-home-{VERSION}]$ mkdir example-base
 [example-base]$ cd example-base
 [example-base]$ ls -la
 total 8

@@ -2,15 +2,10 @@
 // ========================================================================
 // Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -36,7 +31,7 @@ image:debug-eclipse-1.png[image,width=576]
 +
 image:debug-eclipse-2.png[image,width=576]
 
-3.  Accessing that servlet within your browser, pointed at your remote debug configurated jetty-distribution, should transition your Eclipse instance to the standard Debug view.
+3.  Accessing that servlet within your browser, pointed at your remote debug configurated jetty-home, should transition your Eclipse instance to the standard Debug view.
 +
 image:debug-eclipse-3.png[image,width=576]
 

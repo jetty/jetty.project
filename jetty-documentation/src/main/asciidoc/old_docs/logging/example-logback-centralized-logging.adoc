@@ -2,15 +2,10 @@
 // ========================================================================
 // Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -119,7 +114,7 @@ $
 This replacement `centralized-webapp-logging.mod` performs a number of tasks.
 
 . `mybase` is a `${jetty.base}` directory.
-. The jetty-distribution is unpacked (and untouched) into `/opt/jetty-dist/` and becomes the `${jetty.home}` directory for this demonstration.
+. The jetty-home is unpacked (and untouched) into `/opt/jetty-home/` and becomes the `${jetty.home}` directory for this demonstration.
 . The `curl` command downloads the replacement config overlay for the `${jetty.base}/modules/` directory to use.
 . The `start.jar --add-to-start=centralized-webapp-logging` command performs a number of steps to make the centralized-webapp-logging module available to the `${jetty.base}` configuration.
 .. A new `${jetty.base}/start.d/centralized-webapp-logging.ini` configuration was created.

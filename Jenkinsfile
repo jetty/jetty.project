@@ -12,8 +12,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout( time: 240, unit: 'MINUTES' ) {
-                mavenBuild( "jdk11", "clean install", "maven3",
-                            [[parserName: 'Maven'], [parserName: 'Java'], [parserName: 'JavaDoc']] )
+                mavenBuild( "jdk11", "clean install -Perrorprone", "maven3")
                 // Collect up the jacoco execution results (only on main build)
                 jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
                        exclusionPattern: '' +
@@ -32,17 +31,19 @@ pipeline {
                        execPattern: '**/target/jacoco.exec',
                        classPattern: '**/target/classes',
                        sourcePattern: '**/src/main/java'
+                recordIssues id: "jdk11", name: "Static Analysis jdk11", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser(), errorProne()]
               }
             }
           }
         }
+
         stage("Build / Test - JDK15") {
           agent { node { label 'linux' } }
           steps {
             container( 'jetty-build' ) {
               timeout( time: 240, unit: 'MINUTES' ) {
-                mavenBuild( "jdk15", "clean install -Djacoco.skip=true", "maven3",
-                            [[parserName: 'Maven'], [parserName: 'Java'], [parserName: 'JavaDoc']])
+                mavenBuild( "jdk15", "clean install", "maven3")
+                recordIssues id: "jdk15", name: "Static Analysis jdk15", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser()]
               }
             }
           }
@@ -90,7 +91,7 @@ def slackNotif() {
  * @param cmdline the command line in "<profiles> <goals> <properties>"`format.
  * @return the Jenkinsfile step representing a maven build
  */
-def mavenBuild(jdk, cmdline, mvnName, consoleParsers) {
+def mavenBuild(jdk, cmdline, mvnName) {
   script {
     try {
       withEnv(["JAVA_HOME=${ tool "$jdk" }",
@@ -98,15 +99,13 @@ def mavenBuild(jdk, cmdline, mvnName, consoleParsers) {
                "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
         configFileProvider(
                 [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
-          sh "mvn -s $GLOBAL_MVN_SETTINGS -DsettingsPath=$GLOBAL_MVN_SETTINGS -Pci -V -B -e -Djetty.testtracker.log=true $cmdline javadoc:jar -Dunix.socket.tmp=" +
-                     env.JENKINS_HOME
+          sh "mvn --no-transfer-progress -s $GLOBAL_MVN_SETTINGS -Pci -V -B -e -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=/tmp/unixsocket"
         }
       }
-    } finally {
-      junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml,**/h2spec-reports/*.xml', allowEmptyResults: true
-      if(consoleParsers!=null) {
-        warnings consoleParsers: consoleParsers
-      }
+    }
+    finally
+    {
+      junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
     }
   }
 }

@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.0-SNAPSHOT</version>
+    <version>10.0.1-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -12,6 +12,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.deploy</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.deploy.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>
@@ -22,13 +23,6 @@
           <argLine>
             @{argLine} ${jetty.surefire.argLine} --add-modules org.eclipse.jetty.jmx --add-reads org.eclipse.jetty.deploy=org.eclipse.jetty.http,jetty.servlet.api
           </argLine>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.deploy.*</onlyAnalyze>
         </configuration>
       </plugin>
     </plugins>

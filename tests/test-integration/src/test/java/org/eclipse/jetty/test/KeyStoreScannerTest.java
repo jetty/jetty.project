@@ -2,15 +2,10 @@
 // ========================================================================
 // Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -126,7 +121,7 @@ public class KeyStoreScannerTest
 
         // Switch to use newKeystore which has a later expiry date.
         useKeystore("newKeystore");
-        keystoreScanner.scan();
+        assertTrue(keystoreScanner.scan(5000));
 
         // The scanner should have detected the updated keystore, expiry should be renewed.
         X509Certificate cert2 = getCertificateFromServer();
@@ -146,7 +141,7 @@ public class KeyStoreScannerTest
         try (StacklessLogging ignored = new StacklessLogging(KeyStoreScanner.class))
         {
             useKeystore("badKeystore");
-            keystoreScanner.scan();
+            keystoreScanner.scan(5000);
         }
 
         // The good keystore is removed, now the bad keystore now causes an exception.
@@ -167,7 +162,7 @@ public class KeyStoreScannerTest
         {
             Path keystorePath = keystoreDir.resolve("keystore");
             assertTrue(Files.deleteIfExists(keystorePath));
-            keystoreScanner.scan();
+            keystoreScanner.scan(5000);
         }
 
         // The good keystore is removed, having no keystore causes an exception.
@@ -175,7 +170,7 @@ public class KeyStoreScannerTest
 
         // Switch to use keystore2 which has a later expiry date.
         useKeystore("newKeystore");
-        keystoreScanner.scan();
+        keystoreScanner.scan(5000);
         X509Certificate cert2 = getCertificateFromServer();
         assertThat(getExpiryYear(cert2), is(2020));
     }
@@ -200,7 +195,7 @@ public class KeyStoreScannerTest
         // Change the symlink to point to the newKeystore file location which has a later expiry date.
         Files.delete(keystorePath);
         Files.createSymbolicLink(keystorePath, useKeystore("newKeystore"));
-        keystoreScanner.scan();
+        keystoreScanner.scan(5000);
 
         // The scanner should have detected the updated keystore, expiry should be renewed.
         X509Certificate cert2 = getCertificateFromServer();
@@ -232,7 +227,7 @@ public class KeyStoreScannerTest
         // Change the target file of the symlink to the newKeystore which has a later expiry date.
         Files.copy(newKeystoreSrc, target, StandardCopyOption.REPLACE_EXISTING);
         System.err.println("### Triggering scan");
-        keystoreScanner.scan();
+        keystoreScanner.scan(5000);
 
         // The scanner should have detected the updated keystore, expiry should be renewed.
         X509Certificate cert2 = getCertificateFromServer();
