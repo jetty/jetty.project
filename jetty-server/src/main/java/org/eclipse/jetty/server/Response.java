@@ -109,8 +109,7 @@ public class Response implements HttpServletResponse
         NOT_SET,
 
         /**
-         * Character encoding was not explicitly set but has a default value defined by the {@code encoding.properties} file.
-         * @see MimeTypes#getInferredEncodings().
+         * Character encoding was inferred from the Content-Type and will be added as a parameter to the Content-Type.
          */
         INFERRED,
 
@@ -784,9 +783,9 @@ public class Response implements HttpServletResponse
     /**
      * Private utility method to get the character encoding.
      * A standard call to {@link #getCharacterEncoding()} should not change the Content-Type header.
-     * But when {@link #getWriter()} is called we must decide what Content Type to use, so this will allow an inferred
+     * But when {@link #getWriter()} is called we must decide what Content-Type to use, so this will allow an inferred
      * charset to be set in in the Content-Type.
-     * @param setContentType set the Content-Type header if this is set to true, otherwise just calculate what it should be.
+     * @param setContentType if true allow the Content-Type header to be changed if character encoding was inferred.
      * @return the character encoding for this response.
      */
     private String getCharacterEncoding(boolean setContentType)
@@ -797,7 +796,7 @@ public class Response implements HttpServletResponse
 
         String encoding;
 
-        // Try charset from mime type. TODO: should this be added to Content-Type header?
+        // Try charset from mime type.
         if (_mimeType != null && _mimeType.isCharsetAssumed())
             return _mimeType.getCharsetString();
 
@@ -815,13 +814,17 @@ public class Response implements HttpServletResponse
             return encoding;
         }
 
-        // Try any default char encoding for the context. TODO: should this be added to Content-Type header?
+        // Try any default char encoding for the context.
         Context context = _channel.getRequest().getContext();
         if (context != null)
         {
             encoding = context.getResponseCharacterEncoding();
             if (encoding != null)
+            {
+                if (setContentType)
+                    setCharacterEncoding(encoding, EncodingFrom.INFERRED);
                 return encoding;
+            }
         }
 
         // Fallback to last resort iso-8859-1.
