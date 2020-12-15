@@ -76,7 +76,9 @@ class TernaryTrie<V> extends AbstractTrie<V>
     {
         String _key;
         V _value;
-        Table<V>[] _next;
+        Table<V> _nextLo;
+        Table<V> _nextEq;
+        Table<V> _nextHi;
 
         public Node()
         {
@@ -88,10 +90,33 @@ class TernaryTrie<V> extends AbstractTrie<V>
             _value = v;
         }
 
+        public Table<V> getNext(int branch)
+        {
+            return branch == LO ? _nextLo : branch == HI ? _nextHi : _nextEq;
+        }
+
         public void set(String s, V v)
         {
             _key = s;
             _value = v;
+        }
+
+        public void setNext(int branch, Table<V> table)
+        {
+            switch (branch)
+            {
+                case LO:
+                    _nextLo = table;
+                    break;
+                case EQ:
+                    _nextEq = table;
+                    break;
+                case HI:
+                    _nextHi = table;
+                    break;
+                default:
+                    throw new IllegalStateException();
+            }
         }
 
         @Override
@@ -105,9 +130,9 @@ class TernaryTrie<V> extends AbstractTrie<V>
             return String.format("'%s'='%s' [%x,%x,%x]",
                 _key,
                 _value,
-                _next == null ? null : Objects.hashCode(_next[0]),
-                _next == null ? null : Objects.hashCode(_next[1]),
-                _next == null ? null : Objects.hashCode(_next[2])
+                _nextLo == null ? null : Objects.hashCode(_nextLo),
+                _nextEq == null ? null : Objects.hashCode(_nextEq),
+                _nextHi == null ? null : Objects.hashCode(_nextHi)
                 );
         }
     }
@@ -235,12 +260,12 @@ class TernaryTrie<V> extends AbstractTrie<V>
                 Node<V> node = table._nodes[row];
                 int diff = (int)c - nc;
                 int branch = diff == 0 ? EQ : hilo(diff);
-
                 char next = table._tree[idx + branch];
-                if (node != null && node._next != null && node._next[branch - 1] != null)
+                Table<V> nextTable = node == null ? null : node.getNext(branch);
+                if (nextTable != null)
                 {
                     // The branch is to a different table;
-                    table = node._next[branch - 1];
+                    table = nextTable;
                     row = next;
                 }
                 else if (next != 0)
@@ -259,11 +284,9 @@ class TernaryTrie<V> extends AbstractTrie<V>
                     // point to a new row in the tail table;
                     if (node == null)
                         node = table._nodes[row] = new Node<>();
-                    if (node._next == null)
-                        node._next = new Table[3];
                     row = _tail._rows;
                     table._tree[idx + branch] = (char)row;
-                    node._next[branch - 1] = _tail;
+                    node.setNext(branch, _tail);
                     table = _tail;
                 }
                 else if (_growBy > 0 && (_maxCapacity <= 0 || _nodes < _maxCapacity))
@@ -271,13 +294,11 @@ class TernaryTrie<V> extends AbstractTrie<V>
                     // point to a new row in a new table;
                     if (node == null)
                         node = table._nodes[row] = new Node<>();
-                    if (node._next == null)
-                        node._next = new Table[3];
                     int growBy = _maxCapacity < 0 ? _growBy : Math.min(_growBy, _maxCapacity - _nodes);
                     table = _tail = new Table<>(growBy);
                     _tables.add(table);
                     row = 0;
-                    node._next[branch - 1] = table;
+                    node.setNext(branch, table);
                 }
                 else
                 {
@@ -330,10 +351,11 @@ class TernaryTrie<V> extends AbstractTrie<V>
                 int branch = diff == 0 ? EQ : hilo(diff);
 
                 char next = table._tree[idx + branch];
-                if (node != null && node._next != null && node._next[branch - 1] != null)
+                Table<V> nextTable = node == null ? null : node.getNext(branch);
+                if (nextTable != null)
                 {
                     // The branch is to a different table;
-                    table = node._next[branch - 1];
+                    table = nextTable;
                     row = next;
                 }
                 else if (next != 0)
@@ -379,10 +401,11 @@ class TernaryTrie<V> extends AbstractTrie<V>
                 int branch = diff == 0 ? EQ : hilo(diff);
 
                 char next = table._tree[idx + branch];
-                if (node != null && node._next != null && node._next[branch - 1] != null)
+                Table<V> nextTable = node == null ? null : node.getNext(branch);
+                if (nextTable != null)
                 {
                     // The branch is to a different table;
-                    table = node._next[branch - 1];
+                    table = nextTable;
                     row = next;
                 }
                 else if (next != 0)
@@ -436,10 +459,11 @@ class TernaryTrie<V> extends AbstractTrie<V>
                 int branch = diff == 0 ? EQ : hilo(diff);
 
                 char next = table._tree[idx + branch];
-                if (node != null && node._next != null && node._next[branch - 1] != null)
+                Table<V> nextTable = node == null ? null : node.getNext(branch);
+                if (nextTable != null)
                 {
                     // The branch is to a different table;
-                    table = node._next[branch - 1];
+                    table = nextTable;
                     row = next;
                 }
                 else if (next != 0)
@@ -505,10 +529,11 @@ class TernaryTrie<V> extends AbstractTrie<V>
                 int branch = diff == 0 ? EQ : hilo(diff);
 
                 char next = table._tree[idx + branch];
-                if (node != null && node._next != null && node._next[branch - 1] != null)
+                Table<V> nextTable = node == null ? null : node.getNext(branch);
+                if (nextTable != null)
                 {
                     // The branch is to a different table;
-                    table = node._next[branch - 1];
+                    table = nextTable;
                     row = next;
                 }
                 else if (next != 0)
@@ -558,10 +583,11 @@ class TernaryTrie<V> extends AbstractTrie<V>
                 int branch = diff == 0 ? EQ : hilo(diff);
 
                 char next = table._tree[idx + branch];
-                if (node != null && node._next != null && node._next[branch - 1] != null)
+                Table<V> nextTable = node == null ? null : node.getNext(branch);
+                if (nextTable != null)
                 {
                     // The branch is to a different table;
-                    table = node._next[branch - 1];
+                    table = nextTable;
                     row = next;
                 }
                 else if (next != 0)
