@@ -14,6 +14,7 @@
 
   <properties>
     <sonar.skip>true</sonar.skip>
+    <spotbugs.skip>true</spotbugs.skip>
   </properties>
 
   <build>
@@ -23,14 +24,6 @@
         <artifactId>maven-deploy-plugin</artifactId>
         <configuration>
           <!-- No point deploying example projects -->
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <!-- No Point running Findbugs on example projects -->
           <skip>true</skip>
         </configuration>
       </plugin>

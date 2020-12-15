@@ -10,6 +10,7 @@
   <description>Jetty UnixSocket</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.unixsocket</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.unixsocket.*</spotbugs.onlyAnalyze>
   </properties>
   <dependencies>
     <dependency>
@@ -41,13 +42,6 @@
   </dependencies>
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.unixsocket.*</onlyAnalyze>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>

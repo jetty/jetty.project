@@ -10,6 +10,7 @@
   <description>JNDI spi impl for java namespace.</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.jndi</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.jndi.*</spotbugs.onlyAnalyze>
   </properties>
   <build>
     <plugins>
@@ -39,13 +40,6 @@
             </configuration>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.jndi.*</onlyAnalyze>
-        </configuration>
       </plugin>
     </plugins>
   </build>
