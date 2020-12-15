@@ -15,7 +15,6 @@ package org.eclipse.jetty.server;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -329,15 +328,14 @@ public class ServerConnector extends AbstractNetworkConnector
 
         if (serverChannel == null)
         {
-            serverChannel = ServerSocketChannel.open();
-
             InetSocketAddress bindAddress = getHost() == null ? new InetSocketAddress(getPort()) : new InetSocketAddress(getHost(), getPort());
-            serverChannel.socket().setReuseAddress(getReuseAddress());
+            serverChannel = ServerSocketChannel.open();
             try
             {
+                serverChannel.socket().setReuseAddress(getReuseAddress());
                 serverChannel.socket().bind(bindAddress, getAcceptQueueSize());
             }
-            catch (BindException e)
+            catch (Throwable e)
             {
                 IO.close(serverChannel);
                 throw new IOException("Failed to bind to " + bindAddress, e);
