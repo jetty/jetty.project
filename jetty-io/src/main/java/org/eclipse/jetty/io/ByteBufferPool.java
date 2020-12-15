@@ -2,15 +2,10 @@
 // ========================================================================
 // Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -24,6 +19,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -157,7 +153,7 @@ public interface ByteBufferPool
         private final int _capacity;
         private final int _maxSize;
         private final AtomicInteger _size;
-        private long _lastUpdate = System.nanoTime();
+        private final AtomicLong _lastUpdate = new AtomicLong(System.nanoTime());
 
         public Bucket(int capacity, int maxSize)
         {
@@ -178,7 +174,7 @@ public interface ByteBufferPool
 
         public void release(ByteBuffer buffer)
         {
-            _lastUpdate = System.nanoTime();
+            _lastUpdate.setOpaque(System.nanoTime());
             BufferUtil.clear(buffer);
             if (_size == null)
                 queueOffer(buffer);
@@ -233,7 +229,7 @@ public interface ByteBufferPool
 
         long getLastUpdate()
         {
-            return _lastUpdate;
+            return _lastUpdate.getOpaque();
         }
 
         @Override

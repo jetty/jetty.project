@@ -2,15 +2,10 @@
 // ========================================================================
 // Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -81,12 +76,12 @@ public class Scanner extends AbstractLifeCycle
     {
         ADDED, CHANGED, REMOVED, STABLE
     }
-    
+
     enum Notification
     {
         ADDED, CHANGED, REMOVED
     }
-    
+
     /**
      * PathMatcherSet
      *
@@ -109,7 +104,7 @@ public class Scanner extends AbstractLifeCycle
 
     /**
      * MetaData
-     * 
+     *
      * Metadata about a file: Last modified time, file size and
      * last file status (ADDED, CHANGED, DELETED, STABLE)
      */
@@ -136,7 +131,7 @@ public class Scanner extends AbstractLifeCycle
             return "[lm=" + _lastModified + ",sz=" + _size + ",s=" + _status + "]";
         }
     }
-    
+
     private class ScanTask implements Runnable
     {
         @Override
@@ -158,28 +153,28 @@ public class Scanner extends AbstractLifeCycle
         Map<String, MetaData> scanInfoMap;
         IncludeExcludeSet<PathMatcher,Path> rootIncludesExcludes;
         Path root;
-        
+
         public Visitor(Path root, IncludeExcludeSet<PathMatcher,Path> rootIncludesExcludes, Map<String, MetaData> scanInfoMap)
         {
             this.root = root;
             this.rootIncludesExcludes = rootIncludesExcludes;
             this.scanInfoMap = scanInfoMap;
         }
-        
+
         @Override
         public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
         {
             if (!Files.exists(dir))
                 return FileVisitResult.SKIP_SUBTREE;
-            
+
             File f = dir.toFile();
-            
+
             //if we want to report directories and we haven't already seen it
             if (_reportDirs && !scanInfoMap.containsKey(f.getCanonicalPath()))
             {
                 boolean accepted = false;
                 if (rootIncludesExcludes != null && !rootIncludesExcludes.isEmpty())
-                { 
+                {
                     //accepted if not explicitly excluded and either is explicitly included or there are no explicit inclusions
                     accepted = rootIncludesExcludes.test(dir);
                 }
@@ -224,7 +219,7 @@ public class Scanner extends AbstractLifeCycle
                 scanInfoMap.put(f.getCanonicalPath(), new MetaData(f.lastModified(), f.isDirectory() ? 0 : f.length()));
                 if (LOG.isDebugEnabled()) LOG.debug("scan accepted {} mod={}", f, f.lastModified());
             }
-            
+
             return FileVisitResult.CONTINUE;
         }
 
@@ -241,7 +236,7 @@ public class Scanner extends AbstractLifeCycle
             return FileVisitResult.CONTINUE;
         }
     }
-    
+
     /**
      * Listener
      *
@@ -256,11 +251,11 @@ public class Scanner extends AbstractLifeCycle
      */
     public interface DiscreteListener extends Listener
     {
-        public void fileChanged(String filename) throws Exception;
+        void fileChanged(String filename) throws Exception;
 
-        public void fileAdded(String filename) throws Exception;
+        void fileAdded(String filename) throws Exception;
 
-        public void fileRemoved(String filename) throws Exception;
+        void fileRemoved(String filename) throws Exception;
     }
 
     /**
@@ -276,11 +271,11 @@ public class Scanner extends AbstractLifeCycle
      */
     public interface ScanCycleListener extends Listener
     {
-        public default void scanStarted(int cycle) throws Exception
+        default void scanStarted(int cycle) throws Exception
         {
         }
 
-        public default void scanEnded(int cycle) throws Exception
+        default void scanEnded(int cycle) throws Exception
         {
         }
     }
@@ -308,7 +303,7 @@ public class Scanner extends AbstractLifeCycle
     {
         if (isRunning())
             throw new IllegalStateException("Scanner started");
-        
+
         _scanInterval = scanInterval;
     }
 
@@ -331,14 +326,14 @@ public class Scanner extends AbstractLifeCycle
 
     /**
      * Add a file to be scanned. The file must not be null, and must exist.
-     * 
+     *
      * @param p the Path of the file to scan.
      */
     public void addFile(Path p)
     {
         if (isRunning())
             throw new IllegalStateException("Scanner started");
-        
+
         if (p == null)
             throw new IllegalStateException("Null path");
 
@@ -356,7 +351,7 @@ public class Scanner extends AbstractLifeCycle
 
     /**
      * Add a directory to be scanned. The directory must not be null and must exist.
-     * 
+     *
      * @param p the directory to scan.
      * @return an IncludeExcludeSet to which the caller can add PathMatcher patterns to match
      */
@@ -364,7 +359,7 @@ public class Scanner extends AbstractLifeCycle
     {
         if (isRunning())
             throw new IllegalStateException("Scanner started");
-        
+
         if (p == null)
             throw new IllegalStateException("Null path");
 
@@ -384,7 +379,7 @@ public class Scanner extends AbstractLifeCycle
             throw new IllegalStateException(e);
         }
     }
-    
+
 
     /**
      * Apply a filter to files found in the scan directory.
@@ -433,7 +428,7 @@ public class Scanner extends AbstractLifeCycle
     {
         if (isRunning())
             throw new IllegalStateException("Scanner started");
-        
+
         _scanDepth = scanDepth;
     }
 
@@ -505,7 +500,7 @@ public class Scanner extends AbstractLifeCycle
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Scanner start: rprtExists={}, depth={}, rprtDirs={}, interval={}, filter={}, scannables={}",
-                _reportExisting, _scanDepth, _reportDirs, _scanInterval, _filter, _scannables);
+                      _reportExisting, _scanDepth, _reportDirs, _scanInterval, _filter, _scannables);
 
         if (_reportExisting)
         {
@@ -518,12 +513,12 @@ public class Scanner extends AbstractLifeCycle
             //just register the list of existing files and only report changes
             _prevScan = scanFiles();
         }
-        
-        
+
+
         //Create the scheduler and start it
         _scheduler = new ScheduledExecutorScheduler("Scanner-" + SCANNER_IDS.getAndIncrement(), true, 1);
         _scheduler.start();
-        
+
         //schedule the scan
         schedule();
     }
@@ -581,7 +576,7 @@ public class Scanner extends AbstractLifeCycle
     }
 
     /**
-     * Hint to the scanner to perform a scan cycle as soon as possible. 
+     * Hint to the scanner to perform a scan cycle as soon as possible.
      * NOTE that the scan is not guaranteed to have happened by the
      * time this method returns.
      */
@@ -591,17 +586,17 @@ public class Scanner extends AbstractLifeCycle
             throw new IllegalStateException("Scanner not running");
         scan(Callback.NOOP);
     }
-    
+
     /**
      * Get the scanner to perform a scan cycle as soon as possible
      * and call the Callback when the scan is finished or failed.
-     * 
+     *
      * @param complete called when the scan cycle finishes or fails.
      */
     public void scan(Callback complete)
     {
         Scheduler scheduler = _scheduler;
-        
+
         if (!isRunning() || scheduler == null)
         {
             complete.failed(new IllegalStateException("Scanner not running"));
@@ -641,11 +636,12 @@ public class Scanner extends AbstractLifeCycle
     private Map<String, MetaData> scanFiles()
     {
         Map<String, MetaData> currentScan = new HashMap<>();
-        for (Path p : _scannables.keySet())
+        for (Map.Entry<Path, IncludeExcludeSet<PathMatcher, Path>> entry : _scannables.entrySet())
         {
             try
             {
-                Files.walkFileTree(p, EnumSet.allOf(FileVisitOption.class),_scanDepth, new Visitor(p, _scannables.get(p), currentScan));
+                Files.walkFileTree(entry.getKey(), EnumSet.allOf(FileVisitOption.class),_scanDepth,
+                                   new Visitor(entry.getKey(), entry.getValue(), currentScan));
             }
             catch (IOException e)
             {
@@ -657,7 +653,7 @@ public class Scanner extends AbstractLifeCycle
 
     /**
      * Report the adds/changes/removes to the registered listeners
-     * 
+     *
      * Only report an add or change once a file has stablilized in size.
      *
      * @param currentScan the info from the most recent pass
@@ -668,7 +664,7 @@ public class Scanner extends AbstractLifeCycle
         Map<String, Notification> changes = new HashMap<>();
 
         //Handle deleted files
-        Set<String> oldScanKeys = new HashSet<>(oldScan.keySet());        
+        Set<String> oldScanKeys = new HashSet<>(oldScan.keySet());
         oldScanKeys.removeAll(currentScan.keySet());
         for (String file : oldScanKeys)
         {
@@ -676,10 +672,10 @@ public class Scanner extends AbstractLifeCycle
         }
 
         // Handle new and changed files
-        for (String file : currentScan.keySet())
+        for (Map.Entry<String, MetaData> entry : currentScan.entrySet())
         {
-            MetaData current = currentScan.get(file);
-            MetaData previous = oldScan.get(file);
+            MetaData current = entry.getValue();
+            MetaData previous = oldScan.get(entry.getKey());
 
             if (previous == null)
             {
@@ -705,9 +701,9 @@ public class Scanner extends AbstractLifeCycle
                 //Unchanged file: if it was previously
                 //ADDED, we can now send the ADDED event.
                 if (previous._status == Status.ADDED)
-                    changes.put(file,  Notification.ADDED);
+                    changes.put(entry.getKey(),  Notification.ADDED);
                 else if (previous._status == Status.CHANGED)
-                    changes.put(file, Notification.CHANGED);
+                    changes.put(entry.getKey(), Notification.CHANGED);
 
                 current._status = Status.STABLE;
             }
@@ -716,7 +712,7 @@ public class Scanner extends AbstractLifeCycle
         if (LOG.isDebugEnabled())
             LOG.debug("scanned {}", _scannables.keySet());
 
-        //Call the DiscreteListeners 
+        //Call the DiscreteListeners
         for (Map.Entry<String, Notification> entry : changes.entrySet())
         {
             switch (entry.getValue())
@@ -795,7 +791,7 @@ public class Scanner extends AbstractLifeCycle
     {
         if (filename == null)
             return;
-        
+
         for (Listener l : _listeners)
         {
             try
@@ -812,14 +808,14 @@ public class Scanner extends AbstractLifeCycle
 
     /**
      * Report the list of filenames for which changes were detected.
-     * 
+     *
      * @param filenames names of all files added/changed/removed
      */
     private void reportBulkChanges(Set<String> filenames)
     {
         if (filenames == null || filenames.isEmpty())
             return;
-        
+
         for (Listener l : _listeners)
         {
             try
@@ -836,7 +832,7 @@ public class Scanner extends AbstractLifeCycle
 
     /**
      * Call ScanCycleListeners with start of scan
-     * 
+     *
      * @param cycle scan count
      */
     private void reportScanStart(int cycle)
@@ -857,7 +853,7 @@ public class Scanner extends AbstractLifeCycle
 
     /**
      * Call ScanCycleListeners with end of scan.
-     * 
+     *
      * @param cycle scan count
      */
     private void reportScanEnd(int cycle)

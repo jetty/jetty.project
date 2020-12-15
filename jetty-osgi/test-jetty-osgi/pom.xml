@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>10.0.0-SNAPSHOT</version>
+    <version>10.0.1-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -41,20 +41,20 @@
       <version>${pax.exam.version}</version>
       <scope>test</scope>
       <exclusions>
-          <exclusion>
-              <groupId>biz.aQute.bnd</groupId>
-              <artifactId>bndlib</artifactId>
-          </exclusion>
-          <exclusion>
-              <groupId>org.ops4j.pax.tinybundles</groupId>
-              <artifactId>tinybundles</artifactId>
-          </exclusion>
+        <exclusion>
+          <groupId>biz.aQute.bnd</groupId>
+          <artifactId>bndlib</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.ops4j.pax.tinybundles</groupId>
+          <artifactId>tinybundles</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
-        <groupId>org.ops4j.pax.tinybundles</groupId>
-        <artifactId>tinybundles</artifactId>
-        <version>${tinybundles.version}</version>
+      <groupId>org.ops4j.pax.tinybundles</groupId>
+      <artifactId>tinybundles</artifactId>
+      <version>${tinybundles.version}</version>
     </dependency>
     <dependency>
       <groupId>org.ops4j.pax.swissbox</groupId>
@@ -62,10 +62,10 @@
       <version>${swissbox.version}</version>
       <scope>test</scope>
       <exclusions>
-          <exclusion>
-              <groupId>org.ops4j.base</groupId>
-              <artifactId>ops4j-base-monitors</artifactId>
-          </exclusion>
+        <exclusion>
+          <groupId>org.ops4j.base</groupId>
+          <artifactId>ops4j-base-monitors</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
@@ -461,24 +461,6 @@
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-commons</artifactId>
-      <scope>test</scope>
-      <version>${asm.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.ow2.asm</groupId>
-      <artifactId>asm-tree</artifactId>
-      <scope>test</scope>
-      <version>${asm.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.ow2.asm</groupId>
-      <artifactId>asm-analysis</artifactId>
-      <scope>test</scope>
-      <version>${asm.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.ow2.asm</groupId>
-      <artifactId>asm-util</artifactId>
       <scope>test</scope>
       <version>${asm.version}</version>
     </dependency>

@@ -2,15 +2,10 @@
 // ========================================================================
 // Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -1225,7 +1220,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         final Thread currentThread = Thread.currentThread();
         final ClassLoader oldClassloader = currentThread.getContextClassLoader();
         Context oldContext;
-        String oldPathInContext = null;
+        String oldPathInContext = baseRequest.getPathInContext();;
         String pathInContext = target;
 
         DispatcherType dispatch = baseRequest.getDispatcherType();
@@ -1267,14 +1262,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         try
         {
-            oldPathInContext = baseRequest.getPathInContext();
-
             // Update the paths
-            baseRequest.setContext(_scontext, pathInContext);
-            __context.set(_scontext);
+            baseRequest.setContext(_scontext,
+                (DispatcherType.INCLUDE.equals(dispatch) || !target.startsWith("/")) ? oldPathInContext : pathInContext);
 
             if (oldContext != _scontext)
+            {
+                __context.set(_scontext);
                 enterScope(baseRequest, dispatch);
+            }
 
             if (LOG.isDebugEnabled())
                 LOG.debug("context={}|{}|{} @ {}", baseRequest.getContextPath(), baseRequest.getServletPath(), baseRequest.getPathInfo(), this);
@@ -1291,10 +1287,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 if (_classLoader != null)
                     currentThread.setContextClassLoader(oldClassloader);
 
-                // reset the context and servlet path.
-                baseRequest.setContext(oldContext, oldPathInContext);
+                // reset the context
                 __context.set(oldContext);
             }
+
+            // reset pathInContext
+            baseRequest.setContext(oldContext, oldPathInContext);
         }
     }
 
