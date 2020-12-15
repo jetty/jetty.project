@@ -25,7 +25,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
 import org.eclipse.jetty.server.Handler;
@@ -36,6 +39,7 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -108,10 +112,14 @@ public class DeploymentTempDirTest
         createNewFile(webAppContext1.getTempDirectory().toPath(), "myFile.txt", content);
 
         // Touch the webapp and rescan to reload the WebAppContext.
+        WaitScannerListener listener = new WaitScannerListener();
+        webAppProvider.addScannerListener(listener);
         Path fooWebApp1 = testDir.resolve("webapps/foo-webapp-1.war");
         assertTrue(fooWebApp1.toFile().setLastModified(System.currentTimeMillis()));
         webAppProvider.scan();
         webAppProvider.scan();
+        webAppProvider.scan();
+        listener.future.get(5, TimeUnit.SECONDS);
 
         // The second WebAppContext should be using the same temp directory but the file will have been deleted.
         WebAppContext webAppContext2 = getWebAppContext();
@@ -144,10 +152,14 @@ public class DeploymentTempDirTest
         createNewFile(webAppContext1.getTempDirectory().toPath(), "myFile.txt", content);
 
         // Touch the webapp and rescan to reload the WebAppContext.
+        WaitScannerListener listener = new WaitScannerListener();
+        webAppProvider.addScannerListener(listener);
         Path fooWebApp1 = testDir.resolve("webapps/foo-webapp-1.war");
         assertTrue(fooWebApp1.toFile().setLastModified(System.currentTimeMillis()));
         webAppProvider.scan();
         webAppProvider.scan();
+        webAppProvider.scan();
+        listener.future.get(5, TimeUnit.SECONDS);
 
         // The second WebAppContext should be using the same temp directory and file will not have been deleted.
         WebAppContext webAppContext2 = getWebAppContext();
@@ -189,5 +201,16 @@ public class DeploymentTempDirTest
     public String getContent(Path filePath) throws IOException
     {
         return IO.toString(new FileReader(filePath.toFile()));
+    }
+
+    public static class WaitScannerListener implements Scanner.BulkListener
+    {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+
+        @Override
+        public void filesChanged(List<String> filenames)
+        {
+            future.complete(null);
+        }
     }
 }
