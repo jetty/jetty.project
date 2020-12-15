@@ -98,7 +98,6 @@ public class TrieTest
             impls.add(new TernaryTrie<Integer>(caseSensitive, 8, 8, 128));
             impls.add(new ArrayTrie<Integer>(caseSensitive,128));
             impls.add(new ArrayTernaryTrie<Integer>(caseSensitive, 128));
-            impls.add(new ArrayTernaryTrie.Growing<Integer>(caseSensitive, 128, 128));
         }
         impls.add(new TreeTrie<>());
 

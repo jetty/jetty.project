@@ -38,11 +38,8 @@ import java.util.Set;
  *
  * @param <V> the entry type
  */
-@Deprecated
 class TreeTrie<V> extends AbstractTrie<V>
 {
-    // TODO see comments in ArrayTrie for ideas about better space efficiency and
-    // TODO case sensitivity
     private static final int[] LOOKUP =
         {
             // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F

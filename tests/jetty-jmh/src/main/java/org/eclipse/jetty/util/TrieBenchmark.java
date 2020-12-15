@@ -31,6 +31,7 @@ import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.profile.GCProfiler;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
@@ -283,7 +284,7 @@ public class TrieBenchmark
             .measurementTime(TimeValue.seconds(2))
             .forks(1)
             .threads(1)
-            // .addProfiler(GCProfiler.class)
+            .addProfiler(GCProfiler.class)
             .build();
 
         new Runner(opt).run();

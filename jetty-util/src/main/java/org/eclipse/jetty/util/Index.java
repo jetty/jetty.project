@@ -316,6 +316,12 @@ public interface Index<V>
                 AbstractTrie<V> trie = ArrayTrie.from(capacity, maxCapacity, caseSensitive, alphabet, contents);
                 if (trie != null)
                     return trie;
+                trie = ArrayTernaryTrie.from(capacity, maxCapacity, caseSensitive, alphabet, contents);
+                if (trie != null)
+                    return trie;
+                trie = TreeTrie.from(capacity, maxCapacity, caseSensitive, alphabet, contents);
+                if (trie != null)
+                    return trie;
                 trie = TernaryTrie.from(capacity, maxCapacity, caseSensitive, alphabet, contents);
                 if (trie != null)
                     return trie;
@@ -467,6 +473,12 @@ public interface Index<V>
             int capacity = AbstractTrie.requiredCapacity(contents.keySet(), caseSensitive, alphabet);
 
             AbstractTrie<V> trie = ArrayTrie.from(capacity, capacity, caseSensitive, alphabet, contents);
+            if (trie != null)
+                return trie;
+            trie = ArrayTernaryTrie.from(capacity, capacity, caseSensitive, alphabet, contents);
+            if (trie != null)
+                return trie;
+            trie = TreeTrie.from(capacity, capacity, caseSensitive, alphabet, contents);
             if (trie != null)
                 return trie;
             trie = TernaryTrie.from(capacity, capacity, caseSensitive, alphabet, contents);
