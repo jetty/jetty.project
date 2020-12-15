@@ -37,6 +37,7 @@ import javax.management.remote.rmi.RMIConnectorServer;
 import javax.rmi.ssl.SslRMIClientSocketFactory;
 
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ShutdownThread;
@@ -290,7 +291,15 @@ public class ConnectorServer extends AbstractLifeCycle
             {
                 ServerSocket server = new ServerSocket();
                 server.setReuseAddress(true);
-                server.bind(new InetSocketAddress(address, port));
+                try
+                {
+                    server.bind(new InetSocketAddress(address, port));
+                }
+                catch (Throwable e)
+                {
+                    IO.close(server);
+                    throw e;
+                }
                 return server;
             }
             else
