@@ -109,6 +109,11 @@ public class Response implements HttpServletResponse
         NOT_SET,
 
         /**
+         * Using the default character encoding from the context otherwise iso-8859-1.
+         */
+        DEFAULT,
+
+        /**
          * Character encoding was inferred from the Content-Type and will be added as a parameter to the Content-Type.
          */
         INFERRED,
@@ -129,7 +134,7 @@ public class Response implements HttpServletResponse
         SET_CHARACTER_ENCODING
     }
 
-    private static final EnumSet<EncodingFrom> __localeOverride = EnumSet.of(EncodingFrom.NOT_SET, EncodingFrom.INFERRED, EncodingFrom.SET_LOCALE);
+    private static final EnumSet<EncodingFrom> __localeOverride = EnumSet.of(EncodingFrom.NOT_SET, EncodingFrom.DEFAULT, EncodingFrom.INFERRED, EncodingFrom.SET_LOCALE);
     private static final EnumSet<EncodingFrom> __explicitCharset = EnumSet.of(EncodingFrom.SET_LOCALE, EncodingFrom.SET_CHARACTER_ENCODING, EncodingFrom.SET_CONTENT_TYPE);
 
     public Response(HttpChannel channel, HttpOutput out)
@@ -785,7 +790,7 @@ public class Response implements HttpServletResponse
      * A standard call to {@link #getCharacterEncoding()} should not change the Content-Type header.
      * But when {@link #getWriter()} is called we must decide what Content-Type to use, so this will allow an inferred
      * charset to be set in in the Content-Type.
-     * @param setContentType if true allow the Content-Type header to be changed if character encoding was inferred.
+     * @param setContentType if true allow the Content-Type header to be changed if character encoding was inferred or the default encoding was used.
      * @return the character encoding for this response.
      */
     private String getCharacterEncoding(boolean setContentType)
@@ -822,7 +827,7 @@ public class Response implements HttpServletResponse
             if (encoding != null)
             {
                 if (setContentType)
-                    setCharacterEncoding(encoding, EncodingFrom.INFERRED);
+                    setCharacterEncoding(encoding, EncodingFrom.DEFAULT);
                 return encoding;
             }
         }
@@ -830,7 +835,7 @@ public class Response implements HttpServletResponse
         // Fallback to last resort iso-8859-1.
         encoding = StringUtil.__ISO_8859_1;
         if (setContentType)
-            setCharacterEncoding(encoding, EncodingFrom.INFERRED);
+            setCharacterEncoding(encoding, EncodingFrom.DEFAULT);
         return encoding;
     }
 
@@ -1083,18 +1088,8 @@ public class Response implements HttpServletResponse
                 {
                     case NOT_SET:
                         break;
+                    case DEFAULT:
                     case INFERRED:
-                        if (isWriting())
-                        {
-                            _contentType = _contentType + ";charset=" + _characterEncoding;
-                            _mimeType = MimeTypes.CACHE.get(_contentType);
-                        }
-                        else
-                        {
-                            _encodingFrom = EncodingFrom.NOT_SET;
-                            _characterEncoding = null;
-                        }
-                        break;
                     case SET_CONTENT_TYPE:
                     case SET_LOCALE:
                     case SET_CHARACTER_ENCODING:
@@ -1294,8 +1289,7 @@ public class Response implements HttpServletResponse
 
     protected MetaData.Response newResponseMetaData()
     {
-        MetaData.Response info = new MetaData.Response(_channel.getRequest().getHttpVersion(), getStatus(), getReason(), _fields, getLongContentLength(), getTrailers());
-        return info;
+        return new MetaData.Response(_channel.getRequest().getHttpVersion(), getStatus(), getReason(), _fields, getLongContentLength(), getTrailers());
     }
 
     /**
@@ -1337,11 +1331,9 @@ public class Response implements HttpServletResponse
             _fields.remove(HttpHeader.CONTENT_LANGUAGE);
             if (_encodingFrom == EncodingFrom.SET_LOCALE)
                 setCharacterEncoding(null, EncodingFrom.NOT_SET);
-            return;
         }
         else
         {
-
             _locale = locale;
             _fields.put(HttpHeader.CONTENT_LANGUAGE, StringUtil.replace(locale.toString(), '_', '-'));
 
