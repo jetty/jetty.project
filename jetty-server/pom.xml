@@ -10,6 +10,7 @@
   <description>The core jetty server artifact.</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.server.*</spotbugs.onlyAnalyze>
   </properties>
   <build>
     <plugins>
@@ -24,13 +25,6 @@
             </goals>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.server.*</onlyAnalyze>
-        </configuration>
       </plugin>
     </plugins>
   </build>

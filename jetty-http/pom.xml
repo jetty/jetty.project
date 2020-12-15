@@ -10,6 +10,7 @@
   <name>Jetty :: Http Utility</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.http</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.http.*</spotbugs.onlyAnalyze>
   </properties>
   <dependencies>
     <dependency>
@@ -57,13 +58,6 @@
             </goals>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.http.*</onlyAnalyze>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

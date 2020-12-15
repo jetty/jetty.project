@@ -24,6 +24,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -158,7 +159,7 @@ public interface ByteBufferPool
         private final int _capacity;
         private final int _maxSize;
         private final AtomicInteger _size;
-        private long _lastUpdate = System.nanoTime();
+        private final AtomicLong _lastUpdate = new AtomicLong(System.nanoTime());
 
         public Bucket(ByteBufferPool pool, int capacity, int maxSize)
         {
@@ -196,7 +197,7 @@ public interface ByteBufferPool
 
         public void release(ByteBuffer buffer)
         {
-            _lastUpdate = System.nanoTime();
+            _lastUpdate.lazySet(System.nanoTime());
             BufferUtil.clear(buffer);
             if (_size == null)
                 queueOffer(buffer);
@@ -251,7 +252,7 @@ public interface ByteBufferPool
 
         long getLastUpdate()
         {
-            return _lastUpdate;
+            return _lastUpdate.get();
         }
 
         @Override

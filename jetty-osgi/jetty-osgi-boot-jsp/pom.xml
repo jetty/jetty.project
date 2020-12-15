@@ -10,6 +10,7 @@
   <description>Jetty OSGi Boot JSP bundle</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.boot.jsp</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.osgi.boot.jasper.*,org.eclipse.jetty.osgi.boot.jsp.*</spotbugs.onlyAnalyze>
   </properties>
   <dependencies>
     <dependency>
@@ -123,13 +124,6 @@
                 org.apache.jasper.*;version="[$(version;===;${jsp.version}),$(version;+;${jsp.version}))",
                 org.apache.el.*;version="[$(version;===;${jsp.version}),$(version;+;${jsp.version}))"</DynamicImport-Package>
           </instructions>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.osgi.boot.jasper.*,org.eclipse.jetty.osgi.boot.jsp.*</onlyAnalyze>
         </configuration>
       </plugin>
     </plugins>

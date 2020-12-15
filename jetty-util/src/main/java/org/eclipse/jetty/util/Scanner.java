@@ -181,8 +181,8 @@ public class Scanner extends AbstractLifeCycle
                 if (rootIncludesExcludes != null && !rootIncludesExcludes.isEmpty())
                 { 
                     //accepted if not explicitly excluded and either is explicitly included or there are no explicit inclusions
-                    Boolean result = rootIncludesExcludes.test(dir);
-                    if (Boolean.TRUE == result)
+                    boolean result = rootIncludesExcludes.test(dir);
+                    if (result)
                         accepted = true;
                 }
                 else
@@ -215,8 +215,8 @@ public class Scanner extends AbstractLifeCycle
                 if (rootIncludesExcludes != null && !rootIncludesExcludes.isEmpty())
                 {
                     //accepted if not explicitly excluded and either is explicitly included or there are no explicit inclusions
-                    Boolean result = rootIncludesExcludes.test(file);
-                    if (Boolean.TRUE == result)
+                    boolean result = rootIncludesExcludes.test(file);
+                    if (result)
                         accepted = true;
                 }
                 else if (_filter == null || _filter.accept(f.getParentFile(), f.getName()))
@@ -663,11 +663,12 @@ public class Scanner extends AbstractLifeCycle
     public synchronized void scanFiles()
     {
         _currentScan.clear();
-        for (Path p : _scannables.keySet())
+        for (Entry<Path, IncludeExcludeSet<PathMatcher, Path>> entry : _scannables.entrySet())
         {
+            Path p = entry.getKey();
             try
             {
-                Files.walkFileTree(p, EnumSet.allOf(FileVisitOption.class),_scanDepth, new Visitor(p, _scannables.get(p), _currentScan));
+                Files.walkFileTree(p, EnumSet.allOf(FileVisitOption.class),_scanDepth, new Visitor(p, entry.getValue(), _currentScan));
             }
             catch (IOException e)
             {
