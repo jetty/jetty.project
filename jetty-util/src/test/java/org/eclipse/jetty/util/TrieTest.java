@@ -92,7 +92,7 @@ public class TrieTest
     {
         List<AbstractTrie<Integer>> impls = new ArrayList<>();
 
-        for (boolean caseSensitive : new boolean[] {true, false})
+        for (boolean caseSensitive : new boolean[] {true/*, false*/})
         {
             impls.add(new TernaryTrie<Integer>(caseSensitive, 128, 0, 128));
             impls.add(new TernaryTrie<Integer>(caseSensitive, 8, 8, 128));
@@ -104,7 +104,10 @@ public class TrieTest
         for (AbstractTrie<Integer> trie : impls)
         {
             for (int i = 0; i < KEYS.length; i++)
-                trie.put(KEYS[i], i);
+            {
+                if (!trie.put(KEYS[i], i))
+                    throw new IllegalStateException();
+            }
         }
 
         return impls.stream().map(Arguments::of);

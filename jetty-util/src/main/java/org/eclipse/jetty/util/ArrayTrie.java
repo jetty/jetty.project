@@ -53,7 +53,8 @@ class ArrayTrie<V> extends AbstractTrie<V>
      * characters.
      */
     private static final int ROW_SIZE = 48;
-    private static final int BIG_ROW = 22;
+    private static final int BIG_ROW_INSENSITIVE = 22;
+    private static final int BIG_ROW_SENSITIVE = 48;
 
     /**
      * The index lookup table, this maps a character as a byte
@@ -113,6 +114,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
     private final char[] _table;
     private final int[] _lookup;
     private final Node<V>[] _node;
+    private final int _bigRowSize;
     private char _rows;
 
     public static <V> ArrayTrie<V> from(int capacity, int maxCapacity, boolean caseSensitive, Set<Character> alphabet, Map<String, V> contents)
@@ -160,6 +162,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
     ArrayTrie(boolean caseSensitive, int capacity)
     {
         super(caseSensitive);
+        _bigRowSize = caseSensitive ? BIG_ROW_SENSITIVE : BIG_ROW_INSENSITIVE;
         if (capacity > MAX_CAPACITY)
             throw new IllegalArgumentException("Capacity " + capacity + " > " + MAX_CAPACITY);
         _lookup = !caseSensitive ? LOOKUP_INSENSITIVE : LOOKUP_SENSITIVE;
@@ -184,49 +187,83 @@ class ArrayTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < limit; i++)
         {
             char c = key.charAt(i);
-            if (c > 0x7f)
-                throw new IllegalArgumentException("non ascii character");
-
-            int column = _lookup[c & 0x7f];
-            if (column == Integer.MIN_VALUE)
-                throw new IllegalArgumentException("unsupported character");
+            int column = c > 0x7f ? Integer.MIN_VALUE : _lookup[c];
             if (column >= 0)
             {
+                // This character is indexed to a column of the main table
                 int idx = row * ROW_SIZE + column;
-                if (idx >= _table.length)
-                    return false;
                 row = _table[idx];
                 if (row == 0)
                 {
-                    if (++_rows >= _node.length)
+                    // not found so we need a new row
+                    if (_rows == _node.length - 1)
                         return false;
-                    row = _table[idx] = _rows;
+                    row = _table[idx] = ++_rows;
                 }
             }
-            else
+            else if (column != Integer.MIN_VALUE)
             {
-                if (row >= _node.length)
-                    return false;
+                // This character is indexed to a column in the nodes bigIndex
+                int idx = -column;
                 Node<V> node = _node[row];
                 if (node == null)
                     node = _node[row] = new Node<>();
                 char[] big = node._bigIndex;
-                if (big == null)
-                    big = node._bigIndex = new char[_lookup == LOOKUP_INSENSITIVE ? BIG_ROW : ROW_SIZE];
-                row = big[-column];
+                row = (big == null || idx >= big.length) ? 0 : big[idx];
+
                 if (row == 0)
                 {
-                    if (_rows == _node.length)
+                    // Not found, we need a new row
+                    if (_rows == _node.length - 1)
                         return false;
-                    row = big[-column] = ++_rows;
+
+                    // Expand the size of the bigRow to have +1 extended lookups
+                    if (big == null)
+                        big = node._bigIndex = new char[idx + 1];
+                    else if (idx >= big.length)
+                        big = node._bigIndex = Arrays.copyOf(big, idx + 1);
+
+                    row = big[idx] = ++_rows;
                 }
             }
-        }
+            else
+            {
+                // This char is neither in the normal table, nor the first part of a bigIndex
+                // Look for it linearly in an extended big row.
+                row = 0;
+                Node<V> node = _node[row];
+                char[] big = node == null ? null : node._bigIndex;
+                if (big != null)
+                {
+                    for (int idx = _bigRowSize; idx < big.length; idx += 2)
+                    {
+                        if (big[idx] == c)
+                        {
+                            row = big[idx + 1];
+                            break;
+                        }
+                    }
+                }
 
-        if (row >= _node.length)
-        {
-            _rows = (char)_node.length;
-            return false;
+                if (row == 0)
+                {
+                    // Not found, so we need a new row
+                    if (_rows == _node.length - 1)
+                        return false;
+
+                    // Expand the size of the bigRow to have extended lookups
+                    if (node == null)
+                        node = _node[row] = new Node<>();
+                    if (big == null)
+                        big = node._bigIndex = new char[_bigRowSize + 2];
+                    else
+                        big = node._bigIndex = Arrays.copyOf(big, Math.max(big.length, _bigRowSize) + 2);
+
+                    // set the lookup char and its row
+                    big[big.length - 2] = c;
+                    row = big[big.length - 1] = ++_rows;
+                }
+            }
         }
 
         Node<V> node = _node[row];
@@ -237,25 +274,41 @@ class ArrayTrie<V> extends AbstractTrie<V>
         return true;
     }
 
-    private int lookup(int row, int c)
+    private int lookup(int row, char c)
     {
-        int column = _lookup[c];
-        if (column == Integer.MIN_VALUE)
-            return -1;
-        if (column >= 0)
+        if (c < 0x80)
         {
-            int idx = row * ROW_SIZE + column;
-            row = _table[idx];
+            int column = _lookup[c];
+            if (column != Integer.MIN_VALUE)
+            {
+                if (column >= 0)
+                {
+                    int idx = row * ROW_SIZE + column;
+                    row = _table[idx];
+                }
+                else
+                {
+                    Node<V> node = _node[row];
+                    char[] big = node == null ? null : _node[row]._bigIndex;
+                    int idx = -column;
+                    if (big == null || idx >= big.length)
+                        return -1;
+                    row = big[idx];
+                }
+                return row == 0 ? -1 : row;
+            }
         }
-        else
+
+        Node<V> node = _node[row];
+        char[] big = node == null ? null : node._bigIndex;
+        if (big != null)
         {
-            Node<V> node = _node[row];
-            char[] big = node == null ? null : _node[row]._bigIndex;
-            if (big == null)
-                return -1;
-            row = big[-column];
+            for (int i = _bigRowSize; i < big.length; i++)
+                if (_table[big[i] * ROW_SIZE] == c)
+                    return i;
         }
-        return row == 0 ? -1 : row;
+
+        return -1;
     }
 
     @Override
@@ -265,9 +318,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < len; i++)
         {
             char c = s.charAt(offset + i);
-            if (c > 0x7f)
-                return null;
-            row = lookup(row, c & 0x7f);
+            row = lookup(row, c);
             if (row < 0)
                 return null;
         }
@@ -282,9 +333,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < len; i++)
         {
             byte c = b.get(offset + i);
-            if (c < 0)
-                return null;
-            row = lookup(row, c & 0x7f);
+            row = lookup(row, (char)(c & 0xff));
             if (row < 0)
                 return null;
         }
@@ -318,10 +367,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < len; i++)
         {
             char c = s.charAt(pos++);
-            if (c > 0x7f)
-                break;
-
-            int next = lookup(row, c & 0x7f);
+            int next = lookup(row, c);
             if (next < 0)
                 break;
 
@@ -347,9 +393,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < len; i++)
         {
             byte c = b[offset + i];
-            if (c < 0)
-                break;
-            int next = lookup(row, c & 0x7f);
+            int next = lookup(row, (char)(c & 0xff));
             if (next < 0)
                 break;
 
@@ -376,9 +420,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < len; i++)
         {
             byte c = b.get(pos++);
-            if (c < 0)
-                break;
-            int next = lookup(row, c & 0x7f);
+            int next = lookup(row, (char)(c & 0xff));
             if (next < 0)
                 break;
 
@@ -404,7 +446,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
     {
         return
             "AT@" + Integer.toHexString(hashCode()) + '{' +
-            "ci=" + isCaseInsensitive() + ';' +
+            "cs=" + isCaseSensitive() + ';' +
             "c=" + _table.length / ROW_SIZE + ';' +
             Arrays.stream(_node)
                 .filter(n -> n != null && n._key != null)
@@ -433,5 +475,83 @@ class ArrayTrie<V> extends AbstractTrie<V>
     public boolean isEmpty()
     {
         return keySet().isEmpty();
+    }
+
+    public void dumpStdErr()
+    {
+        System.err.print("row:");
+        for (int c = 0; c < ROW_SIZE; c++)
+        {
+            for (int i = 0; i < 0x7f; i++)
+            {
+                if (_lookup[i] == c)
+                {
+                    System.err.printf("  %s", (char)i);
+                    break;
+                }
+            }
+        }
+        System.err.println();
+        System.err.print("big:");
+        for (int c = 0; c < _bigRowSize; c++)
+        {
+            for (int i = 0; i < 0x7f; i++)
+            {
+                if (-_lookup[i] == c)
+                {
+                    System.err.printf("  %s", (char)i);
+                    break;
+                }
+            }
+        }
+        System.err.println();
+
+        for (int row = 0; row <= _rows; row++)
+        {
+            System.err.printf("%3x:", row);
+            for (int c = 0; c < ROW_SIZE; c++)
+            {
+                char ch = _table[row * ROW_SIZE + c];
+                if (ch == 0)
+                    System.err.print("  .");
+                else
+                    System.err.printf("%3x", (int)ch);
+            }
+            if (_node[row] != null)
+            {
+                System.err.printf(" : %s%n", _node[row]);
+                if (_node[row]._bigIndex != null)
+                {
+                    System.err.print("   :");
+                    for (int c = 0; c < Math.min(_bigRowSize, _node[row]._bigIndex.length); c++)
+                    {
+                        char ch = _node[row]._bigIndex[c];
+                        if (ch == 0)
+                            System.err.print("  _");
+                        else
+                            System.err.printf("%3x", (int)ch);
+                    }
+                    System.err.println();
+                }
+            }
+            else
+                System.err.println();
+        }
+        System.err.println();
+    }
+
+    public static void main(String... arg)
+    {
+        ArrayTrie<String> trie = new ArrayTrie<>(true, 16);
+        trie.dumpStdErr();
+        trie.put("hello", "hello");
+        trie.dumpStdErr();
+        trie.put("helloHello", "helloHello");
+        trie.dumpStdErr();
+        trie.put("He", "He");
+        trie.dumpStdErr();
+        trie.put("HELL", "HELL");
+        trie.dumpStdErr();
+        System.err.println(trie.get("He"));
     }
 }
