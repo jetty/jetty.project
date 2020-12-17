@@ -25,6 +25,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -37,6 +39,7 @@ import org.eclipse.jetty.util.component.Dumpable;
  * queue even if the task did not fire, which provides a huge benefit in the performance
  * of garbage collection in young generation.
  */
+@ManagedObject("A scheduler")
 public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Scheduler, Dumpable
 {
     private final String name;
@@ -153,5 +156,23 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
         {
             return scheduledFuture.cancel(false);
         }
+    }
+
+    @ManagedAttribute("name of scheduler")
+    public String getName()
+    {
+        return name;
+    }
+
+    @ManagedAttribute("is scheduler daemon")
+    public boolean isDaemon()
+    {
+        return daemon;
+    }
+
+    @ManagedAttribute("number of scheduler threads")
+    public int getThreads()
+    {
+        return threads;
     }
 }
