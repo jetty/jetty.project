@@ -37,39 +37,23 @@ public class IndexTest
         assertThat(new Index.Builder<String>().caseSensitive(false).with("name", "value").build(), instanceOf(ArrayTrie.class));
         assertThat(new Index.Builder<String>().caseSensitive(true).with("name", "value").build(), instanceOf(ArrayTrie.class));
 
-        // index of non visible ASCII characters
-        assertThat(new Index.Builder<String>().caseSensitive(false).with("name\r\n", "value").build(), instanceOf(ArrayTernaryTrie.class));
-        assertThat(new Index.Builder<String>().caseSensitive(true).with("name\r\n", "value").build(), instanceOf(ArrayTernaryTrie.class));
-
         // large index
         String hugekey = "x".repeat(Character.MAX_VALUE + 1);
         assertTrue(new Index.Builder<String>().caseSensitive(false).with(hugekey, "value").build() instanceof TreeTrie);
-        assertTrue(new Index.Builder<String>().caseSensitive(true).with(hugekey, "value").build() instanceof TernaryTrie);
+        assertTrue(new Index.Builder<String>().caseSensitive(true).with(hugekey, "value").build() instanceof TreeTrie);
     }
 
     @Test
     public void testUnlimitdMutableTrieSelection()
     {
         assertThat(new Index.Builder<String>().mutable().build(), instanceOf(TreeTrie.class));
-        assertThat(new Index.Builder<String>().mutable().useVisibleAsciiAlphabet().build(), instanceOf(TreeTrie.class));
-        assertThat(new Index.Builder<String>().mutable().useIso8859Alphabet().build(), instanceOf(TreeTrie.class));
-        assertThat(new Index.Builder<String>().caseSensitive(true).mutable().useVisibleAsciiAlphabet().build(), instanceOf(TernaryTrie.class));
-        assertThat(new Index.Builder<String>().caseSensitive(true).mutable().useIso8859Alphabet().build(), instanceOf(TernaryTrie.class));
     }
 
     @Test
     public void testLimitedMutableTrieSelection()
     {
-        assertThat(new Index.Builder<String>().mutable().maxCapacity(500).build(), instanceOf(ArrayTernaryTrie.class));
-        assertThat(new Index.Builder<String>().mutable().maxCapacity(500).useVisibleAsciiAlphabet().build(), instanceOf(ArrayTrie.class));
-        assertThat(new Index.Builder<String>().mutable().maxCapacity(500).useIso8859Alphabet().build(), instanceOf(ArrayTernaryTrie.class));
-
+        assertThat(new Index.Builder<String>().mutable().maxCapacity(500).build(), instanceOf(ArrayTrie.class));
         assertThat(new Index.Builder<String>().mutable().maxCapacity(Character.MAX_VALUE + 1).build(), instanceOf(TreeTrie.class));
-        assertThat(new Index.Builder<String>().mutable().maxCapacity(Character.MAX_VALUE + 1).useVisibleAsciiAlphabet().build(), instanceOf(TreeTrie.class));
-        assertThat(new Index.Builder<String>().mutable().maxCapacity(Character.MAX_VALUE + 1).useIso8859Alphabet().build(), instanceOf(TreeTrie.class));
-
-        assertThat(new Index.Builder<String>().caseSensitive(true).mutable().maxCapacity(Character.MAX_VALUE + 1).useVisibleAsciiAlphabet().build(), instanceOf(TernaryTrie.class));
-        assertThat(new Index.Builder<String>().caseSensitive(true).mutable().maxCapacity(Character.MAX_VALUE + 1).useIso8859Alphabet().build(), instanceOf(TernaryTrie.class));
     }
 
     @Test

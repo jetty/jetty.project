@@ -15,7 +15,6 @@ package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -250,7 +249,6 @@ public interface Index<V>
                 .collect(Collectors.toSet()));
 
             private int maxCapacity = -1;
-            private Set<Character> alphabet;
 
             Builder(boolean caseSensitive, Map<String, V> contents)
             {
@@ -268,18 +266,6 @@ public interface Index<V>
             public Builder<V> maxCapacity(int capacity)
             {
                 this.maxCapacity = capacity;
-                return this;
-            }
-
-            public Builder<V> useVisibleAsciiAlphabet()
-            {
-                this.alphabet = VISIBLE_ASCII_ALPHABET;
-                return this;
-            }
-
-            public Builder<V> useIso8859Alphabet()
-            {
-                this.alphabet = ISO_8859_ALPHABET;
                 return this;
             }
 
@@ -302,27 +288,18 @@ public interface Index<V>
                 if (maxCapacity == 0)
                     return EmptyTrie.instance(caseSensitive);
 
-                if (alphabet == null)
-                    alphabet = (contents == null) ? null : new HashSet<>();
-
-                // Work out needed capacity and alphabet
-                int capacity = (contents == null) ? 0 : AbstractTrie.requiredCapacity(contents.keySet(), caseSensitive, alphabet);
+                // Work out needed capacity
+                int capacity = (contents == null) ? 0 : AbstractTrie.requiredCapacity(contents.keySet(), caseSensitive);
 
                 // check capacities
                 if (maxCapacity >= 0 && capacity > maxCapacity)
                     throw new IllegalStateException("Insufficient maxCapacity for contents");
 
                 // try all the tries
-                AbstractTrie<V> trie = ArrayTrie.from(capacity, maxCapacity, caseSensitive, alphabet, contents);
+                AbstractTrie<V> trie = ArrayTrie.from(maxCapacity, caseSensitive, contents);
                 if (trie != null)
                     return trie;
-                trie = ArrayTernaryTrie.from(capacity, maxCapacity, caseSensitive, alphabet, contents);
-                if (trie != null)
-                    return trie;
-                trie = TreeTrie.from(capacity, maxCapacity, caseSensitive, alphabet, contents);
-                if (trie != null)
-                    return trie;
-                trie = TernaryTrie.from(capacity, maxCapacity, caseSensitive, alphabet, contents);
+                trie = TreeTrie.from(caseSensitive, contents);
                 if (trie != null)
                     return trie;
 
@@ -469,19 +446,12 @@ public interface Index<V>
             if (contents == null)
                 return EmptyTrie.instance(caseSensitive);
 
-            Set<Character> alphabet = new HashSet<>();
-            int capacity = AbstractTrie.requiredCapacity(contents.keySet(), caseSensitive, alphabet);
+            int capacity = AbstractTrie.requiredCapacity(contents.keySet(), caseSensitive);
 
-            AbstractTrie<V> trie = ArrayTrie.from(capacity, capacity, caseSensitive, alphabet, contents);
+            AbstractTrie<V> trie = ArrayTrie.from(capacity, caseSensitive, contents);
             if (trie != null)
                 return trie;
-            trie = ArrayTernaryTrie.from(capacity, capacity, caseSensitive, alphabet, contents);
-            if (trie != null)
-                return trie;
-            trie = TreeTrie.from(capacity, capacity, caseSensitive, alphabet, contents);
-            if (trie != null)
-                return trie;
-            trie = TernaryTrie.from(capacity, capacity, caseSensitive, alphabet, contents);
+            trie = TreeTrie.from(caseSensitive, contents);
             if (trie != null)
                 return trie;
 

@@ -40,9 +40,9 @@ import java.util.Set;
  */
 class TreeTrie<V> extends AbstractTrie<V>
 {
-    private static final int[] LOOKUP =
+    private static final int[] LOOKUP_INSENSITIVE =
         {
-            // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
+            //    0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
             /*0*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             /*1*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             /*2*/31, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 26, -1, 27, 30, -1,
@@ -52,71 +52,89 @@ class TreeTrie<V> extends AbstractTrie<V>
             /*6*/-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
             /*7*/15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1
         };
+    private static final int[] LOOKUP_SENSITIVE =
+        {
+            //    0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
+            /*0*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            /*1*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            /*2*/31, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 26, -1, 27, 30, -1,
+            /*3*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 28, 29, -1, -1, -1, -1,
+            /*4*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            /*5*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            /*6*/-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+            /*7*/15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1
+        };
     private static final int INDEX = 32;
-    private final TreeTrie<V>[] _nextIndex;
-    private final List<TreeTrie<V>> _nextOther = new ArrayList<>();
-    private final char _c;
-    private String _key;
-    private V _value;
 
-    public static <V> AbstractTrie<V> from(int capacity, int maxCapacity, boolean caseSensitive, Set<Character> alphabet, Map<String, V> contents)
+    public static <V> AbstractTrie<V> from(boolean caseSensitive, Map<String, V> contents)
     {
-        if (caseSensitive)
-            return null;
-
-        TreeTrie<V> trie = new TreeTrie<>();
+        TreeTrie<V> trie = new TreeTrie<>(caseSensitive);
         if (contents != null && !trie.putAll(contents))
             return null;
         return trie;
     }
+    
+    private static class Node<V>
+    {
+        private final Node<V>[] _nextIndex;
+        private final List<Node<V>> _nextOther = new ArrayList<>();
+        private final char _c;
+        private String _key;
+        private V _value;
 
+        // TODO made this use a variable lookup row like ArrayTrie
+        @SuppressWarnings("unchecked")
+        private Node(char c)
+        {
+            _nextIndex = new Node[INDEX];
+            this._c = c;
+        }
+    }
+    
+    private final int[] _lookup;
+    private final Node<V> _root;
+    
     @SuppressWarnings("unchecked")
     TreeTrie()
     {
-        super(false);
-        _nextIndex = new TreeTrie[INDEX];
-        _c = 0;
+        this(false);
     }
-
-    @SuppressWarnings("unchecked")
-    private TreeTrie(char c)
+    
+    TreeTrie(boolean caseSensitive)
     {
-        super(false);
-        _nextIndex = new TreeTrie[INDEX];
-        this._c = c;
+        super(caseSensitive);
+        _lookup = caseSensitive ? LOOKUP_SENSITIVE : LOOKUP_INSENSITIVE;
+        _root = new Node<V>((char)0);
     }
-
+    
     @Override
     public void clear()
     {
-        Arrays.fill(_nextIndex, null);
-        _nextOther.clear();
-        _key = null;
-        _value = null;
+        Arrays.fill(_root._nextIndex, null);
+        _root._nextOther.clear();
+        _root._key = null;
+        _root._value = null;
     }
 
     @Override
     public boolean put(String s, V v)
     {
-        TreeTrie<V> t = this;
+        Node<V> t = _root;
         int limit = s.length();
         for (int k = 0; k < limit; k++)
         {
             char c = s.charAt(k);
 
-            int index = c >= 0 && c < 0x7f ? LOOKUP[c] : -1;
+            int index = c < 0x7f ? _lookup[c] : -1;
             if (index >= 0)
             {
                 if (t._nextIndex[index] == null)
-                    t._nextIndex[index] = new TreeTrie<V>(c);
+                    t._nextIndex[index] = new Node<V>(c);
                 t = t._nextIndex[index];
             }
             else
             {
-                // TODO If the LOOKUP misses, we immediately go to a linear list.
-                // TODO maybe better to goto a bigIndex like ArrayTrie... specially
-                // TODO if we have a case sensitive version of LOOKUP.
-                TreeTrie<V> n = null;
+                Node<V> n = null;
                 for (int i = t._nextOther.size(); i-- > 0; )
                 {
                     n = t._nextOther.get(i);
@@ -126,7 +144,7 @@ class TreeTrie<V> extends AbstractTrie<V>
                 }
                 if (n == null)
                 {
-                    n = new TreeTrie<V>(c);
+                    n = new Node<V>(c);
                     t._nextOther.add(n);
                 }
                 t = n;
@@ -140,11 +158,11 @@ class TreeTrie<V> extends AbstractTrie<V>
     @Override
     public V get(String s, int offset, int len)
     {
-        TreeTrie<V> t = this;
+        Node<V> t = _root;
         for (int i = 0; i < len; i++)
         {
             char c = s.charAt(offset + i);
-            int index = c < 0x7f ? LOOKUP[c] : -1;
+            int index = c < 0x7f ? _lookup[c] : -1;
             if (index >= 0)
             {
                 if (t._nextIndex[index] == null)
@@ -153,7 +171,7 @@ class TreeTrie<V> extends AbstractTrie<V>
             }
             else
             {
-                TreeTrie<V> n = null;
+                Node<V> n = null;
                 for (int j = t._nextOther.size(); j-- > 0; )
                 {
                     n = t._nextOther.get(j);
@@ -172,11 +190,11 @@ class TreeTrie<V> extends AbstractTrie<V>
     @Override
     public V get(ByteBuffer b, int offset, int len)
     {
-        TreeTrie<V> t = this;
+        Node<V> t = _root;
         for (int i = 0; i < len; i++)
         {
             byte c = b.get(offset + i);
-            int index = c >= 0 && c < 0x7f ? LOOKUP[c] : -1;
+            int index = c >= 0 && c < 0x7f ? _lookup[c] : -1;
             if (index >= 0)
             {
                 if (t._nextIndex[index] == null)
@@ -185,7 +203,7 @@ class TreeTrie<V> extends AbstractTrie<V>
             }
             else
             {
-                TreeTrie<V> n = null;
+                Node<V> n = null;
                 for (int j = t._nextOther.size(); j-- > 0; )
                 {
                     n = t._nextOther.get(j);
@@ -204,11 +222,15 @@ class TreeTrie<V> extends AbstractTrie<V>
     @Override
     public V getBest(byte[] b, int offset, int len)
     {
-        TreeTrie<V> t = this;
+        return getBest(_root, b, offset, len);
+    }
+
+    private V getBest(Node<V> t, byte[] b, int offset, int len)
+    {
         for (int i = 0; i < len; i++)
         {
             byte c = b[offset + i];
-            int index = c >= 0 && c < 0x7f ? LOOKUP[c] : -1;
+            int index = c >= 0 && c < 0x7f ? _lookup[c] : -1;
             if (index >= 0)
             {
                 if (t._nextIndex[index] == null)
@@ -217,7 +239,7 @@ class TreeTrie<V> extends AbstractTrie<V>
             }
             else
             {
-                TreeTrie<V> n = null;
+                Node<V> n = null;
                 for (int j = t._nextOther.size(); j-- > 0; )
                 {
                     n = t._nextOther.get(j);
@@ -234,7 +256,7 @@ class TreeTrie<V> extends AbstractTrie<V>
             if (t._key != null)
             {
                 // Recurse so we can remember this possibility
-                V best = t.getBest(b, offset + i + 1, len - i - 1);
+                V best = getBest(t, b, offset + i + 1, len - i - 1);
                 if (best != null)
                     return best;
                 break;
@@ -258,11 +280,15 @@ class TreeTrie<V> extends AbstractTrie<V>
     @Override
     public V getBest(String s, int offset, int len)
     {
-        TreeTrie<V> t = this;
+        return getBest(_root, s, offset, len);
+    }
+
+    private V getBest(Node<V> t, String s, int offset, int len)
+    {
         for (int i = 0; i < len; i++)
         {
             byte c = (byte)(0xff & s.charAt(offset + i));
-            int index = c >= 0 && c < 0x7f ? LOOKUP[c] : -1;
+            int index = c >= 0 && c < 0x7f ? _lookup[c] : -1;
             if (index >= 0)
             {
                 if (t._nextIndex[index] == null)
@@ -271,7 +297,7 @@ class TreeTrie<V> extends AbstractTrie<V>
             }
             else
             {
-                TreeTrie<V> n = null;
+                Node<V> n = null;
                 for (int j = t._nextOther.size(); j-- > 0; )
                 {
                     n = t._nextOther.get(j);
@@ -288,7 +314,7 @@ class TreeTrie<V> extends AbstractTrie<V>
             if (t._key != null)
             {
                 // Recurse so we can remember this possibility
-                V best = t.getBest(s, offset + i + 1, len - i - 1);
+                V best = getBest(t, s, offset + i + 1, len - i - 1);
                 if (best != null)
                     return best;
                 break;
@@ -302,17 +328,16 @@ class TreeTrie<V> extends AbstractTrie<V>
     {
         if (b.hasArray())
             return getBest(b.array(), b.arrayOffset() + b.position() + offset, len);
-        return getBestByteBuffer(b, offset, len);
+        return getBest(_root, b, offset, len);
     }
 
-    private V getBestByteBuffer(ByteBuffer b, int offset, int len)
+    private V getBest(Node<V> t, ByteBuffer b, int offset, int len)
     {
-        TreeTrie<V> t = this;
         int pos = b.position() + offset;
         for (int i = 0; i < len; i++)
         {
             byte c = b.get(pos++);
-            int index = c >= 0 && c < 0x7f ? LOOKUP[c] : -1;
+            int index = c >= 0 && c < 0x7f ? _lookup[c] : -1;
             if (index >= 0)
             {
                 if (t._nextIndex[index] == null)
@@ -321,7 +346,7 @@ class TreeTrie<V> extends AbstractTrie<V>
             }
             else
             {
-                TreeTrie<V> n = null;
+                Node<V> n = null;
                 for (int j = t._nextOther.size(); j-- > 0; )
                 {
                     n = t._nextOther.get(j);
@@ -338,7 +363,7 @@ class TreeTrie<V> extends AbstractTrie<V>
             if (t._key != null)
             {
                 // Recurse so we can remember this possibility
-                V best = t.getBest(b, offset + i + 1, len - i - 1);
+                V best = getBest(t, b, offset + i + 1, len - i - 1);
                 if (best != null)
                     return best;
                 break;
@@ -353,12 +378,12 @@ class TreeTrie<V> extends AbstractTrie<V>
         StringBuilder buf = new StringBuilder();
         buf.append("TT@").append(Integer.toHexString(hashCode())).append('{');
         buf.append("ci=").append(isCaseInsensitive()).append(';');
-        toString(buf, this);
+        toString(buf, _root);
         buf.append('}');
         return buf.toString();
     }
 
-    private static <V> void toString(Appendable out, TreeTrie<V> t)
+    private static <V> void toString(Appendable out, Node<V> t)
     {
         if (t != null)
         {
@@ -395,11 +420,11 @@ class TreeTrie<V> extends AbstractTrie<V>
     public Set<String> keySet()
     {
         Set<String> keys = new HashSet<>();
-        keySet(keys, this);
+        keySet(keys, _root);
         return keys;
     }
 
-    private static <V> void keySet(Set<String> set, TreeTrie<V> t)
+    private static <V> void keySet(Set<String> set, Node<V> t)
     {
         if (t != null)
         {

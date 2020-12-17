@@ -91,7 +91,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
     {
         String _key;
         V _value;
-        char[] _bigIndex;
+        char[] _bigRow;
 
         @Override
         public String toString()
@@ -117,29 +117,16 @@ class ArrayTrie<V> extends AbstractTrie<V>
     private final int _bigRowSize;
     private char _rows;
 
-    public static <V> ArrayTrie<V> from(int capacity, int maxCapacity, boolean caseSensitive, Set<Character> alphabet, Map<String, V> contents)
+    public static <V> ArrayTrie<V> from(int capacity, boolean caseSensitive, Map<String, V> contents)
     {
         // can't do infinite capacity
-        if (maxCapacity < 0)
+        if (capacity < 0)
             return null;
 
-        if (maxCapacity > MAX_CAPACITY || capacity > MAX_CAPACITY)
+        if (capacity > MAX_CAPACITY)
             return null;
 
-        // check alphabet
-        if (alphabet == null)
-            return null;
-        if (alphabet != Index.Mutable.Builder.VISIBLE_ASCII_ALPHABET)
-        {
-            int[] lookup = caseSensitive ? LOOKUP_SENSITIVE : LOOKUP_INSENSITIVE;
-            for (Character c : alphabet)
-            {
-                if (c > 0x7F || lookup[c & 0x7f] == Integer.MIN_VALUE)
-                    return null;
-            }
-        }
-
-        ArrayTrie<V> trie = new ArrayTrie<>(caseSensitive, maxCapacity);
+        ArrayTrie<V> trie = new ArrayTrie<>(caseSensitive, capacity);
         if (contents != null && !trie.putAll(contents))
             return null;
         return trie;
@@ -203,12 +190,12 @@ class ArrayTrie<V> extends AbstractTrie<V>
             }
             else if (column != Integer.MIN_VALUE)
             {
-                // This character is indexed to a column in the nodes bigIndex
+                // This character is indexed to a column in the nodes bigRow
                 int idx = -column;
                 Node<V> node = _node[row];
                 if (node == null)
                     node = _node[row] = new Node<>();
-                char[] big = node._bigIndex;
+                char[] big = node._bigRow;
                 row = (big == null || idx >= big.length) ? 0 : big[idx];
 
                 if (row == 0)
@@ -219,20 +206,22 @@ class ArrayTrie<V> extends AbstractTrie<V>
 
                     // Expand the size of the bigRow to have +1 extended lookups
                     if (big == null)
-                        big = node._bigIndex = new char[idx + 1];
+                        big = node._bigRow = new char[idx + 1];
                     else if (idx >= big.length)
-                        big = node._bigIndex = Arrays.copyOf(big, idx + 1);
+                        big = node._bigRow = Arrays.copyOf(big, idx + 1);
 
                     row = big[idx] = ++_rows;
                 }
             }
             else
             {
-                // This char is neither in the normal table, nor the first part of a bigIndex
+                // This char is neither in the normal table, nor the first part of a bigRow
                 // Look for it linearly in an extended big row.
-                row = 0;
                 Node<V> node = _node[row];
-                char[] big = node == null ? null : node._bigIndex;
+                if (node == null)
+                    node = _node[row] = new Node<>();
+                row = 0;
+                char[] big = node == null ? null : node._bigRow;
                 if (big != null)
                 {
                     for (int idx = _bigRowSize; idx < big.length; idx += 2)
@@ -252,12 +241,10 @@ class ArrayTrie<V> extends AbstractTrie<V>
                         return false;
 
                     // Expand the size of the bigRow to have extended lookups
-                    if (node == null)
-                        node = _node[row] = new Node<>();
                     if (big == null)
-                        big = node._bigIndex = new char[_bigRowSize + 2];
+                        big = node._bigRow = new char[_bigRowSize + 2];
                     else
-                        big = node._bigIndex = Arrays.copyOf(big, Math.max(big.length, _bigRowSize) + 2);
+                        big = node._bigRow = Arrays.copyOf(big, Math.max(big.length, _bigRowSize) + 2);
 
                     // set the lookup char and its row
                     big[big.length - 2] = c;
@@ -276,20 +263,24 @@ class ArrayTrie<V> extends AbstractTrie<V>
 
     private int lookup(int row, char c)
     {
+        // If the char is small we can lookup in the index table
         if (c < 0x80)
         {
             int column = _lookup[c];
             if (column != Integer.MIN_VALUE)
             {
+                // The char is indexed, so should be in normal row or bigRow
                 if (column >= 0)
                 {
+                    // look in the normal row
                     int idx = row * ROW_SIZE + column;
                     row = _table[idx];
                 }
                 else
                 {
+                    // Look in the indexed part of the bigRow
                     Node<V> node = _node[row];
-                    char[] big = node == null ? null : _node[row]._bigIndex;
+                    char[] big = node == null ? null : _node[row]._bigRow;
                     int idx = -column;
                     if (big == null || idx >= big.length)
                         return -1;
@@ -299,13 +290,14 @@ class ArrayTrie<V> extends AbstractTrie<V>
             }
         }
 
+        // Not an indexed char, so do a linear search through he tail of the bigRow
         Node<V> node = _node[row];
-        char[] big = node == null ? null : node._bigIndex;
+        char[] big = node == null ? null : node._bigRow;
         if (big != null)
         {
-            for (int i = _bigRowSize; i < big.length; i++)
-                if (_table[big[i] * ROW_SIZE] == c)
-                    return i;
+            for (int i = _bigRowSize; i < big.length; i += 2)
+                if (big[i] == c)
+                    return big[i + 1];
         }
 
         return -1;
@@ -517,20 +509,26 @@ class ArrayTrie<V> extends AbstractTrie<V>
                 else
                     System.err.printf("%3x", (int)ch);
             }
-            if (_node[row] != null)
+            Node<V> node = _node[row];
+            if (node != null)
             {
-                System.err.printf(" : %s%n", _node[row]);
-                if (_node[row]._bigIndex != null)
+                System.err.printf(" : %s%n", node);
+                char[] bigRow = node._bigRow;
+                if (bigRow != null)
                 {
                     System.err.print("   :");
-                    for (int c = 0; c < Math.min(_bigRowSize, _node[row]._bigIndex.length); c++)
+                    for (int c = 0; c < Math.min(_bigRowSize, bigRow.length); c++)
                     {
-                        char ch = _node[row]._bigIndex[c];
+                        char ch = bigRow[c];
                         if (ch == 0)
                             System.err.print("  _");
                         else
                             System.err.printf("%3x", (int)ch);
                     }
+
+                    for (int c = _bigRowSize; c < bigRow.length; c += 2)
+                        System.err.printf(" %s>%x", bigRow[c], (int)bigRow[c + 1]);
+
                     System.err.println();
                 }
             }
@@ -538,20 +536,5 @@ class ArrayTrie<V> extends AbstractTrie<V>
                 System.err.println();
         }
         System.err.println();
-    }
-
-    public static void main(String... arg)
-    {
-        ArrayTrie<String> trie = new ArrayTrie<>(true, 16);
-        trie.dumpStdErr();
-        trie.put("hello", "hello");
-        trie.dumpStdErr();
-        trie.put("helloHello", "helloHello");
-        trie.dumpStdErr();
-        trie.put("He", "He");
-        trie.dumpStdErr();
-        trie.put("HELL", "HELL");
-        trie.dumpStdErr();
-        System.err.println(trie.get("He"));
     }
 }

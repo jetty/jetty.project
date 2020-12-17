@@ -15,7 +15,6 @@ package org.eclipse.jetty.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -27,7 +26,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.eclipse.jetty.util.AbstractTrie.requiredCapacity;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -92,14 +90,14 @@ public class TrieTest
     {
         List<AbstractTrie<Integer>> impls = new ArrayList<>();
 
-        for (boolean caseSensitive : new boolean[] {true/*, false*/})
+        for (boolean caseSensitive : new boolean[] {true, false})
         {
             impls.add(new TernaryTrie<Integer>(caseSensitive, 128, 0, 128));
             impls.add(new TernaryTrie<Integer>(caseSensitive, 8, 8, 128));
             impls.add(new ArrayTrie<Integer>(caseSensitive,128));
             impls.add(new ArrayTernaryTrie<Integer>(caseSensitive, 128));
+            impls.add(new TreeTrie<>(caseSensitive));
         }
-        impls.add(new TreeTrie<>());
 
         for (AbstractTrie<Integer> trie : impls)
         {
@@ -275,6 +273,19 @@ public class TrieTest
 
     @ParameterizedTest
     @MethodSource("implementations")
+    public void testOtherChars(AbstractTrie<Integer> trie) throws Exception
+    {
+        assertTrue(trie.put("8859:ä", -1));
+        assertTrue(trie.put("inv:\r\n", -2));
+        assertTrue(trie.put("utf:\u20ac", -3));
+
+        assertThat(trie.getBest("8859:äxxxxx"), is(-1));
+        assertThat(trie.getBest("inv:\r\n:xxxx"), is(-2));
+        assertThat(trie.getBest("utf:\u20ac"), is(-3));
+    }
+
+    @ParameterizedTest
+    @MethodSource("implementations")
     public void testFull(AbstractTrie<Integer> trie) throws Exception
     {
         if (!(trie instanceof ArrayTrie<?> || trie instanceof ArrayTernaryTrie<?>))
@@ -289,30 +300,30 @@ public class TrieTest
     @Test
     public void testRequiredCapacity()
     {
-        assertThat(requiredCapacity(Set.of("ABC", "abc"), true, null), is(6));
-        assertThat(requiredCapacity(Set.of("ABC", "abc"), false, null), is(3));
-        assertThat(requiredCapacity(Set.of(""), false, null), is(0));
-        assertThat(requiredCapacity(Set.of("ABC", ""), false, null), is(3));
-        assertThat(requiredCapacity(Set.of("ABC"), false, null), is(3));
-        assertThat(requiredCapacity(Set.of("ABC", "XYZ"), false, null), is(6));
-        assertThat(requiredCapacity(Set.of("A00", "A11"), false, null), is(5));
-        assertThat(requiredCapacity(Set.of("A00", "A01", "A10", "A11"), false, null), is(7));
-        assertThat(requiredCapacity(Set.of("A", "AB"), false, null), is(2));
-        assertThat(requiredCapacity(Set.of("A", "ABC"), false, null), is(3));
-        assertThat(requiredCapacity(Set.of("A", "ABCD"), false, null), is(4));
-        assertThat(requiredCapacity(Set.of("AB", "ABC"), false, null), is(3));
-        assertThat(requiredCapacity(Set.of("ABC", "ABCD"), false, null), is(4));
-        assertThat(requiredCapacity(Set.of("ABC", "ABCDEF"), false, null), is(6));
-        assertThat(requiredCapacity(Set.of("AB", "A"), false, null), is(2));
-        assertThat(requiredCapacity(Set.of("ABC", "ABCDEF"), false, null), is(6));
-        assertThat(requiredCapacity(Set.of("ABCDEF", "ABC"), false, null), is(6));
-        assertThat(requiredCapacity(Set.of("ABC", "ABCDEF", "ABX"), false, null), is(7));
-        assertThat(requiredCapacity(Set.of("ABCDEF", "ABC", "ABX"), false, null), is(7));
-        assertThat(requiredCapacity(Set.of("ADEF", "AQPR4", "AQZ"), false, null), is(9));
-        assertThat(requiredCapacity(Set.of("111", "ADEF", "AQPR4", "AQZ", "999"), false, null), is(15));
-        assertThat(requiredCapacity(Set.of("utf-16", "utf-8"), false, null), is(7));
-        assertThat(requiredCapacity(Set.of("utf-16", "utf-8", "utf16", "utf8"), false, null), is(10));
-        assertThat(requiredCapacity(Set.of("utf-8", "utf8", "utf-16", "utf16", "iso-8859-1", "iso_8859_1"), false, null), is(27));
+        assertThat(requiredCapacity(Set.of("ABC", "abc"), true), is(6));
+        assertThat(requiredCapacity(Set.of("ABC", "abc"), false), is(3));
+        assertThat(requiredCapacity(Set.of(""), false), is(0));
+        assertThat(requiredCapacity(Set.of("ABC", ""), false), is(3));
+        assertThat(requiredCapacity(Set.of("ABC"), false), is(3));
+        assertThat(requiredCapacity(Set.of("ABC", "XYZ"), false), is(6));
+        assertThat(requiredCapacity(Set.of("A00", "A11"), false), is(5));
+        assertThat(requiredCapacity(Set.of("A00", "A01", "A10", "A11"), false), is(7));
+        assertThat(requiredCapacity(Set.of("A", "AB"), false), is(2));
+        assertThat(requiredCapacity(Set.of("A", "ABC"), false), is(3));
+        assertThat(requiredCapacity(Set.of("A", "ABCD"), false), is(4));
+        assertThat(requiredCapacity(Set.of("AB", "ABC"), false), is(3));
+        assertThat(requiredCapacity(Set.of("ABC", "ABCD"), false), is(4));
+        assertThat(requiredCapacity(Set.of("ABC", "ABCDEF"), false), is(6));
+        assertThat(requiredCapacity(Set.of("AB", "A"), false), is(2));
+        assertThat(requiredCapacity(Set.of("ABC", "ABCDEF"), false), is(6));
+        assertThat(requiredCapacity(Set.of("ABCDEF", "ABC"), false), is(6));
+        assertThat(requiredCapacity(Set.of("ABC", "ABCDEF", "ABX"), false), is(7));
+        assertThat(requiredCapacity(Set.of("ABCDEF", "ABC", "ABX"), false), is(7));
+        assertThat(requiredCapacity(Set.of("ADEF", "AQPR4", "AQZ"), false), is(9));
+        assertThat(requiredCapacity(Set.of("111", "ADEF", "AQPR4", "AQZ", "999"), false), is(15));
+        assertThat(requiredCapacity(Set.of("utf-16", "utf-8"), false), is(7));
+        assertThat(requiredCapacity(Set.of("utf-16", "utf-8", "utf16", "utf8"), false), is(10));
+        assertThat(requiredCapacity(Set.of("utf-8", "utf8", "utf-16", "utf16", "iso-8859-1", "iso_8859_1"), false), is(27));
     }
 
     @Test
@@ -321,7 +332,7 @@ public class TrieTest
         String x = "x".repeat(Character.MAX_VALUE / 2);
         String y = "y".repeat(Character.MAX_VALUE / 2);
         String z = "z".repeat(Character.MAX_VALUE / 2);
-        assertThat(requiredCapacity(Set.of(x, y, z), true, null), is(3 * (Character.MAX_VALUE / 2)));
+        assertThat(requiredCapacity(Set.of(x, y, z), true), is(3 * (Character.MAX_VALUE / 2)));
     }
 
     @ParameterizedTest
@@ -361,25 +372,6 @@ public class TrieTest
         assertTrue(trie.put("null", null));
         assertThat(trie.get("null"), nullValue());
         assertThat(trie.getBest("nullxxxx"), nullValue());
-    }
-
-    @Test
-    @SuppressWarnings("checkstyle:AvoidEscapedUnicodeCharacters")
-    public void testRequiredCapacityAlphabet()
-    {
-        Set<Character> alphabet = new HashSet<>();
-
-        assertThat(requiredCapacity(Set.of("ABC", "abc"), true, alphabet), is(6));
-        assertThat(alphabet, containsInAnyOrder('a', 'b', 'c', 'A', 'B', 'C'));
-
-        alphabet.clear();
-        assertThat(requiredCapacity(Set.of("ABCDEF", "abc"), false, alphabet), is(6));
-        assertThat(alphabet, containsInAnyOrder('a', 'b', 'c', 'd', 'e', 'f'));
-
-        alphabet.clear();
-        String difficult = "!\"%\n\r\u0000\u00a4\u10fb\ufffd";
-        assertThat(requiredCapacity(Set.of("ABCDEF", "abc", difficult), false, alphabet), is(15));
-        assertThat(alphabet, containsInAnyOrder('a', 'b', 'c', 'd', 'e', 'f', '!','\"', '%', '\r', '\n', '\u00a4', '\u10fb', '\ufffd', '\u0000'));
     }
 
     @Test

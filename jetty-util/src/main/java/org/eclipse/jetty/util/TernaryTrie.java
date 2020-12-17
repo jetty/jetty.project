@@ -52,6 +52,7 @@ import java.util.stream.Collectors;
  *
  * @param <V> the Entry type
  */
+@Deprecated
 class TernaryTrie<V> extends AbstractTrie<V>
 {
     private static final int LO = 1;
@@ -622,7 +623,7 @@ class TernaryTrie<V> extends AbstractTrie<V>
     @Override
     public String toString()
     {
-        return "TT@" + Integer.toHexString(hashCode()) + '{' +
+        return "TrT@" + Integer.toHexString(hashCode()) + '{' +
             "ci=" + isCaseInsensitive() + ';' +
             _tables.stream().flatMap(t -> Arrays.stream(t._nodes))
                 .filter(Objects::nonNull)
