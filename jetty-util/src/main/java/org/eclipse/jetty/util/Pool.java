@@ -301,6 +301,11 @@ public class Pool<T> implements AutoCloseable, Dumpable
             {
                 LOGGER.ignore(e);
                 size = entries.size();
+                // Size can be 0 when the pool is in the middle of
+                // acquiring a connection while another thread
+                // removes the last one from the pool.
+                if (size == 0)
+                    break;
             }
             index = (index + 1) % size;
         }
