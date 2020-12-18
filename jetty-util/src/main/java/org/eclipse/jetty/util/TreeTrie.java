@@ -287,8 +287,8 @@ class TreeTrie<V> extends AbstractTrie<V>
     {
         for (int i = 0; i < len; i++)
         {
-            byte c = (byte)(0xff & s.charAt(offset + i));
-            int index = c >= 0 && c < 0x7f ? _lookup[c] : -1;
+            char c = s.charAt(offset + i);
+            int index = c < 0x7f ? _lookup[c] : -1;
             if (index >= 0)
             {
                 if (t._nextIndex[index] == null)

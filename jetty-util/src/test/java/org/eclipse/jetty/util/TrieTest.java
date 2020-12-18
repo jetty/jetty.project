@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -275,6 +276,7 @@ public class TrieTest
     @MethodSource("implementations")
     public void testOtherChars(AbstractTrie<Integer> trie) throws Exception
     {
+        Assumptions.assumeTrue(trie instanceof ArrayTrie<?> || trie instanceof TreeTrie);
         assertTrue(trie.put("8859:ä", -1));
         assertTrue(trie.put("inv:\r\n", -2));
         assertTrue(trie.put("utf:\u20ac", -3));
