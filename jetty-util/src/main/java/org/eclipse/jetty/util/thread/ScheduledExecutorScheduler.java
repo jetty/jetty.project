@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.component.Dumpable;
  * queue even if the task did not fire, which provides a huge benefit in the performance
  * of garbage collection in young generation.
  */
-@ManagedObject("A scheduler")
+@ManagedObject
 public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Scheduler, Dumpable
 {
     private final String name;
@@ -158,19 +158,19 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
         }
     }
 
-    @ManagedAttribute("name of scheduler")
+    @ManagedAttribute("The name of the scheduler")
     public String getName()
     {
         return name;
     }
 
-    @ManagedAttribute("is scheduler daemon")
+    @ManagedAttribute("Whether the scheduler uses daemon threads")
     public boolean isDaemon()
     {
         return daemon;
     }
 
-    @ManagedAttribute("number of scheduler threads")
+    @ManagedAttribute("The number of scheduler threads")
     public int getThreads()
     {
         return threads;
