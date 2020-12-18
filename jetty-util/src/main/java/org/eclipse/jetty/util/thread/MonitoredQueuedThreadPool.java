@@ -80,7 +80,7 @@ public class MonitoredQueuedThreadPool extends QueuedThreadPool
                 {
                     long taskLatency = System.nanoTime() - start;
                     threadStats.decrement();
-                    taskLatencyStats.set(taskLatency);
+                    taskLatencyStats.record(taskLatency);
                 }
             }
 
@@ -110,7 +110,7 @@ public class MonitoredQueuedThreadPool extends QueuedThreadPool
     @ManagedAttribute("the number of tasks executed")
     public long getTasks()
     {
-        return taskLatencyStats.getTotal();
+        return taskLatencyStats.getCount();
     }
 
     /**
