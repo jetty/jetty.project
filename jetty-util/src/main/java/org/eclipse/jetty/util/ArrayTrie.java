@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
  * indexed in each lookup table, whilst infrequently used characters
  * must use a big character table.
  * </p>
- * <p>This Trie is very space efficient if the key characters are
+ * <p>This Trie is space efficient if the key characters are
  * from ' ', '+', '-', ':', ';', '.', '0' - '9', A' to 'Z' or 'a' to 'z'
  * Other ISO-8859-1 characters can be used by the key, but less space
  * efficiently.
@@ -55,12 +55,16 @@ class ArrayTrie<V> extends AbstractTrie<V>
     private static final int ROW_SIZE = 48;
     private static final int BIG_ROW_INSENSITIVE = 22;
     private static final int BIG_ROW_SENSITIVE = 48;
+    private static final int X = Integer.MIN_VALUE;
 
     /**
      * The index lookup table, this maps a character as a byte
-     * (ISO-8859-1 or UTF8) to an index within a Trie row
+     * (ISO-8859-1 or UTF8) to a Trie index within a Trie row.
+     * Positive values are column indexes within the main {@link #_table}.
+     * Negative values are indexes within a {@link Node#_bigRow}.
+     * Values of {@link #X} are not indexed and must be searched for
+     * in the extended {@link Node#_bigRow}
      */
-    private static final int X = Integer.MIN_VALUE;
     private static final int[] LOOKUP_INSENSITIVE =
         {
             //     0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
@@ -74,6 +78,14 @@ class ArrayTrie<V> extends AbstractTrie<V>
             /*7*/ 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,-18,-19,-20,-21,  X,
         };
 
+    /**
+     * The index lookup table, this maps a character as a byte
+     * (ISO-8859-1 or UTF8) to a Trie index within a Trie row.
+     * Positive values are column indexes within the main {@link #_table}.
+     * Negative values are indexes within a {@link Node#_bigRow}.
+     * Values of {@link #X} are not indexed and must be searched for
+     * in the extended {@link Node#_bigRow}
+     */
     private static final int[] LOOKUP_SENSITIVE =
         {
             //     0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
@@ -87,10 +99,24 @@ class ArrayTrie<V> extends AbstractTrie<V>
             /*7*/ 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,-18,-19,-20,-21,  X,
         };
 
+    /**
+     * A Node in the tree.
+     * A Node instance is only needed for rows in the {@link #_table} array
+     * that either have a key/value pair or a {@link #_bigRow} extended row.
+     * @param <V> The value type of the node.
+     */
     private static class Node<V>
     {
         String _key;
         V _value;
+
+        /**
+         * A big row of indexes in which extended characters can be found.
+         * The first {@link ArrayTrie#_bigRowSize} entries are accessed by negative
+         * indexes from the {@link ArrayTrie#_lookup} table. The following entries
+         * are character/row pairs that must be searched looking for a match.
+         * A big row is dynamically allocated to minimum size required for it's entries.
+         */
         char[] _bigRow;
 
         @Override
@@ -216,19 +242,21 @@ class ArrayTrie<V> extends AbstractTrie<V>
             {
                 // This char is neither in the normal table, nor the first part of a bigRow
                 // Look for it linearly in an extended big row.
-                Node<V> node = _node[row];
-                if (node == null)
-                    node = _node[row] = new Node<>();
+                int last = row;
                 row = 0;
-                char[] big = node == null ? null : node._bigRow;
-                if (big != null)
+                Node<V> node = _node[last];
+                if (node != null)
                 {
-                    for (int idx = _bigRowSize; idx < big.length; idx += 2)
+                    char[] big = node._bigRow;
+                    if (big != null)
                     {
-                        if (big[idx] == c)
+                        for (int idx = _bigRowSize; idx < big.length; idx += 2)
                         {
-                            row = big[idx + 1];
-                            break;
+                            if (big[idx] == c)
+                            {
+                                row = big[idx + 1];
+                                break;
+                            }
                         }
                     }
                 }
@@ -239,6 +267,10 @@ class ArrayTrie<V> extends AbstractTrie<V>
                     if (_rows == _node.length - 1)
                         return false;
 
+                    if (node == null)
+                        node = _node[last] = new Node<>();
+                    char[] big = node._bigRow;
+
                     // Expand the size of the bigRow to have extended lookups
                     if (big == null)
                         big = node._bigRow = new char[_bigRowSize + 2];
@@ -246,12 +278,15 @@ class ArrayTrie<V> extends AbstractTrie<V>
                         big = node._bigRow = Arrays.copyOf(big, Math.max(big.length, _bigRowSize) + 2);
 
                     // set the lookup char and its row
+                    // TODO if the extended big row entries were sorted, then missed lookups could be aborted sooner
+                    // TODO and/or a binary chop search could be done for hits.
                     big[big.length - 2] = c;
                     row = big[big.length - 1] = ++_rows;
                 }
             }
         }
 
+        // We have processed all characters so set the key and value in the current Node
         Node<V> node = _node[row];
         if (node == null)
             node = _node[row] = new Node<>();

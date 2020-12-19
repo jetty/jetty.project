@@ -378,41 +378,61 @@ class TreeTrie<V> extends AbstractTrie<V>
         StringBuilder buf = new StringBuilder();
         buf.append("TT@").append(Integer.toHexString(hashCode())).append('{');
         buf.append("ci=").append(isCaseInsensitive()).append(';');
-        toString(buf, _root);
+        toString(buf, _root, "");
         buf.append('}');
         return buf.toString();
     }
 
-    private static <V> void toString(Appendable out, Node<V> t)
+    private static <V> void toString(Appendable out, Node<V> t, String separator)
     {
-        if (t != null)
+        loop: while (true)
         {
-            if (t._value != null)
+            if (t != null)
             {
-                try
+                if (t._value != null)
                 {
-                    out.append(',');
-                    out.append(t._key);
-                    out.append('=');
-                    out.append(t._value.toString());
+                    try
+                    {
+                        out.append(separator);
+                        separator = ",";
+                        out.append(t._key);
+                        out.append('=');
+                        out.append(t._value.toString());
+                    }
+                    catch (IOException e)
+                    {
+                        throw new RuntimeException(e);
+                    }
                 }
-                catch (IOException e)
+
+                for (int i = 0; i < INDEX;)
                 {
-                    throw new RuntimeException(e);
+                    Node<V> n = t._nextIndex[i++];
+                    if (n != null)
+                    {
+                        // can we avoid tail recurse?
+                        if (i == INDEX && t._nextOther.size() == 0)
+                        {
+                            t = n;
+                            continue loop;
+                        }
+                        // recurse
+                        toString(out, n, separator);
+                    }
+                }
+                for (int i = t._nextOther.size(); i-- > 0; )
+                {
+                    // can we avoid tail recurse?
+                    if (i == 0)
+                    {
+                        t = t._nextOther.get(i);
+                        continue loop;
+                    }
+                    toString(out, t._nextOther.get(i), separator);
                 }
             }
 
-            for (int i = 0; i < INDEX; i++)
-            {
-                if (t._nextIndex[i] != null)
-                    // TODO need to tail iterate to avoid stack overflow on long keys
-                    toString(out, t._nextIndex[i]);
-            }
-            for (int i = t._nextOther.size(); i-- > 0; )
-            {
-                // TODO need to tail iterate to avoid stack overflow on long keys
-                toString(out, t._nextOther.get(i));
-            }
+            break;
         }
     }
 

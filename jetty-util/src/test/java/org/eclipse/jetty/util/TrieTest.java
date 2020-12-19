@@ -371,14 +371,24 @@ public class TrieTest
         trie.put("null", 0);
         assertTrue(trie.put("null", null));
         assertThat(trie.get("null"), nullValue());
-        assertThat(trie.getBest("nullxxxx"), nullValue());
+        assertThat(trie.getBest("null;xxxx"), nullValue());
+    }
+
+    @ParameterizedTest
+    @MethodSource("implementations")
+    public void testNullChar(AbstractTrie<Integer> trie) throws Exception
+    {
+        String key = "A" + ((char)0) + "c";
+        trie.put(key, 103);
+        assertThat(trie.get(key), is(103));
+        assertThat(trie.getBest(key + ";xxxx"), is(103));
     }
 
     @Test
     public void testArrayTrieCapacity()
     {
         ArrayTrie<String> trie = new ArrayTrie<>(Character.MAX_VALUE);
-        String huge = "X".repeat(Character.MAX_VALUE - 1);
+        String huge = "x".repeat(Character.MAX_VALUE - 1);
         assertTrue(trie.put(huge, "wow"));
         assertThat(trie.get(huge), is("wow"));
 

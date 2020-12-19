@@ -526,12 +526,13 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
         }
     }
 
-    static class Growing<V> extends AbstractTrie<V>
+    @Deprecated
+    public static class Growing<V> extends AbstractTrie<V>
     {
         private final int _growby;
         private ArrayTernaryTrie<V> _trie;
 
-        Growing(boolean insensitive, int capacity, int growby)
+        public Growing(boolean insensitive, int capacity, int growby)
         {
             super(insensitive);
             _growby = growby;
