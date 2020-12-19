@@ -345,7 +345,7 @@ public interface Index<V>
                 return EmptyTrie.instance(true);
             if (maxCapacity <= ArrayTrie.MAX_CAPACITY)
                 return new ArrayTrie<>(true, maxCapacity);
-            return new TernaryTrie<>(false, Math.max(256, maxCapacity), 256, maxCapacity);
+            return EmptyTrie.instance(true);
         }
 
         private Map<String, V> contents()

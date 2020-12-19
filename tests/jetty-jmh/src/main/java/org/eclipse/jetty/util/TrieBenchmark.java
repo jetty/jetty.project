@@ -62,9 +62,6 @@ public class TrieBenchmark
             case "ArrayTrie":
                 trie = new ArrayTrie<>(caseSensitive, capacity);
                 break;
-            case "TernaryTrie":
-                trie = new TernaryTrie<>(caseSensitive, capacity, 0, capacity);
-                break;
             case "ArrayTernaryTrie":
                 trie = new ArrayTernaryTrie<>(caseSensitive, capacity);
                 break;

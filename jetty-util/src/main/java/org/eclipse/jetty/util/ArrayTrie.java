@@ -153,7 +153,6 @@ class ArrayTrie<V> extends AbstractTrie<V>
         if (capacity > MAX_CAPACITY)
             throw new IllegalArgumentException("Capacity " + capacity + " > " + MAX_CAPACITY);
         _lookup = !caseSensitive ? LOOKUP_INSENSITIVE : LOOKUP_SENSITIVE;
-        capacity++;
         _table = new char[capacity * ROW_SIZE];
         _node = new Node[capacity];
     }

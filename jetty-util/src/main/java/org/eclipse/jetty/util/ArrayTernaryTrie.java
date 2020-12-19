@@ -18,6 +18,7 @@ import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -522,6 +523,147 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
                 (int)_tree[r * ROW_SIZE + HI],
                 _key[r],
                 _value[r]);
+        }
+    }
+
+    static class Growing<V> extends AbstractTrie<V>
+    {
+        private final int _growby;
+        private ArrayTernaryTrie<V> _trie;
+
+        Growing(boolean insensitive, int capacity, int growby)
+        {
+            super(insensitive);
+            _growby = growby;
+            _trie = new ArrayTernaryTrie<>(insensitive, capacity);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return _trie.hashCode();
+        }
+
+        @Override
+        public V remove(String s)
+        {
+            return _trie.remove(s);
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+            Growing<?> growing = (Growing<?>)o;
+            return Objects.equals(_trie, growing._trie);
+        }
+
+        @Override
+        public void clear()
+        {
+            _trie.clear();
+        }
+
+        @Override
+        public boolean put(V v)
+        {
+            return put(v.toString(), v);
+        }
+
+        @Override
+        public boolean put(String s, V v)
+        {
+            boolean added = _trie.put(s, v);
+            while (!added && _growby > 0)
+            {
+                ArrayTernaryTrie<V> bigger = new ArrayTernaryTrie<>(_trie.isCaseInsensitive(), _trie._key.length + _growby);
+                for (Map.Entry<String, V> entry : _trie.entrySet())
+                {
+                    bigger.put(entry.getKey(), entry.getValue());
+                }
+                _trie = bigger;
+                added = _trie.put(s, v);
+            }
+
+            return added;
+        }
+
+        @Override
+        public V get(String s)
+        {
+            return _trie.get(s);
+        }
+
+        @Override
+        public V get(ByteBuffer b)
+        {
+            return _trie.get(b);
+        }
+
+        @Override
+        public V get(String s, int offset, int len)
+        {
+            return _trie.get(s, offset, len);
+        }
+
+        @Override
+        public V get(ByteBuffer b, int offset, int len)
+        {
+            return _trie.get(b, offset, len);
+        }
+
+        @Override
+        public V getBest(byte[] b, int offset, int len)
+        {
+            return _trie.getBest(b, offset, len);
+        }
+
+        @Override
+        public V getBest(String s)
+        {
+            return _trie.getBest(s);
+        }
+
+        @Override
+        public V getBest(String s, int offset, int length)
+        {
+            return _trie.getBest(s, offset, length);
+        }
+
+        @Override
+        public V getBest(ByteBuffer b, int offset, int len)
+        {
+            return _trie.getBest(b, offset, len);
+        }
+
+        @Override
+        public String toString()
+        {
+            return _trie.toString();
+        }
+
+        @Override
+        public Set<String> keySet()
+        {
+            return _trie.keySet();
+        }
+
+        public void dump()
+        {
+            _trie.dump();
+        }
+
+        public boolean isEmpty()
+        {
+            return _trie.isEmpty();
+        }
+
+        public int size()
+        {
+            return _trie.size();
         }
     }
 }

@@ -108,6 +108,7 @@ abstract class AbstractTrie<V> implements Index.Mutable<V>
      *                    \
      *                     8
      * </pre>
+     * In both cases above the returned capacity is 11 as it includes capacity for an empty string key.
      *
      * @param keys The keys to be put in a Trie
      * @param caseSensitive true if the capacity should be calculated with case-sensitive keys
@@ -119,7 +120,7 @@ abstract class AbstractTrie<V> implements Index.Mutable<V>
             ? new ArrayList<>(keys)
             : keys.stream().map(String::toLowerCase).collect(Collectors.toList());
         Collections.sort(list);
-        return AbstractTrie.requiredCapacity(list, 0, list.size(), 0);
+        return 1 + AbstractTrie.requiredCapacity(list, 0, list.size(), 0);
     }
 
     /**
