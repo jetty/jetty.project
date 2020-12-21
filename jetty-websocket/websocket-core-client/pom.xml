@@ -36,48 +36,6 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-enforcer-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>ban-ws-apis</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <configuration>
-              <rules>
-                <bannedDependencies>
-                  <includes>
-                    <include>org.eclipse.jetty.websocket:websocket-jetty-api</include>
-                    <include>javax.websocket</include>
-                  </includes>
-                </bannedDependencies>
-              </rules>
-            </configuration>
-          </execution>
-          <execution>
-            <id>ban-java-servlet-api</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <configuration>
-              <rules>
-                <bannedDependencies>
-                  <includes>
-                    <include>javax.servlet</include>
-                    <include>servletapi</include>
-                    <include>org.eclipse.jetty.orbit:javax.servlet</include>
-                    <include>org.mortbay.jetty:servlet-api</include>
-                    <include>jetty:servlet-api</include>
-                    <include>jetty-servlet-api</include>
-                  </includes>
-                </bannedDependencies>
-              </rules>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
