@@ -23,39 +23,27 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
- * Gives the same basic functionality of {@link LongAdder} but allows you to check
- * the rate of increase of the sum since the last call to {@link #getRate()};
+ * Counts the rate that {@link Long}s are added to this from the time of creation or the last call to {@link #reset()}.
  */
 public class RateCounter
 {
     private final LongAdder _total = new LongAdder();
-    private final LongAdder _totalSinceRateCheck = new LongAdder();
-    private final AtomicLong _rateCheckTimeStamp = new AtomicLong(System.nanoTime());
-
-    public long sum()
-    {
-        return _total.sum();
-    }
+    private final AtomicLong _timeStamp = new AtomicLong(System.nanoTime());
 
     public void add(long l)
     {
         _total.add(l);
-        _totalSinceRateCheck.add(l);
-    }
-
-    public void reset()
-    {
-        _rateCheckTimeStamp.getAndSet(System.nanoTime());
-        _totalSinceRateCheck.reset();
-        _total.reset();
     }
 
     public long getRate()
     {
-        long totalSinceLastCheck = _totalSinceRateCheck.sumThenReset();
-        long now = System.nanoTime();
-        long then = _rateCheckTimeStamp.getAndSet(now);
-        long elapsed = TimeUnit.NANOSECONDS.toMillis(now - then);
-        return elapsed == 0 ? 0 : totalSinceLastCheck * 1000 / elapsed;
+        long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - _timeStamp.get());
+        return elapsed == 0 ? 0 : _total.sum() * 1000 / elapsed;
+    }
+
+    public void reset()
+    {
+        _timeStamp.getAndSet(System.nanoTime());
+        _total.reset();
     }
 }

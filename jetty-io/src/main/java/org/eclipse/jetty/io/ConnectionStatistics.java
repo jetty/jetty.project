@@ -19,6 +19,7 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -41,10 +42,15 @@ public class ConnectionStatistics extends AbstractLifeCycle implements Connectio
 {
     private final CounterStatistic _connections = new CounterStatistic();
     private final SampleStatistic _connectionsDuration = new SampleStatistic();
-    private final RateCounter _bytesIn = new RateCounter();
-    private final RateCounter _bytesOut = new RateCounter();
-    private final RateCounter _messagesIn = new RateCounter();
-    private final RateCounter _messagesOut = new RateCounter();
+
+    private final LongAdder _bytesIn = new LongAdder();
+    private final LongAdder _bytesOut = new LongAdder();
+    private final LongAdder _messagesIn = new LongAdder();
+    private final LongAdder _messagesOut = new LongAdder();
+    private final RateCounter _bytesInRate = new RateCounter();
+    private final RateCounter _bytesOutRate = new RateCounter();
+    private final RateCounter _messagesInRate = new RateCounter();
+    private final RateCounter _messagesOutRate = new RateCounter();
 
     @ManagedOperation(value = "Resets the statistics", impact = "ACTION")
     public void reset()
@@ -55,6 +61,10 @@ public class ConnectionStatistics extends AbstractLifeCycle implements Connectio
         _bytesOut.reset();
         _messagesIn.reset();
         _messagesOut.reset();
+        _bytesInRate.reset();
+        _bytesOutRate.reset();
+        _messagesInRate.reset();
+        _messagesOutRate.reset();
     }
 
     @Override
@@ -83,19 +93,31 @@ public class ConnectionStatistics extends AbstractLifeCycle implements Connectio
 
         long bytesIn = connection.getBytesIn();
         if (bytesIn > 0)
+        {
             _bytesIn.add(bytesIn);
+            _bytesInRate.add(bytesIn);
+        }
 
         long bytesOut = connection.getBytesOut();
         if (bytesOut > 0)
+        {
             _bytesOut.add(bytesOut);
+            _bytesOutRate.add(bytesOut);
+        }
 
         long messagesIn = connection.getMessagesIn();
         if (messagesIn > 0)
+        {
             _messagesIn.add(messagesIn);
+            _messagesInRate.add(messagesIn);
+        }
 
         long messagesOut = connection.getMessagesOut();
         if (messagesOut > 0)
+        {
             _messagesOut.add(messagesOut);
+            _messagesOutRate.add(messagesOut);
+        }
     }
 
     @ManagedAttribute("Total number of bytes received by tracked connections")
@@ -107,7 +129,9 @@ public class ConnectionStatistics extends AbstractLifeCycle implements Connectio
     @ManagedAttribute("Total number of bytes received per second since the last invocation of this method")
     public long getReceivedBytesRate()
     {
-        return _bytesIn.getRate();
+        long rate = _bytesInRate.getRate();
+        _bytesInRate.reset();
+        return rate;
     }
 
     @ManagedAttribute("Total number of bytes sent by tracked connections")
@@ -119,7 +143,9 @@ public class ConnectionStatistics extends AbstractLifeCycle implements Connectio
     @ManagedAttribute("Total number of bytes sent per second since the last invocation of this method")
     public long getSentBytesRate()
     {
-        return _bytesOut.getRate();
+        long rate = _bytesOutRate.getRate();
+        _bytesOutRate.reset();
+        return rate;
     }
 
     @ManagedAttribute("The max duration of a connection in ms")
@@ -167,7 +193,9 @@ public class ConnectionStatistics extends AbstractLifeCycle implements Connectio
     @ManagedAttribute("Total number of messages received per second since the last invocation of this method")
     public long getReceivedMessagesRate()
     {
-        return _messagesIn.getRate();
+        long rate = _messagesInRate.getRate();
+        _messagesInRate.reset();
+        return rate;
     }
 
     @ManagedAttribute("The total number of messages sent")
@@ -179,7 +207,9 @@ public class ConnectionStatistics extends AbstractLifeCycle implements Connectio
     @ManagedAttribute("Total number of messages sent per second since the last invocation of this method")
     public long getSentMessagesRate()
     {
-        return _messagesOut.getRate();
+        long rate = _messagesOutRate.getRate();
+        _messagesOutRate.reset();
+        return rate;
     }
 
     @Override
