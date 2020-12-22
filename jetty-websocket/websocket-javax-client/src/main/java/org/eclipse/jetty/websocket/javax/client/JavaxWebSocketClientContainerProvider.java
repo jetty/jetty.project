@@ -17,7 +17,6 @@ import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
 
 /**
@@ -59,22 +58,14 @@ public class JavaxWebSocketClientContainerProvider extends ContainerProvider
         // TODO: do we want to provide a non-standard way to configure to always return the same clientContainer based on a config somewhere? (system.property?)
 
         JavaxWebSocketClientContainer clientContainer = new JavaxWebSocketClientContainer();
-
-        // Register as JVM runtime shutdown hook?
-        ShutdownThread.register(clientContainer);
-
-        if (!clientContainer.isStarted())
+        try
         {
-            try
-            {
-                clientContainer.start();
-            }
-            catch (Exception e)
-            {
-                throw new RuntimeException("Unable to start Client Container", e);
-            }
+            clientContainer.start();
         }
-
+        catch (Exception e)
+        {
+            throw new RuntimeException("Unable to start Client Container", e);
+        }
         return clientContainer;
     }
 }

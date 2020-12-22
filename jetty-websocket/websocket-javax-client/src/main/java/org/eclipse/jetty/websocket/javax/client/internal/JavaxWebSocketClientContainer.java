@@ -33,6 +33,7 @@ import javax.websocket.Session;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
@@ -59,6 +60,14 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     public JavaxWebSocketClientContainer()
     {
         this(new WebSocketComponents());
+        ShutdownThread.register(this);
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+        ShutdownThread.deregister(this);
     }
 
     /**
