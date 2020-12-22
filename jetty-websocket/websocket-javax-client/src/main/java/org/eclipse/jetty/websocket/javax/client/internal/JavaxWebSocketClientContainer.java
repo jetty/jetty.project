@@ -60,7 +60,13 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     public JavaxWebSocketClientContainer()
     {
         this(new WebSocketComponents());
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
         ShutdownThread.register(this);
+        super.doStart();
     }
 
     @Override
