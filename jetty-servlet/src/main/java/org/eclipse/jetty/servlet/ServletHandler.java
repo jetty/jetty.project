@@ -237,29 +237,27 @@ public class ServletHandler extends ScopedHandler
         // Stop filters
         List<FilterHolder> filterHolders = new ArrayList<>();
         List<FilterMapping> filterMappings = ArrayUtil.asMutableList(_filterMappings);
-        if (_filters != null)
+        for (int i = _filters == null ? 0 : _filters.length; i-- > 0;)
         {
-            for (FilterHolder f : _filters)
+            FilterHolder f = _filters[i];
+            try
             {
-                try
-                {
-                    f.stop();
-                }
-                catch (Exception e)
-                {
-                    LOG.warn(Log.EXCEPTION, e);
-                }
-                if (_durable.contains(f))
-                {
-                    filterHolders.add(f); //only retain embedded
-                }
-                else
-                {
-                    //remove all of the mappings that were for non-embedded filters
-                    _filterNameMap.remove(f.getName());
-                    //remove any mappings associated with this filter
-                    filterMappings.removeIf(fm -> fm.getFilterName().equals(f.getName()));
-                }
+                f.stop();
+            }
+            catch (Exception e)
+            {
+                LOG.warn(Log.EXCEPTION, e);
+            }
+            if (_durable.contains(f))
+            {
+                filterHolders.add(f); //only retain embedded
+            }
+            else
+            {
+                //remove all of the mappings that were for non-embedded filters
+                _filterNameMap.remove(f.getName());
+                //remove any mappings associated with this filter
+                filterMappings.removeIf(fm -> fm.getFilterName().equals(f.getName()));
             }
         }
 
@@ -277,30 +275,28 @@ public class ServletHandler extends ScopedHandler
         // Stop servlets
         List<ServletHolder> servletHolders = new ArrayList<>();  //will be remaining servlets
         List<ServletMapping> servletMappings = ArrayUtil.asMutableList(_servletMappings); //will be remaining mappings
-        if (_servlets != null)
+        for (int i = _servlets == null ? 0 : _servlets.length; i-- > 0;)
         {
-            for (ServletHolder s : _servlets)
+            ServletHolder s = _servlets[i];
+            try
             {
-                try
-                {
-                    s.stop();
-                }
-                catch (Exception e)
-                {
-                    LOG.warn(Log.EXCEPTION, e);
-                }
+                s.stop();
+            }
+            catch (Exception e)
+            {
+                LOG.warn(Log.EXCEPTION, e);
+            }
 
-                if (_durable.contains(s))
-                {
-                    servletHolders.add(s); //only retain embedded
-                }
-                else
-                {
-                    //remove from servlet name map
-                    _servletNameMap.remove(s.getName());
-                    //remove any mappings associated with this servlet
-                    servletMappings.removeIf(sm -> sm.getServletName().equals(s.getName()));
-                }
+            if (_durable.contains(s))
+            {
+                servletHolders.add(s); //only retain embedded
+            }
+            else
+            {
+                //remove from servlet name map
+                _servletNameMap.remove(s.getName());
+                //remove any mappings associated with this servlet
+                servletMappings.removeIf(sm -> sm.getServletName().equals(s.getName()));
             }
         }
 
@@ -317,22 +313,21 @@ public class ServletHandler extends ScopedHandler
 
         //Retain only Listeners added via jetty apis (is Source.EMBEDDED)
         List<ListenerHolder> listenerHolders = new ArrayList<>();
-        if (_listeners != null)
+        for (int i = _listeners == null ? 0 : _listeners.length; i-- > 0;)
         {
-            for (ListenerHolder l : _listeners)
+            ListenerHolder l = _listeners[i];
+            try
             {
-                try
-                {
-                    l.stop();
-                }
-                catch (Exception e)
-                {
-                    LOG.warn(Log.EXCEPTION, e);
-                }
-                if (_durable.contains(l))
-                    listenerHolders.add(l);
+                l.stop();
             }
+            catch (Exception e)
+            {
+                LOG.warn(Log.EXCEPTION, e);
+            }
+            if (_durable.contains(l))
+                listenerHolders.add(l);
         }
+
         ListenerHolder[] listeners = listenerHolders.toArray(new ListenerHolder[0]);
         updateBeans(_listeners, listeners);
         _listeners = listeners;
