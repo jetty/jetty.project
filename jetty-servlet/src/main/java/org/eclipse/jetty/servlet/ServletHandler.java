@@ -26,7 +26,6 @@ import java.util.EnumSet;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -111,6 +110,7 @@ public class ServletHandler extends ScopedHandler
     private List<FilterMapping> _filterPathMappings;
     private MultiMap<FilterMapping> _filterNameMappings;
     private List<FilterMapping> _wildFilterNameMappings;
+    private final List<BaseHolder<?>> _durable = new ArrayList<>();
 
     private final Map<String, ServletHolder> _servletNameMap = new HashMap<>();
     private PathMappings<ServletHolder> _servletPathMap;
@@ -159,6 +159,11 @@ public class ServletHandler extends ScopedHandler
             if (securityHandler != null)
                 _identityService = securityHandler.getIdentityService();
         }
+
+        _durable.clear();
+        _durable.addAll(Arrays.asList(getFilters()));
+        _durable.addAll(Arrays.asList(getServlets()));
+        _durable.addAll(Arrays.asList(getListeners()));
 
         updateNameMappings();
         updateMappings();
@@ -234,35 +239,31 @@ public class ServletHandler extends ScopedHandler
         List<FilterMapping> filterMappings = ArrayUtil.asMutableList(_filterMappings);
         if (_filters != null)
         {
-            for (int i = _filters.length; i-- > 0; )
+            for (FilterHolder f : _filters)
             {
                 try
                 {
-                    _filters[i].stop();
+                    f.stop();
                 }
                 catch (Exception e)
                 {
                     LOG.warn(Log.EXCEPTION, e);
                 }
-                if (_filters[i].getSource() != Source.EMBEDDED)
+                if (_durable.contains(f))
                 {
-                    //remove all of the mappings that were for non-embedded filters
-                    _filterNameMap.remove(_filters[i].getName());
-                    //remove any mappings associated with this filter
-                    ListIterator<FilterMapping> fmitor = filterMappings.listIterator();
-                    while (fmitor.hasNext())
-                    {
-                        FilterMapping fm = fmitor.next();
-                        if (fm.getFilterName().equals(_filters[i].getName()))
-                            fmitor.remove();
-                    }
+                    filterHolders.add(f); //only retain embedded
                 }
                 else
-                    filterHolders.add(_filters[i]); //only retain embedded
+                {
+                    //remove all of the mappings that were for non-embedded filters
+                    _filterNameMap.remove(f.getName());
+                    //remove any mappings associated with this filter
+                    filterMappings.removeIf(fm -> fm.getFilterName().equals(f.getName()));
+                }
             }
         }
 
-        //Retain only filters and mappings that were added using jetty api (ie Source.EMBEDDED)
+        //Retain only filters and mappings that were added using jetty api prior to starting
         FilterHolder[] fhs = filterHolders.toArray(new FilterHolder[0]);
         updateBeans(_filters, fhs);
         _filters = fhs;
@@ -278,36 +279,32 @@ public class ServletHandler extends ScopedHandler
         List<ServletMapping> servletMappings = ArrayUtil.asMutableList(_servletMappings); //will be remaining mappings
         if (_servlets != null)
         {
-            for (int i = _servlets.length; i-- > 0; )
+            for (ServletHolder s : _servlets)
             {
                 try
                 {
-                    _servlets[i].stop();
+                    s.stop();
                 }
                 catch (Exception e)
                 {
                     LOG.warn(Log.EXCEPTION, e);
                 }
 
-                if (_servlets[i].getSource() != Source.EMBEDDED)
+                if (_durable.contains(s))
                 {
-                    //remove from servlet name map
-                    _servletNameMap.remove(_servlets[i].getName());
-                    //remove any mappings associated with this servlet
-                    ListIterator<ServletMapping> smitor = servletMappings.listIterator();
-                    while (smitor.hasNext())
-                    {
-                        ServletMapping sm = smitor.next();
-                        if (sm.getServletName().equals(_servlets[i].getName()))
-                            smitor.remove();
-                    }
+                    servletHolders.add(s); //only retain embedded
                 }
                 else
-                    servletHolders.add(_servlets[i]); //only retain embedded 
+                {
+                    //remove from servlet name map
+                    _servletNameMap.remove(s.getName());
+                    //remove any mappings associated with this servlet
+                    servletMappings.removeIf(sm -> sm.getServletName().equals(s.getName()));
+                }
             }
         }
 
-        //Retain only Servlets and mappings added via jetty apis (ie Source.EMBEDDED)
+        // Retain only Servlets and mappings added via jetty apis prior to starting
         ServletHolder[] shs = servletHolders.toArray(new ServletHolder[0]);
         updateBeans(_servlets, shs);
         _servlets = shs;
@@ -322,18 +319,18 @@ public class ServletHandler extends ScopedHandler
         List<ListenerHolder> listenerHolders = new ArrayList<>();
         if (_listeners != null)
         {
-            for (int i = _listeners.length; i-- > 0; )
+            for (ListenerHolder l : _listeners)
             {
                 try
                 {
-                    _listeners[i].stop();
+                    l.stop();
                 }
                 catch (Exception e)
                 {
                     LOG.warn(Log.EXCEPTION, e);
                 }
-                if (_listeners[i].getSource() == Source.EMBEDDED)
-                    listenerHolders.add(_listeners[i]);
+                if (_durable.contains(l))
+                    listenerHolders.add(l);
             }
         }
         ListenerHolder[] listeners = listenerHolders.toArray(new ListenerHolder[0]);

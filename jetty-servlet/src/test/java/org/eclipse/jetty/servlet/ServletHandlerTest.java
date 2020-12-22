@@ -20,11 +20,14 @@ package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterConfig;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -35,11 +38,13 @@ import javax.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Container;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -834,6 +839,63 @@ public class ServletHandlerTest
         assertThat(connector.getResponse("GET /foo/bar HTTP/1.0\r\n\r\n"), containsString("path-/*-name-foo-FOO"));
         assertThat(connector.getResponse("GET /foo/bar.bob HTTP/1.0\r\n\r\n"), containsString("path-/*-path-*.bob-name-foo-FOO"));
         assertThat(connector.getResponse("GET /other.bob HTTP/1.0\r\n\r\n"), containsString("path-/*-path-*.bob-default"));
+    }
+
+    @Test
+    public void testDurableEmbedded() throws Exception
+    {
+        Server server = new Server();
+        ServletContextHandler context = new ServletContextHandler();
+        server.setHandler(context);
+        ServletHandler handler = context.getServletHandler();
+
+        FilterHolder durableFilter = new FilterHolder((TestFilter)(req,res,c) -> c.doFilter(req, res));
+        ServletHolder durableServlet = new ServletHolder(new HttpServlet(){});
+        ListenerHolder durableListener = new ListenerHolder(MyServletListener.class);
+
+        FilterHolder transientFilter = new FilterHolder((TestFilter)(req,res,c) -> c.doFilter(req, res));
+        ServletHolder transientServlet = new ServletHolder(new HttpServlet(){});
+        ListenerHolder transientListener = new ListenerHolder(MyServletListener.class);
+
+        handler.addFilter(durableFilter);
+        handler.addServletWithMapping(durableServlet, "/");
+        handler.addListener(durableListener);
+
+        context.addBean(new AbstractLifeCycle()
+        {
+            @Override
+            protected void doStart() throws Exception
+            {
+                handler.addFilter(transientFilter);
+                handler.addServlet(transientServlet);
+                handler.addListener(transientListener);
+            }
+        });
+
+        server.start();
+
+        assertThat(Arrays.asList(handler.getFilters()), containsInAnyOrder(durableFilter, transientFilter));
+        assertThat(Arrays.asList(handler.getServlets()), containsInAnyOrder(durableServlet, transientServlet));
+        assertThat(Arrays.asList(handler.getListeners()), containsInAnyOrder(durableListener, transientListener));
+
+        server.stop();
+
+        assertThat(Arrays.asList(handler.getFilters()), containsInAnyOrder(durableFilter));
+        assertThat(Arrays.asList(handler.getServlets()), containsInAnyOrder(durableServlet));
+        assertThat(Arrays.asList(handler.getListeners()), containsInAnyOrder(durableListener));
+    }
+
+    public static class MyServletListener implements ServletContextListener
+    {
+        @Override
+        public void contextInitialized(ServletContextEvent sce)
+        {
+        }
+
+        @Override
+        public void contextDestroyed(ServletContextEvent sce)
+        {
+        }
     }
 
     private interface TestFilter extends Filter
