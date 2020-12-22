@@ -26,7 +26,9 @@ package org.eclipse.jetty.util.preventers;
  * that by invoking the classloading here.
  *
  * Inspired by Tomcat JreMemoryLeakPrevention
+ * @deprecated classloader does not seem to be held any more
  */
+@Deprecated
 public class LoginConfigurationLeakPreventer extends AbstractLeakPreventer
 {
 
