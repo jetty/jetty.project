@@ -948,7 +948,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             {
                 nativeService = false;
                 LOG.info("Using Non-Native Java {}", pollingWatchServiceClass.getName());
-                Class<?> c = Class.forName("com.sun.nio.file.SensitivityWatchEventModifier");
+                Class<?> c = Class.forName("com.sun.nio.file.SensitivityWatchEventModifier", false, cl);
                 Field f = c.getField("HIGH");
                 modifiers = new WatchEvent.Modifier[]
                     {
