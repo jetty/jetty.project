@@ -1275,7 +1275,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         if (LOG.isDebugEnabled())
             LOG.debug("scope {}|{}|{} @ {}", baseRequest.getContextPath(), baseRequest.getServletPath(), baseRequest.getPathInfo(), this);
 
-        Context oldContext;
+        Context oldRequestContext = baseRequest.getContext();
+        Context oldContext = __context.get();
         String oldContextPath = null;
         String oldServletPath = null;
         String oldPathInfo = null;
@@ -1285,10 +1286,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         DispatcherType dispatch = baseRequest.getDispatcherType();
 
-        oldContext = baseRequest.getContext();
-
         // Are we already in this context?
-        if (oldContext != _scontext)
+        if (oldRequestContext != _scontext)
         {
             // check the target.
             if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch))
@@ -1341,7 +1340,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 baseRequest.setPathInfo(pathInfo);
             }
 
-            if (oldContext != _scontext)
+            if (oldRequestContext != _scontext)
                 enterScope(baseRequest, dispatch);
 
             if (LOG.isDebugEnabled())
@@ -1351,7 +1350,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
         finally
         {
-            if (oldContext != _scontext)
+            if (oldRequestContext != _scontext)
             {
                 exitScope(baseRequest);
 
@@ -1360,14 +1359,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 {
                     currentThread.setContextClassLoader(oldClassloader);
                 }
-
-                // reset the context and servlet path.
-                baseRequest.setContext(oldContext);
-                __context.set(oldContext);
-                baseRequest.setContextPath(oldContextPath);
-                baseRequest.setServletPath(oldServletPath);
-                baseRequest.setPathInfo(oldPathInfo);
             }
+
+            // reset the context and servlet path.
+            baseRequest.setContext(oldRequestContext);
+            baseRequest.setContextPath(oldContextPath);
+            baseRequest.setServletPath(oldServletPath);
+            baseRequest.setPathInfo(oldPathInfo);
+            __context.set(oldContext);
         }
     }
 
