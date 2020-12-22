@@ -2416,6 +2416,14 @@ public class Request implements HttpServletRequest
     @Override
     public HttpServletMapping getHttpServletMapping()
     {
+        // TODO This is to pass the current TCK.  This has been challenged in https://github.com/eclipse-ee4j/jakartaee-tck/issues/585
+        if (_dispatcherType == DispatcherType.ASYNC)
+        {
+            Object async = getAttribute(AsyncContext.ASYNC_MAPPING);
+            if (async != null)
+                return (ServletPathMapping)async;
+        }
+
         // The mapping returned is normally for the current servlet.  Except during an
         // INCLUDE dispatch, in which case this method returns the mapping of the source servlet,
         // which we recover from the IncludeAttributes wrapper.

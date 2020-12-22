@@ -1811,10 +1811,9 @@ public class XmlConfiguration
                         if (properties.size() > 0)
                         {
                             Map<String, String> props = new HashMap<>();
-                            for (Object key : properties.keySet())
-                            {
-                                props.put(key.toString(), String.valueOf(properties.get(key)));
-                            }
+                            properties.entrySet().stream()
+                                .forEach(objectObjectEntry -> props.put(objectObjectEntry.getKey().toString(),
+                                                                        String.valueOf(objectObjectEntry.getValue())));
                             configuration.getProperties().putAll(props);
                         }
 

@@ -75,7 +75,7 @@
     <settingsPath>src/it/settings.xml</settingsPath>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
-    <testcontainers.version>1.15.0</testcontainers.version>
+    <testcontainers.version>1.15.1</testcontainers.version>
     <maria.version>2.7.0</maria.version>
   </properties>
 
@@ -154,10 +154,35 @@
         <artifactId>maven-enforcer-plugin</artifactId>
         <executions>
           <execution>
+            <id>ban-javax-servlet-api</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <phase>validate</phase>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <excludes>
+                    <exclude>javax.servlet:*</exclude>
+                    <exclude>servletapi</exclude>
+                    <exclude>org.eclipse.jetty.orbit:javax.servlet</exclude>
+                    <exclude>*:javax.servlet</exclude>
+                    <exclude>org.mortbay.jetty:servlet-api</exclude>
+                    <exclude>jetty:servlet-api</exclude>
+                    <exclude>jetty-servlet-api</exclude>
+                    <exclude>javax.websocket</exclude>
+                  </excludes>
+                  <searchTransitive>true</searchTransitive>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+          <execution>
             <id>enforce-java</id>
             <goals>
               <goal>enforce</goal>
             </goals>
+            <phase>validate</phase>
             <configuration>
               <rules>
                 <requireMavenVersion>
