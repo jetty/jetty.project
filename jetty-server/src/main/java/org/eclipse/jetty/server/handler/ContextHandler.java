@@ -689,7 +689,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         _eventListeners.add(listener);
 
-        if (!(isStarted() || isStarting()))
+        if (!isRunning())
         {
             _durableListeners.add(listener);
         }
@@ -702,7 +702,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         if (listener instanceof ServletContextListener)
-            _servletContextListeners.add((ServletContextListener)listener);
+        {
+            ServletContextListener scl = (ServletContextListener)listener;
+            _servletContextListeners.add(scl);
+            if (_contextStatus == ContextStatus.INITIALIZED)
+            {
+                if (isStarting())
+                    scl.contextInitialized(new ServletContextEvent(_scontext));
+                _destroyServletContextListeners.add(scl);
+            }
+        }
 
         if (listener instanceof ServletContextAttributeListener)
             _servletContextAttributeListeners.add((ServletContextAttributeListener)listener);
@@ -982,31 +991,19 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public void contextInitialized() throws Exception
     {
         // Call context listeners
-        switch (_contextStatus)
+        if (_contextStatus == ContextStatus.NOTSET)
         {
-            case NOTSET:
+            _contextStatus = ContextStatus.INITIALIZED;
+            _destroyServletContextListeners.clear();
+            if (!_servletContextListeners.isEmpty())
             {
-                try
+                ServletContextEvent event = new ServletContextEvent(_scontext);
+                for (ServletContextListener listener : _servletContextListeners)
                 {
-                    _destroyServletContextListeners.clear();
-                    if (!_servletContextListeners.isEmpty())
-                    {
-                        ServletContextEvent event = new ServletContextEvent(_scontext);
-                        for (ServletContextListener listener : _servletContextListeners)
-                        {
-                            callContextInitialized(listener, event);
-                            _destroyServletContextListeners.add(listener);
-                        }
-                    }
+                    callContextInitialized(listener, event);
+                    _destroyServletContextListeners.add(listener);
                 }
-                finally
-                {
-                    _contextStatus = ContextStatus.INITIALIZED;
-                }
-                break;
             }
-            default:
-                break;
         }
     }
 

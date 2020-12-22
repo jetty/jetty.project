@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.http.HttpServletRequest;
@@ -480,6 +481,69 @@ public class ContextHandlerTest
         assertEquals(1, listener.initialized);
         server.stop();
         assertEquals(1, listener.destroyed);
+    }
+
+    @Test
+    public void testNonDurableContextListener() throws Exception
+    {
+        Server server = new Server();
+        ContextHandler context = new ContextHandler();
+        server.setHandler(context);
+        AtomicInteger initialized = new AtomicInteger();
+        AtomicInteger destroyed = new AtomicInteger();
+
+        context.addEventListener(new ServletContextListener()
+        {
+            @Override
+            public void contextInitialized(ServletContextEvent sce)
+            {
+                initialized.incrementAndGet();
+                context.addEventListener(new ServletContextListener()
+                {
+                    @Override
+                    public void contextInitialized(ServletContextEvent sce)
+                    {
+                        initialized.incrementAndGet();
+                    }
+
+                    @Override
+                    public void contextDestroyed(ServletContextEvent sce)
+                    {
+                        destroyed.incrementAndGet();
+                    }
+                });
+            }
+
+            @Override
+            public void contextDestroyed(ServletContextEvent sce)
+            {
+                destroyed.incrementAndGet();
+            }
+        });
+
+        server.start();
+        assertThat(initialized.get(), is(2));
+
+        context.addEventListener(new ServletContextListener()
+        {
+            @Override
+            public void contextInitialized(ServletContextEvent sce)
+            {
+                // This should not get called because added after started
+                initialized.incrementAndGet();
+            }
+
+            @Override
+            public void contextDestroyed(ServletContextEvent sce)
+            {
+                destroyed.incrementAndGet();
+            }
+        });
+
+        assertThat(initialized.get(), is(2));
+
+        server.stop();
+        assertThat(destroyed.get(), is(3));
     }
 
     @Test
