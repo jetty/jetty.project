@@ -22,6 +22,7 @@ import java.util.EventListener;
 import javax.servlet.ServletException;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandler.Context;
 
 /**
  * ListenerHolder
@@ -111,9 +112,12 @@ public class ListenerHolder extends BaseHolder<EventListener>
         {
             try
             {
-                ContextHandler contextHandler = ContextHandler.getCurrentContext().getContextHandler();
-                if (contextHandler != null)
-                    contextHandler.removeEventListener(_listener);
+                Context context = ContextHandler.getCurrentContext();
+                if( context != null ) {
+                    ContextHandler contextHandler = context.getContextHandler();
+                    if (contextHandler != null)
+                        contextHandler.removeEventListener(_listener);
+                }
                 getServletHandler().destroyListener(unwrap(_listener));
             }
             finally
