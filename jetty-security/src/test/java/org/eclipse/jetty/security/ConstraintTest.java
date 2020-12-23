@@ -64,6 +64,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -236,6 +237,48 @@ public class ConstraintTest
         assertFalse(mappings.get(3).getConstraint().getAuthenticate());
     }
 
+    /**
+     * Test that constraint mappings added before the context starts are
+     * retained, but those that are added after the context starts are not.
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testDurableConstraints() throws Exception
+    {
+        _server.start();
+        
+        List<ConstraintMapping> mappings =  _security.getConstraintMappings();
+        assertThat("after start", getConstraintMappings().size(), Matchers.equalTo(mappings.size()));
+        
+        _server.stop();
+        
+        mappings = _security.getConstraintMappings();
+        assertThat("after restart", 0, Matchers.equalTo(mappings.size()));
+        
+        _server.start();
+        mappings = _security.getConstraintMappings();
+        assertThat("after restart", getConstraintMappings().size(), Matchers.equalTo(mappings.size()));
+        
+        ConstraintMapping mapping = new ConstraintMapping();
+        mapping.setPathSpec("/xxxx/*");
+        Constraint constraint = new Constraint();
+        constraint.setAuthenticate(false);
+        constraint.setName("transient");
+        mapping.setConstraint(constraint);
+        
+        _security.addConstraintMapping(mapping);
+        
+        mappings = _security.getConstraintMappings();
+        assertThat("after addition", getConstraintMappings().size() + 1, Matchers.equalTo(mappings.size()));
+        
+        _server.stop();
+        _server.start();
+        
+        mappings = _security.getConstraintMappings();
+        assertThat("after addition", getConstraintMappings().size(), Matchers.equalTo(mappings.size()));
+    }
+    
     /**
      * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-1
      * &#064;ServletSecurity
