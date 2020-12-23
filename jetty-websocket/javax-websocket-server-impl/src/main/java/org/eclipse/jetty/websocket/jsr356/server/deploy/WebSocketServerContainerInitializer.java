@@ -81,10 +81,13 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
                 ServerContainer bean = handler.getBean(ServerContainer.class);
                 if (bean != null)
                     handler.removeBean(bean);
+
+                // Remove reference in ServletContextHandler.
+                handler.removeAttribute(ATTR_JAVAX_SERVER_CONTAINER);
             }
 
             //remove reference in attributes
-            sce.getServletContext().removeAttribute(javax.websocket.server.ServerContainer.class.getName());
+            sce.getServletContext().removeAttribute(ATTR_JAVAX_SERVER_CONTAINER);
         }
     }
 

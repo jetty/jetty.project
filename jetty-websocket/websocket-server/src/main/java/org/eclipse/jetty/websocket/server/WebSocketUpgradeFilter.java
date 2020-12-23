@@ -182,11 +182,14 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
     {
         try
         {
+            // We must clear out the configuration as the configuration is cleared on restart.
+            NativeWebSocketConfiguration config = configuration;
+            boolean localConfig = localConfiguration;
+            configuration = null;
+            localConfiguration = false;
             alreadySetToAttribute = false;
-            if (localConfiguration)
-            {
-                configuration.stop();
-            }
+            if (localConfig)
+                config.stop();
         }
         catch (Exception e)
         {
