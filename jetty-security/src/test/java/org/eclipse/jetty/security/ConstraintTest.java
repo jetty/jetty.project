@@ -214,6 +214,9 @@ public class ConstraintTest
     @Test
     public void testConstraints() throws Exception
     {
+        //constraint mappings are not available until the server is started.
+        _server.start();
+        
         List<ConstraintMapping> mappings = new ArrayList<>(_security.getConstraintMappings());
 
         assertTrue(mappings.get(0).getConstraint().isForbidden());
@@ -698,7 +701,7 @@ public class ConstraintTest
     @MethodSource("basicScenarios")
     public void testBasic(Scenario scenario) throws Exception
     {
-        List<ConstraintMapping> list = new ArrayList<>(_security.getConstraintMappings());
+        List<ConstraintMapping> list = new ArrayList<>(getConstraintMappings());
 
         Constraint constraint6 = new Constraint();
         constraint6.setAuthenticate(true);
