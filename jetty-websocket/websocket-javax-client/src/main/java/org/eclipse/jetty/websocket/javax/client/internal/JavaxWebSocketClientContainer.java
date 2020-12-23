@@ -298,9 +298,9 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
             AbstractLifeCycleListener shutdownListener = new AbstractLifeCycleListener()
             {
                 @Override
-                public void lifeCycleStopped(LifeCycle event)
+                public void lifeCycleStopping(LifeCycle event)
                 {
-                    LifeCycle.stop(this);
+                    LifeCycle.stop(JavaxWebSocketClientContainer.this);
                 }
             };
 
