@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
 import java.util.EnumSet;
+import java.util.Objects;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -131,12 +132,12 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
 
     private NativeWebSocketConfiguration configuration;
     private String instanceKey;
-    private boolean localConfiguration = false;
+    private boolean durableConfiguration = false;
+    private boolean managedConfiguration = false;
     private boolean alreadySetToAttribute = false;
 
     public WebSocketUpgradeFilter()
     {
-        // do nothing
     }
 
     public WebSocketUpgradeFilter(WebSocketServerFactory factory)
@@ -146,6 +147,7 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
 
     public WebSocketUpgradeFilter(NativeWebSocketConfiguration configuration)
     {
+        durableConfiguration = configuration != null;
         this.configuration = configuration;
     }
 
@@ -182,14 +184,17 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
     {
         try
         {
-            // We must clear out the configuration as the configuration is cleared on restart.
             NativeWebSocketConfiguration config = configuration;
-            boolean localConfig = localConfiguration;
-            configuration = null;
-            localConfiguration = false;
-            alreadySetToAttribute = false;
-            if (localConfig)
+            if (!durableConfiguration)
+                configuration = null;
+
+            boolean managed = managedConfiguration;
+            managedConfiguration = false;
+            if (managed)
+            {
                 config.stop();
+            }
+            alreadySetToAttribute = false;
         }
         catch (Exception e)
         {
@@ -332,7 +337,14 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
                 configurationKey = NativeWebSocketConfiguration.class.getName();
             }
 
-            if (configuration == null)
+            if (durableConfiguration)
+            {
+                Objects.requireNonNull(this.configuration);
+                // We have a NativeWebSocketConfiguration already present, make sure it exists on the ServletContext
+                config.getServletContext().setAttribute(configurationKey, this.configuration);
+
+            }
+            else
             {
                 this.configuration = (NativeWebSocketConfiguration)config.getServletContext().getAttribute(configurationKey);
                 if (this.configuration == null)
@@ -342,18 +354,10 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
                         NativeWebSocketConfiguration.class.getName() + " at ServletContext attribute '" + configurationKey + "'");
                 }
             }
-            else
-            {
-                // We have a NativeWebSocketConfiguration already present, make sure it exists on the ServletContext
-                if (config.getServletContext().getAttribute(configurationKey) == null)
-                {
-                    config.getServletContext().setAttribute(configurationKey, this.configuration);
-                }
-            }
 
             if (!this.configuration.isRunning())
             {
-                localConfiguration = true;
+                managedConfiguration = true;
                 this.configuration.start();
             }
 
