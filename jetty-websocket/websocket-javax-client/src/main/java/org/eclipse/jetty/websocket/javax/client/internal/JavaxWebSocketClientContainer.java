@@ -15,6 +15,7 @@ package org.eclipse.jetty.websocket.javax.client.internal;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.EventListener;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -33,6 +34,7 @@ import javax.websocket.Session;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
@@ -60,20 +62,6 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     public JavaxWebSocketClientContainer()
     {
         this(new WebSocketComponents());
-    }
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        ShutdownThread.register(this);
-        super.doStart();
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        super.doStop();
-        ShutdownThread.deregister(this);
     }
 
     /**
@@ -285,5 +273,56 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
             throw new DeploymentException("Could not get ClientEndpoint annotation for " + endpoint.getClass().getName());
 
         return new AnnotatedClientEndpointConfig(anno);
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        doClientStart();
+        super.doStart();
+    }
+
+    protected void doClientStart()
+    {
+        try
+        {
+            Object context = getClass().getClassLoader()
+                .loadClass("org.eclipse.jetty.server.handler.ContextHandler")
+                .getMethod("getCurrentContext")
+                .invoke(null);
+
+            Object contextHandler = context.getClass()
+                .getMethod("getContextHandler")
+                .invoke(context);
+
+            AbstractLifeCycleListener shutdownListener = new AbstractLifeCycleListener()
+            {
+                @Override
+                public void lifeCycleStopped(LifeCycle event)
+                {
+                    LifeCycle.stop(this);
+                }
+            };
+
+            contextHandler.getClass()
+                .getMethod("addEventListener", EventListener.class)
+                .invoke(contextHandler, shutdownListener);
+        }
+        catch (Throwable ignored)
+        {
+            ShutdownThread.register(this);
+        }
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+        doClientStop();
+    }
+
+    protected void doClientStop()
+    {
+        ShutdownThread.deregister(this);
     }
 }
