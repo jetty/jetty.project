@@ -16,6 +16,7 @@ package org.eclipse.jetty.websocket.javax.client;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
@@ -50,24 +51,36 @@ public class JavaxWebSocketClientContainerProvider extends ContainerProvider
      * </p>
      */
     @Override
-    protected WebSocketContainer getContainer()
+    public WebSocketContainer getContainer()
     {
-        // See: https://github.com/javaee/websocket-spec/issues/212
-        // TODO: on multiple executions, do we warn?
-        // TODO: do we care?
-        // TODO: on multiple executions, do we share bufferPool/executors/etc?
-        // TODO: do we want to provide a non-standard way to configure to always return the same clientContainer based on a config somewhere? (system.property?)
-
         JavaxWebSocketClientContainer clientContainer = new JavaxWebSocketClientContainer();
+        registerShutdown(clientContainer);
+        return clientContainer;
+    }
 
+    /**
+     * Get a new instance of a client {@link WebSocketContainer} which uses a supplied {@link HttpClient}.
+     * @param httpClient a pre-configured {@link HttpClient} to be used by the implementation.
+     * @see #getContainer()
+     */
+    public WebSocketContainer getContainer(HttpClient httpClient)
+    {
+        JavaxWebSocketClientContainer clientContainer = new JavaxWebSocketClientContainer(httpClient);
+        registerShutdown(clientContainer);
+        return clientContainer;
+    }
+
+    // See: https://github.com/eclipse-ee4j/websocket-api/issues/212
+    private WebSocketContainer registerShutdown(JavaxWebSocketClientContainer container)
+    {
         // Register as JVM runtime shutdown hook?
-        ShutdownThread.register(clientContainer);
+        ShutdownThread.register(container);
 
-        if (!clientContainer.isStarted())
+        if (!container.isStarted())
         {
             try
             {
-                clientContainer.start();
+                container.start();
             }
             catch (Exception e)
             {
@@ -75,6 +88,6 @@ public class JavaxWebSocketClientContainerProvider extends ContainerProvider
             }
         }
 
-        return clientContainer;
+        return container;
     }
 }
