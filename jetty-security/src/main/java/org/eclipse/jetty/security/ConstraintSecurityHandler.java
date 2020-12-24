@@ -262,12 +262,19 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     }
 
     /**
-     * @return Returns the constraintMappings.
+     * @return only the durable mappings if we are not yet started, otherwise
+     * return both the durables and transients.
      */
     @Override
     public List<ConstraintMapping> getConstraintMappings()
     {
-        return _constraintMappings;
+        //if we've started, then we've processed both the durable and
+        //transient constraint mappings
+        if (isRunning())
+            return _constraintMappings;
+        else
+            //otherwise, we only have durables
+            return _durableConstraintMappings;
     }
 
     @Override

@@ -214,9 +214,6 @@ public class ConstraintTest
     @Test
     public void testConstraints() throws Exception
     {
-        //constraint mappings are not available until the server is started.
-        _server.start();
-        
         List<ConstraintMapping> mappings = new ArrayList<>(_security.getConstraintMappings());
 
         assertTrue(mappings.get(0).getConstraint().isForbidden());
@@ -256,10 +253,13 @@ public class ConstraintTest
         
         _server.stop();
         
+        //After a stop, just the durable mappings are left
         mappings = _security.getConstraintMappings();
-        assertThat("after restart", 0, Matchers.equalTo(mappings.size()));
+        assertThat("after stop", getConstraintMappings().size(), Matchers.equalTo(mappings.size()));
         
         _server.start();
+        
+        //Verify the constraints are just the durables
         mappings = _security.getConstraintMappings();
         assertThat("after restart", getConstraintMappings().size(), Matchers.equalTo(mappings.size()));
         
@@ -278,6 +278,7 @@ public class ConstraintTest
         _server.stop();
         _server.start();
         
+        //After a stop, only the durable mappings remain
         mappings = _security.getConstraintMappings();
         assertThat("after addition", getConstraintMappings().size(), Matchers.equalTo(mappings.size()));
     }
