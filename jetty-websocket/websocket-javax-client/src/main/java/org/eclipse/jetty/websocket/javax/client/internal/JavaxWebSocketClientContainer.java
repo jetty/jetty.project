@@ -46,6 +46,8 @@ import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketExtensionConfig;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Container for Client use of the javax.websocket API.
@@ -55,6 +57,8 @@ import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactor
 @ManagedObject("JSR356 Client Container")
 public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer implements javax.websocket.WebSocketContainer
 {
+    private static final Logger LOG = LoggerFactory.getLogger(JavaxWebSocketClientContainer.class);
+
     protected WebSocketCoreClient coreClient;
     protected Function<WebSocketComponents, WebSocketCoreClient> coreClientFactory;
     private final JavaxWebSocketClientFrameHandlerFactory frameHandlerFactory;
@@ -295,12 +299,25 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
                 .getMethod("getContextHandler")
                 .invoke(context);
 
+            contextHandler.getClass()
+                .getMethod("addManaged", LifeCycle.class)
+                .invoke(contextHandler, this);
+
             AbstractLifeCycleListener shutdownListener = new AbstractLifeCycleListener()
             {
                 @Override
                 public void lifeCycleStopping(LifeCycle event)
                 {
-                    LifeCycle.stop(JavaxWebSocketClientContainer.this);
+                    try
+                    {
+                        contextHandler.getClass()
+                            .getMethod("removeBean", Object.class)
+                            .invoke(contextHandler, JavaxWebSocketClientContainer.this);
+                    }
+                    catch (Throwable t)
+                    {
+                        LOG.warn("could not remove client WebSocketContainer bean from {}", contextHandler);
+                    }
                 }
             };
 

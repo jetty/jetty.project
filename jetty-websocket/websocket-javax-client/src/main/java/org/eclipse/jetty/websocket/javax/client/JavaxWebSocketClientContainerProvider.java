@@ -58,14 +58,7 @@ public class JavaxWebSocketClientContainerProvider extends ContainerProvider
         // TODO: do we want to provide a non-standard way to configure to always return the same clientContainer based on a config somewhere? (system.property?)
 
         JavaxWebSocketClientContainer clientContainer = new JavaxWebSocketClientContainer();
-        try
-        {
-            clientContainer.start();
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException("Unable to start Client Container", e);
-        }
+        LifeCycle.start(clientContainer);
         return clientContainer;
     }
 }

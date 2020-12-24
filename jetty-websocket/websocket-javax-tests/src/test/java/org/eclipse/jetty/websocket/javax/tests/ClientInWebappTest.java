@@ -15,6 +15,7 @@ package org.eclipse.jetty.websocket.javax.tests;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Collection;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -43,11 +44,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class ClientInWebappTest
 {
     private Server server;
+    private ServletContextHandler contextHandler;
     private URI serverUri;
     private HttpClient httpClient;
     private volatile WebSocketContainer container;
 
-    public class ServerSocket extends HttpServlet
+    public class WebSocketClientInServlet extends HttpServlet
     {
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
@@ -64,9 +66,9 @@ public class ClientInWebappTest
         connector.setPort(8080);
         server.addConnector(connector);
 
-        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler = new ServletContextHandler();
         contextHandler.setContextPath("/");
-        contextHandler.addServlet(new ServletHolder(new ServerSocket()), "/");
+        contextHandler.addServlet(new ServletHolder(new WebSocketClientInServlet()), "/");
         server.setHandler(contextHandler);
         server.start();
         serverUri = WSURI.toWebsocket(server.getURI());
@@ -92,6 +94,11 @@ public class ClientInWebappTest
         assertThat(container, instanceOf(JavaxWebSocketClientContainer.class));
         JavaxWebSocketClientContainer clientContainer = (JavaxWebSocketClientContainer)container;
         assertThat(clientContainer.isRunning(), is(true));
+
+        // The container should be a bean on the ContextHandler.
+        Collection<WebSocketContainer> containedBeans = contextHandler.getBeans(WebSocketContainer.class);
+        assertThat(containedBeans.size(), is(1));
+        assertThat(containedBeans.toArray()[0], is(container));
 
         // The client should be attached to the servers LifeCycle and should stop with it.
         server.stop();
