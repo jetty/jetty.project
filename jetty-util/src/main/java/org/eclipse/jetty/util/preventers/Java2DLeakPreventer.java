@@ -25,7 +25,11 @@ package org.eclipse.jetty.util.preventers;
  * before webapp classloaders are created.
  *
  * See https://issues.apache.org/bugzilla/show_bug.cgi?id=51687
+ * 
+ * @deprecated fixed in jdk 9, see https://bugs.java.com/bugdatabase/view_bug.do?bug_id=6489540
+ * 
  */
+@Deprecated
 public class Java2DLeakPreventer extends AbstractLeakPreventer
 {
 

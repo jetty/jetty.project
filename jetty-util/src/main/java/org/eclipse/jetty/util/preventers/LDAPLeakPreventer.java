@@ -27,7 +27,10 @@ package org.eclipse.jetty.util.preventers;
  * load the LdapPoolManager.
  *
  * Inspired by Tomcat JreMemoryLeakPrevention
+ * 
+ * @deprecated fixed in jdk 8u192
  */
+@Deprecated 
 public class LDAPLeakPreventer extends AbstractLeakPreventer
 {
 
