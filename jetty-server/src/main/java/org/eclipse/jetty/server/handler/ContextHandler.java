@@ -707,9 +707,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             _servletContextListeners.add(scl);
             if (_contextStatus == ContextStatus.INITIALIZED)
             {
-                if (isStarting())
-                    scl.contextInitialized(new ServletContextEvent(_scontext));
-                _destroyServletContextListeners.add(scl);
+                throw new IllegalStateException("Context is initialized");
+//                scl.contextInitialized(new ServletContextEvent(_scontext));
+//                _destroyServletContextListeners.add(scl);
             }
         }
 
