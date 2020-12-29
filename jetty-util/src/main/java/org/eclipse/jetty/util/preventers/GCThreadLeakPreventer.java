@@ -34,7 +34,10 @@ import java.lang.reflect.Method;
  * RMI.
  *
  * Inspired by Tomcat JreMemoryLeakPrevention.
+ * 
+ * @deprecated fixed in jdvm 9b130, see https://bugs.java.com/bugdatabase/view_bug.do?bug_id=JDK-8157570
  */
+@Deprecated
 public class GCThreadLeakPreventer extends AbstractLeakPreventer
 {
 

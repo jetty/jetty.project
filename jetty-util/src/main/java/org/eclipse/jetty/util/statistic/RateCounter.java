@@ -16,36 +16,34 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.util.preventers;
+package org.eclipse.jetty.util.statistic;
+
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
- * Java2DLeakPreventer
- *
- * Prevent pinning of webapp classloader by pre-loading sun.java2d.Disposer class
- * before webapp classloaders are created.
- *
- * See https://issues.apache.org/bugzilla/show_bug.cgi?id=51687
- * 
- * @deprecated fixed in jdk 9, see https://bugs.java.com/bugdatabase/view_bug.do?bug_id=6489540
- * 
+ * Counts the rate that {@link Long}s are added to this from the time of creation or the last call to {@link #reset()}.
  */
-@Deprecated
-public class Java2DLeakPreventer extends AbstractLeakPreventer
+public class RateCounter
 {
+    private final LongAdder _total = new LongAdder();
+    private final AtomicLong _timeStamp = new AtomicLong(System.nanoTime());
 
-    /**
-     * @see org.eclipse.jetty.util.preventers.AbstractLeakPreventer#prevent(java.lang.ClassLoader)
-     */
-    @Override
-    public void prevent(ClassLoader loader)
+    public void add(long l)
     {
-        try
-        {
-            Class.forName("sun.java2d.Disposer", true, loader);
-        }
-        catch (ClassNotFoundException e)
-        {
-            LOG.ignore(e);
-        }
+        _total.add(l);
+    }
+
+    public long getRate()
+    {
+        long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - _timeStamp.get());
+        return elapsed == 0 ? 0 : _total.sum() * 1000 / elapsed;
+    }
+
+    public void reset()
+    {
+        _timeStamp.getAndSet(System.nanoTime());
+        _total.reset();
     }
 }
