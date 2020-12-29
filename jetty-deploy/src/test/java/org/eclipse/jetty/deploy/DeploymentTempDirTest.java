@@ -119,7 +119,7 @@ public class DeploymentTempDirTest
         webAppProvider.scan();
         webAppProvider.scan();
         webAppProvider.scan();
-        listener.future.get(5, TimeUnit.SECONDS);
+        listener.future.get(10, TimeUnit.SECONDS);
 
         // The second WebAppContext should be using the same temp directory but the file will have been deleted.
         WebAppContext webAppContext2 = getWebAppContext();
@@ -159,7 +159,7 @@ public class DeploymentTempDirTest
         webAppProvider.scan();
         webAppProvider.scan();
         webAppProvider.scan();
-        listener.future.get(5, TimeUnit.SECONDS);
+        listener.future.get(10, TimeUnit.SECONDS);
 
         // The second WebAppContext should be using the same temp directory and file will not have been deleted.
         WebAppContext webAppContext2 = getWebAppContext();
