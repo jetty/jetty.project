@@ -157,7 +157,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     {
         startBasic(scenario, new EmptyServerHandler(), StandardCharsets.UTF_8);
         URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
-        testAuthentication(scenario, new BasicAuthentication(uri, realm, "basic_utf8", "\u20AC"));
+        testAuthentication(scenario, new BasicAuthentication(uri, realm, "basic_utf8", "€"));
     }
 
     @ParameterizedTest
