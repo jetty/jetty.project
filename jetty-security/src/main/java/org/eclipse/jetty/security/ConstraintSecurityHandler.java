@@ -261,20 +261,10 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         return mappings;
     }
 
-    /**
-     * @return only the durable mappings if we are not yet started, otherwise
-     * return both the durables and transients.
-     */
     @Override
     public List<ConstraintMapping> getConstraintMappings()
     {
-        //if we've started, then we've processed both the durable and
-        //transient constraint mappings
-        if (isRunning())
-            return _constraintMappings;
-        else
-            //otherwise, we only have durables
-            return _durableConstraintMappings;
+        return _constraintMappings;
     }
 
     @Override
@@ -319,6 +309,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     {
         _durableConstraintMappings.clear();
         _constraintMappings.clear();
+        _constraintMappings.addAll(constraintMappings);    
         
         if (isInDurableState())
             _durableConstraintMappings.addAll(constraintMappings);
@@ -343,11 +334,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
 
         if (isStarted())
         {
-            _constraintMappings.addAll(constraintMappings);    
-            for (ConstraintMapping mapping : _constraintMappings)
-            {
-                processConstraintMapping(mapping);
-            }
+            _constraintMappings.stream().forEach(m -> processConstraintMapping(m));
         }
     }
 
@@ -373,6 +360,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         if (isInDurableState())
             _durableConstraintMappings.add(mapping);
         
+        _constraintMappings.add(mapping);
+        
         if (mapping.getConstraint() != null && mapping.getConstraint().getRoles() != null)
         {
             //allow for lazy role naming: if a role is named in a security constraint, try and
@@ -386,10 +375,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         }
 
         if (isStarted())
-        {
-            _constraintMappings.add(mapping);
             processConstraintMapping(mapping);
-        }
     }
 
     /**
@@ -420,7 +406,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     @Override
     protected void doStart() throws Exception
     {
-        _constraintMappings.addAll(_durableConstraintMappings);
         _constraintMappings.stream().forEach(m -> processConstraintMapping(m));
 
         //Servlet Spec 3.1 pg 147 sec 13.8.4.2 log paths for which there are uncovered http methods
@@ -435,7 +420,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         super.doStop();
         _constraintMap.clear();
         _constraintMappings.clear();
-    }
+        _constraintMappings.addAll(_durableConstraintMappings);
+    }       
 
     /**
      * Create and combine the constraint with the existing processed
