@@ -36,6 +36,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MainTest
 {
@@ -244,5 +245,22 @@ public class MainTest
         assertThat("jetty.base", baseHome.getBase(), is(homePath.toString()));
 
         ConfigurationAssert.assertConfiguration(baseHome, args, "assert-home-with-spaces.txt");
+    }
+
+    @Test
+    public void testDownload() throws Exception
+    {
+        List<String> cmdLineArgs = new ArrayList<>();
+        Path homePath = MavenTestingUtils.getTestResourceDir("dist-home").toPath().toRealPath();
+        cmdLineArgs.add("jetty.home=" + homePath);
+        cmdLineArgs.add("user.dir=" + homePath);
+        String outPath = "lib/maven-metadata.xml";
+        cmdLineArgs.add("--download=https://repo1.maven.org/maven2/org/eclipse/jetty/maven-metadata.xml|" + outPath);
+
+        Main main = new Main();
+        main.processCommandLine(cmdLineArgs.toArray(new String[0]));
+        BaseHome baseHome = main.getBaseHome();
+
+        assertTrue(Files.exists(baseHome.getBasePath(outPath)), "could not create " + outPath);
     }
 }
