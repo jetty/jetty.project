@@ -1654,6 +1654,7 @@
         <checkstyle.skip>true</checkstyle.skip>
         <enforcer.skip>true</enforcer.skip>
         <license.skip>true</license.skip>
+        <spotbugs.skip>true</spotbugs.skip>
       </properties>
     </profile>
   </profiles>
