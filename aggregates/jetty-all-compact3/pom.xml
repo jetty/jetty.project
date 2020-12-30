@@ -11,6 +11,7 @@
   <name>Jetty :: Aggregate :: All core Jetty suitable for Java 8 compact 3 profile</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.all.compact3</bundle-symbolic-name>
+    <pmd.skip>true</pmd.skip>
   </properties>
   <build>
     <sourceDirectory>${project.build.directory}/sources</sourceDirectory>
