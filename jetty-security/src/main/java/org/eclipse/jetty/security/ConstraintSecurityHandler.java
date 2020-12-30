@@ -307,12 +307,15 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     @Override
     public void setConstraintMappings(List<ConstraintMapping> constraintMappings, Set<String> roles)
     {
-        _durableConstraintMappings.clear();
+
         _constraintMappings.clear();
-        _constraintMappings.addAll(constraintMappings);    
+        _constraintMappings.addAll(constraintMappings);
         
+        _durableConstraintMappings.clear();
         if (isInDurableState())
+        {
             _durableConstraintMappings.addAll(constraintMappings);
+        }
 
         if (roles == null)
         {
@@ -357,10 +360,10 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     @Override
     public void addConstraintMapping(ConstraintMapping mapping)
     {
+        _constraintMappings.add(mapping);
+        
         if (isInDurableState())
             _durableConstraintMappings.add(mapping);
-        
-        _constraintMappings.add(mapping);
         
         if (mapping.getConstraint() != null && mapping.getConstraint().getRoles() != null)
         {

@@ -246,9 +246,12 @@ public class ConstraintTest
     @Test
     public void testDurableConstraints() throws Exception
     {
+        List<ConstraintMapping> mappings =  _security.getConstraintMappings();
+        assertThat("before start", getConstraintMappings().size(), Matchers.equalTo(mappings.size()));
+        
         _server.start();
         
-        List<ConstraintMapping> mappings =  _security.getConstraintMappings();
+        mappings =  _security.getConstraintMappings();
         assertThat("after start", getConstraintMappings().size(), Matchers.equalTo(mappings.size()));
         
         _server.stop();
@@ -263,6 +266,7 @@ public class ConstraintTest
         mappings = _security.getConstraintMappings();
         assertThat("after restart", getConstraintMappings().size(), Matchers.equalTo(mappings.size()));
         
+        //Add a non-durable constraint
         ConstraintMapping mapping = new ConstraintMapping();
         mapping.setPathSpec("/xxxx/*");
         Constraint constraint = new Constraint();
@@ -281,6 +285,28 @@ public class ConstraintTest
         //After a stop, only the durable mappings remain
         mappings = _security.getConstraintMappings();
         assertThat("after addition", getConstraintMappings().size(), Matchers.equalTo(mappings.size()));
+        
+        //test that setConstraintMappings replaces all existing mappings whether durable or not
+        
+        //test setConstraintMappings in durable state
+        _server.stop();
+        _security.setConstraintMappings(Collections.singletonList(mapping));
+        mappings = _security.getConstraintMappings();
+        assertThat("after set during stop", 1, Matchers.equalTo(mappings.size()));
+        _server.start();
+        mappings = _security.getConstraintMappings();
+        assertThat("after set after start", 1, Matchers.equalTo(mappings.size()));
+       
+        //test setConstraintMappings not in durable state
+        _server.stop();
+        _server.start();
+        assertThat("no change after start", 1, Matchers.equalTo(mappings.size()));
+        _security.setConstraintMappings(getConstraintMappings());
+        mappings = _security.getConstraintMappings();
+        assertThat("durables lost", getConstraintMappings().size(), Matchers.equalTo(mappings.size()));
+        _server.stop();
+        mappings = _security.getConstraintMappings();
+        assertThat("no mappings", 0, Matchers.equalTo(mappings.size()));
     }
     
     /**
