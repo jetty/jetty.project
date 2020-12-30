@@ -1,7 +1,5 @@
-# DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
-
 [description]
-Enable javax.websocket for deployed web applications.
+Enable Java WebSocket APIs for deployed web applications.
 
 [tags]
 websocket
