@@ -33,15 +33,12 @@ module org.eclipse.jetty.util
 
     // Standard Jetty Logging now.
     requires org.slf4j;
-
+    // Only required if using DriverManagerLeakPreventer.
+    requires static java.sql;
     // Only required if using AppContextLeakPreventer/AWTLeakPreventer.
     requires static java.desktop;
     // Only required if using JavaUtilLog.
     requires static java.logging;
-    // Only required if using DriverManagerLeakPreventer.
-    requires static java.sql;
-    // Only required if using DOMLeakPreventer.
-    requires static java.xml;
 
     uses CredentialProvider;
 }
