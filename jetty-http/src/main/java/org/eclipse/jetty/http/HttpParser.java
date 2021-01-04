@@ -1057,7 +1057,7 @@ public class HttpParser
                 if (addToFieldCache && _header != null && _valueString != null)
                 {
                     if (_fieldCache == null)
-                        _fieldCache = Index.Builder.buildCaseSensitiveMutableVisibleAsciiAlphabet(getHeaderCacheSize());
+                        _fieldCache = Index.buildCaseSensitiveMutableVisibleAsciiAlphabet(getHeaderCacheSize());
 
                     if (_field == null)
                         _field = new HttpField(_header, caseInsensitiveHeader(_headerString, _header.asString()), _valueString);

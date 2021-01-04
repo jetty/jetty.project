@@ -253,6 +253,21 @@ public interface Index<V>
     }
 
     /**
+     * A special purpose static builder for fast creation of specific Index type
+     * @param maxCapacity The max capacity of the index
+     * @param <V> The type of the index
+     * @return A case sensitive mutable Index tacking visible ASCII alphabet to a max capacity.
+     */
+    static <V> Mutable<V> buildCaseSensitiveMutableVisibleAsciiAlphabet(int maxCapacity)
+    {
+        if (maxCapacity < 0 || maxCapacity > ArrayTrie.MAX_CAPACITY)
+            return new TreeTrie<>(true);
+        if (maxCapacity == 0)
+            return EmptyTrie.instance(true);
+        return new ArrayTrie<>(true, maxCapacity);
+    }
+
+    /**
      * Builder of {@link Index} instances.
      * @param <V> the entry type
      */
@@ -274,21 +289,6 @@ public interface Index<V>
         {
             this.caseSensitive = caseSensitive;
             this.contents = contents;
-        }
-
-        /**
-         * A special purpose static builder for fast creation of specific Index type
-         * @param maxCapacity The max capacity of the index
-         * @param <V> The type of the index
-         * @return A case sensitive mutable Index tacking visible ASCII alphabet to a max capacity.
-         */
-        public static <V> Mutable<V> buildCaseSensitiveMutableVisibleAsciiAlphabet(int maxCapacity)
-        {
-            if (maxCapacity <= 0)
-                return EmptyTrie.instance(true);
-            if (maxCapacity <= ArrayTrie.MAX_CAPACITY)
-                return new ArrayTrie<>(true, maxCapacity);
-            return new TreeTrie<>(true);
         }
 
         private Map<String, V> contents()
