@@ -103,10 +103,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
      * @param caseSensitive true if the Trie is insensitive to the case of the key.
      * @param capacity The capacity of the Trie, which is in the worst case
      * is the total number of characters of all keys stored in the Trie.
-     * The capacity needed is dependent of the shared prefixes of the keys.
-     * For example, a capacity of 6 nodes is required to store keys "foo"
-     * and "bar", but a capacity of only 4 is required to
-     * store "bar" and "bat".
+     * @see AbstractTrie#requiredCapacity(Set, boolean)
      */
     @SuppressWarnings("unchecked")
     ArrayTernaryTrie(boolean caseSensitive, int capacity)

@@ -92,24 +92,24 @@ abstract class AbstractTrie<V> implements Index.Mutable<V>
      * </ul>
      * The tree switching by character is:
      * <pre>
-     *                     1 - 6
-     *                   /
-     *                 _ - 8
-     *               /
-     *     u - t - f - 1 - 6
-     *               \
-     *                 8
+     *                            1 - 6
+     *                          /
+     *                        _ - 8
+     *                      /
+     *     root - u - t - f - 1 - 6
+     *                      \
+     *                        8
      * </pre>
      * The count also applies to ternary trees as follows:
      * <pre>
-     *     u - t - f - _ ----- 1 - 6
-     *                  \       \
-     *                   1 - 6   8
-     *                    \
-     *                     8
+     *     root - u - t - f - _ ----- 1 - 6
+     *                         \       \
+     *                          1 - 6   8
+     *                           \
+     *                            8
      * </pre>
-     * In both cases above there are 10 nodes, but the
-     * returned capacity is 11 as it includes capacity for an empty string key.
+     * In both cases above there are 10 character nodes plus the root node that can
+     * hold a value for the empty string key, so the returned capacity is 11.
      *
      * @param keys The keys to be put in a Trie
      * @param caseSensitive true if the capacity should be calculated with case-sensitive keys

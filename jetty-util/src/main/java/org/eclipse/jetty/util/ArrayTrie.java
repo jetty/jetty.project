@@ -169,11 +169,7 @@ class ArrayTrie<V> extends AbstractTrie<V>
      * @param capacity The capacity of the trie, which at the worst case
      * is the total number of characters of all keys stored in the Trie, 
      * plus 1 for the empty key.
-     * The capacity needed is dependent of the shared prefixes of the keys.
-     * For example, a capacity of 7 nodes is required to store keys "foo"
-     * and "bar", but a capacity of only 5 is required to
-     * store "bar" and "bat".
-     * @see AbstractTrie#requiredCapacity(Set, boolean) 
+     * @see AbstractTrie#requiredCapacity(Set, boolean)
      */
     ArrayTrie(int capacity)
     {
