@@ -36,7 +36,6 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.util.Index;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -501,7 +500,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
                 case EXPECT:
                 {
-                    if (!Index.parseCsvIndex(HttpHeaderValue.CACHE, value, t ->
+                    if (!HttpHeaderValue.parseCsvIndex(value, t ->
                     {
                         switch (t)
                         {
@@ -514,7 +513,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
                             default:
                                 return false;
                         }
-                    }))
+                    }, s -> false))
                     {
                         _unknownExpectation = true;
                         _expect100Continue = false;

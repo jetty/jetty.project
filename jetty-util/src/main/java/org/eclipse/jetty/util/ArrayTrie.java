@@ -143,6 +143,13 @@ class ArrayTrie<V> extends AbstractTrie<V>
     private final int _bigRowSize;
     private char _rows;
 
+    /** Create a trie from capacity and content
+     * @param capacity The maximum capacity of the Trie or -1 for unlimited capacity
+     * @param caseSensitive True if the Trie keys are case sensitive
+     * @param contents The known contents of the Trie
+     * @param <V> The value type of the Trie
+     * @return a Trie containing the contents or null if not possible.
+     */
     public static <V> ArrayTrie<V> from(int capacity, boolean caseSensitive, Map<String, V> contents)
     {
         // can't do infinite capacity
@@ -160,11 +167,13 @@ class ArrayTrie<V> extends AbstractTrie<V>
 
     /**
      * @param capacity The capacity of the trie, which at the worst case
-     * is the total number of characters of all keys stored in the Trie.
+     * is the total number of characters of all keys stored in the Trie, 
+     * plus 1 for the empty key.
      * The capacity needed is dependent of the shared prefixes of the keys.
-     * For example, a capacity of 6 nodes is required to store keys "foo"
-     * and "bar", but a capacity of only 4 is required to
+     * For example, a capacity of 7 nodes is required to store keys "foo"
+     * and "bar", but a capacity of only 5 is required to
      * store "bar" and "bat".
+     * @see AbstractTrie#requiredCapacity(Set, boolean) 
      */
     ArrayTrie(int capacity)
     {

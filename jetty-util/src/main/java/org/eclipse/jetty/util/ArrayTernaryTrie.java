@@ -97,24 +97,6 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
      */
     private char _rows;
 
-    public static <V> AbstractTrie<V> from(int capacity, int maxCapacity, boolean caseSensitive, Set<Character> alphabet, Map<String, V> contents)
-    {
-        // Can't grow
-        if (maxCapacity < 0)
-            return null;
-        if (capacity < maxCapacity)
-            capacity = maxCapacity;
-        capacity++;
-        if (capacity > MAX_CAPACITY)
-            return null;
-
-        AbstractTrie<V> trie = new ArrayTernaryTrie<V>(caseSensitive, capacity);
-
-        if (contents != null && !trie.putAll(contents))
-            return null;
-        return trie;
-    }
-
     /**
      * Create a Trie
      *

@@ -14,14 +14,11 @@
 package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * An immutable String lookup data structure.
@@ -151,53 +148,6 @@ public interface Index<V>
     Set<String> keySet();
 
     /**
-     * Parse an unquoted comma separated list of index keys.
-     * @param index An Index with the length of the value in strings matches the key length
-     * @param value A string list of index keys, separated with commas and possible white space
-     * @param found The function to call for all found index entries. If the function returns false parsing is halted.
-     * @param <V> The type of the index
-     * @return true if parsing completed normally and all found index items returned true from the found function.
-     */
-    static <V> boolean parseCsvIndex(Index<V> index, String value, Function<V, Boolean> found)
-    {
-        if (StringUtil.isBlank(value))
-            return true;
-        int next = 0;
-        while (true)
-        {
-            // Look for the best fit next token
-            V token = index.getBest(value, next, value.length() - next);
-
-            // If nothing found parse failed
-            if (token == null)
-                return false;
-
-            next += token.toString().length();
-
-            boolean comma = false;
-            loop:
-            while (true)
-            {
-                if (next >= value.length())
-                    return !comma && found.apply(token);
-                switch (value.charAt(next))
-                {
-                    case ',':
-                        if (!found.apply(token))
-                            return false;
-                        comma = true;
-                        break;
-                    case ' ':
-                        break;
-                    default:
-                        break loop;
-                }
-                next++;
-            }
-        }
-    }
-
-    /**
      * A mutable String lookup data structure.
      * Implementations are not thread-safe.
      * @param <V> the entry type
@@ -241,13 +191,6 @@ public interface Index<V>
          */
         class Builder<V> extends Index.Builder<V>
         {
-            static Set<Character> ISO_8859_ALPHABET = Collections.unmodifiableSet(IntStream.range(0x01, 0x80)
-                .mapToObj(i -> (char)i)
-                .collect(Collectors.toSet()));
-            static Set<Character> VISIBLE_ASCII_ALPHABET = Collections.unmodifiableSet(IntStream.range(0x20, 0x7f)
-                .mapToObj(i -> (char)i)
-                .collect(Collectors.toSet()));
-
             private int maxCapacity = -1;
 
             Builder(boolean caseSensitive, Map<String, V> contents)
@@ -345,7 +288,7 @@ public interface Index<V>
                 return EmptyTrie.instance(true);
             if (maxCapacity <= ArrayTrie.MAX_CAPACITY)
                 return new ArrayTrie<>(true, maxCapacity);
-            return EmptyTrie.instance(true);
+            return new TreeTrie<>(true);
         }
 
         private Map<String, V> contents()

@@ -66,6 +66,12 @@ class TreeTrie<V> extends AbstractTrie<V>
         };
     private static final int INDEX = 32;
 
+    /** Create a trie from capacity and content
+     * @param caseSensitive True if the Trie keys are case sensitive
+     * @param contents The known contents of the Trie
+     * @param <V> The value type of the Trie
+     * @return a Trie containing the contents or null if not possible.
+     */
     public static <V> AbstractTrie<V> from(boolean caseSensitive, Map<String, V> contents)
     {
         TreeTrie<V> trie = new TreeTrie<>(caseSensitive);
