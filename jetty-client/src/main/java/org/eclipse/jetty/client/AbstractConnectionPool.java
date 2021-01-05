@@ -190,11 +190,15 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
      * <p>Returns an idle connection, if available;
      * if an idle connection is not available, and the given {@code create} parameter is {@code true}
      * or {@link #isMaximizeConnections()} is {@code true},
-     * then schedules the opening of a new connection, if possible within the configuration of this
+     * then attempts to open a new connection, if possible within the configuration of this
      * connection pool (for example, if it does not exceed the max connection count);
-     * otherwise returns {@code null}.</p>
+     * otherwise it attempts to open a new connection, if the number of queued requests is
+     * greater than the number of pending connections;
+     * if no connection is available even after the attempts to open, return {@code null}.</p>
+     * <p>The {@code create} parameter is just a hint: the connection may be created even if
+     * {@code false}, or may not be created even if {@code true}.</p>
      *
-     * @param create whether to schedule the opening of a connection if no idle connections are available
+     * @param create a hint to attempt to open a new connection if no idle connections are available
      * @return an idle connection or {@code null} if no idle connections are available
      * @see #tryCreate(int)
      */
@@ -203,9 +207,23 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         if (LOG.isDebugEnabled())
             LOG.debug("Acquiring create={} on {}", create, this);
         Connection connection = activate();
-        if (connection == null && (create || isMaximizeConnections()))
+        if (connection == null)
         {
-            tryCreate(destination.getQueuedRequestCount());
+            if (create || isMaximizeConnections())
+            {
+                // Try to forcibly create a connection if none is available.
+                tryCreate(-1);
+            }
+            else
+            {
+                // QueuedRequests may be stale and different from pool.pending.
+                // So tryCreate() may be a no-operation (when queuedRequests < pool.pending);
+                // or tryCreate() may create more connections than necessary, when
+                // queuedRequests read below is stale and some request has just been
+                // dequeued to be processed causing queuedRequests > pool.pending.
+                int queuedRequests = destination.getQueuedRequestCount();
+                tryCreate(queuedRequests);
+            }
             connection = activate();
         }
         return connection;
@@ -226,7 +244,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         tryCreateAsync(maxPending);
     }
 
-    private CompletableFuture<Void> tryCreateAsync(int maxPending)
+    private CompletableFuture<?> tryCreateAsync(int maxPending)
     {
         int connectionCount = getConnectionCount();
         if (LOG.isDebugEnabled())
@@ -237,39 +255,42 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
             return CompletableFuture.completedFuture(null);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Creating connection {}/{}", connectionCount, getMaxConnectionCount());
+            LOG.debug("Creating connection {}/{} at {}", connectionCount, getMaxConnectionCount(), entry);
 
-        CompletableFuture<Void> future = new CompletableFuture<>();
-        destination.newConnection(new Promise<Connection>()
+        Promise.Completable<Connection> future = new Promise.Completable<Connection>()
         {
             @Override
             public void succeeded(Connection connection)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Connection {}/{} creation succeeded {}", connectionCount, getMaxConnectionCount(), connection);
-                if (!(connection instanceof Attachable))
+                    LOG.debug("Connection {}/{} creation succeeded at {}: {}", connectionCount, getMaxConnectionCount(), entry, connection);
+                if (connection instanceof Attachable)
+                {
+                    ((Attachable)connection).setAttachment(entry);
+                    onCreated(connection);
+                    entry.enable(connection, false);
+                    idle(connection, false);
+                    complete(null);
+                    proceed();
+                }
+                else
                 {
                     failed(new IllegalArgumentException("Invalid connection object: " + connection));
-                    return;
                 }
-                ((Attachable)connection).setAttachment(entry);
-                onCreated(connection);
-                entry.enable(connection, false);
-                idle(connection, false);
-                future.complete(null);
-                proceed();
             }
 
             @Override
             public void failed(Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Connection {}/{} creation failed", connectionCount, getMaxConnectionCount(), x);
+                    LOG.debug("Connection {}/{} creation failed at {}", connectionCount, getMaxConnectionCount(), entry, x);
                 entry.remove();
-                future.completeExceptionally(x);
+                completeExceptionally(x);
                 requester.failed(x);
             }
-        });
+        };
+
+        destination.newConnection(future);
 
         return future;
     }

@@ -64,10 +64,12 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
             destination.start();
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
             Connection connection = connectionPool.acquire();
-            assertNull(connection);
-            // There are no queued requests, so no connection should be created.
-            connection = peekIdleConnection(connectionPool, 1, TimeUnit.SECONDS);
-            assertNull(connection);
+            if (connection == null)
+            {
+                // There are no queued requests, so the newly created connection will be idle.
+                connection = peekIdleConnection(connectionPool, 5, TimeUnit.SECONDS);
+            }
+            assertNotNull(connection);
         }
     }
 
