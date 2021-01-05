@@ -52,6 +52,7 @@ import javax.servlet.http.HttpSessionBindingListener;
 import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
+import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -438,6 +439,18 @@ public class ServletContextHandler extends ContextHandler
      * @param pathSpec the path spec to map servlet to
      * @return the ServletHolder for the added servlet
      */
+    public ServletHolder addServlet(String className, PathSpec pathSpec)
+    {
+        return getServletHandler().addServletWithMapping(className, pathSpec);
+    }
+
+    /**
+     * Convenience method to add a servlet.
+     *
+     * @param className the servlet class name
+     * @param pathSpec the path spec to map servlet to
+     * @return the ServletHolder for the added servlet
+     */
     public ServletHolder addServlet(String className, String pathSpec)
     {
         return getServletHandler().addServletWithMapping(className, pathSpec);
@@ -450,9 +463,32 @@ public class ServletContextHandler extends ContextHandler
      * @param pathSpec the path spec to map servlet to
      * @return the ServletHolder for the added servlet
      */
+    public ServletHolder addServlet(Class<? extends Servlet> servlet, PathSpec pathSpec)
+    {
+        return getServletHandler().addServletWithMapping(servlet, pathSpec);
+    }
+
+    /**
+     * Convenience method to add a servlet.
+     *
+     * @param servlet the servlet class
+     * @param pathSpec the path spec to map servlet to
+     * @return the ServletHolder for the added servlet
+     */
     public ServletHolder addServlet(Class<? extends Servlet> servlet, String pathSpec)
     {
         return getServletHandler().addServletWithMapping(servlet, pathSpec);
+    }
+
+    /**
+     * Convenience method to add a servlet.
+     *
+     * @param servlet the servlet holder
+     * @param pathSpec the path spec
+     */
+    public void addServlet(ServletHolder servlet, PathSpec pathSpec)
+    {
+        getServletHandler().addServletWithMapping(servlet, pathSpec);
     }
 
     /**

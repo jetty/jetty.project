@@ -60,6 +60,8 @@ import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
+import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.pathmap.RegexPathSpec;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.RoleInfo;
 import org.eclipse.jetty.security.SecurityHandler;
@@ -1818,5 +1820,23 @@ public class ServletContextHandlerTest
         response = _connector.getResponse(request);
         assertThat(response, containsString("200 OK"));
         assertThat(response, containsString("/three"));
+    }
+
+    @Test
+    public void testBespokeServlet() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.addServlet(TestPServlet.class, new RegexPathSpec("^/.*\\.one$"));
+        _server.setHandler(context);
+        _server.start();
+
+        String request = "GET /example.one HTTP/1.1\r\n" +
+            "Host: localhost\r\n" +
+            "Connection: close\r\n" +
+            "\r\n";
+        String rawResponse = _connector.getResponse(request);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertEquals(200, response.getStatus());
+        System.out.println(response.getContent());
     }
 }

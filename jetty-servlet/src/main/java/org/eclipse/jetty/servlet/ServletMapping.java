@@ -21,6 +21,7 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
@@ -28,6 +29,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 public class ServletMapping
 {
     private String[] _pathSpecs;
+    private PathSpec _bespokePathSpec;
     private String _servletName;
     private boolean _default;
     private Source _source;
@@ -49,6 +51,12 @@ public class ServletMapping
     public String[] getPathSpecs()
     {
         return _pathSpecs;
+    }
+
+    @ManagedAttribute(value = "path-spec", readonly = true)
+    public PathSpec getBespokePathSpec()
+    {
+        return _bespokePathSpec;
     }
 
     /**
@@ -85,6 +93,14 @@ public class ServletMapping
                 return true;
         }
         return false;
+    }
+
+    /**
+     * @param pathSpec The pathSpec to set.
+     */
+    public void setBespokePathSpec(PathSpec pathSpec)
+    {
+        _bespokePathSpec = pathSpec;
     }
 
     /**
