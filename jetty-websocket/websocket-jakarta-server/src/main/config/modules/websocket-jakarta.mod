@@ -1,7 +1,5 @@
-# DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
-
 [description]
-Enable jakarta.websocket for deployed web applications.
+Enable jakarta.websocket APIs for deployed web applications.
 
 [tags]
 websocket

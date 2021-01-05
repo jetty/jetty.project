@@ -288,7 +288,7 @@ public class Request implements HttpServletRequest
         return !isPush() && getHttpChannel().getHttpTransport().isPushSupported();
     }
 
-    private static EnumSet<HttpHeader> NOT_PUSHED_HEADERS = EnumSet.of(
+    private static final EnumSet<HttpHeader> NOT_PUSHED_HEADERS = EnumSet.of(
         HttpHeader.IF_MATCH,
         HttpHeader.IF_RANGE,
         HttpHeader.IF_UNMODIFIED_SINCE,
@@ -853,7 +853,7 @@ public class Request implements HttpServletRequest
     public long getDateHeader(String name)
     {
         HttpFields fields = _httpFields;
-        return fields == null ? null : fields.getDateField(name);
+        return fields == null ? -1 : fields.getDateField(name);
     }
 
     @Override
@@ -1062,7 +1062,7 @@ public class Request implements HttpServletRequest
         List<String> vals = getParameters().getValues(name);
         if (vals == null)
             return null;
-        return vals.toArray(new String[vals.size()]);
+        return vals.toArray(new String[0]);
     }
 
     public MultiMap<String> getQueryParameters()

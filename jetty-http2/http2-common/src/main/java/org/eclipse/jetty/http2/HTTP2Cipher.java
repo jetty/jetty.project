@@ -14,311 +14,312 @@
 package org.eclipse.jetty.http2;
 
 import java.util.Comparator;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import org.eclipse.jetty.util.Index;
+import org.eclipse.jetty.util.StringUtil;
 
 public class HTTP2Cipher
 {
     public static final Comparator<String> COMPARATOR = new CipherComparator();
 
-    private static final Index<Boolean> __blackProtocols = new Index.Builder<Boolean>()
-        .caseSensitive(false)
-        .with("TLSv1.2", Boolean.TRUE)
-        .with("TLSv1.1", Boolean.TRUE)
-        .with("TLSv1", Boolean.TRUE)
-        .with("SSL", Boolean.TRUE)
-        .with("SSLv2", Boolean.TRUE)
-        .with("SSLv3", Boolean.TRUE)
-        .build();
+    private static final Set<String> __blackProtocols = Stream.of(
+        "TLSv1.2",
+        "TLSv1.1",
+        "TLSv1",
+        "SSL",
+        "SSLv2",
+        "SSLv3"
+    ).map(StringUtil::asciiToUpperCase).collect(Collectors.toSet());
 
-    private static final Index<Boolean> __blackCiphers = new Index.Builder<Boolean>()
-        .caseSensitive(false)
-        .with("TLS_NULL_WITH_NULL_NULL", Boolean.TRUE)
-        .with("TLS_RSA_WITH_NULL_MD5", Boolean.TRUE)
-        .with("TLS_RSA_WITH_NULL_SHA", Boolean.TRUE)
-        .with("TLS_RSA_EXPORT_WITH_RC4_40_MD5", Boolean.TRUE)
-        .with("TLS_RSA_WITH_RC4_128_MD5", Boolean.TRUE)
-        .with("TLS_RSA_WITH_RC4_128_SHA", Boolean.TRUE)
-        .with("TLS_RSA_EXPORT_WITH_RC2_CBC_40_MD5", Boolean.TRUE)
-        .with("TLS_RSA_WITH_IDEA_CBC_SHA", Boolean.TRUE)
-        .with("TLS_RSA_EXPORT_WITH_DES40_CBC_SHA", Boolean.TRUE)
-        .with("TLS_RSA_WITH_DES_CBC_SHA", Boolean.TRUE)
-        .with("TLS_RSA_WITH_3DES_EDE_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DH_DSS_EXPORT_WITH_DES40_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DH_DSS_WITH_DES_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DH_DSS_WITH_3DES_EDE_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DH_RSA_EXPORT_WITH_DES40_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DH_RSA_WITH_DES_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DH_RSA_WITH_3DES_EDE_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DHE_DSS_WITH_DES_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DHE_RSA_WITH_DES_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DH_anon_EXPORT_WITH_RC4_40_MD5", Boolean.TRUE)
-        .with("TLS_DH_anon_WITH_RC4_128_MD5", Boolean.TRUE)
-        .with("TLS_DH_anon_EXPORT_WITH_DES40_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DH_anon_WITH_DES_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DH_anon_WITH_3DES_EDE_CBC_SHA", Boolean.TRUE)
-        .with("TLS_KRB5_WITH_DES_CBC_SHA", Boolean.TRUE)
-        .with("TLS_KRB5_WITH_3DES_EDE_CBC_SHA", Boolean.TRUE)
-        .with("TLS_KRB5_WITH_RC4_128_SHA", Boolean.TRUE)
-        .with("TLS_KRB5_WITH_IDEA_CBC_SHA", Boolean.TRUE)
-        .with("TLS_KRB5_WITH_DES_CBC_MD5", Boolean.TRUE)
-        .with("TLS_KRB5_WITH_3DES_EDE_CBC_MD5", Boolean.TRUE)
-        .with("TLS_KRB5_WITH_RC4_128_MD5", Boolean.TRUE)
-        .with("TLS_KRB5_WITH_IDEA_CBC_MD5", Boolean.TRUE)
-        .with("TLS_KRB5_EXPORT_WITH_DES_CBC_40_SHA", Boolean.TRUE)
-        .with("TLS_KRB5_EXPORT_WITH_RC2_CBC_40_SHA", Boolean.TRUE)
-        .with("TLS_KRB5_EXPORT_WITH_RC4_40_SHA", Boolean.TRUE)
-        .with("TLS_KRB5_EXPORT_WITH_DES_CBC_40_MD5", Boolean.TRUE)
-        .with("TLS_KRB5_EXPORT_WITH_RC2_CBC_40_MD5", Boolean.TRUE)
-        .with("TLS_KRB5_EXPORT_WITH_RC4_40_MD5", Boolean.TRUE)
-        .with("TLS_PSK_WITH_NULL_SHA", Boolean.TRUE)
-        .with("TLS_DHE_PSK_WITH_NULL_SHA", Boolean.TRUE)
-        .with("TLS_RSA_PSK_WITH_NULL_SHA", Boolean.TRUE)
-        .with("TLS_RSA_WITH_AES_128_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DH_DSS_WITH_AES_128_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DH_RSA_WITH_AES_128_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DHE_DSS_WITH_AES_128_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DHE_RSA_WITH_AES_128_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DH_anon_WITH_AES_128_CBC_SHA", Boolean.TRUE)
-        .with("TLS_RSA_WITH_AES_256_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DH_DSS_WITH_AES_256_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DH_RSA_WITH_AES_256_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DHE_DSS_WITH_AES_256_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DHE_RSA_WITH_AES_256_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DH_anon_WITH_AES_256_CBC_SHA", Boolean.TRUE)
-        .with("TLS_RSA_WITH_NULL_SHA256", Boolean.TRUE)
-        .with("TLS_RSA_WITH_AES_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_RSA_WITH_AES_256_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DH_DSS_WITH_AES_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DH_RSA_WITH_AES_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DHE_DSS_WITH_AES_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_RSA_WITH_CAMELLIA_128_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DHE_RSA_WITH_AES_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DH_DSS_WITH_AES_256_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DH_RSA_WITH_AES_256_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DHE_DSS_WITH_AES_256_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DHE_RSA_WITH_AES_256_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DH_anon_WITH_AES_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DH_anon_WITH_AES_256_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_RSA_WITH_CAMELLIA_256_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA", Boolean.TRUE)
-        .with("TLS_PSK_WITH_RC4_128_SHA", Boolean.TRUE)
-        .with("TLS_PSK_WITH_3DES_EDE_CBC_SHA", Boolean.TRUE)
-        .with("TLS_PSK_WITH_AES_128_CBC_SHA", Boolean.TRUE)
-        .with("TLS_PSK_WITH_AES_256_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DHE_PSK_WITH_RC4_128_SHA", Boolean.TRUE)
-        .with("TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DHE_PSK_WITH_AES_128_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DHE_PSK_WITH_AES_256_CBC_SHA", Boolean.TRUE)
-        .with("TLS_RSA_PSK_WITH_RC4_128_SHA", Boolean.TRUE)
-        .with("TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA", Boolean.TRUE)
-        .with("TLS_RSA_PSK_WITH_AES_128_CBC_SHA", Boolean.TRUE)
-        .with("TLS_RSA_PSK_WITH_AES_256_CBC_SHA", Boolean.TRUE)
-        .with("TLS_RSA_WITH_SEED_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DH_DSS_WITH_SEED_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DH_RSA_WITH_SEED_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DHE_DSS_WITH_SEED_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DHE_RSA_WITH_SEED_CBC_SHA", Boolean.TRUE)
-        .with("TLS_DH_anon_WITH_SEED_CBC_SHA", Boolean.TRUE)
-        .with("TLS_RSA_WITH_AES_128_GCM_SHA256", Boolean.TRUE)
-        .with("TLS_RSA_WITH_AES_256_GCM_SHA384", Boolean.TRUE)
-        .with("TLS_DH_RSA_WITH_AES_128_GCM_SHA256", Boolean.TRUE)
-        .with("TLS_DH_RSA_WITH_AES_256_GCM_SHA384", Boolean.TRUE)
-        .with("TLS_DH_DSS_WITH_AES_128_GCM_SHA256", Boolean.TRUE)
-        .with("TLS_DH_DSS_WITH_AES_256_GCM_SHA384", Boolean.TRUE)
-        .with("TLS_DH_anon_WITH_AES_128_GCM_SHA256", Boolean.TRUE)
-        .with("TLS_DH_anon_WITH_AES_256_GCM_SHA384", Boolean.TRUE)
-        .with("TLS_PSK_WITH_AES_128_GCM_SHA256", Boolean.TRUE)
-        .with("TLS_PSK_WITH_AES_256_GCM_SHA384", Boolean.TRUE)
-        .with("TLS_RSA_PSK_WITH_AES_128_GCM_SHA256", Boolean.TRUE)
-        .with("TLS_RSA_PSK_WITH_AES_256_GCM_SHA384", Boolean.TRUE)
-        .with("TLS_PSK_WITH_AES_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_PSK_WITH_AES_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_PSK_WITH_NULL_SHA256", Boolean.TRUE)
-        .with("TLS_PSK_WITH_NULL_SHA384", Boolean.TRUE)
-        .with("TLS_DHE_PSK_WITH_AES_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DHE_PSK_WITH_AES_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_DHE_PSK_WITH_NULL_SHA256", Boolean.TRUE)
-        .with("TLS_DHE_PSK_WITH_NULL_SHA384", Boolean.TRUE)
-        .with("TLS_RSA_PSK_WITH_AES_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_RSA_PSK_WITH_AES_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_RSA_PSK_WITH_NULL_SHA256", Boolean.TRUE)
-        .with("TLS_RSA_PSK_WITH_NULL_SHA384", Boolean.TRUE)
-        .with("TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_EMPTY_RENEGOTIATION_INFO_SCSV", Boolean.TRUE)
-        .with("TLS_ECDH_ECDSA_WITH_NULL_SHA", Boolean.TRUE)
-        .with("TLS_ECDH_ECDSA_WITH_RC4_128_SHA", Boolean.TRUE)
-        .with("TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA", Boolean.TRUE)
-        .with("TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA", Boolean.TRUE)
-        .with("TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA", Boolean.TRUE)
-        .with("TLS_ECDHE_ECDSA_WITH_NULL_SHA", Boolean.TRUE)
-        .with("TLS_ECDHE_ECDSA_WITH_RC4_128_SHA", Boolean.TRUE)
-        .with("TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA", Boolean.TRUE)
-        .with("TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA", Boolean.TRUE)
-        .with("TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA", Boolean.TRUE)
-        .with("TLS_ECDH_RSA_WITH_NULL_SHA", Boolean.TRUE)
-        .with("TLS_ECDH_RSA_WITH_RC4_128_SHA", Boolean.TRUE)
-        .with("TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA", Boolean.TRUE)
-        .with("TLS_ECDH_RSA_WITH_AES_128_CBC_SHA", Boolean.TRUE)
-        .with("TLS_ECDH_RSA_WITH_AES_256_CBC_SHA", Boolean.TRUE)
-        .with("TLS_ECDHE_RSA_WITH_NULL_SHA", Boolean.TRUE)
-        .with("TLS_ECDHE_RSA_WITH_RC4_128_SHA", Boolean.TRUE)
-        .with("TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA", Boolean.TRUE)
-        .with("TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA", Boolean.TRUE)
-        .with("TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA", Boolean.TRUE)
-        .with("TLS_ECDH_anon_WITH_NULL_SHA", Boolean.TRUE)
-        .with("TLS_ECDH_anon_WITH_RC4_128_SHA", Boolean.TRUE)
-        .with("TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA", Boolean.TRUE)
-        .with("TLS_ECDH_anon_WITH_AES_128_CBC_SHA", Boolean.TRUE)
-        .with("TLS_ECDH_anon_WITH_AES_256_CBC_SHA", Boolean.TRUE)
-        .with("TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA", Boolean.TRUE)
-        .with("TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA", Boolean.TRUE)
-        .with("TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA", Boolean.TRUE)
-        .with("TLS_SRP_SHA_WITH_AES_128_CBC_SHA", Boolean.TRUE)
-        .with("TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA", Boolean.TRUE)
-        .with("TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA", Boolean.TRUE)
-        .with("TLS_SRP_SHA_WITH_AES_256_CBC_SHA", Boolean.TRUE)
-        .with("TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA", Boolean.TRUE)
-        .with("TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA", Boolean.TRUE)
-        .with("TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256", Boolean.TRUE)
-        .with("TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384", Boolean.TRUE)
-        .with("TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256", Boolean.TRUE)
-        .with("TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384", Boolean.TRUE)
-        .with("TLS_ECDHE_PSK_WITH_RC4_128_SHA", Boolean.TRUE)
-        .with("TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA", Boolean.TRUE)
-        .with("TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA", Boolean.TRUE)
-        .with("TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA", Boolean.TRUE)
-        .with("TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_ECDHE_PSK_WITH_NULL_SHA", Boolean.TRUE)
-        .with("TLS_ECDHE_PSK_WITH_NULL_SHA256", Boolean.TRUE)
-        .with("TLS_ECDHE_PSK_WITH_NULL_SHA384", Boolean.TRUE)
-        .with("TLS_RSA_WITH_ARIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_RSA_WITH_ARIA_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_DH_DSS_WITH_ARIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DH_DSS_WITH_ARIA_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_DH_RSA_WITH_ARIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DH_RSA_WITH_ARIA_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_DHE_DSS_WITH_ARIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DHE_DSS_WITH_ARIA_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_DHE_RSA_WITH_ARIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DHE_RSA_WITH_ARIA_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_DH_anon_WITH_ARIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DH_anon_WITH_ARIA_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_ECDHE_ECDSA_WITH_ARIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_ECDHE_ECDSA_WITH_ARIA_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_ECDH_ECDSA_WITH_ARIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_ECDH_ECDSA_WITH_ARIA_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_ECDHE_RSA_WITH_ARIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_ECDHE_RSA_WITH_ARIA_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_ECDH_RSA_WITH_ARIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_ECDH_RSA_WITH_ARIA_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_RSA_WITH_ARIA_128_GCM_SHA256", Boolean.TRUE)
-        .with("TLS_RSA_WITH_ARIA_256_GCM_SHA384", Boolean.TRUE)
-        .with("TLS_DH_RSA_WITH_ARIA_128_GCM_SHA256", Boolean.TRUE)
-        .with("TLS_DH_RSA_WITH_ARIA_256_GCM_SHA384", Boolean.TRUE)
-        .with("TLS_DH_DSS_WITH_ARIA_128_GCM_SHA256", Boolean.TRUE)
-        .with("TLS_DH_DSS_WITH_ARIA_256_GCM_SHA384", Boolean.TRUE)
-        .with("TLS_DH_anon_WITH_ARIA_128_GCM_SHA256", Boolean.TRUE)
-        .with("TLS_DH_anon_WITH_ARIA_256_GCM_SHA384", Boolean.TRUE)
-        .with("TLS_ECDH_ECDSA_WITH_ARIA_128_GCM_SHA256", Boolean.TRUE)
-        .with("TLS_ECDH_ECDSA_WITH_ARIA_256_GCM_SHA384", Boolean.TRUE)
-        .with("TLS_ECDH_RSA_WITH_ARIA_128_GCM_SHA256", Boolean.TRUE)
-        .with("TLS_ECDH_RSA_WITH_ARIA_256_GCM_SHA384", Boolean.TRUE)
-        .with("TLS_PSK_WITH_ARIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_PSK_WITH_ARIA_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_DHE_PSK_WITH_ARIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DHE_PSK_WITH_ARIA_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_RSA_PSK_WITH_ARIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_RSA_PSK_WITH_ARIA_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_PSK_WITH_ARIA_128_GCM_SHA256", Boolean.TRUE)
-        .with("TLS_PSK_WITH_ARIA_256_GCM_SHA384", Boolean.TRUE)
-        .with("TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256", Boolean.TRUE)
-        .with("TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384", Boolean.TRUE)
-        .with("TLS_ECDHE_PSK_WITH_ARIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_ECDHE_PSK_WITH_ARIA_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_ECDH_ECDSA_WITH_CAMELLIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_ECDH_ECDSA_WITH_CAMELLIA_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_ECDH_RSA_WITH_CAMELLIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_ECDH_RSA_WITH_CAMELLIA_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_RSA_WITH_CAMELLIA_128_GCM_SHA256", Boolean.TRUE)
-        .with("TLS_RSA_WITH_CAMELLIA_256_GCM_SHA384", Boolean.TRUE)
-        .with("TLS_DH_RSA_WITH_CAMELLIA_128_GCM_SHA256", Boolean.TRUE)
-        .with("TLS_DH_RSA_WITH_CAMELLIA_256_GCM_SHA384", Boolean.TRUE)
-        .with("TLS_DH_DSS_WITH_CAMELLIA_128_GCM_SHA256", Boolean.TRUE)
-        .with("TLS_DH_DSS_WITH_CAMELLIA_256_GCM_SHA384", Boolean.TRUE)
-        .with("TLS_DH_anon_WITH_CAMELLIA_128_GCM_SHA256", Boolean.TRUE)
-        .with("TLS_DH_anon_WITH_CAMELLIA_256_GCM_SHA384", Boolean.TRUE)
-        .with("TLS_ECDH_ECDSA_WITH_CAMELLIA_128_GCM_SHA256", Boolean.TRUE)
-        .with("TLS_ECDH_ECDSA_WITH_CAMELLIA_256_GCM_SHA384", Boolean.TRUE)
-        .with("TLS_ECDH_RSA_WITH_CAMELLIA_128_GCM_SHA256", Boolean.TRUE)
-        .with("TLS_ECDH_RSA_WITH_CAMELLIA_256_GCM_SHA384", Boolean.TRUE)
-        .with("TLS_PSK_WITH_CAMELLIA_128_GCM_SHA256", Boolean.TRUE)
-        .with("TLS_PSK_WITH_CAMELLIA_256_GCM_SHA384", Boolean.TRUE)
-        .with("TLS_RSA_PSK_WITH_CAMELLIA_128_GCM_SHA256", Boolean.TRUE)
-        .with("TLS_RSA_PSK_WITH_CAMELLIA_256_GCM_SHA384", Boolean.TRUE)
-        .with("TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256", Boolean.TRUE)
-        .with("TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384", Boolean.TRUE)
-        .with("TLS_RSA_WITH_AES_128_CCM", Boolean.TRUE)
-        .with("TLS_RSA_WITH_AES_256_CCM", Boolean.TRUE)
-        .with("TLS_RSA_WITH_AES_128_CCM_8", Boolean.TRUE)
-        .with("TLS_RSA_WITH_AES_256_CCM_8", Boolean.TRUE)
-        .with("TLS_PSK_WITH_AES_128_CCM", Boolean.TRUE)
-        .with("TLS_PSK_WITH_AES_256_CCM", Boolean.TRUE)
-        .with("TLS_PSK_WITH_AES_128_CCM_8", Boolean.TRUE)
-        .with("TLS_PSK_WITH_AES_256_CCM_8", Boolean.TRUE)
-        .build();
+    private static final Set<String> __blackCiphers = Stream.of(
+        "TLS_NULL_WITH_NULL_NULL",
+        "TLS_RSA_WITH_NULL_MD5",
+        "TLS_RSA_WITH_NULL_SHA",
+        "TLS_RSA_EXPORT_WITH_RC4_40_MD5",
+        "TLS_RSA_WITH_RC4_128_MD5",
+        "TLS_RSA_WITH_RC4_128_SHA",
+        "TLS_RSA_EXPORT_WITH_RC2_CBC_40_MD5",
+        "TLS_RSA_WITH_IDEA_CBC_SHA",
+        "TLS_RSA_EXPORT_WITH_DES40_CBC_SHA",
+        "TLS_RSA_WITH_DES_CBC_SHA",
+        "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
+        "TLS_DH_DSS_EXPORT_WITH_DES40_CBC_SHA",
+        "TLS_DH_DSS_WITH_DES_CBC_SHA",
+        "TLS_DH_DSS_WITH_3DES_EDE_CBC_SHA",
+        "TLS_DH_RSA_EXPORT_WITH_DES40_CBC_SHA",
+        "TLS_DH_RSA_WITH_DES_CBC_SHA",
+        "TLS_DH_RSA_WITH_3DES_EDE_CBC_SHA",
+        "TLS_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA",
+        "TLS_DHE_DSS_WITH_DES_CBC_SHA",
+        "TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA",
+        "TLS_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
+        "TLS_DHE_RSA_WITH_DES_CBC_SHA",
+        "TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA",
+        "TLS_DH_anon_EXPORT_WITH_RC4_40_MD5",
+        "TLS_DH_anon_WITH_RC4_128_MD5",
+        "TLS_DH_anon_EXPORT_WITH_DES40_CBC_SHA",
+        "TLS_DH_anon_WITH_DES_CBC_SHA",
+        "TLS_DH_anon_WITH_3DES_EDE_CBC_SHA",
+        "TLS_KRB5_WITH_DES_CBC_SHA",
+        "TLS_KRB5_WITH_3DES_EDE_CBC_SHA",
+        "TLS_KRB5_WITH_RC4_128_SHA",
+        "TLS_KRB5_WITH_IDEA_CBC_SHA",
+        "TLS_KRB5_WITH_DES_CBC_MD5",
+        "TLS_KRB5_WITH_3DES_EDE_CBC_MD5",
+        "TLS_KRB5_WITH_RC4_128_MD5",
+        "TLS_KRB5_WITH_IDEA_CBC_MD5",
+        "TLS_KRB5_EXPORT_WITH_DES_CBC_40_SHA",
+        "TLS_KRB5_EXPORT_WITH_RC2_CBC_40_SHA",
+        "TLS_KRB5_EXPORT_WITH_RC4_40_SHA",
+        "TLS_KRB5_EXPORT_WITH_DES_CBC_40_MD5",
+        "TLS_KRB5_EXPORT_WITH_RC2_CBC_40_MD5",
+        "TLS_KRB5_EXPORT_WITH_RC4_40_MD5",
+        "TLS_PSK_WITH_NULL_SHA",
+        "TLS_DHE_PSK_WITH_NULL_SHA",
+        "TLS_RSA_PSK_WITH_NULL_SHA",
+        "TLS_RSA_WITH_AES_128_CBC_SHA",
+        "TLS_DH_DSS_WITH_AES_128_CBC_SHA",
+        "TLS_DH_RSA_WITH_AES_128_CBC_SHA",
+        "TLS_DHE_DSS_WITH_AES_128_CBC_SHA",
+        "TLS_DHE_RSA_WITH_AES_128_CBC_SHA",
+        "TLS_DH_anon_WITH_AES_128_CBC_SHA",
+        "TLS_RSA_WITH_AES_256_CBC_SHA",
+        "TLS_DH_DSS_WITH_AES_256_CBC_SHA",
+        "TLS_DH_RSA_WITH_AES_256_CBC_SHA",
+        "TLS_DHE_DSS_WITH_AES_256_CBC_SHA",
+        "TLS_DHE_RSA_WITH_AES_256_CBC_SHA",
+        "TLS_DH_anon_WITH_AES_256_CBC_SHA",
+        "TLS_RSA_WITH_NULL_SHA256",
+        "TLS_RSA_WITH_AES_128_CBC_SHA256",
+        "TLS_RSA_WITH_AES_256_CBC_SHA256",
+        "TLS_DH_DSS_WITH_AES_128_CBC_SHA256",
+        "TLS_DH_RSA_WITH_AES_128_CBC_SHA256",
+        "TLS_DHE_DSS_WITH_AES_128_CBC_SHA256",
+        "TLS_RSA_WITH_CAMELLIA_128_CBC_SHA",
+        "TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA",
+        "TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA",
+        "TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA",
+        "TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA",
+        "TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA",
+        "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256",
+        "TLS_DH_DSS_WITH_AES_256_CBC_SHA256",
+        "TLS_DH_RSA_WITH_AES_256_CBC_SHA256",
+        "TLS_DHE_DSS_WITH_AES_256_CBC_SHA256",
+        "TLS_DHE_RSA_WITH_AES_256_CBC_SHA256",
+        "TLS_DH_anon_WITH_AES_128_CBC_SHA256",
+        "TLS_DH_anon_WITH_AES_256_CBC_SHA256",
+        "TLS_RSA_WITH_CAMELLIA_256_CBC_SHA",
+        "TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA",
+        "TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA",
+        "TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA",
+        "TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA",
+        "TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA",
+        "TLS_PSK_WITH_RC4_128_SHA",
+        "TLS_PSK_WITH_3DES_EDE_CBC_SHA",
+        "TLS_PSK_WITH_AES_128_CBC_SHA",
+        "TLS_PSK_WITH_AES_256_CBC_SHA",
+        "TLS_DHE_PSK_WITH_RC4_128_SHA",
+        "TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA",
+        "TLS_DHE_PSK_WITH_AES_128_CBC_SHA",
+        "TLS_DHE_PSK_WITH_AES_256_CBC_SHA",
+        "TLS_RSA_PSK_WITH_RC4_128_SHA",
+        "TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA",
+        "TLS_RSA_PSK_WITH_AES_128_CBC_SHA",
+        "TLS_RSA_PSK_WITH_AES_256_CBC_SHA",
+        "TLS_RSA_WITH_SEED_CBC_SHA",
+        "TLS_DH_DSS_WITH_SEED_CBC_SHA",
+        "TLS_DH_RSA_WITH_SEED_CBC_SHA",
+        "TLS_DHE_DSS_WITH_SEED_CBC_SHA",
+        "TLS_DHE_RSA_WITH_SEED_CBC_SHA",
+        "TLS_DH_anon_WITH_SEED_CBC_SHA",
+        "TLS_RSA_WITH_AES_128_GCM_SHA256",
+        "TLS_RSA_WITH_AES_256_GCM_SHA384",
+        "TLS_DH_RSA_WITH_AES_128_GCM_SHA256",
+        "TLS_DH_RSA_WITH_AES_256_GCM_SHA384",
+        "TLS_DH_DSS_WITH_AES_128_GCM_SHA256",
+        "TLS_DH_DSS_WITH_AES_256_GCM_SHA384",
+        "TLS_DH_anon_WITH_AES_128_GCM_SHA256",
+        "TLS_DH_anon_WITH_AES_256_GCM_SHA384",
+        "TLS_PSK_WITH_AES_128_GCM_SHA256",
+        "TLS_PSK_WITH_AES_256_GCM_SHA384",
+        "TLS_RSA_PSK_WITH_AES_128_GCM_SHA256",
+        "TLS_RSA_PSK_WITH_AES_256_GCM_SHA384",
+        "TLS_PSK_WITH_AES_128_CBC_SHA256",
+        "TLS_PSK_WITH_AES_256_CBC_SHA384",
+        "TLS_PSK_WITH_NULL_SHA256",
+        "TLS_PSK_WITH_NULL_SHA384",
+        "TLS_DHE_PSK_WITH_AES_128_CBC_SHA256",
+        "TLS_DHE_PSK_WITH_AES_256_CBC_SHA384",
+        "TLS_DHE_PSK_WITH_NULL_SHA256",
+        "TLS_DHE_PSK_WITH_NULL_SHA384",
+        "TLS_RSA_PSK_WITH_AES_128_CBC_SHA256",
+        "TLS_RSA_PSK_WITH_AES_256_CBC_SHA384",
+        "TLS_RSA_PSK_WITH_NULL_SHA256",
+        "TLS_RSA_PSK_WITH_NULL_SHA384",
+        "TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256",
+        "TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA256",
+        "TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA256",
+        "TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256",
+        "TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256",
+        "TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256",
+        "TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256",
+        "TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA256",
+        "TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA256",
+        "TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256",
+        "TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256",
+        "TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256",
+        "TLS_EMPTY_RENEGOTIATION_INFO_SCSV",
+        "TLS_ECDH_ECDSA_WITH_NULL_SHA",
+        "TLS_ECDH_ECDSA_WITH_RC4_128_SHA",
+        "TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA",
+        "TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA",
+        "TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA",
+        "TLS_ECDHE_ECDSA_WITH_NULL_SHA",
+        "TLS_ECDHE_ECDSA_WITH_RC4_128_SHA",
+        "TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA",
+        "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
+        "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
+        "TLS_ECDH_RSA_WITH_NULL_SHA",
+        "TLS_ECDH_RSA_WITH_RC4_128_SHA",
+        "TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA",
+        "TLS_ECDH_RSA_WITH_AES_128_CBC_SHA",
+        "TLS_ECDH_RSA_WITH_AES_256_CBC_SHA",
+        "TLS_ECDHE_RSA_WITH_NULL_SHA",
+        "TLS_ECDHE_RSA_WITH_RC4_128_SHA",
+        "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA",
+        "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+        "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+        "TLS_ECDH_anon_WITH_NULL_SHA",
+        "TLS_ECDH_anon_WITH_RC4_128_SHA",
+        "TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA",
+        "TLS_ECDH_anon_WITH_AES_128_CBC_SHA",
+        "TLS_ECDH_anon_WITH_AES_256_CBC_SHA",
+        "TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA",
+        "TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA",
+        "TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA",
+        "TLS_SRP_SHA_WITH_AES_128_CBC_SHA",
+        "TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA",
+        "TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA",
+        "TLS_SRP_SHA_WITH_AES_256_CBC_SHA",
+        "TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA",
+        "TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA",
+        "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256",
+        "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384",
+        "TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256",
+        "TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384",
+        "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
+        "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384",
+        "TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256",
+        "TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384",
+        "TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256",
+        "TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384",
+        "TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256",
+        "TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384",
+        "TLS_ECDHE_PSK_WITH_RC4_128_SHA",
+        "TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA",
+        "TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA",
+        "TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA",
+        "TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256",
+        "TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384",
+        "TLS_ECDHE_PSK_WITH_NULL_SHA",
+        "TLS_ECDHE_PSK_WITH_NULL_SHA256",
+        "TLS_ECDHE_PSK_WITH_NULL_SHA384",
+        "TLS_RSA_WITH_ARIA_128_CBC_SHA256",
+        "TLS_RSA_WITH_ARIA_256_CBC_SHA384",
+        "TLS_DH_DSS_WITH_ARIA_128_CBC_SHA256",
+        "TLS_DH_DSS_WITH_ARIA_256_CBC_SHA384",
+        "TLS_DH_RSA_WITH_ARIA_128_CBC_SHA256",
+        "TLS_DH_RSA_WITH_ARIA_256_CBC_SHA384",
+        "TLS_DHE_DSS_WITH_ARIA_128_CBC_SHA256",
+        "TLS_DHE_DSS_WITH_ARIA_256_CBC_SHA384",
+        "TLS_DHE_RSA_WITH_ARIA_128_CBC_SHA256",
+        "TLS_DHE_RSA_WITH_ARIA_256_CBC_SHA384",
+        "TLS_DH_anon_WITH_ARIA_128_CBC_SHA256",
+        "TLS_DH_anon_WITH_ARIA_256_CBC_SHA384",
+        "TLS_ECDHE_ECDSA_WITH_ARIA_128_CBC_SHA256",
+        "TLS_ECDHE_ECDSA_WITH_ARIA_256_CBC_SHA384",
+        "TLS_ECDH_ECDSA_WITH_ARIA_128_CBC_SHA256",
+        "TLS_ECDH_ECDSA_WITH_ARIA_256_CBC_SHA384",
+        "TLS_ECDHE_RSA_WITH_ARIA_128_CBC_SHA256",
+        "TLS_ECDHE_RSA_WITH_ARIA_256_CBC_SHA384",
+        "TLS_ECDH_RSA_WITH_ARIA_128_CBC_SHA256",
+        "TLS_ECDH_RSA_WITH_ARIA_256_CBC_SHA384",
+        "TLS_RSA_WITH_ARIA_128_GCM_SHA256",
+        "TLS_RSA_WITH_ARIA_256_GCM_SHA384",
+        "TLS_DH_RSA_WITH_ARIA_128_GCM_SHA256",
+        "TLS_DH_RSA_WITH_ARIA_256_GCM_SHA384",
+        "TLS_DH_DSS_WITH_ARIA_128_GCM_SHA256",
+        "TLS_DH_DSS_WITH_ARIA_256_GCM_SHA384",
+        "TLS_DH_anon_WITH_ARIA_128_GCM_SHA256",
+        "TLS_DH_anon_WITH_ARIA_256_GCM_SHA384",
+        "TLS_ECDH_ECDSA_WITH_ARIA_128_GCM_SHA256",
+        "TLS_ECDH_ECDSA_WITH_ARIA_256_GCM_SHA384",
+        "TLS_ECDH_RSA_WITH_ARIA_128_GCM_SHA256",
+        "TLS_ECDH_RSA_WITH_ARIA_256_GCM_SHA384",
+        "TLS_PSK_WITH_ARIA_128_CBC_SHA256",
+        "TLS_PSK_WITH_ARIA_256_CBC_SHA384",
+        "TLS_DHE_PSK_WITH_ARIA_128_CBC_SHA256",
+        "TLS_DHE_PSK_WITH_ARIA_256_CBC_SHA384",
+        "TLS_RSA_PSK_WITH_ARIA_128_CBC_SHA256",
+        "TLS_RSA_PSK_WITH_ARIA_256_CBC_SHA384",
+        "TLS_PSK_WITH_ARIA_128_GCM_SHA256",
+        "TLS_PSK_WITH_ARIA_256_GCM_SHA384",
+        "TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256",
+        "TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384",
+        "TLS_ECDHE_PSK_WITH_ARIA_128_CBC_SHA256",
+        "TLS_ECDHE_PSK_WITH_ARIA_256_CBC_SHA384",
+        "TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256",
+        "TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384",
+        "TLS_ECDH_ECDSA_WITH_CAMELLIA_128_CBC_SHA256",
+        "TLS_ECDH_ECDSA_WITH_CAMELLIA_256_CBC_SHA384",
+        "TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256",
+        "TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384",
+        "TLS_ECDH_RSA_WITH_CAMELLIA_128_CBC_SHA256",
+        "TLS_ECDH_RSA_WITH_CAMELLIA_256_CBC_SHA384",
+        "TLS_RSA_WITH_CAMELLIA_128_GCM_SHA256",
+        "TLS_RSA_WITH_CAMELLIA_256_GCM_SHA384",
+        "TLS_DH_RSA_WITH_CAMELLIA_128_GCM_SHA256",
+        "TLS_DH_RSA_WITH_CAMELLIA_256_GCM_SHA384",
+        "TLS_DH_DSS_WITH_CAMELLIA_128_GCM_SHA256",
+        "TLS_DH_DSS_WITH_CAMELLIA_256_GCM_SHA384",
+        "TLS_DH_anon_WITH_CAMELLIA_128_GCM_SHA256",
+        "TLS_DH_anon_WITH_CAMELLIA_256_GCM_SHA384",
+        "TLS_ECDH_ECDSA_WITH_CAMELLIA_128_GCM_SHA256",
+        "TLS_ECDH_ECDSA_WITH_CAMELLIA_256_GCM_SHA384",
+        "TLS_ECDH_RSA_WITH_CAMELLIA_128_GCM_SHA256",
+        "TLS_ECDH_RSA_WITH_CAMELLIA_256_GCM_SHA384",
+        "TLS_PSK_WITH_CAMELLIA_128_GCM_SHA256",
+        "TLS_PSK_WITH_CAMELLIA_256_GCM_SHA384",
+        "TLS_RSA_PSK_WITH_CAMELLIA_128_GCM_SHA256",
+        "TLS_RSA_PSK_WITH_CAMELLIA_256_GCM_SHA384",
+        "TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256",
+        "TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384",
+        "TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256",
+        "TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384",
+        "TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256",
+        "TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384",
+        "TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256",
+        "TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384",
+        "TLS_RSA_WITH_AES_128_CCM",
+        "TLS_RSA_WITH_AES_256_CCM",
+        "TLS_RSA_WITH_AES_128_CCM_8",
+        "TLS_RSA_WITH_AES_256_CCM_8",
+        "TLS_PSK_WITH_AES_128_CCM",
+        "TLS_PSK_WITH_AES_256_CCM",
+        "TLS_PSK_WITH_AES_128_CCM_8",
+        "TLS_PSK_WITH_AES_256_CCM_8"
+    ).map(StringUtil::asciiToUpperCase).collect(Collectors.toSet());
 
     public static boolean isBlackListProtocol(String tlsProtocol)
     {
-        return __blackProtocols.get(tlsProtocol) != null;
+        return __blackProtocols.contains(StringUtil.asciiToUpperCase(tlsProtocol));
     }
 
     public static boolean isBlackListCipher(String tlsCipher)
     {
-        return __blackCiphers.get(tlsCipher) != null;
+        return __blackCiphers.contains(StringUtil.asciiToUpperCase(tlsCipher));
     }
 
     /**
