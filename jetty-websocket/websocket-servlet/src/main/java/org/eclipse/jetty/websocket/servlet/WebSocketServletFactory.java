@@ -43,6 +43,7 @@ public interface WebSocketServletFactory
         {
             try
             {
+                @SuppressWarnings("unchecked")
                 Class<? extends WebSocketServletFactory> wsClazz =
                     (Class<? extends WebSocketServletFactory>)Class.forName(DEFAULT_IMPL, true, Thread.currentThread().getContextClassLoader());
                 Constructor<? extends WebSocketServletFactory> ctor = wsClazz.getDeclaredConstructor(ServletContext.class, WebSocketPolicy.class);
