@@ -75,8 +75,7 @@ public class StringUtil
     }
 
     // @checkstyle-disable-check : IllegalTokenTextCheck
-
-    public static final char[] lowercases =
+    private static final char[] LOWERCASES =
     {
         '\000', '\001', '\002', '\003', '\004', '\005', '\006', '\007',
         '\010', '\011', '\012', '\013', '\014', '\015', '\016', '\017',
@@ -96,7 +95,72 @@ public class StringUtil
         '\170', '\171', '\172', '\173', '\174', '\175', '\176', '\177'
     };
 
+    // @checkstyle-disable-check : IllegalTokenTextCheck
+    private static final char[] UPPERCASES =
+    {
+        '\000', '\001', '\002', '\003', '\004', '\005', '\006', '\007',
+        '\010', '\011', '\012', '\013', '\014', '\015', '\016', '\017',
+        '\020', '\021', '\022', '\023', '\024', '\025', '\026', '\027',
+        '\030', '\031', '\032', '\033', '\034', '\035', '\036', '\037',
+        '\040', '\041', '\042', '\043', '\044', '\045', '\046', '\047',
+        '\050', '\051', '\052', '\053', '\054', '\055', '\056', '\057',
+        '\060', '\061', '\062', '\063', '\064', '\065', '\066', '\067',
+        '\070', '\071', '\072', '\073', '\074', '\075', '\076', '\077',
+        '\100', '\101', '\102', '\103', '\104', '\105', '\106', '\107',
+        '\110', '\111', '\112', '\113', '\114', '\115', '\116', '\117',
+        '\120', '\121', '\122', '\123', '\124', '\125', '\126', '\127',
+        '\130', '\131', '\132', '\133', '\134', '\135', '\136', '\137',
+        '\140', '\101', '\102', '\103', '\104', '\105', '\106', '\107',
+        '\110', '\111', '\112', '\113', '\114', '\115', '\116', '\117',
+        '\120', '\121', '\122', '\123', '\124', '\125', '\126', '\127',
+        '\130', '\131', '\132', '\173', '\174', '\175', '\176', '\177'
+    };
+
     // @checkstyle-enable-check : IllegalTokenTextCheck
+
+    /**
+     * fast lower case conversion. Only works on ascii (not unicode)
+     *
+     * @param c the char to convert
+     * @return a lower case version of c
+     */
+    public static char asciiToLowerCase(char c)
+    {
+        return (c < 0x80) ? LOWERCASES[c] : c;
+    }
+
+    /**
+     * fast lower case conversion. Only works on ascii (not unicode)
+     *
+     * @param c the byte to convert
+     * @return a lower case version of c
+     */
+    public static byte asciiToLowerCase(byte c)
+    {
+        return (c > 0) ? (byte)LOWERCASES[c] : c;
+    }
+
+    /**
+     * fast upper case conversion. Only works on ascii (not unicode)
+     *
+     * @param c the char to convert
+     * @return a upper case version of c
+     */
+    public static char asciiToUpperCase(char c)
+    {
+        return (c < 0x80) ? UPPERCASES[c] : c;
+    }
+
+    /**
+     * fast upper case conversion. Only works on ascii (not unicode)
+     *
+     * @param c the byte to convert
+     * @return a upper case version of c
+     */
+    public static byte asciiToUpperCase(byte c)
+    {
+        return (c > 0) ? (byte)UPPERCASES[c] : c;
+    }
 
     /**
      * fast lower case conversion. Only works on ascii (not unicode)
@@ -117,7 +181,7 @@ public class StringUtil
             char c1 = s.charAt(i);
             if (c1 <= 127)
             {
-                char c2 = lowercases[c1];
+                char c2 = LOWERCASES[c1];
                 if (c1 != c2)
                 {
                     c = s.toCharArray();
@@ -129,9 +193,45 @@ public class StringUtil
         while (i-- > 0)
         {
             if (c[i] <= 127)
-                c[i] = lowercases[c[i]];
+                c[i] = LOWERCASES[c[i]];
         }
 
+        return c == null ? s : new String(c);
+    }
+
+    /**
+     * fast upper case conversion. Only works on ascii (not unicode)
+     *
+     * @param s the string to convert
+     * @return a lower case version of s
+     */
+    public static String asciiToUpperCase(String s)
+    {
+        if (s == null)
+            return null;
+
+        char[] c = null;
+        int i = s.length();
+        // look for first conversion
+        while (i-- > 0)
+        {
+            char c1 = s.charAt(i);
+            if (c1 <= 127)
+            {
+                char c2 = UPPERCASES[c1];
+                if (c1 != c2)
+                {
+                    c = s.toCharArray();
+                    c[i] = c2;
+                    break;
+                }
+            }
+        }
+        while (i-- > 0)
+        {
+            if (c[i] <= 127)
+                c[i] = UPPERCASES[c[i]];
+        }
         return c == null ? s : new String(c);
     }
 
@@ -199,9 +299,9 @@ public class StringUtil
             if (c1 != c2)
             {
                 if (c1 <= 127)
-                    c1 = lowercases[c1];
+                    c1 = LOWERCASES[c1];
                 if (c2 <= 127)
-                    c2 = lowercases[c2];
+                    c2 = LOWERCASES[c2];
                 if (c1 != c2)
                     return false;
             }
@@ -229,9 +329,9 @@ public class StringUtil
             if (c1 != c2)
             {
                 if (c1 <= 127)
-                    c1 = lowercases[c1];
+                    c1 = LOWERCASES[c1];
                 if (c2 <= 127)
-                    c2 = lowercases[c2];
+                    c2 = LOWERCASES[c2];
                 if (c1 != c2)
                     return false;
             }
