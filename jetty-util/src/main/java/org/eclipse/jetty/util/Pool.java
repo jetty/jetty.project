@@ -244,13 +244,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
      * The returned entry must ultimately have the {@link Entry#enable(Object, boolean)}
      * method called or be removed via {@link Pool.Entry#remove()} or
      * {@link Pool#remove(Pool.Entry)}.
-     * <p>For multiplexed entries, a call to reserve may return null if a previously
-     * reserved entry has excess capacity, which is determined by each call to
-     * reserve() incrementing demand. </p>
      *
      * @return a disabled entry that is contained in the pool,
      * or null if the pool is closed or if the pool already contains
-     * {@link #getMaxEntries()} entries, or the allotment has already been reserved
+     * {@link #getMaxEntries()} entries
      */
     public Entry reserve()
     {
