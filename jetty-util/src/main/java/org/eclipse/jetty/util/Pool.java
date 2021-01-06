@@ -229,8 +229,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
             if (space <= 0)
                 return null;
 
-            long pending = entries.stream().filter(Entry::isReserved).count();
-            if (allotment >= 0 && (pending * getMaxMultiplex()) >= allotment)
+            if (allotment >= 0 && (getReservedCount() * getMaxMultiplex()) >= allotment)
                 return null;
 
             Entry entry = new Entry();
