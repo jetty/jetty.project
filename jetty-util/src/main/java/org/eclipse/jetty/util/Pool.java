@@ -268,25 +268,23 @@ public class Pool<T> implements AutoCloseable, Dumpable
             if (closed)
                 return null;
 
-            int space = maxEntries - entries.size();
-            if (space <= 0)
-                return null;
-
+            // Loop to update atomic pending as other mutators do not use lock.
             while (true)
             {
                 long encoded = pending.get();
                 int reserved = AtomicBiInteger.getLo(encoded);
                 int demand = AtomicBiInteger.getHi(encoded);
 
-                if (reserved * getMaxMultiplex() <= demand)
+                // If we have space and there is demand for a new entry
+                if (entries.size() < maxEntries && reserved * getMaxMultiplex() <= demand)
                 {
-                    // we need a new connection
+                    // create a new entry and increment demand
                     if (pending.compareAndSet(encoded, demand + 1, reserved + 1))
                         break;
                 }
                 else
                 {
-                    // We increment demand on existing reservations
+                    // We either can't create or don't need a new entry, so only increment demand
                     if (pending.compareAndSet(encoded, demand + 1, reserved))
                         return null;
                 }
