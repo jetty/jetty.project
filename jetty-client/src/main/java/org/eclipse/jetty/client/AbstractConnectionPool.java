@@ -97,7 +97,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
             Pool<Connection>.Entry entry = pool.reserve();
             if (entry == null)
                 break;
-            pending.addAndGetHi(1);
+            pending.add(1, 0);
 
             Promise.Completable<Connection> future = new FutureConnection(entry);
             futures.add(future);
@@ -270,7 +270,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         if (entry == null)
         {
             // pool is full, so decrement reservations and return
-            pending.addAndGetHi(-1);
+            pending.add(-1, 0);
             return;
         }
 
@@ -480,12 +480,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
                 ((Attachable)connection).setAttachment(reserved);
                 onCreated(connection);
 
-                while (true)
-                {
-                    long encoded = pending.get();
-                    if (pending.compareAndSet(encoded, getHi(encoded) - 1, Math.max(0, getLo(encoded) - getMaxMultiplex())))
-                        break;
-                }
+                pending.updateAndGet(encoded -> AtomicBiInteger.encode(getHi(encoded) - 1, Math.max(0, getLo(encoded) - getMaxMultiplex())));
                 reserved.enable(connection, false);
                 idle(connection, false);
                 complete(null);
@@ -493,7 +488,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
             }
             else
             {
-                pending.addAndGetHi(-1);
+                pending.add(-1, 0);
                 failed(new IllegalArgumentException("Invalid connection object: " + connection));
             }
         }
@@ -503,7 +498,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Connection creation failed {}", reserved, x);
-            pending.addAndGetHi(-1);
+            pending.add(-1, 0);
             reserved.remove();
             completeExceptionally(x);
             requester.failed(x);
