@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
+import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Pool;
@@ -42,12 +43,15 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Sweeper;
 
 import static java.util.stream.Collectors.toCollection;
+import static org.eclipse.jetty.util.AtomicBiInteger.getHi;
+import static org.eclipse.jetty.util.AtomicBiInteger.getLo;
 
 @ManagedObject
 public abstract class AbstractConnectionPool extends ContainerLifeCycle implements ConnectionPool, Dumpable, Sweeper.Sweepable
 {
     private static final Logger LOG = Log.getLogger(AbstractConnectionPool.class);
 
+    private final AtomicBiInteger pending = new AtomicBiInteger(); // hi==reserved; lo==demand
     private final HttpDestination destination;
     private final Callback requester;
     private final Pool<Connection> pool;
@@ -88,24 +92,17 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
             LOG.debug("Precreating connections {}/{}", connectionCount, getMaxConnectionCount());
 
         List<CompletableFuture<?>> futures = new ArrayList<>();
-        loop : for (int i = 0; i < connectionCount; i++)
+        for (int i = 0; i < connectionCount; i++)
         {
             Pool<Connection>.Entry entry = pool.reserve();
-            while (entry == null)
-            {
-                if (pool.size() >= pool.getMaxEntries())
-                    break loop;
-                if (pool.getMaxMultiplex() <= 1)
-                    throw new IllegalStateException();
-                entry = pool.reserve();
-            }
+            if (entry == null)
+                break;
+            pending.addAndGetHi(1);
 
-            final Pool<Connection>.Entry reserved = entry;
-
-            Promise.Completable<Connection> future = new FutureConnection(reserved);
+            Promise.Completable<Connection> future = new FutureConnection(entry);
             futures.add(future);
             if (LOG.isDebugEnabled())
-                LOG.debug("Creating connection {}/{} at {}", futures.size() + 1, getMaxConnectionCount(), reserved);
+                LOG.debug("Creating connection {}/{} at {}", futures.size() + 1, getMaxConnectionCount(), entry);
             destination.newConnection(future);
         }
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
@@ -252,9 +249,30 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         if (LOG.isDebugEnabled())
             LOG.debug("Try creating connection {}/{} with {} pending", connectionCount, getMaxConnectionCount(), getPendingConnectionCount());
 
+        // If we have already reserved sufficient multiplexed connections, then do not create another
+        int multiplexed = getMaxMultiplex();
+        while (true)
+        {
+            long encoded = pending.get();
+            int reserved = getHi(encoded);
+            int demand = getLo(encoded);
+
+            // If we have already reserved enough connections, just increment demand and return
+            if (reserved * multiplexed > demand && (pending.compareAndSet(encoded, reserved, demand + 1)))
+                return;
+
+            // otherwise increase reservations and demand
+            if (pending.compareAndSet(encoded, reserved + 1, demand + 1))
+                break;
+        }
+
         Pool<Connection>.Entry entry = pool.reserve();
         if (entry == null)
+        {
+            // pool is full, so decrement reservations and return
+            pending.addAndGetHi(-1);
             return;
+        }
 
         if (LOG.isDebugEnabled())
             LOG.debug("Creating connection {}/{} at {}", connectionCount, getMaxConnectionCount(), entry);
@@ -461,6 +479,13 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
             {
                 ((Attachable)connection).setAttachment(reserved);
                 onCreated(connection);
+
+                while (true)
+                {
+                    long encoded = pending.get();
+                    if (pending.compareAndSet(encoded, getHi(encoded) - 1, Math.max(0, getLo(encoded) - getMaxMultiplex())))
+                        break;
+                }
                 reserved.enable(connection, false);
                 idle(connection, false);
                 complete(null);
@@ -468,6 +493,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
             }
             else
             {
+                pending.addAndGetHi(-1);
                 failed(new IllegalArgumentException("Invalid connection object: " + connection));
             }
         }
@@ -477,6 +503,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Connection creation failed {}", reserved, x);
+            pending.addAndGetHi(-1);
             reserved.remove();
             completeExceptionally(x);
             requester.failed(x);

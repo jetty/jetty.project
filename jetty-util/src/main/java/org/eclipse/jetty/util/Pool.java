@@ -54,7 +54,6 @@ public class Pool<T> implements AutoCloseable, Dumpable
     private final List<Entry> entries = new CopyOnWriteArrayList<>();
 
     private final int maxEntries;
-    private final AtomicBiInteger pending = new AtomicBiInteger(); // Lo reserved; Hi demand
     private final StrategyType strategyType;
 
     /*
@@ -137,12 +136,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
     public int getReservedCount()
     {
-        return pending.getLo();
-    }
-
-    public int getDemand()
-    {
-        return pending.getHi();
+        return (int)entries.stream().filter(Entry::isReserved).count();
     }
 
     public int getIdleCount()
@@ -235,12 +229,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
             if (space <= 0)
                 return null;
 
-            // The pending count is an AtomicInteger that is only ever incremented here with
-            // the lock held.  Thus the pending count can be reduced immediately after the
-            // test below, but never incremented.  Thus the allotment limit can be enforced.
-            if (allotment >= 0 && (pending.getLo() * getMaxMultiplex()) >= allotment)
+            long pending = entries.stream().filter(Entry::isReserved).count();
+            if (allotment >= 0 && (pending * getMaxMultiplex()) >= allotment)
                 return null;
-            pending.addAndGetLo(1);
 
             Entry entry = new Entry();
             entries.add(entry);
@@ -268,27 +259,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
             if (closed)
                 return null;
 
-            // Loop to update atomic pending as other mutators do not use lock.
-            while (true)
-            {
-                long encoded = pending.get();
-                int reserved = AtomicBiInteger.getLo(encoded);
-                int demand = AtomicBiInteger.getHi(encoded);
-
-                // If we have space and there is demand for a new entry
-                if (entries.size() < maxEntries && reserved * getMaxMultiplex() <= demand)
-                {
-                    // create a new entry and increment demand
-                    if (pending.compareAndSet(encoded, demand + 1, reserved + 1))
-                        break;
-                }
-                else
-                {
-                    // We either can't create or don't need a new entry, so only increment demand
-                    if (pending.compareAndSet(encoded, demand + 1, reserved))
-                        return null;
-                }
-            }
+            // If we have no space
+            if (entries.size() >= maxEntries)
+                return null;
 
             Entry entry = new Entry();
             entries.add(entry);
@@ -512,14 +485,11 @@ public class Pool<T> implements AutoCloseable, Dumpable
     @Override
     public String toString()
     {
-        long encoded = pending.get();
-        return String.format("%s@%x[size=%d closed=%s reserved=%d, demand=%d]",
+        return String.format("%s@%x[size=%d closed=%s]",
             getClass().getSimpleName(),
             hashCode(),
             entries.size(),
-            closed,
-            AtomicBiInteger.getLo(encoded),
-            AtomicBiInteger.getHi(encoded));
+            closed);
     }
 
     public class Entry
@@ -575,16 +545,6 @@ public class Pool<T> implements AutoCloseable, Dumpable
                 throw new IllegalStateException("Entry already enabled: " + this);
             }
 
-            while (true)
-            {
-                long encoded = pending.get();
-                int reserved = AtomicBiInteger.getLo(encoded);
-                int demand = AtomicBiInteger.getHi(encoded);
-                reserved = reserved - 1;
-                demand = Math.max(0, demand - getMaxMultiplex());
-                if (pending.compareAndSet(encoded, demand, reserved))
-                    break;
-            }
             return true;
         }
 
@@ -685,17 +645,18 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
                 boolean removed = state.compareAndSet(usageCount, -1, multiplexCount, newMultiplexCount);
                 if (removed)
-                {
-                    if (usageCount == Integer.MIN_VALUE)
-                        pending.addAndGetLo(-1);
                     return newMultiplexCount == 0;
-                }
             }
         }
 
         public boolean isClosed()
         {
             return state.getHi() < 0;
+        }
+
+        public boolean isReserved()
+        {
+            return state.getHi() == Integer.MIN_VALUE;
         }
 
         public boolean isIdle()

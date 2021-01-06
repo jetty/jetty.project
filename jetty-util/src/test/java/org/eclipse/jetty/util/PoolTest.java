@@ -159,15 +159,6 @@ public class PoolTest
         Pool<String>.Entry e1 = pool.reserve();
         assertThat(pool.size(), is(1));
         assertThat(pool.getReservedCount(), is(1));
-        assertThat(pool.getDemand(), is(1));
-        assertThat(pool.getIdleCount(), is(0));
-        assertThat(pool.getInUseCount(), is(0));
-
-        // max reservations
-        assertNull(pool.reserve());
-        assertThat(pool.size(), is(1));
-        assertThat(pool.getReservedCount(), is(1));
-        assertThat(pool.getDemand(), is(2));
         assertThat(pool.getIdleCount(), is(0));
         assertThat(pool.getInUseCount(), is(0));
 
@@ -175,7 +166,6 @@ public class PoolTest
         e1.enable("aaa", false);
         assertThat(pool.size(), is(1));
         assertThat(pool.getReservedCount(), is(0));
-        assertThat(pool.getDemand(), is(0));
         assertThat(pool.getIdleCount(), is(1));
         assertThat(pool.getInUseCount(), is(0));
 
@@ -183,7 +173,6 @@ public class PoolTest
         Pool<String>.Entry e2 = pool.reserve();
         assertThat(pool.size(), is(2));
         assertThat(pool.getReservedCount(), is(1));
-        assertThat(pool.getDemand(), is(1));
         assertThat(pool.getIdleCount(), is(1));
         assertThat(pool.getInUseCount(), is(0));
 
@@ -191,7 +180,6 @@ public class PoolTest
         e2.remove();
         assertThat(pool.size(), is(1));
         assertThat(pool.getReservedCount(), is(0));
-        assertThat(pool.getDemand(), is(1));
         assertThat(pool.getIdleCount(), is(1));
         assertThat(pool.getInUseCount(), is(0));
 
@@ -199,7 +187,6 @@ public class PoolTest
         Pool<String>.Entry e3 = pool.reserve();
         assertThat(pool.size(), is(2));
         assertThat(pool.getReservedCount(), is(1));
-        assertThat(pool.getDemand(), is(2));
         assertThat(pool.getIdleCount(), is(1));
         assertThat(pool.getInUseCount(), is(0));
 
@@ -207,7 +194,6 @@ public class PoolTest
         e3.enable("bbb", true);
         assertThat(pool.size(), is(2));
         assertThat(pool.getReservedCount(), is(0));
-        assertThat(pool.getDemand(), is(0));
         assertThat(pool.getIdleCount(), is(1));
         assertThat(pool.getInUseCount(), is(1));
 
