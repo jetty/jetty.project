@@ -776,6 +776,12 @@
       <version>${project.version}</version>
       <optional>true</optional>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-test-keystore</artifactId>
+      <version>${project.version}</version>
+      <optional>true</optional>
+    </dependency>
     <!-- Demo Apps -->
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
