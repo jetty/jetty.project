@@ -102,39 +102,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
 
             final Pool<Connection>.Entry reserved = entry;
 
-            Promise.Completable<Connection> future = new Promise.Completable<Connection>()
-            {
-                @Override
-                public void succeeded(Connection connection)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Connection creation succeeded {}: {}", reserved, connection);
-                    if (connection instanceof Attachable)
-                    {
-                        ((Attachable)connection).setAttachment(reserved);
-                        onCreated(connection);
-                        reserved.enable(connection, false);
-                        idle(connection, false);
-                        complete(null);
-                        proceed();
-                    }
-                    else
-                    {
-                        failed(new IllegalArgumentException("Invalid connection object: " + connection));
-                    }
-                }
-
-                @Override
-                public void failed(Throwable x)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Connection creation failed {}", reserved, x);
-                    reserved.remove();
-                    completeExceptionally(x);
-                    requester.failed(x);
-                }
-            };
-
+            Promise.Completable<Connection> future = new FutureConnection(reserved);
             futures.add(future);
             if (LOG.isDebugEnabled())
                 LOG.debug("Creating connection {}/{} at {}", futures.size() + 1, getMaxConnectionCount(), reserved);
@@ -291,37 +259,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         if (LOG.isDebugEnabled())
             LOG.debug("Creating connection {}/{} at {}", connectionCount, getMaxConnectionCount(), entry);
 
-        Promise<Connection> future = new Promise<Connection>()
-        {
-            @Override
-            public void succeeded(Connection connection)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Connection {}/{} creation succeeded at {}: {}", connectionCount, getMaxConnectionCount(), entry, connection);
-                if (connection instanceof Attachable)
-                {
-                    ((Attachable)connection).setAttachment(entry);
-                    onCreated(connection);
-                    entry.enable(connection, false);
-                    idle(connection, false);
-                    proceed();
-                }
-                else
-                {
-                    failed(new IllegalArgumentException("Invalid connection object: " + connection));
-                }
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Connection {}/{} creation failed at {}", connectionCount, getMaxConnectionCount(), entry, x);
-                entry.remove();
-                requester.failed(x);
-            }
-        };
-
+        Promise<Connection> future = new FutureConnection(entry);
         destination.newConnection(future);
     }
 
@@ -503,5 +441,45 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
             getMaxConnectionCount(),
             getActiveConnectionCount(),
             getIdleConnectionCount());
+    }
+
+    private class FutureConnection extends Promise.Completable<Connection>
+    {
+        private final Pool<Connection>.Entry reserved;
+
+        public FutureConnection(Pool<Connection>.Entry reserved)
+        {
+            this.reserved = reserved;
+        }
+
+        @Override
+        public void succeeded(Connection connection)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Connection creation succeeded {}: {}", reserved, connection);
+            if (connection instanceof Attachable)
+            {
+                ((Attachable)connection).setAttachment(reserved);
+                onCreated(connection);
+                reserved.enable(connection, false);
+                idle(connection, false);
+                complete(null);
+                proceed();
+            }
+            else
+            {
+                failed(new IllegalArgumentException("Invalid connection object: " + connection));
+            }
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Connection creation failed {}", reserved, x);
+            reserved.remove();
+            completeExceptionally(x);
+            requester.failed(x);
+        }
     }
 }
