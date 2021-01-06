@@ -20,7 +20,9 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -82,12 +84,63 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     @Override
     public CompletableFuture<Void> preCreateConnections(int connectionCount)
     {
-        CompletableFuture<?>[] futures = new CompletableFuture[connectionCount];
-        for (int i = 0; i < connectionCount; i++)
+        if (LOG.isDebugEnabled())
+            LOG.debug("Precreating connections {}/{}", connectionCount, getMaxConnectionCount());
+
+        List<CompletableFuture<?>> futures = new ArrayList<>();
+        loop : for (int i = 0; i < connectionCount; i++)
         {
-            futures[i] = tryCreateAsync(getMaxConnectionCount());
+            Pool<Connection>.Entry entry = pool.reserve();
+            while (entry == null)
+            {
+                if (pool.size() >= pool.getMaxEntries())
+                    break loop;
+                if (pool.getMaxMultiplex() <= 1)
+                    throw new IllegalStateException();
+                entry = pool.reserve();
+            }
+
+            final Pool<Connection>.Entry reserved = entry;
+
+            Promise.Completable<Connection> future = new Promise.Completable<Connection>()
+            {
+                @Override
+                public void succeeded(Connection connection)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Connection creation succeeded {}: {}", reserved, connection);
+                    if (connection instanceof Attachable)
+                    {
+                        ((Attachable)connection).setAttachment(reserved);
+                        onCreated(connection);
+                        reserved.enable(connection, false);
+                        idle(connection, false);
+                        complete(null);
+                        proceed();
+                    }
+                    else
+                    {
+                        failed(new IllegalArgumentException("Invalid connection object: " + connection));
+                    }
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Connection creation failed {}", reserved, x);
+                    reserved.remove();
+                    completeExceptionally(x);
+                    requester.failed(x);
+                }
+            };
+
+            futures.add(future);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Creating connection {}/{} at {}", futures.size() + 1, getMaxConnectionCount(), reserved);
+            destination.newConnection(future);
         }
-        return CompletableFuture.allOf(futures);
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
 
     protected int getMaxMultiplex()
@@ -200,7 +253,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
      *
      * @param create a hint to attempt to open a new connection if no idle connections are available
      * @return an idle connection or {@code null} if no idle connections are available
-     * @see #tryCreate(int)
+     * @see #tryCreate()
      */
     protected Connection acquire(boolean create)
     {
@@ -210,20 +263,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         if (connection == null)
         {
             if (create || isMaximizeConnections())
-            {
-                // Try to forcibly create a connection if none is available.
-                tryCreate(-1);
-            }
-            else
-            {
-                // QueuedRequests may be stale and different from pool.pending.
-                // So tryCreate() may be a no-operation (when queuedRequests < pool.pending);
-                // or tryCreate() may create more connections than necessary, when
-                // queuedRequests read below is stale and some request has just been
-                // dequeued to be processed causing queuedRequests > pool.pending.
-                int queuedRequests = destination.getQueuedRequestCount();
-                tryCreate(queuedRequests);
-            }
+                tryCreate();
             connection = activate();
         }
         return connection;
@@ -236,28 +276,22 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
      * then this method returns without scheduling the opening of a new connection;
      * if {@code maxPending} is negative, a new connection is always scheduled for opening.</p>
      *
-     * @param maxPending the max desired number of connections scheduled for opening,
      * or a negative number to always trigger the opening of a new connection
      */
-    protected void tryCreate(int maxPending)
-    {
-        tryCreateAsync(maxPending);
-    }
-
-    private CompletableFuture<?> tryCreateAsync(int maxPending)
+    protected void tryCreate()
     {
         int connectionCount = getConnectionCount();
         if (LOG.isDebugEnabled())
-            LOG.debug("Try creating connection {}/{} with {}/{} pending", connectionCount, getMaxConnectionCount(), getPendingConnectionCount(), maxPending);
+            LOG.debug("Try creating connection {}/{} with {} pending", connectionCount, getMaxConnectionCount(), getPendingConnectionCount());
 
-        Pool<Connection>.Entry entry = pool.reserve(maxPending);
+        Pool<Connection>.Entry entry = pool.reserve();
         if (entry == null)
-            return CompletableFuture.completedFuture(null);
+            return;
 
         if (LOG.isDebugEnabled())
             LOG.debug("Creating connection {}/{} at {}", connectionCount, getMaxConnectionCount(), entry);
 
-        Promise.Completable<Connection> future = new Promise.Completable<Connection>()
+        Promise<Connection> future = new Promise<Connection>()
         {
             @Override
             public void succeeded(Connection connection)
@@ -270,7 +304,6 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
                     onCreated(connection);
                     entry.enable(connection, false);
                     idle(connection, false);
-                    complete(null);
                     proceed();
                 }
                 else
@@ -285,14 +318,11 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
                 if (LOG.isDebugEnabled())
                     LOG.debug("Connection {}/{} creation failed at {}", connectionCount, getMaxConnectionCount(), entry, x);
                 entry.remove();
-                completeExceptionally(x);
                 requester.failed(x);
             }
         };
 
         destination.newConnection(future);
-
-        return future;
     }
 
     protected void proceed()

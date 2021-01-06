@@ -54,7 +54,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
     private final List<Entry> entries = new CopyOnWriteArrayList<>();
 
     private final int maxEntries;
-    private final AtomicInteger pending = new AtomicInteger();
+    private final AtomicBiInteger pending = new AtomicBiInteger(); // Lo reserved; Hi demand
     private final StrategyType strategyType;
 
     /*
@@ -137,7 +137,12 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
     public int getReservedCount()
     {
-        return pending.get();
+        return pending.getLo();
+    }
+
+    public int getDemand()
+    {
+        return pending.getHi();
     }
 
     public int getIdleCount()
@@ -216,7 +221,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
      * @return a disabled entry that is contained in the pool,
      * or null if the pool is closed or if the pool already contains
      * {@link #getMaxEntries()} entries, or the allotment has already been reserved
+     * @deprecated Use {@link #reserve()}
      */
+    @Deprecated
     public Entry reserve(int allotment)
     {
         try (Locker.Lock l = locker.lock())
@@ -231,9 +238,59 @@ public class Pool<T> implements AutoCloseable, Dumpable
             // The pending count is an AtomicInteger that is only ever incremented here with
             // the lock held.  Thus the pending count can be reduced immediately after the
             // test below, but never incremented.  Thus the allotment limit can be enforced.
-            if (allotment >= 0 && (pending.get() * getMaxMultiplex()) >= allotment)
+            if (allotment >= 0 && (pending.getLo() * getMaxMultiplex()) >= allotment)
                 return null;
-            pending.incrementAndGet();
+            pending.addAndGetLo(1);
+
+            Entry entry = new Entry();
+            entries.add(entry);
+            return entry;
+        }
+    }
+
+    /**
+     * Create a new disabled slot into the pool.
+     * The returned entry must ultimately have the {@link Entry#enable(Object, boolean)}
+     * method called or be removed via {@link Pool.Entry#remove()} or
+     * {@link Pool#remove(Pool.Entry)}.
+     * <p>For multiplexed entries, a call to reserve may return null if a previously
+     * reserved entry has excess capacity, which is determined by each call to
+     * reserve() incrementing demand. </p>
+     *
+     * @return a disabled entry that is contained in the pool,
+     * or null if the pool is closed or if the pool already contains
+     * {@link #getMaxEntries()} entries, or the allotment has already been reserved
+     */
+    public Entry reserve()
+    {
+        try (Locker.Lock l = locker.lock())
+        {
+            if (closed)
+                return null;
+
+            int space = maxEntries - entries.size();
+            if (space <= 0)
+                return null;
+
+            while (true)
+            {
+                long encoded = pending.get();
+                int reserved = AtomicBiInteger.getLo(encoded);
+                int demand = AtomicBiInteger.getHi(encoded);
+
+                if (reserved * getMaxMultiplex() <= demand)
+                {
+                    // we need a new connection
+                    if (pending.compareAndSet(encoded, demand + 1, reserved + 1))
+                        break;
+                }
+                else
+                {
+                    // We increment demand on existing reservations
+                    if (pending.compareAndSet(encoded, demand + 1, reserved))
+                        return null;
+                }
+            }
 
             Entry entry = new Entry();
             entries.add(entry);
@@ -342,7 +399,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         if (entry != null)
             return entry;
 
-        entry = reserve(-1);
+        entry = reserve();
         if (entry == null)
             return null;
 
@@ -457,12 +514,14 @@ public class Pool<T> implements AutoCloseable, Dumpable
     @Override
     public String toString()
     {
-        return String.format("%s@%x[size=%d closed=%s pending=%d]",
+        long encoded = pending.get();
+        return String.format("%s@%x[size=%d closed=%s reserved=%d, demand=%d]",
             getClass().getSimpleName(),
             hashCode(),
             entries.size(),
             closed,
-            pending.get());
+            AtomicBiInteger.getLo(encoded),
+            AtomicBiInteger.getHi(encoded));
     }
 
     public class Entry
@@ -488,7 +547,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
 
         /** Enable a reserved entry {@link Entry}.
-         * An entry returned from the {@link #reserve(int)} method must be enabled with this method,
+         * An entry returned from the {@link #reserve()} method must be enabled with this method,
          * once and only once, before it is usable by the pool.
          * The entry may be enabled and not acquired, in which case it is immediately available to be
          * acquired, potentially by another thread; or it can be enabled and acquired atomically so that
@@ -517,7 +576,17 @@ public class Pool<T> implements AutoCloseable, Dumpable
                     return false; // Pool has been closed
                 throw new IllegalStateException("Entry already enabled: " + this);
             }
-            pending.decrementAndGet();
+
+            while (true)
+            {
+                long encoded = pending.get();
+                int reserved = AtomicBiInteger.getLo(encoded);
+                int demand = AtomicBiInteger.getHi(encoded);
+                reserved = reserved - 1;
+                demand = Math.max(0, demand - getMaxMultiplex());
+                if (pending.compareAndSet(encoded, demand, reserved))
+                    break;
+            }
             return true;
         }
 
@@ -620,7 +689,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
                 if (removed)
                 {
                     if (usageCount == Integer.MIN_VALUE)
-                        pending.decrementAndGet();
+                        pending.addAndGetLo(-1);
                     return newMultiplexCount == 0;
                 }
             }
