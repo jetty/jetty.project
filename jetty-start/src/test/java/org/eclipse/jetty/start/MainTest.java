@@ -131,8 +131,8 @@ public class MainTest
         List<String> cmdLineArgs = new ArrayList<>();
 
         Path homePath = MavenTestingUtils.getTestResourceDir("dist-home").toPath().toRealPath();
-        cmdLineArgs.add("jetty.home=" + homePath.toString());
-        cmdLineArgs.add("user.dir=" + homePath.toString());
+        cmdLineArgs.add("jetty.home=" + homePath);
+        cmdLineArgs.add("user.dir=" + homePath);
 
         // JVM args
         cmdLineArgs.add("--exec");
@@ -146,10 +146,7 @@ public class MainTest
         assertThat("Extra Jar exists: " + extraJar, Files.exists(extraJar), is(true));
         assertThat("Extra Dir exists: " + extraDir, Files.exists(extraDir), is(true));
 
-        String lib = "--lib=" +
-            extraJar.toString() +
-            File.pathSeparator +
-            extraDir.toString();
+        String lib = "--lib=" + extraJar + File.pathSeparator + extraDir;
         cmdLineArgs.add(lib);
 
         // Arbitrary XMLs
@@ -174,8 +171,8 @@ public class MainTest
         List<String> cmdLineArgs = new ArrayList<>();
 
         Path homePath = MavenTestingUtils.getTestResourceDir("dist-home").toPath().toRealPath();
-        cmdLineArgs.add("jetty.home=" + homePath.toString());
-        cmdLineArgs.add("user.dir=" + homePath.toString());
+        cmdLineArgs.add("jetty.home=" + homePath);
+        cmdLineArgs.add("user.dir=" + homePath);
 
         // JVM args
         cmdLineArgs.add("--exec");
