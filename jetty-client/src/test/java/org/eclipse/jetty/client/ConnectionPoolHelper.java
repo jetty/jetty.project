@@ -29,6 +29,6 @@ public class ConnectionPoolHelper
 
     public static void tryCreate(AbstractConnectionPool connectionPool, int pending)
     {
-        connectionPool.tryCreate(pending > 0);
+        connectionPool.tryCreate(pending != 0);
     }
 }
