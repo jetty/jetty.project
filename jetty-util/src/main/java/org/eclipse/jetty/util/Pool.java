@@ -215,7 +215,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
      * @return a disabled entry that is contained in the pool,
      * or null if the pool is closed or if the pool already contains
      * {@link #getMaxEntries()} entries, or the allotment has already been reserved
-     * @deprecated Use {@link #reserve()}
+     * @deprecated Use {@link #reserve()} instead
      */
     @Deprecated
     public Entry reserve(int allotment)

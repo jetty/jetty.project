@@ -87,7 +87,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     public CompletableFuture<Void> preCreateConnections(int connectionCount)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Precreating connections {}/{}", connectionCount, getMaxConnectionCount());
+            LOG.debug("Pre-creating connections {}/{}", connectionCount, getMaxConnectionCount());
 
         List<CompletableFuture<?>> futures = new ArrayList<>();
         for (int i = 0; i < connectionCount; i++)
@@ -95,12 +95,11 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
             Pool<Connection>.Entry entry = pool.reserve();
             if (entry == null)
                 break;
-            pending.addAndGet(1);
-
+            pending.incrementAndGet();
             Promise.Completable<Connection> future = new FutureConnection(entry);
             futures.add(future);
             if (LOG.isDebugEnabled())
-                LOG.debug("Creating connection {}/{} at {}", futures.size() + 1, getMaxConnectionCount(), entry);
+                LOG.debug("Pre-creating connection {}/{} at {}", futures.size(), getMaxConnectionCount(), entry);
             destination.newConnection(future);
         }
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
@@ -164,7 +163,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     @ManagedAttribute(value = "The number of pending connections", readonly = true)
     public int getPendingConnectionCount()
     {
-        return pool.getReservedCount();
+        return pending.get();
     }
 
     @Override
@@ -221,7 +220,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     protected Connection acquire(boolean create)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Acquiring on {}", this);
+            LOG.debug("Acquiring create={} on {}", create, this);
         Connection connection = activate();
         if (connection == null)
         {
@@ -232,17 +231,17 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     }
 
     /**
-     * <p>Try creating a new connection.</p>
-     * <p>Whether a new connection is determined by the {@code demanded} parameter
-     * and a count kept of previous demand and supply:</p>
-     * <ul>
-     *     <li>The demand is incremented for every call to tryCreate with {@code demanded} true</li>
-     *     <li>If the demand is greater than the pending connections time the {@link #getMaxMultiplex()} factor,
-     *     then the method tries to reserve an entry in the pool so it can schedule a new connection.</li>
-     *     <li>If a new connection is scheduled, then the pending count is incremented</li>
-     *     <li>Once a scheduled new connection completes successfully, pending is decremented and demand is
-     *     reduced by the {@link #getMaxMultiplex()} factor.</li>
-     * </ul>
+     * <p>Tries to create a new connection.</p>
+     * <p>Whether a new connection is created is determined by the {@code create} parameter
+     * and a count of demand and supply, where the demand is derived from the number of
+     * queued requests, and the supply is the number of pending connections time the
+     * {@link #getMaxMultiplex()} factor: is the demand is less than the supply, the
+     * connection will not be created.</p>
+     * <p>Since the number of queued requests used to derive the demand may be a stale
+     * value, it is possible that few more connections than strictly necessary may be
+     * created, but enough to satisfy the demand.</p>
+     *
+     * @param create a hint to request to create a connection
      */
     protected void tryCreate(boolean create)
     {
@@ -250,7 +249,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         if (LOG.isDebugEnabled())
             LOG.debug("Try creating connection {}/{} with {} pending", connectionCount, getMaxConnectionCount(), getPendingConnectionCount());
 
-        // If we have already pending sufficient multiplexed connections, then do not create another
+        // If we have already pending sufficient multiplexed connections, then do not create another.
         int multiplexed = getMaxMultiplex();
         while (true)
         {
@@ -258,14 +257,19 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
             int supply = pending * multiplexed;
             int demand = destination.getQueuedRequestCount() + (create ? 1 : 0);
 
-            if (!isMaximizeConnections() && supply >= demand)
+            boolean tryCreate = isMaximizeConnections() || supply < demand;
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Try creating({}) connection, pending/demand/supply: {}/{}/{}, result={}", create, pending, demand, supply, tryCreate);
+
+            if (!tryCreate)
                 return;
 
             if (this.pending.compareAndSet(pending, pending + 1))
                 break;
         }
 
-        // Create the connection
+        // Create the connection.
         Pool<Connection>.Entry entry = pool.reserve();
         if (entry == null)
         {
@@ -449,10 +453,9 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     @Override
     public String toString()
     {
-        return String.format("%s@%x[c=%d/%d/%d/%d,a=%d,i=%d,q=%d]",
+        return String.format("%s@%x[c=%d/%d/%d,a=%d,i=%d,q=%d]",
             getClass().getSimpleName(),
             hashCode(),
-            pending.get(),
             getPendingConnectionCount(),
             getConnectionCount(),
             getMaxConnectionCount(),
@@ -479,7 +482,6 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
             {
                 ((Attachable)connection).setAttachment(reserved);
                 onCreated(connection);
-
                 pending.decrementAndGet();
                 reserved.enable(connection, false);
                 idle(connection, false);
