@@ -27,8 +27,8 @@ public class ConnectionPoolHelper
         return connectionPool.acquire(create);
     }
 
-    public static void tryCreate(AbstractConnectionPool connectionPool, int pending)
+    public static void tryCreate(AbstractConnectionPool connectionPool)
     {
-        connectionPool.tryCreate(pending != 0);
+        connectionPool.tryCreate(true);
     }
 }
