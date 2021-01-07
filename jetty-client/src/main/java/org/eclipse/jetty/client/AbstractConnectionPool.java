@@ -235,7 +235,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
      * <p>Whether a new connection is created is determined by the {@code create} parameter
      * and a count of demand and supply, where the demand is derived from the number of
      * queued requests, and the supply is the number of pending connections time the
-     * {@link #getMaxMultiplex()} factor: is the demand is less than the supply, the
+     * {@link #getMaxMultiplex()} factor: if the demand is less than the supply, the
      * connection will not be created.</p>
      * <p>Since the number of queued requests used to derive the demand may be a stale
      * value, it is possible that few more connections than strictly necessary may be

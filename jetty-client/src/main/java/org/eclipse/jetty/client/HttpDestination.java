@@ -323,7 +323,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         // It is also necessary when thread T1 cannot acquire a connection
         // (for example, it has been stolen by thread T2 and the pool has
         // enough pending reservations). T1 returns without doing anything
-        // and therefore it is T2 that must send both request R1 and R2.
+        // and therefore it is T2 that must send both queued requests.
         while (true)
         {
             Connection connection;
