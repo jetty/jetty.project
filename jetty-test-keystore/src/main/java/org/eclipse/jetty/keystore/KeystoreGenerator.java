@@ -43,7 +43,7 @@ public class KeystoreGenerator
         generateTestKeystore("test-keystore.p12", "storepwd");
     }
 
-    public static void generateTestKeystore(String location, String password) throws Exception
+    public static File generateTestKeystore(String location, String password) throws Exception
     {
         // Generate an RSA key pair.
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
@@ -51,9 +51,9 @@ public class KeystoreGenerator
         KeyPair keyPair = keyPairGenerator.generateKeyPair();
 
         // Create a self-signed certificate.
-        Instant now = Instant.now();
-        Date notBefore = Date.from(now);
-        Date notAfter = Date.from(now.plus(Duration.ofDays(365)));
+        Instant start = Instant.now().minus(Duration.ofDays(1));
+        Date notBefore = Date.from(start);
+        Date notAfter = Date.from(start.plus(Duration.ofDays(365)));
         BigInteger serial = BigInteger.valueOf(new SecureRandom().nextLong());
         X500Name x500Name = new X500Name("C=US,ST=NE,L=Omaha,O=Webtide,OU=Jetty,CN=localhost");
         X509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(x500Name, serial, notBefore, notAfter, x500Name, keyPair.getPublic());
@@ -76,6 +76,6 @@ public class KeystoreGenerator
         {
             keystore.store(fos, pwdCharArray);
         }
+        return keystoreFile;
     }
-
 }

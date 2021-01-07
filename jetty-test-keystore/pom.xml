@@ -7,23 +7,24 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-test-keystore</artifactId>
+  <packaging>jar</packaging>
   <name>Jetty :: Test Keystore</name>
   <description>Test keystore with self-signed SSL Certificate.</description>
 
   <properties>
-    <bouncycastle-version>1.60</bouncycastle-version>
+    <bouncycastle.version>1.62</bouncycastle.version>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcpkix-jdk15on</artifactId>
-      <version>${bouncycastle-version}</version>
+      <version>${bouncycastle.version}</version>
     </dependency>
     <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcprov-jdk15on</artifactId>
-      <version>${bouncycastle-version}</version>
+      <version>${bouncycastle.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
