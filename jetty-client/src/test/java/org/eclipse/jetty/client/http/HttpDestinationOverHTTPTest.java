@@ -85,7 +85,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
             // Trigger creation of one connection.
-            ConnectionPoolHelper.tryCreate(connectionPool, 1);
+            ConnectionPoolHelper.tryCreate(connectionPool);
 
             Connection connection = ConnectionPoolHelper.acquire(connectionPool, false);
             if (connection == null)
@@ -106,7 +106,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
             // Trigger creation of one connection.
-            ConnectionPoolHelper.tryCreate(connectionPool, 1);
+            ConnectionPoolHelper.tryCreate(connectionPool);
 
             Connection connection1 = connectionPool.acquire();
             if (connection1 == null)
@@ -158,7 +158,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
             // Trigger creation of one connection.
-            ConnectionPoolHelper.tryCreate(connectionPool, 1);
+            ConnectionPoolHelper.tryCreate(connectionPool);
 
             // Make sure we entered idleCreated().
             assertTrue(idleLatch.await(5, TimeUnit.SECONDS));
@@ -169,7 +169,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
             assertNull(connection1);
 
             // Trigger creation of a second connection.
-            ConnectionPoolHelper.tryCreate(connectionPool, 1);
+            ConnectionPoolHelper.tryCreate(connectionPool);
 
             // Second attempt also returns null because we delayed idleCreated() above.
             Connection connection2 = connectionPool.acquire();
@@ -197,7 +197,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
             // Trigger creation of one connection.
-            ConnectionPoolHelper.tryCreate(connectionPool, 1);
+            ConnectionPoolHelper.tryCreate(connectionPool);
 
             Connection connection1 = connectionPool.acquire();
             if (connection1 == null)
@@ -234,7 +234,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
             // Trigger creation of one connection.
-            ConnectionPoolHelper.tryCreate(connectionPool, 1);
+            ConnectionPoolHelper.tryCreate(connectionPool);
 
             Connection connection1 = connectionPool.acquire();
             if (connection1 == null)

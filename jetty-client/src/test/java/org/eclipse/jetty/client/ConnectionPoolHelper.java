@@ -19,7 +19,6 @@
 package org.eclipse.jetty.client;
 
 import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.Destination;
 
 public class ConnectionPoolHelper
 {
@@ -28,8 +27,8 @@ public class ConnectionPoolHelper
         return connectionPool.acquire(create);
     }
 
-    public static void tryCreate(AbstractConnectionPool connectionPool, int pending)
+    public static void tryCreate(AbstractConnectionPool connectionPool)
     {
-        connectionPool.tryCreate(pending);
+        connectionPool.tryCreate(true);
     }
 }
