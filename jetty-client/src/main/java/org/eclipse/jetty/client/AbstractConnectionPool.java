@@ -475,12 +475,12 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Connection creation succeeded {}: {}", reserved, connection);
-            pending.decrementAndGet();
             if (connection instanceof Attachable)
             {
                 ((Attachable)connection).setAttachment(reserved);
                 onCreated(connection);
 
+                pending.decrementAndGet();
                 reserved.enable(connection, false);
                 idle(connection, false);
                 complete(null);
