@@ -23,6 +23,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
@@ -34,6 +35,7 @@ import javax.websocket.Session;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
@@ -58,6 +60,7 @@ import org.slf4j.LoggerFactory;
 public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer implements javax.websocket.WebSocketContainer
 {
     private static final Logger LOG = LoggerFactory.getLogger(JavaxWebSocketClientContainer.class);
+    public static final AtomicReference<ContainerLifeCycle> SHUTDOWN_CONTAINER = new AtomicReference<>();
 
     protected WebSocketCoreClient coreClient;
     protected Function<WebSocketComponents, WebSocketCoreClient> coreClientFactory;
@@ -288,6 +291,24 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
 
     protected void doClientStart()
     {
+        // If we are running in Jetty register shutdown with the ContextHandler.
+        // TODO: add test mode to disable this.
+        if (shutdownWithContextHandler(this))
+            return;
+
+        // If we are running inside a different ServletContainer we can register with the SHUTDOWN_CONTAINER static.
+        ContainerLifeCycle shutdownContainer = SHUTDOWN_CONTAINER.get();
+        if (shutdownContainer != null)
+        {
+            shutdownContainer.addManaged(this);
+            return;
+        }
+
+        ShutdownThread.register(this);
+    }
+
+    private boolean shutdownWithContextHandler(LifeCycle lifeCycle)
+    {
         try
         {
             Object context = getClass().getClassLoader()
@@ -301,7 +322,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
 
             contextHandler.getClass()
                 .getMethod("addManaged", LifeCycle.class)
-                .invoke(contextHandler, this);
+                .invoke(contextHandler, lifeCycle);
 
             AbstractLifeCycleListener shutdownListener = new AbstractLifeCycleListener()
             {
@@ -324,22 +345,11 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
             contextHandler.getClass()
                 .getMethod("addEventListener", EventListener.class)
                 .invoke(contextHandler, shutdownListener);
+            return true;
         }
-        catch (Throwable ignored)
+        catch (Throwable throwable)
         {
-            ShutdownThread.register(this);
+            return false;
         }
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        super.doStop();
-        doClientStop();
-    }
-
-    protected void doClientStop()
-    {
-        ShutdownThread.deregister(this);
     }
 }
