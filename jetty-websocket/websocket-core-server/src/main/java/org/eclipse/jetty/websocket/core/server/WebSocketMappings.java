@@ -33,8 +33,6 @@ import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
-import org.eclipse.jetty.websocket.core.server.internal.CreatorNegotiator;
-import org.eclipse.jetty.websocket.core.server.internal.Handshaker;
 import org.eclipse.jetty.websocket.core.server.internal.HandshakerSelector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,14 +52,14 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketMappings.class);
     public static final String WEBSOCKET_MAPPING_ATTRIBUTE = WebSocketMappings.class.getName();
 
-    public static WebSocketMappings getWebSocketNegotiator(ServletContext servletContext)
+    public static WebSocketMappings getMappings(ServletContext servletContext)
     {
         return (WebSocketMappings)servletContext.getAttribute(WEBSOCKET_MAPPING_ATTRIBUTE);
     }
 
     public static WebSocketMappings ensureMappings(ServletContext servletContext)
     {
-        WebSocketMappings mapping = getWebSocketNegotiator(servletContext);
+        WebSocketMappings mapping = getMappings(servletContext);
         if (mapping == null)
         {
             mapping = new WebSocketMappings(WebSocketServerComponents.getWebSocketComponents(servletContext));

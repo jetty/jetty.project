@@ -34,7 +34,6 @@ import org.eclipse.jetty.websocket.common.SessionTracker;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
-import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.internal.DelegatedServerUpgradeRequest;
@@ -82,7 +81,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
 
     private final ServletContextHandler contextHandler;
     private final WebSocketMappings webSocketMappings;
-    private final FrameHandlerFactory frameHandlerFactory;
+    private final JettyServerFrameHandlerFactory frameHandlerFactory;
     private final Executor executor;
     private final Configuration.ConfigurationCustomizer customizer = new Configuration.ConfigurationCustomizer();
 
@@ -100,16 +99,8 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         this.contextHandler = contextHandler;
         this.webSocketMappings = webSocketMappings;
         this.executor = executor;
-
-        // Ensure there is a FrameHandlerFactory
-        JettyServerFrameHandlerFactory factory = contextHandler.getBean(JettyServerFrameHandlerFactory.class);
-        if (factory == null)
-        {
-            factory = new JettyServerFrameHandlerFactory(this);
-            contextHandler.addManaged(factory);
-            contextHandler.addEventListener(factory);
-        }
-        frameHandlerFactory = factory;
+        this.frameHandlerFactory = new JettyServerFrameHandlerFactory(this);
+        addBean(frameHandlerFactory);
 
         addSessionListener(sessionTracker);
         addBean(sessionTracker);

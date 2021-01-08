@@ -42,6 +42,7 @@ import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
+import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.slf4j.Logger;
