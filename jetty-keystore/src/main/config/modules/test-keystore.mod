@@ -14,7 +14,7 @@ maven://org.bouncycastle/bcpkix-jdk15on/${bouncycastle.version}|lib/bouncycastle
 maven://org.bouncycastle/bcprov-jdk15on/${bouncycastle.version}|lib/bouncycastle/bcprov-jdk15on-${bouncycastle.version}.jar
 
 [lib]
-lib/jetty-test-keystore-${jetty.version}.jar
+lib/jetty-keystore-${jetty.version}.jar
 lib/bouncycastle/bcpkix-jdk15on-${bouncycastle.version}.jar
 lib/bouncycastle/bcprov-jdk15on-${bouncycastle.version}.jar
 

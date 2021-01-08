@@ -38,11 +38,7 @@ import org.eclipse.jetty.util.security.Password;
 
 public class KeystoreGenerator
 {
-    public static void main(String[] args) throws Exception
-    {
-        generateTestKeystore("test-keystore.p12", "storepwd");
-    }
-
+    @SuppressWarnings("unused")
     public static File generateTestKeystore(String location, String password) throws Exception
     {
         // Generate an RSA key pair.
