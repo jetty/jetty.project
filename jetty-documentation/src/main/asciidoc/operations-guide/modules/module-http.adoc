@@ -24,10 +24,14 @@ include::{JETTY_HOME}/modules/http.mod[tags=documentation]
 
 Among the configurable properties, the most relevant are:
 
-* `jetty.http.port`, default `8080`, is the network port that Jetty listens to for clear-text HTTP/1.1 connections.
-* `jetty.http.idleTimeout`, default `30` seconds, is the amount of time a connection can be idle (i.e. no bytes received and no bytes sent) until the server decides to close it to save resources.
-* `jetty.http.acceptors`, default -1 (i.e. an accept heuristic decides the value based on the number of cores), is the number of threads that compete to accept connections.
-* `jetty.http.selectors`, default -1 (i.e. a select heuristic decides the value based on the number of cores), is the number of NIO selectors (with an associated thread) that manage connections.
+`jetty.http.port`::
+The network port that Jetty listens to for clear-text HTTP/1.1 connections -- default `8080`.
+`jetty.http.idleTimeout`::
+The amount of time a connection can be idle (i.e. no bytes received and no bytes sent) until the server decides to close it to save resources -- default `30` seconds.
+`jetty.http.acceptors`::
+The number of threads that compete to accept connections -- default -1 (i.e. an accept heuristic decides the value based on the number of cores).
+`jetty.http.selectors`::
+The number of NIO selectors (with an associated thread) that manage connections -- default -1 (i.e. a select heuristic decides the value based on the number of cores).
 
 [[og-module-http-acceptors]]
 ===== Configuration of Acceptors
