@@ -38,6 +38,7 @@ import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.URIUtil;
@@ -60,6 +61,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     private static final String OMISSION_SUFFIX = ".omission";
     private static final String ALL_METHODS = "*";
     private final List<ConstraintMapping> _constraintMappings = new CopyOnWriteArrayList<>();
+    private final List<ConstraintMapping> _durableConstraintMappings = new CopyOnWriteArrayList<>();
     private final Set<String> _roles = new CopyOnWriteArraySet<>();
     private final PathMappings<Map<String, RoleInfo>> _constraintRoles = new PathMappings<>();
     private boolean _denyUncoveredMethods = false;
@@ -255,9 +257,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         return mappings;
     }
 
-    /**
-     * @return Returns the constraintMappings.
-     */
     @Override
     public List<ConstraintMapping> getConstraintMappings()
     {
@@ -304,8 +303,15 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     @Override
     public void setConstraintMappings(List<ConstraintMapping> constraintMappings, Set<String> roles)
     {
+
         _constraintMappings.clear();
         _constraintMappings.addAll(constraintMappings);
+
+        _durableConstraintMappings.clear();
+        if (isInDurableState())
+        {
+            _durableConstraintMappings.addAll(constraintMappings);
+        }
 
         if (roles == null)
         {
@@ -327,10 +333,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
 
         if (isStarted())
         {
-            for (ConstraintMapping mapping : _constraintMappings)
-            {
-                processConstraintMapping(mapping);
-            }
+            _constraintMappings.stream().forEach(m -> processConstraintMapping(m));
         }
     }
 
@@ -351,6 +354,10 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     public void addConstraintMapping(ConstraintMapping mapping)
     {
         _constraintMappings.add(mapping);
+
+        if (isInDurableState())
+            _durableConstraintMappings.add(mapping);
+
         if (mapping.getConstraint() != null && mapping.getConstraint().getRoles() != null)
         {
             //allow for lazy role naming: if a role is named in a security constraint, try and
@@ -364,9 +371,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         }
 
         if (isStarted())
-        {
             processConstraintMapping(mapping);
-        }
     }
 
     @Override
@@ -392,10 +397,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     protected void doStart() throws Exception
     {
         _constraintRoles.reset();
-        if (_constraintMappings != null)
-        {
-            _constraintMappings.stream().forEach(this::processConstraintMapping);
-        }
+        _constraintMappings.forEach(this::processConstraintMapping);
 
         //Servlet Spec 3.1 pg 147 sec 13.8.4.2 log paths for which there are uncovered http methods
         checkPathsWithUncoveredHttpMethods();
@@ -408,6 +410,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     {
         super.doStop();
         _constraintRoles.reset();
+        _constraintMappings.clear();
+        _constraintMappings.addAll(_durableConstraintMappings);
     }
 
     /**
@@ -842,5 +846,24 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             methods.add(strings[i]);
         }
         return methods;
+    }
+
+    /**
+     * Constraints can be added to the ConstraintSecurityHandler before the
+     * associated context is started. These constraints should persist across
+     * a stop/start. Others can be added after the associated context is starting
+     * (eg by a web.xml/web-fragment.xml, annotation or javax.servlet api call) -
+     * these should not be persisted across a stop/start as they will be re-added on
+     * the restart.
+     *
+     * @return true if the context with which this ConstraintSecurityHandler
+     * has not yet started, or if there is no context, the server has not yet started.
+     */
+    private boolean isInDurableState()
+    {
+        ContextHandler context = ContextHandler.getContextHandler(null);
+        Server server = getServer();
+
+        return (context == null && server == null) || (context != null && !context.isRunning()) || (context == null && server != null && !server.isRunning());
     }
 }
