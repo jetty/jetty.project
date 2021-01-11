@@ -704,13 +704,12 @@ public class AnnotationConfiguration extends AbstractConfiguration
         }
 
         //Check if it is excluded by an ordering
-        URI loadingJarURI = sciResource.getURI();
         boolean found = false;
         Iterator<Resource> itor = orderedJars.iterator();
         while (!found && itor.hasNext())
         {
             Resource r = itor.next();
-            found = r.getURI().equals(loadingJarURI);
+            found = r.equals(sciResource);
         }
 
         if (LOG.isDebugEnabled())
