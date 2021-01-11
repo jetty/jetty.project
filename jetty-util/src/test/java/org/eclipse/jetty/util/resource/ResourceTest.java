@@ -34,6 +34,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -43,6 +44,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ResourceTest
 {
@@ -296,5 +298,18 @@ public class ResourceTest
         String globReference = testDir.toAbsolutePath().toString() + File.separator + '*';
         Resource globResource = Resource.newResource(globReference);
         assertNotNull(globResource, "Should have produced a Resource");
+    }
+    
+    @Test
+    @EnabledOnOs({OS.MAC, OS.WINDOWS}) 
+    public void testEquals() throws Exception
+    {
+        URI a = new URI("file:///c:/foo/bar");
+        URI b = new URI("file:///C:/foo/bar");
+        
+        Resource ra = Resource.newResource(a);
+        Resource rb = Resource.newResource(b);
+        
+        assertTrue(ra.equals(rb));
     }
 }
