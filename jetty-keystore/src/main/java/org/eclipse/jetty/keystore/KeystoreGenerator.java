@@ -35,12 +35,18 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.eclipse.jetty.util.security.Password;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class KeystoreGenerator
 {
+    private static final Logger LOG = LoggerFactory.getLogger(KeystoreGenerator.class);
+
     @SuppressWarnings("unused")
     public static File generateTestKeystore(String location, String password) throws Exception
     {
+        LOG.warn("Generating Test Keystore: DO NOT USE IN PRODUCTION!");
+
         // Generate an RSA key pair.
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
         keyPairGenerator.initialize(2048);
