@@ -42,6 +42,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -465,6 +466,30 @@ public class DistributionTests extends AbstractJettyHomeTest
                 assertThat(content, containsString("WebSocketEcho: success"));
                 assertThat(content, containsString("ConnectTimeout: 4999"));
             }
+        }
+    }
+
+    @Test
+    @Tag("external")
+    public void testDownload() throws Exception
+    {
+        Path jettyBase = Files.createTempDirectory("jetty_base");
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        String outPath = "etc/maven-metadata.xml";
+        String[] args1 = {
+            "--download=https://repo1.maven.org/maven2/org/eclipse/jetty/maven-metadata.xml|" + outPath
+        };
+        try (JettyHomeTester.Run run = distribution.start(args1))
+        {
+            assertTrue(run.awaitConsoleLogsFor("Base directory was modified", 15, TimeUnit.SECONDS));
+            Path target = jettyBase.resolve(outPath);
+            assertTrue(Files.exists(target), "could not create " + target);
         }
     }
 

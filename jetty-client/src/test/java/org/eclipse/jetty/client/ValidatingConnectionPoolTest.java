@@ -55,12 +55,14 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(200, response.getStatus());
 
         // The second request should be sent after the validating timeout.
         response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(200, response.getStatus());
     }
@@ -95,6 +97,7 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
             .path("/redirect")
+            .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(200, response.getStatus());
     }

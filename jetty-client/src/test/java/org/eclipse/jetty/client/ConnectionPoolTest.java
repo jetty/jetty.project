@@ -18,11 +18,13 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -243,9 +245,12 @@ public class ConnectionPoolTest
     }
 
     @ParameterizedTest
-    @MethodSource("pools")
+    @MethodSource("poolsNoRoundRobin")
     public void testQueuedRequestsDontOpenTooManyConnections(ConnectionPoolFactory factory) throws Exception
     {
+        // Round robin connection pool does open a few more
+        // connections than expected, exclude it from this test.
+
         startServer(new EmptyServerHandler());
 
         ClientConnector clientConnector = new ClientConnector();
@@ -301,11 +306,10 @@ public class ConnectionPoolTest
     }
 
     @ParameterizedTest
-    @MethodSource("poolsNoRoundRobin")
-    public void testConcurrentRequestsDontOpenTooManyConnections(ConnectionPoolFactory factory) throws Exception
+    @MethodSource("pools")
+    public void testConcurrentRequestsWithSlowAddressResolver(ConnectionPoolFactory factory) throws Exception
     {
-        // Round robin connection pool does open a few more
-        // connections than expected, exclude it from this test.
+        // ConnectionPools may open a few more connections than expected.
 
         startServer(new EmptyServerHandler());
 
@@ -355,9 +359,83 @@ public class ConnectionPoolTest
         assertTrue(latch.await(count, TimeUnit.SECONDS));
         List<Destination> destinations = client.getDestinations();
         assertEquals(1, destinations.size());
+    }
+
+    @ParameterizedTest
+    @MethodSource("pools")
+    public void testConcurrentRequestsAllBlockedOnServerWithLargeConnectionPool(ConnectionPoolFactory factory) throws Exception
+    {
+        int count = 50;
+        testConcurrentRequestsAllBlockedOnServer(factory, count, 2 * count);
+    }
+
+    @ParameterizedTest
+    @MethodSource("pools")
+    public void testConcurrentRequestsAllBlockedOnServerWithExactConnectionPool(ConnectionPoolFactory factory) throws Exception
+    {
+        int count = 50;
+        testConcurrentRequestsAllBlockedOnServer(factory, count, count);
+    }
+
+    private  void testConcurrentRequestsAllBlockedOnServer(ConnectionPoolFactory factory, int count, int maxConnections) throws Exception
+    {
+        CyclicBarrier barrier = new CyclicBarrier(count);
+
+        QueuedThreadPool serverThreads = new QueuedThreadPool(2 * count);
+        serverThreads.setName("server");
+        server = new Server(serverThreads);
+        connector = new ServerConnector(server);
+        server.addConnector(connector);
+        server.setHandler(new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            {
+                try
+                {
+                    barrier.await();
+                }
+                catch (Exception x)
+                {
+                    throw new ServletException(x);
+                }
+            }
+        });
+        server.start();
+
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setSelectors(1);
+        QueuedThreadPool clientThreads = new QueuedThreadPool(2 * count);
+        clientThreads.setName("client");
+        HttpClientTransport transport = new HttpClientTransportOverHTTP(clientConnector);
+        transport.setConnectionPoolFactory(factory.factory);
+        client = new HttpClient(transport);
+        client.setExecutor(clientThreads);
+        client.setMaxConnectionsPerDestination(maxConnections);
+        client.start();
+
+        // Send N requests to the server, all waiting on the server.
+        // This should open N connections, and the test verifies that
+        // all N are sent (i.e. the client does not keep any queued).
+        CountDownLatch latch = new CountDownLatch(count);
+        for (int i = 0; i < count; ++i)
+        {
+            int id = i;
+            clientThreads.execute(() -> client.newRequest("localhost", connector.getLocalPort())
+                .path("/" + id)
+                .send(result ->
+                {
+                    if (result.isSucceeded())
+                        latch.countDown();
+                }));
+        }
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS), "server requests " + barrier.getNumberWaiting() + "<" + count + " - client: " + client.dump());
+        List<Destination> destinations = client.getDestinations();
+        assertEquals(1, destinations.size());
         HttpDestination destination = (HttpDestination)destinations.get(0);
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
-        assertThat(connectionPool.getConnectionCount(), Matchers.lessThanOrEqualTo(count));
+        assertThat(connectionPool.getConnectionCount(), Matchers.greaterThanOrEqualTo(count));
     }
 
     @ParameterizedTest

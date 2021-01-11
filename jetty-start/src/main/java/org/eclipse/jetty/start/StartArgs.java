@@ -242,9 +242,9 @@ public class StartArgs
 
     private void addFile(Module module, String uriLocation)
     {
-        if (module.isSkipFilesValidation())
+        if (module != null && module.isSkipFilesValidation())
         {
-            StartLog.debug("Not validating %s [files] for %s", module, uriLocation);
+            StartLog.debug("Not validating module %s [files] for %s", module, uriLocation);
             return;
         }
 
