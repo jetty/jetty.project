@@ -16,7 +16,7 @@
 
 The Eclipse Jetty Operations Guide targets sysops, devops, and developers who want to install Eclipse Jetty as a standalone server to deploy web applications.
 
-=== Introduction
+=== Getting Started
 
 If you are new to Eclipse Jetty, read xref:og-begin[here] to download, install, start and deploy web applications to Jetty.
 
@@ -55,4 +55,5 @@ TODO
 * xref:og-protocols-http2c[Configure Clear-Text HTTP/2]
 * xref:og-protocols-http2s[Configure Secure HTTP/2]
 * xref:og-protocols-proxy[Configure Jetty Behind a Load Balancer or Reverse Proxy]
+* xref:og-logging[Configure Jetty Logging]
 * xref:og-troubleshooting[Troubleshooting]

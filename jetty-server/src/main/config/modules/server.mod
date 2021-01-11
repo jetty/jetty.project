@@ -1,7 +1,7 @@
-# DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
-
 [description]
-Enables the core Jetty server on the classpath.
+Enables and configures the Jetty server.
+This module does not enable any network protocol support.
+To enable a specific network protocol such as HTTP/1.1, you must enable the correspondent Jetty module.
 
 [optional]
 jvm
