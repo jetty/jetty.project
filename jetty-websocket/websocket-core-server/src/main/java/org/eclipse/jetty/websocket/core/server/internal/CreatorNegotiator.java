@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.server;
+package org.eclipse.jetty.websocket.core.server.internal;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -20,6 +20,12 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
+import org.eclipse.jetty.websocket.core.server.WebSocketCreator;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 
 public class CreatorNegotiator extends WebSocketNegotiator.AbstractNegotiator
 {

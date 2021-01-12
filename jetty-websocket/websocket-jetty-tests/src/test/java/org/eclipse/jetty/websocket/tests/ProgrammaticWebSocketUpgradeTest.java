@@ -31,7 +31,6 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.core.server.CreatorNegotiator;
 import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketCreator;
@@ -100,7 +99,7 @@ public class ProgrammaticWebSocketUpgradeTest
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             WebSocketCreator creator = (req, resp) -> new EchoSocket();
-            WebSocketNegotiator negotiator = new CreatorNegotiator(creator, frameHandlerFactory);
+            WebSocketNegotiator negotiator = WebSocketNegotiator.from(creator, frameHandlerFactory);
             handshaker.upgradeRequest(negotiator, request, response, components, null);
         }
     }
