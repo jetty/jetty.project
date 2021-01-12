@@ -54,14 +54,14 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketMappings.class);
     public static final String WEBSOCKET_MAPPING_ATTRIBUTE = WebSocketMappings.class.getName();
 
-    public static WebSocketMappings getWebSocketNegotiator(ServletContext servletContext)
+    public static WebSocketMappings getMappings(ServletContext servletContext)
     {
         return (WebSocketMappings)servletContext.getAttribute(WEBSOCKET_MAPPING_ATTRIBUTE);
     }
 
     public static WebSocketMappings ensureMappings(ServletContext servletContext)
     {
-        WebSocketMappings mapping = getWebSocketNegotiator(servletContext);
+        WebSocketMappings mapping = getMappings(servletContext);
         if (mapping == null)
         {
             mapping = new WebSocketMappings(WebSocketServerComponents.getWebSocketComponents(servletContext));

@@ -152,6 +152,7 @@
     <module>jetty-home</module>
     <module>jetty-bom</module>
     <module>jetty-documentation</module>
+    <module>jetty-keystore</module>
   </modules>
 
   <build>

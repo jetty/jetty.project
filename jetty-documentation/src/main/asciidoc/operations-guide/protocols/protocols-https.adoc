@@ -56,7 +56,7 @@ You need to configure these two properties by editing `ssl.ini`:
 * `jetty.sslContext.keyStorePath`
 * `jetty.sslContext.keyStorePassword`
 
-As a quick example, you can enable the xref:og-module-test-keystore[`test-keystore` module], that provides a KeyStore containing a self-signed certificate:
+As a quick example, you can enable the xref:og-module-test-keystore[`test-keystore` module], that creates on-the-fly a KeyStore containing a self-signed certificate:
 
 ----
 $ java -jar $JETTY_HOME/start.jar --add-modules=test-keystore
