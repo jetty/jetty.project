@@ -18,13 +18,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.Properties;
+import java.util.stream.Stream;
 import javax.management.JMX;
+import javax.management.MBeanAttributeInfo;
+import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -35,18 +40,24 @@ public class JMXTest
     {
         MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
 
-        Properties props = new Properties();
-        JettyLoggerConfiguration config = new JettyLoggerConfiguration(props);
-        JettyLoggerFactory loggerFactory = new JettyLoggerFactory(config);
-
         ObjectName objectName = ObjectName.getInstance("org.eclipse.jetty.logging", "type", JettyLoggerFactory.class.getSimpleName().toLowerCase(Locale.ENGLISH));
-        mbeanServer.registerMBean(loggerFactory, objectName);
+        mbeanServer.registerMBean(LoggerFactory.getILoggerFactory(), objectName);
+
+        // Verify MBeanInfo
+        MBeanInfo beanInfo = mbeanServer.getMBeanInfo(objectName);
+
+        MBeanAttributeInfo[] attributeInfos = beanInfo.getAttributes();
+        assertThat("MBeanAttributeInfo count", attributeInfos.length, is(2));
+
+        MBeanAttributeInfo attr = Stream.of(attributeInfos).filter((a) -> a.getName().equals("LoggerNames")).findFirst().orElseThrow();
+        assertThat("attr", attr.getDescription(), is("List of Registered Loggers by Name."));
 
         JettyLoggerFactoryMBean mbean = JMX.newMBeanProxy(mbeanServer, objectName, JettyLoggerFactoryMBean.class);
 
         // Only the root logger.
         assertEquals(1, mbean.getLoggerCount());
 
+        JettyLoggerFactory loggerFactory = (JettyLoggerFactory)LoggerFactory.getILoggerFactory();
         JettyLogger child = loggerFactory.getJettyLogger("org.eclipse.jetty.logging");
         JettyLogger parent = loggerFactory.getJettyLogger("org.eclipse.jetty");
         assertEquals(3, mbean.getLoggerCount());
