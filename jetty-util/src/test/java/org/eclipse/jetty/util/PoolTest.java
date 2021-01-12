@@ -224,7 +224,7 @@ public class PoolTest
         Pool<CloseableHolder> pool = factory.getPool(2);
 
         // Reserve an entry
-        Pool<CloseableHolder>.Entry e1 = pool.reserve();
+        Pool<CloseableHolder>.Entry e1 = pool.reserve(-1);
         assertThat(pool.size(), is(1));
         assertThat(pool.getReservedCount(), is(1));
         assertThat(pool.getIdleCount(), is(0));
@@ -245,7 +245,7 @@ public class PoolTest
         assertThat(pool.getInUseCount(), is(0));
 
         // Reserve another entry
-        Pool<CloseableHolder>.Entry e2 = pool.reserve();
+        Pool<CloseableHolder>.Entry e2 = pool.reserve(-1);
         assertThat(pool.size(), is(2));
         assertThat(pool.getReservedCount(), is(1));
         assertThat(pool.getIdleCount(), is(1));
@@ -259,7 +259,7 @@ public class PoolTest
         assertThat(pool.getInUseCount(), is(0));
 
         // Reserve another entry
-        Pool<CloseableHolder>.Entry e3 = pool.reserve();
+        Pool<CloseableHolder>.Entry e3 = pool.reserve(-1);
         assertThat(pool.size(), is(2));
         assertThat(pool.getReservedCount(), is(1));
         assertThat(pool.getIdleCount(), is(1));
