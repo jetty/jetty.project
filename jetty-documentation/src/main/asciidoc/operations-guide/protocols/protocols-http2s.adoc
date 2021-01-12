@@ -30,7 +30,7 @@ $ java -jar $JETTY_HOME/start.jar --add-modules=ssl,http2,https
 
 As when enabling the `https` Jetty module, you need a valid KeyStore (read xref:og-keystore[this section] to create your own KeyStore).
 
-As a quick example, you can enable the xref:og-module-test-keystore[`test-keystore` module], that provides a KeyStore containing a self-signed certificate:
+As a quick example, you can enable the xref:og-module-test-keystore[`test-keystore` module], that creates on-the-fly a KeyStore containing a self-signed certificate:
 
 ----
 $ java -jar $JETTY_HOME/start.jar --add-modules=test-keystore
@@ -43,6 +43,7 @@ $ java -jar $JETTY_HOME/start.jar
 ----
 [source,subs=quotes]
 ----
+2020-09-29 19:00:47.137:WARN :oejk.KeystoreGenerator:main: Generating Test Keystore: DO NOT USE IN PRODUCTION!
 2020-09-29 19:00:47.316:INFO :oejs.Server:main: jetty-10.0.0-SNAPSHOT; built: 2020-09-29T13:28:40.441Z; git: 9c0082610528a846b366ae26f4c74894579a8e48; jvm 15+36-1562
 2020-09-29 19:00:47.528:INFO :oejus.SslContextFactory:main: x509=X509@7770f470(mykey,h=[localhost],w=[]) for Server@24313fcc[provider=null,keyStore=file:///tmp/jetty.base/etc/test-keystore.p12,trustStore=file:///tmp/jetty.base/etc/test-keystore.p12]
 2020-09-29 19:00:47.621:INFO :oejs.AbstractConnector:main: Started ServerConnector@73700b80##{SSL, (ssl, alpn, h2, http/1.1)}{0.0.0.0:8443}##
