@@ -29,7 +29,7 @@ import java.util.Set;
 import org.eclipse.jetty.util.annotation.Name;
 import org.junit.jupiter.api.Disabled;
 
-@Disabled
+@Disabled("Not a test case")
 public class TestConfiguration extends HashMap<String, Object>
 {
     public static int VALUE = 77;
