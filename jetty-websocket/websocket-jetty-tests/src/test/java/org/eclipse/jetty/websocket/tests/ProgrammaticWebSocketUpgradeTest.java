@@ -18,7 +18,6 @@ import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -30,12 +29,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
-import org.eclipse.jetty.websocket.core.server.Handshaker;
-import org.eclipse.jetty.websocket.core.server.WebSocketCreator;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
-import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
+import org.eclipse.jetty.websocket.server.JettyWebSocketCreator;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.junit.jupiter.api.AfterEach;
@@ -81,26 +75,20 @@ public class ProgrammaticWebSocketUpgradeTest
 
     public static class CustomUpgradeServlet extends HttpServlet
     {
-        private final Handshaker handshaker = Handshaker.newInstance();
-        private FrameHandlerFactory frameHandlerFactory;
-        private WebSocketComponents components;
+        private JettyWebSocketServerContainer container;
 
         @Override
         public void init(ServletConfig config) throws ServletException
         {
             super.init(config);
-            ServletContext servletContext = getServletContext();
-            JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(servletContext);
-            components = WebSocketServerComponents.getWebSocketComponents(servletContext);
-            frameHandlerFactory = container.getBean(FrameHandlerFactory.class);
+            container = JettyWebSocketServerContainer.getContainer(getServletContext());
         }
 
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
-            WebSocketCreator creator = (req, resp) -> new EchoSocket();
-            WebSocketNegotiator negotiator = WebSocketNegotiator.from(creator, frameHandlerFactory);
-            handshaker.upgradeRequest(negotiator, request, response, components, null);
+            JettyWebSocketCreator creator = (req, resp) -> new EchoSocket();
+            container.upgrade(creator, request, response);
         }
     }
 

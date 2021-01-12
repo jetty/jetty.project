@@ -123,6 +123,11 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
         this.components = components;
     }
 
+    public Handshaker getHandshaker()
+    {
+        return handshaker;
+    }
+
     @Override
     public void lifeCycleStopping(LifeCycle context)
     {
