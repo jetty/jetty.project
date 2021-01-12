@@ -709,11 +709,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
         }
 
         //Check if it is excluded by an ordering
-        URI loadingJarURI = sciResource.getURI();
         boolean included = false;
         for (Resource r : orderedJars)
         {
-            included = r.getURI().equals(loadingJarURI);
+            included = r.equals(sciResource);
             if (included)
                 break;
         }
