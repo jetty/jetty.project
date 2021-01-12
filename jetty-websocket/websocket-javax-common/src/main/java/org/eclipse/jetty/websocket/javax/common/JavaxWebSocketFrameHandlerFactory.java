@@ -165,16 +165,14 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         errorHandle = InvokerUtils.bindTo(errorHandle, endpoint);
         pongHandle = InvokerUtils.bindTo(pongHandle, endpoint);
 
-        JavaxWebSocketFrameHandler frameHandler = new JavaxWebSocketFrameHandler(
+        return new JavaxWebSocketFrameHandler(
             container,
+            upgradeRequest,
             endpoint,
             openHandle, closeHandle, errorHandle,
             textMetadata, binaryMetadata,
             pongHandle,
             config);
-
-        frameHandler.setUpgradeRequest(upgradeRequest);
-        return frameHandler;
     }
 
     public static MessageSink createMessageSink(JavaxWebSocketSession session, JavaxWebSocketMessageMetadata msgMetadata)
