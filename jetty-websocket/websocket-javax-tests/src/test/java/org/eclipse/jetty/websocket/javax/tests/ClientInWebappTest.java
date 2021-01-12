@@ -30,7 +30,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.servlet.listener.ContainerInitializer;
 import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientShutdown;
 import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
 import org.junit.jupiter.api.AfterEach;
@@ -73,8 +72,7 @@ public class ClientInWebappTest
         server.setHandler(contextHandler);
 
         // Because we are using embedded we must manually add the Javax WS Client Shutdown SCI.
-        // TODO: fix to not use ContainerInitializer.asContextListener
-        contextHandler.addEventListener(ContainerInitializer.asContextListener(new JavaxWebSocketClientShutdown()));
+        contextHandler.addServletContainerInitializer(new JavaxWebSocketClientShutdown());
 
         server.start();
         serverUri = WSURI.toWebsocket(server.getURI());

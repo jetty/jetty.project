@@ -697,6 +697,27 @@ public class ServletContextHandler extends ContextHandler
     }
 
     /**
+     * Utility Method to allow for manual execution of {@link javax.servlet.ServletContainerInitializer} when using Embedded Jetty.
+     * @param containerInitializer the ServletContainerInitializer to register.
+     * @see Initializer
+     */
+    public void addServletContainerInitializer(ServletContainerInitializer containerInitializer)
+    {
+        addManaged(new Initializer(this, containerInitializer));
+    }
+
+    /**
+     * Utility Method to allow for manual execution of {@link javax.servlet.ServletContainerInitializer} when using Embedded Jetty.
+     * @param containerInitializer the ServletContainerInitializer to register.
+     * @param classes the Set of application classes.
+     * @see Initializer
+     */
+    public void addServletContainerInitializer(ServletContainerInitializer containerInitializer, Set<Class<?>> classes)
+    {
+        addManaged(new Initializer(this, containerInitializer, classes));
+    }
+
+    /**
      * The DecoratedObjectFactory for use by IoC containers (weld / spring / etc)
      *
      * @return The DecoratedObjectFactory

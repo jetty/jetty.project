@@ -14,11 +14,11 @@
 package org.eclipse.jetty.websocket.server.config;
 
 import java.util.Set;
+import java.util.function.Consumer;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.listener.ContainerInitializer;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 public class JettyWebSocketServletContainerInitializer implements ServletContainerInitializer
 {
     private static final Logger LOG = LoggerFactory.getLogger(JettyWebSocketServletContainerInitializer.class);
+    private Consumer<ServletContext> afterStartupConsumer;
 
     public interface Configurator
     {
@@ -51,17 +52,15 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
         if (!context.isStopped())
             throw new IllegalStateException("configure should be called before starting");
 
-        context.addEventListener(
-            ContainerInitializer
-                .asContextListener(new JettyWebSocketServletContainerInitializer())
-                .afterStartup((servletContext) ->
+        context.addServletContainerInitializer(new JettyWebSocketServletContainerInitializer()
+            .afterStartup((servletContext) ->
+            {
+                if (configurator != null)
                 {
-                    if (configurator != null)
-                    {
-                        JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(servletContext);
-                        configurator.accept(servletContext, container);
-                    }
-                }));
+                    JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(servletContext);
+                    configurator.accept(servletContext, container);
+                }
+            }));
     }
 
     /**
@@ -101,5 +100,21 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
         JettyWebSocketServerContainer container = JettyWebSocketServletContainerInitializer.initialize(contextHandler);
         if (LOG.isDebugEnabled())
             LOG.debug("onStartup {}", container);
+
+        if (afterStartupConsumer != null)
+            afterStartupConsumer.accept(context);
+    }
+
+    /**
+     * Add a optional consumer to execute once the {@link ServletContainerInitializer#onStartup(Set, ServletContext)} has
+     * been called successfully.
+     *
+     * @param consumer the consumer to execute after the SCI has executed
+     * @return this configured {@link JettyWebSocketServletContainerInitializer} instance.
+     */
+    public JettyWebSocketServletContainerInitializer afterStartup(Consumer<ServletContext> consumer)
+    {
+        this.afterStartupConsumer = consumer;
+        return this;
     }
 }

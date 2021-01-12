@@ -15,6 +15,7 @@ package org.eclipse.jetty.websocket.javax.server.config;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Consumer;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -28,7 +29,6 @@ import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.listener.ContainerInitializer;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
@@ -51,6 +51,8 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
     public static final String ENABLE_KEY = "org.eclipse.jetty.websocket.javax";
     public static final String HTTPCLIENT_ATTRIBUTE = "org.eclipse.jetty.websocket.javax.HttpClient";
     private static final Logger LOG = LoggerFactory.getLogger(JavaxWebSocketServletContainerInitializer.class);
+
+    private Consumer<ServletContext> afterStartupConsumer;
 
     /**
      * Test a ServletContext for {@code init-param} or {@code attribute} at {@code keyName} for
@@ -102,7 +104,7 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
         // the initialization phase is over. (important for this SCI to function)
         context.getServletContext().setExtendedListenerTypes(true);
 
-        context.addEventListener(ContainerInitializer.asContextListener(new JavaxWebSocketServletContainerInitializer())
+        context.addServletContainerInitializer(new JavaxWebSocketServletContainerInitializer()
             .afterStartup((servletContext) ->
             {
                 JavaxWebSocketServerContainer serverContainer = JavaxWebSocketServerContainer.getContainer(servletContext);
@@ -270,6 +272,9 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
                 }
             }
         }
+
+        if (afterStartupConsumer != null)
+            afterStartupConsumer.accept(context);
     }
 
     @SuppressWarnings("unchecked")
@@ -295,5 +300,18 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
                 discoveredAnnotatedEndpoints.add(clazz);
             }
         }
+    }
+
+    /**
+     * Add a optional consumer to execute once the {@link ServletContainerInitializer#onStartup(Set, ServletContext)} has
+     * been called successfully.
+     *
+     * @param consumer the consumer to execute after the SCI has executed
+     * @return this configured {@link JavaxWebSocketServletContainerInitializer} instance.
+     */
+    public JavaxWebSocketServletContainerInitializer afterStartup(Consumer<ServletContext> consumer)
+    {
+        this.afterStartupConsumer = consumer;
+        return this;
     }
 }

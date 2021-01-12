@@ -25,7 +25,9 @@ import javax.servlet.ServletContextListener;
 /**
  * Utility Methods for manual execution of {@link javax.servlet.ServletContainerInitializer} when
  * using Embedded Jetty.
+ * @deprecated use {@link org.eclipse.jetty.servlet.ServletContextHandler#addServletContainerInitializer(ServletContainerInitializer)}.
  */
+@Deprecated
 public final class ContainerInitializer
 {
     /**
