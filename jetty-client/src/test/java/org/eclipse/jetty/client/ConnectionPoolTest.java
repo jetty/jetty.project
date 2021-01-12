@@ -21,12 +21,14 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
@@ -47,6 +49,7 @@ import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -70,6 +73,12 @@ public class ConnectionPoolTest
     {
         return Stream.of(
             new ConnectionPoolFactory("duplex", destination -> new DuplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination)),
+            new ConnectionPoolFactory("duplex-maxDuration", destination ->
+            {
+                DuplexConnectionPool pool = new DuplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination);
+                pool.setMaxDuration(10);
+                return pool;
+            }),
             new ConnectionPoolFactory("multiplex", destination -> new MultiplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, 1)),
             new ConnectionPoolFactory("random", destination -> new RandomConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, 1))
         );
@@ -436,6 +445,116 @@ public class ConnectionPoolTest
         HttpDestination destination = (HttpDestination)destinations.get(0);
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
         assertThat(connectionPool.getConnectionCount(), Matchers.greaterThanOrEqualTo(count));
+    }
+
+    @Test
+    public void testMaxDurationConnectionsWithConstrainedPool() throws Exception
+    {
+        // ConnectionPool may NOT open more connections than expected because
+        // it is constrained to a single connection in this test.
+
+        final int maxConnections = 1;
+        final int maxDuration = 30;
+        AtomicInteger poolCreateCounter = new AtomicInteger();
+        AtomicInteger poolRemoveCounter = new AtomicInteger();
+        ConnectionPoolFactory factory = new ConnectionPoolFactory("duplex-maxDuration", destination ->
+        {
+            // Constrain the max pool size to 1.
+            DuplexConnectionPool pool = new DuplexConnectionPool(destination, maxConnections, destination)
+            {
+                @Override
+                protected void onCreated(Connection connection)
+                {
+                    poolCreateCounter.incrementAndGet();
+                }
+
+                @Override
+                protected void removed(Connection connection)
+                {
+                    poolRemoveCounter.incrementAndGet();
+                }
+            };
+            pool.setMaxDuration(maxDuration);
+            return pool;
+        });
+
+        startServer(new EmptyServerHandler());
+
+        HttpClientTransport transport = new HttpClientTransportOverHTTP(1);
+        transport.setConnectionPoolFactory(factory.factory);
+        client = new HttpClient(transport);
+        client.start();
+
+        // Use the connection pool 5 times with a delay that is longer than the max duration in between each time.
+        for (int i = 0; i < 5; i++)
+        {
+            ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+            assertThat(response.getStatus(), Matchers.is(200));
+
+            Thread.sleep(maxDuration * 2);
+        }
+
+        // Check that the pool created 5 and removed 4 connections;
+        // it must be exactly 4 removed b/c each cycle of the loop
+        // can only open 1 connection as the pool is constrained to
+        // maximum 1 connection.
+        assertThat(poolCreateCounter.get(), Matchers.is(5));
+        assertThat(poolRemoveCounter.get(), Matchers.is(4));
+    }
+
+    @Test
+    public void testMaxDurationConnectionsWithUnconstrainedPool() throws Exception
+    {
+        // ConnectionPools may open a few more connections than expected.
+
+        final int maxDuration = 30;
+        AtomicInteger poolCreateCounter = new AtomicInteger();
+        AtomicInteger poolRemoveCounter = new AtomicInteger();
+        ConnectionPoolFactory factory = new ConnectionPoolFactory("duplex-maxDuration", destination ->
+        {
+            DuplexConnectionPool pool = new DuplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination)
+            {
+                @Override
+                protected void onCreated(Connection connection)
+                {
+                    poolCreateCounter.incrementAndGet();
+                }
+
+                @Override
+                protected void removed(Connection connection)
+                {
+                    poolRemoveCounter.incrementAndGet();
+                }
+            };
+            pool.setMaxDuration(maxDuration);
+            return pool;
+        });
+
+        startServer(new EmptyServerHandler());
+
+        HttpClientTransport transport = new HttpClientTransportOverHTTP(1);
+        transport.setConnectionPoolFactory(factory.factory);
+        client = new HttpClient(transport);
+        client.start();
+
+        // Use the connection pool 5 times with a delay that is longer than the max duration in between each time.
+        for (int i = 0; i < 5; i++)
+        {
+            ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+            assertThat(response.getStatus(), Matchers.is(200));
+
+            Thread.sleep(maxDuration * 2);
+        }
+
+        // Check that the pool created 5 and removed at least 4 connections;
+        // it can be more than 4 removed b/c each cycle of the loop may
+        // open more than 1 connection as the pool is not constrained.
+        assertThat(poolCreateCounter.get(), Matchers.is(5));
+        assertThat(poolRemoveCounter.get(), Matchers.greaterThanOrEqualTo(4));
     }
 
     @ParameterizedTest
