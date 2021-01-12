@@ -161,7 +161,6 @@ public class JdbcLoginServiceTest
         assertEquals(HttpServletResponse.SC_UNAUTHORIZED, response.getStatus());
     }
 
-    //Head requests to jetty-client are not working: see https://bugs.eclipse.org/bugs/show_bug.cgi?id=394552
     @Test
     public void testHead() throws Exception
     {
