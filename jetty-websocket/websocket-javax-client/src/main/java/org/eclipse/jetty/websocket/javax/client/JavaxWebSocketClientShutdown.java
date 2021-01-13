@@ -29,7 +29,7 @@ public class JavaxWebSocketClientShutdown extends ContainerLifeCycle implements 
     @Override
     public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
     {
-        JavaxWebSocketClientContainer.SHUTDOWN_CONTAINER.compareAndSet(null, this);
+        JavaxWebSocketClientContainer.initialize(this);
         ctx.addListener(this);
     }
 
@@ -44,5 +44,6 @@ public class JavaxWebSocketClientShutdown extends ContainerLifeCycle implements 
     {
         LifeCycle.stop(this);
         removeBeans();
+        JavaxWebSocketClientContainer.initialize(null);
     }
 }

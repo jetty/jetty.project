@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.javax.server.config;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Consumer;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -52,7 +51,17 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
     public static final String HTTPCLIENT_ATTRIBUTE = "org.eclipse.jetty.websocket.javax.HttpClient";
     private static final Logger LOG = LoggerFactory.getLogger(JavaxWebSocketServletContainerInitializer.class);
 
-    private Consumer<ServletContext> afterStartupConsumer;
+    private final Configurator configurator;
+
+    public JavaxWebSocketServletContainerInitializer()
+    {
+        this(null);
+    }
+
+    public JavaxWebSocketServletContainerInitializer(Configurator configurator)
+    {
+        this.configurator = configurator;
+    }
 
     /**
      * Test a ServletContext for {@code init-param} or {@code attribute} at {@code keyName} for
@@ -98,28 +107,7 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
     {
         if (!context.isStopped())
             throw new IllegalStateException("configure should be called before starting");
-
-        // In this embedded-jetty usage, allow ServletContext.addListener() to
-        // add other ServletContextListeners (such as the ContextDestroyListener) after
-        // the initialization phase is over. (important for this SCI to function)
-        context.getServletContext().setExtendedListenerTypes(true);
-
-        context.addServletContainerInitializer(new JavaxWebSocketServletContainerInitializer()
-            .afterStartup((servletContext) ->
-            {
-                JavaxWebSocketServerContainer serverContainer = JavaxWebSocketServerContainer.getContainer(servletContext);
-                if (configurator != null)
-                {
-                    try
-                    {
-                        configurator.accept(servletContext, serverContainer);
-                    }
-                    catch (DeploymentException e)
-                    {
-                        throw new RuntimeException("Failed to deploy WebSocket Endpoint", e);
-                    }
-                }
-            }));
+        context.addServletContainerInitializer(new JavaxWebSocketServletContainerInitializer(configurator));
     }
 
     /**
@@ -273,8 +261,18 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
             }
         }
 
-        if (afterStartupConsumer != null)
-            afterStartupConsumer.accept(context);
+        // Call the configurator after startup.
+        if (configurator != null)
+        {
+            try
+            {
+                configurator.accept(context, container);
+            }
+            catch (DeploymentException e)
+            {
+                throw new RuntimeException("Failed to deploy WebSocket Endpoint", e);
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -300,18 +298,5 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
                 discoveredAnnotatedEndpoints.add(clazz);
             }
         }
-    }
-
-    /**
-     * Add a optional consumer to execute once the {@link ServletContainerInitializer#onStartup(Set, ServletContext)} has
-     * been called successfully.
-     *
-     * @param consumer the consumer to execute after the SCI has executed
-     * @return this configured {@link JavaxWebSocketServletContainerInitializer} instance.
-     */
-    public JavaxWebSocketServletContainerInitializer afterStartup(Consumer<ServletContext> consumer)
-    {
-        this.afterStartupConsumer = consumer;
-        return this;
     }
 }

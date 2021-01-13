@@ -703,7 +703,7 @@ public class ServletContextHandler extends ContextHandler
      */
     public void addServletContainerInitializer(ServletContainerInitializer containerInitializer)
     {
-        addManaged(new Initializer(this, containerInitializer));
+        addServletContainerInitializer(containerInitializer, Collections.emptySet());
     }
 
     /**

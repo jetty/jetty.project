@@ -60,7 +60,12 @@ import org.slf4j.LoggerFactory;
 public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer implements javax.websocket.WebSocketContainer
 {
     private static final Logger LOG = LoggerFactory.getLogger(JavaxWebSocketClientContainer.class);
-    public static final AtomicReference<ContainerLifeCycle> SHUTDOWN_CONTAINER = new AtomicReference<>();
+    private static final AtomicReference<ContainerLifeCycle> SHUTDOWN_CONTAINER = new AtomicReference<>();
+
+    public static void initialize(ContainerLifeCycle container)
+    {
+        SHUTDOWN_CONTAINER.set(container);
+    }
 
     protected WebSocketCoreClient coreClient;
     protected Function<WebSocketComponents, WebSocketCoreClient> coreClientFactory;
@@ -280,6 +285,12 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
             throw new DeploymentException("Could not get ClientEndpoint annotation for " + endpoint.getClass().getName());
 
         return new AnnotatedClientEndpointConfig(anno);
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
     }
 
     @Override

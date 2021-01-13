@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.server.config;
 
 import java.util.Set;
-import java.util.function.Consumer;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 
@@ -32,7 +31,17 @@ import org.slf4j.LoggerFactory;
 public class JettyWebSocketServletContainerInitializer implements ServletContainerInitializer
 {
     private static final Logger LOG = LoggerFactory.getLogger(JettyWebSocketServletContainerInitializer.class);
-    private Consumer<ServletContext> afterStartupConsumer;
+    private final Configurator configurator;
+
+    public JettyWebSocketServletContainerInitializer()
+    {
+        this(null);
+    }
+
+    public JettyWebSocketServletContainerInitializer(Configurator configurator)
+    {
+        this.configurator = configurator;
+    }
 
     public interface Configurator
     {
@@ -51,16 +60,7 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
     {
         if (!context.isStopped())
             throw new IllegalStateException("configure should be called before starting");
-
-        context.addServletContainerInitializer(new JettyWebSocketServletContainerInitializer()
-            .afterStartup((servletContext) ->
-            {
-                if (configurator != null)
-                {
-                    JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(servletContext);
-                    configurator.accept(servletContext, container);
-                }
-            }));
+        context.addServletContainerInitializer(new JettyWebSocketServletContainerInitializer());
     }
 
     /**
@@ -101,20 +101,9 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
         if (LOG.isDebugEnabled())
             LOG.debug("onStartup {}", container);
 
-        if (afterStartupConsumer != null)
-            afterStartupConsumer.accept(context);
-    }
-
-    /**
-     * Add a optional consumer to execute once the {@link ServletContainerInitializer#onStartup(Set, ServletContext)} has
-     * been called successfully.
-     *
-     * @param consumer the consumer to execute after the SCI has executed
-     * @return this configured {@link JettyWebSocketServletContainerInitializer} instance.
-     */
-    public JettyWebSocketServletContainerInitializer afterStartup(Consumer<ServletContext> consumer)
-    {
-        this.afterStartupConsumer = consumer;
-        return this;
+        if (configurator != null)
+        {
+            configurator.accept(context, container);
+        }
     }
 }
