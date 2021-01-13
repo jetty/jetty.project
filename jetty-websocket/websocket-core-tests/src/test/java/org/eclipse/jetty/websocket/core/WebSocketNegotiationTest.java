@@ -332,7 +332,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
         // RFC6455: If the server does not agree to any of the client's requested subprotocols, the only acceptable
         // value is null. It MUST NOT send back a |Sec-WebSocket-Protocol| header field in its response.
         HttpFields httpFields = headers.get();
-        assertThat(httpFields.get(HttpHeader.UPGRADE), is("WebSocket"));
+        assertThat(httpFields.get(HttpHeader.UPGRADE), is("websocket"));
         assertNull(httpFields.get(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL));
     }
 

@@ -36,7 +36,7 @@ import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 
 public final class RFC6455Handshaker extends AbstractHandshaker
 {
-    private static final HttpField UPGRADE_WEBSOCKET = new PreEncodedHttpField(HttpHeader.UPGRADE, "WebSocket");
+    private static final HttpField UPGRADE_WEBSOCKET = new PreEncodedHttpField(HttpHeader.UPGRADE, "websocket");
     private static final HttpField CONNECTION_UPGRADE = new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeader.UPGRADE.asString());
 
     @Override

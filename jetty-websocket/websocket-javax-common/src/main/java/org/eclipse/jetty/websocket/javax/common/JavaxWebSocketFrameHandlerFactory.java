@@ -167,6 +167,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
 
         return new JavaxWebSocketFrameHandler(
             container,
+            upgradeRequest,
             endpoint,
             openHandle, closeHandle, errorHandle,
             textMetadata, binaryMetadata,
