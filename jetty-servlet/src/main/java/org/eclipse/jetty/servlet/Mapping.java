@@ -19,6 +19,7 @@
 package org.eclipse.jetty.servlet;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -105,6 +106,16 @@ public class Mapping
         _pathSpecs = (pathSpecs == null)
             ? new PathSpec[]{}
             : Arrays.stream(pathSpecs).filter(Objects::nonNull).toArray(PathSpec[]::new);
+    }
+
+    /**
+     * @param pathSpecs The pathSpecs to set, which are assumed to be {@link ServletPathSpec}s
+     */
+    public void setPathSpecs(Collection<PathSpec> pathSpecs)
+    {
+        _pathSpecs = (pathSpecs == null)
+            ? new PathSpec[]{}
+            : pathSpecs.stream().filter(Objects::nonNull).toArray(PathSpec[]::new);
     }
 
     public Source getSource()

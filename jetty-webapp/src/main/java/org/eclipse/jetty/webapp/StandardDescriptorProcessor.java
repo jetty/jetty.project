@@ -1185,7 +1185,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         mapping.setServletName(servletName);
         mapping.setDefault(descriptor instanceof DefaultsDescriptor);
 
-        List<String> paths = new ArrayList<String>();
+        List<PathSpec> pathspecs = new ArrayList<>();
         Iterator<XmlParser.Node> iter = node.iterator("url-pattern");
         while (iter.hasNext())
         {
@@ -1198,13 +1198,13 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             while (listItor.hasNext() && !found)
             {
                 ServletMapping sm = listItor.next();
-                if (sm.getPathSpecs() != null)
+                if (sm.hasPathSpecs())
                 {
-                    for (String ps : sm.getPathSpecs())
+                    for (PathSpec ps : sm.toPathSpecs())
                     {
                         //The same path has been mapped multiple times, either to a different servlet or the same servlet.
                         //If its a different servlet, this is only valid to do if the old mapping was from a default descriptor.
-                        if (p.equals(ps) && (sm.isDefault() || servletName.equals(sm.getServletName())))
+                        if (ps.is(p) && (sm.isDefault() || servletName.equals(sm.getServletName())))
                         {
                             if (sm.isDefault())
                             {
@@ -1216,7 +1216,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
                             //remove ps from the path specs on the existing mapping
                             //if the mapping now has no pathspecs, remove it
-                            String[] updatedPaths = ArrayUtil.removeFromArray(sm.getPathSpecs(), ps);
+                            PathSpec[] updatedPaths = ArrayUtil.removeFromArray(sm.toPathSpecs(), ps);
 
                             if (updatedPaths == null || updatedPaths.length == 0)
                             {
@@ -1237,11 +1237,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 }
             }
 
-            paths.add(p);
+            pathspecs.add(new ServletPathSpec(p));
             context.getMetaData().setOrigin(servletName + ".servlet.mapping." + p, descriptor);
         }
 
-        mapping.setPathSpecs(paths.toArray(new String[paths.size()]));
+        mapping.setPathSpecs(pathspecs.toArray(new PathSpec[0]));
         if (LOG.isDebugEnabled())
             LOG.debug("Added mapping {} ", mapping);
         _servletMappings.add(mapping);
@@ -1393,7 +1393,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     //no paths in jsp servlet mapping, we will add all of ours
                     if (LOG.isDebugEnabled())
                         LOG.debug("Adding all paths from jsp-config to jsp servlet mapping");
-                    jspMapping.setPathSpecs(jspPaths.toArray(new PathSpec[0]));
+                    jspMapping.setPathSpecs(jspPaths);
                 }
                 else
                 {

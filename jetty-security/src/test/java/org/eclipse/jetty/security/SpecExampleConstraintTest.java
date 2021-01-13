@@ -27,6 +27,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
@@ -237,9 +239,9 @@ public class SpecExampleConstraintTest
         _security.setAuthenticator(new BasicAuthenticator());
         _server.start();
 
-        Set<String> paths = _security.getPathsWithUncoveredHttpMethods();
+        Set<PathSpec> paths = _security.getPathsWithUncoveredHttpMethods();
         assertEquals(1, paths.size());
-        assertEquals("/*", paths.iterator().next());
+        assertEquals(new ServletPathSpec("/*"), paths.iterator().next());
     }
 
     @Test

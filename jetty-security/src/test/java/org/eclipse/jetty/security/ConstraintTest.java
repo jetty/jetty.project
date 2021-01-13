@@ -46,6 +46,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
@@ -405,7 +407,7 @@ public class ConstraintTest
         _security.setAuthenticator(new BasicAuthenticator());
         _server.start();
 
-        Set<String> uncoveredPaths = _security.getPathsWithUncoveredHttpMethods();
+        Set<PathSpec> uncoveredPaths = _security.getPathsWithUncoveredHttpMethods();
         assertTrue(uncoveredPaths.isEmpty()); //no uncovered methods
 
         //Test only an explicitly named method, no omissions to cover other methods
@@ -422,7 +424,7 @@ public class ConstraintTest
         uncoveredPaths = _security.getPathsWithUncoveredHttpMethods();
         assertNotNull(uncoveredPaths);
         assertEquals(1, uncoveredPaths.size());
-        assertThat("/user/*", is(in(uncoveredPaths)));
+        assertThat(new ServletPathSpec("/user/*"), is(in(uncoveredPaths)));
 
         //Test an explicitly named method with an http-method-omission to cover all other methods
         Constraint constraint2a = new Constraint();
@@ -450,7 +452,7 @@ public class ConstraintTest
         _security.addConstraintMapping(mapping3);
         uncoveredPaths = _security.getPathsWithUncoveredHttpMethods();
         assertNotNull(uncoveredPaths);
-        assertThat("/omit/*", is(in(uncoveredPaths)));
+        assertThat(new ServletPathSpec("/omit/*"), is(in(uncoveredPaths)));
 
         _security.setDenyUncoveredHttpMethods(true);
         uncoveredPaths = _security.getPathsWithUncoveredHttpMethods();

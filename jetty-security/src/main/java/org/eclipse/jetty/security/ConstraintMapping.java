@@ -74,11 +74,11 @@ public class ConstraintMapping
     }
 
     /**
-     * @return Returns the pathSpec.
+     * @return Returns the pathSpec as a String only if it is a {@link ServletPathSpec}
      */
     public String getPathSpec()
     {
-        return _pathSpec.getDeclaration();
+        return (ServletPathSpec.class.isInstance(_pathSpec)) ? _pathSpec.getDeclaration() : null;
     }
 
     /**
