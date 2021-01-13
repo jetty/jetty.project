@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Allows for setting up a Jetty server for testing based on XML configuration files.
  */
-@Disabled
+@Disabled("Not a test case")
 public class TestableJettyServer
 {
     private List<URL> _xmlConfigurations;

@@ -22,7 +22,7 @@ import java.net.URL;
 
 import org.junit.jupiter.api.Disabled;
 
-@Disabled
+@Disabled("Not a test case")
 public class TestConfiguration
 {
     public static int VALUE = 77;

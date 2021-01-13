@@ -1046,7 +1046,6 @@ public class XmlConfigurationTest
     }
 
     @Test
-    @Disabled
     public void testSetBadBoolean() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration(
@@ -1054,8 +1053,10 @@ public class XmlConfigurationTest
                 "  <Set name=\"boolean\">tru</Set>" +
                 "</Configure>");
 
+        //Any string other than "true" (case insensitive) will be false
+        //according to Boolean constructor.
         NativeHolder bh = (NativeHolder)xmlConfiguration.configure();
-        assertTrue(bh.getBoolean(), "boolean['tru']");
+        assertFalse(bh.getBoolean(), "boolean['tru']");
     }
 
     @Test

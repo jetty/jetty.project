@@ -28,7 +28,10 @@ import java.security.Security;
  * is not a webapp classloader.
  *
  * Inspired by Tomcat JreMemoryLeakPrevention
+ * 
+ * @deprecated sun.security.pkcs11.SunPKCS11 class explicitly sets thread classloader to null
  */
+@Deprecated
 public class SecurityProviderLeakPreventer extends AbstractLeakPreventer
 {
 
