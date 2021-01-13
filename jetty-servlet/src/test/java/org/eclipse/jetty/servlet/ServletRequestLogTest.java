@@ -14,10 +14,7 @@
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.ArrayList;
@@ -32,8 +29,10 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
@@ -46,7 +45,6 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -55,12 +53,13 @@ import org.slf4j.LoggerFactory;
 
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 
 /**
  * Servlet equivalent of the jetty-server's RequestLogHandlerTest, but with more ErrorHandler twists.
  */
-@Disabled
 public class ServletRequestLogTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletRequestLogTest.class);
@@ -104,7 +103,7 @@ public class ServletRequestLogTest
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
-            response.sendError(500, "Whoops");
+            response.sendError(500, "FromResponseSendErrorServlet");
         }
     }
 
@@ -114,7 +113,7 @@ public class ServletRequestLogTest
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
-            throw new ServletException("Whoops");
+            throw new ServletException("FromServletExceptionServlet");
         }
     }
 
@@ -124,7 +123,7 @@ public class ServletRequestLogTest
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
-            throw new IOException("Whoops");
+            throw new IOException("FromIOExceptionServlet");
         }
     }
 
@@ -134,7 +133,7 @@ public class ServletRequestLogTest
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
-            throw new RuntimeException("Whoops");
+            throw new RuntimeException("FromRuntimeExceptionServlet");
         }
     }
 
@@ -268,7 +267,6 @@ public class ServletRequestLogTest
         data.add(new Object[]{new HelloServlet(), "/test/", "GET /test/ HTTP/1.1 200"});
         data.add(new Object[]{new AsyncOnTimeoutCompleteServlet(), "/test/", "GET /test/ HTTP/1.1 200"});
         data.add(new Object[]{new AsyncOnTimeoutDispatchServlet(), "/test/", "GET /test/ HTTP/1.1 200"});
-
         data.add(new Object[]{new AsyncOnStartIOExceptionServlet(), "/test/", "GET /test/ HTTP/1.1 500"});
         data.add(new Object[]{new ResponseSendErrorServlet(), "/test/", "GET /test/ HTTP/1.1 500"});
         data.add(new Object[]{new ServletExceptionServlet(), "/test/", "GET /test/ HTTP/1.1 500"});
@@ -318,21 +316,28 @@ public class ServletRequestLogTest
 
         // Add the test servlet
         ServletHolder testHolder = new ServletHolder(testServlet);
-        app.addServlet(testHolder, "/test");
+        app.addServlet(testHolder, "/test/*");
 
-        try
+        try (StacklessLogging scope = new StacklessLogging(HttpChannel.class))
         {
+            server.start();
+
             Assertions.assertTimeoutPreemptively(ofSeconds(4), () ->
             {
-                server.start();
-
+                connector.addBean(new HttpChannel.Listener()
+                {
+                    @Override
+                    public void onComplete(Request request)
+                    {
+                        assertRequestLog(expectedLogEntry, captureLog);
+                    }
+                });
+                
                 String host = connector.getHost();
                 if (host == null)
-                {
                     host = "localhost";
-                }
+                
                 int port = connector.getLocalPort();
-
                 URI serverUri = new URI("http", null, host, port, requestPath, null, null);
 
                 // Make call to test handler
@@ -340,24 +345,11 @@ public class ServletRequestLogTest
                 try
                 {
                     connection.setAllowUserInteraction(false);
-
-                    // log response status code
-                    int statusCode = connection.getResponseCode();
-                    LOG.debug("Response Status Code: {}", statusCode);
-
-                    if (statusCode == 200)
-                    {
-                        // collect response message and log it
-                        String content = getResponseContent(connection);
-                        LOG.debug("Response Content: {}", content);
-                    }
                 }
                 finally
                 {
                     connection.disconnect();
                 }
-
-                assertRequestLog(expectedLogEntry, captureLog);
             });
         }
         finally
@@ -401,22 +393,28 @@ public class ServletRequestLogTest
 
         // Add the test servlet
         ServletHolder testHolder = new ServletHolder(testServlet);
-        app.addServlet(testHolder, "/test");
+        app.addServlet(testHolder, "/test/*");
 
-        try
+        try (StacklessLogging scope = new StacklessLogging(HttpChannel.class))
         {
             server.start();
 
             Assertions.assertTimeoutPreemptively(ofSeconds(4), () ->
             {
-
+                connector.addBean(new HttpChannel.Listener()
+                {
+                    @Override
+                    public void onComplete(Request request)
+                    {
+                        assertRequestLog(expectedLogEntry, captureLog);
+                    }
+                });
+                
                 String host = connector.getHost();
                 if (host == null)
-                {
                     host = "localhost";
-                }
-                int port = connector.getLocalPort();
 
+                int port = connector.getLocalPort();
                 URI serverUri = new URI("http", null, host, port, requestPath, null, null);
 
                 // Make call to test handler
@@ -424,24 +422,11 @@ public class ServletRequestLogTest
                 try
                 {
                     connection.setAllowUserInteraction(false);
-
-                    // log response status code
-                    int statusCode = connection.getResponseCode();
-                    LOG.debug("Response Status Code: {}", statusCode);
-
-                    if (statusCode == 200)
-                    {
-                        // collect response message and log it
-                        String content = getResponseContent(connection);
-                        LOG.debug("Response Content: {}", content);
-                    }
                 }
                 finally
                 {
                     connection.disconnect();
                 }
-
-                assertRequestLog(expectedLogEntry, captureLog);
             });
         }
         finally
@@ -489,20 +474,26 @@ public class ServletRequestLogTest
         errorMapper.addErrorPage(500, "/errorpage");
         app.setErrorHandler(errorMapper);
 
-        try
+        try (StacklessLogging scope = new StacklessLogging(HttpChannel.class))
         {
             server.start();
 
             Assertions.assertTimeoutPreemptively(ofSeconds(4), () ->
             {
-
+                connector.addBean(new HttpChannel.Listener()
+                {
+                    @Override
+                    public void onComplete(Request request)
+                    {
+                        assertRequestLog(expectedLogEntry, captureLog);
+                    }
+                });
+                
                 String host = connector.getHost();
                 if (host == null)
-                {
                     host = "localhost";
-                }
-                int port = connector.getLocalPort();
 
+                int port = connector.getLocalPort();
                 URI serverUri = new URI("http", null, host, port, requestPath, null, null);
 
                 // Make call to test handler
@@ -510,24 +501,11 @@ public class ServletRequestLogTest
                 try
                 {
                     connection.setAllowUserInteraction(false);
-
-                    // log response status code
-                    int statusCode = connection.getResponseCode();
-                    LOG.debug("Response Status Code: {}", statusCode);
-
-                    if (statusCode == 200)
-                    {
-                        // collect response message and log it
-                        String content = getResponseContent(connection);
-                        LOG.debug("Response Content: {}", content);
-                    }
                 }
                 finally
                 {
                     connection.disconnect();
                 }
-
-                assertRequestLog(expectedLogEntry, captureLog);
             });
         }
         finally
@@ -584,13 +562,20 @@ public class ServletRequestLogTest
 
             Assertions.assertTimeoutPreemptively(ofSeconds(4), () ->
             {
+                connector.addBean(new HttpChannel.Listener()
+                {
+                    @Override
+                    public void onComplete(Request request)
+                    {
+                        assertRequestLog(expectedLogEntry, captureLog);
+                    }
+                });
+
                 String host = connector.getHost();
                 if (host == null)
-                {
                     host = "localhost";
-                }
-                int port = connector.getLocalPort();
 
+                int port = connector.getLocalPort();
                 URI serverUri = new URI("http", null, host, port, "/test", null, null);
 
                 // Make call to test handler
@@ -598,24 +583,11 @@ public class ServletRequestLogTest
                 try
                 {
                     connection.setAllowUserInteraction(false);
-
-                    // log response status code
-                    int statusCode = connection.getResponseCode();
-                    LOG.info("Response Status Code: {}", statusCode);
-
-                    if (statusCode == 200)
-                    {
-                        // collect response message and log it
-                        String content = getResponseContent(connection);
-                        LOG.info("Response Content: {}", content);
-                    }
                 }
                 finally
                 {
                     connection.disconnect();
                 }
-
-                assertRequestLog(expectedLogEntry, captureLog);
             });
         }
         finally
@@ -626,33 +598,7 @@ public class ServletRequestLogTest
 
     private void assertRequestLog(final String expectedLogEntry, CaptureLog captureLog)
     {
-        int captureCount = captureLog.captured.size();
-
-        if (captureCount != 1)
-        {
-            LOG.warn("Capture Log size is {}, expected to be 1", captureCount);
-            if (captureCount > 1)
-            {
-                for (int i = 0; i < captureCount; i++)
-                {
-                    LOG.warn("[{}] {}", i, captureLog.captured.get(i));
-                }
-            }
-            assertThat("Capture Log Entry Count", captureLog.captured.size(), is(1));
-        }
-
-        String actual = captureLog.captured.get(0);
-        assertThat("Capture Log", actual, is(expectedLogEntry));
-    }
-
-    private String getResponseContent(HttpURLConnection connection) throws IOException
-    {
-        try (InputStream in = connection.getInputStream();
-             InputStreamReader reader = new InputStreamReader(in))
-        {
-            StringWriter writer = new StringWriter();
-            IO.copy(reader, writer);
-            return writer.toString();
-        }
+        assertThat("Request log size", captureLog.captured, not(empty()));
+        assertThat("Request log entry",captureLog.captured.get(0), is(expectedLogEntry));
     }
 }
