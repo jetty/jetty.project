@@ -134,7 +134,7 @@ public class ConstraintMapping extends PathSpec.Mapping
 
     public String getServletPathSpec()
     {
-        return stream().filter(ServletPathSpec.class::isInstance).findFirst().map(PathSpec::toString).orElse(null);
+        return stream().filter(ServletPathSpec.class::isInstance).findFirst().map(PathSpec::getDeclaration).orElse(null);
     }
 
     public PathSpec toPathSpec()
