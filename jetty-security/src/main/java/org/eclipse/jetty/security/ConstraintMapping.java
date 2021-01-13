@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.security;
 
+import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.util.security.Constraint;
 
 public class ConstraintMapping
@@ -25,9 +27,19 @@ public class ConstraintMapping
     String _method;
     String[] _methodOmissions;
 
-    String _pathSpec;
+    PathSpec _pathSpec;
 
     Constraint _constraint;
+
+    public boolean containsPathSpec(String pathSpec)
+    {
+        return _pathSpec.is(pathSpec);
+    }
+
+    public boolean containsPathSpec(PathSpec pathSpec)
+    {
+        return _pathSpec.equals(pathSpec);
+    }
 
     /**
      * @return Returns the constraint.
@@ -66,6 +78,14 @@ public class ConstraintMapping
      */
     public String getPathSpec()
     {
+        return _pathSpec.getDeclaration();
+    }
+
+    /**
+     * @return Returns the pathSpec.
+     */
+    public PathSpec toPathSpec()
+    {
         return _pathSpec;
     }
 
@@ -73,6 +93,14 @@ public class ConstraintMapping
      * @param pathSpec The pathSpec to set.
      */
     public void setPathSpec(String pathSpec)
+    {
+        this._pathSpec = new ServletPathSpec(pathSpec);
+    }
+
+    /**
+     * @param pathSpec The pathSpec to set.
+     */
+    public void setPathSpec(PathSpec pathSpec)
     {
         this._pathSpec = pathSpec;
     }

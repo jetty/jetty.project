@@ -26,7 +26,6 @@ public class ServletPathSpec extends AbstractPathSpec
 {
     private static final Logger LOG = Log.getLogger(ServletPathSpec.class);
 
-    private final String _declaration;
     private final PathSpecGroup _group;
     private final int _pathDepth;
     private final int _specLength;
@@ -34,14 +33,20 @@ public class ServletPathSpec extends AbstractPathSpec
     private final String _suffix;
 
     /**
-     * If a servlet or filter path mapping isn't a suffix mapping, ensure
-     * it starts with '/'
-     *
+     * Normalize servlet path spec:<ul>
+     *     <li>null pathspec to ""</li>
+     *     <li>"servlet|spec" to "spec"</li>
+     *     <li>"path/*" to "/path/*"</li>
+     * </ul>
      * @param pathSpec the servlet or filter mapping pattern
      * @return the pathSpec prefixed by '/' if appropriate
      */
     public static String normalize(String pathSpec)
     {
+        if (StringUtil.isEmpty(pathSpec))
+            return "";
+        if (pathSpec.startsWith("servlet|"))
+            pathSpec = pathSpec.substring("servlet|".length());
         if (StringUtil.isNotBlank(pathSpec) && !pathSpec.startsWith("/") && !pathSpec.startsWith("*"))
             return "/" + pathSpec;
         return pathSpec;
@@ -49,16 +54,13 @@ public class ServletPathSpec extends AbstractPathSpec
 
     public ServletPathSpec(String servletPathSpec)
     {
-        if (servletPathSpec == null)
-            servletPathSpec = "";
-        if (servletPathSpec.startsWith("servlet|"))
-            servletPathSpec = servletPathSpec.substring("servlet|".length());
-        assertValidServletPathSpec(servletPathSpec);
+        super(normalize(servletPathSpec));
+        String declaration = getDeclaration();
+        assertValidServletPathSpec(declaration);
 
         // The Root Path Spec
-        if (servletPathSpec.isEmpty())
+        if ("".equals(declaration))
         {
-            _declaration = "";
             _group = PathSpecGroup.ROOT;
             _pathDepth = -1; // Set pathDepth to -1 to force this to be at the end of the sort order.
             _specLength = 1;
@@ -68,9 +70,8 @@ public class ServletPathSpec extends AbstractPathSpec
         }
 
         // The Default Path Spec
-        if ("/".equals(servletPathSpec))
+        if ("/".equals(declaration))
         {
-            _declaration = "/";
             _group = PathSpecGroup.DEFAULT;
             _pathDepth = -1; // Set pathDepth to -1 to force this to be at the end of the sort order.
             _specLength = 1;
@@ -79,41 +80,41 @@ public class ServletPathSpec extends AbstractPathSpec
             return;
         }
 
-        int specLength = servletPathSpec.length();
+        int specLength = declaration.length();
         PathSpecGroup group;
         String prefix;
         String suffix;
 
         // prefix based
-        if (servletPathSpec.charAt(0) == '/' && servletPathSpec.endsWith("/*"))
+        if (declaration.charAt(0) == '/' && declaration.endsWith("/*"))
         {
             group = PathSpecGroup.PREFIX_GLOB;
-            prefix = servletPathSpec.substring(0, specLength - 2);
+            prefix = declaration.substring(0, specLength - 2);
             suffix = null;
         }
         // suffix based
-        else if (servletPathSpec.charAt(0) == '*' && servletPathSpec.length() > 1)
+        else if (declaration.charAt(0) == '*' && declaration.length() > 1)
         {
             group = PathSpecGroup.SUFFIX_GLOB;
             prefix = null;
-            suffix = servletPathSpec.substring(2, specLength);
+            suffix = declaration.substring(2, specLength);
         }
         else
         {
             group = PathSpecGroup.EXACT;
-            prefix = servletPathSpec;
+            prefix = declaration;
             suffix = null;
-            if (servletPathSpec.endsWith("*"))
+            if (declaration.endsWith("*"))
             {
                 LOG.warn("Suspicious URL pattern: '{}'; see sections 12.1 and 12.2 of the Servlet specification",
-                        servletPathSpec);
+                    declaration);
             }
         }
 
         int pathDepth = 0;
         for (int i = 0; i < specLength; i++)
         {
-            int cp = servletPathSpec.codePointAt(i);
+            int cp = declaration.codePointAt(i);
             if (cp < 128)
             {
                 char c = (char)cp;
@@ -122,12 +123,17 @@ public class ServletPathSpec extends AbstractPathSpec
             }
         }
 
-        _declaration = servletPathSpec;
         _group = group;
         _pathDepth = pathDepth;
         _specLength = specLength;
         _prefix = prefix;
         _suffix = suffix;
+    }
+
+    @Override
+    public boolean is(String pathSpec)
+    {
+        return getDeclaration().equals(normalize(pathSpec));
     }
 
     private static void assertValidServletPathSpec(String servletPathSpec)
@@ -221,7 +227,7 @@ public class ServletPathSpec extends AbstractPathSpec
                 return "";
 
             case EXACT:
-                if (_declaration.equals(path))
+                if (getDeclaration().equals(path))
                     return path;
                 return null;
 
@@ -231,7 +237,7 @@ public class ServletPathSpec extends AbstractPathSpec
                 return null;
 
             case SUFFIX_GLOB:
-                if (path.regionMatches(path.length() - (_specLength - 1), _declaration, 1, _specLength - 1))
+                if (path.regionMatches(path.length() - (_specLength - 1), getDeclaration(), 1, _specLength - 1))
                     return path;
                 return null;
 
@@ -241,12 +247,6 @@ public class ServletPathSpec extends AbstractPathSpec
             default:
                 return null;
         }
-    }
-
-    @Override
-    public String getDeclaration()
-    {
-        return _declaration;
     }
 
     @Override
@@ -265,7 +265,7 @@ public class ServletPathSpec extends AbstractPathSpec
     {
         // For a spec of "/foo/*" match "/foo" , "/foo/..." but not "/foobar"
         int cpl = _specLength - 2;
-        if ((_group == PathSpecGroup.PREFIX_GLOB) && (path.regionMatches(0, _declaration, 0, cpl)))
+        if ((_group == PathSpecGroup.PREFIX_GLOB) && (path.regionMatches(0, getDeclaration(), 0, cpl)))
             return (path.length() == cpl) || ('/' == path.charAt(cpl));
         return false;
     }
@@ -276,11 +276,11 @@ public class ServletPathSpec extends AbstractPathSpec
         switch (_group)
         {
             case EXACT:
-                return _declaration.equals(path);
+                return getDeclaration().equals(path);
             case PREFIX_GLOB:
                 return isWildcardMatch(path);
             case SUFFIX_GLOB:
-                return path.regionMatches((path.length() - _specLength) + 1, _declaration, 1, _specLength - 1);
+                return path.regionMatches((path.length() - _specLength) + 1, getDeclaration(), 1, _specLength - 1);
             case ROOT:
                 // Only "/" matches
                 return ("/".equals(path));

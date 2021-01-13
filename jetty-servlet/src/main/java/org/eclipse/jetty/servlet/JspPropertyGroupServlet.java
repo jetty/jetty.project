@@ -69,15 +69,8 @@ public class JspPropertyGroupServlet extends GenericServlet
             ServletMapping[] mappings = _servletHandler.getServletMappings();
             for (ServletMapping m : mappings)
             {
-                String[] paths = m.getPathSpecs();
-                if (paths != null)
-                {
-                    for (String path : paths)
-                    {
-                        if ("*.jsp".equals(path) && !NAME.equals(m.getServletName()))
-                            servletMapping = m;
-                    }
-                }
+                if (m.containsPathSpec("*.jsp") && !NAME.equals(m.getServletName()))
+                    servletMapping = m;
             }
 
             jspName = servletMapping.getServletName();

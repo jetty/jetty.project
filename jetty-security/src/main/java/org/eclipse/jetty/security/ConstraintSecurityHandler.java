@@ -31,6 +31,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.stream.Collectors;
 import javax.servlet.HttpConstraintElement;
 import javax.servlet.HttpMethodConstraintElement;
 import javax.servlet.ServletSecurityElement;
@@ -39,6 +40,8 @@ import javax.servlet.annotation.ServletSecurity.TransportGuarantee;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.PathMap;
+import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -65,6 +68,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     private static final String ALL_METHODS = "*";
     private final List<ConstraintMapping> _constraintMappings = new CopyOnWriteArrayList<>();
     private final Set<String> _roles = new CopyOnWriteArraySet<>();
+
+    // TODO convert to PathMappings
     private final PathMap<Map<String, RoleInfo>> _constraintMap = new PathMap<>();
     private boolean _denyUncoveredMethods = false;
 
@@ -164,14 +169,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             return Collections.emptyList();
 
         List<ConstraintMapping> mappings = new ArrayList<>();
-        for (ConstraintMapping mapping : constraintMappings)
-        {
-            if (pathSpec.equals(mapping.getPathSpec()))
-            {
-                mappings.add(mapping);
-            }
-        }
-        return mappings;
+        return constraintMappings.stream().filter(m -> m.containsPathSpec(pathSpec)).collect(Collectors.toList());
     }
 
     /**
@@ -187,16 +185,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         if (pathSpec == null || "".equals(pathSpec.trim()) || constraintMappings == null || constraintMappings.size() == 0)
             return Collections.emptyList();
 
-        List<ConstraintMapping> mappings = new ArrayList<>();
-        for (ConstraintMapping mapping : constraintMappings)
-        {
-            //Remove the matching mappings by only copying in non-matching mappings
-            if (!pathSpec.equals(mapping.getPathSpec()))
-            {
-                mappings.add(mapping);
-            }
-        }
-        return mappings;
+        //Remove the matching mappings by only copying in non-matching mappings
+        return constraintMappings.stream().filter(m -> !m.containsPathSpec(pathSpec)).collect(Collectors.toList());
     }
 
     /**
@@ -208,6 +198,19 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * @return the list of constraint mappings
      */
     public static List<ConstraintMapping> createConstraintsWithMappingsForPath(String name, String pathSpec, ServletSecurityElement securityElement)
+    {
+        return createConstraintsWithMappingsForPath(name, new ServletPathSpec(pathSpec), securityElement);
+    }
+
+    /**
+     * Generate Constraints and ContraintMappings for the given url pattern and ServletSecurityElement
+     *
+     * @param name the name
+     * @param pathSpec the path spec
+     * @param securityElement the servlet security element
+     * @return the list of constraint mappings
+     */
+    public static List<ConstraintMapping> createConstraintsWithMappingsForPath(String name, PathSpec pathSpec, ServletSecurityElement securityElement)
     {
         List<ConstraintMapping> mappings = new ArrayList<>();
 
@@ -434,6 +437,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      */
     protected void processConstraintMapping(ConstraintMapping mapping)
     {
+        // TODO handle all path spec types
         Map<String, RoleInfo> mappings = _constraintMap.get(mapping.getPathSpec());
 
         if (mappings == null)

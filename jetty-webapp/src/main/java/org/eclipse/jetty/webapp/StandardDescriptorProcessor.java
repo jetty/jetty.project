@@ -20,6 +20,7 @@ package org.eclipse.jetty.webapp;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.EventListener;
 import java.util.HashMap;
@@ -34,6 +35,7 @@ import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.SessionTrackingMode;
 
+import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
@@ -1179,7 +1181,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
     public ServletMapping addServletMapping(String servletName, XmlParser.Node node, WebAppContext context, Descriptor descriptor)
     {
-        ServletMapping mapping = new ServletMapping(new Source(Source.Origin.DESCRIPTOR, descriptor.getResource().toString()));
+        ServletMapping mapping = new ServletMapping(descriptor.getSource());
         mapping.setServletName(servletName);
         mapping.setDefault(descriptor instanceof DefaultsDescriptor);
 
@@ -1248,7 +1250,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
     public void addFilterMapping(String filterName, XmlParser.Node node, WebAppContext context, Descriptor descriptor)
     {
-        FilterMapping mapping = new FilterMapping();
+        FilterMapping mapping = new FilterMapping(descriptor.getSource());
         mapping.setFilterName(filterName);
 
         List<String> paths = new ArrayList<String>();
@@ -1326,7 +1328,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         // Map URLs from jsp property groups to JSP servlet.
         // this is more JSP stupidness creeping into the servlet spec
         Iterator<XmlParser.Node> iter = node.iterator("jsp-property-group");
-        List<String> paths = new ArrayList<String>();
+        List<PathSpec> jspPaths = new ArrayList<>();
         while (iter.hasNext())
         {
 
@@ -1337,10 +1339,10 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             Iterator<XmlParser.Node> iter2 = group.iterator("url-pattern");
             while (iter2.hasNext())
             {
-                String url = iter2.next().toString(false, true);
-                url = ServletPathSpec.normalize(url);
-                paths.add(url);
-                jpg.addUrlPattern(url);
+                String urlPattern = iter2.next().toString(false, true);
+                urlPattern = ServletPathSpec.normalize(urlPattern);
+                jspPaths.add(new ServletPathSpec(urlPattern));
+                jpg.addUrlPattern(urlPattern);
             }
 
             jpg.setElIgnored(group.getString("el-ignored", false, true));
@@ -1373,7 +1375,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
 
         //add mappings to the jsp servlet from the property-group mappings
-        if (paths.size() > 0)
+        if (jspPaths.size() > 0)
         {
             ServletMapping jspMapping = null;
             for (ServletMapping m : _servletMappings)
@@ -1386,44 +1388,41 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             }
             if (jspMapping != null)
             {
-                if (jspMapping.getPathSpecs() == null)
+                if (jspMapping.hasPathSpecs())
                 {
                     //no paths in jsp servlet mapping, we will add all of ours
                     if (LOG.isDebugEnabled())
                         LOG.debug("Adding all paths from jsp-config to jsp servlet mapping");
-                    jspMapping.setPathSpecs(paths.toArray(new String[paths.size()]));
+                    jspMapping.setPathSpecs(jspPaths.toArray(new PathSpec[0]));
                 }
                 else
                 {
                     //check if each of our paths is already present in existing mapping
-                    ListIterator<String> piterator = paths.listIterator();
+                    ListIterator<PathSpec> piterator = jspPaths.listIterator();
                     while (piterator.hasNext())
                     {
-                        String p = piterator.next();
+                        PathSpec p = piterator.next();
                         if (jspMapping.containsPathSpec(p))
                             piterator.remove();
                     }
 
                     //any remaining paths, add to the jspMapping
-                    if (paths.size() > 0)
+                    if (jspPaths.size() > 0)
                     {
-                        for (String p : jspMapping.getPathSpecs())
-                        {
-                            paths.add(p);
-                        }
+                        Collections.addAll(jspPaths, jspMapping.toPathSpecs());
                         if (LOG.isDebugEnabled())
                             LOG.debug("Adding extra paths from jsp-config to jsp servlet mapping");
-                        jspMapping.setPathSpecs(paths.toArray(new String[paths.size()]));
+                        jspMapping.setPathSpecs(jspPaths.toArray(new PathSpec[0]));
                     }
                 }
             }
             else
             {
                 //no mapping for jsp yet, make one
-                ServletMapping mapping = new ServletMapping(new Source(Source.Origin.DESCRIPTOR, descriptor.getResource().toString()));
-                mapping.setServletName("jsp");
-                mapping.setPathSpecs(paths.toArray(new String[paths.size()]));
-                _servletMappings.add(mapping);
+                jspMapping = new ServletMapping(new Source(Source.Origin.DESCRIPTOR, descriptor.getResource().toString()));
+                jspMapping.setServletName("jsp");
+                jspMapping.setPathSpecs(jspPaths.toArray(new PathSpec[0]));
+                _servletMappings.add(jspMapping);
             }
         }
     }

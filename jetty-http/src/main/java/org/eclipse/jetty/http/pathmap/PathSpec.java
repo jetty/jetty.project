@@ -65,9 +65,9 @@ public interface PathSpec extends Comparable<PathSpec>
     String getPathMatch(String path);
 
     /**
-     * The as-provided path spec.
+     * The path spec declaration as a string.
      *
-     * @return the as-provided path spec
+     * @return the declaration as a string
      */
     String getDeclaration();
 
@@ -84,6 +84,13 @@ public interface PathSpec extends Comparable<PathSpec>
      * @return A simple suffix match for the pathspec or null
      */
     String getSuffix();
+
+    /**
+     *  Test if a normalized string pathspec is equivalent to this pathspec
+     * @param pathSpec String representation to be normalized
+     * @return true of the string represents the same pathspec
+     */
+    boolean is(String pathSpec);
 
     /**
      * Test to see if the provided path matches this path spec

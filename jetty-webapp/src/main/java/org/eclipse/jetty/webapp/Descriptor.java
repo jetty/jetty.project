@@ -18,12 +18,14 @@
 
 package org.eclipse.jetty.webapp;
 
+import org.eclipse.jetty.servlet.Source;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser;
 
 public abstract class Descriptor
 {
-    protected Resource _xml;
+    protected final Resource _xml;
+    protected final Source _source;
     protected XmlParser.Node _root;
     protected String _dtd;
     protected boolean _validating;
@@ -31,6 +33,7 @@ public abstract class Descriptor
     public Descriptor(Resource xml)
     {
         _xml = xml;
+        _source = new Source(Source.Origin.DESCRIPTOR, String.valueOf(xml));
     }
 
     public abstract XmlParser ensureParser()
@@ -68,6 +71,11 @@ public abstract class Descriptor
     public XmlParser.Node getRoot()
     {
         return _root;
+    }
+
+    public Source getSource()
+    {
+        return _source;
     }
 
     @Override

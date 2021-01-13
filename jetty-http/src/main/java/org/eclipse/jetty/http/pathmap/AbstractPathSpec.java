@@ -22,6 +22,19 @@ import java.util.Objects;
 
 public abstract class AbstractPathSpec implements PathSpec
 {
+    private final String _declaration;
+
+    protected AbstractPathSpec(String declaration)
+    {
+        _declaration = declaration;
+    }
+
+    @Override
+    public String getDeclaration()
+    {
+        return _declaration;
+    }
+
     @Override
     public int compareTo(PathSpec other)
     {

@@ -25,14 +25,13 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import javax.servlet.DispatcherType;
 
-import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 
 @ManagedObject("Filter Mappings")
-public class FilterMapping implements Dumpable
+public class FilterMapping extends Mapping implements Dumpable
 {
     /**
      * Dispatch types
@@ -117,11 +116,16 @@ public class FilterMapping implements Dumpable
     private int _dispatches = DEFAULT;
     private String _filterName;
     private transient FilterHolder _holder;
-    private String[] _pathSpecs;
     private String[] _servletNames;
 
     public FilterMapping()
     {
+        this(Source.EMBEDDED);
+    }
+
+    public FilterMapping(Source source)
+    {
+        super(source);
     }
 
     /**
@@ -133,16 +137,7 @@ public class FilterMapping implements Dumpable
      */
     boolean appliesTo(String path, int type)
     {
-        if (appliesTo(type))
-        {
-            for (int i = 0; i < _pathSpecs.length; i++)
-            {
-                if (_pathSpecs[i] != null && PathMap.match(_pathSpecs[i], path, true))
-                    return true;
-            }
-        }
-
-        return false;
+        return appliesTo(type) && stream().anyMatch(ps -> ps.matches(path));
     }
 
     /**
@@ -184,15 +179,6 @@ public class FilterMapping implements Dumpable
     FilterHolder getFilterHolder()
     {
         return _holder;
-    }
-
-    /**
-     * @return Returns the pathSpec.
-     */
-    @ManagedAttribute(value = "url patterns", readonly = true)
-    public String[] getPathSpecs()
-    {
-        return _pathSpecs;
     }
 
     public void setDispatcherTypes(EnumSet<DispatcherType> dispatcherTypes)
@@ -260,22 +246,6 @@ public class FilterMapping implements Dumpable
     }
 
     /**
-     * @param pathSpecs The Path specifications to which this filter should be mapped.
-     */
-    public void setPathSpecs(String[] pathSpecs)
-    {
-        _pathSpecs = pathSpecs;
-    }
-
-    /**
-     * @param pathSpec The pathSpec to set.
-     */
-    public void setPathSpec(String pathSpec)
-    {
-        _pathSpecs = new String[]{pathSpec};
-    }
-
-    /**
      * @return Returns the servletName.
      */
     @ManagedAttribute(value = "servlet names", readonly = true)
@@ -306,9 +276,10 @@ public class FilterMapping implements Dumpable
     public String toString()
     {
         return
-            TypeUtil.asList(_pathSpecs) + "/" +
-                TypeUtil.asList(_servletNames) + "/" +
-                Arrays.stream(DispatcherType.values()).filter(this::appliesTo).collect(Collectors.toSet()) + "=>" +
+            TypeUtil.asList(toPathSpecs()) +
+                "/" + TypeUtil.asList(_servletNames) +
+                "/" + getSource() +
+                "/" + Arrays.stream(DispatcherType.values()).filter(this::appliesTo).collect(Collectors.toSet()) + "=>" +
                 _filterName;
     }
 

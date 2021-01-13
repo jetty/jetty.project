@@ -62,7 +62,6 @@ public class UriTemplatePathSpec extends AbstractPathSpec
         FORBIDDEN_SEGMENTS.add("//");
     }
 
-    private final String _declaration;
     private final PathSpecGroup _group;
     private final int _pathDepth;
     private final int _specLength;
@@ -73,13 +72,21 @@ public class UriTemplatePathSpec extends AbstractPathSpec
      */
     private final String _logicalDeclaration;
 
-    public UriTemplatePathSpec(String rawSpec)
+    private static String normalize(String pathSpec)
     {
-        Objects.requireNonNull(rawSpec, "Path Param Spec cannot be null");
+        Objects.requireNonNull(pathSpec, "Path Param Spec cannot be null");
+        if ("".equals(pathSpec) || "/".equals(pathSpec))
+            return "/";
+        return pathSpec;
+    }
 
-        if ("".equals(rawSpec) || "/".equals(rawSpec))
+    public UriTemplatePathSpec(String rawSpecX)
+    {
+        super(normalize(rawSpecX));
+        String declaration = getDeclaration();
+
+        if ("/".equals(declaration))
         {
-            _declaration = "/";
             _group = PathSpecGroup.EXACT;
             _pathDepth = 1;
             _specLength = 1;
@@ -89,25 +96,24 @@ public class UriTemplatePathSpec extends AbstractPathSpec
             return;
         }
 
-        if (rawSpec.charAt(0) != '/')
+        if (declaration.charAt(0) != '/')
         {
             // path specs must start with '/'
-            throw new IllegalArgumentException("Syntax Error: path spec \"" + rawSpec + "\" must start with '/'");
+            throw new IllegalArgumentException("Syntax Error: path spec \"" + declaration + "\" must start with '/'");
         }
 
         for (String forbidden : FORBIDDEN_SEGMENTS)
         {
-            if (rawSpec.contains(forbidden))
-                throw new IllegalArgumentException("Syntax Error: segment " + forbidden + " is forbidden in path spec: " + rawSpec);
+            if (declaration.contains(forbidden))
+                throw new IllegalArgumentException("Syntax Error: segment " + forbidden + " is forbidden in path spec: " + declaration);
         }
 
-        String declaration = rawSpec;
         StringBuilder regex = new StringBuilder();
         regex.append('^');
 
         List<String> varNames = new ArrayList<>();
         // split up into path segments (ignoring the first slash that will always be empty)
-        String[] segments = rawSpec.substring(1).split("/");
+        String[] segments = declaration.substring(1).split("/");
         char[] segmentSignature = new char[segments.length];
         StringBuilder logicalSignature = new StringBuilder();
         int pathDepth = segments.length;
@@ -123,7 +129,7 @@ public class UriTemplatePathSpec extends AbstractPathSpec
                 if (varNames.contains(variable))
                 {
                     // duplicate variable names
-                    throw new IllegalArgumentException("Syntax Error: variable " + variable + " is duplicated in path spec: " + rawSpec);
+                    throw new IllegalArgumentException("Syntax Error: variable " + variable + " is duplicated in path spec: " + declaration);
                 }
 
                 assertIsValidVariableLiteral(variable, declaration);
@@ -138,17 +144,17 @@ public class UriTemplatePathSpec extends AbstractPathSpec
             else if (mat.find(0))
             {
                 // variable exists as partial segment
-                throw new IllegalArgumentException("Syntax Error: variable " + mat.group() + " must exist as entire path segment: " + rawSpec);
+                throw new IllegalArgumentException("Syntax Error: variable " + mat.group() + " must exist as entire path segment: " + declaration);
             }
             else if ((segment.indexOf('{') >= 0) || (segment.indexOf('}') >= 0))
             {
                 // variable is split with a path separator
-                throw new IllegalArgumentException("Syntax Error: invalid path segment /" + segment + "/ variable declaration incomplete: " + rawSpec);
+                throw new IllegalArgumentException("Syntax Error: invalid path segment /" + segment + "/ variable declaration incomplete: " + declaration);
             }
             else if (segment.indexOf('*') >= 0)
             {
                 // glob segment
-                throw new IllegalArgumentException("Syntax Error: path segment /" + segment + "/ contains a wildcard symbol (not supported by this uri-template implementation): " + rawSpec);
+                throw new IllegalArgumentException("Syntax Error: path segment /" + segment + "/ contains a wildcard symbol (not supported by this uri-template implementation): " + declaration);
             }
             else
             {
@@ -169,7 +175,7 @@ public class UriTemplatePathSpec extends AbstractPathSpec
         }
 
         // Handle trailing slash (which is not picked up during split)
-        if (rawSpec.charAt(rawSpec.length() - 1) == '/')
+        if (declaration.charAt(declaration.length() - 1) == '/')
         {
             regex.append('/');
             logicalSignature.append('/');
@@ -195,13 +201,18 @@ public class UriTemplatePathSpec extends AbstractPathSpec
         else
             group = PathSpecGroup.MIDDLE_GLOB;
 
-        _declaration = declaration;
         _group = group;
         _pathDepth = pathDepth;
         _specLength = declaration.length();
         _pattern = pattern;
         _variables = variables;
         _logicalDeclaration = logicalSignature.toString();
+    }
+
+    @Override
+    public boolean is(String pathSpec)
+    {
+        return getDeclaration().equals(normalize(pathSpec));
     }
 
     /**
@@ -371,12 +382,6 @@ public class UriTemplatePathSpec extends AbstractPathSpec
             return path;
         }
         return null;
-    }
-
-    @Override
-    public String getDeclaration()
-    {
-        return _declaration;
     }
 
     @Override
