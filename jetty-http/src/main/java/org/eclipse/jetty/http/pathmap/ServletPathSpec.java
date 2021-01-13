@@ -34,8 +34,6 @@ public class ServletPathSpec extends AbstractPathSpec
 
     /**
      * Normalize servlet path spec:<ul>
-     *     <li>null pathspec to ""</li>
-     *     <li>"servlet|spec" to "spec"</li>
      *     <li>"path/*" to "/path/*"</li>
      * </ul>
      * @param pathSpec the servlet or filter mapping pattern
@@ -43,18 +41,32 @@ public class ServletPathSpec extends AbstractPathSpec
      */
     public static String normalize(String pathSpec)
     {
-        if (StringUtil.isEmpty(pathSpec))
-            return "";
-        if (pathSpec.startsWith("servlet|"))
-            pathSpec = pathSpec.substring("servlet|".length());
         if (StringUtil.isNotBlank(pathSpec) && !pathSpec.startsWith("/") && !pathSpec.startsWith("*"))
             return "/" + pathSpec;
         return pathSpec;
     }
 
+    /**
+     * Sanitize servlet path spec:<ul>
+     *     <li>null pathspec to ""</li>
+     *     <li>"servlet|spec" to "spec"</li>
+     * </ul>
+     * @param pathSpec the servlet or filter mapping pattern
+     * @return the pathSpec prefixed by '/' if appropriate
+     */
+    private static String sanitize(String pathSpec)
+    {
+        // TODO can this be combined with normalize?
+        if (StringUtil.isEmpty(pathSpec))
+            return "";
+        if (pathSpec.startsWith("servlet|"))
+            pathSpec = pathSpec.substring("servlet|".length());
+        return pathSpec;
+    }
+
     public ServletPathSpec(String servletPathSpec)
     {
-        super(normalize(servletPathSpec));
+        super(sanitize(servletPathSpec));
         String declaration = getDeclaration();
         assertValidServletPathSpec(declaration);
 
