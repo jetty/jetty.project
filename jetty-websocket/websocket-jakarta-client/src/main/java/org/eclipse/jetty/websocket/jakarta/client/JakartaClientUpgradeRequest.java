@@ -16,8 +16,6 @@ package org.eclipse.jetty.websocket.jakarta.client;
 import java.net.URI;
 import java.security.Principal;
 
-import org.eclipse.jetty.client.HttpResponse;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
@@ -32,13 +30,6 @@ public class JakartaClientUpgradeRequest extends CoreClientUpgradeRequest implem
     {
         super(coreClient, requestURI);
         frameHandler = clientContainer.newFrameHandler(websocketPojo, this);
-    }
-
-    @Override
-    public void upgrade(HttpResponse response, EndPoint endPoint)
-    {
-        frameHandler.setUpgradeRequest(this);
-        super.upgrade(response, endPoint);
     }
 
     @Override

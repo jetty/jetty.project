@@ -167,6 +167,7 @@ public abstract class JakartaWebSocketFrameHandlerFactory
 
         return new JakartaWebSocketFrameHandler(
             container,
+            upgradeRequest,
             endpoint,
             openHandle, closeHandle, errorHandle,
             textMetadata, binaryMetadata,

@@ -68,7 +68,7 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
     private MethodHandle pongHandle;
     private JakartaWebSocketMessageMetadata textMetadata;
     private JakartaWebSocketMessageMetadata binaryMetadata;
-    private UpgradeRequest upgradeRequest;
+    private final UpgradeRequest upgradeRequest;
     private EndpointConfig endpointConfig;
     private final Map<Byte, RegisteredMessageHandler> messageHandlerMap = new HashMap<>();
     private MessageSink textSink;
@@ -79,6 +79,7 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
     protected byte dataType = OpCode.UNDEFINED;
 
     public JakartaWebSocketFrameHandler(JakartaWebSocketContainer container,
+                                      UpgradeRequest upgradeRequest,
                                         Object endpointInstance,
                                         MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
                                       JakartaWebSocketMessageMetadata textMetadata,
@@ -89,6 +90,7 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         this.logger = LoggerFactory.getLogger(endpointInstance.getClass());
 
         this.container = container;
+        this.upgradeRequest = upgradeRequest;
         if (endpointInstance instanceof ConfiguredEndpoint)
         {
             RuntimeException oops = new RuntimeException("ConfiguredEndpoint needs to be unwrapped");
@@ -96,7 +98,6 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
             throw oops;
         }
         this.endpointInstance = endpointInstance;
-
         this.openHandle = openHandle;
         this.closeHandle = closeHandle;
         this.errorHandle = errorHandle;
@@ -634,11 +635,6 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
             default:
                 throw new ProtocolException("Unable to process continuation during dataType " + dataType);
         }
-    }
-
-    public void setUpgradeRequest(UpgradeRequest upgradeRequest)
-    {
-        this.upgradeRequest = upgradeRequest;
     }
 
     public UpgradeRequest getUpgradeRequest()
