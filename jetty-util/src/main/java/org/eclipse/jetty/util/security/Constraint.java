@@ -96,6 +96,20 @@ public class Constraint implements Cloneable, Serializable
         setRoles(new String[]{role});
     }
 
+    /**
+     * Convenience Constructor.
+     *
+     * @param name the name
+     * @param authenticate to authenticate or not
+     * @param roles the roles
+     */
+    public Constraint(String name, boolean authenticate, String... roles)
+    {
+        setName(name);
+        setAuthenticate(authenticate);
+        setRoles(roles);
+    }
+
     @Override
     public Object clone() throws CloneNotSupportedException
     {

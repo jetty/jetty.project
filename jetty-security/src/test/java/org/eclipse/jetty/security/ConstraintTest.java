@@ -47,6 +47,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.http.pathmap.RegexPathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.DigestAuthenticator;
@@ -1793,7 +1794,7 @@ public class ConstraintTest
         _server.start();
 
         String response;
-        response = _connector.getResponse("GET /ctx/forbid/somethig HTTP/1.0\r\n\r\n");
+        response = _connector.getResponse("GET /ctx/forbid/something HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 403 "));
 
         response = _connector.getResponse("POST /ctx/forbid/post HTTP/1.0\r\n\r\n");
@@ -1801,6 +1802,38 @@ public class ConstraintTest
 
         response = _connector.getResponse("GET /ctx/forbid/post HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 "));  // This is so stupid, but it is the S P E C
+    }
+
+    @Test
+    public void testNonStandardPathSpecs() throws Exception
+    {
+        _security.setAuthenticator(new BasicAuthenticator());
+
+        ConstraintMapping evil = new ConstraintMapping();
+        evil.setPathSpec(new RegexPathSpec(".*666.*"));
+        evil.setConstraint(new Constraint("evil", true));
+        _security.addConstraintMapping(evil);
+
+        ConstraintMapping answer = new ConstraintMapping();
+        answer.setPathSpec(new RegexPathSpec(".*42.*"));
+        answer.setConstraint(new Constraint("answer", true, "user"));
+        _security.addConstraintMapping(answer);
+
+        _server.start();
+        _server.dumpStdErr();
+
+        String response;
+        response = _connector.getResponse("GET /ctx/some/path HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 200 "));
+
+        response = _connector.getResponse("GET /ctx/some/p42th HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 401 "));
+
+        response = _connector.getResponse("GET /ctx/some/p666th HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 403 "));
+
+        response = _connector.getResponse("GET /ctx/s42me/p666th HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 403 "));
     }
 
     private static String authBase64(String authorization)

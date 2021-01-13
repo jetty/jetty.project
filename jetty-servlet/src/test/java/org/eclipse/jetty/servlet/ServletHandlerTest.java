@@ -145,7 +145,6 @@ public class ServletHandlerTest
     @Test
     public void testAddFilterIgnoresDuplicates2() throws Exception
     {
-
         ServletHandler handler = new ServletHandler();
         FilterHolder h = new FilterHolder();
         h.setName("x");
