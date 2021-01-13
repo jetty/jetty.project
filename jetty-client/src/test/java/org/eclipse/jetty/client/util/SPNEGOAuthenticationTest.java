@@ -149,7 +149,7 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
         constraint.setAuthenticate(true);
         constraint.setRoles(new String[]{"**"}); //allow any authenticated user
         ConstraintMapping mapping = new ConstraintMapping();
-        mapping.setPathSpec("/secure");
+        mapping.setServletPathSpec("/secure");
         mapping.setConstraint(constraint);
         securityHandler.addConstraintMapping(mapping);
         authenticator = new ConfigurableSpnegoAuthenticator();

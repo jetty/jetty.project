@@ -1262,7 +1262,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             paths.add(p);
             context.getMetaData().setOrigin(filterName + ".filter.mapping." + p, descriptor);
         }
-        mapping.setPathSpecs(paths.toArray(new String[paths.size()]));
+        mapping.setServletPathSpecs(paths.toArray(new String[paths.size()]));
 
         List<String> names = new ArrayList<String>();
         iter = node.iterator("servlet-name");
@@ -1506,7 +1506,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                             String method = methods.next().toString(false, true);
                             ConstraintMapping mapping = new ConstraintMapping();
                             mapping.setMethod(method);
-                            mapping.setPathSpec(url);
+                            mapping.setServletPathSpec(url);
                             mapping.setConstraint(sc);
                             ((ConstraintAware)context.getSecurityHandler()).addConstraintMapping(mapping);
                         }
@@ -1520,7 +1520,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                             String method = ommissions.next().toString(false, true);
                             ConstraintMapping mapping = new ConstraintMapping();
                             mapping.setMethodOmissions(new String[]{method});
-                            mapping.setPathSpec(url);
+                            mapping.setServletPathSpec(url);
                             mapping.setConstraint(sc);
                             ((ConstraintAware)context.getSecurityHandler()).addConstraintMapping(mapping);
                         }
@@ -1529,7 +1529,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     {
                         //No http-methods or http-method-omissions specified, the constraint applies to all
                         ConstraintMapping mapping = new ConstraintMapping();
-                        mapping.setPathSpec(url);
+                        mapping.setServletPathSpec(url);
                         mapping.setConstraint(sc);
                         ((ConstraintAware)context.getSecurityHandler()).addConstraintMapping(mapping);
                     }

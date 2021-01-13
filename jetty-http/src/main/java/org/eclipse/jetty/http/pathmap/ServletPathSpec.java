@@ -145,7 +145,7 @@ public class ServletPathSpec extends AbstractPathSpec
     @Override
     public boolean is(String pathSpec)
     {
-        return getDeclaration().equals(normalize(pathSpec));
+        return getDeclaration().equals(normalize(sanitize(pathSpec)));
     }
 
     private static void assertValidServletPathSpec(String servletPathSpec)

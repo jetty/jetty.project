@@ -1003,7 +1003,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             //otherwise apply all of them
             ServletMapping mapping = new ServletMapping(Source.JAVAX_API);
             mapping.setServletName(ServletHolder.this.getName());
-            mapping.setPathSpecs(urlPatterns);
+            mapping.setServletPathSpecs(urlPatterns);
             getServletHandler().addServletMapping(mapping);
 
             return Collections.emptySet();
@@ -1020,7 +1020,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 {
                     if (!mapping.getServletName().equals(getName()))
                         continue;
-                    String[] specs = mapping.getPathSpecs();
+                    String[] specs = mapping.getServletPathSpecs();
                     if (specs != null && specs.length > 0)
                         patterns.addAll(Arrays.asList(specs));
                 }

@@ -157,7 +157,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
 
             mapping = new ServletMapping(source);
             mapping.setServletName(holder.getName());
-            mapping.setPathSpecs(LazyList.toStringArray(urlPatternList));
+            mapping.setServletPathSpecs(LazyList.toStringArray(urlPatternList));
         }
         else
         {
@@ -193,7 +193,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             {
                 mapping = new ServletMapping(new Source(Source.Origin.ANNOTATION, clazz.getName()));
                 mapping.setServletName(servletName);
-                mapping.setPathSpecs(LazyList.toStringArray(urlPatternList));
+                mapping.setServletPathSpecs(LazyList.toStringArray(urlPatternList));
             }
         }
 

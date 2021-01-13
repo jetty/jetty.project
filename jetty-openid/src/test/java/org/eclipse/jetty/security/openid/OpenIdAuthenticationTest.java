@@ -83,13 +83,13 @@ public class OpenIdAuthenticationTest
         // constraint mappings
         ConstraintMapping profileMapping = new ConstraintMapping();
         profileMapping.setConstraint(constraint);
-        profileMapping.setPathSpec("/profile");
+        profileMapping.setServletPathSpec("/profile");
         ConstraintMapping loginMapping = new ConstraintMapping();
         loginMapping.setConstraint(constraint);
-        loginMapping.setPathSpec("/login");
+        loginMapping.setServletPathSpec("/login");
         ConstraintMapping adminMapping = new ConstraintMapping();
         adminMapping.setConstraint(adminConstraint);
-        adminMapping.setPathSpec("/admin");
+        adminMapping.setServletPathSpec("/admin");
 
         // security handler
         ConstraintSecurityHandler securityHandler = new ConstraintSecurityHandler();

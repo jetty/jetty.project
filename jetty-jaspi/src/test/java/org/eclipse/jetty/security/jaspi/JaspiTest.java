@@ -118,7 +118,7 @@ public class JaspiTest
         Constraint constraint = new Constraint("All", "users");
         constraint.setAuthenticate(true);
         ConstraintMapping mapping = new ConstraintMapping();
-        mapping.setPathSpec("/jaspi/*");
+        mapping.setServletPathSpec("/jaspi/*");
         mapping.setConstraint(constraint);
         security.addConstraintMapping(mapping);
 

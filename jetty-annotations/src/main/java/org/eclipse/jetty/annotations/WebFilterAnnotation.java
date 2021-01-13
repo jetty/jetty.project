@@ -120,7 +120,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
                 {
                     paths.add(ServletPathSpec.normalize(s));
                 }
-                mapping.setPathSpecs(paths.toArray(new String[paths.size()]));
+                mapping.setServletPathSpecs(paths.toArray(new String[paths.size()]));
             }
 
             if (filterAnnotation.servletNames().length > 0)
@@ -191,7 +191,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
                     {
                         paths.add(ServletPathSpec.normalize(s));
                     }
-                    mapping.setPathSpecs(paths.toArray(new String[paths.size()]));
+                    mapping.setServletPathSpecs(paths.toArray(new String[paths.size()]));
                 }
                 if (filterAnnotation.servletNames().length > 0)
                 {

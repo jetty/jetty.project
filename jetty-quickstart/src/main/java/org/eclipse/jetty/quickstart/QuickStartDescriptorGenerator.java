@@ -192,8 +192,8 @@ public class QuickStartDescriptorGenerator
             {
                 out.openTag("filter-mapping");
                 out.tag("filter-name", mapping.getFilterName());
-                if (mapping.getPathSpecs() != null)
-                    for (String s : mapping.getPathSpecs())
+                if (mapping.getServletPathSpecs() != null)
+                    for (String s : mapping.getServletPathSpecs())
                     {
                         out.tag("url-pattern", s);
                     }
@@ -234,8 +234,8 @@ public class QuickStartDescriptorGenerator
             {
                 out.openTag("servlet-mapping", origin(md, mapping.getServletName() + ".servlet.mappings"));
                 out.tag("servlet-name", mapping.getServletName());
-                if (mapping.getPathSpecs() != null)
-                    for (String s : mapping.getPathSpecs())
+                if (mapping.getServletPathSpecs() != null)
+                    for (String s : mapping.getServletPathSpecs())
                     {
                         out.tag("url-pattern", s);
                     }
@@ -283,8 +283,8 @@ public class QuickStartDescriptorGenerator
                 {
                     if (m.getConstraint().getName() != null)
                         out.tag("web-resource-name", m.getConstraint().getName());
-                    if (m.getPathSpec() != null)
-                        out.tag("url-pattern", origin(md, "constraint.url." + m.getPathSpec()), m.getPathSpec());
+                    if (m.getServletPathSpec() != null)
+                        out.tag("url-pattern", origin(md, "constraint.url." + m.getServletPathSpec()), m.getServletPathSpec());
                     if (m.getMethod() != null)
                         out.tag("http-method", m.getMethod());
 

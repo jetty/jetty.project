@@ -107,11 +107,11 @@ public class TestSecurityAnnotationConversions
 
         expectedMappings[0] = new ConstraintMapping();
         expectedMappings[0].setConstraint(expectedConstraint);
-        expectedMappings[0].setPathSpec("/foo/*");
+        expectedMappings[0].setServletPathSpec("/foo/*");
 
         expectedMappings[1] = new ConstraintMapping();
         expectedMappings[1].setConstraint(expectedConstraint);
-        expectedMappings[1].setPathSpec("*.foo");
+        expectedMappings[1].setServletPathSpec("*.foo");
 
         introspector.introspect(DenyServlet.class);
 
@@ -164,11 +164,11 @@ public class TestSecurityAnnotationConversions
         ConstraintMapping[] expectedMappings = new ConstraintMapping[2];
         expectedMappings[0] = new ConstraintMapping();
         expectedMappings[0].setConstraint(expectedConstraint);
-        expectedMappings[0].setPathSpec("/foo/*");
+        expectedMappings[0].setServletPathSpec("/foo/*");
 
         expectedMappings[1] = new ConstraintMapping();
         expectedMappings[1].setConstraint(expectedConstraint);
-        expectedMappings[1].setPathSpec("*.foo");
+        expectedMappings[1].setServletPathSpec("*.foo");
 
         introspector.introspect(RolesServlet.class);
         compareResults(expectedMappings, ((ConstraintAware)wac.getSecurityHandler()).getConstraintMappings());
@@ -200,20 +200,20 @@ public class TestSecurityAnnotationConversions
         ConstraintMapping[] expectedMappings = new ConstraintMapping[4];
         expectedMappings[0] = new ConstraintMapping();
         expectedMappings[0].setConstraint(expectedConstraint1);
-        expectedMappings[0].setPathSpec("/foo/*");
+        expectedMappings[0].setServletPathSpec("/foo/*");
         expectedMappings[0].setMethodOmissions(new String[]{"GET"});
         expectedMappings[1] = new ConstraintMapping();
         expectedMappings[1].setConstraint(expectedConstraint1);
-        expectedMappings[1].setPathSpec("*.foo");
+        expectedMappings[1].setServletPathSpec("*.foo");
         expectedMappings[1].setMethodOmissions(new String[]{"GET"});
 
         expectedMappings[2] = new ConstraintMapping();
         expectedMappings[2].setConstraint(expectedConstraint2);
-        expectedMappings[2].setPathSpec("/foo/*");
+        expectedMappings[2].setServletPathSpec("/foo/*");
         expectedMappings[2].setMethod("GET");
         expectedMappings[3] = new ConstraintMapping();
         expectedMappings[3].setConstraint(expectedConstraint2);
-        expectedMappings[3].setPathSpec("*.foo");
+        expectedMappings[3].setServletPathSpec("*.foo");
         expectedMappings[3].setMethod("GET");
 
         AnnotationIntrospector introspector = new AnnotationIntrospector();
@@ -252,20 +252,20 @@ public class TestSecurityAnnotationConversions
         ConstraintMapping[] expectedMappings = new ConstraintMapping[4];
         expectedMappings[0] = new ConstraintMapping();
         expectedMappings[0].setConstraint(expectedConstraint1);
-        expectedMappings[0].setPathSpec("/foo/*");
+        expectedMappings[0].setServletPathSpec("/foo/*");
         expectedMappings[0].setMethodOmissions(new String[]{"GET"});
         expectedMappings[1] = new ConstraintMapping();
         expectedMappings[1].setConstraint(expectedConstraint1);
-        expectedMappings[1].setPathSpec("*.foo");
+        expectedMappings[1].setServletPathSpec("*.foo");
         expectedMappings[1].setMethodOmissions(new String[]{"GET"});
 
         expectedMappings[2] = new ConstraintMapping();
         expectedMappings[2].setConstraint(expectedConstraint2);
-        expectedMappings[2].setPathSpec("/foo/*");
+        expectedMappings[2].setServletPathSpec("/foo/*");
         expectedMappings[2].setMethod("GET");
         expectedMappings[3] = new ConstraintMapping();
         expectedMappings[3].setConstraint(expectedConstraint2);
-        expectedMappings[3].setPathSpec("*.foo");
+        expectedMappings[3].setServletPathSpec("*.foo");
         expectedMappings[3].setMethod("GET");
 
         introspector.introspect(Method2Servlet.class);
@@ -285,7 +285,7 @@ public class TestSecurityAnnotationConversions
             for (int i = 0; i < expectedMappings.length && !matched; i++)
             {
                 ConstraintMapping em = expectedMappings[i];
-                if (em.getPathSpec().equals(am.getPathSpec()))
+                if (em.getServletPathSpec().equals(am.getServletPathSpec()))
                 {
                     if ((em.getMethod() == null && am.getMethod() == null) || em.getMethod() != null && em.getMethod().equals(am.getMethod()))
                     {
@@ -315,7 +315,7 @@ public class TestSecurityAnnotationConversions
             }
 
             if (!matched)
-                fail("No expected ConstraintMapping matching method:" + am.getMethod() + " pathSpec: " + am.getPathSpec());
+                fail("No expected ConstraintMapping matching method:" + am.getMethod() + " pathSpec: " + am.getServletPathSpec());
         }
     }
 
@@ -334,7 +334,7 @@ public class TestSecurityAnnotationConversions
         ServletMapping[] servletMappings = new ServletMapping[1];
         servletMappings[0] = new ServletMapping();
 
-        servletMappings[0].setPathSpecs(paths);
+        servletMappings[0].setServletPathSpecs(paths);
         servletMappings[0].setServletName(servletName);
         wac.getServletHandler().setServletMappings(servletMappings);
         return wac;

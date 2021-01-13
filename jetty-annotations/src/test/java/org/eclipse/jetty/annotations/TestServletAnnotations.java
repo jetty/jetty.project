@@ -97,7 +97,7 @@ public class TestServletAnnotations
         ServletMapping[] mappings = wac.getServletHandler().getServletMappings();
         assertNotNull(mappings);
         assertEquals(1, mappings.length);
-        String[] paths = mappings[0].getPathSpecs();
+        String[] paths = mappings[0].getServletPathSpecs();
         assertNotNull(paths);
         assertEquals(2, paths.length);
     }
@@ -128,9 +128,9 @@ public class TestServletAnnotations
         ServletMapping[] resultMappings = wac.getServletHandler().getServletMappings();
         assertNotNull(resultMappings);
         assertEquals(1, resultMappings.length);
-        assertEquals(2, resultMappings[0].getPathSpecs().length);
+        assertEquals(2, resultMappings[0].getServletPathSpecs().length);
         resultMappings[0].getServletName().equals("DServlet");
-        for (String s : resultMappings[0].getPathSpecs())
+        for (String s : resultMappings[0].getServletPathSpecs())
         {
             assertThat(s, anyOf(is("/"), is("/bah/*")));
         }
@@ -170,13 +170,13 @@ public class TestServletAnnotations
         {
             if (r.getServletName().equals("default"))
             {
-                assertEquals(1, r.getPathSpecs().length);
-                assertEquals("/other", r.getPathSpecs()[0]);
+                assertEquals(1, r.getServletPathSpecs().length);
+                assertEquals("/other", r.getServletPathSpecs()[0]);
             }
             else if (r.getServletName().equals("DServlet"))
             {
-                assertEquals(2, r.getPathSpecs().length);
-                for (String p : r.getPathSpecs())
+                assertEquals(2, r.getServletPathSpecs().length);
+                for (String p : r.getServletPathSpecs())
                 {
                     if (!p.equals("/") && !p.equals("/bah/*"))
                         fail("Unexpected path");
@@ -211,11 +211,11 @@ public class TestServletAnnotations
         {
             if (r.getServletName().equals("DServlet"))
             {
-                assertEquals(2, r.getPathSpecs().length);
+                assertEquals(2, r.getServletPathSpecs().length);
             }
             else if (r.getServletName().equals("foo"))
             {
-                assertEquals(1, r.getPathSpecs().length);
+                assertEquals(1, r.getServletPathSpecs().length);
             }
             else
                 fail("Unexpected servlet name: " + r);
@@ -252,8 +252,8 @@ public class TestServletAnnotations
 
         for (ServletMapping r : resultMappings)
         {
-            assertEquals(1, r.getPathSpecs().length);
-            if (!r.getPathSpecs()[0].equals("/default") && !r.getPathSpecs()[0].equals("/other"))
+            assertEquals(1, r.getServletPathSpecs().length);
+            if (!r.getServletPathSpecs()[0].equals("/default") && !r.getServletPathSpecs()[0].equals("/other"))
                 fail("Unexpected path in mapping: " + r);
         }
     }
@@ -273,8 +273,8 @@ public class TestServletAnnotations
 
         ServletMapping[] resultMappings = wac.getServletHandler().getServletMappings();
         assertEquals(1, resultMappings.length);
-        assertEquals(2, resultMappings[0].getPathSpecs().length);
-        for (String s : resultMappings[0].getPathSpecs())
+        assertEquals(2, resultMappings[0].getServletPathSpecs().length);
+        for (String s : resultMappings[0].getServletPathSpecs())
         {
             assertThat(s, anyOf(is("/"), is("/bah/*")));
         }

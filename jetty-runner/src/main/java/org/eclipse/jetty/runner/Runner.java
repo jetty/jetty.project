@@ -32,7 +32,6 @@ import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
-import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NCSARequestLog;
@@ -374,7 +373,7 @@ public class Runner
 
                                     ConstraintMapping cm = new ConstraintMapping();
                                     cm.setConstraint(constraint);
-                                    cm.setPathSpec("/*");
+                                    cm.setServletPathSpec("/*");
 
                                     ConstraintSecurityHandler securityHandler = new ConstraintSecurityHandler();
                                     securityHandler.setLoginService(loginService);

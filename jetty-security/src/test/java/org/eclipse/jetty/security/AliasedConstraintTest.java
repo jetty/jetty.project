@@ -100,7 +100,7 @@ public class AliasedConstraintTest
         constraint0.setAuthenticate(true);
         constraint0.setName("forbid");
         ConstraintMapping mapping0 = new ConstraintMapping();
-        mapping0.setPathSpec("/forbid/*");
+        mapping0.setServletPathSpec("/forbid/*");
         mapping0.setConstraint(constraint0);
         constraints.add(mapping0);
 

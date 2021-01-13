@@ -75,8 +75,18 @@ public class ConstraintMapping
 
     /**
      * @return Returns the pathSpec as a String only if it is a {@link ServletPathSpec}
+     * @deprecated Use {@link #getServletPathSpec()}
      */
+    @Deprecated
     public String getPathSpec()
+    {
+        return (ServletPathSpec.class.isInstance(_pathSpec)) ? _pathSpec.getDeclaration() : null;
+    }
+
+    /**
+     * @return Returns the pathSpec as a String only if it is a {@link ServletPathSpec}
+     */
+    public String getServletPathSpec()
     {
         return (ServletPathSpec.class.isInstance(_pathSpec)) ? _pathSpec.getDeclaration() : null;
     }
@@ -91,8 +101,18 @@ public class ConstraintMapping
 
     /**
      * @param pathSpec The pathSpec to set.
+     * @deprecated Use {@link #setServletPathSpec(String)}
      */
+    @Deprecated
     public void setPathSpec(String pathSpec)
+    {
+        this._pathSpec = new ServletPathSpec(pathSpec);
+    }
+
+    /**
+     * @param pathSpec The pathSpec to set.
+     */
+    public void setServletPathSpec(String pathSpec)
     {
         this._pathSpec = new ServletPathSpec(pathSpec);
     }

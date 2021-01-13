@@ -114,17 +114,17 @@ public class SpecExampleConstraintTest
         constraint0.setAuthenticate(true);
         constraint0.setName("precluded methods");
         ConstraintMapping mapping0 = new ConstraintMapping();
-        mapping0.setPathSpec("/*");
+        mapping0.setServletPathSpec("/*");
         mapping0.setConstraint(constraint0);
         mapping0.setMethodOmissions(new String[]{"GET", "POST"});
 
         ConstraintMapping mapping1 = new ConstraintMapping();
-        mapping1.setPathSpec("/acme/wholesale/*");
+        mapping1.setServletPathSpec("/acme/wholesale/*");
         mapping1.setConstraint(constraint0);
         mapping1.setMethodOmissions(new String[]{"GET", "POST"});
 
         ConstraintMapping mapping2 = new ConstraintMapping();
-        mapping2.setPathSpec("/acme/retail/*");
+        mapping2.setServletPathSpec("/acme/retail/*");
         mapping2.setConstraint(constraint0);
         mapping2.setMethodOmissions(new String[]{"GET", "POST"});
         
@@ -147,11 +147,11 @@ public class SpecExampleConstraintTest
         constraint1.setName("wholesale");
         constraint1.setRoles(new String[]{"SALESCLERK"});
         ConstraintMapping mapping3 = new ConstraintMapping();
-        mapping3.setPathSpec("/acme/wholesale/*");
+        mapping3.setServletPathSpec("/acme/wholesale/*");
         mapping3.setConstraint(constraint1);
         mapping3.setMethod("GET");
         ConstraintMapping mapping4 = new ConstraintMapping();
-        mapping4.setPathSpec("/acme/wholesale/*");
+        mapping4.setServletPathSpec("/acme/wholesale/*");
         mapping4.setConstraint(constraint1);
         mapping4.setMethod("PUT");
 
@@ -177,11 +177,11 @@ public class SpecExampleConstraintTest
         constraint2.setRoles(new String[]{"CONTRACTOR"});
         constraint2.setDataConstraint(Constraint.DC_CONFIDENTIAL);
         ConstraintMapping mapping5 = new ConstraintMapping();
-        mapping5.setPathSpec("/acme/wholesale/*");
+        mapping5.setServletPathSpec("/acme/wholesale/*");
         mapping5.setMethod("GET");
         mapping5.setConstraint(constraint2);
         ConstraintMapping mapping6 = new ConstraintMapping();
-        mapping6.setPathSpec("/acme/wholesale/*");
+        mapping6.setServletPathSpec("/acme/wholesale/*");
         mapping6.setMethod("POST");
         mapping6.setConstraint(constraint2);
         
@@ -204,11 +204,11 @@ public class SpecExampleConstraintTest
         constraint4.setAuthenticate(true);
         constraint4.setRoles(new String[]{"CONTRACTOR", "HOMEOWNER"});
         ConstraintMapping mapping7 = new ConstraintMapping();
-        mapping7.setPathSpec("/acme/retail/*");
+        mapping7.setServletPathSpec("/acme/retail/*");
         mapping7.setMethod("GET");
         mapping7.setConstraint(constraint4);
         ConstraintMapping mapping8 = new ConstraintMapping();
-        mapping8.setPathSpec("/acme/retail/*");
+        mapping8.setServletPathSpec("/acme/retail/*");
         mapping8.setMethod("POST");
         mapping8.setConstraint(constraint4);
 

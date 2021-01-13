@@ -118,7 +118,7 @@ public class DataConstraintsTest
         constraint0.setName("integral");
         constraint0.setDataConstraint(Constraint.DC_INTEGRAL);
         ConstraintMapping mapping0 = new ConstraintMapping();
-        mapping0.setPathSpec("/integral/*");
+        mapping0.setServletPathSpec("/integral/*");
         mapping0.setConstraint(constraint0);
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
@@ -149,7 +149,7 @@ public class DataConstraintsTest
         constraint0.setName("confid");
         constraint0.setDataConstraint(Constraint.DC_CONFIDENTIAL);
         ConstraintMapping mapping0 = new ConstraintMapping();
-        mapping0.setPathSpec("/confid/*");
+        mapping0.setServletPathSpec("/confid/*");
         mapping0.setConstraint(constraint0);
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
@@ -179,7 +179,7 @@ public class DataConstraintsTest
         constraint0.setName("confid");
         constraint0.setDataConstraint(Constraint.DC_CONFIDENTIAL);
         ConstraintMapping mapping0 = new ConstraintMapping();
-        mapping0.setPathSpec("/confid/*");
+        mapping0.setServletPathSpec("/confid/*");
         mapping0.setConstraint(constraint0);
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
@@ -205,7 +205,7 @@ public class DataConstraintsTest
         constraint0.setName("confid");
         constraint0.setDataConstraint(Constraint.DC_CONFIDENTIAL);
         ConstraintMapping mapping0 = new ConstraintMapping();
-        mapping0.setPathSpec("/confid/*");
+        mapping0.setServletPathSpec("/confid/*");
         mapping0.setMethod(HttpMethod.POST.asString());
         mapping0.setConstraint(constraint0);
 
@@ -239,7 +239,7 @@ public class DataConstraintsTest
         constraint0.setName("confid");
         constraint0.setDataConstraint(Constraint.DC_CONFIDENTIAL);
         ConstraintMapping mapping0 = new ConstraintMapping();
-        mapping0.setPathSpec("/confid/*");
+        mapping0.setServletPathSpec("/confid/*");
         mapping0.setMethod(HttpMethod.POST.asString());
         mapping0.setConstraint(constraint0);
 
@@ -274,7 +274,7 @@ public class DataConstraintsTest
         constraint0.setName("confid");
         constraint0.setDataConstraint(Constraint.DC_CONFIDENTIAL);
         ConstraintMapping mapping0 = new ConstraintMapping();
-        mapping0.setPathSpec("/confid/*");
+        mapping0.setServletPathSpec("/confid/*");
         mapping0.setMethod(HttpMethod.POST.asString());
         mapping0.setConstraint(constraint0);
 
@@ -320,7 +320,7 @@ public class DataConstraintsTest
         constraint0.setRoles(new String[]{"admin"});
         constraint0.setName("restricted");
         ConstraintMapping mapping0 = new ConstraintMapping();
-        mapping0.setPathSpec("/restricted/*");
+        mapping0.setServletPathSpec("/restricted/*");
         mapping0.setConstraint(constraint0);
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
@@ -352,7 +352,7 @@ public class DataConstraintsTest
         constraint0.setRoles(new String[]{"admin"});
         constraint0.setName("restricted");
         ConstraintMapping mapping0 = new ConstraintMapping();
-        mapping0.setPathSpec("/restricted/*");
+        mapping0.setServletPathSpec("/restricted/*");
         mapping0.setMethod("GET");
         mapping0.setConstraint(constraint0);
 
@@ -385,7 +385,7 @@ public class DataConstraintsTest
         constraint0.setRoles(new String[]{"admin"});
         constraint0.setName("restricted");
         ConstraintMapping mapping0 = new ConstraintMapping();
-        mapping0.setPathSpec("/restricted/*");
+        mapping0.setServletPathSpec("/restricted/*");
         mapping0.setMethod("GET");
         mapping0.setConstraint(constraint0);
 

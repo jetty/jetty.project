@@ -79,7 +79,7 @@ public class SecuredHelloHandler
         // for this constraint mapping are mined from the Constraint itself
         // although methods exist to declare and bind roles separately as well.
         ConstraintMapping mapping = new ConstraintMapping();
-        mapping.setPathSpec("/*");
+        mapping.setServletPathSpec("/*");
         mapping.setConstraint(constraint);
 
         // First you see the constraint mapping being applied to the handler as

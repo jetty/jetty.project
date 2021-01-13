@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
+import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 
 public class Mapping
@@ -52,6 +53,7 @@ public class Mapping
     public void addPathSpec(PathSpec pathSpec)
     {
         Objects.requireNonNull(pathSpec);
+        _pathSpecs = ArrayUtil.addToArray(_pathSpecs, pathSpec, PathSpec.class);
     }
 
     /**
@@ -78,9 +80,19 @@ public class Mapping
 
     /**
      * @return Returns only the {@link ServletPathSpec}s as strings or empty array.
+     * @deprecated Use {@link #getServletPathSpecs()}
      */
-    @ManagedAttribute(value = "url patterns", readonly = true)
+    @Deprecated
     public String[] getPathSpecs()
+    {
+        return getServletPathSpecs();
+    }
+
+    /**
+     * @return Returns only the {@link ServletPathSpec}s as strings or empty array.
+     */
+    @ManagedAttribute(value = "servlet url patterns", readonly = true)
+    public String[] getServletPathSpecs()
     {
         return Arrays.stream(_pathSpecs)
             .filter(ServletPathSpec.class::isInstance)
@@ -90,8 +102,18 @@ public class Mapping
 
     /**
      * @param pathSpecs The pathSpecs to set, which are assumed to be {@link ServletPathSpec}s
+     * @deprecated Use {@link #setServletPathSpecs(String[])}
      */
+    @Deprecated
     public void setPathSpecs(String[] pathSpecs)
+    {
+        setServletPathSpecs(pathSpecs);
+    }
+
+    /**
+     * @param pathSpecs The pathSpecs to set, which are assumed to be {@link ServletPathSpec}s
+     */
+    public void setServletPathSpecs(String[] pathSpecs)
     {
         _pathSpecs = (pathSpecs == null)
             ? new PathSpec[]{}
@@ -154,6 +176,7 @@ public class Mapping
     /**
      * @return Returns the pathSpecs as array of {@link PathSpec} instances or empty array.
      */
+    @ManagedAttribute(value = "all path spec patterns", readonly = true)
     public PathSpec[] toPathSpecs()
     {
         return Arrays.copyOf(_pathSpecs, _pathSpecs.length);

@@ -150,7 +150,7 @@ public class ConstraintTest
         constraint0.setAuthenticate(true);
         constraint0.setName("forbid");
         ConstraintMapping mapping0 = new ConstraintMapping();
-        mapping0.setPathSpec("/forbid/*");
+        mapping0.setServletPathSpec("/forbid/*");
         mapping0.setConstraint(constraint0);
 
         Constraint constraint1 = new Constraint();
@@ -158,7 +158,7 @@ public class ConstraintTest
         constraint1.setName("auth");
         constraint1.setRoles(new String[]{Constraint.ANY_ROLE});
         ConstraintMapping mapping1 = new ConstraintMapping();
-        mapping1.setPathSpec("/auth/*");
+        mapping1.setServletPathSpec("/auth/*");
         mapping1.setConstraint(constraint1);
 
         Constraint constraint2 = new Constraint();
@@ -166,7 +166,7 @@ public class ConstraintTest
         constraint2.setName("admin");
         constraint2.setRoles(new String[]{"administrator"});
         ConstraintMapping mapping2 = new ConstraintMapping();
-        mapping2.setPathSpec("/admin/*");
+        mapping2.setServletPathSpec("/admin/*");
         mapping2.setConstraint(constraint2);
         mapping2.setMethod("GET");
 
@@ -174,7 +174,7 @@ public class ConstraintTest
         constraint3.setAuthenticate(false);
         constraint3.setName("relax");
         ConstraintMapping mapping3 = new ConstraintMapping();
-        mapping3.setPathSpec("/admin/relax/*");
+        mapping3.setServletPathSpec("/admin/relax/*");
         mapping3.setConstraint(constraint3);
 
         Constraint constraint4 = new Constraint();
@@ -182,14 +182,14 @@ public class ConstraintTest
         constraint4.setName("loginpage");
         constraint4.setRoles(new String[]{"administrator"});
         ConstraintMapping mapping4 = new ConstraintMapping();
-        mapping4.setPathSpec("/testLoginPage");
+        mapping4.setServletPathSpec("/testLoginPage");
         mapping4.setConstraint(constraint4);
 
         Constraint constraint5 = new Constraint();
         constraint5.setAuthenticate(false);
         constraint5.setName("allow forbidden POST");
         ConstraintMapping mapping5 = new ConstraintMapping();
-        mapping5.setPathSpec("/forbid/post");
+        mapping5.setServletPathSpec("/forbid/post");
         mapping5.setConstraint(constraint5);
         mapping5.setMethod("POST");
 
@@ -198,7 +198,7 @@ public class ConstraintTest
         constraint6.setName("data constraint");
         constraint6.setDataConstraint(2);
         ConstraintMapping mapping6 = new ConstraintMapping();
-        mapping6.setPathSpec("/data/*");
+        mapping6.setServletPathSpec("/data/*");
         mapping6.setConstraint(constraint6);
 
         Constraint constraint7 = new Constraint();
@@ -208,7 +208,7 @@ public class ConstraintTest
             Constraint.ANY_AUTH, "user"
         }); //the "user" role is superfluous once ** has been defined
         ConstraintMapping mapping7 = new ConstraintMapping();
-        mapping7.setPathSpec("/starstar/*");
+        mapping7.setServletPathSpec("/starstar/*");
         mapping7.setConstraint(constraint7);
 
         return Arrays.asList(mapping0, mapping1, mapping2, mapping3, mapping4, mapping5, mapping6, mapping7);
@@ -271,7 +271,7 @@ public class ConstraintTest
         
         //Add a non-durable constraint
         ConstraintMapping mapping = new ConstraintMapping();
-        mapping.setPathSpec("/xxxx/*");
+        mapping.setServletPathSpec("/xxxx/*");
         Constraint constraint = new Constraint();
         constraint.setAuthenticate(false);
         constraint.setName("transient");
@@ -474,7 +474,7 @@ public class ConstraintTest
         constraint1.setName("** constraint");
         constraint1.setRoles(new String[]{Constraint.ANY_AUTH, "user"}); //No methods named, no uncovered methods
         ConstraintMapping mapping1 = new ConstraintMapping();
-        mapping1.setPathSpec("/starstar/*");
+        mapping1.setServletPathSpec("/starstar/*");
         mapping1.setConstraint(constraint1);
 
         _security.setConstraintMappings(Collections.singletonList(mapping1));
@@ -490,7 +490,7 @@ public class ConstraintTest
         constraint2.setName("user constraint");
         constraint2.setRoles(new String[]{"user"});
         ConstraintMapping mapping2 = new ConstraintMapping();
-        mapping2.setPathSpec("/user/*");
+        mapping2.setServletPathSpec("/user/*");
         mapping2.setMethod("GET");
         mapping2.setConstraint(constraint2);
 
@@ -505,7 +505,7 @@ public class ConstraintTest
         constraint2a.setAuthenticate(true);
         constraint2a.setName("forbid constraint");
         ConstraintMapping mapping2a = new ConstraintMapping();
-        mapping2a.setPathSpec("/user/*");
+        mapping2a.setServletPathSpec("/user/*");
         mapping2a.setMethodOmissions(new String[]{"GET"});
         mapping2a.setConstraint(constraint2a);
 
@@ -519,7 +519,7 @@ public class ConstraintTest
         constraint3.setAuthenticate(true);
         constraint3.setName("omit constraint");
         ConstraintMapping mapping3 = new ConstraintMapping();
-        mapping3.setPathSpec("/omit/*");
+        mapping3.setServletPathSpec("/omit/*");
         mapping3.setMethodOmissions(new String[]{"GET", "POST"});
         mapping3.setConstraint(constraint3);
 
@@ -738,7 +738,7 @@ public class ConstraintTest
         constraint6.setName("omit HEAD and GET");
         constraint6.setRoles(new String[]{"user"});
         ConstraintMapping mapping6 = new ConstraintMapping();
-        mapping6.setPathSpec("/omit/*");
+        mapping6.setServletPathSpec("/omit/*");
         mapping6.setConstraint(constraint6);
         mapping6.setMethodOmissions(new String[]{
             "GET", "HEAD"
@@ -750,7 +750,7 @@ public class ConstraintTest
         constraint7.setName("non-omitted GET");
         constraint7.setRoles(new String[]{"administrator"});
         ConstraintMapping mapping7 = new ConstraintMapping();
-        mapping7.setPathSpec("/omit/*");
+        mapping7.setServletPathSpec("/omit/*");
         mapping7.setConstraint(constraint7);
         mapping7.setMethod("GET"); //requests for GET must be in role "admin"
         list.add(mapping7);
@@ -760,7 +760,7 @@ public class ConstraintTest
         constraint8.setName("non specific");
         constraint8.setRoles(new String[]{"foo"});
         ConstraintMapping mapping8 = new ConstraintMapping();
-        mapping8.setPathSpec("/omit/*");
+        mapping8.setServletPathSpec("/omit/*");
         mapping8.setConstraint(constraint8);//requests for all methods must be in role "foo"
         list.add(mapping8);
 

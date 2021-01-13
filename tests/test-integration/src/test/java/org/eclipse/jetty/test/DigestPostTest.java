@@ -143,7 +143,7 @@ public class DigestPostTest
             constraint.setAuthenticate(true);
             ConstraintMapping mapping = new ConstraintMapping();
             mapping.setConstraint(constraint);
-            mapping.setPathSpec("/*");
+            mapping.setServletPathSpec("/*");
 
             security.setConstraintMappings(Collections.singletonList(mapping));
 

@@ -224,7 +224,7 @@ public class DatabaseLoginServiceTestServer
         constraint.setRoles(new String[]{"user", "admin"});
 
         ConstraintMapping mapping = new ConstraintMapping();
-        mapping.setPathSpec("/*");
+        mapping.setServletPathSpec("/*");
         mapping.setConstraint(constraint);
 
         Set<String> knownRoles = new HashSet<>();

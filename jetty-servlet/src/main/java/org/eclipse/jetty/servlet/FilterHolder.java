@@ -255,7 +255,7 @@ public class FilterHolder extends Holder<Filter>
             illegalStateIfContextStarted();
             FilterMapping mapping = new FilterMapping(Source.JAVAX_API);
             mapping.setFilterHolder(FilterHolder.this);
-            mapping.setPathSpecs(urlPatterns);
+            mapping.setServletPathSpecs(urlPatterns);
             mapping.setDispatcherTypes(dispatcherTypes);
             if (isMatchAfter)
                 getServletHandler().addFilterMapping(mapping);
@@ -288,7 +288,7 @@ public class FilterHolder extends Holder<Filter>
             {
                 if (mapping.getFilterHolder() != FilterHolder.this)
                     continue;
-                String[] specs = mapping.getPathSpecs();
+                String[] specs = mapping.getServletPathSpecs();
                 patterns.addAll(TypeUtil.asList(specs));
             }
             return patterns;

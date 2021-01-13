@@ -130,7 +130,7 @@ public class CustomRequestLogTest
         constraint.setRoles(new String[]{"**"});
 
         ConstraintMapping mapping = new ConstraintMapping();
-        mapping.setPathSpec("/secure/*");
+        mapping.setServletPathSpec("/secure/*");
         mapping.setConstraint(constraint);
 
         ConstraintSecurityHandler security = new ConstraintSecurityHandler();
