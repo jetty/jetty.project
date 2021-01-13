@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.http.pathmap;
 
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -28,18 +29,18 @@ public class RegexPathSpec extends AbstractPathSpec
     private final int _specLength;
     private final Pattern _pattern;
 
-    private static String normalize(String pathSpec)
+    private static String normalize(String regex)
     {
-        if (pathSpec.startsWith("regex|"))
-            return pathSpec.substring("regex|".length());
-        return pathSpec;
+        if (regex != null && regex.startsWith("regex|"))
+            return regex.substring("regex|".length());
+        return regex;
     }
 
     public RegexPathSpec(String regex)
     {
         super(normalize(regex));
+        Objects.requireNonNull(regex);
         String declaration = getDeclaration();
-        int specLength = declaration.length();
         // build up a simple signature we can use to identify the grouping
         boolean inGrouping = false;
         StringBuilder signature = new StringBuilder();
@@ -87,7 +88,7 @@ public class RegexPathSpec extends AbstractPathSpec
 
         _group = group;
         _pathDepth = pathDepth;
-        _specLength = specLength;
+        _specLength = declaration.length();
         _pattern = pattern;
     }
 

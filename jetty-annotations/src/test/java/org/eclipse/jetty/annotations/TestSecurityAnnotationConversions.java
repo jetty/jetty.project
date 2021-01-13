@@ -285,7 +285,7 @@ public class TestSecurityAnnotationConversions
             for (int i = 0; i < expectedMappings.length && !matched; i++)
             {
                 ConstraintMapping em = expectedMappings[i];
-                if (em.getServletPathSpec().equals(am.getServletPathSpec()))
+                if (em.toPathSpec().equals(am.toPathSpec()))
                 {
                     if ((em.getMethod() == null && am.getMethod() == null) || em.getMethod() != null && em.getMethod().equals(am.getMethod()))
                     {
@@ -315,7 +315,7 @@ public class TestSecurityAnnotationConversions
             }
 
             if (!matched)
-                fail("No expected ConstraintMapping matching method:" + am.getMethod() + " pathSpec: " + am.getServletPathSpec());
+                fail("No expected ConstraintMapping matching method:" + am.getMethod() + " pathSpec: " + am.toPathSpec());
         }
     }
 

@@ -49,6 +49,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
@@ -72,7 +73,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     private final List<ConstraintMapping> _durableConstraintMappings = new CopyOnWriteArrayList<>();
     private final Set<String> _roles = new CopyOnWriteArraySet<>();
 
-    private final PathMappings<Map<String, RoleInfo>> _constraintMap = new PathMappings<>();
+    private final PathMappings<Map<String, RoleInfo>> _constraintRoles = new PathMappings<>();
     private boolean _denyUncoveredMethods = false;
 
     public static Constraint createConstraint()
@@ -167,7 +168,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
 
     public static List<ConstraintMapping> getConstraintMappingsForPath(String pathSpec, List<ConstraintMapping> constraintMappings)
     {
-        if (pathSpec == null || "".equals(pathSpec.trim()) || constraintMappings == null || constraintMappings.size() == 0)
+        if (StringUtil.isBlank(pathSpec) || constraintMappings == null || constraintMappings.size() == 0)
             return Collections.emptyList();
 
         return constraintMappings.stream().filter(m -> m.containsPathSpec(pathSpec)).collect(Collectors.toList());
@@ -183,7 +184,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      */
     public static List<ConstraintMapping> removeConstraintMappingsForPath(String pathSpec, List<ConstraintMapping> constraintMappings)
     {
-        if (pathSpec == null || "".equals(pathSpec.trim()) || constraintMappings == null || constraintMappings.size() == 0)
+        if (StringUtil.isBlank(pathSpec) || constraintMappings == null || constraintMappings.size() == 0)
             return Collections.emptyList();
 
         //Remove the matching mappings by only copying in non-matching mappings
@@ -392,7 +393,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         if (isStarted() && modified)
         {
             // Add the new role to currently defined any role role infos
-            for (MappedResource<Map<String, RoleInfo>> map : _constraintMap)
+            for (MappedResource<Map<String, RoleInfo>> map : _constraintRoles)
             {
                 for (RoleInfo info : map.getResource().values())
                 {
@@ -409,7 +410,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     @Override
     protected void doStart() throws Exception
     {
-        _constraintMap.reset();
+        _constraintRoles.reset();
         _constraintMappings.forEach(this::processConstraintMapping);
 
         //Servlet Spec 3.1 pg 147 sec 13.8.4.2 log paths for which there are uncovered http methods
@@ -422,7 +423,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     protected void doStop() throws Exception
     {
         super.doStop();
-        _constraintMap.reset();
+        _constraintRoles.reset();
         _constraintMappings.clear();
         _constraintMappings.addAll(_durableConstraintMappings);
     }       
@@ -435,12 +436,12 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      */
     protected void processConstraintMapping(ConstraintMapping mapping)
     {
-        Map<String, RoleInfo> mappings = _constraintMap.get(mapping.toPathSpec());
+        Map<String, RoleInfo> mappings = _constraintRoles.get(mapping.toPathSpec());
 
         if (mappings == null)
         {
             mappings = new HashMap<>();
-            _constraintMap.put(mapping.toPathSpec(), mappings);
+            _constraintRoles.put(mapping.toPathSpec(), mappings);
         }
         RoleInfo allMethodsRoleInfo = mappings.get(ALL_METHODS);
         if (allMethodsRoleInfo != null && allMethodsRoleInfo.isForbidden())
@@ -581,7 +582,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     @Override
     protected RoleInfo prepareConstraintInfo(String pathInContext, Request request)
     {
-        MappedResource<Map<String, RoleInfo>> mapped = _constraintMap.getMatch(pathInContext);
+        MappedResource<Map<String, RoleInfo>> mapped = _constraintRoles.getMatch(pathInContext);
         Map<String, RoleInfo> mappings = mapped == null ? null : mapped.getResource();
 
         if (mappings != null)
@@ -729,7 +730,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     {
         dumpObjects(out, indent,
             DumpableCollection.from("roles", _roles),
-            DumpableCollection.from("constraints", _constraintMap));
+            DumpableCollection.from("constraints", _constraintRoles));
     }
 
     /**
@@ -782,7 +783,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             return Collections.emptySet();
 
         Set<PathSpec> uncoveredPathSpecs = new HashSet<>();
-        for (MappedResource<Map<String, RoleInfo>> entry : _constraintMap)
+        for (MappedResource<Map<String, RoleInfo>> entry : _constraintRoles)
         {
             Map<String, RoleInfo> methodMappings = entry.getResource();
 

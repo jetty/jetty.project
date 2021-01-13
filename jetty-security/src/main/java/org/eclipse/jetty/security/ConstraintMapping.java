@@ -18,28 +18,18 @@
 
 package org.eclipse.jetty.security;
 
+import java.util.Collection;
+
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.util.security.Constraint;
 
-public class ConstraintMapping
+public class ConstraintMapping extends PathSpec.Mapping
 {
     String _method;
     String[] _methodOmissions;
 
-    PathSpec _pathSpec;
-
     Constraint _constraint;
-
-    public boolean containsPathSpec(String pathSpec)
-    {
-        return _pathSpec.is(pathSpec);
-    }
-
-    public boolean containsPathSpec(PathSpec pathSpec)
-    {
-        return _pathSpec.equals(pathSpec);
-    }
 
     /**
      * @return Returns the constraint.
@@ -74,58 +64,6 @@ public class ConstraintMapping
     }
 
     /**
-     * @return Returns the pathSpec as a String only if it is a {@link ServletPathSpec}
-     * @deprecated Use {@link #getServletPathSpec()}
-     */
-    @Deprecated
-    public String getPathSpec()
-    {
-        return (ServletPathSpec.class.isInstance(_pathSpec)) ? _pathSpec.getDeclaration() : null;
-    }
-
-    /**
-     * @return Returns the pathSpec as a String only if it is a {@link ServletPathSpec}
-     */
-    public String getServletPathSpec()
-    {
-        return (ServletPathSpec.class.isInstance(_pathSpec)) ? _pathSpec.getDeclaration() : null;
-    }
-
-    /**
-     * @return Returns the pathSpec.
-     */
-    public PathSpec toPathSpec()
-    {
-        return _pathSpec;
-    }
-
-    /**
-     * @param pathSpec The pathSpec to set.
-     * @deprecated Use {@link #setServletPathSpec(String)}
-     */
-    @Deprecated
-    public void setPathSpec(String pathSpec)
-    {
-        this._pathSpec = new ServletPathSpec(pathSpec);
-    }
-
-    /**
-     * @param pathSpec The pathSpec to set.
-     */
-    public void setServletPathSpec(String pathSpec)
-    {
-        this._pathSpec = new ServletPathSpec(pathSpec);
-    }
-
-    /**
-     * @param pathSpec The pathSpec to set.
-     */
-    public void setPathSpec(PathSpec pathSpec)
-    {
-        this._pathSpec = pathSpec;
-    }
-
-    /**
      * @param omissions The http-method-omission
      */
     public void setMethodOmissions(String[] omissions)
@@ -136,5 +74,71 @@ public class ConstraintMapping
     public String[] getMethodOmissions()
     {
         return _methodOmissions;
+    }
+
+    @Override
+    public void addPathSpec(String pathSpec)
+    {
+        if (hasPathSpecs())
+            throw new IllegalArgumentException("> 1 pathSpec");
+        super.addPathSpec(pathSpec);
+    }
+
+    @Override
+    public void addPathSpec(PathSpec pathSpec)
+    {
+        if (hasPathSpecs())
+            throw new IllegalArgumentException("> 1 pathSpec");
+        super.addPathSpec(pathSpec);
+    }
+
+    @Override
+    public void setPathSpecs(String[] pathSpecs)
+    {
+        if (pathSpecs != null && pathSpecs.length > 1)
+            throw new IllegalArgumentException("> 1 pathSpec");
+        super.setPathSpecs(pathSpecs);
+    }
+
+    @Override
+    public void setPathSpecs(PathSpec[] pathSpecs)
+    {
+        if (pathSpecs != null && pathSpecs.length > 1)
+            throw new IllegalArgumentException("> 1 pathSpec");
+        super.setPathSpecs(pathSpecs);
+    }
+
+    @Override
+    public void setPathSpecs(Collection<PathSpec> pathSpecs)
+    {
+        if (pathSpecs != null && pathSpecs.size() > 1)
+            throw new IllegalArgumentException("> 1 pathSpec");
+        super.setPathSpecs(pathSpecs);
+    }
+
+    @Override
+    public void setServletPathSpecs(String[] pathSpecs)
+    {
+        if (pathSpecs != null && pathSpecs.length > 1)
+            throw new IllegalArgumentException("> 1 pathSpec");
+        super.setServletPathSpecs(pathSpecs);
+    }
+
+    /**
+     * @param pathSpec The pathSpecs to set, which are assumed to be {@link ServletPathSpec}s
+     */
+    public void setServletPathSpec(String pathSpec)
+    {
+        super.setServletPathSpecs(pathSpec == null ? new String[]{} : new String[]{pathSpec});
+    }
+
+    public String getServletPathSpec()
+    {
+        return stream().filter(ServletPathSpec.class::isInstance).findFirst().map(PathSpec::toString).orElse(null);
+    }
+
+    public PathSpec toPathSpec()
+    {
+        return stream().findFirst().orElse(null);
     }
 }

@@ -26,6 +26,7 @@ public abstract class AbstractPathSpec implements PathSpec
 
     protected AbstractPathSpec(String declaration)
     {
+        Objects.requireNonNull(declaration);
         _declaration = declaration;
     }
 
