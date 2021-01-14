@@ -300,6 +300,12 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     @Override
     protected void doClientStart()
     {
-        // Do nothing to avoid registration with the ShutdownThread.
+        // Do nothing.
+    }
+
+    @Override
+    protected void doClientStop()
+    {
+        // Do nothing.
     }
 }
