@@ -1401,6 +1401,8 @@ public class ServletHandler extends ScopedHandler
             PathMappings<ServletHolder> pm = new PathMappings<>();
 
             // Create a map of String paths (servlet url-pattern) to set of ServletMappings that define that mapping
+            // Use a LinkedHashMap to preserve the order as some PathSpec types are order dependent when added to a
+            // PathMappings
             Map<PathSpec, List<ServletMapping>> servletUrlMappings = new LinkedHashMap<>();
             for (ServletMapping servletMapping : _servletMappings)
             {
