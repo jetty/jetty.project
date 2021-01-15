@@ -111,7 +111,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
+            File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-simple-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
             try (JettyHomeTester.Run run2 = distribution.start("jetty.quickstart.mode=GENERATE"))
@@ -165,7 +165,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             // Verify that --create-start-ini works
             assertTrue(Files.exists(jettyBase.resolve("start.ini")));
 
-            File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
+            File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-simple-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
             int port = distribution.freePort();
@@ -201,7 +201,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
+            File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-simple-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
             int port = distribution.freePort();
@@ -252,7 +252,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
+            File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-simple-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
             int port = distribution.freePort();
@@ -308,7 +308,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             assertTrue(run1.awaitFor(30, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
+            File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-simple-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
             try (JettyHomeTester.Run run2 = distribution.start("jetty.unixsocket.path=" + sockFile.toString()))
@@ -349,7 +349,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             assertEquals(0, run1.getExitValue());
             assertTrue(Files.exists(jettyBase.resolve("resources/log4j2.xml")));
 
-            File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
+            File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-simple-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
             int port = distribution.freePort();

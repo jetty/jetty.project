@@ -83,7 +83,7 @@ import org.slf4j.LoggerFactory;
  *     assertEquals(0, run1.getExitValue());
  *
  *     // Install a web application.
- *     File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
+ *     File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-simple-webapp:war:" + jettyVersion);
  *     distribution.installWarFile(war, "test");
  *
  *     // The second run starts the distribution.
