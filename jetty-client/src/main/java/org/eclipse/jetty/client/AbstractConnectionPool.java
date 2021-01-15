@@ -288,7 +288,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         if (LOG.isDebugEnabled())
             LOG.debug("onCreating {} {}", entry, connection);
         Attachable attachable = (Attachable)connection;
-        attachable.setAttachment(entry);
+        attachable.setAttachment(new EntryHolder(entry));
         onCreated(connection);
         entry.enable(connection, false);
         idle(connection, false);
