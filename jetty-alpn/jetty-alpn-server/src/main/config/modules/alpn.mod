@@ -8,10 +8,9 @@ internal
 
 [depend]
 ssl
-alpn-impl/alpn-${java.version.platform}
+alpn-impl
 
 [lib]
-lib/jetty-alpn-client-${jetty.version}.jar
 lib/jetty-alpn-server-${jetty.version}.jar
 
 [xml]
