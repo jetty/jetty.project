@@ -293,7 +293,6 @@ public class PathMappingsTest
 
     @ParameterizedTest
     @ValueSource(strings = {
-        "*",
         "/foo/*/bar",
         "*/foo",
         "*.foo/*"

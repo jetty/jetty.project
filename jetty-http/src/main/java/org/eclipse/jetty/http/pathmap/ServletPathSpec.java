@@ -59,8 +59,6 @@ public class ServletPathSpec extends AbstractPathSpec
         // TODO can this be combined with normalize?
         if (StringUtil.isEmpty(pathSpec))
             return "";
-        if ("*".equals(pathSpec)) // TODO Why is this needed for CDI demo?
-            return "/*";
         if (pathSpec.startsWith("servlet|"))
             pathSpec = pathSpec.substring("servlet|".length());
         return pathSpec;

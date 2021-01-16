@@ -1259,6 +1259,12 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         {
             String p = iter.next().toString(false, true);
             p = ServletPathSpec.normalize(p);
+            if ("*".equals(p))
+            {
+                // TODO removed this suppport once https://issues.apache.org/jira/browse/OWB-1367 is fixed
+                LOG.warn("Deprecated '*' filter pattern in {}", descriptor);
+                p = "/*";
+            }
             paths.add(p);
             context.getMetaData().setOrigin(filterName + ".filter.mapping." + p, descriptor);
         }
