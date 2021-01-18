@@ -130,7 +130,7 @@ service:jmx:rmi://localhost:1099/jndi/rmi://localhost:1099/jmxrmi
 You must set the system property `-Djava.rmi.server.hostname=localhost` so that the RMI stub contains `localhost` as the host name to connect to.
 This is, incidentally, the default configuration of the `jmx-remote` module.
 
-Then you setup the local port forwarding with the SSH tunnel:
+Then you set up the local port forwarding with the SSH tunnel:
 
 ----
 $ ssh -L 1099:localhost:1099 <user>@<machine_host>
@@ -152,7 +152,7 @@ For a complete guide to controlling authentication and authorization in JMX, see
 
 The simplest way to control JMX authentication and authorization is to specify two files: one contains username and password pairs, and the other contains username and permission pairs.
 
-This is achieved by enbling the `jmx-remote-auth` Jetty module:
+This is achieved by enabling the `jmx-remote-auth` Jetty module:
 
 ----
 $ java -jar $JETTY_HOME/start.jar --add-module=jmx-remote-auth
