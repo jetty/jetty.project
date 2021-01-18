@@ -109,7 +109,6 @@ public class HttpParser
         .with(new HttpField(HttpHeader.ACCEPT_ENCODING, "gzip"))
         .with(new HttpField(HttpHeader.ACCEPT_ENCODING, "gzip, deflate"))
         .with(new HttpField(HttpHeader.ACCEPT_ENCODING, "gzip, deflate, br"))
-        .with(new HttpField(HttpHeader.ACCEPT_ENCODING, "gzip,deflate,sdch"))
         .with(new HttpField(HttpHeader.ACCEPT_LANGUAGE, "en-US,enq=0.5"))
         .with(new HttpField(HttpHeader.ACCEPT_LANGUAGE, "en-GB,en-USq=0.8,enq=0.6"))
         .with(new HttpField(HttpHeader.ACCEPT_LANGUAGE, "en-AU,enq=0.9,it-ITq=0.8,itq=0.7,en-GBq=0.6,en-USq=0.5"))
@@ -1058,19 +1057,11 @@ public class HttpParser
                 if (addToFieldCache && _header != null && _valueString != null)
                 {
                     if (_fieldCache == null)
-                    {
-                        _fieldCache = (getHeaderCacheSize() > 0 && (_version != null && _version == HttpVersion.HTTP_1_1))
-                            ? new Index.Builder<HttpField>()
-                            .caseSensitive(false)
-                            .mutable()
-                            .maxCapacity(getHeaderCacheSize())
-                            .build()
-                            : NO_CACHE;
-                    }
+                        _fieldCache = Index.buildCaseSensitiveMutableVisibleAsciiAlphabet(getHeaderCacheSize());
 
                     if (_field == null)
                         _field = new HttpField(_header, caseInsensitiveHeader(_headerString, _header.asString()), _valueString);
-                    if (!_fieldCache.put(_field))
+                    if (_field.getValue().length() < getHeaderCacheSize() && !_fieldCache.put(_field))
                     {
                         _fieldCache.clear();
                         _fieldCache.put(_field);

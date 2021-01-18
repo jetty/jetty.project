@@ -11,25 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.util.preventers;
+[[og-logging]]
+=== Eclipse Jetty Logging
 
-import java.security.Security;
-
-/**
- * SecurityProviderLeakPreventer
- *
- * Some security providers, such as sun.security.pkcs11.SunPKCS11 start a deamon thread,
- * which will use the thread context classloader. Load them here to ensure the classloader
- * is not a webapp classloader.
- *
- * Inspired by Tomcat JreMemoryLeakPrevention
- */
-public class SecurityProviderLeakPreventer extends AbstractLeakPreventer
-{
-
-    @Override
-    public void prevent(ClassLoader loader)
-    {
-        Security.getProviders();
-    }
-}
+TODO

@@ -60,6 +60,7 @@
     <maven.deploy.plugin.version>3.0.0-M1</maven.deploy.plugin.version>
 
     <pmd.verbose>true</pmd.verbose>
+    <pmd.skip>false</pmd.skip>
 
     <!-- testing -->
     <it.debug>false</it.debug>
@@ -146,6 +147,7 @@
     <module>jetty-home</module>
     <module>jetty-bom</module>
     <module>jetty-documentation</module>
+    <module>jetty-keystore</module>
   </modules>
 
   <build>
@@ -279,6 +281,7 @@
               <goal>check</goal>
             </goals>
             <configuration>
+              <skip>${pmd.skip}</skip>
               <verbose>${pmd.verbose}</verbose>
               <printFailingErrors>${pmd.verbose}</printFailingErrors>
             </configuration>
@@ -1600,6 +1603,17 @@
           </snapshots>
         </repository>
       </repositories>
+    </profile>
+    <profile>
+      <id>fast</id>
+      <properties>
+        <skipTests>true</skipTests>
+        <pmd.skip>true</pmd.skip>
+        <checkstyle.skip>true</checkstyle.skip>
+        <enforcer.skip>true</enforcer.skip>
+        <license.skip>true</license.skip>
+        <spotbugs.skip>true</spotbugs.skip>
+      </properties>
     </profile>
   </profiles>
 

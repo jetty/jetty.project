@@ -14,6 +14,7 @@
 package org.eclipse.jetty.security.authentication;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import javax.servlet.ServletRequest;
@@ -29,14 +30,18 @@ import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.security.Constraint;
 
-/**
- * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
- */
 public class BasicAuthenticator extends LoginAuthenticator
 {
+    private Charset _charset;
 
-    public BasicAuthenticator()
+    public Charset getCharset()
     {
+        return _charset;
+    }
+
+    public void setCharset(Charset charset)
+    {
+        this._charset = charset;
     }
 
     @Override
@@ -66,7 +71,10 @@ public class BasicAuthenticator extends LoginAuthenticator
                     if ("basic".equalsIgnoreCase(method))
                     {
                         credentials = credentials.substring(space + 1);
-                        credentials = new String(Base64.getDecoder().decode(credentials), StandardCharsets.ISO_8859_1);
+                        Charset charset = getCharset();
+                        if (charset == null)
+                            charset = StandardCharsets.ISO_8859_1;
+                        credentials = new String(Base64.getDecoder().decode(credentials), charset);
                         int i = credentials.indexOf(':');
                         if (i > 0)
                         {
@@ -75,9 +83,7 @@ public class BasicAuthenticator extends LoginAuthenticator
 
                             UserIdentity user = login(username, password, request);
                             if (user != null)
-                            {
                                 return new UserAuthentication(getAuthMethod(), user);
-                            }
                         }
                     }
                 }
@@ -86,7 +92,11 @@ public class BasicAuthenticator extends LoginAuthenticator
             if (DeferredAuthentication.isDeferred(response))
                 return Authentication.UNAUTHENTICATED;
 
-            response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "basic realm=\"" + _loginService.getName() + '"');
+            String value = "basic realm=\"" + _loginService.getName() + "\"";
+            Charset charset = getCharset();
+            if (charset != null)
+                value += ", charset=\"" + charset.name() + "\"";
+            response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), value);
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             return Authentication.SEND_CONTINUE;
         }

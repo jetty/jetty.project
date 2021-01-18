@@ -657,7 +657,7 @@ public class HttpClientTLSTest
         HttpDestination destination = client.resolveDestination(origin);
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         // Trigger the creation of a new connection, but don't use it.
-        ConnectionPoolHelper.tryCreate(connectionPool, -1);
+        ConnectionPoolHelper.tryCreate(connectionPool);
         // Verify that the connection has been created.
         while (true)
         {
@@ -755,7 +755,7 @@ public class HttpClientTLSTest
         HttpDestination destination = client.resolveDestination(origin);
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         // Trigger the creation of a new connection, but don't use it.
-        ConnectionPoolHelper.tryCreate(connectionPool, -1);
+        ConnectionPoolHelper.tryCreate(connectionPool);
         // Verify that the connection has been created.
         while (true)
         {
