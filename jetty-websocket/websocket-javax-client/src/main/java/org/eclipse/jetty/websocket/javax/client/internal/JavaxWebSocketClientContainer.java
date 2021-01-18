@@ -64,12 +64,14 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     public static void initialize(ContainerLifeCycle container)
     {
         SHUTDOWN_CONTAINER.set(container);
+        if (LOG.isDebugEnabled())
+            LOG.debug("initialized {} to {}", String.format("%s@%x", SHUTDOWN_CONTAINER.getClass().getSimpleName(), SHUTDOWN_CONTAINER.hashCode()), container);
     }
 
     protected WebSocketCoreClient coreClient;
     protected Function<WebSocketComponents, WebSocketCoreClient> coreClientFactory;
     private final JavaxWebSocketClientFrameHandlerFactory frameHandlerFactory;
-    private boolean allowContextHandlerRegistration = true;
+    private boolean allowShutdownWithContextHandler = true;
 
     public JavaxWebSocketClientContainer()
     {
@@ -110,9 +112,9 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         this.frameHandlerFactory = new JavaxWebSocketClientFrameHandlerFactory(this);
     }
 
-    public void allowContextHandlerRegistration(boolean allowContextHandlerRegistration)
+    public void allowShutdownWithContextHandler(boolean allowShutdownWithContextHandler)
     {
-        this.allowContextHandlerRegistration = allowContextHandlerRegistration;
+        this.allowShutdownWithContextHandler = allowShutdownWithContextHandler;
     }
 
     protected HttpClient getHttpClient()
@@ -302,37 +304,51 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     @Override
     protected void doStop() throws Exception
     {
-        doClientStop();
         super.doStop();
+        doClientStop();
     }
 
     protected void doClientStart()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("doClientStart() {}", this);
+
         // If we are running in Jetty register shutdown with the ContextHandler.
-        if (allowContextHandlerRegistration && addToContextHandler(this))
+        if (allowShutdownWithContextHandler && addToContextHandler())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Shutdown registered with ContextHandler");
             return;
+        }
 
         // If we are running inside a different ServletContainer we can register with the SHUTDOWN_CONTAINER static.
         ContainerLifeCycle shutdownContainer = SHUTDOWN_CONTAINER.get();
         if (shutdownContainer != null)
         {
             shutdownContainer.addManaged(this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Shutdown registered with ShutdownContainer {}", shutdownContainer);
             return;
         }
 
         ShutdownThread.register(this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Shutdown registered with ShutdownThread");
     }
 
     protected void doClientStop()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("doClientStop() {}", this);
+
         // Remove from context handler if running in Jetty server.
-        removeFromContextHandler(this);
+        removeFromContextHandler();
 
         // Remove from the Shutdown Container.
         ContainerLifeCycle shutdownContainer = SHUTDOWN_CONTAINER.get();
         if (shutdownContainer != null && shutdownContainer.contains(this))
         {
-            // Un-manage first as removeBean() will stop this, but this is already in STOPPING state.
+            // Un-manage first as we don't want to call stop again while in STOPPING state.
             shutdownContainer.unmanage(this);
             shutdownContainer.removeBean(this);
         }
@@ -341,7 +357,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         ShutdownThread.deregister(this);
     }
 
-    private boolean addToContextHandler(LifeCycle lifeCycle)
+    private boolean addToContextHandler()
     {
         try
         {
@@ -356,19 +372,19 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
 
             contextHandler.getClass()
                 .getMethod("addManaged", LifeCycle.class)
-                .invoke(contextHandler, lifeCycle);
+                .invoke(contextHandler, this);
 
             return true;
         }
         catch (Throwable throwable)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("error from addToContextHandler({})", lifeCycle, throwable);
+                LOG.debug("error from addToContextHandler() for {}", this, throwable);
             return false;
         }
     }
 
-    private void removeFromContextHandler(LifeCycle lifeCycle)
+    private void removeFromContextHandler()
     {
         try
         {
@@ -381,14 +397,19 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
                 .getMethod("getContextHandler")
                 .invoke(context);
 
+            // Un-manage first as we don't want to call stop again while in STOPPING state.
+            contextHandler.getClass()
+                .getMethod("unmanage", Object.class)
+                .invoke(contextHandler, this);
+
             contextHandler.getClass()
                 .getMethod("removeBean", Object.class)
-                .invoke(contextHandler, JavaxWebSocketClientContainer.this);
+                .invoke(contextHandler, this);
         }
         catch (Throwable throwable)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("error from removeFromContextHandler({})", lifeCycle, throwable);
+                LOG.debug("error from removeFromContextHandler() for {}", this, throwable);
         }
     }
 }

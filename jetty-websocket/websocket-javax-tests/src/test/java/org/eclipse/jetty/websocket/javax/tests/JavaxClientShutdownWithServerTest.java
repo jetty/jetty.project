@@ -69,7 +69,7 @@ public class JavaxClientShutdownWithServerTest
         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
             JavaxWebSocketClientContainer clientContainer = new JavaxWebSocketClientContainer();
-            clientContainer.allowContextHandlerRegistration(false);
+            clientContainer.allowShutdownWithContextHandler(false);
             LifeCycle.start(clientContainer);
             container = clientContainer;
         }

@@ -23,9 +23,13 @@ import javax.servlet.ServletException;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JavaxWebSocketClientShutdown extends ContainerLifeCycle implements ServletContainerInitializer, ServletContextListener
 {
+    private static final Logger LOG = LoggerFactory.getLogger(JavaxWebSocketClientShutdown.class);
+
     @Override
     public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
     {
@@ -36,12 +40,17 @@ public class JavaxWebSocketClientShutdown extends ContainerLifeCycle implements 
     @Override
     public void contextInitialized(ServletContextEvent sce)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("contextInitialized({}) {}", sce, this);
         LifeCycle.start(this);
     }
 
     @Override
     public void contextDestroyed(ServletContextEvent sce)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("contextDestroyed({}) {}", sce, this);
+
         LifeCycle.stop(this);
         removeBeans();
         JavaxWebSocketClientContainer.initialize(null);
