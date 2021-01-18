@@ -13,10 +13,8 @@
 
 package org.eclipse.jetty.websocket.javax.tests;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.Collection;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -32,7 +30,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientShutdown;
+import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketShutdownContainer;
 import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,11 +51,10 @@ public class JavaxClientShutdownWithServerTest
     private volatile WebSocketContainer container;
     private ContainerLifeCycle shutdownContainer;
 
-
     public class ContextHandlerShutdownServlet extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp)
         {
             container = ContainerProvider.getWebSocketContainer();
         }
@@ -66,7 +63,7 @@ public class JavaxClientShutdownWithServerTest
     public class ServletContainerInitializerShutdownServlet extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp)
         {
             JavaxWebSocketClientContainer clientContainer = new JavaxWebSocketClientContainer();
             clientContainer.allowShutdownWithContextHandler(false);
@@ -84,12 +81,12 @@ public class JavaxClientShutdownWithServerTest
 
         contextHandler = new ServletContextHandler();
         contextHandler.setContextPath("/");
-        contextHandler.addServlet(new ServletHolder(new ContextHandlerShutdownServlet()), "/contextHandlerShutdown");
-        contextHandler.addServlet(new ServletHolder(new ServletContainerInitializerShutdownServlet()), "/servletContainerInitializerShutdown");
+        contextHandler.addServlet(new ServletHolder(new ContextHandlerShutdownServlet()), "/contextHandler");
+        contextHandler.addServlet(new ServletHolder(new ServletContainerInitializerShutdownServlet()), "/shutdownContainer");
         server.setHandler(contextHandler);
 
         // Because we are using embedded we must manually add the Javax WS Client Shutdown SCI.
-        JavaxWebSocketClientShutdown javaxWebSocketClientShutdown = new JavaxWebSocketClientShutdown();
+        JavaxWebSocketShutdownContainer javaxWebSocketClientShutdown = new JavaxWebSocketShutdownContainer();
         shutdownContainer = javaxWebSocketClientShutdown;
         contextHandler.addServletContainerInitializer(javaxWebSocketClientShutdown);
 
@@ -108,9 +105,9 @@ public class JavaxClientShutdownWithServerTest
     }
 
     @Test
-    public void testWebSocketClientContainerInWebapp() throws Exception
+    public void testShutdownWithContextHandler() throws Exception
     {
-        ContentResponse response = httpClient.GET(serverUri.resolve("/contextHandlerShutdown"));
+        ContentResponse response = httpClient.GET(serverUri.resolve("/contextHandler"));
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
 
         assertNotNull(container);
@@ -130,9 +127,9 @@ public class JavaxClientShutdownWithServerTest
     }
 
     @Test
-    public void testWebSocketClientContainerInWebapp2() throws Exception
+    public void testShutdownWithShutdownContainer() throws Exception
     {
-        ContentResponse response = httpClient.GET(serverUri.resolve("/servletContainerInitializerShutdown"));
+        ContentResponse response = httpClient.GET(serverUri.resolve("/shutdownContainer"));
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
 
         assertNotNull(container);

@@ -1,1 +1,1 @@
-org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientShutdown
+org.eclipse.jetty.websocket.javax.client.JavaxWebSocketShutdownContainer

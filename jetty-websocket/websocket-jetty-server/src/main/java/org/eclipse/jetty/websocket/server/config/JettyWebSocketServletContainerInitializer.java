@@ -60,7 +60,7 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
     {
         if (!context.isStopped())
             throw new IllegalStateException("configure should be called before starting");
-        context.addServletContainerInitializer(new JettyWebSocketServletContainerInitializer());
+        context.addServletContainerInitializer(new JettyWebSocketServletContainerInitializer(configurator));
     }
 
     /**

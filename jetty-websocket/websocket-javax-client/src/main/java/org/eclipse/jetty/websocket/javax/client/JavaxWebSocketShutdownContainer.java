@@ -26,9 +26,9 @@ import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientCon
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JavaxWebSocketClientShutdown extends ContainerLifeCycle implements ServletContainerInitializer, ServletContextListener
+public class JavaxWebSocketShutdownContainer extends ContainerLifeCycle implements ServletContainerInitializer, ServletContextListener
 {
-    private static final Logger LOG = LoggerFactory.getLogger(JavaxWebSocketClientShutdown.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JavaxWebSocketShutdownContainer.class);
 
     @Override
     public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
