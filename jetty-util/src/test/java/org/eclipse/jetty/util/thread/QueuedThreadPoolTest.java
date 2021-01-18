@@ -27,6 +27,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -833,6 +834,24 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertThat(count(dump, "QueuedThreadPoolTest.lambda$testDump$"), is(1));
     }
 
+    @Test
+    public void testContextClassLoader() throws Exception
+    {
+        QueuedThreadPool tp = new QueuedThreadPool();
+        tp.setMinThreads(1);
+        tp.setMaxThreads(2);
+        tp.setIdleTimeout(1000);
+        tp.setThreadsPriority(Thread.NORM_PRIORITY - 1);
+        try (StacklessLogging stackless = new StacklessLogging(QueuedThreadPool.class))
+        {
+            tp.start();
+            tp.execute(() ->
+            {
+                assertThat(Thread.currentThread().getContextClassLoader(), Matchers.equalTo(QueuedThreadPool.class.getClassLoader()));
+            });
+        }
+    }
+    
     private int count(String s, String p)
     {
         int c = 0;
