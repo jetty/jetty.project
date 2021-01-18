@@ -96,7 +96,7 @@ import org.slf4j.LoggerFactory;
  *         // Make an HTTP request to the web application.
  *         HttpClient client = new HttpClient();
  *         client.start();
- *         ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
+ *         ContentResponse response = client.GET("http://localhost:" + port + "/test/index.html");
  *         assertEquals(HttpStatus.OK_200, response.getStatus());
  *     }
  * }
