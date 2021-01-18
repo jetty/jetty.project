@@ -19,6 +19,8 @@
 package org.eclipse.jetty.util.thread;
 
 import java.io.Closeable;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -839,16 +841,26 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
     {
         QueuedThreadPool tp = new QueuedThreadPool();
         tp.setMinThreads(1);
-        tp.setMaxThreads(2);
+        tp.setMaxThreads(3);
         tp.setIdleTimeout(1000);
         tp.setThreadsPriority(Thread.NORM_PRIORITY - 1);
         try (StacklessLogging stackless = new StacklessLogging(QueuedThreadPool.class))
         {
-            tp.start();
-            tp.execute(() ->
+            //change the current thread's classloader to something else
+            Thread.currentThread().setContextClassLoader(new URLClassLoader(new URL[] {}));
+            
+            //create a new thread
+            Thread t = tp.newThread(() ->
             {
+                //the executing thread should be still set to the classloader of the QueuedThreadPool,
+                //not that of the thread that created this thread.
                 assertThat(Thread.currentThread().getContextClassLoader(), Matchers.equalTo(QueuedThreadPool.class.getClassLoader()));
             });
+            
+            //new thread should be set to the classloader of the QueuedThreadPool
+            assertThat(t.getContextClassLoader(), Matchers.equalTo(QueuedThreadPool.class.getClassLoader()));
+            
+            t.start();
         }
     }
     
