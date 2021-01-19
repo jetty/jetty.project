@@ -80,7 +80,7 @@ public class AvailableEncoders implements Predicate<Class<?>>
     }
 
     private final EndpointConfig config;
-    private LinkedList<RegisteredEncoder> registeredEncoders;
+    private final LinkedList<RegisteredEncoder> registeredEncoders;
 
     public AvailableEncoders(EndpointConfig config)
     {
@@ -193,41 +193,23 @@ public class AvailableEncoders implements Predicate<Class<?>>
         Class<?> objectType = ReflectUtils.findGenericClassFor(encoder, interfaceClass);
         if (objectType == null)
         {
-            StringBuilder err = new StringBuilder();
-            err.append("Invalid Encoder Object type declared for interface ");
-            err.append(interfaceClass.getName());
-            err.append(" on class ");
-            err.append(encoder);
-            throw new InvalidWebSocketException(err.toString());
+            String err = String.format("Invalid Encoder Object type declared for interface %s on class %s", interfaceClass.getName(), encoder);
+            throw new InvalidWebSocketException(err);
         }
 
-        try
-        {
-            RegisteredEncoder conflicts = registeredEncoders.stream()
-                .filter(registered -> registered.isType(objectType))
-                .filter(registered -> !registered.primitive)
-                .findFirst()
-                .get();
+        List<RegisteredEncoder> conflicts = registeredEncoders.stream()
+            .filter(registered -> registered.isType(objectType))
+            .filter(registered -> !registered.primitive)
+            .collect(Collectors.toList());
 
-            if (conflicts.encoder.equals(encoder) && conflicts.implementsInterface(interfaceClass))
-            {
-                // Same encoder as what is there already, don't bother adding it again.
+        for (RegisteredEncoder conflict : conflicts)
+        {
+            // If same encoder as what is there already, don't bother adding it again.
+            if (conflict.encoder.equals(encoder) && conflict.implementsInterface(interfaceClass))
                 return;
-            }
+        }
 
-            StringBuilder err = new StringBuilder();
-            err.append("Duplicate Encoder Object type ");
-            err.append(objectType.getName());
-            err.append(" in ");
-            err.append(encoder.getName());
-            err.append(", previously declared in ");
-            err.append(conflicts.encoder.getName());
-            throw new InvalidWebSocketException(err.toString());
-        }
-        catch (NoSuchElementException e)
-        {
-            registeredEncoders.addFirst(new RegisteredEncoder(encoder, interfaceClass, objectType));
-        }
+        registeredEncoders.addFirst(new RegisteredEncoder(encoder, interfaceClass, objectType));
     }
 
     public List<RegisteredEncoder> supporting(Class<? extends Encoder> interfaceType)
@@ -242,7 +224,7 @@ public class AvailableEncoders implements Predicate<Class<?>>
         return registeredEncoders.stream()
             .filter(registered -> registered.isType(type))
             .findFirst()
-            .get();
+            .orElse(null);
     }
 
     public Class<? extends Encoder> getEncoderFor(Class<?> type)

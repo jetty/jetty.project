@@ -138,12 +138,9 @@ public class AvailableDecoders implements Iterable<RegisteredDecoder>
             if (!registered.primitive && objectType.equals(registered.objectType))
             {
                 // Streaming decoders can only have one decoder per object type.
-                if (interfaceClass.equals(Decoder.TextStream.class) || interfaceClass.equals(Decoder.BinaryStream.class))
-                    throw new InvalidWebSocketException("Multiple decoders for objectType" + objectType);
-
-                // If we have the same objectType, then the interfaceTypes must be the same to form a decoder list.
-                if (!registered.interfaceType.equals(interfaceClass))
-                    throw new InvalidWebSocketException("Multiple decoders with different interface types for objectType " + objectType);
+                if ((interfaceClass.equals(Decoder.TextStream.class) && registered.interfaceType.equals(Decoder.TextStream.class)) ||
+                    (interfaceClass.equals(Decoder.BinaryStream.class) && registered.interfaceType.equals(Decoder.BinaryStream.class)))
+                    throw new InvalidWebSocketException("Multiple stream decoders for objectType" + objectType + " interface " + interfaceClass);
             }
 
             // If this decoder is already registered for this interface type we can skip adding a duplicate.
