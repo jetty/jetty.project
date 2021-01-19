@@ -35,29 +35,32 @@ public class WebSocketServerComponents extends WebSocketComponents
     public static final String WEBSOCKET_COMPONENTS_ATTRIBUTE = WebSocketComponents.class.getName();
     public static final String WEBSOCKET_INFLATER_POOL_ATTRIBUTE = "jetty.websocket.inflater";
     public static final String WEBSOCKET_DEFLATER_POOL_ATTRIBUTE = "jetty.websocket.deflater";
+    public static final String WEBSOCKET_BUFFER_POOL_ATTRIBUTE = "jetty.websocket.bufferPool";
 
-    WebSocketServerComponents(InflaterPool inflaterPool, DeflaterPool deflaterPool)
+    WebSocketServerComponents(InflaterPool inflaterPool, DeflaterPool deflaterPool, ByteBufferPool bufferPool)
     {
-        super(null, null, null, inflaterPool, deflaterPool);
+        super(null, null, bufferPool, inflaterPool, deflaterPool);
     }
 
     public static WebSocketComponents ensureWebSocketComponents(Server server, ServletContext servletContext)
     {
-        WebSocketComponents components = server.getBean(WebSocketComponents.class);
-        if (components == null)
-        {
-            InflaterPool inflaterPool = (InflaterPool)servletContext.getAttribute(WEBSOCKET_INFLATER_POOL_ATTRIBUTE);
-            if (inflaterPool == null)
-                inflaterPool = InflaterPool.ensurePool(server);
+        WebSocketComponents components = (WebSocketComponents)servletContext.getAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE);
+        if (components != null)
+            return components;
 
-            DeflaterPool deflaterPool = (DeflaterPool)servletContext.getAttribute(WEBSOCKET_DEFLATER_POOL_ATTRIBUTE);
-            if (deflaterPool == null)
-                deflaterPool = DeflaterPool.ensurePool(server);
+        InflaterPool inflaterPool = (InflaterPool)servletContext.getAttribute(WEBSOCKET_INFLATER_POOL_ATTRIBUTE);
+        if (inflaterPool == null)
+            inflaterPool = InflaterPool.ensurePool(server);
 
-            components = new WebSocketServerComponents(inflaterPool, deflaterPool);
-            server.addBean(components);
-        }
+        DeflaterPool deflaterPool = (DeflaterPool)servletContext.getAttribute(WEBSOCKET_DEFLATER_POOL_ATTRIBUTE);
+        if (deflaterPool == null)
+            deflaterPool = DeflaterPool.ensurePool(server);
 
+        ByteBufferPool bufferPool = (ByteBufferPool)servletContext.getAttribute(WEBSOCKET_BUFFER_POOL_ATTRIBUTE);
+        if (bufferPool == null)
+            bufferPool = server.getBean(ByteBufferPool.class);
+
+        components = new WebSocketServerComponents(inflaterPool, deflaterPool, bufferPool);
         servletContext.setAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE, components);
         return components;
     }

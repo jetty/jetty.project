@@ -51,6 +51,7 @@ public class WebSocketComponents extends ContainerLifeCycle
 
         addBean(inflaterPool);
         addBean(deflaterPool);
+        addBean(bufferPool);
     }
 
     public ByteBufferPool getBufferPool()
