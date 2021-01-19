@@ -452,6 +452,18 @@ public class ForwardedRequestCustomizerTest
                     .requestURL("http://myhost/")
                     .remoteAddr("10.9.8.7").remotePort(1111)
             ),
+            Arguments.of(new Request("X-Forwarded-For (IPv6 without port)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "X-Forwarded-For: 2001:db8:cafe::17"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(80)
+                    .secure(false)
+                    .requestURL("http://myhost/")
+                    .remoteAddr("[2001:db8:cafe::17]").remotePort(0)
+            ),
             Arguments.of(new Request("X-Forwarded-For (IPv6 with port)")
                     .headers(
                         "GET / HTTP/1.1",
