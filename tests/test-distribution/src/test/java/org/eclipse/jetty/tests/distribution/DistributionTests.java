@@ -134,7 +134,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                     startHttpClient();
                     ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
                     assertEquals(HttpStatus.OK_200, response.getStatus());
-                    assertThat(response.getContentAsString(), containsString("Hello"));
+                    assertThat(response.getContentAsString(), containsString("JSP Examples"));
                     assertThat(response.getContentAsString(), not(containsString("<%")));
                 }
             }
@@ -176,7 +176,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
                 assertEquals(HttpStatus.OK_200, response.getStatus());
-                assertThat(response.getContentAsString(), containsString("Hello"));
+                assertThat(response.getContentAsString(), containsString("JSP Examples"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));
             }
         }
@@ -216,7 +216,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
                 assertEquals(HttpStatus.OK_200, response.getStatus());
-                assertThat(response.getContentAsString(), containsString("Hello"));
+                assertThat(response.getContentAsString(), containsString("JSP Examples"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));
             }
         }
@@ -267,7 +267,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 startHttpClient(() -> new HttpClient(new HttpClientTransportOverHTTP2(h2Client)));
                 ContentResponse response = client.GET((ssl ? "https" : "http") + "://localhost:" + port + "/test/index.jsp");
                 assertEquals(HttpStatus.OK_200, response.getStatus());
-                assertThat(response.getContentAsString(), containsString("Hello"));
+                assertThat(response.getContentAsString(), containsString("JSP Examples"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));
             }
         }
@@ -318,7 +318,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 startHttpClient(() -> new HttpClient(new HttpClientTransportOverUnixSockets(sockFile.toString())));
                 ContentResponse response = client.GET("http://localhost/test/index.jsp");
                 assertEquals(HttpStatus.OK_200, response.getStatus());
-                assertThat(response.getContentAsString(), containsString("Hello"));
+                assertThat(response.getContentAsString(), containsString("JSP Examples"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));
             }
         }
@@ -360,7 +360,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
                 assertEquals(HttpStatus.OK_200, response.getStatus());
-                assertThat(response.getContentAsString(), containsString("Hello"));
+                assertThat(response.getContentAsString(), containsString("JSP Examples"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));
                 assertTrue(Files.exists(jettyBase.resolve("resources/log4j2.xml")));
             }

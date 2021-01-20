@@ -4,6 +4,7 @@
 <h1>JSP Dump</h1>
 
 <table border="1">
+<tr><th>Protocol:</th><td><%= request.getProtocol() %></td></tr>
 <tr><th>Request URI:</th><td><%= request.getRequestURI() %></td></tr>
 <tr><th>ServletPath:</th><td><%= request.getServletPath() %></td></tr>
 <tr><th>PathInfo:</th><td><%= request.getPathInfo() %></td></tr>
