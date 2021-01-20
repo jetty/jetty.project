@@ -18,10 +18,16 @@ import java.util.function.Function;
 
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.server.internal.CreatorNegotiator;
 
 public interface WebSocketNegotiator extends Configuration.Customizer
 {
     FrameHandler negotiate(WebSocketNegotiation negotiation) throws IOException;
+
+    @Override
+    default void customize(Configuration configurable)
+    {
+    }
 
     static WebSocketNegotiator from(Function<WebSocketNegotiation, FrameHandler> negotiate)
     {
@@ -38,6 +44,16 @@ public interface WebSocketNegotiator extends Configuration.Customizer
                 return negotiate.apply(negotiation);
             }
         };
+    }
+
+    static WebSocketNegotiator from(WebSocketCreator creator, FrameHandlerFactory factory)
+    {
+        return from(creator, factory, null);
+    }
+
+    static WebSocketNegotiator from(WebSocketCreator creator, FrameHandlerFactory factory, Configuration.Customizer customizer)
+    {
+        return new CreatorNegotiator(creator, factory, customizer);
     }
 
     abstract class AbstractNegotiator extends Configuration.ConfigurationCustomizer implements WebSocketNegotiator

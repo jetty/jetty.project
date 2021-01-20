@@ -32,6 +32,11 @@ public class CreatorNegotiator extends WebSocketNegotiator.AbstractNegotiator
     private final WebSocketCreator creator;
     private final FrameHandlerFactory factory;
 
+    public CreatorNegotiator(WebSocketCreator creator, FrameHandlerFactory factory)
+    {
+        this(creator, factory, null);
+    }
+
     public CreatorNegotiator(WebSocketCreator creator, FrameHandlerFactory factory, Customizer customizer)
     {
         super(customizer);
