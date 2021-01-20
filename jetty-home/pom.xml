@@ -849,7 +849,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>demo-simple-jsp-webapp</artifactId>
+      <artifactId>demo-jsp-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>config</classifier>
       <type>jar</type>

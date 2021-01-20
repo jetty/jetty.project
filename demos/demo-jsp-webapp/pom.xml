@@ -7,12 +7,32 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>demo-simple-jsp-webapp</artifactId>
-  <name>Demo :: Simple :: JSP :: Webapp</name>
+  <artifactId>demo-jsp-webapp</artifactId>
+  <name>Demo :: JSP :: Webapp</name>
   <packaging>war</packaging>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.simple.jsp</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.jsp</bundle-symbolic-name>
   </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>javax.servlet.jsp</groupId>
+      <artifactId>javax.servlet.jsp-api</artifactId>
+      <version>2.3.3</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.servlet.jsp.jstl</groupId>
+      <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+      <version>1.2.7</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
 
 </project>

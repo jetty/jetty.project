@@ -4,6 +4,15 @@
          xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
          version="4.0">
 
-  <display-name>Simple JSP Web Application</display-name>
+  <display-name>Demo JSP Web Application</display-name>
+
+  <servlet>
+    <servlet-name>foo.jsp</servlet-name>
+    <jsp-file>/foo/foo.jsp</jsp-file>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>foo.jsp</servlet-name>
+    <url-pattern>/foo/</url-pattern>
+  </servlet-mapping>
 
 </web-app>

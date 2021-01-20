@@ -1,6 +1,6 @@
 <%-- 
-   - Copyright (c) 2002 The Apache Software Foundation.  All rights 
-   - reserved.
+    Copyright (c) 2002 The Apache Software Foundation.
+    All rights reserved.
 --%>
 <%@ attribute name="color" %>
 <%@ attribute name="bgcolor" %>
