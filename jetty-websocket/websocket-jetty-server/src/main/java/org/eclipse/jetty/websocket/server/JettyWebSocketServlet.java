@@ -113,7 +113,6 @@ public abstract class JettyWebSocketServlet extends HttpServlet
     private FrameHandlerFactory getFactory()
     {
         JettyServerFrameHandlerFactory frameHandlerFactory = JettyServerFrameHandlerFactory.getFactory(getServletContext());
-
         if (frameHandlerFactory == null)
             throw new IllegalStateException("JettyServerFrameHandlerFactory not found");
 
