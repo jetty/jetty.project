@@ -33,7 +33,7 @@ public class JavaxWebSocketShutdownContainer extends ContainerLifeCycle implemen
     @Override
     public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
     {
-        JavaxWebSocketClientContainer.initialize(this);
+        JavaxWebSocketClientContainer.setShutdownContainer(this);
         ctx.addListener(this);
     }
 
@@ -53,6 +53,6 @@ public class JavaxWebSocketShutdownContainer extends ContainerLifeCycle implemen
 
         LifeCycle.stop(this);
         removeBeans();
-        JavaxWebSocketClientContainer.initialize(null);
+        JavaxWebSocketClientContainer.setShutdownContainer(null);
     }
 }

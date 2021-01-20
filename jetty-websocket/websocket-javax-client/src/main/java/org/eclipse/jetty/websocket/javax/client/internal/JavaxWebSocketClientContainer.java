@@ -61,7 +61,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     private static final Logger LOG = LoggerFactory.getLogger(JavaxWebSocketClientContainer.class);
     private static final AtomicReference<ContainerLifeCycle> SHUTDOWN_CONTAINER = new AtomicReference<>();
 
-    public static void initialize(ContainerLifeCycle container)
+    public static void setShutdownContainer(ContainerLifeCycle container)
     {
         SHUTDOWN_CONTAINER.set(container);
         if (LOG.isDebugEnabled())
