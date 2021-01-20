@@ -21,6 +21,7 @@ public final class WebSocketConstants
     // Supported Spec Version
     public static final int SPEC_VERSION = 13;
     public static final String SPEC_VERSION_STRING = Integer.toString(SPEC_VERSION);
+    public static final int MAX_CONTROL_PAYLOAD = 125;
 
     public static final int DEFAULT_MAX_BINARY_MESSAGE_SIZE = 64 * 1024;
     public static final int DEFAULT_MAX_TEXT_MESSAGE_SIZE = 64 * 1024;

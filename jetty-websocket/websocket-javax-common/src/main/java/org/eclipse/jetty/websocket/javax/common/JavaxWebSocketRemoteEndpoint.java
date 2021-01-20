@@ -28,6 +28,7 @@ import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.internal.messages.MessageOutputStream;
 import org.eclipse.jetty.websocket.core.internal.messages.MessageWriter;
@@ -135,6 +136,12 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
                 callback.failed(t);
                 return;
             }
+        }
+        else
+        {
+            // The websocket-core implementation will throw ProtocolException but the TCK wants IllegalArgumentException.
+            if (frame.getPayloadLength() > WebSocketConstants.MAX_CONTROL_PAYLOAD)
+                throw new IllegalArgumentException("Payload exceeded max control frame size.");
         }
 
         try

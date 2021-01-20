@@ -86,9 +86,9 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
         {
             sendObject(data, future);
         }
-        catch (Throwable t)
+        catch (IOException | EncodeException e)
         {
-            future.failed(t);
+            future.failed(e);
         }
         return future;
     }
