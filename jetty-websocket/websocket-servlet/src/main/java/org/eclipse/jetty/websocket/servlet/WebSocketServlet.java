@@ -91,7 +91,10 @@ public abstract class WebSocketServlet extends HttpServlet
     {
         try
         {
+            ServletContext ctx = getServletContext();
+            ctx.removeAttribute(WebSocketServletFactory.class.getName());
             factory.stop();
+            factory = null;
         }
         catch (Exception ignore)
         {
@@ -135,11 +138,8 @@ public abstract class WebSocketServlet extends HttpServlet
 
             ServletContext ctx = getServletContext();
             factory = WebSocketServletFactory.Loader.load(ctx, policy);
-
             configure(factory);
-
             factory.start();
-
             ctx.setAttribute(WebSocketServletFactory.class.getName(), factory);
         }
         catch (Exception x)
