@@ -840,10 +840,6 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
     public void testContextClassLoader() throws Exception
     {
         QueuedThreadPool tp = new QueuedThreadPool();
-        tp.setMinThreads(1);
-        tp.setMaxThreads(3);
-        tp.setIdleTimeout(1000);
-        tp.setThreadsPriority(Thread.NORM_PRIORITY - 1);
         try (StacklessLogging stackless = new StacklessLogging(QueuedThreadPool.class))
         {
             //change the current thread's classloader to something else
@@ -859,8 +855,6 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             
             //new thread should be set to the classloader of the QueuedThreadPool
             assertThat(t.getContextClassLoader(), Matchers.equalTo(QueuedThreadPool.class.getClassLoader()));
-            
-            t.start();
         }
     }
     

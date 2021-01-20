@@ -38,15 +38,10 @@ import org.eclipse.jetty.util.log.Logger;
 public class ShutdownThread extends Thread
 {
     private static final Logger LOG = Log.getLogger(ShutdownThread.class);
-    private static final ShutdownThread _thread = AccessController.doPrivileged(new PrivilegedAction<ShutdownThread>()
-        {
-            @Override
-            public ShutdownThread run()
-            {
-                return new ShutdownThread();
-            }
-        
-        });
+    private static final ShutdownThread _thread = ThreadCreator.create(() ->
+    {
+        return new ShutdownThread();
+    });
 
     private boolean _hooked;
     private final List<LifeCycle> _lifeCycles = new CopyOnWriteArrayList<LifeCycle>();

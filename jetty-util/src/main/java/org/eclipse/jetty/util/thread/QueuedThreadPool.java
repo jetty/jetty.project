@@ -687,19 +687,15 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     @Override
     public Thread newThread(Runnable runnable)
     {
-        return (AccessController.doPrivileged(new PrivilegedAction<Thread>()
+        return ThreadCreator.create(() ->
         {
-            @Override
-            public Thread run()
-            {
-                Thread thread = new Thread(_threadGroup, runnable);
-                thread.setDaemon(isDaemon());
-                thread.setPriority(getThreadsPriority());
-                thread.setName(_name + "-" + thread.getId());
-                thread.setContextClassLoader(this.getClass().getClassLoader());
-                return thread;
-            }
-        }));
+            Thread thread = new Thread(_threadGroup, runnable);
+            thread.setDaemon(isDaemon());
+            thread.setPriority(getThreadsPriority());
+            thread.setName(_name + "-" + thread.getId());
+            thread.setContextClassLoader(this.getClass().getClassLoader());
+            return thread;
+        });
     }
 
     protected void removeThread(Thread thread)
