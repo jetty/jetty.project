@@ -13,10 +13,8 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
-import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 import javax.websocket.SendHandler;
 import javax.websocket.SendResult;
@@ -81,14 +79,15 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
     @Override
     public Future<Void> sendObject(Object data)
     {
+        assertMessageNotNull(data);
         FutureCallback future = new FutureCallback();
         try
         {
             sendObject(data, future);
         }
-        catch (IOException | EncodeException e)
+        catch (Throwable t)
         {
-            future.failed(e);
+            future.failed(t);
         }
         return future;
     }
@@ -118,12 +117,12 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
             {
                 String msg = etxt.encode(data);
                 sendText(msg, handler);
-                return;
             }
-            catch (EncodeException e)
+            catch (Throwable t)
             {
-                handler.onResult(new SendResult(e));
+                handler.onResult(new SendResult(t));
             }
+            return;
         }
         else if (encoder instanceof Encoder.TextStream)
         {
@@ -133,12 +132,12 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
             {
                 writer.setCallback(callback);
                 etxt.encode(data, writer);
-                return;
             }
-            catch (EncodeException | IOException e)
+            catch (Throwable t)
             {
-                handler.onResult(new SendResult(e));
+                handler.onResult(new SendResult(t));
             }
+            return;
         }
         else if (encoder instanceof Encoder.Binary)
         {
@@ -147,12 +146,12 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
             {
                 ByteBuffer buf = ebin.encode(data);
                 sendBinary(buf, handler);
-                return;
             }
-            catch (EncodeException e)
+            catch (Throwable t)
             {
-                handler.onResult(new SendResult(e));
+                handler.onResult(new SendResult(t));
             }
+            return;
         }
         else if (encoder instanceof Encoder.BinaryStream)
         {
@@ -162,12 +161,12 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
             {
                 out.setCallback(callback);
                 ebin.encode(data, out);
-                return;
             }
-            catch (EncodeException | IOException e)
+            catch (Throwable t)
             {
-                handler.onResult(new SendResult(e));
+                handler.onResult(new SendResult(t));
             }
+            return;
         }
 
         throw new IllegalArgumentException("Unknown encoder type: " + encoder);
