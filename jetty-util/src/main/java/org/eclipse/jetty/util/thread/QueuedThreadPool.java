@@ -693,7 +693,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             thread.setDaemon(isDaemon());
             thread.setPriority(getThreadsPriority());
             thread.setName(_name + "-" + thread.getId());
-            thread.setContextClassLoader(this.getClass().getClassLoader());
+            thread.setContextClassLoader(getClass().getClassLoader());
             return thread;
         });
     }
