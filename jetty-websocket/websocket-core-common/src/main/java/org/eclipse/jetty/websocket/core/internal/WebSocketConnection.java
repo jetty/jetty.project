@@ -421,7 +421,15 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                     messagesIn.increment();
 
                     if (meetDemand())
+                    {
+                        // TODO: TCK expects a non-direct buffer. This is inefficient so we should not do this.
+                        ByteBuffer payload = BufferUtil.allocate(frame.getPayloadLength(), false);
+                        BufferUtil.clearToFill(payload);
+                        payload.put(frame.getPayload());
+                        BufferUtil.flipToFlush(payload, 0);
+                        frame.setPayload(payload);
                         onFrame(frame);
+                    }
 
                     if (!moreDemand())
                         return;
