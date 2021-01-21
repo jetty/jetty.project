@@ -703,6 +703,9 @@ public class ServletContextHandler extends ContextHandler
      */
     public void addServletContainerInitializer(ServletContainerInitializer containerInitializer)
     {
+        if (!isStopped())
+            throw new IllegalStateException("ServletContainerInitializers should be added before starting");
+
         addServletContainerInitializer(containerInitializer, Collections.emptySet());
     }
 
@@ -714,6 +717,9 @@ public class ServletContextHandler extends ContextHandler
      */
     public void addServletContainerInitializer(ServletContainerInitializer containerInitializer, Set<Class<?>> classes)
     {
+        if (!isStopped())
+            throw new IllegalStateException("ServletContainerInitializers should be added before starting");
+
         addManaged(new Initializer(this, containerInitializer, classes));
     }
 
