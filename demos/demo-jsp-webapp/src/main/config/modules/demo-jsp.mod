@@ -7,6 +7,7 @@ webapp
 
 [depends]
 jsp
+jstl
 deploy
 
 [files]
