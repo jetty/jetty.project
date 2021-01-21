@@ -46,7 +46,7 @@ public class OneWebAppWithJsp
         // the webapp will unpack itself.
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        Path warFile = JettyDemoBase.resolve("webapps/demo-jetty.war");
+        Path warFile = JettyDemoBase.resolve("webapps/demo-jsp.war");
         if (!Files.exists(warFile))
         {
             throw new FileNotFoundException(warFile.toString());

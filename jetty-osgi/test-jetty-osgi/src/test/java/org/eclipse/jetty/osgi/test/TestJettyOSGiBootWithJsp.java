@@ -69,7 +69,7 @@ public class TestJettyOSGiBootWithJsp
     {
         List<Option> res = new ArrayList<>(TestOSGiUtil.jspDependencies());
         //test webapp bundle
-        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-jetty-webapp").classifier("webbundle").versionAsInProject());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-jsp-webapp").classifier("webbundle").versionAsInProject());
         return res;
     }
 
@@ -86,7 +86,7 @@ public class TestJettyOSGiBootWithJsp
 
             String port = System.getProperty("boot.jsp.port");
             assertNotNull(port);
-            ContentResponse response = client.GET("http://127.0.0.1:" + port + "/jsp/jstl.jsp");
+            ContentResponse response = client.GET("http://127.0.0.1:" + port + "/demo-jsp/jstl.jsp");
 
             assertEquals(HttpStatus.OK_200, response.getStatus());
             String content = response.getContentAsString();

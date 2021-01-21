@@ -69,7 +69,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                 assertTrue(runStart.awaitConsoleLogsFor("Started Server@", 20, TimeUnit.SECONDS));
 
                 startHttpClient();
-                ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/jsp/dump.jsp");
+                ContentResponse response = client.GET("http://localhost:" + httpPort + "/demo-jsp/dump.jsp");
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("PathInfo"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));

@@ -55,7 +55,7 @@ public class OneWebAppWithJspTest extends AbstractEmbeddedTest
     @Test
     public void testGetDumpInfo() throws Exception
     {
-        URI uri = serverLocalUri.resolve("/dump/info");
+        URI uri = serverLocalUri.resolve("/dump.jsp");
         ContentResponse response = client.newRequest(uri)
             .method(HttpMethod.GET)
             .send();
@@ -65,13 +65,13 @@ public class OneWebAppWithJspTest extends AbstractEmbeddedTest
 
         // test response content
         String responseBody = response.getContentAsString();
-        assertThat("Response Content", responseBody, containsString("getProtocol:&nbsp;</th><td>HTTP/1.1"));
+        assertThat("Response Content", responseBody, containsString("Protocol:</th><td>HTTP/1.1"));
     }
 
     @Test
     public void testGetJspExpr() throws Exception
     {
-        URI uri = serverLocalUri.resolve("/jsp/expr.jsp?A=1");
+        URI uri = serverLocalUri.resolve("/expr.jsp?A=1");
         ContentResponse response = client.newRequest(uri)
             .method(HttpMethod.GET)
             .send();
@@ -88,7 +88,7 @@ public class OneWebAppWithJspTest extends AbstractEmbeddedTest
     @Test
     public void testGetJstlExpr() throws Exception
     {
-        URI uri = serverLocalUri.resolve("/jsp/jstl.jsp");
+        URI uri = serverLocalUri.resolve("/jstl.jsp");
         ContentResponse response = client.newRequest(uri)
             .method(HttpMethod.GET)
             .send();
@@ -101,7 +101,7 @@ public class OneWebAppWithJspTest extends AbstractEmbeddedTest
         assertThat("Response Content", responseBody, containsString("<h1>JSTL Example</h1>"));
         for (int i = 1; i <= 10; i++)
         {
-            assertThat("Reponse content (counting)", responseBody, containsString("" + i));
+            assertThat("Response content (counting)", responseBody, containsString("" + i));
         }
     }
 }
