@@ -83,7 +83,7 @@ import org.slf4j.LoggerFactory;
  *     assertEquals(0, run1.getExitValue());
  *
  *     // Install a web application.
- *     File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
+ *     File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-simple-webapp:war:" + jettyVersion);
  *     distribution.installWarFile(war, "test");
  *
  *     // The second run starts the distribution.
@@ -96,7 +96,7 @@ import org.slf4j.LoggerFactory;
  *         // Make an HTTP request to the web application.
  *         HttpClient client = new HttpClient();
  *         client.start();
- *         ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
+ *         ContentResponse response = client.GET("http://localhost:" + port + "/test/index.html");
  *         assertEquals(HttpStatus.OK_200, response.getStatus());
  *     }
  * }
