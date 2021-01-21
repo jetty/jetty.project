@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class ShutdownThread extends Thread
 {
     private static final Logger LOG = Log.getLogger(ShutdownThread.class);
-    private static final ShutdownThread _thread = ThreadCreator.create(() ->
+    private static final ShutdownThread _thread = PrivilegedThreadFactory.newThread(() ->
     {
         return new ShutdownThread();
     });

@@ -687,7 +687,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     @Override
     public Thread newThread(Runnable runnable)
     {
-        return ThreadCreator.create(() ->
+        return PrivilegedThreadFactory.newThread(() ->
         {
             Thread thread = new Thread(_threadGroup, runnable);
             thread.setDaemon(isDaemon());
