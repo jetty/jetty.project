@@ -23,10 +23,10 @@ import java.security.PrivilegedAction;
 import java.util.function.Supplier;
 
 /**
- * PrivilegedThreadFactory
- *
  * Convenience class to ensure that a new Thread is created
- * inside a privileged block. This prevents the Thread constructor
+ * inside a privileged block. 
+ * 
+ * This prevents the Thread constructor
  * from pinning the caller's context classloader. This happens
  * when the Thread constructor takes a snapshot of the current
  * calling context - which contains ProtectionDomains that may
