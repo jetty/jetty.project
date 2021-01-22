@@ -19,7 +19,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Stream;
-import javax.management.JMX;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
@@ -52,28 +51,44 @@ public class JMXTest
         MBeanAttributeInfo attr = Stream.of(attributeInfos).filter((a) -> a.getName().equals("LoggerNames")).findFirst().orElseThrow();
         assertThat("attr", attr.getDescription(), is("List of Registered Loggers by Name."));
 
-        JettyLoggerFactoryMBean mbean = JMX.newMBeanProxy(mbeanServer, objectName, JettyLoggerFactoryMBean.class);
+        // Do some MBean attribute testing
+        int loggerCount;
 
         // Only the root logger.
-        assertEquals(1, mbean.getLoggerCount());
+        loggerCount = (int)mbeanServer.getAttribute(objectName, "LoggerCount");
+        assertEquals(1, loggerCount);
 
         JettyLoggerFactory loggerFactory = (JettyLoggerFactory)LoggerFactory.getILoggerFactory();
         JettyLogger child = loggerFactory.getJettyLogger("org.eclipse.jetty.logging");
         JettyLogger parent = loggerFactory.getJettyLogger("org.eclipse.jetty");
-        assertEquals(3, mbean.getLoggerCount());
+        loggerCount = (int)mbeanServer.getAttribute(objectName, "LoggerCount");
+        assertEquals(3, loggerCount);
 
-        // Names are sorted.
+        // Names from JMX are sorted, so lets sort our expected list too.
         List<String> expected = new ArrayList<>(Arrays.asList(JettyLogger.ROOT_LOGGER_NAME, parent.getName(), child.getName()));
         expected.sort(String::compareTo);
-        String[] loggerNames = mbean.getLoggerNames();
+        String[] loggerNames = (String[])mbeanServer.getAttribute(objectName, "LoggerNames");
         assertEquals(expected, Arrays.asList(loggerNames));
+
+        // Do some MBean invoker testing
+        String operationName;
+        String[] signature;
+        Object[] params;
 
         // Setting the parent level should propagate to the children.
         parent.setLevel(JettyLevel.DEBUG);
-        assertEquals(parent.getLevel().toString(), mbean.getLoggerLevel(child.getName()));
+        operationName = "getLoggerName";
+        signature = new String[]{String.class.getName()};
+        params = new Object[]{child.getName()};
+        String levelName = (String)mbeanServer.invoke(objectName, operationName, params, signature);
+        assertEquals(parent.getLevel().toString(), levelName);
 
         // Setting the level via JMX affects the logger.
-        assertTrue(mbean.setLoggerLevel(child.getName(), "INFO"));
+        operationName = "setLoggerName";
+        signature = new String[]{String.class.getName(), String.class.getName()};
+        params = new Object[]{child.getName(), "INFO"};
+        boolean result = (boolean)mbeanServer.invoke(objectName, operationName, params, signature);
+        assertTrue(result);
         assertEquals(JettyLevel.INFO, child.getLevel());
     }
 }

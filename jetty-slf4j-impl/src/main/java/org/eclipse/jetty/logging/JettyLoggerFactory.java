@@ -35,7 +35,7 @@ import javax.management.ReflectionException;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 
-public class JettyLoggerFactory implements ILoggerFactory, DynamicMBean, JettyLoggerFactoryMBean
+public class JettyLoggerFactory implements ILoggerFactory, DynamicMBean
 {
     private final JettyLoggerConfiguration configuration;
     private final JettyLogger rootLogger;
@@ -253,11 +253,6 @@ public class JettyLoggerFactory implements ILoggerFactory, DynamicMBean, JettyLo
         }
         return ret;
     }
-
-    /*
-    setLoggerLevel(String loggerName, String levelName);
-    String getLoggerLevel(String loggerName);
-     */
 
     @Override
     public Object invoke(String actionName, Object[] params, String[] signature) throws MBeanException, ReflectionException
