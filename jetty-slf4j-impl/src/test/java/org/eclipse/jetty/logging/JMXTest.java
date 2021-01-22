@@ -77,14 +77,14 @@ public class JMXTest
 
         // Setting the parent level should propagate to the children.
         parent.setLevel(JettyLevel.DEBUG);
-        operationName = "getLoggerName";
+        operationName = "getLoggerLevel";
         signature = new String[]{String.class.getName()};
         params = new Object[]{child.getName()};
         String levelName = (String)mbeanServer.invoke(objectName, operationName, params, signature);
         assertEquals(parent.getLevel().toString(), levelName);
 
         // Setting the level via JMX affects the logger.
-        operationName = "setLoggerName";
+        operationName = "setLoggerLevel";
         signature = new String[]{String.class.getName(), String.class.getName()};
         params = new Object[]{child.getName(), "INFO"};
         boolean result = (boolean)mbeanServer.invoke(objectName, operationName, params, signature);
