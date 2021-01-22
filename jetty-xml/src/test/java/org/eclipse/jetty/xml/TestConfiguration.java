@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -24,7 +24,7 @@ import java.util.Set;
 import org.eclipse.jetty.util.annotation.Name;
 import org.junit.jupiter.api.Disabled;
 
-@Disabled
+@Disabled("Not a test case")
 public class TestConfiguration extends HashMap<String, Object>
 {
     public static int VALUE = 77;

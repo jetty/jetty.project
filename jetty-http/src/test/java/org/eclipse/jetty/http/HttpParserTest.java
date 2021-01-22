@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -37,6 +37,7 @@ import static org.eclipse.jetty.http.HttpCompliance.Violation.TRANSFER_ENCODING_
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -2970,5 +2971,83 @@ public class HttpParserTest
         {
             _complianceViolation.add(violation);
         }
+    }
+
+    @Test
+    public void testHttpHeaderValueParseCsv()
+    {
+        final List<HttpHeaderValue> list = new ArrayList<>();
+        final List<String> unknowns = new ArrayList<>();
+
+        assertTrue(HttpHeaderValue.parseCsvIndex("", list::add, unknowns::add));
+        assertThat(list, empty());
+        assertThat(unknowns, empty());
+
+        assertTrue(HttpHeaderValue.parseCsvIndex(" ", list::add, unknowns::add));
+        assertThat(list, empty());
+        assertThat(unknowns, empty());
+
+        assertTrue(HttpHeaderValue.parseCsvIndex(",", list::add, unknowns::add));
+        assertThat(list, empty());
+        assertThat(unknowns, empty());
+
+        assertTrue(HttpHeaderValue.parseCsvIndex(",,", list::add, unknowns::add));
+        assertThat(list, empty());
+        assertThat(unknowns, empty());
+
+        assertTrue(HttpHeaderValue.parseCsvIndex(" , , ", list::add, unknowns::add));
+        assertThat(list, empty());
+        assertThat(unknowns, empty());
+
+        list.clear();
+        assertTrue(HttpHeaderValue.parseCsvIndex("close", list::add));
+        assertThat(list, contains(HttpHeaderValue.CLOSE));
+
+        list.clear();
+        assertTrue(HttpHeaderValue.parseCsvIndex(" close ", list::add));
+        assertThat(list, contains(HttpHeaderValue.CLOSE));
+
+        list.clear();
+        assertTrue(HttpHeaderValue.parseCsvIndex(",close,", list::add));
+        assertThat(list, contains(HttpHeaderValue.CLOSE));
+
+        list.clear();
+        assertTrue(HttpHeaderValue.parseCsvIndex(" , close , ", list::add));
+        assertThat(list, contains(HttpHeaderValue.CLOSE));
+
+        list.clear();
+        assertTrue(HttpHeaderValue.parseCsvIndex(" close,GZIP, chunked    , Keep-Alive   ", list::add));
+        assertThat(list, contains(HttpHeaderValue.CLOSE, HttpHeaderValue.GZIP, HttpHeaderValue.CHUNKED, HttpHeaderValue.KEEP_ALIVE));
+
+        list.clear();
+        assertTrue(HttpHeaderValue.parseCsvIndex(" close,GZIP, chunked    , Keep-Alive   ", t ->
+        {
+            if (t.toString().startsWith("c"))
+                list.add(t);
+            return true;
+        }));
+        assertThat(list, contains(HttpHeaderValue.CLOSE, HttpHeaderValue.CHUNKED));
+
+        list.clear();
+        assertFalse(HttpHeaderValue.parseCsvIndex(" close,GZIP, chunked    , Keep-Alive   ", t ->
+        {
+            if (HttpHeaderValue.CHUNKED == t)
+                return false;
+            list.add(t);
+            return true;
+        }));
+        assertThat(list, contains(HttpHeaderValue.CLOSE, HttpHeaderValue.GZIP));
+
+        list.clear();
+        unknowns.clear();
+        assertTrue(HttpHeaderValue.parseCsvIndex("closed,close, unknown , bytes", list::add, unknowns::add));
+        assertThat(list, contains(HttpHeaderValue.CLOSE, HttpHeaderValue.BYTES));
+        assertThat(unknowns, contains("closed", "unknown"));
+
+        list.clear();
+        unknowns.clear();
+        assertFalse(HttpHeaderValue.parseCsvIndex("close, unknown , bytes", list::add, s -> false));
+        assertThat(list, contains(HttpHeaderValue.CLOSE));
+        assertThat(unknowns, empty());
     }
 }

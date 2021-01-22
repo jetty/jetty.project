@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -332,7 +332,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
         // RFC6455: If the server does not agree to any of the client's requested subprotocols, the only acceptable
         // value is null. It MUST NOT send back a |Sec-WebSocket-Protocol| header field in its response.
         HttpFields httpFields = headers.get();
-        assertThat(httpFields.get(HttpHeader.UPGRADE), is("WebSocket"));
+        assertThat(httpFields.get(HttpHeader.UPGRADE), is("websocket"));
         assertNull(httpFields.get(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL));
     }
 

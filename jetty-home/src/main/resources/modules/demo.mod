@@ -21,6 +21,7 @@ demo-rewrite
 demo-root
 demo-jndi
 demo-spec
+demo-jsp
 
 [ini-template]
 # Websocket chat examples needs websocket enabled

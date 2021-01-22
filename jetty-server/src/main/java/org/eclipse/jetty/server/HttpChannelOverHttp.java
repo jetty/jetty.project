@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -500,31 +500,24 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
                 case EXPECT:
                 {
-                    if (HttpVersion.HTTP_1_1.equals(_requestBuilder.version()))
+                    if (!HttpHeaderValue.parseCsvIndex(value, t ->
                     {
-                        HttpHeaderValue expect = HttpHeaderValue.CACHE.get(value);
-                        if (expect == HttpHeaderValue.CONTINUE)
+                        switch (t)
                         {
-                            _expect100Continue = true;
+                            case CONTINUE:
+                                _expect100Continue = true;
+                                return true;
+                            case PROCESSING:
+                                _expect102Processing = true;
+                                return true;
+                            default:
+                                return false;
                         }
-                        else if (expect == HttpHeaderValue.PROCESSING)
-                        {
-                            _expect102Processing = true;
-                        }
-                        else
-                        {
-                            String[] values = field.getValues();
-                            for (int i = 0; values != null && i < values.length; i++)
-                            {
-                                expect = HttpHeaderValue.CACHE.get(values[i].trim());
-                                if (expect == HttpHeaderValue.CONTINUE)
-                                    _expect100Continue = true;
-                                else if (expect == HttpHeaderValue.PROCESSING)
-                                    _expect102Processing = true;
-                                else
-                                    _unknownExpectation = true;
-                            }
-                        }
+                    }, s -> false))
+                    {
+                        _unknownExpectation = true;
+                        _expect100Continue = false;
+                        _expect102Processing = false;
                     }
                     break;
                 }

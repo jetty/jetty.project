@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,7 +16,6 @@ package org.eclipse.jetty.websocket.core.server;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -43,15 +42,14 @@ public class ServerUpgradeResponse
     {
         if (HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.is(name))
         {
-            setAcceptedSubProtocol(value); // Can only be one, so set
+            setAcceptedSubProtocol(value);
             return;
         }
 
-        if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name) && getExtensions() != null)
+        if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name))
         {
-            // Move any extensions configs to the headers
-            response.addHeader(name, ExtensionConfig.toHeaderValue(getExtensions()));
-            setExtensions(null);
+            addExtensions(ExtensionConfig.parseList(value));
+            return;
         }
 
         response.addHeader(name, value);
@@ -59,7 +57,6 @@ public class ServerUpgradeResponse
 
     public void setHeader(String name, String value)
     {
-
         if (HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.is(name))
         {
             setAcceptedSubProtocol(value);
@@ -67,7 +64,10 @@ public class ServerUpgradeResponse
         }
 
         if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name))
-            setExtensions(null);
+        {
+            setExtensions(ExtensionConfig.parseList(value));
+            return;
+        }
 
         response.setHeader(name, value);
     }
@@ -86,14 +86,21 @@ public class ServerUpgradeResponse
 
         if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name))
         {
-            setExtensions(null);
-            response.setHeader(name, null);
-            values.forEach(value -> addHeader(name, value));
+            List<ExtensionConfig> extensions = Collections.emptyList();
+            if (values != null)
+            {
+                extensions = values.stream()
+                    .flatMap(s -> ExtensionConfig.parseList(s).stream())
+                    .collect(Collectors.toList());
+            }
+
+            setExtensions(extensions);
             return;
         }
 
-        response.setHeader(name, null); // clear it out first
-        values.forEach(value -> response.addHeader(name, value));
+        response.setHeader(name, null);
+        if (values != null)
+            values.forEach(value -> response.addHeader(name, value));
     }
 
     public String getAcceptedSubProtocol()
@@ -113,7 +120,7 @@ public class ServerUpgradeResponse
 
     public Set<String> getHeaderNames()
     {
-        return Collections.unmodifiableSet(new HashSet<>(response.getHeaderNames()));
+        return Set.copyOf(response.getHeaderNames());
     }
 
     public Map<String, List<String>> getHeadersMap()
@@ -125,7 +132,7 @@ public class ServerUpgradeResponse
 
     public List<String> getHeaders(String name)
     {
-        return Collections.unmodifiableList(new ArrayList<>(response.getHeaders(name)));
+        return List.copyOf(response.getHeaders(name));
     }
 
     public int getStatusCode()
@@ -152,6 +159,14 @@ public class ServerUpgradeResponse
     public void setAcceptedSubProtocol(String protocol)
     {
         negotiation.setSubprotocol(protocol);
+    }
+
+    public void addExtensions(List<ExtensionConfig> configs)
+    {
+        ArrayList<ExtensionConfig> combinedConfig = new ArrayList<>();
+        combinedConfig.addAll(getExtensions());
+        combinedConfig.addAll(configs);
+        setExtensions(combinedConfig);
     }
 
     public void setExtensions(List<ExtensionConfig> configs)

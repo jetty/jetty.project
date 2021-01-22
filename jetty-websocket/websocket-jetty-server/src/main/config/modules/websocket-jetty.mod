@@ -1,7 +1,5 @@
-# DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
-
 [description]
-Enable the Jetty WebSocket API for deployed web applications.
+Enable the Jetty WebSocket API support for deployed web applications.
 
 [tags]
 websocket

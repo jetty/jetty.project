@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -69,7 +69,7 @@ public class TestJettyOSGiBootWithJsp
     {
         List<Option> res = new ArrayList<>(TestOSGiUtil.jspDependencies());
         //test webapp bundle
-        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-jetty-webapp").classifier("webbundle").versionAsInProject());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-jsp-webapp").classifier("webbundle").versionAsInProject());
         return res;
     }
 
@@ -86,7 +86,7 @@ public class TestJettyOSGiBootWithJsp
 
             String port = System.getProperty("boot.jsp.port");
             assertNotNull(port);
-            ContentResponse response = client.GET("http://127.0.0.1:" + port + "/jsp/jstl.jsp");
+            ContentResponse response = client.GET("http://127.0.0.1:" + port + "/demo-jsp/jstl.jsp");
 
             assertEquals(HttpStatus.OK_200, response.getStatus());
             String content = response.getContentAsString();

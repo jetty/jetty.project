@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -55,12 +55,14 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(200, response.getStatus());
 
         // The second request should be sent after the validating timeout.
         response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(200, response.getStatus());
     }
@@ -95,6 +97,7 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
             .path("/redirect")
+            .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(200, response.getStatus());
     }

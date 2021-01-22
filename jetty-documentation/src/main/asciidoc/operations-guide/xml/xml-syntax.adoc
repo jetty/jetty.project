@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -286,7 +286,7 @@ You can only specify the key value via the `name` attribute, so the key can only
 [[og-xml-syntax-array]]
 ===== `<Array>` and `<Item>`
 
-Element `<Array>` creates a new array, whose component type may be specified by the `type` attribute.
+Element `<Array>` creates a new array, whose component type may be specified by the `type` attribute, or by a `Type` child element.
 
 [source,xml]
 ----

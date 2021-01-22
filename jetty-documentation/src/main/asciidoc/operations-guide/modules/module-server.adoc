@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -26,6 +26,14 @@ include::{JETTY_HOME}/modules/server.mod[]
 
 Among the configurable properties, the most relevant are:
 
-TODO
-
 // TODO: consider extracting the httpConfig and scheduler properties into separate files.
+
+`jetty.server.dumpAfterStart`::
+Whether to perform a `Server.dump()` operation after the `Server` has started.
+The output of the dump operation is sent to `System.err`.
+See also the xref:og-troubleshooting-dump[Jetty Server Dump] section for more information.
+
+`jetty.server.dumpBeforeStop`::
+Whether to perform a `Server.dump()` operation before the `Server` stops.
+The output of the dump operation is sent to `System.err`.
+See also the xref:og-troubleshooting-dump[Jetty Server Dump] section for more information.

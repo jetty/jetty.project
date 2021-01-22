@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -171,7 +171,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
-    private static Logger LOG = LoggerFactory.getLogger(HttpOutput.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpOutput.class);
     private static final ThreadLocal<CharsetEncoder> _encoder = new ThreadLocal<>();
 
     private final HttpChannel _channel;
@@ -1018,6 +1018,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         if (isClosed())
             throw new IOException("Closed");
+
+        s = String.valueOf(s);
 
         String charset = _channel.getResponse().getCharacterEncoding();
         CharsetEncoder encoder = _encoder.get();

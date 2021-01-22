@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -32,14 +32,13 @@ import org.eclipse.jetty.websocket.client.JettyUpgradeListener;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class JettyWebSocketNegotiationTest
@@ -112,7 +111,6 @@ public class JettyWebSocketNegotiationTest
         }
     }
 
-    @Disabled("Work in progress; ServerUpgradeResponse in websocket-core throws NPEs")
     @Test
     public void testManualNegotiationInCreator() throws Exception
     {
@@ -123,7 +121,7 @@ public class JettyWebSocketNegotiationTest
                 .filter(ec -> "permessage-deflate".equals(ec.getName()))
                 .filter(ec -> ec.getParameters().containsKey("client_no_context_takeover"))
                 .count();
-            assertThat(matchedExts, Matchers.is(1L));
+            assertThat(matchedExts, is(1L));
 
             // Manually drop the param so it is not negotiated in the extension stack.
             resp.setHeader("Sec-WebSocket-Extensions", "permessage-deflate");
@@ -146,6 +144,7 @@ public class JettyWebSocketNegotiationTest
 
         client.connect(socket, uri, upgradeRequest, upgradeListener).get(5, TimeUnit.SECONDS);
         HttpResponse httpResponse = responseReference.get();
-        System.err.println(httpResponse.getHeaders());
+        String extensions = httpResponse.getHeaders().get("Sec-WebSocket-Extensions");
+        assertThat(extensions, is("permessage-deflate"));
     }
 }

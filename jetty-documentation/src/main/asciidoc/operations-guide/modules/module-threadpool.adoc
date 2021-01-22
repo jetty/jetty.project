@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,7 +16,10 @@
 
 The `threadpool` module allows you to configure the server-wide thread pool.
 
-// TODO: thread pool per connector should be documented here?
+The thread pool creates threads on demand up to `maxThreads`, and idle them out if they are not used.
+
+Since Jetty uses the thread pool internally to execute critical tasks, it is not recommended to constrain the thread pool to small values of `maxThreads` with the purpose of limiting HTTP request concurrency, as this could very likely cause a server lockup when Jetty needs to run a critical task but there are no threads available.
+Start with the default value of `maxThreads`, and tune for larger values if needed.
 
 The module file is `$JETTY_HOME/modules/threadpool.mod`:
 
@@ -26,4 +29,11 @@ include::{JETTY_HOME}/modules/threadpool.mod[]
 
 Among the configurable properties, the most relevant are:
 
-TODO
+`jetty.threadPool.detailedDump`::
+Whether the thread pool should dump the whole stack trace of each thread, or just the topmost stack frame -- defaults to `false`.
+
+`jetty.threadPool.idleTimeout`::
+The time, in milliseconds, after which an idle thread is released from the pool -- defaults to 60000, i.e. 60 seconds.
+
+`jetty.threadPool.maxThreads`::
+The max number of threads pooled by the thread pool -- defaults to 200.

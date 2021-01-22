@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -288,7 +288,7 @@ public class Request implements HttpServletRequest
         return !isPush() && getHttpChannel().getHttpTransport().isPushSupported();
     }
 
-    private static EnumSet<HttpHeader> NOT_PUSHED_HEADERS = EnumSet.of(
+    private static final EnumSet<HttpHeader> NOT_PUSHED_HEADERS = EnumSet.of(
         HttpHeader.IF_MATCH,
         HttpHeader.IF_RANGE,
         HttpHeader.IF_UNMODIFIED_SINCE,
@@ -853,7 +853,7 @@ public class Request implements HttpServletRequest
     public long getDateHeader(String name)
     {
         HttpFields fields = _httpFields;
-        return fields == null ? null : fields.getDateField(name);
+        return fields == null ? -1 : fields.getDateField(name);
     }
 
     @Override
@@ -1062,7 +1062,7 @@ public class Request implements HttpServletRequest
         List<String> vals = getParameters().getValues(name);
         if (vals == null)
             return null;
-        return vals.toArray(new String[vals.size()]);
+        return vals.toArray(new String[0]);
     }
 
     public MultiMap<String> getQueryParameters()
@@ -2416,14 +2416,6 @@ public class Request implements HttpServletRequest
     @Override
     public HttpServletMapping getHttpServletMapping()
     {
-        // TODO This is to pass the current TCK.  This has been challenged in https://github.com/eclipse-ee4j/jakartaee-tck/issues/585
-        if (_dispatcherType == DispatcherType.ASYNC)
-        {
-            Object async = getAttribute(AsyncContext.ASYNC_MAPPING);
-            if (async != null)
-                return (ServletPathMapping)async;
-        }
-
         // The mapping returned is normally for the current servlet.  Except during an
         // INCLUDE dispatch, in which case this method returns the mapping of the source servlet,
         // which we recover from the IncludeAttributes wrapper.

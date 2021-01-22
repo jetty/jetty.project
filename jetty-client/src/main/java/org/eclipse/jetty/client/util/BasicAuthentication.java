@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,6 +14,7 @@
 package org.eclipse.jetty.client.util;
 
 import java.net.URI;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
@@ -58,7 +59,9 @@ public class BasicAuthentication extends AbstractAuthentication
     @Override
     public Result authenticate(Request request, ContentResponse response, HeaderInfo headerInfo, Attributes context)
     {
-        return new BasicResult(getURI(), headerInfo.getHeader(), user, password);
+        String charsetParam = headerInfo.getParameter("charset");
+        Charset charset = charsetParam == null ? null : Charset.forName(charsetParam);
+        return new BasicResult(getURI(), headerInfo.getHeader(), user, password, charset);
     }
 
     /**
@@ -84,9 +87,16 @@ public class BasicAuthentication extends AbstractAuthentication
 
         public BasicResult(URI uri, HttpHeader header, String user, String password)
         {
+            this(uri, header, user, password, StandardCharsets.ISO_8859_1);
+        }
+
+        public BasicResult(URI uri, HttpHeader header, String user, String password, Charset charset)
+        {
             this.uri = uri;
             this.header = header;
-            byte[] authBytes = (user + ":" + password).getBytes(StandardCharsets.ISO_8859_1);
+            if (charset == null)
+                charset = StandardCharsets.ISO_8859_1;
+            byte[] authBytes = (user + ":" + password).getBytes(charset);
             this.value = "Basic " + Base64.getEncoder().encodeToString(authBytes);
         }
 
