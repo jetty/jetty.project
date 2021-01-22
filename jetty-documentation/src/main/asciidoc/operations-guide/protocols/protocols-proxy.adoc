@@ -70,14 +70,21 @@ Forwarded: for=2.36.72.144:21216;proto=https
 
 In the example above, the intermediary added the `Forwarded` header specifying that the client remote address is `2.36.72.144:21216` and that the request was made with the `https` scheme.
 
-Support for the `Forwarded` HTTP header (and its predecessor `X-Forwarded-*` headers) is enabled with the `http-forwarded` Jetty module with the following command (issued from within the `$JETTY_BASE` directory):
+Let's assume you have already configured Jetty with the HTTP/1.1 protocol with the following command (issued from within the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=http
+----
+
+Support for the `Forwarded` HTTP header (and its predecessor `X-Forwarded-*` headers) is enabled with the `http-forwarded` Jetty module:
 
 ----
 $ java -jar $JETTY_HOME/start.jar --add-module=http-forwarded
 ----
+
+[source,options=nowrap]
 ----
-INFO  : http-forwarded  initialized in ${jetty.base}/start.d/http-forwarded.ini
-INFO  : Base directory was modified
+include::jetty[setupArgs="--add-module=http",args="--add-module=http-forwarded"]
 ----
 
 With the `http-forwarded` Jetty module enabled, Jetty interprets the `Forwarded` header and makes its information available to web applications via the standard Servlet APIs.
@@ -103,14 +110,21 @@ Proxy protocol v2 has a binary format, carries the information about the client 
 
 Support for the proxy protocol can be enabled for the clear-text connector or for the secure connector (or both).
 
-To enable proxy protocol support for the clear-text connector, enable the `proxy-protocol` Jetty module with the following command (issued from within the `$JETTY_BASE` directory):
+Let's assume you have already configured Jetty with the HTTP/1.1 clear-text protocol with the following command (issued from within the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=http
+----
+
+To enable proxy protocol support for the clear-text connector, enable the `proxy-protocol` Jetty module:
 
 ----
 $ java -jar $JETTY_HOME/start.jar --add-module=proxy-protocol
 ----
+
+[source,options=nowrap]
 ----
-INFO  : proxy-protocol  initialized in ${jetty.base}/start.d/proxy-protocol.ini
-INFO  : Base directory was modified
+include::jetty[setupArgs="--add-module=http",args="--add-module=proxy-protocol"]
 ----
 
 Starting Jetty yields:
@@ -118,25 +132,32 @@ Starting Jetty yields:
 ----
 $ java -jar $JETTY_HOME/start.jar
 ----
-[source,subs=quotes]
+
+[source,subs=quotes,options=nowrap]
 ----
-2020-10-12 18:44:25.246:INFO :oejs.Server:main: jetty-10.0.0-SNAPSHOT; built: 2020-10-12T13:49:35.796Z; git: 1cd15e8d85feb308527c3df560734fc2ca1bc13c; jvm 15+36-1562
-2020-10-12 18:44:25.267:INFO :oejdp.ScanningAppProvider:main: Deployment monitor [file:///tmp/jetty.base/webapps/]
-2020-10-12 18:44:25.276:INFO :oejs.AbstractConnector:main: Started ServerConnector@7a8c8dcf{[proxy], ##([proxy], http/1.1)##}{0.0.0.0:8080}
-2020-10-12 18:44:25.285:INFO :oejs.Server:main: Started Server@5c5eefef{STARTING}[10.0.0-SNAPSHOT,sto=5000] @486ms
+include::jetty[args="--module=proxy-protocol",highlight="(\{.*:8080})"]
 ----
 
 Note how in the example above the list of protocols for the clear-text connector is first `proxy` and then `http/1.1`.
 For every new TCP connection, Jetty first interprets the proxy protocol bytes with the client information; after this initial proxy protocol processing, Jetty interprets the incoming bytes as HTTP/1.1 bytes.
 
-Similarly, to enable proxy protocol support for the secure connector, enable the `proxy-protocol-ssl` Jetty module with the following command (issued from within the `$JETTY_BASE` directory):
+Enabling proxy protocol support for the secure connector is similar.
+
+Let's assume you have already configured Jetty with the HTTP/1.1 secure protocol and the test KeyStore with the following command (issued from within the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=https,test-keystore
+----
+
+Enable the `proxy-protocol-ssl` Jetty module with the following command (issued from within the `$JETTY_BASE` directory):
 
 ----
 $ java -jar $JETTY_HOME/start.jar --add-module=proxy-protocol-ssl
 ----
+
+[source,options=nowrap]
 ----
-INFO  : proxy-protocol-ssl initialized in ${jetty.base}/start.d/proxy-protocol-ssl.ini
-INFO  : Base directory was modified
+include::jetty[setupArgs="--add-module=https",args="--add-module=proxy-protocol-ssl"]
 ----
 
 Starting Jetty yields:
@@ -144,13 +165,10 @@ Starting Jetty yields:
 ----
 $ java -jar $JETTY_HOME/start.jar
 ----
-[source,subs=quotes]
+
+[source,subs=quotes,options=nowrap]
 ----
-2020-10-12 19:09:38.397:INFO :oejs.Server:main: jetty-10.0.0-SNAPSHOT; built: 2020-10-12T13:49:35.796Z; git: 1cd15e8d85feb308527c3df560734fc2ca1bc13c; jvm 15+36-1562
-2020-10-12 19:09:38.417:INFO :oejdp.ScanningAppProvider:main: Deployment monitor [file:///tmp/jetty.base/webapps/]
-2020-10-12 19:09:38.605:INFO :oejus.SslContextFactory:main: x509=X509@4a7f959b(mykey,h=[localhost],w=[]) for Server@5403f35f[provider=null,keyStore=file:///tmp/jetty.base/etc/test-keystore.p12,trustStore=file:///tmp/jetty.base/etc/test-keystore.p12]
-2020-10-12 19:09:38.697:INFO :oejs.AbstractConnector:main: Started ServerConnector@5afa3c9{[proxy], ##([proxy], ssl, http/1.1)##}{0.0.0.0:8443}
-2020-10-12 19:09:38.705:INFO :oejs.Server:main: Started Server@54d9d12d{STARTING}[10.0.0-SNAPSHOT,sto=5000] @785ms
+include::jetty[setupArgs="--add-modules=https,test-keystore,proxy-protocol-ssl",highlight="(\{.*:8443})"]
 ----
 
 Note how in the example above the list of protocols for the secure connector is first `proxy`, then `ssl` and then `http/1.1`.
@@ -175,7 +193,7 @@ HAProxy will need a single file containing the X509 certificates and the private
 
 Refer to the xref:og-keystore[section about KeyStores] for more information about generating the required certificates and private key.
 
-Now you can create the HAProxy configuration file (in Linux it's typically `/etc/haproxy/haproxy.cfg).
+Now you can create the HAProxy configuration file (in Linux it's typically `/etc/haproxy/haproxy.cfg`).
 This is a minimal configuration:
 
 .haproxy.cfg
