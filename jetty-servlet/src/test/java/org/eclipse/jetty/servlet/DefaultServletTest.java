@@ -2059,10 +2059,15 @@ public class DefaultServletTest
         context.addServlet(DefaultServlet.class, "/");
         context.addAliasCheck(new SameFileAliasChecker());
 
-        // UTF-8 NFC format
+        // Create file with UTF-8 NFC format
         String filename = "swedish-" + new String(TypeUtil.fromHexString("C3A5"), UTF_8) + ".txt";
         createFile(docRoot.resolve(filename), "hi a-with-circle");
 
+        // Using filesystem, attempt to access via NFD format
+        Path nfdPath = docRoot.resolve("swedish-a" + new String(TypeUtil.fromHexString("CC8A"), UTF_8) + ".txt");
+        boolean filesystemSupportsNFDAccess = Files.exists(nfdPath);
+
+        // Make requests
         String rawResponse;
         HttpTester.Response response;
 
@@ -2075,7 +2080,7 @@ public class DefaultServletTest
         // Request as UTF-8 NFD
         rawResponse = connector.getResponse("GET /context/swedish-a%CC%8A.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
-        if (OS.MAC.isCurrentOs())
+        if (filesystemSupportsNFDAccess)
         {
             assertThat(response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), is("hi a-with-circle"));
@@ -2094,9 +2099,13 @@ public class DefaultServletTest
         context.addServlet(DefaultServlet.class, "/");
         context.addAliasCheck(new SameFileAliasChecker());
 
-        // UTF-8 NFD format
-        String filename = "swedish-" + new String(TypeUtil.fromHexString("61CC8A"), UTF_8) + ".txt";
+        // Create file with UTF-8 NFD format
+        String filename = "swedish-a" + new String(TypeUtil.fromHexString("CC8A"), UTF_8) + ".txt";
         createFile(docRoot.resolve(filename), "hi a-with-circle");
+
+        // Using filesystem, attempt to access via NFC format
+        Path nfcPath = docRoot.resolve("swedish-" + new String(TypeUtil.fromHexString("C3A5"), UTF_8) + ".txt");
+        boolean filesystemSupportsNFCAccess = Files.exists(nfcPath);
 
         String rawResponse;
         HttpTester.Response response;
@@ -2110,7 +2119,7 @@ public class DefaultServletTest
         // Request as UTF-8 NFC
         rawResponse = connector.getResponse("GET /context/swedish-%C3%A5.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
-        if (OS.MAC.isCurrentOs())
+        if (filesystemSupportsNFCAccess)
         {
             assertThat(response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), is("hi a-with-circle"));
