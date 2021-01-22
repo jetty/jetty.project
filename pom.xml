@@ -707,6 +707,10 @@
               <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
               <jetty.testtracker.log>${jetty.testtracker.log}</jetty.testtracker.log>
             </systemPropertyVariables>
+            <!-- The LC_ALL env variable must have some UTF variant otherwise creating and/or reading files with non-ascii names doesn't work -->
+            <environmentVariables>
+              <LC_ALL>en_US.UTF-8</LC_ALL>
+            </environmentVariables>
           </configuration>
           <dependencies>
             <dependency>
