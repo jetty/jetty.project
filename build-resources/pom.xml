@@ -6,6 +6,10 @@
   <packaging>jar</packaging>
   <name>Jetty :: Build Resources</name>
 
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
   <build>
     <plugins>
       <plugin>
