@@ -30,7 +30,7 @@ public class PathParamIdentifier implements InvokerUtils.ParamIdentifier
     public InvokerUtils.Arg getParamArg(Method method, Class<?> paramType, int idx)
     {
         Annotation[] annos = method.getParameterAnnotations()[idx];
-        if (annos != null || (annos.length > 0))
+        if (annos != null && (annos.length > 0))
         {
             for (Annotation anno : annos)
             {
@@ -38,7 +38,13 @@ public class PathParamIdentifier implements InvokerUtils.ParamIdentifier
                 {
                     validateType(paramType);
                     PathParam pathParam = (PathParam)anno;
-                    return new InvokerUtils.Arg(paramType, pathParam.value());
+
+                    // Strip curly brackets around pathParam value to pass the TCK.
+                    String value = pathParam.value();
+                    if (value.length() >= 2 && value.startsWith("{") && value.endsWith("}"))
+                        value = value.substring(1, value.length() - 1);
+
+                    return new InvokerUtils.Arg(paramType, value);
                 }
             }
         }
@@ -52,6 +58,14 @@ public class PathParamIdentifier implements InvokerUtils.ParamIdentifier
     public static void validateType(Class<?> type)
     {
         if (!String.class.isAssignableFrom(type) &&
+            !Integer.class.isAssignableFrom(type) &&
+            !Long.class.isAssignableFrom(type) &&
+            !Short.class.isAssignableFrom(type) &&
+            !Float.class.isAssignableFrom(type) &&
+            !Double.class.isAssignableFrom(type) &&
+            !Boolean.class.isAssignableFrom(type) &&
+            !Character.class.isAssignableFrom(type) &&
+            !Byte.class.isAssignableFrom(type) &&
             !Integer.TYPE.isAssignableFrom(type) &&
             !Long.TYPE.isAssignableFrom(type) &&
             !Short.TYPE.isAssignableFrom(type) &&

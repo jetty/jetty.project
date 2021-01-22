@@ -17,7 +17,6 @@ import java.net.URI;
 import java.util.concurrent.TimeUnit;
 import javax.websocket.ContainerProvider;
 import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 import javax.websocket.server.PathParam;
@@ -52,7 +51,12 @@ public class PathParamTest
         _server.setHandler(_context);
 
         JavaxWebSocketServletContainerInitializer.configure(_context, (context, container) ->
-            container.addEndpoint(EchoParamSocket.class));
+        {
+            container.addEndpoint(StringParamSocket.class);
+            container.addEndpoint(IntegerParamSocket.class);
+            container.addEndpoint(IntParamSocket.class);
+            container.addEndpoint(WSFullBooleanAndSessionAndPathParamServer.class);
+        });
 
         _server.start();
     }
@@ -63,36 +67,106 @@ public class PathParamTest
         _server.stop();
     }
 
-    @ServerEndpoint("/pathParam/echo/{name}")
-    public static class EchoParamSocket
+    @ServerEndpoint("/pathParam/string/{param}")
+    public static class StringParamSocket
     {
-        private Session session;
-
-        @OnOpen
-        public void onOpen(Session session)
-        {
-            this.session = session;
-        }
-
         @OnMessage
-        public void onMessage(String message, @PathParam("name") String name)
+        public void onMessage(Session session, String message, @PathParam("param") String param)
         {
-            session.getAsyncRemote().sendText(message + "-" + name);
+            session.getAsyncRemote().sendText(message + "-" + param);
+        }
+    }
+
+    @ServerEndpoint("/pathParam/integer/{param}")
+    public static class IntegerParamSocket
+    {
+        @OnMessage
+        public void onMessage(Session session, String message, @PathParam("param") Integer param)
+        {
+            session.getAsyncRemote().sendText(message + "-" + param);
+        }
+    }
+
+    @ServerEndpoint("/pathParam/int/{param}")
+    public static class IntParamSocket
+    {
+        @OnMessage
+        public void onMessage(Session session, String message, @PathParam("param") int param)
+        {
+            session.getAsyncRemote().sendText(message + "-" + param);
+        }
+    }
+
+    @ServerEndpoint("/pathParam/paramInBrackets/{param}")
+    public static class WSFullBooleanAndSessionAndPathParamServer
+    {
+        @OnMessage
+        public String echo(@PathParam("{param}") Boolean param, Boolean b, Session s)
+        {
+            return "message:" + b + ", param:" + param;
         }
     }
 
     @Test
-    public void testBasicPathParamSocket() throws Exception
+    public void testStringPathParamSocket() throws Exception
     {
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         EventSocket clientEndpoint = new EventSocket();
 
-        URI serverUri = URI.create("ws://localhost:" + _connector.getLocalPort() + "/context/pathParam/echo/myParam");
+        URI serverUri = URI.create("ws://localhost:" + _connector.getLocalPort() + "/context/pathParam/string/myParam");
         Session session = container.connectToServer(clientEndpoint, serverUri);
         session.getBasicRemote().sendText("echo");
 
         String resp = clientEndpoint.textMessages.poll(1, TimeUnit.SECONDS);
         assertThat("Response echo", resp, is("echo-myParam"));
+        session.close();
+        clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testIntegerPathParamSocket() throws Exception
+    {
+        WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+        EventSocket clientEndpoint = new EventSocket();
+
+        URI serverUri = URI.create("ws://localhost:" + _connector.getLocalPort() + "/context/pathParam/integer/1001");
+        Session session = container.connectToServer(clientEndpoint, serverUri);
+        session.getBasicRemote().sendText("echo");
+
+        String resp = clientEndpoint.textMessages.poll(1, TimeUnit.SECONDS);
+        assertThat("Response echo", resp, is("echo-1001"));
+        session.close();
+        clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testIntPathParamSocket() throws Exception
+    {
+        WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+        EventSocket clientEndpoint = new EventSocket();
+
+        URI serverUri = URI.create("ws://localhost:" + _connector.getLocalPort() + "/context/pathParam/int/1001");
+        Session session = container.connectToServer(clientEndpoint, serverUri);
+        session.getBasicRemote().sendText("echo");
+
+        String resp = clientEndpoint.textMessages.poll(1, TimeUnit.SECONDS);
+        assertThat("Response echo", resp, is("echo-1001"));
+        session.close();
+        clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testPathPramStripsBrackets() throws Exception
+    {
+        WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+        EventSocket clientEndpoint = new EventSocket();
+
+        URI serverUri = URI.create("ws://localhost:" + _connector.getLocalPort() + "/context/pathParam/paramInBrackets/false");
+        Session session = container.connectToServer(clientEndpoint, serverUri);
+        session.getBasicRemote().sendText("true");
+
+        String resp = clientEndpoint.textMessages.poll(1, TimeUnit.SECONDS);
+        assertThat("Response echo", resp, is("message:true, param:false"));
         session.close();
         clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS);
     }
