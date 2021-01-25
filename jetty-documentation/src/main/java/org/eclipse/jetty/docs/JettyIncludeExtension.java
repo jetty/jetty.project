@@ -38,12 +38,15 @@ import org.eclipse.jetty.tests.distribution.JettyHomeTester;
  * <dl>
  *   <dt>setupArgs</dt>
  *   <dd>Optional, specifies the arguments to use in a Jetty server <em>setup</em> run.
+ *   If missing, no Jetty server <em>setup</em> run will be executed.
  *   The output produced by this run is ignored.</dd>
  *   <dt>args</dt>
  *   <dd>Optional, specifies the arguments to use in a Jetty server run.
+ *   If missing, a Jetty server run will be executed with no arguments.
  *   The output produced by this run is included in the Asciidoc document.</dd>
  *   <dt>highlight</dt>
  *   <dd>Optional, specifies a regular expression that matches lines that should be highlighted.
+ *   If missing, no line will be highlighted.
  *   If the regular expression contains capturing groups, only the text matching
  *   the groups is highlighted, not the whole line.
  *   </dd>
@@ -74,18 +77,15 @@ public class JettyIncludeExtension implements ExtensionRegistry
                 Path projectPath = Path.of((String)document.getAttribute("projectdir"));
                 Path jettyHome = projectPath.resolve("jetty-home/target/jetty-home").normalize();
 
-                String setupArgs = (String)attributes.get("setupArgs");
-                if (setupArgs != null)
-                    setupArgs += " " + jettyHome.resolve("etc/jetty-halt.xml");
-
-                String args = (String)attributes.get("args");
-                args = args == null ? "" : args + " ";
-                args += jettyHome.resolve("etc/jetty-halt.xml");
-
                 JettyHomeTester jetty = JettyHomeTester.Builder.newInstance()
                     .jettyHome(jettyHome)
                     .mavenLocalRepository((String)document.getAttribute("mavenrepository"))
                     .build();
+
+                String setupArgs = (String)attributes.get("setupArgs");
+                String args = (String)attributes.get("args");
+                args = args == null ? "" : args + " ";
+                args += jettyHome.resolve("etc/jetty-halt.xml");
 
                 // Run first the setup arguments, then the normal arguments.
                 String args0 = setupArgs != null ? setupArgs : args;
