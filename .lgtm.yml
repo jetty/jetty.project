@@ -1,0 +1,7 @@
+# This is used to configure the LGTM.com website's build of eclipse/jetty.project
+# See: https://lgtm.com/projects/g/eclipse/jetty.project
+
+extraction:
+  java:
+    index:
+      java_version: "11"
