@@ -83,26 +83,22 @@ public class JettyIncludeExtension implements ExtensionRegistry
                     .build();
 
                 String setupArgs = (String)attributes.get("setupArgs");
+                if (setupArgs != null)
+                {
+                    try (JettyHomeTester.Run setupRun = jetty.start(setupArgs.split(" ")))
+                    {
+                        setupRun.awaitFor(15, TimeUnit.SECONDS);
+                    }
+                }
+
                 String args = (String)attributes.get("args");
                 args = args == null ? "" : args + " ";
                 args += jettyHome.resolve("etc/jetty-halt.xml");
-
-                // Run first the setup arguments, then the normal arguments.
-                if (setupArgs != null)
+                try (JettyHomeTester.Run run = jetty.start(args.split(" ")))
                 {
-                    try (JettyHomeTester.Run runSetup = jetty.start(setupArgs.split(" ")))
-                    {
-                        run0.awaitFor(15, TimeUnit.SECONDS);
-                    }
-                }
-                if (args != null)
-                {
-                    try (JettyHomeTester.Run run = jetty.start(args.split(" ")))
-                    {
-                        run.awaitFor(15, TimeUnit.SECONDS);
-                        String output = captureOutput(attributes, jetty, run);
-                        reader.push_include(output, "jettyHome_run", target, 1, attributes);
-                    }
+                    run.awaitFor(15, TimeUnit.SECONDS);
+                    String output = captureOutput(attributes, jetty, run);
+                    reader.push_include(output, "jettyHome_run", target, 1, attributes);
                 }
             }
             catch (Throwable x)
