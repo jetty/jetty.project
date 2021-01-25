@@ -30,11 +30,10 @@ Starting Jetty yields:
 ----
 $ java -jar $JETTY_HOME/start.jar
 ----
-[source,subs=quotes]
+
+[source,subs=quotes,options=nowrap]
 ----
-2020-09-30 09:18:36.322:INFO :oejs.Server:main: jetty-10.0.0-SNAPSHOT; built: 2020-09-29T22:40:09.015Z; git: ba5f91fe00a68804a586b7dd4e2520c8c948dcc8; jvm 15+36-1562
-2020-09-30 09:18:36.349:INFO :oejs.AbstractConnector:main: Started ServerConnector@636be97c##{HTTP/1.1, (http/1.1, h2c)}{0.0.0.0:8080}##
-2020-09-30 09:18:36.361:INFO :oejs.Server:main: Started Server@3c72f59f{STARTING}[10.0.0-SNAPSHOT,sto=5000] @526ms
+include::jetty[setupArgs="--add-modules=http,http2c",highlight="(\{.+:8080})"]
 ----
 
 Note how Jetty is listening on port `8080` and the protocols supported are HTTP/1.1 and `h2c` (i.e. clear-text HTTP/2).

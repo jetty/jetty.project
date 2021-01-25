@@ -29,11 +29,10 @@ $ JETTY_BASE=/path/to/jetty.base
 $ cd $JETTY_BASE
 $ java -jar $JETTY_HOME/start.jar
 ----
-----
-ERROR : Nothing to start, exiting ...
 
-Usage: java -jar $JETTY_HOME/start.jar [options] [properties] [configs]
-       java -jar $JETTY_HOME/start.jar --help  # for more information
+[source,options=nowrap]
+----
+include::jetty[]
 ----
 
 The error is normal, since the `$JETTY_BASE` you just created is empty and therefore there is no configuration to use to assemble the Jetty server.
@@ -52,18 +51,10 @@ Try to enable the `http` module (see also xref:og-protocols-http[this section] f
 ----
 $ java -jar $JETTY_HOME/start.jar --add-module=http
 ----
+
+[source,options=nowrap]
 ----
-INFO  : mkdir ${jetty.base}/start.d
-INFO  : server          transitively enabled, ini template available with --add-module=server
-INFO  : logging-jetty   transitively enabled
-INFO  : http            initialized in ${jetty.base}/start.d/http.ini
-INFO  : resources       transitively enabled
-INFO  : threadpool      transitively enabled, ini template available with --add-module=threadpool
-INFO  : logging/slf4j   dynamic dependency of logging-jetty
-INFO  : bytebufferpool  transitively enabled, ini template available with --add-module=bytebufferpool
-INFO  : mkdir ${jetty.base}/resources
-INFO  : copy ${jetty.home}/modules/logging/jetty/resources/jetty-logging.properties to ${jetty.base}/resources/jetty-logging.properties
-INFO  : Base directory was modified
+include::jetty[args="--add-module=http"]
 ----
 
 Now you can start Jetty:
@@ -71,11 +62,10 @@ Now you can start Jetty:
 ----
 $ java -jar $JETTY_HOME/start.jar
 ----
-[source,subs=quotes]
+
+[source,subs=quotes,options=nowrap]
 ----
-2020-09-11 15:35:17.451:INFO :oejs.Server:main: jetty-10.0.0-SNAPSHOT; built: 2020-09-10T11:01:33.608Z; git: b10a14ebf9b200da388f4f9a2036bd8117ee0b11; jvm 11.0.8+10
-2020-09-11 15:35:17.485:INFO :oejs.AbstractConnector:main: Started ServerConnector@2d52216b{HTTP/1.1, #(http/1.1)}{0.0.0.0:8080}#
-2020-09-11 15:35:17.496:INFO :oejs.Server:main: Started Server@44821a96{STARTING}[10.0.0-SNAPSHOT,sto=5000] @553ms
+include::jetty[args="--module=http",highlight="(\{.*:8080})"]
 ----
 
 Note how Jetty is listening on port `8080` for clear-text HTTP/1.1 connections.
@@ -128,11 +118,10 @@ If you restart Jetty, the new value will be used:
 ----
 $ java -jar $JETTY_HOME/start.jar
 ----
-[source,subs=quotes]
+
+[source,subs=quotes,options=nowrap]
 ----
-2020-09-11 15:35:17.451:INFO :oejs.Server:main: jetty-10.0.0-SNAPSHOT; built: 2020-09-10T11:01:33.608Z; git: b10a14ebf9b200da388f4f9a2036bd8117ee0b11; jvm 11.0.8+10
-2020-09-11 15:35:17.485:INFO :oejs.AbstractConnector:main: Started ServerConnector@2d52216b{HTTP/1.1, #(http/1.1)}{0.0.0.0:9999}#
-2020-09-11 15:35:17.496:INFO :oejs.Server:main: Started Server@44821a96{STARTING}[10.0.0-SNAPSHOT,sto=5000] @553ms
+include::jetty[args="--module=http jetty.http.port=9999",highlight="(\{.*:9999})"]
 ----
 
 Note how Jetty is now listening on port `9999` for clear-text HTTP/1.1 connections.

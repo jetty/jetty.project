@@ -13,6 +13,15 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.asciidoctor</groupId>
+      <artifactId>asciidoctorj</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>test-distribution</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-jakarta-servlet-api</artifactId>
     </dependency>
@@ -82,16 +91,16 @@
       <version>${project.version}</version>
       <scope>compile</scope>
     </dependency>
-	<dependency>
-	  <groupId>org.eclipse.jetty.memcached</groupId>
+    <dependency>
+      <groupId>org.eclipse.jetty.memcached</groupId>
       <artifactId>jetty-memcached-sessions</artifactId>
       <version>${project.version}</version>
-	</dependency>
-	<dependency>
-	  <groupId>org.eclipse.jetty</groupId>
-	  <artifactId>jetty-nosql</artifactId>
-	  <version>${project.version}</version>
-	</dependency>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-nosql</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
 
   <build>
@@ -105,6 +114,11 @@
             <artifactId>asciidoctorj-diagram</artifactId>
             <version>2.0.5</version>
           </dependency>
+          <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-documentation</artifactId>
+            <version>${project.version}</version>
+          </dependency>
         </dependencies>
         <configuration>
           <backend>html5</backend>
@@ -112,6 +126,8 @@
             <require>asciidoctor-diagram</require>
           </requires>
           <attributes>
+            <MAVENREPOSITORY>${settings.localRepository}</MAVENREPOSITORY>
+            <PROJECTDIR>${project.basedir}/..</PROJECTDIR>
             <JDURL>http://www.eclipse.org/jetty/javadoc/${project.version}</JDURL>
             <JXURL>http://download.eclipse.org/jetty/stable-9/xref</JXURL>
             <SRCDIR>${basedir}/..</SRCDIR>
@@ -129,7 +145,7 @@
         <executions>
           <execution>
             <id>index</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>process-asciidoc</goal>
             </goals>
@@ -141,7 +157,7 @@
           </execution>
           <execution>
             <id>operations-guide</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>process-asciidoc</goal>
             </goals>
@@ -153,7 +169,7 @@
           </execution>
           <execution>
             <id>contribution-guide</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>process-asciidoc</goal>
             </goals>
