@@ -138,7 +138,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
                "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
         configFileProvider(
                 [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
-          sh "mvn --no-transfer-progress -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Dmaven.repo.uri=http://10.0.0.15:8081/repository/maven-public/ -Pci -V -B -e -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=/tmp/unixsocket"
+          sh "mvn --no-transfer-progress -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Dmaven.repo.uri=${env.MAVEN_REPO_URI} -Pci -V -B -e -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=/tmp/unixsocket"
         }
       }
     }
