@@ -154,7 +154,7 @@ public class JettyHomeTester
         commands.add(config.jettyHome.toAbsolutePath() + "/start.jar");
         // we get artifacts from local repo first
         args = new ArrayList<>(args);
-        args.add("maven.local.repo=" + System.getProperty("mavenRepoPath"));
+        args.add("maven.local.repo=" + config.mavenLocalRepository);
         commands.addAll(args);
 
         LOGGER.info("Executing: {}", commands);
