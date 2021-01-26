@@ -61,6 +61,7 @@ import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -155,10 +156,12 @@ public class JettyHomeTester
 
         args = new ArrayList<>(args);
 
-        args.add("maven.local.repo=" + config.mavenLocalRepository);
-
-        // we get artifacts from local repo first
-        args.add("maven.local.repo=" + System.getProperty("mavenRepoPath"));
+        if (StringUtil.isNotBlank( config.mavenLocalRepository)) {
+            args.add("maven.local.repo=" + config.mavenLocalRepository);
+        } else if (StringUtil.isNotBlank(System.getProperty("mavenRepoPath"))){
+            // we get artifacts from local repo first
+            args.add("maven.local.repo=" + System.getProperty("mavenRepoPath"));
+        }
 
         // if this JVM has `maven.repo.uri` defined, make sure to propagate it to child
         String remoteRepoUri = System.getProperty("maven.repo.uri");

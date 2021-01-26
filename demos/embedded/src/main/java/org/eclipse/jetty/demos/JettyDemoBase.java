@@ -87,6 +87,7 @@ public class JettyDemoBase
                     "jetty.version=" + jettyVersion,
                     "jetty.home=" + jettyHome.toString(),
                     "jetty.base=" + jettyBase.toString(),
+                    "maven.local.repo=" + System.getProperty("mavenRepoPath"),
                     "--add-modules=logging-jetty,demo"
                 };
 
