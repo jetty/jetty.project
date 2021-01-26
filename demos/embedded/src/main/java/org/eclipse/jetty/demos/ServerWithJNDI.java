@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.demos;
 
+import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.util.Properties;
 import javax.naming.NamingException;
@@ -28,7 +29,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class ServerWithJNDI
 {
-    public static Server createServer(int port) throws NamingException
+    public static Server createServer(int port) throws NamingException, FileNotFoundException
     {
         // Create the server
         Server server = new Server(port);
@@ -36,7 +37,7 @@ public class ServerWithJNDI
         // Create a WebApp
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        Path testJndiWar = JettyDemoBase.resolve("webapps/demo-jndi.war");
+        Path testJndiWar = JettyDemos.find("demo-jndi-webapp/target/demo-jndi-webapp-@VER@.war");
         webapp.setWarResource(new PathResource(testJndiWar));
         server.setHandler(webapp);
 
