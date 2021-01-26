@@ -32,6 +32,7 @@ import org.eclipse.jetty.start.fileinits.MavenLocalRepoFileInitializer.Coordinat
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -172,6 +173,7 @@ public class MavenLocalRepoFileInitializerTest
     }
 
     @Test
+    @Tag("external")
     public void testDownloadUnspecifiedRepo()
         throws Exception
     {
