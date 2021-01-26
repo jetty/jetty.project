@@ -65,9 +65,6 @@
     <maven.install.plugin.version>3.0.0-M1</maven.install.plugin.version>
     <maven.deploy.plugin.version>3.0.0-M1</maven.deploy.plugin.version>
 
-    <pmd.verbose>true</pmd.verbose>
-    <pmd.skip>false</pmd.skip>
-
     <!-- testing -->
     <it.debug>false</it.debug>
     <jetty.test.version>5.5</jetty.test.version>
@@ -282,39 +279,6 @@
             </configuration>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-pmd-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>named-logging-enforcement</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-            <configuration>
-              <skip>${pmd.skip}</skip>
-              <verbose>${pmd.verbose}</verbose>
-              <printFailingErrors>${pmd.verbose}</printFailingErrors>
-            </configuration>
-          </execution>
-        </executions>
-        <configuration>
-          <linkXRef>false</linkXRef>
-          <targetJdk>11</targetJdk>
-          <rulesets>
-            <ruleset>jetty/pmd_logging_ruleset.xml</ruleset>
-          </rulesets>
-          <analysisCache>true</analysisCache>
-          <showPmdLog>false</showPmdLog>
-        </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>org.eclipse.jetty.toolchain</groupId>
-            <artifactId>jetty-build-support</artifactId>
-            <version>${build-support.version}</version>
-          </dependency>
-        </dependencies>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -647,11 +611,6 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-pmd-plugin</artifactId>
-          <version>3.14.0</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-project-info-reports-plugin</artifactId>
           <version>3.1.1</version>
         </plugin>
@@ -968,19 +927,6 @@
                     <versionRange>[2.8,)</versionRange>
                     <goals>
                       <goal>jar</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore />
-                  </action>
-                </pluginExecution>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-pmd-plugin</artifactId>
-                    <versionRange>[2.5,)</versionRange>
-                    <goals>
-                      <goal>check</goal>
                     </goals>
                   </pluginExecutionFilter>
                   <action>
@@ -1487,7 +1433,6 @@
         <spotbugs.effort>Default</spotbugs.effort>
         <spotbugs.skip>false</spotbugs.skip>
         <spotbugs.onlyAnalyze>org.eclipse.jetty.*</spotbugs.onlyAnalyze>
-        <pmd.verbose>false</pmd.verbose>
       </properties>
       <modules>
         <module>javadoc</module>
@@ -1680,7 +1625,6 @@
       <id>fast</id>
       <properties>
         <skipTests>true</skipTests>
-        <pmd.skip>true</pmd.skip>
         <checkstyle.skip>true</checkstyle.skip>
         <enforcer.skip>true</enforcer.skip>
         <license.skip>true</license.skip>
