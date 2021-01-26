@@ -156,9 +156,12 @@ public class JettyHomeTester
 
         args = new ArrayList<>(args);
 
-        if (StringUtil.isNotBlank( config.mavenLocalRepository)) {
+        if (StringUtil.isNotBlank(config.mavenLocalRepository))
+        {
             args.add("maven.local.repo=" + config.mavenLocalRepository);
-        } else if (StringUtil.isNotBlank(System.getProperty("mavenRepoPath"))){
+        } 
+        else if (StringUtil.isNotBlank(System.getProperty("mavenRepoPath")))
+        {
             // we get artifacts from local repo first
             args.add("maven.local.repo=" + System.getProperty("mavenRepoPath"));
         }
