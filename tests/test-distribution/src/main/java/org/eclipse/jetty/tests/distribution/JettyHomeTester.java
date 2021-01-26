@@ -152,9 +152,21 @@ public class JettyHomeTester
         commands.add("-Djava.io.tmpdir=" + workDir.toAbsolutePath().toString());
         commands.add("-jar");
         commands.add(config.jettyHome.toAbsolutePath() + "/start.jar");
-        // we get artifacts from local repo first
+
         args = new ArrayList<>(args);
+
         args.add("maven.local.repo=" + config.mavenLocalRepository);
+
+        // we get artifacts from local repo first
+        args.add("maven.local.repo=" + System.getProperty("mavenRepoPath"));
+
+        // if this JVM has `maven.repo.uri` defined, make sure to propagate it to child
+        String remoteRepoUri = System.getProperty("maven.repo.uri");
+        if (remoteRepoUri != null)
+        {
+            args.add("maven.repo.uri=" + remoteRepoUri);
+        }
+        
         commands.addAll(args);
 
         LOGGER.info("Executing: {}", commands);
