@@ -99,7 +99,7 @@ public class ConstraintTest
     private Constraint _authAdminConstraint;
     private Constraint _relaxConstraint;
     private Constraint _loginPageConstraint;
-    private Constraint _allowPostConstraint;
+    private Constraint _noAuthConstraint;
     private Constraint _confidentialDataConstraint;
     private Constraint _anyUserAuthConstraint;
 
@@ -196,12 +196,12 @@ public class ConstraintTest
         mapping4.setPathSpec("/testLoginPage");
         mapping4.setConstraint(_loginPageConstraint);
 
-        _allowPostConstraint = new Constraint();
-        _allowPostConstraint.setAuthenticate(false);
-        _allowPostConstraint.setName("allow forbidden POST");
+        _noAuthConstraint = new Constraint();
+        _noAuthConstraint.setAuthenticate(false);
+        _noAuthConstraint.setName("allow forbidden");
         ConstraintMapping mapping5 = new ConstraintMapping();
         mapping5.setPathSpec("/forbid/post");
-        mapping5.setConstraint(_allowPostConstraint);
+        mapping5.setConstraint(_noAuthConstraint);
         mapping5.setMethod("POST");
         ConstraintMapping mapping5o = new ConstraintMapping();
         mapping5o.setPathSpec("/forbid/post");
@@ -1836,7 +1836,11 @@ public class ConstraintTest
         allowOmitOptions.setPathSpec("/");
         allowOmitOptions.setConstraint(_relaxConstraint);
 
-        _security.setConstraintMappings(new ConstraintMapping[] {forbidTrace, allowOmitTrace, forbidOptions, allowOmitOptions});
+        ConstraintMapping someConstraint = new ConstraintMapping();
+        someConstraint.setPathSpec("/some/constaint/*");
+        someConstraint.setConstraint(_noAuthConstraint);
+
+        _security.setConstraintMappings(new ConstraintMapping[] {forbidTrace, allowOmitTrace, forbidOptions, allowOmitOptions, someConstraint});
 
         _security.setAuthenticator(new BasicAuthenticator());
         _server.start();
@@ -1852,6 +1856,12 @@ public class ConstraintTest
 
         response = _connector.getResponse("GET /ctx/some/path HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 "));
+
+        response = _connector.getResponse("GET /ctx/some/constraint/info HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 200 "));
+
+        response = _connector.getResponse("OPTIONS /ctx/some/constraint/info HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 403 "));
     }
 
     private static String authBase64(String authorization)
