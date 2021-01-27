@@ -366,8 +366,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 {
                     case TERMINATED:
                         onCompleted();
-                        _request.getHttpInput().failed(new IOException("terminated"));
-                        getEndPoint().cancelFillInterested();
+                        if (_request.getHttpInput().isError())
+                        {
+                            _request.getHttpInput().failed(new IOException("terminated"));
+                            getEndPoint().cancelFillInterested();
+                        }
                         break loop;
 
                     case WAIT:
