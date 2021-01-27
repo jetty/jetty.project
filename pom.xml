@@ -1319,9 +1319,11 @@
     </profile>
     <profile>
       <id>eclipse-release</id>
+      <!--
       <modules>
         <module>javadoc</module>
       </modules>
+       -->
       <build>
         <plugins>
           <plugin>
