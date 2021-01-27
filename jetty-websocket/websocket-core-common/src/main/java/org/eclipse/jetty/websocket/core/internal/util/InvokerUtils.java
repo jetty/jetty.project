@@ -342,15 +342,13 @@ public class InvokerUtils
                 if (ref < 0)
                 {
                     if (!throwOnFailure)
-                    {
                         return null;
-                    }
 
                     StringBuilder err = new StringBuilder();
                     err.append("Invalid mapping of type [");
                     err.append(parameterArgs[pi].getType());
                     err.append("] in method ");
-                    ReflectUtils.append(err, method);
+                    ReflectUtils.append(err, targetClass, method);
                     err.append(" to calling args ");
                     appendTypeList(err, callingArgs);
 
@@ -365,20 +363,18 @@ public class InvokerUtils
             {
                 for (int uci = 0; uci < usedCallingArgs.length; uci++)
                 {
-                    if (usedCallingArgs[uci] == false)
+                    if (!usedCallingArgs[uci])
                     {
                         if (callingArgs[uci].required)
                         {
                             if (!throwOnFailure)
-                            {
                                 return null;
-                            }
 
                             StringBuilder err = new StringBuilder();
                             err.append("Missing required argument [");
                             err.append(callingArgs[uci].getType().getName());
                             err.append("] in method ");
-                            ReflectUtils.append(err, method);
+                            ReflectUtils.append(err, targetClass, method);
 
                             throw new InvalidSignatureException(err.toString());
                         }
@@ -408,9 +404,8 @@ public class InvokerUtils
                 // Use converted Types for callingArgs
                 cTypes = new ArrayList<>();
                 cTypes.add(targetClass); // targetClass always at index 0
-                for (int i = 0; i < callingArgs.length; i++)
+                for (Arg arg : callingArgs)
                 {
-                    Arg arg = callingArgs[i];
                     cTypes.add(arg.getConvertedType());
                 }
                 callingType = MethodType.methodType(method.getReturnType(), cTypes);

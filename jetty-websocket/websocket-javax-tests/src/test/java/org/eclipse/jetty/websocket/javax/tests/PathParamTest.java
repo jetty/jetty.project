@@ -17,6 +17,7 @@ import java.net.URI;
 import java.util.concurrent.TimeUnit;
 import javax.websocket.ContainerProvider;
 import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 import javax.websocket.server.PathParam;
@@ -26,18 +27,21 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.javax.server.internal.JavaxWebSocketServerContainer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PathParamTest
 {
     private Server _server;
     private ServerConnector _connector;
-    private ServletContextHandler _context;
+    private JavaxWebSocketServerContainer serverContainer;
 
     @BeforeEach
     public void startContainer() throws Exception
@@ -46,19 +50,13 @@ public class PathParamTest
         _connector = new ServerConnector(_server);
         _server.addConnector(_connector);
 
-        _context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        ServletContextHandler _context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         _context.setContextPath("/context");
         _server.setHandler(_context);
 
-        JavaxWebSocketServletContainerInitializer.configure(_context, (context, container) ->
-        {
-            container.addEndpoint(StringParamSocket.class);
-            container.addEndpoint(IntegerParamSocket.class);
-            container.addEndpoint(IntParamSocket.class);
-            container.addEndpoint(WSFullBooleanAndSessionAndPathParamServer.class);
-        });
-
+        JavaxWebSocketServletContainerInitializer.configure(_context, null);
         _server.start();
+        serverContainer = JavaxWebSocketServerContainer.getContainer(_context.getServletContext());
     }
 
     @AfterEach
@@ -98,7 +96,7 @@ public class PathParamTest
     }
 
     @ServerEndpoint("/pathParam/paramInBrackets/{param}")
-    public static class WSFullBooleanAndSessionAndPathParamServer
+    public static class PathParamStripsBracketsEndpoint
     {
         @OnMessage
         public String echo(@PathParam("{param}") Boolean param, Boolean b, Session s)
@@ -107,9 +105,39 @@ public class PathParamTest
         }
     }
 
+    @ServerEndpoint(value = "/nonUsedParams")
+    public static class UnusedPathParamServerEndpoint
+    {
+        @OnOpen
+        public void onOpen(@PathParam("param1") String p1, Session session) throws Exception
+        {
+            session.getBasicRemote().sendText("unusedParamValue:" + p1);
+        }
+    }
+
+    @Disabled("This will require changes to InvokerUtils to fix.")
+    @Test
+    public void testUnusedParameter() throws Exception
+    {
+        serverContainer.addEndpoint(UnusedPathParamServerEndpoint.class);
+
+        WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+        EventSocket clientEndpoint = new EventSocket();
+
+        URI serverUri = URI.create("ws://localhost:" + _connector.getLocalPort() + "/context/nonUsedParams");
+        Session session = container.connectToServer(clientEndpoint, serverUri);
+
+        String resp = clientEndpoint.textMessages.poll(1, TimeUnit.SECONDS);
+        assertThat("Response echo", resp, is("unusedParamValue:null"));
+        session.close();
+        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
+    }
+
     @Test
     public void testStringPathParamSocket() throws Exception
     {
+        serverContainer.addEndpoint(StringParamSocket.class);
+
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         EventSocket clientEndpoint = new EventSocket();
 
@@ -120,12 +148,14 @@ public class PathParamTest
         String resp = clientEndpoint.textMessages.poll(1, TimeUnit.SECONDS);
         assertThat("Response echo", resp, is("echo-myParam"));
         session.close();
-        clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS);
+        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
     public void testIntegerPathParamSocket() throws Exception
     {
+        serverContainer.addEndpoint(IntegerParamSocket.class);
+
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         EventSocket clientEndpoint = new EventSocket();
 
@@ -136,12 +166,14 @@ public class PathParamTest
         String resp = clientEndpoint.textMessages.poll(1, TimeUnit.SECONDS);
         assertThat("Response echo", resp, is("echo-1001"));
         session.close();
-        clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS);
+        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
     public void testIntPathParamSocket() throws Exception
     {
+        serverContainer.addEndpoint(IntParamSocket.class);
+
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         EventSocket clientEndpoint = new EventSocket();
 
@@ -152,12 +184,14 @@ public class PathParamTest
         String resp = clientEndpoint.textMessages.poll(1, TimeUnit.SECONDS);
         assertThat("Response echo", resp, is("echo-1001"));
         session.close();
-        clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS);
+        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
     public void testPathPramStripsBrackets() throws Exception
     {
+        serverContainer.addEndpoint(PathParamStripsBracketsEndpoint.class);
+
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         EventSocket clientEndpoint = new EventSocket();
 
@@ -168,6 +202,6 @@ public class PathParamTest
         String resp = clientEndpoint.textMessages.poll(1, TimeUnit.SECONDS);
         assertThat("Response echo", resp, is("message:true, param:false"));
         session.close();
-        clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS);
+        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
     }
 }
