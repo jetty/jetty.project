@@ -59,9 +59,6 @@ public class JavaxWebSocketCreator implements WebSocketCreator
     @Override
     public Object createWebSocket(ServerUpgradeRequest req, ServerUpgradeResponse resp)
     {
-        final JsrHandshakeRequest jsrHandshakeRequest = new JsrHandshakeRequest(req);
-        final JsrHandshakeResponse jsrHandshakeResponse = new JsrHandshakeResponse(resp);
-
         // Establish a copy of the config, so that the UserProperties are unique
         // per upgrade request.
         ServerEndpointConfig config = new ServerEndpointConfigWrapper(baseConfig)
@@ -138,6 +135,9 @@ public class JavaxWebSocketCreator implements WebSocketCreator
         }
         resp.setExtensions(configs);
 
+        final JsrHandshakeRequest jsrHandshakeRequest = new JsrHandshakeRequest(req);
+        final JsrHandshakeResponse jsrHandshakeResponse = new JsrHandshakeResponse(resp);
+
         // [JSR] Step 4: build out new ServerEndpointConfig
         PathSpec pathSpec = jsrHandshakeRequest.getRequestPathSpec();
         if (pathSpec instanceof UriTemplatePathSpec)
@@ -146,7 +146,9 @@ public class JavaxWebSocketCreator implements WebSocketCreator
             UriTemplatePathSpec wspathSpec = (UriTemplatePathSpec)pathSpec;
             String requestPath = req.getRequestPath();
             // Wrap the config with the path spec information
-            config = new PathParamServerEndpointConfig(config, wspathSpec, requestPath);
+            PathParamServerEndpointConfig pathParamConfig = new PathParamServerEndpointConfig(config, wspathSpec, requestPath);
+            jsrHandshakeRequest.setPathParams(pathParamConfig.getPathParams());
+            config = pathParamConfig;
         }
 
         // [JSR] Step 5: Call modifyHandshake

@@ -28,20 +28,14 @@ import org.eclipse.jetty.websocket.javax.common.ServerEndpointConfigWrapper;
  */
 public class PathParamServerEndpointConfig extends ServerEndpointConfigWrapper implements PathParamProvider
 {
-    private final Map<String, String> pathParamMap;
+    private final Map<String, String> pathParamMap = new HashMap<>();
 
     public PathParamServerEndpointConfig(ServerEndpointConfig config, UriTemplatePathSpec pathSpec, String requestPath)
     {
         super(config);
-
         Map<String, String> pathMap = pathSpec.getPathParams(requestPath);
-        pathParamMap = new HashMap<>();
         if (pathMap != null)
-        {
-            pathMap.entrySet().stream().forEach(
-                entry -> pathParamMap.put(entry.getKey(), URIUtil.decodePath(entry.getValue()))
-            );
-        }
+            pathMap.forEach((key, value) -> pathParamMap.put(key, URIUtil.decodePath(value)));
     }
 
     @Override

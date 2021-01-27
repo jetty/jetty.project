@@ -15,6 +15,9 @@ package org.eclipse.jetty.websocket.javax.server.internal;
 
 import java.net.URI;
 import java.security.Principal;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.websocket.server.HandshakeRequest;
@@ -25,10 +28,16 @@ import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 public class JsrHandshakeRequest implements HandshakeRequest
 {
     private final ServerUpgradeRequest delegate;
+    private Map<String, String> pathParams;
 
     public JsrHandshakeRequest(ServerUpgradeRequest req)
     {
         this.delegate = req;
+    }
+
+    public void setPathParams(Map<String, String> pathParams)
+    {
+        this.pathParams = pathParams;
     }
 
     @Override
@@ -46,6 +55,22 @@ public class JsrHandshakeRequest implements HandshakeRequest
     @Override
     public Map<String, List<String>> getParameterMap()
     {
+        // The TCK wants the PathParams to be included in the list of Request parameters.
+        if (pathParams != null && !pathParams.isEmpty())
+        {
+            HashMap<String, List<String>> map = new HashMap<>(delegate.getParameterMap());
+            for (Map.Entry<String, String> entry : pathParams.entrySet())
+            {
+                List<String> list = map.get(entry.getKey());
+                ArrayList<String> updatedList = new ArrayList<>();
+                if (list != null)
+                    updatedList.addAll(list);
+                updatedList.add(entry.getValue());
+                map.put(entry.getKey(), Collections.unmodifiableList(updatedList));
+            }
+            return map;
+        }
+
         return delegate.getParameterMap();
     }
 
