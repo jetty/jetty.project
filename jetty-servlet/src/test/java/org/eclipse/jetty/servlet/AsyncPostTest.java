@@ -171,7 +171,7 @@ public class AsyncPostTest
 
             // make sure there are no threads stuck in the servlet code
             servletReadsExecutor.shutdown();
-            assertThat(servletReadsExecutor.isTerminated(), is(true));
+            assertThat(servletReadsExecutor.awaitTermination(5, TimeUnit.SECONDS), is(true));
         }
         catch (InterruptedException e)
         {
