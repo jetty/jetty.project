@@ -1394,9 +1394,9 @@
         <spotbugs.skip>false</spotbugs.skip>
         <spotbugs.onlyAnalyze>org.eclipse.jetty.*</spotbugs.onlyAnalyze>
       </properties>
-      <modules>
-        <module>javadoc</module>
-      </modules>
+<!--      <modules>-->
+<!--        <module>javadoc</module>-->
+<!--      </modules>-->
       <build>
         <pluginManagement>
           <plugins>
