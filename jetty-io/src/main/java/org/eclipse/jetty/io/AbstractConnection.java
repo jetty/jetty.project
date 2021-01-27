@@ -139,7 +139,6 @@ public abstract class AbstractConnection implements Connection
         getEndPoint().fillInterestedWithCancel(_readCallback);
     }
 
-
     public void tryFillInterested()
     {
         tryFillInterested(_readCallback);

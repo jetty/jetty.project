@@ -26,9 +26,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletInputStream;
@@ -55,8 +53,8 @@ import static org.hamcrest.core.Is.is;
 
 public class AsyncPostTest
 {
-    private static final int THREADS = 100;
-    private static final int REQUEST_COUNT = 1000;
+    private static final int THREADS = 10;
+    private static final int REQUEST_COUNT = 100;
     private static final int ASYNC_TIMEOUT = 1000;
 
     private Server server;
@@ -82,8 +80,6 @@ public class AsyncPostTest
                         int read = inputStream.read(buffer);
                         if (read == -1)
                             break;
-                        if (read != 1)
-                            System.out.println("WTF? read was " + read);
                     }
                 }
                 catch (IOException e)
@@ -121,16 +117,7 @@ public class AsyncPostTest
         client.setExecutor(new QueuedThreadPool(THREADS, THREADS, new LinkedBlockingDeque<>()));
         client.start();
 
-        servletReadsExecutor = Executors.newFixedThreadPool(THREADS, new ThreadFactory() {
-            private final AtomicInteger counter = new AtomicInteger();
-            @Override
-            public Thread newThread(Runnable r)
-            {
-                Thread t = new Thread(r, "ServletReadsThread-" + counter.incrementAndGet());
-                t.setDaemon(true);
-                return t;
-            }
-        });
+        servletReadsExecutor = Executors.newFixedThreadPool(THREADS);
         contentProviderExecutor = Executors.newFixedThreadPool(THREADS);
     }
 
@@ -144,10 +131,10 @@ public class AsyncPostTest
     }
 
     @Test
-    void readOnPostWithAsyncTimeout() throws Exception
+    public void blockingReadOnPostWithAsyncTimeout()
     {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 1_000; i++)
+        for (int i = 0; i < 300; i++)
             sb.append("|").append(i);
         String content = sb.toString();
 
@@ -157,7 +144,7 @@ public class AsyncPostTest
 
         for (int i = 0; i < REQUEST_COUNT; i++)
         {
-            client.newRequest("http://localhost:8080")
+            client.newRequest(server.getURI())
                 .path("/ctx/readOnPost")
                 .method(HttpMethod.POST)
                 .content(new StringDeferredContentProvider(content, StandardCharsets.UTF_8, 1, contentProviderExecutor))
@@ -167,7 +154,7 @@ public class AsyncPostTest
 
         try
         {
-            assertThat(latch.await(360, TimeUnit.SECONDS), is(true));
+            assertThat(latch.await(60, TimeUnit.SECONDS), is(true));
 
             // make sure there are no threads stuck in the servlet code
             servletReadsExecutor.shutdown();
@@ -185,15 +172,14 @@ public class AsyncPostTest
 
     private static class StringDeferredContentProvider extends DeferredContentProvider
     {
-
         private final byte[] bytes;
-
         private int index;
 
         public StringDeferredContentProvider(String content, Charset charset, int delay, ExecutorService executor)
         {
             this.bytes = content.getBytes(charset);
-            executor.submit(()->{
+            executor.submit(() ->
+            {
                 while (true)
                 {
                     try
@@ -214,6 +200,4 @@ public class AsyncPostTest
             });
         }
     }
-
-
 }
