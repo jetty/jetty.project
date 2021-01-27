@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.util.Callback;
@@ -46,6 +45,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
 
     private final WebSocketComponents components;
     private final Behavior behavior;
+    private List<ExtensionConfig> negotiatedExtensions;
     private List<Extension> extensions;
     private IncomingFrames incoming;
     private OutgoingFrames outgoing;
@@ -70,10 +70,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
      */
     public List<ExtensionConfig> getNegotiatedExtensions()
     {
-        if (extensions == null)
-            return Collections.emptyList();
-
-        return extensions.stream().filter(e -> !e.getName().startsWith("@")).map(Extension::getConfig).collect(Collectors.toList());
+        return (negotiatedExtensions == null) ? Collections.emptyList() : negotiatedExtensions;
     }
 
     @ManagedAttribute(name = "Next Incoming Frames Handler", readonly = true)
@@ -114,6 +111,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
         if (LOG.isDebugEnabled())
             LOG.debug("Extension Configs={}", negotiatedConfigs);
 
+        this.negotiatedExtensions = List.copyOf(negotiatedConfigs);
         this.extensions = new ArrayList<>();
 
         for (ExtensionConfig config : negotiatedConfigs)

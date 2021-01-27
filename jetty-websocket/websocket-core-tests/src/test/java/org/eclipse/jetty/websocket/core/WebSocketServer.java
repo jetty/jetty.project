@@ -29,6 +29,7 @@ import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 public class WebSocketServer
 {
     private final Server server = new Server();
+    private final WebSocketComponents components;
     private URI serverUri;
 
     public void start() throws Exception
@@ -84,6 +85,7 @@ public class WebSocketServer
         ContextHandler context = new ContextHandler("/");
         server.setHandler(context);
 
+        this.components = components;
         WebSocketUpgradeHandler upgradeHandler = new WebSocketUpgradeHandler(components);
         upgradeHandler.addMapping("/*", negotiator);
         context.setHandler(upgradeHandler);
@@ -95,6 +97,11 @@ public class WebSocketServer
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
         sslContextFactory.setKeyStorePassword("storepwd");
         return sslContextFactory;
+    }
+
+    public WebSocketComponents getComponents()
+    {
+        return components;
     }
 
     public URI getUri()

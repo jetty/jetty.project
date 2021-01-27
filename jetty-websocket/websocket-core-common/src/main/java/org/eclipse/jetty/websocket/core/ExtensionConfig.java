@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -295,6 +296,16 @@ public class ExtensionConfig
     public final void setParameter(String key, String value)
     {
         parameters.put(key, value);
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (!(obj instanceof ExtensionConfig))
+            return false;
+
+        ExtensionConfig extensionConfig = (ExtensionConfig)obj;
+        return Objects.equals(this.name, extensionConfig.name) && Objects.equals(this.parameters, extensionConfig.parameters);
     }
 
     @Override

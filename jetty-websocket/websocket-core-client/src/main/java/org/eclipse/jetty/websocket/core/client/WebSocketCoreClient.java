@@ -23,7 +23,6 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.core.CoreSession;
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
@@ -76,15 +75,6 @@ public class WebSocketCoreClient extends ContainerLifeCycle
     {
         if (!isStarted())
             throw new IllegalStateException(WebSocketCoreClient.class.getSimpleName() + "@" + this.hashCode() + " is not started");
-
-        // Validate Requested Extensions
-        for (ExtensionConfig reqExt : request.getExtensions())
-        {
-            if (!components.getExtensionRegistry().isAvailable(reqExt.getName()))
-            {
-                throw new IllegalArgumentException("Requested extension [" + reqExt.getName() + "] is not installed");
-            }
-        }
 
         for (Request.Listener l : getBeans(Request.Listener.class))
         {
