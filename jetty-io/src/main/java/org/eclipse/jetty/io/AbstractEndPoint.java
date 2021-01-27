@@ -356,6 +356,20 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     }
 
     @Override
+    public void cancelFillInterested()
+    {
+        notIdle();
+        _fillInterest.cancel();
+    }
+
+    @Override
+    public void fillInterestedWithCancel(Callback callback)
+    {
+        notIdle();
+        _fillInterest.registerWithCancel(callback);
+    }
+
+    @Override
     public void fillInterested(Callback callback)
     {
         notIdle();

@@ -278,7 +278,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 }
                 else if (filled == 0)
                 {
-                    fillInterested();
+                    tryFillInterested();
                     break;
                 }
                 else if (filled < 0)
@@ -464,7 +464,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             }
             // else the parser must be closed, so seek the EOF if we are still open
             else if (getEndPoint().isOpen())
-                fillInterested();
+                fillInterestedWithCancel();
         }
     }
 

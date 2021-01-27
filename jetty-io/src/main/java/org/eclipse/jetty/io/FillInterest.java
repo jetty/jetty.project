@@ -42,6 +42,27 @@ public abstract class FillInterest
     {
     }
 
+    public void cancel()
+    {
+        Callback callback = _interested.getAndSet(null);
+        if (callback != null)
+        {
+            callback.failed(new IOException("cancel called"));
+            LOG.info("cancelled {}", callback);
+        }
+        else
+        {
+            LOG.info("cancelled nothing as callback was null");
+        }
+    }
+
+    public void registerWithCancel(Callback callback) throws ReadPendingException
+    {
+        Callback cancelled = _interested.getAndSet(callback);
+        if (cancelled != null)
+            cancelled.failed(new IOException("registerWithCancel"));
+    }
+
     /**
      * Call to register interest in a callback when a read is possible.
      * The callback will be called either immediately if {@link #needsFillInterest()}

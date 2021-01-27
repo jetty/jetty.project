@@ -199,6 +199,10 @@ public interface EndPoint extends Closeable
      */
     void setIdleTimeout(long idleTimeout);
 
+    default void cancelFillInterested(){} //TODO check all implementations!
+
+    default void fillInterestedWithCancel(Callback callback) throws ReadPendingException{} //TODO check all implementations!
+
     /**
      * <p>Requests callback methods to be invoked when a call to {@link #fill(ByteBuffer)} would return data or EOF.</p>
      *
