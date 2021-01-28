@@ -39,8 +39,6 @@ public class LikeJettyXmlTest extends AbstractEmbeddedTest
     @BeforeEach
     public void startServer() throws Exception
     {
-        assumeTrue(JettyHome.JETTY_HOME != null, "jetty-home not found");
-
         server = LikeJettyXml.createServer(0, 0, false);
         server.start();
 

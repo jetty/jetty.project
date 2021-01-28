@@ -1277,7 +1277,7 @@
                   <path>
                     <groupId>com.google.errorprone</groupId>
                     <artifactId>error_prone_core</artifactId>
-                    <version>2.4.0</version>
+                    <version>2.5.1</version>
                   </path>
                 </annotationProcessorPaths>
               </configuration>
@@ -1359,9 +1359,11 @@
     </profile>
     <profile>
       <id>eclipse-release</id>
+      <!-- Disabled Temporarily: see Issue #5942
       <modules>
         <module>javadoc</module>
       </modules>
+      -->
       <build>
         <plugins>
           <plugin>
@@ -1434,9 +1436,11 @@
         <spotbugs.skip>false</spotbugs.skip>
         <spotbugs.onlyAnalyze>org.eclipse.jetty.*</spotbugs.onlyAnalyze>
       </properties>
+      <!-- Disabled Temporarily: see Issue #5942
       <modules>
         <module>javadoc</module>
       </modules>
+      -->
       <build>
         <pluginManagement>
           <plugins>

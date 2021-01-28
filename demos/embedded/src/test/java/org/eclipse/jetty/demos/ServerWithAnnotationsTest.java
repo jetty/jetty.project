@@ -36,8 +36,6 @@ public class ServerWithAnnotationsTest extends AbstractEmbeddedTest
     @BeforeEach
     public void startServer() throws Exception
     {
-        assumeTrue(JettyHome.JETTY_HOME != null, "jetty-home not found");
-
         server = ServerWithAnnotations.createServer(0);
         server.start();
     }

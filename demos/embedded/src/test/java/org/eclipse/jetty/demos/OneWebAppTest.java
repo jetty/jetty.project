@@ -37,8 +37,6 @@ public class OneWebAppTest extends AbstractEmbeddedTest
     @BeforeEach
     public void startServer() throws Exception
     {
-        assumeTrue(JettyHome.JETTY_HOME != null, "jetty-home not found");
-
         server = OneWebApp.createServer(0);
         server.start();
     }
