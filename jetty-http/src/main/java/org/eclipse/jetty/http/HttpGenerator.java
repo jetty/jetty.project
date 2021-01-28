@@ -465,6 +465,12 @@ public class HttpGenerator
         }
     }
 
+    public void servletUpgrade()
+    {
+        _noContentResponse = false;
+        _state = State.COMMITTED;
+    }
+
     private void prepareChunk(ByteBuffer chunk, int remaining)
     {
         // if we need CRLF add this to header
