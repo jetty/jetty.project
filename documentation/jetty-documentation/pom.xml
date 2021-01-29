@@ -45,7 +45,7 @@
             <PROGGUIDE>../programming-guide/index.html</PROGGUIDE>
             <GSTARTGUIDE>../gettingstarted-guide/index.html</GSTARTGUIDE>
             <CONTRIBGUIDE>../contribution-guide/index.html</CONTRIBGUIDE>
-            <MVNCENTRAL>http://central.maven.org/maven2</MVNCENTRAL>
+            <MVNCENTRAL>https://repo1.maven.org/maven2</MVNCENTRAL>
             <VERSION>${project.version}</VERSION>
             <TIMESTAMP>${maven.build.timestamp}</TIMESTAMP>
           </attributes>
