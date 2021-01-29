@@ -41,7 +41,7 @@ public class PathParamTest
 {
     private Server _server;
     private ServerConnector _connector;
-    private JavaxWebSocketServerContainer serverContainer;
+    private JavaxWebSocketServerContainer _serverContainer;
 
     @BeforeEach
     public void startContainer() throws Exception
@@ -50,13 +50,13 @@ public class PathParamTest
         _connector = new ServerConnector(_server);
         _server.addConnector(_connector);
 
-        ServletContextHandler _context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        _context.setContextPath("/context");
-        _server.setHandler(_context);
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/context");
+        _server.setHandler(context);
 
-        JavaxWebSocketServletContainerInitializer.configure(_context, null);
+        JavaxWebSocketServletContainerInitializer.configure(context, null);
         _server.start();
-        serverContainer = JavaxWebSocketServerContainer.getContainer(_context.getServletContext());
+        _serverContainer = JavaxWebSocketServerContainer.getContainer(context.getServletContext());
     }
 
     @AfterEach
@@ -119,7 +119,7 @@ public class PathParamTest
     @Test
     public void testUnusedParameter() throws Exception
     {
-        serverContainer.addEndpoint(UnusedPathParamServerEndpoint.class);
+        _serverContainer.addEndpoint(UnusedPathParamServerEndpoint.class);
 
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         EventSocket clientEndpoint = new EventSocket();
@@ -136,7 +136,7 @@ public class PathParamTest
     @Test
     public void testStringPathParamSocket() throws Exception
     {
-        serverContainer.addEndpoint(StringParamSocket.class);
+        _serverContainer.addEndpoint(StringParamSocket.class);
 
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         EventSocket clientEndpoint = new EventSocket();
@@ -154,7 +154,7 @@ public class PathParamTest
     @Test
     public void testIntegerPathParamSocket() throws Exception
     {
-        serverContainer.addEndpoint(IntegerParamSocket.class);
+        _serverContainer.addEndpoint(IntegerParamSocket.class);
 
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         EventSocket clientEndpoint = new EventSocket();
@@ -172,7 +172,7 @@ public class PathParamTest
     @Test
     public void testIntPathParamSocket() throws Exception
     {
-        serverContainer.addEndpoint(IntParamSocket.class);
+        _serverContainer.addEndpoint(IntParamSocket.class);
 
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         EventSocket clientEndpoint = new EventSocket();
@@ -190,7 +190,7 @@ public class PathParamTest
     @Test
     public void testPathPramStripsBrackets() throws Exception
     {
-        serverContainer.addEndpoint(PathParamStripsBracketsEndpoint.class);
+        _serverContainer.addEndpoint(PathParamStripsBracketsEndpoint.class);
 
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         EventSocket clientEndpoint = new EventSocket();
