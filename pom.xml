@@ -1319,11 +1319,9 @@
     </profile>
     <profile>
       <id>eclipse-release</id>
-      <!-- Disabled Temporarily: see Issue #5942
       <modules>
         <module>javadoc</module>
       </modules>
-      -->
       <build>
         <plugins>
           <plugin>
@@ -1396,11 +1394,9 @@
         <spotbugs.skip>false</spotbugs.skip>
         <spotbugs.onlyAnalyze>org.eclipse.jetty.*</spotbugs.onlyAnalyze>
       </properties>
-      <!-- Disabled Temporarily: see Issue #5942
       <modules>
         <module>javadoc</module>
       </modules>
-      -->
       <build>
         <pluginManagement>
           <plugins>
