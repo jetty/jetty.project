@@ -628,6 +628,9 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-resources-plugin</artifactId>
           <version>${maven.resources.plugin.version}</version>
+          <configuration>
+            <propertiesEncoding>${project.build.sourceEncoding}</propertiesEncoding>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -1359,11 +1362,9 @@
     </profile>
     <profile>
       <id>eclipse-release</id>
-      <!-- Disabled Temporarily: see Issue #5942
       <modules>
         <module>javadoc</module>
       </modules>
-      -->
       <build>
         <plugins>
           <plugin>
@@ -1436,11 +1437,9 @@
         <spotbugs.skip>false</spotbugs.skip>
         <spotbugs.onlyAnalyze>org.eclipse.jetty.*</spotbugs.onlyAnalyze>
       </properties>
-      <!-- Disabled Temporarily: see Issue #5942
       <modules>
         <module>javadoc</module>
       </modules>
-      -->
       <build>
         <pluginManagement>
           <plugins>
