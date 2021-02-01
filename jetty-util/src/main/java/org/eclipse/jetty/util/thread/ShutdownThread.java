@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.util.thread;
 
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -31,7 +33,10 @@ import org.slf4j.LoggerFactory;
 public class ShutdownThread extends Thread
 {
     private static final Logger LOG = LoggerFactory.getLogger(ShutdownThread.class);
-    private static final ShutdownThread _thread = new ShutdownThread();
+    private static final ShutdownThread _thread = PrivilegedThreadFactory.newThread(() ->
+    {
+        return new ShutdownThread();
+    });
 
     private final AutoLock _lock = new AutoLock();
     private boolean _hooked;
