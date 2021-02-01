@@ -15,6 +15,8 @@ package org.eclipse.jetty.util.thread;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -697,11 +699,15 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     @Override
     public Thread newThread(Runnable runnable)
     {
-        Thread thread = new Thread(_threadGroup, runnable);
-        thread.setDaemon(isDaemon());
-        thread.setPriority(getThreadsPriority());
-        thread.setName(_name + "-" + thread.getId());
-        return thread;
+        return PrivilegedThreadFactory.newThread(() ->
+        {
+            Thread thread = new Thread(_threadGroup, runnable);
+            thread.setDaemon(isDaemon());
+            thread.setPriority(getThreadsPriority());
+            thread.setName(_name + "-" + thread.getId());
+            thread.setContextClassLoader(getClass().getClassLoader());
+            return thread;
+        });
     }
 
     protected void removeThread(Thread thread)
