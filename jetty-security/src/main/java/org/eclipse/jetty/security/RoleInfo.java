@@ -143,12 +143,12 @@ public class RoleInfo
         else if (other._checked)
         {
             setChecked(true);
+            if (other._isAnyAuth)
+                setAnyAuth(true);
             if (other._isAnyRole)
                 setAnyRole(true);
-            else if (other._isAnyAuth)
-                setAnyAuth(true);
-            else if (!_isAnyRole)
-                _roles.addAll(other._roles);
+
+            _roles.addAll(other._roles);
         }
         setUserDataConstraint(other._userDataConstraint);
     }
