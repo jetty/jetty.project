@@ -377,7 +377,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     public void onCompleted()
     {
         boolean complete = _input.consumeAll();
-        getEndPoint().cancelFillInterest(_input::getError);
+        Throwable cancelled = getEndPoint().cancelFillInterest(_input::getError);
+        if (LOG.isDebugEnabled())
+            LOG.debug("cancelled {}", this, cancelled);
 
         // Handle connection upgrades
         if (_channel.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)

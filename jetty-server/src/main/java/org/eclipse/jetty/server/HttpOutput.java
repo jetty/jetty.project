@@ -29,6 +29,7 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.util.ResourceBundle;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
@@ -449,6 +450,15 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                             break;
 
                         case BLOCKED:
+                            CancellationException cancelled = new CancellationException();
+                            if (_writeBlocker.fail(cancelled))
+                                _channel.abort(cancelled);
+                            // An operation is in progress, so we soft close now
+                            _softClose = true;
+                            // then trigger a close from onWriteComplete
+                            _state = State.CLOSE;
+                            break;
+
                         case UNREADY:
                         case PENDING:
                             // An operation is in progress, so we soft close now
@@ -1399,7 +1409,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             _state = State.OPEN;
             _apiState = ApiState.BLOCKING;
-            _softClose = false;
+            _softClose = true; // Stay closed until next request
             _interceptor = _channel;
             HttpConfiguration config = _channel.getHttpConfiguration();
             _bufferSize = config.getOutputBufferSize();

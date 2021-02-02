@@ -18,10 +18,15 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -44,6 +49,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -393,6 +399,106 @@ public class BlockingTest
             // Async thread should have stopped
             assertTrue(stopped.await(10, TimeUnit.SECONDS));
             assertThat(readException.get(), instanceOf(IOException.class));
+        }
+    }
+
+    @Test
+    public void testBlockingWriteThenNormalComplete() throws Exception
+    {
+        CountDownLatch started = new CountDownLatch(1);
+        CountDownLatch stopped = new CountDownLatch(1);
+        AtomicReference<Throwable> readException = new AtomicReference<>();
+        AbstractHandler handler = new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setStatus(200);
+                response.setContentType("text/plain");
+                new Thread(() ->
+                {
+                    try
+                    {
+                        byte[] data = new byte[16 * 1024];
+                        Arrays.fill(data, (byte)'X');
+                        data[data.length - 2] = '\r';
+                        data[data.length - 1] = '\n';
+                        OutputStream out = response.getOutputStream();
+                        started.countDown();
+                        while (true)
+                            out.write(data);
+                    }
+                    catch (Throwable t)
+                    {
+                        readException.set(t);
+                        stopped.countDown();
+                    }
+                }).start();
+
+                try
+                {
+                    // wait for thread to start and read first byte
+                    started.await(10, TimeUnit.SECONDS);
+                    // give it time to block on write
+                    Thread.sleep(1000);
+                }
+                catch (Throwable e)
+                {
+                    throw new ServletException(e);
+                }
+            }
+        };
+        context.setHandler(handler);
+        server.start();
+
+        StringBuilder request = new StringBuilder();
+        request.append("GET /ctx/path/info HTTP/1.1\r\n")
+            .append("Host: localhost\r\n")
+            .append("\r\n");
+
+        int port = connector.getLocalPort();
+        try (Socket socket = new Socket("localhost", port))
+        {
+            socket.setSoTimeout(1000000);
+            OutputStream out = socket.getOutputStream();
+            out.write(request.toString().getBytes(StandardCharsets.ISO_8859_1));
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.ISO_8859_1));
+
+            // Read the header
+            List<String> header = new ArrayList<>();
+            while (true)
+            {
+                String line = in.readLine();
+                if (line.length() == 0)
+                    break;
+                header.add(line);
+            }
+            assertThat(header.get(0), containsString("200 OK"));
+
+            // read one line of content
+            String content = in.readLine();
+            assertThat(content, is("4000"));
+            content = in.readLine();
+            assertThat(content, startsWith("XXXXXXXX"));
+
+            // check that writing thread is stopped by end of request handling
+            assertTrue(stopped.await(10, TimeUnit.SECONDS));
+
+            // read until last line
+            String last = null;
+            while (true)
+            {
+                String line = in.readLine();
+                if (line == null)
+                    break;
+
+                last = line;
+            }
+
+            // last line is not empty chunk, ie abnormal completion
+            assertThat(last, startsWith("XXXXX"));
         }
     }
 }
