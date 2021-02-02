@@ -49,9 +49,10 @@ import org.eclipse.jetty.server.UserIdentity;
  */
 public class UpgradeHttpServletRequest implements HttpServletRequest
 {
-    private static final String UNSUPPORTED_WITH_WEBSOCKET_UPGRADE = "Feature unsupported with a Upgraded to WebSocket HttpServletRequest";
+    private static final String UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE = "Feature unsupported after Upgraded to WebSocket";
 
-    private final Request baseRequest;
+    private HttpServletRequest request;
+
     private final ServletContext context;
     private final DispatcherType dispatcher;
     private final String method;
@@ -88,6 +89,8 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
     {
         // The original request object must be held temporarily for the duration of the handshake
         // in order to be able to implement methods such as isUserInRole() and setAttribute().
+        request = httpRequest;
+
         context = httpRequest.getServletContext();
         dispatcher = httpRequest.getDispatcherType();
 
@@ -107,7 +110,7 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
 
         remoteUser = httpRequest.getRemoteUser();
         principal = httpRequest.getUserPrincipal();
-        baseRequest = Objects.requireNonNull(Request.getBaseRequest(httpRequest));
+        Request baseRequest = Objects.requireNonNull(Request.getBaseRequest(httpRequest));
         authentication = baseRequest.getAuthentication();
         scope = baseRequest.getUserIdentityScope();
 
@@ -120,13 +123,6 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
 
         parameters.putAll(httpRequest.getParameterMap());
 
-        Enumeration<String> attributeNames = httpRequest.getAttributeNames();
-        while (attributeNames.hasMoreElements())
-        {
-            String name = attributeNames.nextElement();
-            attributes.put(name, httpRequest.getAttribute(name));
-        }
-
         Enumeration<Locale> localeElements = httpRequest.getLocales();
         while (localeElements.hasMoreElements())
         {
@@ -138,6 +134,23 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
         remoteAddress = InetSocketAddress.createUnresolved(httpRequest.getRemoteAddr(), httpRequest.getRemotePort());
         remoteName = httpRequest.getRemoteHost();
         serverAddress = InetSocketAddress.createUnresolved(httpRequest.getServerName(), httpRequest.getServerPort());
+    }
+
+    public void upgrade()
+    {
+        Enumeration<String> attributeNames = request.getAttributeNames();
+        while (attributeNames.hasMoreElements())
+        {
+            String name = attributeNames.nextElement();
+            attributes.put(name, request.getAttribute(name));
+        }
+
+        request = null;
+    }
+
+    public HttpServletRequest getHttpServletRequest()
+    {
+        return request;
     }
 
     @Override
@@ -184,13 +197,13 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
     @Override
     public long getDateHeader(String name)
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
     }
 
     @Override
     public int getIntHeader(String name)
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
     }
 
     @Override
@@ -234,7 +247,6 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
     {
         if (authentication instanceof Authentication.User)
             return ((Authentication.User)authentication).isUserInRole(scope, role);
-
         return false;
     }
 
@@ -265,8 +277,8 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
     @Override
     public HttpSession getSession(boolean create)
     {
-        if (create)
-            throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        if (create && (session == null))
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
         return session;
     }
 
@@ -276,56 +288,50 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
         return session;
     }
 
-    public Request getBaseRequest()
-    {
-        return baseRequest;
-    }
-
     @Override
     public String getRequestedSessionId()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
     }
 
     @Override
     public boolean isRequestedSessionIdValid()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
     }
 
     @Override
     public boolean isRequestedSessionIdFromCookie()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
     }
 
     @Override
     public boolean isRequestedSessionIdFromURL()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
     }
 
     @Override
     public boolean isRequestedSessionIdFromUrl()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
     }
 
     @Override
     public Object getAttribute(String name)
     {
-        return attributes.get(name);
+        if (request == null)
+            return attributes.get(name);
+        return request.getAttribute(name);
     }
 
     @Override
     public Enumeration<String> getAttributeNames()
     {
-        return Collections.enumeration(attributes.keySet());
-    }
-
-    public Map<String, Object> getAttributes()
-    {
-        return Collections.unmodifiableMap(attributes);
+        if (request == null)
+            return Collections.enumeration(attributes.keySet());
+        return request.getAttributeNames();
     }
 
     @Override
@@ -400,13 +406,17 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
     @Override
     public void setAttribute(String name, Object value)
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        request.setAttribute(name, value);
     }
 
     @Override
     public void removeAttribute(String name)
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        request.removeAttribute(name);
     }
 
     @Override
@@ -468,73 +478,73 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
     @Override
     public boolean authenticate(HttpServletResponse response)
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
     }
 
     @Override
     public String changeSessionId()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
     }
 
     @Override
     public AsyncContext getAsyncContext()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
     }
 
     @Override
     public String getCharacterEncoding()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
     }
 
     @Override
     public int getContentLength()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
     }
 
     @Override
     public long getContentLengthLong()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
     }
 
     @Override
     public String getContentType()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
     }
 
     @Override
     public ServletInputStream getInputStream()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
     }
 
     @Override
     public Part getPart(String name)
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
     }
 
     @Override
     public Collection<Part> getParts()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
     }
 
     @Override
     public BufferedReader getReader()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
     }
 
     @Override
     public RequestDispatcher getRequestDispatcher(String path)
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
     }
 
     @Override
@@ -552,36 +562,36 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
     @Override
     public void login(String username, String password)
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
     }
 
     @Override
     public void logout()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
     }
 
     @Override
     public void setCharacterEncoding(String enc)
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
     }
 
     @Override
     public AsyncContext startAsync() throws IllegalStateException
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
     }
 
     @Override
     public AsyncContext startAsync(ServletRequest servletRequest, ServletResponse servletResponse) throws IllegalStateException
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
     }
 
     @Override
     public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass)
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_WITH_WEBSOCKET_UPGRADE);
+        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
     }
 }

@@ -19,15 +19,16 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.security.Principal;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 import javax.servlet.ServletRequest;
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
@@ -42,7 +43,7 @@ public class ServerUpgradeRequest
 {
     private final URI requestURI;
     private final String queryString;
-    private final UpgradeHttpServletRequest request;
+    private final HttpServletRequest request;
     private final boolean secure;
     private final WebSocketNegotiation negotiation;
     private List<HttpCookie> cookies;
@@ -51,20 +52,17 @@ public class ServerUpgradeRequest
     public ServerUpgradeRequest(WebSocketNegotiation negotiation) throws BadMessageException
     {
         this.negotiation = negotiation;
-        HttpServletRequest httpRequest = negotiation.getRequest();
-        this.queryString = httpRequest.getQueryString();
-        this.secure = httpRequest.isSecure();
+        this.request = negotiation.getRequest();
+        this.queryString = request.getQueryString();
+        this.secure = request.isSecure();
 
         try
         {
-            // TODO why is this URL and not URI?
-            StringBuffer uri = httpRequest.getRequestURL();
-            // WHY?
+            StringBuffer uri = request.getRequestURL();
             if (this.queryString != null)
                 uri.append("?").append(this.queryString);
             uri.replace(0, uri.indexOf(":"), secure ? "wss" : "ws");
             this.requestURI = new URI(uri.toString());
-            this.request = new UpgradeHttpServletRequest(httpRequest);
         }
         catch (Throwable t)
         {
@@ -88,17 +86,9 @@ public class ServerUpgradeRequest
     {
         if (cookies == null)
         {
-            Cookie[] requestCookies = request.getCookies();
-            if (requestCookies != null)
-            {
-                cookies = new ArrayList<>();
-                for (Cookie requestCookie : requestCookies)
-                {
-                    HttpCookie cookie = new HttpCookie(requestCookie.getName(), requestCookie.getValue());
-                    // No point handling domain/path/expires/secure/httponly on client request cookies
-                    cookies.add(cookie);
-                }
-            }
+            cookies = Arrays.stream(request.getCookies())
+                .map(c -> new HttpCookie(c.getName(), c.getValue()))
+                .collect(Collectors.toList());
         }
 
         return cookies;
@@ -130,12 +120,7 @@ public class ServerUpgradeRequest
      */
     public int getHeaderInt(String name)
     {
-        String val = request.getHeader(name);
-        if (val == null)
-        {
-            return -1;
-        }
-        return Integer.parseInt(val);
+        return request.getIntHeader(name);
     }
 
     /**
@@ -144,7 +129,14 @@ public class ServerUpgradeRequest
      */
     public Map<String, List<String>> getHeadersMap()
     {
-        return request.getHeaders();
+        Map<String, List<String>> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        Enumeration<String> headerNames = request.getHeaderNames();
+        while (headerNames.hasMoreElements())
+        {
+            String name = headerNames.nextElement();
+            headers.put(name, Collections.list(request.getHeaders(name)));
+        }
+        return headers;
     }
 
     /**
@@ -154,7 +146,10 @@ public class ServerUpgradeRequest
      */
     public List<String> getHeaders(String name)
     {
-        return request.getHeaders().get(name);
+        Enumeration<String> headers = request.getHeaders(name);
+        if (headers == null || !headers.hasMoreElements())
+            return null;
+        return Collections.list(headers);
     }
 
     /**
@@ -163,7 +158,6 @@ public class ServerUpgradeRequest
      */
     public String getHost()
     {
-        // TODO why is this not HttpServletRequest#getHost ?
         return requestURI.getHost();
     }
 
@@ -209,7 +203,7 @@ public class ServerUpgradeRequest
      */
     public SocketAddress getLocalSocketAddress()
     {
-        // TODO: fix when HttpServletRequest can use Unix Socket stuff
+        // TODO: fix when HttpServletRequest can use Unix Socket stuff.
         return new InetSocketAddress(request.getLocalAddr(), request.getLocalPort());
     }
 
@@ -326,11 +320,17 @@ public class ServerUpgradeRequest
 
     /**
      * @return Request attribute map
-     * @see UpgradeHttpServletRequest#getAttributes()
      */
     public Map<String, Object> getServletAttributes()
     {
-        return request.getAttributes();
+        Map<String, Object> attributes = new HashMap<>(2);
+        Enumeration<String> attributeNames = request.getAttributeNames();
+        while (attributeNames.hasMoreElements())
+        {
+            String name = attributeNames.nextElement();
+            attributes.put(name, request.getAttribute(name));
+        }
+        return attributes;
     }
 
     /**
@@ -377,9 +377,7 @@ public class ServerUpgradeRequest
         for (String protocol : getSubProtocols())
         {
             if (protocol.equalsIgnoreCase(subprotocol))
-            {
                 return true;
-            }
         }
         return false;
     }
