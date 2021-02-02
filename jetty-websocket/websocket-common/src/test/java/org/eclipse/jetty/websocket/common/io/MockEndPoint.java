@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -112,6 +113,12 @@ public class MockEndPoint implements EndPoint
 
     @Override
     public void fillInterested(Callback callback) throws ReadPendingException
+    {
+        throw new UnsupportedOperationException(NOT_SUPPORTED);
+    }
+
+    @Override
+    public Throwable cancelFillInterest(Supplier<Throwable> cancellation)
     {
         throw new UnsupportedOperationException(NOT_SUPPORTED);
     }
