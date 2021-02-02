@@ -18,6 +18,7 @@ module org.eclipse.jetty.logging
 {
     exports org.eclipse.jetty.logging;
 
+    requires transitive java.management;
     requires transitive org.slf4j;
 
     provides SLF4JServiceProvider with JettyLoggingServiceProvider;
