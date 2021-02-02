@@ -1812,7 +1812,10 @@ public class Request implements HttpServletRequest
     public void setMetaData(org.eclipse.jetty.http.MetaData.Request request)
     {
         if (_metaData == null)
+        {
             _input.recycle();
+            _channel.getResponse().getHttpOutput().reopen();
+        }
         _metaData = request;
 
         setMethod(request.getMethod());
