@@ -376,6 +376,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     @Override
     public void onCompleted()
     {
+        boolean complete = _input.consumeAll();
+        getEndPoint().cancelFillInterest(_input::getError);
+
         // Handle connection upgrades
         if (_channel.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
         {
@@ -409,7 +412,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             _parser.close();
         }
         // else abort if we can't consume all
-        else if (_generator.isPersistent() && !_input.consumeAll())
+        else if (_generator.isPersistent() && !complete)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("unconsumed input {} {}", this, _parser);

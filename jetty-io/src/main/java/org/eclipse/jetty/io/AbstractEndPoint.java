@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -360,6 +361,12 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     {
         notIdle();
         _fillInterest.register(callback);
+    }
+
+    @Override
+    public Throwable cancelFillInterest(Supplier<Throwable> cancellation)
+    {
+        return _fillInterest.cancel(cancellation);
     }
 
     @Override

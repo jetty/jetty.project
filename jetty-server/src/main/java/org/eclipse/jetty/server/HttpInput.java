@@ -720,12 +720,17 @@ public class HttpInput extends ServletInputStream implements Runnable
                 {
                     produceContent();
                     if (_content == null && _intercepted == null && _inputQ.isEmpty())
+                    {
+                        _state = EARLY_EOF;
+                        _inputQ.notify();
                         return false;
+                    }
                 }
                 catch (Throwable e)
                 {
                     LOG.debug(e);
                     _state = new ErrorState(e);
+                    _inputQ.notify();
                     return false;
                 }
             }
@@ -737,6 +742,15 @@ public class HttpInput extends ServletInputStream implements Runnable
         synchronized (_inputQ)
         {
             return _state instanceof ErrorState;
+        }
+    }
+
+    public Throwable getError()
+    {
+        synchronized (_inputQ)
+        {
+            Throwable error = _state instanceof ErrorState ? ((ErrorState)_state)._error : null;
+            return error == null ? new IOException() : error;
         }
     }
 

@@ -1811,6 +1811,8 @@ public class Request implements HttpServletRequest
      */
     public void setMetaData(org.eclipse.jetty.http.MetaData.Request request)
     {
+        if (_metaData == null)
+            _input.recycle();
         _metaData = request;
 
         setMethod(request.getMethod());
@@ -1879,7 +1881,7 @@ public class Request implements HttpServletRequest
 
         getHttpChannelState().recycle();
         _requestAttributeListeners.clear();
-        _input.recycle();
+        // Defer _input.recycle() until setMetaData on next request, so that late readers will fail
         _metaData = null;
         _originalURI = null;
         _contextPath = null;
