@@ -303,7 +303,7 @@ public class ErrorPageTest
             assertThat(response, Matchers.containsString("ERROR_PAGE: /TestException"));
             assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION: jakarta.servlet.ServletException: java.lang.IllegalStateException"));
-            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class jakarta.servlet.ServletException"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class java.lang.IllegalStateException"));
             assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServlet-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail/exception"));
         }
