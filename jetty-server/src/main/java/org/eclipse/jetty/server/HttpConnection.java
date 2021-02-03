@@ -384,9 +384,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             {
                 Throwable cancelled = getEndPoint().cancelFillInterest(_input::getError);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("cancelled {}", this, cancelled);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Upgrade from {} to {}", this, connection);
+                    LOG.debug("Upgrade from {} to {}", this, connection, cancelled);
                 _channel.getState().upgrade();
                 getEndPoint().upgrade(connection);
                 _channel.recycle();
