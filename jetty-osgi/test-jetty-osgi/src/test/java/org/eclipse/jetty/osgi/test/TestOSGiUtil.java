@@ -211,12 +211,7 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-jsp").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("apache-jsp").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.servlet.jsp.jstl").artifactId("jakarta.servlet.jsp.jstl-api").versionAsInProject());
-        res.add(mavenBundle().groupId("org.apache.servicemix.bundles").artifactId("org.apache.servicemix.bundles.xmlresolver").version("1.2_5").start());
-        res.add(mavenBundle().groupId("org.apache.servicemix.bundles").artifactId("org.apache.servicemix.bundles.xerces").version("2.12.0_1").start());
-        res.add(mavenBundle().groupId("org.apache.servicemix.bundles").artifactId("org.apache.servicemix.bundles.xalan-serializer").version("2.7.2_1").start());
-        res.add(mavenBundle().groupId("org.apache.servicemix.bundles").artifactId("org.apache.servicemix.bundles.bcel").version("5.2_4").start());
-        res.add(mavenBundle().groupId("org.apache.servicemix.bundles").artifactId("org.apache.servicemix.bundles.xalan").version("2.7.2_3").start());
-        res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("taglibs-standard").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.glassfish.web").artifactId("jakarta.servlet.jsp.jstl").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jdt").artifactId("ecj").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-boot-jsp").versionAsInProject().noStart());
         return res;

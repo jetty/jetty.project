@@ -700,32 +700,9 @@ For the JSTL library, we recommend the use of the implementation from Glassfish,
 |Jar |Bundle Symbolic Name
 |The link:#osgi-jsp[jsp jars]|
 
-|org.eclipse.jetty.orbit:jakarta.servlet.jsp.jstl-1.2.0.v201105211821.jar| jakarta.servlet.jsp.jstl
+|jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api-2.0.0.jar| jakarta.servlet.jsp.jstl-api
 
-|org.glassfish.web:jakarta.servlet.jsp.jstl-1.2.2.jar|org.glassfish.web.jakarta.servlet.jsp.jstl
-|=======================================================================
-
-However, if you wish, you may use the JSTL implementation from Apache instead, although you will need to source some dependency jars with suitable OSGi manifests:
-
-.Jars Required for Apache JSTL
-[cols=",,",options="header",]
-|=======================================================================
-|Jar |Bundle Symbolic Name |Location
-|The link:#osgi-jsp[jsp jars] | |
-
-|org.apache.taglibs:taglibs-standard-spec:jar:1.2.1
-|org.apache.taglibs.taglibs-standard-spec |Distribution lib/apache-jstl
-
-|org.apache.taglibs:taglibs-standard-spec:jar:1.2.1
-|org.apache.taglibs.standard-impl |Distribution lib/apache-jstl
-
-|org.apache.xalan 2.7.1 | |Try
-http://download.eclipse.org/tools/orbit/downloads/drops/R20140525021250/repository/plugins/org.apache.xalan_2.7.1.v201005080400.jar[Eclipse
-Orbit]
-
-|org.apache.xml.serializer 2.7.1 | |Try
-http://download.eclipse.org/tools/orbit/downloads/drops/R20140525021250/repository/plugins/org.apache.xml.serializer_2.7.1.v201005080400.jar[Eclipse
-Orbit]
+|org.glassfish.web:jakarta.servlet.jsp.jstl-2.0.0.jar|org.glassfish.web.jakarta.servlet.jsp.jstl
 |=======================================================================
 
 ===== The jetty-osgi-boot-jsp jar
