@@ -197,9 +197,10 @@
     <module>jetty-util</module>
     <module>jetty-jmx</module>
     <module>jetty-io</module>
+    <module>jetty-quic</module>
     <module>jetty-http</module>
     <module>jetty-http2</module>
-    <module>jetty-quic</module>
+    <module>jetty-http3</module>
     <module>jetty-server</module>
     <module>jetty-xml</module>
     <module>jetty-security</module>
