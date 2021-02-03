@@ -331,7 +331,7 @@ public class HTTPServerDocs
         SslConnectionFactory tls = new SslConnectionFactory(sslContextFactory, alpn.getProtocol());
 
         // The ServerConnector instance.
-        ServerConnector connector = new ServerConnector(server, tls, alpn, http11, h2);
+        ServerConnector connector = new ServerConnector(server, tls, alpn, h2, http11);
         connector.setPort(8443);
 
         server.addConnector(connector);
