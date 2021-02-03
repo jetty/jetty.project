@@ -929,7 +929,7 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
             commit(response);
             _combinedListener.onResponseBegin(_request);
             _request.onResponseCommit();
-            
+
             // wrap callback to process 100 responses
             final int status = response.getStatus();
             final Callback committed = (status < HttpStatus.OK_200 && status >= HttpStatus.CONTINUE_100)
