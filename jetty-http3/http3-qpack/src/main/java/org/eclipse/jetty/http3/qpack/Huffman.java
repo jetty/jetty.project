@@ -348,12 +348,12 @@ public class Huffman
         }
     }
 
-    public static String decode(ByteBuffer buffer) throws HpackException.CompressionException
+    public static String decode(ByteBuffer buffer) throws QpackException.CompressionException
     {
         return decode(buffer, buffer.remaining());
     }
 
-    public static String decode(ByteBuffer buffer, int length) throws HpackException.CompressionException
+    public static String decode(ByteBuffer buffer, int length) throws QpackException.CompressionException
     {
         Utf8StringBuilder utf8 = new Utf8StringBuilder(length * 2);
         int node = 0;
@@ -372,7 +372,7 @@ public class Huffman
                 if (rowbits[node] != 0)
                 {
                     if (rowsym[node] == EOS)
-                        throw new HpackException.CompressionException("EOS in content");
+                        throw new QpackException.CompressionException("EOS in content");
 
                     // terminal node
                     utf8.append((byte)(0xFF & rowsym[node]));
@@ -402,7 +402,7 @@ public class Huffman
                 }
 
                 if ((c >> (8 - bits)) != requiredPadding)
-                    throw new HpackException.CompressionException("Incorrect padding");
+                    throw new QpackException.CompressionException("Incorrect padding");
 
                 node = lastNode;
                 break;
@@ -414,7 +414,7 @@ public class Huffman
         }
 
         if (node != 0)
-            throw new HpackException.CompressionException("Bad termination");
+            throw new QpackException.CompressionException("Bad termination");
 
         return utf8.toString();
     }

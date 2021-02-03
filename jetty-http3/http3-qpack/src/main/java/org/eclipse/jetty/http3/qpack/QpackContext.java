@@ -30,16 +30,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * HPACK - Header Compression for HTTP/2
+ * QPACK - Header Compression for HTTP/2
  * <p>This class maintains the compression context for a single HTTP/2
  * connection. Specifically it holds the static and dynamic Header Field Tables
  * and the associated sizes and limits.
  * </p>
  * <p>It is compliant with draft 11 of the specification</p>
  */
-public class HpackContext
+public class QpackContext
 {
-    public static final Logger LOG = LoggerFactory.getLogger(HpackContext.class);
+    public static final Logger LOG = LoggerFactory.getLogger(QpackContext.class);
     private static final String EMPTY = "";
     public static final String[][] STATIC_TABLE =
         {
@@ -187,7 +187,7 @@ public class HpackContext
     private final Map<HttpField, Entry> _fieldMap = new HashMap<>();
     private final Map<String, Entry> _nameMap = new HashMap<>();
 
-    HpackContext(int maxDynamicTableSize)
+    QpackContext(int maxDynamicTableSize)
     {
         _maxDynamicTableSizeInBytes = maxDynamicTableSize;
         int guesstimateEntries = 10 + maxDynamicTableSize / (32 + 10 + 10);
@@ -310,7 +310,7 @@ public class HpackContext
     @Override
     public String toString()
     {
-        return String.format("HpackContext@%x{entries=%d,size=%d,max=%d}", hashCode(), _dynamicTable.size(), _dynamicTableSizeInBytes, _maxDynamicTableSizeInBytes);
+        return String.format("QpackContext@%x{entries=%d,size=%d,max=%d}", hashCode(), _dynamicTable.size(), _dynamicTableSizeInBytes, _maxDynamicTableSizeInBytes);
     }
 
     private class DynamicTable
@@ -373,7 +373,7 @@ public class HpackContext
                 _offset = (_offset + 1) % _entries.length;
                 _size--;
                 if (LOG.isDebugEnabled())
-                    LOG.debug(String.format("HdrTbl[%x] evict %s", HpackContext.this.hashCode(), entry));
+                    LOG.debug(String.format("HdrTbl[%x] evict %s", QpackContext.this.hashCode(), entry));
                 _dynamicTableSizeInBytes -= entry.getSize();
                 entry._slot = -1;
                 _fieldMap.remove(entry.getHttpField());
@@ -382,13 +382,13 @@ public class HpackContext
                     _nameMap.remove(lc);
             }
             if (LOG.isDebugEnabled())
-                LOG.debug(String.format("HdrTbl[%x] entries=%d, size=%d, max=%d", HpackContext.this.hashCode(), _dynamicTable.size(), _dynamicTableSizeInBytes, _maxDynamicTableSizeInBytes));
+                LOG.debug(String.format("HdrTbl[%x] entries=%d, size=%d, max=%d", QpackContext.this.hashCode(), _dynamicTable.size(), _dynamicTableSizeInBytes, _maxDynamicTableSizeInBytes));
         }
 
         private void evictAll()
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(String.format("HdrTbl[%x] evictAll", HpackContext.this.hashCode()));
+                LOG.debug(String.format("HdrTbl[%x] evictAll", QpackContext.this.hashCode()));
             if (size() > 0)
             {
                 _fieldMap.clear();

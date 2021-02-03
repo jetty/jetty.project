@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class HpackTest
+public class QpackTest
 {
     static final HttpField ServerJetty = new PreEncodedHttpField(HttpHeader.SERVER, "jetty");
     static final HttpField XPowerJetty = new PreEncodedHttpField(HttpHeader.X_POWERED_BY, "jetty");
@@ -43,8 +43,8 @@ public class HpackTest
     @Test
     public void encodeDecodeResponseTest() throws Exception
     {
-        HpackEncoder encoder = new HpackEncoder();
-        HpackDecoder decoder = new HpackDecoder(4096, 8192);
+        QpackEncoder encoder = new QpackEncoder();
+        QpackDecoder decoder = new QpackDecoder(4096, 8192);
         ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
 
         HttpFields.Mutable fields0 = HttpFields.build()
@@ -98,8 +98,8 @@ public class HpackTest
     @Test
     public void encodeDecodeTooLargeTest() throws Exception
     {
-        HpackEncoder encoder = new HpackEncoder();
-        HpackDecoder decoder = new HpackDecoder(4096, 164);
+        QpackEncoder encoder = new QpackEncoder();
+        QpackDecoder decoder = new QpackDecoder(4096, 164);
         ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
 
         HttpFields fields0 = HttpFields.build()
@@ -128,7 +128,7 @@ public class HpackTest
             decoder.decode(buffer);
             fail();
         }
-        catch (HpackException.SessionException e)
+        catch (QpackException.SessionException e)
         {
             assertThat(e.getMessage(), containsString("Header too large"));
         }
@@ -137,8 +137,8 @@ public class HpackTest
     @Test
     public void encodeDecodeNonAscii() throws Exception
     {
-        HpackEncoder encoder = new HpackEncoder();
-        HpackDecoder decoder = new HpackDecoder(4096, 8192);
+        QpackEncoder encoder = new QpackEncoder();
+        QpackDecoder decoder = new QpackDecoder(4096, 8192);
         ByteBuffer buffer = BufferUtil.allocate(16 * 1024);
 
         HttpFields fields0 = HttpFields.build()
@@ -158,8 +158,8 @@ public class HpackTest
     @Test
     public void evictReferencedFieldTest() throws Exception
     {
-        HpackEncoder encoder = new HpackEncoder(200, 200);
-        HpackDecoder decoder = new HpackDecoder(200, 1024);
+        QpackEncoder encoder = new QpackEncoder(200, 200);
+        QpackDecoder decoder = new QpackDecoder(200, 1024);
         ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
 
         String longEnoughToBeEvicted = "012345678901234567890123456789012345678901234567890";
@@ -174,10 +174,10 @@ public class HpackTest
         BufferUtil.flipToFlush(buffer, 0);
         MetaData decoded0 = decoder.decode(buffer);
 
-        assertEquals(2, encoder.getHpackContext().size());
-        assertEquals(2, decoder.getHpackContext().size());
-        assertEquals(longEnoughToBeEvicted, encoder.getHpackContext().get(HpackContext.STATIC_TABLE.length + 1).getHttpField().getName());
-        assertEquals("foo", encoder.getHpackContext().get(HpackContext.STATIC_TABLE.length).getHttpField().getName());
+        assertEquals(2, encoder.getQpackContext().size());
+        assertEquals(2, decoder.getQpackContext().size());
+        assertEquals(longEnoughToBeEvicted, encoder.getQpackContext().get(QpackContext.STATIC_TABLE.length + 1).getHttpField().getName());
+        assertEquals("foo", encoder.getQpackContext().get(QpackContext.STATIC_TABLE.length).getHttpField().getName());
 
         assertMetaDataSame(original0, decoded0);
 
@@ -192,17 +192,17 @@ public class HpackTest
         MetaData decoded1 = decoder.decode(buffer);
         assertMetaDataSame(original1, decoded1);
 
-        assertEquals(2, encoder.getHpackContext().size());
-        assertEquals(2, decoder.getHpackContext().size());
-        assertEquals("x", encoder.getHpackContext().get(HpackContext.STATIC_TABLE.length).getHttpField().getName());
-        assertEquals("foo", encoder.getHpackContext().get(HpackContext.STATIC_TABLE.length + 1).getHttpField().getName());
+        assertEquals(2, encoder.getQpackContext().size());
+        assertEquals(2, decoder.getQpackContext().size());
+        assertEquals("x", encoder.getQpackContext().get(QpackContext.STATIC_TABLE.length).getHttpField().getName());
+        assertEquals("foo", encoder.getQpackContext().get(QpackContext.STATIC_TABLE.length + 1).getHttpField().getName());
     }
 
     @Test
     public void testHopHeadersAreRemoved() throws Exception
     {
-        HpackEncoder encoder = new HpackEncoder();
-        HpackDecoder decoder = new HpackDecoder(4096, 16384);
+        QpackEncoder encoder = new QpackEncoder();
+        QpackDecoder decoder = new QpackDecoder(4096, 16384);
 
         HttpFields input = HttpFields.build()
             .add(HttpHeader.ACCEPT, "*")
@@ -228,8 +228,8 @@ public class HpackTest
     @Test
     public void testTETrailers() throws Exception
     {
-        HpackEncoder encoder = new HpackEncoder();
-        HpackDecoder decoder = new HpackDecoder(4096, 16384);
+        QpackEncoder encoder = new QpackEncoder();
+        QpackDecoder decoder = new QpackDecoder(4096, 16384);
 
         String teValue = "trailers";
         String trailerValue = "Custom";
@@ -253,8 +253,8 @@ public class HpackTest
     @Test
     public void testColonHeaders() throws Exception
     {
-        HpackEncoder encoder = new HpackEncoder();
-        HpackDecoder decoder = new HpackDecoder(4096, 16384);
+        QpackEncoder encoder = new QpackEncoder();
+        QpackDecoder decoder = new QpackDecoder(4096, 16384);
 
         HttpFields input = HttpFields.build()
             .add(":status", "200")
@@ -262,13 +262,13 @@ public class HpackTest
 
         ByteBuffer buffer = BufferUtil.allocate(2048);
         BufferUtil.clearToFill(buffer);
-        assertThrows(HpackException.StreamException.class, () -> encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, input)));
+        assertThrows(QpackException.StreamException.class, () -> encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, input)));
 
         encoder.setValidateEncoding(false);
         encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, input));
 
         BufferUtil.flipToFlush(buffer, 0);
-        assertThrows(HpackException.StreamException.class, () -> decoder.decode(buffer));
+        assertThrows(QpackException.StreamException.class, () -> decoder.decode(buffer));
     }
 
     private void assertMetaDataResponseSame(MetaData.Response expected, MetaData.Response actual)
