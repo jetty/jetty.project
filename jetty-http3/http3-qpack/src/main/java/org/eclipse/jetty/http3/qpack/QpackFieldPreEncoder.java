@@ -23,7 +23,7 @@ import org.eclipse.jetty.util.BufferUtil;
 /**
  *
  */
-public class HpackFieldPreEncoder implements HttpFieldPreEncoder
+public class QpackFieldPreEncoder implements HttpFieldPreEncoder
 {
 
     @Override
@@ -35,7 +35,7 @@ public class HpackFieldPreEncoder implements HttpFieldPreEncoder
     @Override
     public byte[] getEncodedField(HttpHeader header, String name, String value)
     {
-        boolean notIndexed = HpackEncoder.DO_NOT_INDEX.contains(header);
+        boolean notIndexed = QpackEncoder.DO_NOT_INDEX.contains(header);
 
         ByteBuffer buffer = BufferUtil.allocate(name.length() + value.length() + 10);
         BufferUtil.clearToFill(buffer);
@@ -45,8 +45,8 @@ public class HpackFieldPreEncoder implements HttpFieldPreEncoder
         if (notIndexed)
         {
             // Non indexed field
-            boolean neverIndex = HpackEncoder.NEVER_INDEX.contains(header);
-            huffman = !HpackEncoder.DO_NOT_HUFFMAN.contains(header);
+            boolean neverIndex = QpackEncoder.NEVER_INDEX.contains(header);
+            huffman = !QpackEncoder.DO_NOT_HUFFMAN.contains(header);
             buffer.put(neverIndex ? (byte)0x10 : (byte)0x00);
             bits = 4;
         }
@@ -61,11 +61,11 @@ public class HpackFieldPreEncoder implements HttpFieldPreEncoder
         {
             // indexed
             buffer.put((byte)0x40);
-            huffman = !HpackEncoder.DO_NOT_HUFFMAN.contains(header);
+            huffman = !QpackEncoder.DO_NOT_HUFFMAN.contains(header);
             bits = 6;
         }
 
-        int nameIdx = HpackContext.staticIndex(header);
+        int nameIdx = QpackContext.staticIndex(header);
         if (nameIdx > 0)
             NBitInteger.encode(buffer, bits, nameIdx);
         else
@@ -75,7 +75,7 @@ public class HpackFieldPreEncoder implements HttpFieldPreEncoder
             Huffman.encodeLC(buffer, name);
         }
 
-        HpackEncoder.encodeValue(buffer, huffman, value);
+        QpackEncoder.encodeValue(buffer, huffman, value);
 
         BufferUtil.flipToFlush(buffer, 0);
         return BufferUtil.toArray(buffer);

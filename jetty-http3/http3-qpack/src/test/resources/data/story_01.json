@@ -16,7 +16,7 @@
           ":method": "GET"
         },
         {
-          "user-agent": "hpack-test"
+          "user-agent": "qpack-test"
         },
         {
           "cookie": "xxxxxxx1"
@@ -41,7 +41,7 @@
           ":method": "GET"
         },
         {
-          "user-agent": "hpack-test"
+          "user-agent": "qpack-test"
         },
         {
           "cookie": "xxxxxxx2"

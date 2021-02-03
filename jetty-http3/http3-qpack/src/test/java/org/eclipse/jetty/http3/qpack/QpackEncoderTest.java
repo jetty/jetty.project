@@ -28,12 +28,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class HpackEncoderTest
+public class QpackEncoderTest
 {
     @Test
     public void testUnknownFieldsContextManagement() throws Exception
     {
-        HpackEncoder encoder = new HpackEncoder(38 * 5);
+        QpackEncoder encoder = new QpackEncoder(38 * 5);
         HttpFields.Mutable fields = HttpFields.build();
 
         HttpField[] field =
@@ -67,7 +67,7 @@ public class HpackEncoderTest
         assertThat(buffer.remaining(), Matchers.greaterThan(0));
 
         // All are in the dynamic table
-        assertEquals(4, encoder.getHpackContext().size());
+        assertEquals(4, encoder.getQpackContext().size());
 
         // encode exact same fields again!
         BufferUtil.clearToFill(buffer);
@@ -75,7 +75,7 @@ public class HpackEncoderTest
         BufferUtil.flipToFlush(buffer, 0);
 
         // All are in the dynamic table
-        assertEquals(4, encoder.getHpackContext().size());
+        assertEquals(4, encoder.getQpackContext().size());
 
         // Add 4 more fields
         for (int i = 4; i <= 7; i++)
@@ -92,7 +92,7 @@ public class HpackEncoderTest
         assertThat(buffer.remaining(), Matchers.greaterThan(0));
 
         // max dynamic table size reached
-        assertEquals(5, encoder.getHpackContext().size());
+        assertEquals(5, encoder.getQpackContext().size());
 
         // remove some fields
         for (int i = 0; i <= 7; i += 2)
@@ -109,7 +109,7 @@ public class HpackEncoderTest
         assertThat(buffer.remaining(), Matchers.greaterThan(0));
 
         // max dynamic table size reached
-        assertEquals(5, encoder.getHpackContext().size());
+        assertEquals(5, encoder.getQpackContext().size());
 
         // remove another fields
         fields.remove(field[1].getName());
@@ -123,7 +123,7 @@ public class HpackEncoderTest
         assertThat(buffer.remaining(), Matchers.greaterThan(0));
 
         // max dynamic table size reached
-        assertEquals(5, encoder.getHpackContext().size());
+        assertEquals(5, encoder.getQpackContext().size());
 
         // re add the field
 
@@ -138,14 +138,14 @@ public class HpackEncoderTest
         assertThat(buffer.remaining(), Matchers.greaterThan(0));
 
         // max dynamic table size reached
-        assertEquals(5, encoder.getHpackContext().size());
+        assertEquals(5, encoder.getQpackContext().size());
     }
 
     @Test
     public void testLargeFieldsNotIndexed()
     {
-        HpackEncoder encoder = new HpackEncoder(38 * 5);
-        HpackContext ctx = encoder.getHpackContext();
+        QpackEncoder encoder = new QpackEncoder(38 * 5);
+        QpackContext ctx = encoder.getQpackContext();
 
         ByteBuffer buffer = BufferUtil.allocate(4096);
 
@@ -170,8 +170,8 @@ public class HpackEncoderTest
     @Test
     public void testIndexContentLength()
     {
-        HpackEncoder encoder = new HpackEncoder(38 * 5);
-        HpackContext ctx = encoder.getHpackContext();
+        QpackEncoder encoder = new QpackEncoder(38 * 5);
+        QpackContext ctx = encoder.getQpackContext();
 
         ByteBuffer buffer = BufferUtil.allocate(4096);
 
@@ -192,7 +192,7 @@ public class HpackEncoderTest
     @Test
     public void testNeverIndexSetCookie() throws Exception
     {
-        HpackEncoder encoder = new HpackEncoder(38 * 5);
+        QpackEncoder encoder = new QpackEncoder(38 * 5);
         ByteBuffer buffer = BufferUtil.allocate(4096);
 
         HttpFields.Mutable fields = HttpFields.build()
@@ -207,7 +207,7 @@ public class HpackEncoderTest
         assertThat(buffer.remaining(), Matchers.greaterThan(0));
 
         // empty dynamic table
-        assertEquals(0, encoder.getHpackContext().size());
+        assertEquals(0, encoder.getQpackContext().size());
 
         // encode again
         BufferUtil.clearToFill(buffer);
@@ -218,7 +218,7 @@ public class HpackEncoderTest
         assertThat(buffer.remaining(), Matchers.greaterThan(0));
 
         // empty dynamic table
-        assertEquals(0, encoder.getHpackContext().size());
+        assertEquals(0, encoder.getQpackContext().size());
     }
 
     @Test
@@ -226,20 +226,20 @@ public class HpackEncoderTest
     {
         HttpFields.Mutable fields = HttpFields.build();
 
-        HpackEncoder encoder = new HpackEncoder(128);
+        QpackEncoder encoder = new QpackEncoder(128);
         ByteBuffer buffer0 = BufferUtil.allocate(4096);
         int pos = BufferUtil.flipToFill(buffer0);
         encoder.encode(buffer0, new MetaData(HttpVersion.HTTP_2, fields));
         BufferUtil.flipToFlush(buffer0, pos);
 
-        encoder = new HpackEncoder(128);
+        encoder = new QpackEncoder(128);
         fields.add(new HttpField("user-agent", "jetty/test"));
         ByteBuffer buffer1 = BufferUtil.allocate(4096);
         pos = BufferUtil.flipToFill(buffer1);
         encoder.encode(buffer1, new MetaData(HttpVersion.HTTP_2, fields));
         BufferUtil.flipToFlush(buffer1, pos);
 
-        encoder = new HpackEncoder(128);
+        encoder = new QpackEncoder(128);
         encoder.setValidateEncoding(false);
         fields.add(new HttpField(":path",
             "This is a very large field, whose size is larger than the dynamic table so it should not be indexed as it will not fit in the table ever!" +
@@ -251,7 +251,7 @@ public class HpackEncoderTest
         encoder.encode(buffer2, new MetaData(HttpVersion.HTTP_2, fields));
         BufferUtil.flipToFlush(buffer2, pos);
 
-        encoder = new HpackEncoder(128);
+        encoder = new QpackEncoder(128);
         encoder.setValidateEncoding(false);
         fields.add(new HttpField("host", "somehost"));
         ByteBuffer buffer = BufferUtil.allocate(4096);
@@ -277,12 +277,12 @@ public class HpackEncoderTest
         assertThat((buffer.get(buffer2.remaining()) & 0xFF) >> 6, equalTo(1));
 
         // Only first and third fields are put in the table
-        HpackContext context = encoder.getHpackContext();
+        QpackContext context = encoder.getQpackContext();
         assertThat(context.size(), equalTo(2));
-        assertThat(context.get(HpackContext.STATIC_SIZE + 1).getHttpField().getName(), equalTo("host"));
-        assertThat(context.get(HpackContext.STATIC_SIZE + 2).getHttpField().getName(), equalTo("user-agent"));
+        assertThat(context.get(QpackContext.STATIC_SIZE + 1).getHttpField().getName(), equalTo("host"));
+        assertThat(context.get(QpackContext.STATIC_SIZE + 2).getHttpField().getName(), equalTo("user-agent"));
         assertThat(context.getDynamicTableSize(), equalTo(
-            context.get(HpackContext.STATIC_SIZE + 1).getSize() + context.get(HpackContext.STATIC_SIZE + 2).getSize()));
+            context.get(QpackContext.STATIC_SIZE + 1).getSize() + context.get(QpackContext.STATIC_SIZE + 2).getSize()));
     }
 
     @Test
@@ -292,7 +292,7 @@ public class HpackEncoderTest
             .add("host", "localhost0")
             .add("cookie", "abcdefghij");
 
-        HpackEncoder encoder = new HpackEncoder(4096);
+        QpackEncoder encoder = new QpackEncoder(4096);
 
         ByteBuffer buffer = BufferUtil.allocate(4096);
         int pos = BufferUtil.flipToFill(buffer);
@@ -301,7 +301,7 @@ public class HpackEncoderTest
         encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, fields));
         BufferUtil.flipToFlush(buffer, pos);
 
-        HpackContext context = encoder.getHpackContext();
+        QpackContext context = encoder.getQpackContext();
 
         assertThat(context.getMaxDynamicTableSize(), Matchers.is(50));
         assertThat(context.size(), Matchers.is(1));

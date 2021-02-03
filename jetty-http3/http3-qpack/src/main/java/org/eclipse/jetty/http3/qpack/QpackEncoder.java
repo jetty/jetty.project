@@ -29,16 +29,16 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.http3.qpack.HpackContext.Entry;
-import org.eclipse.jetty.http3.qpack.HpackContext.StaticEntry;
+import org.eclipse.jetty.http3.qpack.QpackContext.Entry;
+import org.eclipse.jetty.http3.qpack.QpackContext.StaticEntry;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HpackEncoder
+public class QpackEncoder
 {
-    private static final Logger LOG = LoggerFactory.getLogger(HpackEncoder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(QpackEncoder.class);
     private static final HttpField[] STATUSES = new HttpField[599];
     static final EnumSet<HttpHeader> DO_NOT_HUFFMAN =
         EnumSet.of(
@@ -90,7 +90,7 @@ public class HpackEncoder
         }
     }
 
-    private final HpackContext _context;
+    private final QpackContext _context;
     private final boolean _debug;
     private int _remoteMaxDynamicTableSize;
     private int _localMaxDynamicTableSize;
@@ -98,24 +98,24 @@ public class HpackEncoder
     private int _headerListSize;
     private boolean _validateEncoding = true;
 
-    public HpackEncoder()
+    public QpackEncoder()
     {
         this(4096, 4096, -1);
     }
 
-    public HpackEncoder(int localMaxDynamicTableSize)
+    public QpackEncoder(int localMaxDynamicTableSize)
     {
         this(localMaxDynamicTableSize, 4096, -1);
     }
 
-    public HpackEncoder(int localMaxDynamicTableSize, int remoteMaxDynamicTableSize)
+    public QpackEncoder(int localMaxDynamicTableSize, int remoteMaxDynamicTableSize)
     {
         this(localMaxDynamicTableSize, remoteMaxDynamicTableSize, -1);
     }
 
-    public HpackEncoder(int localMaxDynamicTableSize, int remoteMaxDynamicTableSize, int maxHeaderListSize)
+    public QpackEncoder(int localMaxDynamicTableSize, int remoteMaxDynamicTableSize, int maxHeaderListSize)
     {
-        _context = new HpackContext(remoteMaxDynamicTableSize);
+        _context = new QpackContext(remoteMaxDynamicTableSize);
         _remoteMaxDynamicTableSize = remoteMaxDynamicTableSize;
         _localMaxDynamicTableSize = localMaxDynamicTableSize;
         _maxHeaderListSize = maxHeaderListSize;
@@ -132,7 +132,7 @@ public class HpackEncoder
         _maxHeaderListSize = maxHeaderListSize;
     }
 
-    public HpackContext getHpackContext()
+    public QpackContext getQpackContext()
     {
         return _context;
     }
@@ -157,7 +157,7 @@ public class HpackEncoder
         _validateEncoding = validateEncoding;
     }
 
-    public void encode(ByteBuffer buffer, MetaData metadata) throws HpackException
+    public void encode(ByteBuffer buffer, MetaData metadata) throws QpackException
     {
         try
         {
@@ -173,7 +173,7 @@ public class HpackEncoder
                     String name = field.getName();
                     char firstChar = name.charAt(0);
                     if (firstChar <= ' ' || firstChar == ':')
-                        throw new HpackException.StreamException("Invalid header name: '%s'", name);
+                        throw new QpackException.StreamException("Invalid header name: '%s'", name);
                 }
             }
 
@@ -269,13 +269,13 @@ public class HpackEncoder
             if (LOG.isDebugEnabled())
                 LOG.debug(String.format("CtxTbl[%x] encoded %d octets", _context.hashCode(), buffer.position() - pos));
         }
-        catch (HpackException x)
+        catch (QpackException x)
         {
             throw x;
         }
         catch (Throwable x)
         {
-            HpackException.SessionException failure = new HpackException.SessionException("Could not hpack encode %s", metadata);
+            QpackException.SessionException failure = new QpackException.SessionException("Could not qpack encode %s", metadata);
             failure.initCause(x);
             throw failure;
         }

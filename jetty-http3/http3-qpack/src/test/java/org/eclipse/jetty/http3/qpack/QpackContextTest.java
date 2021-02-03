@@ -16,7 +16,7 @@ package org.eclipse.jetty.http3.qpack;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http3.qpack.HpackContext.Entry;
+import org.eclipse.jetty.http3.qpack.QpackContext.Entry;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -30,13 +30,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  *
  */
-public class HpackContextTest
+public class QpackContextTest
 {
 
     @Test
     public void testStaticName()
     {
-        HpackContext ctx = new HpackContext(4096);
+        QpackContext ctx = new QpackContext(4096);
         Entry entry = ctx.get(":method");
         assertEquals(":method", entry.getHttpField().getName());
         assertTrue(entry.isStatic());
@@ -46,7 +46,7 @@ public class HpackContextTest
     @Test
     public void testEmptyAdd()
     {
-        HpackContext ctx = new HpackContext(0);
+        QpackContext ctx = new QpackContext(0);
         HttpField field = new HttpField("foo", "bar");
         assertNull(ctx.add(field));
     }
@@ -54,7 +54,7 @@ public class HpackContextTest
     @Test
     public void testTooBigAdd()
     {
-        HpackContext ctx = new HpackContext(37);
+        QpackContext ctx = new QpackContext(37);
         HttpField field = new HttpField("foo", "bar");
         assertNull(ctx.add(field));
     }
@@ -62,7 +62,7 @@ public class HpackContextTest
     @Test
     public void testJustRight()
     {
-        HpackContext ctx = new HpackContext(38);
+        QpackContext ctx = new QpackContext(38);
         HttpField field = new HttpField("foo", "bar");
         Entry entry = ctx.add(field);
         assertNotNull(entry);
@@ -72,7 +72,7 @@ public class HpackContextTest
     @Test
     public void testEvictOne()
     {
-        HpackContext ctx = new HpackContext(38);
+        QpackContext ctx = new QpackContext(38);
         HttpField field0 = new HttpField("foo", "bar");
 
         assertEquals(field0, ctx.add(field0).getHttpField());
@@ -90,7 +90,7 @@ public class HpackContextTest
     @Test
     public void testEvictNames()
     {
-        HpackContext ctx = new HpackContext(38 * 2);
+        QpackContext ctx = new QpackContext(38 * 2);
         HttpField[] field =
             {
                 new HttpField("name", "v0"),
@@ -129,7 +129,7 @@ public class HpackContextTest
     @SuppressWarnings("ReferenceEquality")
     public void testGetAddStatic()
     {
-        HpackContext ctx = new HpackContext(4096);
+        QpackContext ctx = new QpackContext(4096);
 
         // Look for the field.  Should find static version.
         HttpField methodGet = new HttpField(":method", "GET");
@@ -157,7 +157,7 @@ public class HpackContextTest
     @Test
     public void testGetAddStaticName()
     {
-        HpackContext ctx = new HpackContext(4096);
+        QpackContext ctx = new QpackContext(4096);
         HttpField methodOther = new HttpField(":method", "OTHER");
 
         // Look for the field by name.  Should find static version.
@@ -176,7 +176,7 @@ public class HpackContextTest
     public void testIndexes()
     {
         // Only enough space for 5 entries
-        HpackContext ctx = new HpackContext(38 * 5);
+        QpackContext ctx = new QpackContext(38 * 5);
 
         HttpField methodPost = new HttpField(":method", "POST");
         HttpField[] field =
@@ -304,7 +304,7 @@ public class HpackContextTest
     public void testResize()
     {
         // Only enough space for 5 entries
-        HpackContext ctx = new HpackContext(38 * 5);
+        QpackContext ctx = new QpackContext(38 * 5);
 
         HttpField[] field =
             {
@@ -413,7 +413,7 @@ public class HpackContextTest
     @Test
     public void testStaticHuffmanValues() throws Exception
     {
-        HpackContext ctx = new HpackContext(4096);
+        QpackContext ctx = new QpackContext(4096);
         for (int i = 2; i <= 14; i++)
         {
             Entry entry = ctx.get(i);
@@ -435,7 +435,7 @@ public class HpackContextTest
     @Test
     public void testNameInsensitivity()
     {
-        HpackContext ctx = new HpackContext(4096);
+        QpackContext ctx = new QpackContext(4096);
         assertEquals("content-length", ctx.get("content-length").getHttpField().getName());
         assertEquals("content-length", ctx.get("Content-Length").getHttpField().getName());
         assertTrue(ctx.get("Content-Length").isStatic());

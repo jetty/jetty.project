@@ -19,22 +19,22 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http3.qpack.HpackContext.Entry;
+import org.eclipse.jetty.http3.qpack.QpackContext.Entry;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Hpack Decoder
+ * Qpack Decoder
  * <p>This is not thread safe and may only be called by 1 thread at a time.</p>
  */
-public class HpackDecoder
+public class QpackDecoder
 {
-    public static final Logger LOG = LoggerFactory.getLogger(HpackDecoder.class);
+    public static final Logger LOG = LoggerFactory.getLogger(QpackDecoder.class);
     public static final HttpField.LongValueHttpField CONTENT_LENGTH_0 =
         new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH, 0L);
 
-    private final HpackContext _context;
+    private final QpackContext _context;
     private final MetaDataBuilder _builder;
     private int _localMaxDynamicTableSize;
 
@@ -42,14 +42,14 @@ public class HpackDecoder
      * @param localMaxDynamicTableSize The maximum allowed size of the local dynamic header field table.
      * @param maxHeaderSize The maximum allowed size of a headers block, expressed as total of all name and value characters, plus 32 per field
      */
-    public HpackDecoder(int localMaxDynamicTableSize, int maxHeaderSize)
+    public QpackDecoder(int localMaxDynamicTableSize, int maxHeaderSize)
     {
-        _context = new HpackContext(localMaxDynamicTableSize);
+        _context = new QpackContext(localMaxDynamicTableSize);
         _localMaxDynamicTableSize = localMaxDynamicTableSize;
         _builder = new MetaDataBuilder(maxHeaderSize);
     }
 
-    public HpackContext getHpackContext()
+    public QpackContext getQpackContext()
     {
         return _context;
     }
@@ -59,14 +59,14 @@ public class HpackDecoder
         _localMaxDynamicTableSize = localMaxdynamciTableSize;
     }
 
-    public MetaData decode(ByteBuffer buffer) throws HpackException.SessionException, HpackException.StreamException
+    public MetaData decode(ByteBuffer buffer) throws QpackException.SessionException, QpackException.StreamException
     {
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("CtxTbl[%x] decoding %d octets", _context.hashCode(), buffer.remaining()));
 
         // If the buffer is big, don't even think about decoding it
         if (buffer.remaining() > _builder.getMaxSize())
-            throw new HpackException.SessionException("431 Request Header Fields too large");
+            throw new QpackException.SessionException("431 Request Header Fields too large");
 
         boolean emitted = false;
 
@@ -82,7 +82,7 @@ public class HpackDecoder
                 int index = NBitInteger.decode(buffer, 7);
                 Entry entry = _context.get(index);
                 if (entry == null)
-                    throw new HpackException.SessionException("Unknown index %d", index);
+                    throw new QpackException.SessionException("Unknown index %d", index);
 
                 if (entry.isStatic())
                 {
@@ -126,7 +126,7 @@ public class HpackDecoder
                         if (size > _localMaxDynamicTableSize)
                             throw new IllegalArgumentException();
                         if (emitted)
-                            throw new HpackException.CompressionException("Dynamic table resize after fields");
+                            throw new QpackException.CompressionException("Dynamic table resize after fields");
                         _context.resize(size);
                         continue;
 
@@ -280,6 +280,6 @@ public class HpackDecoder
     @Override
     public String toString()
     {
-        return String.format("HpackDecoder@%x{%s}", hashCode(), _context);
+        return String.format("QpackDecoder@%x{%s}", hashCode(), _context);
     }
 }
