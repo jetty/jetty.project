@@ -27,7 +27,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
 import java.nio.charset.StandardCharsets;
-import java.util.function.Supplier;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
@@ -804,12 +803,6 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         public void fillInterested(Callback callback) throws ReadPendingException
         {
             _endp.fillInterested(callback);
-        }
-
-        @Override
-        public Throwable cancelFillInterest(Supplier<Throwable> cancellation)
-        {
-            return _endp.cancelFillInterest(cancellation);
         }
 
         @Override

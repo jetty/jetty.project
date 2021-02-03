@@ -21,9 +21,7 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ReadPendingException;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
@@ -42,38 +40,6 @@ public abstract class FillInterest
 
     protected FillInterest()
     {
-    }
-
-    /**
-     * Cancel a fill interest registration.
-     *
-     * If there was a registration, then any {@link #fillable()}, {@link #onClose()} or {@link #onFail(Throwable)}
-     * calls are remembered and passed to the next registration.
-     * Since any actions resulting from a call to {@link #needsFillInterest()} cannot be unwound, a subsequent call to
-     * register will not call {@link #needsFillInterest()} again if it has already been called an no callback received.
-     * @param cancellation A supplier of the cancellation Throwable to use if there is an existing registration. If the
-     * suppler or the supplied Throwable is null, then a new {@link CancellationException} is used.
-     * @return The Throwable used to cancel an existing registration or null if there was no registration to cancel.
-     */
-    public Throwable cancel(Supplier<Throwable> cancellation)
-    {
-        Cancelled cancelled = new Cancelled();
-        while (true)
-        {
-            Callback callback = _interested.get();
-            if (callback == null || callback instanceof Cancelled)
-                return null;
-            if (_interested.compareAndSet(callback, cancelled))
-            {
-                Throwable cause = cancellation == null ? null : cancellation.get();
-                if (cause == null)
-                    cause = new CancellationException();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("cancelled {} {}",this, callback, cause);
-                callback.failed(cause);
-                return cause;
-            }
-        }
     }
 
     /**
@@ -103,62 +69,25 @@ public abstract class FillInterest
      */
     public boolean tryRegister(Callback callback)
     {
-        return register(callback, null);
-    }
-
-    /**
-     * Call to register interest in a callback when a read is possible.
-     * The callback will be called either immediately if {@link #needsFillInterest()}
-     * returns true or eventually once {@link #fillable()} is called.
-     *
-     * @param callback the callback to register
-     * @param cancellation A supplier of a {@link Throwable}, which if not null will be used to fail any existing registration
-     * @return true if the register succeeded
-     */
-    public boolean register(Callback callback, Supplier<Throwable> cancellation)
-    {
         if (callback == null)
             throw new IllegalArgumentException();
 
-        while (true)
+        if (!_interested.compareAndSet(null, callback))
+            return false;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("interested {}", this);
+
+        try
         {
-            Callback existing = _interested.get();
-
-            if (existing != null && !(existing instanceof Cancelled) && cancellation == null)
-                return false;
-
-            if (existing == callback)
-                return true;
-
-            if (_interested.compareAndSet(existing, callback))
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("interested {}->{}", existing, this);
-                if (existing == null)
-                {
-                    try
-                    {
-                        needsFillInterest();
-                    }
-                    catch (Throwable e)
-                    {
-                        onFail(e);
-                    }
-                }
-                else if (existing instanceof Cancelled)
-                {
-                    ((Cancelled)existing).apply(callback);
-                }
-                else
-                {
-                    Throwable cause = cancellation.get();
-                    if (cause == null)
-                        cause = new CancellationException();
-                    existing.failed(cause);
-                }
-                return true;
-            }
+            needsFillInterest();
         }
+        catch (Throwable e)
+        {
+            onFail(e);
+        }
+
+        return true;
     }
 
     /**
@@ -168,19 +97,17 @@ public abstract class FillInterest
      */
     public boolean fillable()
     {
-        while (true)
+        if (LOG.isDebugEnabled())
+            LOG.debug("fillable {}", this);
+        Callback callback = _interested.get();
+        if (callback != null && _interested.compareAndSet(callback, null))
         {
-            Callback callback = _interested.get();
-            if (callback == null)
-                return false;
-            if (_interested.compareAndSet(callback, null))
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("fillable {} {}",this, callback);
-                callback.succeeded();
-                return true;
-            }
+            callback.succeeded();
+            return true;
         }
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} lost race {}", this, callback);
+        return false;
     }
 
     /**
@@ -188,8 +115,7 @@ public abstract class FillInterest
      */
     public boolean isInterested()
     {
-        Callback callback = _interested.get();
-        return callback != null && !(callback instanceof Cancelled);
+        return _interested.get() != null;
     }
 
     public InvocationType getCallbackInvocationType()
@@ -206,37 +132,24 @@ public abstract class FillInterest
      */
     public boolean onFail(Throwable cause)
     {
-        while (true)
+        if (LOG.isDebugEnabled())
+            LOG.debug("onFail " + this, cause);
+        Callback callback = _interested.get();
+        if (callback != null && _interested.compareAndSet(callback, null))
         {
-            Callback callback = _interested.get();
-            if (callback == null)
-                return false;
-            if (_interested.compareAndSet(callback, null))
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("onFail {} {}",this, callback, cause);
-                callback.failed(cause);
-                return true;
-            }
+            callback.failed(cause);
+            return true;
         }
+        return false;
     }
 
     public void onClose()
     {
-        while (true)
-        {
-            Callback callback = _interested.get();
-            if (callback == null)
-                return;
-            if (_interested.compareAndSet(callback, null))
-            {
-                ClosedChannelException cause = new ClosedChannelException();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("onFail {} {}",this, callback, cause);
-                callback.failed(cause);
-                return;
-            }
-        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("onClose {}", this);
+        Callback callback = _interested.get();
+        if (callback != null && _interested.compareAndSet(callback, null))
+            callback.failed(new ClosedChannelException());
     }
 
     @Override
@@ -258,36 +171,4 @@ public abstract class FillInterest
      * @throws IOException if unable to fulfill interest in fill
      */
     protected abstract void needsFillInterest() throws IOException;
-
-    private static class Cancelled implements Callback
-    {
-        private final AtomicReference<Object> _result = new AtomicReference<>();
-
-        @Override
-        public void succeeded()
-        {
-            _result.compareAndSet(null, Boolean.TRUE);
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            _result.compareAndSet(null, x == null ? new Exception() : x);
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return InvocationType.NON_BLOCKING;
-        }
-
-        void apply(Callback callback)
-        {
-            Object result = _result.get();
-            if (result == Boolean.TRUE)
-                callback.succeeded();
-            else if (result instanceof Throwable)
-                callback.failed((Throwable)result);
-        }
-    }
 }

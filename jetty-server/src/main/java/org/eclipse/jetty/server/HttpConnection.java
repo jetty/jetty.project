@@ -382,30 +382,33 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             Connection connection = (Connection)_channel.getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
             if (connection != null)
             {
-                Throwable cancelled = getEndPoint().cancelFillInterest(_input::getError);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Upgrade from {} to {}", this, connection, cancelled);
-                _channel.getState().upgrade();
-                getEndPoint().upgrade(connection);
-                _channel.recycle();
-                _parser.reset();
-                _generator.reset();
-                if (_contentBufferReferences.get() == 0)
-                    releaseRequestBuffer();
+                if (isFillInterested())
+                    abort(new IllegalStateException());
                 else
                 {
-                    LOG.warn("{} lingering content references?!?!", this);
-                    _requestBuffer = null; // Not returned to pool!
-                    _contentBufferReferences.set(0);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Upgrade from {} to {}", this, connection);
+                    _channel.getState().upgrade();
+                    getEndPoint().upgrade(connection);
+                    _channel.recycle();
+                    _parser.reset();
+                    _generator.reset();
+                    if (_contentBufferReferences.get() == 0)
+                        releaseRequestBuffer();
+                    else
+                    {
+                        LOG.warn("{} lingering content references?!?!", this);
+                        _requestBuffer = null; // Not returned to pool!
+                        _contentBufferReferences.set(0);
+                    }
                 }
                 return;
             }
         }
 
         boolean complete = _input.consumeAll();
-        Throwable cancelled = getEndPoint().cancelFillInterest(_input::getError);
-        if (LOG.isDebugEnabled())
-            LOG.debug("cancelled {}", this, cancelled);
+        if (isFillInterested())
+            abort(new IllegalStateException());
 
         // Finish consuming the request
         // If we are still expecting

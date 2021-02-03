@@ -24,7 +24,6 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
-import java.util.function.Supplier;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -223,8 +222,6 @@ public interface EndPoint extends Closeable
      * been called
      */
     boolean isFillInterested();
-
-    Throwable cancelFillInterest(Supplier<Throwable> cancellation);
 
     /**
      * <p>Writes the given buffers via {@link #flush(ByteBuffer...)} and invokes callback methods when either
