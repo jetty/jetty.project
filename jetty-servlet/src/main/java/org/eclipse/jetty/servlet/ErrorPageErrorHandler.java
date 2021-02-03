@@ -83,6 +83,10 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
                     request.setAttribute(Dispatcher.ERROR_EXCEPTION_TYPE, th.getClass());
                 }
             }
+            else
+            {
+                th = null;
+            }
 
         }
 
