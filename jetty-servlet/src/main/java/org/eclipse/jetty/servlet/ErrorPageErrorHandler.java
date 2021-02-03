@@ -75,9 +75,11 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
             if (errorPage != null)
                 matchedThrowable = exClass;
 
-            if (th instanceof ServletException){
+            if (th instanceof ServletException)
+            {
                 th = ((ServletException)th).getRootCause();
-                if (th != null) {
+                if (th != null)
+                {
                     request.setAttribute(Dispatcher.ERROR_EXCEPTION_TYPE, th.getClass());
                 }
             }
