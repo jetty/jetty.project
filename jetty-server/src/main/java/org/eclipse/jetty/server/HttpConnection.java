@@ -376,17 +376,15 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     @Override
     public void onCompleted()
     {
-        boolean complete = _input.consumeAll();
-        Throwable cancelled = getEndPoint().cancelFillInterest(_input::getError);
-        if (LOG.isDebugEnabled())
-            LOG.debug("cancelled {}", this, cancelled);
-
         // Handle connection upgrades
         if (_channel.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
         {
             Connection connection = (Connection)_channel.getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
             if (connection != null)
             {
+                Throwable cancelled = getEndPoint().cancelFillInterest(_input::getError);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("cancelled {}", this, cancelled);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Upgrade from {} to {}", this, connection);
                 _channel.getState().upgrade();
@@ -405,6 +403,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 return;
             }
         }
+
+        boolean complete = _input.consumeAll();
+        Throwable cancelled = getEndPoint().cancelFillInterest(_input::getError);
+        if (LOG.isDebugEnabled())
+            LOG.debug("cancelled {}", this, cancelled);
 
         // Finish consuming the request
         // If we are still expecting
