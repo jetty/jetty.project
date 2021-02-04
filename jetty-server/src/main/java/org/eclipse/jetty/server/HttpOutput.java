@@ -450,20 +450,15 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                             break;
 
                         case BLOCKED:
-                            // An operation is in progress, so we soft close now
-                            _softClose = true;
-                            // then cancel the operation
-                            CancellationException cancelled = new CancellationException();
-                            if (_writeBlocker.fail(cancelled))
-                                _channel.abort(cancelled);
-                            // then trigger a close from onWriteComplete
-                            _state = State.CLOSE;
-                            break;
-
                         case UNREADY:
                         case PENDING:
+                            LOG.warn("Pending write onComplated {} {}", this, _channel);
                             // An operation is in progress, so we soft close now
                             _softClose = true;
+                            // then cancel the operation and abort the channel
+                            CancellationException cancelled = new CancellationException();
+                            _writeBlocker.fail(cancelled);
+                            _channel.abort(cancelled);
                             // then trigger a close from onWriteComplete
                             _state = State.CLOSE;
                             break;

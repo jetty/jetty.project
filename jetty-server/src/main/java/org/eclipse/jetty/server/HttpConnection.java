@@ -376,39 +376,40 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     @Override
     public void onCompleted()
     {
+        // If we are fill interested, then a read is pending and we must abort
+        if (isFillInterested())
+        {
+            LOG.warn("Pending read in onCompleted {} {}", this, getEndPoint());
+            abort(new IllegalStateException());
+        }
+
         // Handle connection upgrades
         if (_channel.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
         {
             Connection connection = (Connection)_channel.getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
             if (connection != null)
             {
-                if (isFillInterested())
-                    abort(new IllegalStateException());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Upgrade from {} to {}", this, connection);
+                _channel.getState().upgrade();
+                getEndPoint().upgrade(connection);
+                _channel.recycle();
+                _parser.reset();
+                _generator.reset();
+                if (_contentBufferReferences.get() == 0)
+                    releaseRequestBuffer();
                 else
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Upgrade from {} to {}", this, connection);
-                    _channel.getState().upgrade();
-                    getEndPoint().upgrade(connection);
-                    _channel.recycle();
-                    _parser.reset();
-                    _generator.reset();
-                    if (_contentBufferReferences.get() == 0)
-                        releaseRequestBuffer();
-                    else
-                    {
-                        LOG.warn("{} lingering content references?!?!", this);
-                        _requestBuffer = null; // Not returned to pool!
-                        _contentBufferReferences.set(0);
-                    }
+                    LOG.warn("{} lingering content references?!?!", this);
+                    _requestBuffer = null; // Not returned to pool!
+                    _contentBufferReferences.set(0);
                 }
                 return;
             }
         }
 
+        // Drive to EOF, EarlyEOF or Error
         boolean complete = _input.consumeAll();
-        if (isFillInterested())
-            abort(new IllegalStateException());
 
         // Finish consuming the request
         // If we are still expecting
