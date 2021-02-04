@@ -504,6 +504,41 @@ public class ServletContextHandler extends ContextHandler
     {
         return getServletHandler().addFilterWithMapping(filterClass, pathSpec, dispatches);
     }
+    
+    /**
+     * Utility Method to allow for manual execution of {@link javax.servlet.ServletContainerInitializer} when using Embedded Jetty.
+     * @param containerInitializer the ServletContainerInitializer to register.
+     * @see Initializer
+     */
+    public void addServletContainerInitializer(ServletContainerInitializer containerInitializer)
+    {
+        if (!isStopped())
+            throw new IllegalStateException("ServletContainerInitializers should be added before starting");
+
+        addServletContainerInitializer(containerInitializer, Collections.emptySet());
+    }
+
+    /**
+     * Utility Method to allow for manual execution of {@link javax.servlet.ServletContainerInitializer} when using Embedded Jetty.
+     * @param sci the ServletContainerInitializer to register.
+     * @param classes the Set of application classes.
+     * @see Initializer
+     */
+    public void addServletContainerInitializer(ServletContainerInitializer sci, Set<Class<?>> classes)
+    {
+        if (!isStopped())
+            throw new IllegalStateException("ServletContainerInitializers should be added before starting");
+
+        //addManaged(new Initializer(this, containerInitializer, classes));
+        addServletContainerInitializer(new ServletContainerInitializerHolder(sci, classes));
+    }
+    
+    public void addServletContainerInitializer(ServletContainerInitializerHolder... sciHolder)
+    {
+        // getBean(starter class);
+        // if bean is null, create it and add it
+        // add all sciHolders in order to it
+    }
 
     /**
      * notification that a ServletRegistration has been created so we can track the annotations
