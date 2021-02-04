@@ -455,12 +455,19 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                             LOG.warn("Pending write onComplated {} {}", this, _channel);
                             // An operation is in progress, so we soft close now
                             _softClose = true;
-                            // then cancel the operation and abort the channel
-                            CancellationException cancelled = new CancellationException();
-                            _writeBlocker.fail(cancelled);
-                            _channel.abort(cancelled);
                             // then trigger a close from onWriteComplete
                             _state = State.CLOSE;
+
+                            // But if we are blocked or there is more content to come, we must abort
+                            // Note that this allows a pending async write to complete only if it is the last write
+                            if (_apiState == ApiState.BLOCKED || !_channel.getResponse().isContentComplete(_written))
+                            {
+                                CancellationException cancelled = new CancellationException();
+                                _writeBlocker.fail(cancelled);
+                                _channel.abort(cancelled);
+                                _state = State.CLOSED;
+                            }
+
                             break;
                     }
                     break;
