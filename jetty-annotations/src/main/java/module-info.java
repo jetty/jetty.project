@@ -25,6 +25,7 @@ module org.eclipse.jetty.annotations
     requires transitive org.eclipse.jetty.plus;
     requires transitive org.objectweb.asm;
     requires org.slf4j;
+    requires org.eclipse.jetty.servlet;
 
     uses ServletContainerInitializer;
 

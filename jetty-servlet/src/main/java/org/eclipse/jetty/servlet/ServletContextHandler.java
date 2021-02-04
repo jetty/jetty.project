@@ -68,6 +68,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -515,7 +516,7 @@ public class ServletContextHandler extends ContextHandler
         if (!isStopped())
             throw new IllegalStateException("ServletContainerInitializers should be added before starting");
 
-        addServletContainerInitializer(containerInitializer, Collections.emptySet());
+        addServletContainerInitializer(new ServletContainerInitializerHolder(containerInitializer));
     }
 
     /**
@@ -524,20 +525,23 @@ public class ServletContextHandler extends ContextHandler
      * @param classes the Set of application classes.
      * @see Initializer
      */
-    public void addServletContainerInitializer(ServletContainerInitializer sci, Set<Class<?>> classes)
+    public void addServletContainerInitializer(ServletContainerInitializer sci, Class<?>... classes)
     {
         if (!isStopped())
             throw new IllegalStateException("ServletContainerInitializers should be added before starting");
 
-        //addManaged(new Initializer(this, containerInitializer, classes));
         addServletContainerInitializer(new ServletContainerInitializerHolder(sci, classes));
     }
     
-    public void addServletContainerInitializer(ServletContainerInitializerHolder... sciHolder)
+    public void addServletContainerInitializer(ServletContainerInitializerHolder... sciHolders)
     {
-        // getBean(starter class);
-        // if bean is null, create it and add it
-        // add all sciHolders in order to it
+        ServletContainerInitializerStarter starter = getBean(ServletContainerInitializerStarter.class);
+        if (starter == null)
+        {
+            starter = new ServletContainerInitializerStarter();
+            addManaged(starter);
+        }
+        starter.addServletContainerInitializerHolders(sciHolders);
     }
 
     /**
@@ -1580,7 +1584,9 @@ public class ServletContextHandler extends ContextHandler
      * A utility class to hold a {@link ServletContainerInitializer} and implement the
      * {@link ServletContainerInitializerCaller} interface so that the SCI is correctly
      * started if an instance of this class is added as a bean to a {@link ServletContextHandler}.
+     * @deprecated
      */
+    @Deprecated
     public static class Initializer extends AbstractLifeCycle implements ServletContainerInitializerCaller
     {
         private final ServletContextHandler _context;
@@ -1612,6 +1618,40 @@ public class ServletContextHandler extends ContextHandler
             {
                 _context.getServletContext().setExtendedListenerTypes(oldExtended);
             }
+        }
+    }
+    
+    /**
+     * Bean that is added to the ServletContextHandler to start all of the
+     * ServletContainerInitializers by starting their corresponding
+     * ServletContainerInitializerHolders when this bean is itself started.
+     * Note that the SCIs will be started in order of addition.
+     *
+     */
+    public static class ServletContainerInitializerStarter extends ContainerLifeCycle
+    {
+        public void addServletContainerInitializerHolders(ServletContainerInitializerHolder... holders)
+        {
+            for (ServletContainerInitializerHolder holder:holders)
+                addManaged(holder);
+        }
+        
+        public Collection<ServletContainerInitializerHolder> getServletContainerInitializerHolders()
+        {
+            return getContainedBeans(ServletContainerInitializerHolder.class);
+        }
+
+        @Override
+        protected void doStop() throws Exception
+        {
+            //remove all of the non-programmatic holders
+            Collection<ServletContainerInitializerHolder> holders = getServletContainerInitializerHolders();
+            for (ServletContainerInitializerHolder h:holders)
+            {
+                if (h.getSource().getOrigin() != Source.Origin.EMBEDDED)
+                    removeBean(h);
+            }
+            super.doStop();
         }
     }
 }

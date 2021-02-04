@@ -27,7 +27,9 @@ import org.slf4j.LoggerFactory;
  *
  * Call the onStartup() method on all ServletContainerInitializers, after having
  * found all applicable classes (if any) to pass in as args.
+ * @deprecated
  */
+@Deprecated
 public class ServletContainerInitializersStarter extends AbstractLifeCycle implements ServletContextHandler.ServletContainerInitializerCaller
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletContainerInitializersStarter.class);

@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.annotations;
 
+import org.eclipse.jetty.annotations.AnnotationConfiguration.DiscoveredServletContainerInitializerHolder;
 import org.eclipse.jetty.annotations.AnnotationParser.AbstractHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
 import org.eclipse.jetty.annotations.AnnotationParser.FieldInfo;
@@ -28,12 +29,19 @@ import org.eclipse.jetty.plus.annotation.ContainerInitializer;
  */
 public class ContainerInitializerAnnotationHandler extends AbstractHandler
 {
-    final ContainerInitializer _initializer;
-    final Class _annotation;
+    final DiscoveredServletContainerInitializerHolder _holder;
+    final Class<?> _annotation;
 
-    public ContainerInitializerAnnotationHandler(ContainerInitializer initializer, Class annotation)
+    @Deprecated
+    public ContainerInitializerAnnotationHandler(ContainerInitializer initializer, Class<?> annotation)
     {
-        _initializer = initializer;
+        _holder = null;
+        _annotation = null;
+    }
+    
+    public ContainerInitializerAnnotationHandler(DiscoveredServletContainerInitializerHolder holder, Class<?> annotation)
+    {
+        _holder = holder;
         _annotation = annotation;
     }
 
@@ -45,10 +53,10 @@ public class ContainerInitializerAnnotationHandler extends AbstractHandler
     @Override
     public void handle(ClassInfo info, String annotationName)
     {
-        if (annotationName == null || !_annotation.getName().equals(annotationName))
+        if (!_annotation.getName().equals(annotationName))
             return;
 
-        _initializer.addAnnotatedTypeName(info.getClassName());
+        _holder.addApplicableClass(info.getClassName());
     }
 
     /**
@@ -59,9 +67,10 @@ public class ContainerInitializerAnnotationHandler extends AbstractHandler
     @Override
     public void handle(FieldInfo info, String annotationName)
     {
-        if (annotationName == null || !_annotation.getName().equals(annotationName))
+        if (!_annotation.getName().equals(annotationName))
             return;
-        _initializer.addAnnotatedTypeName(info.getClassInfo().getClassName());
+        
+        _holder.addApplicableClass(info.getClassInfo().getClassName());
     }
 
     /**
@@ -72,13 +81,19 @@ public class ContainerInitializerAnnotationHandler extends AbstractHandler
     @Override
     public void handle(MethodInfo info, String annotationName)
     {
-        if (annotationName == null || !_annotation.getName().equals(annotationName))
+        if (!_annotation.getName().equals(annotationName))
             return;
-        _initializer.addAnnotatedTypeName(info.getClassInfo().getClassName());
+        _holder.addApplicableClass(info.getClassInfo().getClassName());
     }
 
+    @Deprecated
     public ContainerInitializer getContainerInitializer()
     {
-        return _initializer;
+        return null;
+    }
+    
+    public DiscoveredServletContainerInitializerHolder getHolder()
+    {
+        return _holder;
     }
 }

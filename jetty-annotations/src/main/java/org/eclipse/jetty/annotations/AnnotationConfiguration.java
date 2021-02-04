@@ -39,8 +39,10 @@ import javax.servlet.ServletContainerInitializer;
 import javax.servlet.annotation.HandlesTypes;
 
 import org.eclipse.jetty.annotations.AnnotationParser.Handler;
-import org.eclipse.jetty.plus.annotation.ContainerInitializer;
 import org.eclipse.jetty.plus.webapp.PlusConfiguration;
+import org.eclipse.jetty.servlet.ServletContainerInitializerHolder;
+import org.eclipse.jetty.servlet.Source;
+import org.eclipse.jetty.servlet.Source.Origin;
 import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.ProcessorUtils;
@@ -80,6 +82,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     protected final List<AbstractDiscoverableAnnotationHandler> _discoverableAnnotationHandlers = new ArrayList<>();
     protected ClassInheritanceHandler _classInheritanceHandler;
     protected final List<ContainerInitializerAnnotationHandler> _containerInitializerAnnotationHandlers = new ArrayList<>();
+    protected final List<DiscoveredServletContainerInitializerHolder> _sciHolders = new ArrayList<>();
 
     protected List<ParserTask> _parserTasks;
 
@@ -87,7 +90,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
     protected CounterStatistic _webInfLibStats;
     protected CounterStatistic _webInfClassesStats;
     protected Pattern _sciExcludePattern;
-    protected List<ServletContainerInitializer> _initializers;
 
     public AnnotationConfiguration()
     {
@@ -314,6 +316,64 @@ public class AnnotationConfiguration extends AbstractConfiguration
             return Integer.compare(i1, i2);
         }
     }
+    
+    public static class DiscoveredServletContainerInitializerHolder extends ServletContainerInitializerHolder
+    {
+        private Set<String> applicableClasses = new HashSet<>();
+        private Set<Class<?>> declaredClasses = new HashSet<>();
+        
+        public DiscoveredServletContainerInitializerHolder(Source source, ServletContainerInitializer sci, Class<?>... startupClasses)
+        {
+            super(source, sci);
+            //take the classes and set them aside until we can calculate all of their
+            //subclasses, if necessary
+            declaredClasses.addAll(Arrays.asList(startupClasses));
+        }
+
+        public void addApplicableClass(String classname)
+        {
+            applicableClasses.add(classname);
+        }
+        
+        void resolveClasses(Map<String, Set<String>> classMap)
+        {
+            //If we have a full inheritance map of all classes in the webapp,
+            //process each of the classes we have found that contained an 
+            //annotation listed in HandlesTypes, or the listed class itself,
+            //by adding all of their subclasses also as classes to pass to
+            //onStartup
+            Set<String> classnames = new HashSet<>();
+            classnames.addAll(applicableClasses);
+            declaredClasses.stream().map(Class::getName);
+
+            Set<String> finalClassnames = new HashSet<>();
+
+            for (String classname:classnames)
+            {
+                finalClassnames.add(classname);
+                if (classMap != null)
+                    //walk the hierarchy and find all types that extend or implement the class
+                    addInheritedTypes(finalClassnames, classMap, (Set<String>)classMap.get(classname));
+            }
+            
+            //finally, add them all as startup classes
+            addStartupClasses(finalClassnames.toArray(new String[0]));
+        }
+
+        private void addInheritedTypes(Set<String> results, Map<String, Set<String>> classMap, Set<String> names)
+        {
+            if (names == null || names.isEmpty())
+                return;
+
+            for (String s : names)
+            {
+                results.add(s);
+
+                //walk the hierarchy and find all types that extend or implement the class
+                addInheritedTypes(results, classMap, (Set<String>)classMap.get(s));
+            }
+        }
+    }
 
     @Override
     public void preConfigure(final WebAppContext context) throws Exception
@@ -351,9 +411,13 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
         if (!_discoverableAnnotationHandlers.isEmpty() || _classInheritanceHandler != null || !_containerInitializerAnnotationHandlers.isEmpty())
             scanForAnnotations(context);
+        
+        Map<String, Set<String>> map = (Map<String, Set<String>>)context.getAttribute(AnnotationConfiguration.CLASS_INHERITANCE_MAP);
+        for (DiscoveredServletContainerInitializerHolder holder:_sciHolders)
+            holder.resolveClasses(map);
 
         // Resolve container initializers
-        List<ContainerInitializer> initializers =
+        /* List<ContainerInitializer> initializers =
             (List<ContainerInitializer>)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZERS);
         if (initializers != null && initializers.size() > 0)
         {
@@ -362,7 +426,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
             {
                 i.resolveClasses(context, map);
             }
-        }
+        }*/
     }
 
     @Override
@@ -373,33 +437,16 @@ public class AnnotationConfiguration extends AbstractConfiguration
             classMap.clear();
         context.removeAttribute(CLASS_INHERITANCE_MAP);
 
-        List<ContainerInitializer> initializers = (List<ContainerInitializer>)context.getAttribute(CONTAINER_INITIALIZERS);
-        if (initializers != null)
-            initializers.clear();
-        context.removeAttribute(CONTAINER_INITIALIZERS);
-
-        if (_discoverableAnnotationHandlers != null)
-            _discoverableAnnotationHandlers.clear();
-
+        _discoverableAnnotationHandlers.clear();
         _classInheritanceHandler = null;
-        if (_containerInitializerAnnotationHandlers != null)
-            _containerInitializerAnnotationHandlers.clear();
+        _containerInitializerAnnotationHandlers.clear();
+        _sciHolders.clear();
 
         if (_parserTasks != null)
         {
             _parserTasks.clear();
             _parserTasks = null;
         }
-
-        ServletContainerInitializersStarter starter = (ServletContainerInitializersStarter)context.getAttribute(CONTAINER_INITIALIZER_STARTER);
-        if (starter != null)
-        {
-            context.removeBean(starter);
-            context.removeAttribute(CONTAINER_INITIALIZER_STARTER);
-        }
-
-        if (_initializers != null)
-            _initializers.clear();
 
         super.postConfigure(context);
     }
@@ -568,28 +615,74 @@ public class AnnotationConfiguration extends AbstractConfiguration
     {
         if (scis == null || scis.isEmpty())
             return; // nothing to do
-
+        
+        for (ServletContainerInitializer sci : scis)
+        {
+            Class<?>[] classes = new Class<?>[0];
+            HandlesTypes annotation = sci.getClass().getAnnotation(HandlesTypes.class);
+            if (annotation != null)
+                classes = annotation.value();
+            
+            DiscoveredServletContainerInitializerHolder holder = new DiscoveredServletContainerInitializerHolder(new Source(Origin.ANNOTATION, sci.getClass().getName()),
+                sci, classes);
+            _sciHolders.add(holder);
+            
+            if (classes.length > 0)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("HandlesTypes {} on initializer {}", Arrays.asList(classes), sci.getClass());
+                
+                //If we haven't already done so, we need to register a handler that will
+                //process the whole class hierarchy to satisfy the ServletContainerInitializer
+                if (context.getAttribute(CLASS_INHERITANCE_MAP) == null)
+                {
+                    Map<String, Set<String>> map = new ClassInheritanceMap();
+                    context.setAttribute(CLASS_INHERITANCE_MAP, map);
+                    _classInheritanceHandler = new ClassInheritanceHandler(map);
+                }
+                
+                for (Class<?> c : classes)
+                {
+                    //The value of one of the HandlesTypes classes is actually an Annotation itself so
+                    //register a handler for it
+                    if (c.isAnnotation())
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Registering annotation handler for {}", c.getName());
+                        _containerInitializerAnnotationHandlers.add(new ContainerInitializerAnnotationHandler(holder, c));
+                    }
+                }
+            }
+            
+            context.addServletContainerInitializer(holder);
+        }
+        
+        
+        
+        /*
         List<ContainerInitializer> initializers = new ArrayList<ContainerInitializer>();
         context.setAttribute(CONTAINER_INITIALIZERS, initializers);
-
+        
         for (ServletContainerInitializer service : scis)
         {
             HandlesTypes annotation = service.getClass().getAnnotation(HandlesTypes.class);
             ContainerInitializer initializer = null;
+            
+            
             if (annotation != null)
             {
                 //There is a HandlesTypes annotation on the on the ServletContainerInitializer
                 Class<?>[] classes = annotation.value();
                 if (classes != null)
                 {
-
+        
                     if (LOG.isDebugEnabled())
                     {
                         LOG.debug("HandlesTypes {} on initializer {}", Arrays.asList(classes), service.getClass());
                     }
-
+        
                     initializer = new ContainerInitializer(service, classes);
-
+        
                     //If we haven't already done so, we need to register a handler that will
                     //process the whole class hierarchy to satisfy the ServletContainerInitializer
                     if (context.getAttribute(CLASS_INHERITANCE_MAP) == null)
@@ -599,7 +692,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
                         context.setAttribute(CLASS_INHERITANCE_MAP, map);
                         _classInheritanceHandler = new ClassInheritanceHandler(map);
                     }
-
+        
                     for (Class<?> c : classes)
                     {
                         //The value of one of the HandlesTypes classes is actually an Annotation itself so
@@ -625,17 +718,17 @@ public class AnnotationConfiguration extends AbstractConfiguration
                 if (LOG.isDebugEnabled())
                     LOG.debug("No HandlesTypes annotation on initializer {}", service.getClass());
             }
-
+        
             initializers.add(initializer);
         }
-
+        
         //add a bean to the context which will call the servletcontainerinitializers when appropriate
         ServletContainerInitializersStarter starter = (ServletContainerInitializersStarter)context.getAttribute(CONTAINER_INITIALIZER_STARTER);
         if (starter != null)
             throw new IllegalStateException("ServletContainerInitializersStarter already exists");
         starter = new ServletContainerInitializersStarter(context);
         context.setAttribute(CONTAINER_INITIALIZER_STARTER, starter);
-        context.addBean(starter, true);
+        context.addBean(starter, true);*/
     }
 
     public Resource getJarFor(ServletContainerInitializer service)
