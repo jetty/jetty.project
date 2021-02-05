@@ -15,6 +15,7 @@ package org.eclipse.jetty.http3.qpack;
 
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http3.qpack.table.StaticTable;
 
 /**
  *

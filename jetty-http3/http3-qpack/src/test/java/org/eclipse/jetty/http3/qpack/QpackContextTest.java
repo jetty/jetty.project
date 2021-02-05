@@ -16,7 +16,7 @@ package org.eclipse.jetty.http3.qpack;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http3.qpack.QpackContext.Entry;
+import org.eclipse.jetty.http3.qpack.table.Entry;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -197,7 +197,7 @@ public class QpackContextTest
         Entry[] entry = new Entry[100];
 
         // Lookup the index of a static field
-        assertEquals(0, ctx.size());
+        assertEquals(0, ctx.getNumEntries());
         assertEquals(":authority", ctx.get(1).getHttpField().getName());
         assertEquals(3, ctx.index(ctx.get(methodPost)));
         assertEquals(methodPost, ctx.get(3).getHttpField());
@@ -208,7 +208,7 @@ public class QpackContextTest
         entry[0] = ctx.add(field[0]);
 
         // Check new entry is 62 
-        assertEquals(1, ctx.size());
+        assertEquals(1, ctx.getNumEntries());
         assertEquals(62, ctx.index(entry[0]));
         assertEquals(entry[0], ctx.get(62));
 
@@ -217,7 +217,7 @@ public class QpackContextTest
         assertEquals(3, ctx.index(ctx.get(methodPost)));
         assertEquals(methodPost, ctx.get(3).getHttpField());
         assertEquals("www-authenticate", ctx.get(61).getHttpField().getName());
-        assertEquals(null, ctx.get(62 + ctx.size()));
+        assertEquals(null, ctx.get(62 + ctx.getNumEntries()));
 
         // Add 4 more entries
         for (int i = 1; i <= 4; i++)
@@ -226,7 +226,7 @@ public class QpackContextTest
         }
 
         // Check newest entry is at 62 oldest at 66
-        assertEquals(5, ctx.size());
+        assertEquals(5, ctx.getNumEntries());
         int index = 66;
         for (int i = 0; i <= 4; i++)
         {
@@ -240,7 +240,7 @@ public class QpackContextTest
         assertEquals(3, ctx.index(ctx.get(methodPost)));
         assertEquals(methodPost, ctx.get(3).getHttpField());
         assertEquals("www-authenticate", ctx.get(61).getHttpField().getName());
-        assertEquals(null, ctx.get(62 + ctx.size()));
+        assertEquals(null, ctx.get(62 + ctx.getNumEntries()));
 
         // add 1 more entry and this should cause an eviction!
         entry[5] = ctx.add(field[5]);
@@ -262,7 +262,7 @@ public class QpackContextTest
         assertEquals(3, ctx.index(ctx.get(methodPost)));
         assertEquals(methodPost, ctx.get(3).getHttpField());
         assertEquals("www-authenticate", ctx.get(61).getHttpField().getName());
-        assertEquals(null, ctx.get(62 + ctx.size()));
+        assertEquals(null, ctx.get(62 + ctx.getNumEntries()));
 
         // Add 4 more entries
         for (int i = 6; i <= 9; i++)
@@ -328,7 +328,7 @@ public class QpackContextTest
             entry[i] = ctx.add(field[i]);
         }
 
-        assertEquals(5, ctx.size());
+        assertEquals(5, ctx.getNumEntries());
 
         // check indexes
         int index = 66;
@@ -341,7 +341,7 @@ public class QpackContextTest
 
         // resize so that only 2 entries may be held
         ctx.resize(38 * 2);
-        assertEquals(2, ctx.size());
+        assertEquals(2, ctx.getNumEntries());
 
         // check indexes
         index = 63;
@@ -354,7 +354,7 @@ public class QpackContextTest
 
         // resize so that 6.5 entries may be held
         ctx.resize(38 * 6 + 19);
-        assertEquals(2, ctx.size());
+        assertEquals(2, ctx.getNumEntries());
 
         // check indexes
         index = 63;
@@ -371,7 +371,7 @@ public class QpackContextTest
             entry[i] = ctx.add(field[i]);
         }
 
-        assertEquals(6, ctx.size());
+        assertEquals(6, ctx.getNumEntries());
 
         // check indexes
         index = 67;
@@ -384,7 +384,7 @@ public class QpackContextTest
 
         // resize so that only 100 entries may be held
         ctx.resize(38 * 100);
-        assertEquals(6, ctx.size());
+        assertEquals(6, ctx.getNumEntries());
         // check indexes
         index = 67;
         for (int i = 4; i <= 9; i++)

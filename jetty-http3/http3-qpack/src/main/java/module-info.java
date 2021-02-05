@@ -17,6 +17,7 @@ import org.eclipse.jetty.http3.qpack.QpackFieldPreEncoder;
 module org.eclipse.jetty.http3.qpack
 {
     exports org.eclipse.jetty.http3.qpack;
+    exports org.eclipse.jetty.http3.qpack.table;
 
     requires transitive org.eclipse.jetty.http;
     requires org.slf4j;

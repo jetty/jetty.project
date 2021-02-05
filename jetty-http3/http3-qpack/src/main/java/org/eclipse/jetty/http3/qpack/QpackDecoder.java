@@ -19,7 +19,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http3.qpack.QpackContext.Entry;
+import org.eclipse.jetty.http3.qpack.table.Entry;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

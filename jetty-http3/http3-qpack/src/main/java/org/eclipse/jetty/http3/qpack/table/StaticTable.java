@@ -1,4 +1,4 @@
-package org.eclipse.jetty.http3.qpack;
+package org.eclipse.jetty.http3.qpack.table;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -9,6 +9,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http3.qpack.StaticTableHttpField;
 import org.eclipse.jetty.util.Index;
 
 public class StaticTable
@@ -82,18 +83,18 @@ public class StaticTable
 
     public static final int STATIC_SIZE = STATIC_TABLE.length - 1;
 
-    private final Map<HttpField, QpackContext.Entry> __staticFieldMap = new HashMap<>();
-    private final Index<QpackContext.StaticEntry> __staticNameMap;
-    private final QpackContext.StaticEntry[] __staticTableByHeader = new QpackContext.StaticEntry[HttpHeader.values().length];
-    private final QpackContext.StaticEntry[] __staticTable = new QpackContext.StaticEntry[STATIC_TABLE.length];
+    private final Map<HttpField, Entry> __staticFieldMap = new HashMap<>();
+    private final Index<StaticEntry> __staticNameMap;
+    private final StaticEntry[] __staticTableByHeader = new StaticEntry[HttpHeader.values().length];
+    private final StaticEntry[] __staticTable = new StaticEntry[STATIC_TABLE.length];
 
     public StaticTable()
     {
-        Index.Builder<QpackContext.StaticEntry> staticNameMapBuilder = new Index.Builder<QpackContext.StaticEntry>().caseSensitive(false);
+        Index.Builder<StaticEntry> staticNameMapBuilder = new Index.Builder<StaticEntry>().caseSensitive(false);
         Set<String> added = new HashSet<>();
         for (int i = 1; i < STATIC_TABLE.length; i++)
         {
-            QpackContext.StaticEntry entry = null;
+            StaticEntry entry = null;
 
             String name = STATIC_TABLE[i][0];
             String value = STATIC_TABLE[i][1];
@@ -107,7 +108,7 @@ public class StaticTable
 
                         HttpMethod method = HttpMethod.CACHE.get(value);
                         if (method != null)
-                            entry = new QpackContext.StaticEntry(i, new StaticTableHttpField(header, name, value, method));
+                            entry = new StaticEntry(i, new StaticTableHttpField(header, name, value, method));
                         break;
                     }
 
@@ -116,13 +117,13 @@ public class StaticTable
 
                         HttpScheme scheme = HttpScheme.CACHE.get(value);
                         if (scheme != null)
-                            entry = new QpackContext.StaticEntry(i, new StaticTableHttpField(header, name, value, scheme));
+                            entry = new StaticEntry(i, new StaticTableHttpField(header, name, value, scheme));
                         break;
                     }
 
                     case C_STATUS:
                     {
-                        entry = new QpackContext.StaticEntry(i, new StaticTableHttpField(header, name, value, value));
+                        entry = new StaticEntry(i, new StaticTableHttpField(header, name, value, value));
                         break;
                     }
 
@@ -132,7 +133,7 @@ public class StaticTable
             }
 
             if (entry == null)
-                entry = new QpackContext.StaticEntry(i, header == null ? new HttpField(STATIC_TABLE[i][0], value) : new HttpField(header, name, value));
+                entry = new StaticEntry(i, header == null ? new HttpField(STATIC_TABLE[i][0], value) : new HttpField(header, name, value));
 
             __staticTable[i] = entry;
 
@@ -149,30 +150,30 @@ public class StaticTable
 
         for (HttpHeader h : HttpHeader.values())
         {
-            QpackContext.StaticEntry entry = __staticNameMap.get(h.asString());
+            StaticEntry entry = __staticNameMap.get(h.asString());
             if (entry != null)
                 __staticTableByHeader[h.ordinal()] = entry;
         }
     }
 
-    public QpackContext.Entry get(HttpField field)
+    public Entry get(HttpField field)
     {
         return __staticFieldMap.get(field);
     }
 
-    public QpackContext.Entry get(String name)
+    public Entry get(String name)
     {
         return __staticNameMap.get(name);
     }
 
-    public QpackContext.Entry get(int index)
+    public Entry get(int index)
     {
         if (index >= __staticTable.length)
             return null;
         return __staticTable[index];
     }
 
-    public QpackContext.Entry get(HttpHeader header)
+    public Entry get(HttpHeader header)
     {
         int index = header.ordinal();
         if (index >= __staticTableByHeader.length)
