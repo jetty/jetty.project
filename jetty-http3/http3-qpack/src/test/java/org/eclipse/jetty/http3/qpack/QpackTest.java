@@ -176,8 +176,8 @@ public class QpackTest
 
         assertEquals(2, encoder.getQpackContext().size());
         assertEquals(2, decoder.getQpackContext().size());
-        assertEquals(longEnoughToBeEvicted, encoder.getQpackContext().get(QpackContext.STATIC_TABLE.length + 1).getHttpField().getName());
-        assertEquals("foo", encoder.getQpackContext().get(QpackContext.STATIC_TABLE.length).getHttpField().getName());
+        assertEquals(longEnoughToBeEvicted, encoder.getQpackContext().get(StaticTable.STATIC_TABLE.length + 1).getHttpField().getName());
+        assertEquals("foo", encoder.getQpackContext().get(StaticTable.STATIC_TABLE.length).getHttpField().getName());
 
         assertMetaDataSame(original0, decoded0);
 
@@ -194,8 +194,8 @@ public class QpackTest
 
         assertEquals(2, encoder.getQpackContext().size());
         assertEquals(2, decoder.getQpackContext().size());
-        assertEquals("x", encoder.getQpackContext().get(QpackContext.STATIC_TABLE.length).getHttpField().getName());
-        assertEquals("foo", encoder.getQpackContext().get(QpackContext.STATIC_TABLE.length + 1).getHttpField().getName());
+        assertEquals("x", encoder.getQpackContext().get(StaticTable.STATIC_TABLE.length).getHttpField().getName());
+        assertEquals("foo", encoder.getQpackContext().get(StaticTable.STATIC_TABLE.length + 1).getHttpField().getName());
     }
 
     @Test

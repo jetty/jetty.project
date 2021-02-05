@@ -279,10 +279,10 @@ public class QpackEncoderTest
         // Only first and third fields are put in the table
         QpackContext context = encoder.getQpackContext();
         assertThat(context.size(), equalTo(2));
-        assertThat(context.get(QpackContext.STATIC_SIZE + 1).getHttpField().getName(), equalTo("host"));
-        assertThat(context.get(QpackContext.STATIC_SIZE + 2).getHttpField().getName(), equalTo("user-agent"));
+        assertThat(context.get(StaticTable.STATIC_SIZE + 1).getHttpField().getName(), equalTo("host"));
+        assertThat(context.get(StaticTable.STATIC_SIZE + 2).getHttpField().getName(), equalTo("user-agent"));
         assertThat(context.getDynamicTableSize(), equalTo(
-            context.get(QpackContext.STATIC_SIZE + 1).getSize() + context.get(QpackContext.STATIC_SIZE + 2).getSize()));
+            context.get(StaticTable.STATIC_SIZE + 1).getSize() + context.get(StaticTable.STATIC_SIZE + 2).getSize()));
     }
 
     @Test

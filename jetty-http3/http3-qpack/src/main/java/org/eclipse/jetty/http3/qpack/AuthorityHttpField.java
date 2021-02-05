@@ -21,7 +21,7 @@ import org.eclipse.jetty.http.HttpHeader;
  */
 public class AuthorityHttpField extends HostPortHttpField
 {
-    public static final String AUTHORITY = QpackContext.STATIC_TABLE[1][0];
+    public static final String AUTHORITY = StaticTable.STATIC_TABLE[1][0];
 
     public AuthorityHttpField(String authority)
     {
