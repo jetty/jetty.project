@@ -13,12 +13,15 @@
 
 package org.eclipse.jetty.annotations;
 
+import java.util.Objects;
+
 import org.eclipse.jetty.annotations.AnnotationConfiguration.DiscoveredServletContainerInitializerHolder;
 import org.eclipse.jetty.annotations.AnnotationParser.AbstractHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
 import org.eclipse.jetty.annotations.AnnotationParser.FieldInfo;
 import org.eclipse.jetty.annotations.AnnotationParser.MethodInfo;
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
+import org.eclipse.jetty.servlet.ServletContainerInitializerHolder;
 
 /**
  * ContainerInitializerAnnotationHandler
@@ -29,7 +32,7 @@ import org.eclipse.jetty.plus.annotation.ContainerInitializer;
  */
 public class ContainerInitializerAnnotationHandler extends AbstractHandler
 {
-    final DiscoveredServletContainerInitializerHolder _holder;
+    final ServletContainerInitializerHolder _holder;
     final Class<?> _annotation;
 
     @Deprecated
@@ -39,10 +42,10 @@ public class ContainerInitializerAnnotationHandler extends AbstractHandler
         _annotation = null;
     }
     
-    public ContainerInitializerAnnotationHandler(DiscoveredServletContainerInitializerHolder holder, Class<?> annotation)
+    public ContainerInitializerAnnotationHandler(ServletContainerInitializerHolder holder, Class<?> annotation)
     {
-        _holder = holder;
-        _annotation = annotation;
+        _holder = Objects.requireNonNull(holder);
+        _annotation = Objects.requireNonNull(annotation);
     }
 
     /**
@@ -56,7 +59,7 @@ public class ContainerInitializerAnnotationHandler extends AbstractHandler
         if (!_annotation.getName().equals(annotationName))
             return;
 
-        _holder.addApplicableClass(info.getClassName());
+        _holder.addStartupClasses(info.getClassName());
     }
 
     /**
@@ -70,7 +73,7 @@ public class ContainerInitializerAnnotationHandler extends AbstractHandler
         if (!_annotation.getName().equals(annotationName))
             return;
         
-        _holder.addApplicableClass(info.getClassInfo().getClassName());
+        _holder.addStartupClasses(info.getClassInfo().getClassName());
     }
 
     /**
@@ -83,17 +86,12 @@ public class ContainerInitializerAnnotationHandler extends AbstractHandler
     {
         if (!_annotation.getName().equals(annotationName))
             return;
-        _holder.addApplicableClass(info.getClassInfo().getClassName());
+        _holder.addStartupClasses(info.getClassInfo().getClassName());
     }
 
     @Deprecated
     public ContainerInitializer getContainerInitializer()
     {
         return null;
-    }
-    
-    public DiscoveredServletContainerInitializerHolder getHolder()
-    {
-        return _holder;
     }
 }

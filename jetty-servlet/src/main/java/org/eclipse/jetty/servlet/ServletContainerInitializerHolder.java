@@ -37,8 +37,8 @@ import org.slf4j.LoggerFactory;
 public class ServletContainerInitializerHolder extends BaseHolder<ServletContainerInitializer>
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletContainerInitializerHolder.class);
-    private Set<String> _startupClassNames = new HashSet<>();
-    private Set<Class<?>> _startupClasses = new HashSet<>();
+    protected Set<String> _startupClassNames = new HashSet<>();
+    protected Set<Class<?>> _startupClasses = new HashSet<>();
 
     protected ServletContainerInitializerHolder(Source source)
     {
@@ -93,20 +93,29 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
         for (Class<?> c:clazzes)
             _startupClasses.add(c);
     }
-
-    @Override
-    public void doStart() throws Exception
+    
+    protected Set<Class<?>> resolveStartupClasses() throws Exception
     {
-        //Ensure SCI class is loaded
-        super.doStart();
-        
-        //Ensure all startup classes are also loaded     
-        Set<Class<?>> classes = new HashSet<>(_startupClasses);
+        Set<Class<?>> classes = new HashSet<>();
         for (String name:_startupClassNames)
         {
             classes.add(Loader.loadClass(name)); //TODO catch CNFE?
         }
-        
+        return classes;
+    }
+
+    @Override
+    public void doStart() throws Exception
+    {
+        //Ensure all startup classes are also loaded     
+        Set<Class<?>> classes = new HashSet<>(_startupClasses);
+
+        //Ensure SCI class is loaded
+        super.doStart();
+
+        //load all classnames
+        classes.addAll(resolveStartupClasses());
+
         ContextHandler.Context ctx = null;
         if (getServletHandler() != null)
         {
