@@ -209,7 +209,7 @@ public class QpackDecoderTest
         assertThat(metaData.getFields().get(HttpHeader.HOST), is("localhost0"));
         assertThat(metaData.getFields().get(HttpHeader.COOKIE), is("abcdefghij"));
         assertThat(decoder.getQpackContext().getMaxDynamicTableSize(), is(50));
-        assertThat(decoder.getQpackContext().size(), is(1));
+        assertThat(decoder.getQpackContext().getNumEntries(), is(1));
     }
 
     @Test

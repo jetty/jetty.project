@@ -13,13 +13,11 @@
 
 package org.eclipse.jetty.http3.qpack;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http3.qpack.table.DynamicTable;
+import org.eclipse.jetty.http3.qpack.table.Entry;
+import org.eclipse.jetty.http3.qpack.table.StaticTable;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,35 +34,23 @@ public class QpackContext
 {
     public static final Logger LOG = LoggerFactory.getLogger(QpackContext.class);
     private static final StaticTable __staticTable = new StaticTable();
-
     private final DynamicTable _dynamicTable;
-
-    private int _maxDynamicTableSizeInBytes;
-    private int _dynamicTableSizeInBytes;
-
-    private final Map<HttpField, Entry> _fieldMap = new HashMap<>();
-    private final Map<String, Entry> _nameMap = new HashMap<>();
 
     QpackContext(int maxDynamicTableSize)
     {
-        _maxDynamicTableSizeInBytes = maxDynamicTableSize;
-        int guesstimateEntries = 10 + maxDynamicTableSize / (32 + 10 + 10);
-        _dynamicTable = new DynamicTable(guesstimateEntries);
+        _dynamicTable = new DynamicTable(maxDynamicTableSize);
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("HdrTbl[%x] created max=%d", hashCode(), maxDynamicTableSize));
     }
 
     public void resize(int newMaxDynamicTableSize)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug(String.format("HdrTbl[%x] resized max=%d->%d", hashCode(), _maxDynamicTableSizeInBytes, newMaxDynamicTableSize));
-        _maxDynamicTableSizeInBytes = newMaxDynamicTableSize;
-        _dynamicTable.evict();
+        _dynamicTable.setCapacity(newMaxDynamicTableSize);
     }
 
     public Entry get(HttpField field)
     {
-        Entry entry = _fieldMap.get(field);
+        Entry entry = _dynamicTable.get(field);
         if (entry == null)
             entry = __staticTable.get(field);
         return entry;
@@ -75,7 +61,7 @@ public class QpackContext
         Entry entry = __staticTable.get(name);
         if (entry != null)
             return entry;
-        return _nameMap.get(StringUtil.asciiToLowerCase(name));
+        return _dynamicTable.get(StringUtil.asciiToLowerCase(name));
     }
 
     public Entry get(int index)
@@ -96,32 +82,15 @@ public class QpackContext
 
     public Entry add(HttpField field)
     {
-        Entry entry = new Entry(field);
-        int size = entry.getSize();
-        if (size > _maxDynamicTableSizeInBytes)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug(String.format("HdrTbl[%x] !added size %d>%d", hashCode(), size, _maxDynamicTableSizeInBytes));
-            _dynamicTable.evictAll();
-            return null;
-        }
-        _dynamicTableSizeInBytes += size;
-        _dynamicTable.add(entry);
-        _fieldMap.put(field, entry);
-        _nameMap.put(field.getLowerCaseName(), entry);
-
-        if (LOG.isDebugEnabled())
-            LOG.debug(String.format("HdrTbl[%x] added %s", hashCode(), entry));
-        _dynamicTable.evict();
-        return entry;
+        return _dynamicTable.add(new Entry(field));
     }
 
     /**
      * @return Current dynamic table size in entries
      */
-    public int size()
+    public int getNumEntries()
     {
-        return _dynamicTable.size();
+        return _dynamicTable.getNumEntries();
     }
 
     /**
@@ -129,7 +98,7 @@ public class QpackContext
      */
     public int getDynamicTableSize()
     {
-        return _dynamicTableSizeInBytes;
+        return _dynamicTable.getSize();
     }
 
     /**
@@ -137,19 +106,25 @@ public class QpackContext
      */
     public int getMaxDynamicTableSize()
     {
-        return _maxDynamicTableSizeInBytes;
+        return _dynamicTable.getMaxSize();
     }
 
+    /**
+     * @return index of entry in COMBINED address space (QPACK has separate address spaces for dynamic and static tables).
+     */
     public int index(Entry entry)
     {
-        if (entry._slot < 0)
+        if (entry.getIndex() < 0)
             return 0;
         if (entry.isStatic())
-            return entry._slot;
+            return entry.getIndex();
 
         return _dynamicTable.index(entry);
     }
 
+    /**
+     * @return index of entry in the static table or 0 if not in the table (I guess the entries start from 1 not 0 unlike QPACK).
+     */
     public static int staticIndex(HttpHeader header)
     {
         if (header == null)
@@ -157,194 +132,6 @@ public class QpackContext
         Entry entry = __staticTable.get(header.asString());
         if (entry == null)
             return 0;
-        return entry._slot;
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format("QpackContext@%x{entries=%d,size=%d,max=%d}", hashCode(), _dynamicTable.size(), _dynamicTableSizeInBytes, _maxDynamicTableSizeInBytes);
-    }
-
-    private class DynamicTable
-    {
-        Entry[] _entries;
-        int _size;
-        int _offset;
-        int _growby;
-
-        private DynamicTable(int initCapacity)
-        {
-            _entries = new Entry[initCapacity];
-            _growby = initCapacity;
-        }
-
-        public void add(Entry entry)
-        {
-            if (_size == _entries.length)
-            {
-                Entry[] entries = new Entry[_entries.length + _growby];
-                for (int i = 0; i < _size; i++)
-                {
-                    int slot = (_offset + i) % _entries.length;
-                    entries[i] = _entries[slot];
-                    entries[i]._slot = i;
-                }
-                _entries = entries;
-                _offset = 0;
-            }
-            int slot = (_size++ + _offset) % _entries.length;
-            _entries[slot] = entry;
-            entry._slot = slot;
-        }
-
-        public int index(Entry entry)
-        {
-            return StaticTable.STATIC_SIZE + _size - (entry._slot - _offset + _entries.length) % _entries.length;
-        }
-
-        public Entry get(int index)
-        {
-            int d = index - StaticTable.STATIC_SIZE - 1;
-            if (d < 0 || d >= _size)
-                return null;
-            int slot = (_offset + _size - d - 1) % _entries.length;
-            return _entries[slot];
-        }
-
-        public int size()
-        {
-            return _size;
-        }
-
-        private void evict()
-        {
-            while (_dynamicTableSizeInBytes > _maxDynamicTableSizeInBytes)
-            {
-                Entry entry = _entries[_offset];
-                _entries[_offset] = null;
-                _offset = (_offset + 1) % _entries.length;
-                _size--;
-                if (LOG.isDebugEnabled())
-                    LOG.debug(String.format("HdrTbl[%x] evict %s", QpackContext.this.hashCode(), entry));
-                _dynamicTableSizeInBytes -= entry.getSize();
-                entry._slot = -1;
-                _fieldMap.remove(entry.getHttpField());
-                String lc = entry.getHttpField().getLowerCaseName();
-                if (entry == _nameMap.get(lc))
-                    _nameMap.remove(lc);
-            }
-            if (LOG.isDebugEnabled())
-                LOG.debug(String.format("HdrTbl[%x] entries=%d, size=%d, max=%d", QpackContext.this.hashCode(), _dynamicTable.size(), _dynamicTableSizeInBytes, _maxDynamicTableSizeInBytes));
-        }
-
-        private void evictAll()
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug(String.format("HdrTbl[%x] evictAll", QpackContext.this.hashCode()));
-            if (size() > 0)
-            {
-                _fieldMap.clear();
-                _nameMap.clear();
-                _offset = 0;
-                _size = 0;
-                _dynamicTableSizeInBytes = 0;
-                Arrays.fill(_entries, null);
-            }
-        }
-    }
-
-    public static class Entry
-    {
-        final HttpField _field;
-        int _slot; // The index within it's array
-
-        Entry()
-        {
-            _slot = -1;
-            _field = null;
-        }
-
-        Entry(HttpField field)
-        {
-            _field = field;
-        }
-
-        public int getSize()
-        {
-            String value = _field.getValue();
-            return 32 + _field.getName().length() + (value == null ? 0 : value.length());
-        }
-
-        public HttpField getHttpField()
-        {
-            return _field;
-        }
-
-        public boolean isStatic()
-        {
-            return false;
-        }
-
-        public byte[] getStaticHuffmanValue()
-        {
-            return null;
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("{%s,%d,%s,%x}", isStatic() ? "S" : "D", _slot, _field, hashCode());
-        }
-    }
-
-    public static class StaticEntry extends Entry
-    {
-        private final byte[] _huffmanValue;
-        private final byte _encodedField;
-
-        StaticEntry(int index, HttpField field)
-        {
-            super(field);
-            _slot = index;
-            String value = field.getValue();
-            if (value != null && value.length() > 0)
-            {
-                int huffmanLen = Huffman.octetsNeeded(value);
-                if (huffmanLen < 0)
-                    throw new IllegalStateException("bad value");
-                int lenLen = NBitInteger.octectsNeeded(7, huffmanLen);
-                _huffmanValue = new byte[1 + lenLen + huffmanLen];
-                ByteBuffer buffer = ByteBuffer.wrap(_huffmanValue);
-
-                // Indicate Huffman
-                buffer.put((byte)0x80);
-                // Add huffman length
-                NBitInteger.encode(buffer, 7, huffmanLen);
-                // Encode value
-                Huffman.encode(buffer, value);
-            }
-            else
-                _huffmanValue = null;
-
-            _encodedField = (byte)(0x80 | index);
-        }
-
-        @Override
-        public boolean isStatic()
-        {
-            return true;
-        }
-
-        @Override
-        public byte[] getStaticHuffmanValue()
-        {
-            return _huffmanValue;
-        }
-
-        public byte getEncodedField()
-        {
-            return _encodedField;
-        }
+        return entry.getIndex();
     }
 }

@@ -20,6 +20,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http3.qpack.table.StaticTable;
 import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -67,7 +68,7 @@ public class QpackEncoderTest
         assertThat(buffer.remaining(), Matchers.greaterThan(0));
 
         // All are in the dynamic table
-        assertEquals(4, encoder.getQpackContext().size());
+        assertEquals(4, encoder.getQpackContext().getNumEntries());
 
         // encode exact same fields again!
         BufferUtil.clearToFill(buffer);
@@ -75,7 +76,7 @@ public class QpackEncoderTest
         BufferUtil.flipToFlush(buffer, 0);
 
         // All are in the dynamic table
-        assertEquals(4, encoder.getQpackContext().size());
+        assertEquals(4, encoder.getQpackContext().getNumEntries());
 
         // Add 4 more fields
         for (int i = 4; i <= 7; i++)
@@ -92,7 +93,7 @@ public class QpackEncoderTest
         assertThat(buffer.remaining(), Matchers.greaterThan(0));
 
         // max dynamic table size reached
-        assertEquals(5, encoder.getQpackContext().size());
+        assertEquals(5, encoder.getQpackContext().getNumEntries());
 
         // remove some fields
         for (int i = 0; i <= 7; i += 2)
@@ -109,7 +110,7 @@ public class QpackEncoderTest
         assertThat(buffer.remaining(), Matchers.greaterThan(0));
 
         // max dynamic table size reached
-        assertEquals(5, encoder.getQpackContext().size());
+        assertEquals(5, encoder.getQpackContext().getNumEntries());
 
         // remove another fields
         fields.remove(field[1].getName());
@@ -123,7 +124,7 @@ public class QpackEncoderTest
         assertThat(buffer.remaining(), Matchers.greaterThan(0));
 
         // max dynamic table size reached
-        assertEquals(5, encoder.getQpackContext().size());
+        assertEquals(5, encoder.getQpackContext().getNumEntries());
 
         // re add the field
 
@@ -138,7 +139,7 @@ public class QpackEncoderTest
         assertThat(buffer.remaining(), Matchers.greaterThan(0));
 
         // max dynamic table size reached
-        assertEquals(5, encoder.getQpackContext().size());
+        assertEquals(5, encoder.getQpackContext().getNumEntries());
     }
 
     @Test
@@ -207,7 +208,7 @@ public class QpackEncoderTest
         assertThat(buffer.remaining(), Matchers.greaterThan(0));
 
         // empty dynamic table
-        assertEquals(0, encoder.getQpackContext().size());
+        assertEquals(0, encoder.getQpackContext().getNumEntries());
 
         // encode again
         BufferUtil.clearToFill(buffer);
@@ -218,7 +219,7 @@ public class QpackEncoderTest
         assertThat(buffer.remaining(), Matchers.greaterThan(0));
 
         // empty dynamic table
-        assertEquals(0, encoder.getQpackContext().size());
+        assertEquals(0, encoder.getQpackContext().getNumEntries());
     }
 
     @Test
@@ -278,7 +279,7 @@ public class QpackEncoderTest
 
         // Only first and third fields are put in the table
         QpackContext context = encoder.getQpackContext();
-        assertThat(context.size(), equalTo(2));
+        assertThat(context.getNumEntries(), equalTo(2));
         assertThat(context.get(StaticTable.STATIC_SIZE + 1).getHttpField().getName(), equalTo("host"));
         assertThat(context.get(StaticTable.STATIC_SIZE + 2).getHttpField().getName(), equalTo("user-agent"));
         assertThat(context.getDynamicTableSize(), equalTo(
@@ -304,6 +305,6 @@ public class QpackEncoderTest
         QpackContext context = encoder.getQpackContext();
 
         assertThat(context.getMaxDynamicTableSize(), Matchers.is(50));
-        assertThat(context.size(), Matchers.is(1));
+        assertThat(context.getNumEntries(), Matchers.is(1));
     }
 }

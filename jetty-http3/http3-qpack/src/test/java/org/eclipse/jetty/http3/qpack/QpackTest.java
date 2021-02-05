@@ -24,6 +24,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MetaData.Response;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http3.qpack.table.DynamicTable;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.Test;
 
@@ -174,10 +175,10 @@ public class QpackTest
         BufferUtil.flipToFlush(buffer, 0);
         MetaData decoded0 = decoder.decode(buffer);
 
-        assertEquals(2, encoder.getQpackContext().size());
-        assertEquals(2, decoder.getQpackContext().size());
-        assertEquals(longEnoughToBeEvicted, encoder.getQpackContext().get(StaticTable.STATIC_TABLE.length + 1).getHttpField().getName());
-        assertEquals("foo", encoder.getQpackContext().get(StaticTable.STATIC_TABLE.length).getHttpField().getName());
+        assertEquals(2, encoder.getQpackContext().getNumEntries());
+        assertEquals(2, decoder.getQpackContext().getNumEntries());
+        assertEquals(longEnoughToBeEvicted, encoder.getQpackContext().get(DynamicTable.FIRST_INDEX + 1).getHttpField().getName());
+        assertEquals("foo", encoder.getQpackContext().get(DynamicTable.FIRST_INDEX).getHttpField().getName());
 
         assertMetaDataSame(original0, decoded0);
 
@@ -192,10 +193,10 @@ public class QpackTest
         MetaData decoded1 = decoder.decode(buffer);
         assertMetaDataSame(original1, decoded1);
 
-        assertEquals(2, encoder.getQpackContext().size());
-        assertEquals(2, decoder.getQpackContext().size());
-        assertEquals("x", encoder.getQpackContext().get(StaticTable.STATIC_TABLE.length).getHttpField().getName());
-        assertEquals("foo", encoder.getQpackContext().get(StaticTable.STATIC_TABLE.length + 1).getHttpField().getName());
+        assertEquals(2, encoder.getQpackContext().getNumEntries());
+        assertEquals(2, decoder.getQpackContext().getNumEntries());
+        assertEquals("x", encoder.getQpackContext().get(DynamicTable.FIRST_INDEX).getHttpField().getName());
+        assertEquals("foo", encoder.getQpackContext().get(DynamicTable.FIRST_INDEX + 1).getHttpField().getName());
     }
 
     @Test
