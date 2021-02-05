@@ -1884,7 +1884,7 @@ public class Request implements HttpServletRequest
 
         getHttpChannelState().recycle();
         _requestAttributeListeners.clear();
-        // Defer _input.recycle() until setMetaData on next request, so that late readers will fail
+        // Defer _input.recycle() until setMetaData on next request, TODO replace with recycle and reopen in 10
         _metaData = null;
         _originalURI = null;
         _contextPath = null;

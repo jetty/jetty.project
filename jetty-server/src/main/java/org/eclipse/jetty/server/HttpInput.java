@@ -745,15 +745,6 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
     }
 
-    public Throwable getError()
-    {
-        synchronized (_inputQ)
-        {
-            Throwable error = _state instanceof ErrorState ? ((ErrorState)_state)._error : null;
-            return error == null ? new IOException() : error;
-        }
-    }
-
     public boolean isAsync()
     {
         synchronized (_inputQ)

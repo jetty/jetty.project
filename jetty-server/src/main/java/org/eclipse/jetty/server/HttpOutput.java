@@ -452,7 +452,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                         case BLOCKED:
                         case UNREADY:
                         case PENDING:
-                            LOG.warn("Pending write onComplated {} {}", this, _channel);
+                            LOG.warn("Pending write in complete {} {}", this, _channel);
                             // An operation is in progress, so we soft close now
                             _softClose = true;
                             // then trigger a close from onWriteComplete
