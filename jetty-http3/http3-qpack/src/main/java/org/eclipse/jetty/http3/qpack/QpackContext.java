@@ -16,15 +16,10 @@ package org.eclipse.jetty.http3.qpack;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,150 +35,13 @@ import org.slf4j.LoggerFactory;
 public class QpackContext
 {
     public static final Logger LOG = LoggerFactory.getLogger(QpackContext.class);
-    private static final String EMPTY = "";
-    public static final String[][] STATIC_TABLE =
-        {
-            {null, null},
-            /* 1  */ {":authority", EMPTY},
-            /* 2  */ {":method", "GET"},
-            /* 3  */ {":method", "POST"},
-            /* 4  */ {":path", "/"},
-            /* 5  */ {":path", "/index.html"},
-            /* 6  */ {":scheme", "http"},
-            /* 7  */ {":scheme", "https"},
-            /* 8  */ {":status", "200"},
-            /* 9  */ {":status", "204"},
-            /* 10 */ {":status", "206"},
-            /* 11 */ {":status", "304"},
-            /* 12 */ {":status", "400"},
-            /* 13 */ {":status", "404"},
-            /* 14 */ {":status", "500"},
-            /* 15 */ {"accept-charset", EMPTY},
-            /* 16 */ {"accept-encoding", "gzip, deflate"},
-            /* 17 */ {"accept-language", EMPTY},
-            /* 18 */ {"accept-ranges", EMPTY},
-            /* 19 */ {"accept", EMPTY},
-            /* 20 */ {"access-control-allow-origin", EMPTY},
-            /* 21 */ {"age", EMPTY},
-            /* 22 */ {"allow", EMPTY},
-            /* 23 */ {"authorization", EMPTY},
-            /* 24 */ {"cache-control", EMPTY},
-            /* 25 */ {"content-disposition", EMPTY},
-            /* 26 */ {"content-encoding", EMPTY},
-            /* 27 */ {"content-language", EMPTY},
-            /* 28 */ {"content-length", EMPTY},
-            /* 29 */ {"content-location", EMPTY},
-            /* 30 */ {"content-range", EMPTY},
-            /* 31 */ {"content-type", EMPTY},
-            /* 32 */ {"cookie", EMPTY},
-            /* 33 */ {"date", EMPTY},
-            /* 34 */ {"etag", EMPTY},
-            /* 35 */ {"expect", EMPTY},
-            /* 36 */ {"expires", EMPTY},
-            /* 37 */ {"from", EMPTY},
-            /* 38 */ {"host", EMPTY},
-            /* 39 */ {"if-match", EMPTY},
-            /* 40 */ {"if-modified-since", EMPTY},
-            /* 41 */ {"if-none-match", EMPTY},
-            /* 42 */ {"if-range", EMPTY},
-            /* 43 */ {"if-unmodified-since", EMPTY},
-            /* 44 */ {"last-modified", EMPTY},
-            /* 45 */ {"link", EMPTY},
-            /* 46 */ {"location", EMPTY},
-            /* 47 */ {"max-forwards", EMPTY},
-            /* 48 */ {"proxy-authenticate", EMPTY},
-            /* 49 */ {"proxy-authorization", EMPTY},
-            /* 50 */ {"range", EMPTY},
-            /* 51 */ {"referer", EMPTY},
-            /* 52 */ {"refresh", EMPTY},
-            /* 53 */ {"retry-after", EMPTY},
-            /* 54 */ {"server", EMPTY},
-            /* 55 */ {"set-cookie", EMPTY},
-            /* 56 */ {"strict-transport-security", EMPTY},
-            /* 57 */ {"transfer-encoding", EMPTY},
-            /* 58 */ {"user-agent", EMPTY},
-            /* 59 */ {"vary", EMPTY},
-            /* 60 */ {"via", EMPTY},
-            /* 61 */ {"www-authenticate", EMPTY}
-        };
+    private static final StaticTable __staticTable = new StaticTable();
 
-    private static final Map<HttpField, Entry> __staticFieldMap = new HashMap<>();
-    private static final Index<StaticEntry> __staticNameMap;
-    private static final StaticEntry[] __staticTableByHeader = new StaticEntry[HttpHeader.values().length];
-    private static final StaticEntry[] __staticTable = new StaticEntry[STATIC_TABLE.length];
-    public static final int STATIC_SIZE = STATIC_TABLE.length - 1;
-
-    static
-    {
-        Index.Builder<StaticEntry> staticNameMapBuilder = new Index.Builder<StaticEntry>().caseSensitive(false);
-        Set<String> added = new HashSet<>();
-        for (int i = 1; i < STATIC_TABLE.length; i++)
-        {
-            StaticEntry entry = null;
-
-            String name = STATIC_TABLE[i][0];
-            String value = STATIC_TABLE[i][1];
-            HttpHeader header = HttpHeader.CACHE.get(name);
-            if (header != null && value != null)
-            {
-                switch (header)
-                {
-                    case C_METHOD:
-                    {
-
-                        HttpMethod method = HttpMethod.CACHE.get(value);
-                        if (method != null)
-                            entry = new StaticEntry(i, new StaticTableHttpField(header, name, value, method));
-                        break;
-                    }
-
-                    case C_SCHEME:
-                    {
-
-                        HttpScheme scheme = HttpScheme.CACHE.get(value);
-                        if (scheme != null)
-                            entry = new StaticEntry(i, new StaticTableHttpField(header, name, value, scheme));
-                        break;
-                    }
-
-                    case C_STATUS:
-                    {
-                        entry = new StaticEntry(i, new StaticTableHttpField(header, name, value, value));
-                        break;
-                    }
-
-                    default:
-                        break;
-                }
-            }
-
-            if (entry == null)
-                entry = new StaticEntry(i, header == null ? new HttpField(STATIC_TABLE[i][0], value) : new HttpField(header, name, value));
-
-            __staticTable[i] = entry;
-
-            if (entry._field.getValue() != null)
-                __staticFieldMap.put(entry._field, entry);
-
-            if (!added.contains(entry._field.getName()))
-            {
-                added.add(entry._field.getName());
-                staticNameMapBuilder.with(entry._field.getName(), entry);
-            }
-        }
-        __staticNameMap = staticNameMapBuilder.build();
-
-        for (HttpHeader h : HttpHeader.values())
-        {
-            StaticEntry entry = __staticNameMap.get(h.asString());
-            if (entry != null)
-                __staticTableByHeader[h.ordinal()] = entry;
-        }
-    }
+    private final DynamicTable _dynamicTable;
 
     private int _maxDynamicTableSizeInBytes;
     private int _dynamicTableSizeInBytes;
-    private final DynamicTable _dynamicTable;
+
     private final Map<HttpField, Entry> _fieldMap = new HashMap<>();
     private final Map<String, Entry> _nameMap = new HashMap<>();
 
@@ -208,13 +66,13 @@ public class QpackContext
     {
         Entry entry = _fieldMap.get(field);
         if (entry == null)
-            entry = __staticFieldMap.get(field);
+            entry = __staticTable.get(field);
         return entry;
     }
 
     public Entry get(String name)
     {
-        Entry entry = __staticNameMap.get(name);
+        Entry entry = __staticTable.get(name);
         if (entry != null)
             return entry;
         return _nameMap.get(StringUtil.asciiToLowerCase(name));
@@ -222,23 +80,18 @@ public class QpackContext
 
     public Entry get(int index)
     {
-        if (index <= STATIC_SIZE)
-            return __staticTable[index];
+        if (index <= StaticTable.STATIC_SIZE)
+            return __staticTable.get(index);
 
         return _dynamicTable.get(index);
     }
 
     public Entry get(HttpHeader header)
     {
-        Entry e = __staticTableByHeader[header.ordinal()];
+        Entry e = __staticTable.get(header);
         if (e == null)
             return get(header.asString());
         return e;
-    }
-
-    public static Entry getStatic(HttpHeader header)
-    {
-        return __staticTableByHeader[header.ordinal()];
     }
 
     public Entry add(HttpField field)
@@ -301,7 +154,7 @@ public class QpackContext
     {
         if (header == null)
             return 0;
-        Entry entry = __staticNameMap.get(header.asString());
+        Entry entry = __staticTable.get(header.asString());
         if (entry == null)
             return 0;
         return entry._slot;
@@ -347,12 +200,12 @@ public class QpackContext
 
         public int index(Entry entry)
         {
-            return STATIC_SIZE + _size - (entry._slot - _offset + _entries.length) % _entries.length;
+            return StaticTable.STATIC_SIZE + _size - (entry._slot - _offset + _entries.length) % _entries.length;
         }
 
         public Entry get(int index)
         {
-            int d = index - STATIC_SIZE - 1;
+            int d = index - StaticTable.STATIC_SIZE - 1;
             if (d < 0 || d >= _size)
                 return null;
             int slot = (_offset + _size - d - 1) % _entries.length;
