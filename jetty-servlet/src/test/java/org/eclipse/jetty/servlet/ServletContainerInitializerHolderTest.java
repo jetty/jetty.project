@@ -14,7 +14,6 @@
 package org.eclipse.jetty.servlet;
 
 import java.util.Set;
-
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -52,6 +51,5 @@ public class ServletContainerInitializerHolderTest
     public void testClassNoArgs() throws Exception
     {
         ServletContainerInitializerHolder holder = new ServletContainerInitializerHolder(SimpleSCI.class);
-        holder.start();
     }
 }
