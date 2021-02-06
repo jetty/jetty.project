@@ -538,8 +538,11 @@ public class ServletContextHandler extends ContextHandler
         ServletContainerInitializerStarter starter = getBean(ServletContainerInitializerStarter.class);
         if (starter == null)
         {
+            //add the starter as bean which will start when the context is started
+            //NOTE: do not use addManaged(starter) because this will start the
+            //starter immediately, which  may not be before we have parsed web.xml
             starter = new ServletContainerInitializerStarter();
-            addManaged(starter);
+            addBean(starter, true);
         }
         starter.addServletContainerInitializerHolders(sciHolders);
     }
