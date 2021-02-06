@@ -1644,6 +1644,15 @@ public class ServletContextHandler extends ContextHandler
             return getContainedBeans(ServletContainerInitializerHolder.class);
         }
 
+
+        @Override
+        protected void doStart() throws Exception
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Starting SCIs");
+            super.doStart();
+        }
+
         @Override
         protected void doStop() throws Exception
         {
