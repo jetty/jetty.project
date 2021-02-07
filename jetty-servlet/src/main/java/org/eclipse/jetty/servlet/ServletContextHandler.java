@@ -1644,7 +1644,6 @@ public class ServletContextHandler extends ContextHandler
             return getContainedBeans(ServletContainerInitializerHolder.class);
         }
 
-
         @Override
         protected void doStart() throws Exception
         {
