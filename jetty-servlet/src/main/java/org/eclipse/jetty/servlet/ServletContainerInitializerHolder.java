@@ -14,6 +14,7 @@
 package org.eclipse.jetty.servlet;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -39,6 +40,7 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
     private static final Logger LOG = LoggerFactory.getLogger(ServletContainerInitializerHolder.class);
     protected Set<String> _startupClassNames = new HashSet<>();
     protected Set<Class<?>> _startupClasses = new HashSet<>();
+    public static final Pattern __pattern = Pattern.compile("ContainerInitializer\\{([^,]*),interested=(\\[[^\\]]*\\])(,applicable=(\\[[^\\]]*\\]))?(,annotated=(\\[[^\\]]*\\]))?\\}");
 
     protected ServletContainerInitializerHolder(Source source)
     {
@@ -164,8 +166,8 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
      */
     public static ServletContainerInitializerHolder fromString(ClassLoader loader, String string)
     {
-        //Be flexible and accept old toString format
-        Matcher m = Pattern.compile("ContainerInitializer\\{(.*),interested=(.*),applicable=(.*),annotated=(.*)\\}").matcher(string);
+        Matcher m = __pattern.matcher(string);
+
         if (!m.matches())
             throw new IllegalArgumentException(string);
 
@@ -183,15 +185,15 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
             for (String name:classnames)
                 classes.add(loader.loadClass(name));
             
-            classnames = StringUtil.arrayFromString(m.group(3));
-            for (String name:classnames)
-                classes.add(loader.loadClass(name));
-
             classnames = StringUtil.arrayFromString(m.group(4));
             for (String name:classnames)
                 classes.add(loader.loadClass(name));
+
+            classnames = StringUtil.arrayFromString(m.group(6));
+            for (String name:classnames)
+                classes.add(loader.loadClass(name));
             
-            holder.addStartupClasses((Class<?>[])classes.toArray());
+            holder.addStartupClasses((Class<?>[])classes.toArray(new Class<?>[0]));
             
             return holder;
         }
@@ -206,8 +208,8 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
     {
         Set<String> interested = new HashSet<>(_startupClassNames);
         _startupClasses.forEach((c) -> interested.add(c.getName()));
-
-        return String.format("ContainerInitializer{%s,interested=%s}", getClassName(), interested);
+        //for backward compatibility the old output format must be retained
+        return String.format("ContainerInitializer{%s,interested=%s,applicable=%s,annotated=%s}", getClassName(), interested, Collections.emptySet(), Collections.emptySet());
     }
 
     /**
