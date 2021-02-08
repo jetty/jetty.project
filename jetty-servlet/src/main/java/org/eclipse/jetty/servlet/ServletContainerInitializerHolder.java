@@ -136,7 +136,7 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
             initializer = createInstance();
             initializer = wrap(initializer, WrapFunction.class, WrapFunction::wrapServletContainerInitializer);
         }
-       
+
         try
         {
 

@@ -1631,12 +1631,12 @@ public class ServletContextHandler extends ContextHandler
      * Note that the SCIs will be started in order of addition.
      *
      */
-    public static class ServletContainerInitializerStarter extends ContainerLifeCycle
+    public static class ServletContainerInitializerStarter extends ContainerLifeCycle implements ServletContainerInitializerCaller
     {
         public void addServletContainerInitializerHolders(ServletContainerInitializerHolder... holders)
         {
             for (ServletContainerInitializerHolder holder:holders)
-                addManaged(holder);
+                addBean(holder, true);
         }
         
         public Collection<ServletContainerInitializerHolder> getServletContainerInitializerHolders()
