@@ -532,14 +532,6 @@
           </execution>
         </executions>
       </plugin>
-      <!-- No point performing PMD in assembly project -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-pmd-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
   <dependencies>
@@ -776,6 +768,12 @@
       <version>${project.version}</version>
       <optional>true</optional>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-keystore</artifactId>
+      <version>${project.version}</version>
+      <optional>true</optional>
+    </dependency>
     <!-- Demo Apps -->
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
@@ -828,6 +826,22 @@
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>demo-proxy-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>config</classifier>
+      <type>jar</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>demo-simple-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>config</classifier>
+      <type>jar</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>demo-jsp-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>config</classifier>
       <type>jar</type>

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,6 +14,8 @@
 package org.eclipse.jetty.util.thread;
 
 import java.io.Closeable;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -22,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -849,6 +852,28 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertThat(count(dump, "QueuedThreadPoolTest.lambda$testDump$"), is(1));
     }
 
+    @Test
+    public void testContextClassLoader() throws Exception
+    {
+        QueuedThreadPool tp = new QueuedThreadPool();
+        try (StacklessLogging stackless = new StacklessLogging(QueuedThreadPool.class))
+        {
+            //change the current thread's classloader to something else
+            Thread.currentThread().setContextClassLoader(new URLClassLoader(new URL[] {}));
+            
+            //create a new thread
+            Thread t = tp.newThread(() ->
+            {
+                //the executing thread should be still set to the classloader of the QueuedThreadPool,
+                //not that of the thread that created this thread.
+                assertThat(Thread.currentThread().getContextClassLoader(), Matchers.equalTo(QueuedThreadPool.class.getClassLoader()));
+            });
+            
+            //new thread should be set to the classloader of the QueuedThreadPool
+            assertThat(t.getContextClassLoader(), Matchers.equalTo(QueuedThreadPool.class.getClassLoader()));
+        }
+    }
+    
     private int count(String s, String p)
     {
         int c = 0;

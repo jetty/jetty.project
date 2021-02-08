@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -35,7 +35,7 @@ public interface Index<V>
     V get(String s);
 
     /**
-     * Get an exact match from a segment of a ByteBuufer as key
+     * Get an exact match from a segment of a ByteBuffer as key
      *
      * @param b The buffer
      * @return The value or null if not found
@@ -53,7 +53,7 @@ public interface Index<V>
     V get(String s, int offset, int len);
 
     /**
-     * Get an exact match from a segment of a ByteBuufer as key
+     * Get an exact match from a segment of a ByteBuffer as key
      *
      * @param b The buffer
      * @param offset The offset within the buffer of the key
@@ -73,6 +73,14 @@ public interface Index<V>
     V getBest(String s, int offset, int len);
 
     /**
+     * Get the best match from key in a String.
+     *
+     * @param s The string
+     * @return The value or null if not found
+     */
+    V getBest(String s);
+
+    /**
      * Get the best match from key in a byte buffer.
      * The key is assumed to by ISO_8859_1 characters.
      *
@@ -84,12 +92,16 @@ public interface Index<V>
     V getBest(ByteBuffer b, int offset, int len);
 
     /**
-     * Get the best match from key in a String.
+     * Get the best match from key in a byte buffer.
+     * The key is assumed to by ISO_8859_1 characters.
      *
-     * @param s The string
+     * @param b The buffer
      * @return The value or null if not found
      */
-    V getBest(String s);
+    default V getBest(ByteBuffer b)
+    {
+        return getBest(b, 0, b.remaining());
+    }
 
     /**
      * Get the best match from key in a byte array.
@@ -101,6 +113,18 @@ public interface Index<V>
      * @return The value or null if not found
      */
     V getBest(byte[] b, int offset, int len);
+
+    /**
+     * Get the best match from key in a byte array.
+     * The key is assumed to by ISO_8859_1 characters.
+     *
+     * @param b The buffer
+     * @return The value or null if not found
+     */
+    default V getBest(byte[] b)
+    {
+        return getBest(b, 0, b.length);
+    }
 
     /**
      * Check if the index contains any entry.
@@ -133,8 +157,8 @@ public interface Index<V>
         /**
          * Put an entry into the index.
          *
-         * @param s The key for the entry
-         * @param v The value of the entry
+         * @param s The key for the entry. Must be non null, but can be empty.
+         * @param v The value of the entry. Must be non null.
          * @return True if the index had capacity to add the field.
          */
         boolean put(String s, V v);
@@ -189,43 +213,58 @@ public interface Index<V>
             }
 
             /**
+             * Configure the index to be mutable.
+             *
+             * @return a {@link Mutable.Builder} configured like this builder.
+             */
+            public Mutable.Builder<V> mutable()
+            {
+                return this;
+            }
+
+            /**
              * Build a {@link Mutable} instance.
              * @return a {@link Mutable} instance.
              */
             public Mutable<V> build()
             {
-                if (contents != null && maxCapacity == 0)
-                    throw new IllegalStateException("Cannot create a mutable index with maxCapacity=0 and some contents");
+                if (maxCapacity == 0)
+                    return EmptyTrie.instance(caseSensitive);
 
-                // TODO we need to consider large size and alphabet when picking a trie impl
-                Mutable<V> result;
-                if (maxCapacity > 0)
-                {
-                    result = new ArrayTernaryTrie<>(!caseSensitive, maxCapacity);
-                }
-                else if (maxCapacity < 0)
-                {
-                    if (caseSensitive)
-                        result = new ArrayTernaryTrie.Growing<>(false, 512, 512);
-                    else
-                        result = new TreeTrie<>();
-                }
-                else
-                {
-                    result = EmptyTrie.instance(caseSensitive);
-                }
+                // Work out needed capacity
+                int capacity = (contents == null) ? 0 : AbstractTrie.requiredCapacity(contents.keySet(), caseSensitive);
 
-                if (contents != null)
-                {
-                    for (Map.Entry<String, V> entry : contents.entrySet())
-                    {
-                        if (!result.put(entry.getKey(), entry.getValue()))
-                            throw new AssertionError("Index capacity exceeded at " + entry.getKey());
-                    }
-                }
-                return result;
+                // check capacities
+                if (maxCapacity >= 0 && capacity > maxCapacity)
+                    throw new IllegalStateException("Insufficient maxCapacity for contents");
+
+                // try all the tries
+                AbstractTrie<V> trie = ArrayTrie.from(maxCapacity, caseSensitive, contents);
+                if (trie != null)
+                    return trie;
+                trie = TreeTrie.from(caseSensitive, contents);
+                if (trie != null)
+                    return trie;
+
+                // Nothing suitable
+                throw new IllegalStateException("No suitable Trie implementation: " + this);
             }
         }
+    }
+
+    /**
+     * A special purpose static builder for fast creation of specific Index type
+     * @param maxCapacity The max capacity of the index
+     * @param <V> The type of the index
+     * @return A case sensitive mutable Index tacking visible ASCII alphabet to a max capacity.
+     */
+    static <V> Mutable<V> buildCaseSensitiveMutableVisibleAsciiAlphabet(int maxCapacity)
+    {
+        if (maxCapacity < 0 || maxCapacity > ArrayTrie.MAX_CAPACITY)
+            return new TreeTrie<>(true);
+        if (maxCapacity == 0)
+            return EmptyTrie.instance(true);
+        return new ArrayTrie<>(true, maxCapacity);
     }
 
     /**
@@ -242,7 +281,8 @@ public interface Index<V>
          */
         public Builder()
         {
-            this(false, null);
+            this.caseSensitive = false;
+            this.contents = null;
         }
 
         Builder(boolean caseSensitive, Map<String, V> contents)
@@ -349,11 +389,22 @@ public interface Index<V>
             if (contents == null)
                 return EmptyTrie.instance(caseSensitive);
 
-            // TODO we need to consider large size and alphabet when picking a trie impl
-            if (caseSensitive)
-                return new ArrayTernaryTrie<>(false, contents);
-            else
-                return new ArrayTrie<>(contents);
+            int capacity = AbstractTrie.requiredCapacity(contents.keySet(), caseSensitive);
+
+            AbstractTrie<V> trie = ArrayTrie.from(capacity, caseSensitive, contents);
+            if (trie != null)
+                return trie;
+            trie = TreeTrie.from(caseSensitive, contents);
+            if (trie != null)
+                return trie;
+
+            throw new IllegalStateException("No suitable Trie implementation : " + this);
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s{c=%d,cs=%b}", super.toString(), contents == null ? 0 : contents.size(), caseSensitive);
         }
     }
 }

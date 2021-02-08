@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -53,6 +53,7 @@ import java.util.Set;
  *
  * @param <V> the Entry type
  */
+@Deprecated
 class ArrayTernaryTrie<V> extends AbstractTrie<V>
 {
     private static final int LO = 1;
@@ -70,7 +71,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
      * the 16 bit indexes can overflow and the trie
      * cannot find existing entries anymore.
      */
-    private static final int MAX_CAPACITY = 21_000;
+    private static final int MAX_CAPACITY = Character.MAX_VALUE;
 
     /**
      * The Trie rows in a single array which allows a lookup of row,character
@@ -99,45 +100,20 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
     /**
      * Create a Trie
      *
-     * @param insensitive true if the Trie is insensitive to the case of the key.
+     * @param caseSensitive true if the Trie is insensitive to the case of the key.
      * @param capacity The capacity of the Trie, which is in the worst case
      * is the total number of characters of all keys stored in the Trie.
-     * The capacity needed is dependent of the shared prefixes of the keys.
-     * For example, a capacity of 6 nodes is required to store keys "foo"
-     * and "bar", but a capacity of only 4 is required to
-     * store "bar" and "bat".
+     * @see AbstractTrie#requiredCapacity(Set, boolean)
      */
     @SuppressWarnings("unchecked")
-    ArrayTernaryTrie(boolean insensitive, int capacity)
+    ArrayTernaryTrie(boolean caseSensitive, int capacity)
     {
-        super(insensitive);
+        super(caseSensitive);
         if (capacity > MAX_CAPACITY)
             throw new IllegalArgumentException("ArrayTernaryTrie maximum capacity overflow (" + capacity + " > " + MAX_CAPACITY + ")");
         _value = (V[])new Object[capacity];
         _tree = new char[capacity * ROW_SIZE];
         _key = new String[capacity];
-    }
-
-    @SuppressWarnings("unchecked")
-    ArrayTernaryTrie(boolean insensitive, Map<String, V> initialValues)
-    {
-        super(insensitive);
-        // The calculated requiredCapacity does not take into account the
-        // extra reserved slot for the empty string key, nor the slots
-        // required for 'terminating' the entry (1 slot per key) so we
-        // have to add those.
-        Set<String> keys = initialValues.keySet();
-        int capacity = AbstractTrie.requiredCapacity(keys, !insensitive) + keys.size() + 1;
-        if (capacity > MAX_CAPACITY)
-            throw new IllegalArgumentException("ArrayTernaryTrie maximum capacity overflow (" + capacity + " > " + MAX_CAPACITY + ")");
-        _value = (V[])new Object[capacity];
-        _tree = new char[capacity * ROW_SIZE];
-        _key = new String[capacity];
-        for (Map.Entry<String, V> entry : initialValues.entrySet())
-        {
-            if (!put(entry.getKey(), entry.getValue()))
-                throw new AssertionError("Invalid capacity calculated (" + capacity + ") at '" + entry + "' for " + initialValues);
-        }
     }
 
     @Override
@@ -158,8 +134,8 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
         for (int k = 0; k < limit; k++)
         {
             char c = s.charAt(k);
-            if (isCaseInsensitive() && c < 128)
-                c = StringUtil.lowercases[c];
+            if (isCaseInsensitive())
+                c = StringUtil.asciiToLowerCase(c);
 
             while (true)
             {
@@ -169,7 +145,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
                 if (t == _rows)
                 {
                     _rows++;
-                    if (_rows >= _key.length)
+                    if (_rows > _key.length)
                     {
                         _rows--;
                         return false;
@@ -202,7 +178,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
         if (t == _rows)
         {
             _rows++;
-            if (_rows >= _key.length)
+            if (_rows > _key.length)
             {
                 _rows--;
                 return false;
@@ -223,8 +199,8 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < len; )
         {
             char c = s.charAt(offset + i++);
-            if (isCaseInsensitive() && c < 128)
-                c = StringUtil.lowercases[c];
+            if (isCaseInsensitive())
+                c = StringUtil.asciiToLowerCase(c);
 
             while (true)
             {
@@ -259,7 +235,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
         {
             byte c = (byte)(b.get(offset + i++) & 0x7f);
             if (isCaseInsensitive())
-                c = (byte)StringUtil.lowercases[c];
+                c = StringUtil.asciiToLowerCase(c);
 
             while (true)
             {
@@ -305,8 +281,8 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
         {
             char c = s.charAt(offset++);
             len--;
-            if (isCaseInsensitive() && c < 128)
-                c = StringUtil.lowercases[c];
+            if (isCaseInsensitive())
+                c = StringUtil.asciiToLowerCase(c);
 
             while (true)
             {
@@ -363,7 +339,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
             byte c = (byte)(b[offset++] & 0x7f);
             len--;
             if (isCaseInsensitive())
-                c = (byte)StringUtil.lowercases[c];
+                c = StringUtil.asciiToLowerCase(c);
 
             while (true)
             {
@@ -406,7 +382,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
         {
             byte c = (byte)(b.get(o + i) & 0x7f);
             if (isCaseInsensitive())
-                c = (byte)StringUtil.lowercases[c];
+                c = StringUtil.asciiToLowerCase(c);
 
             while (true)
             {
@@ -443,20 +419,20 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
     public String toString()
     {
         StringBuilder buf = new StringBuilder();
+        buf.append("ATT@").append(Integer.toHexString(hashCode())).append('{');
+        buf.append("ci=").append(isCaseInsensitive()).append(';');
+        buf.append("c=").append(_tree.length / ROW_SIZE).append(';');
         for (int r = 0; r <= _rows; r++)
         {
             if (_key[r] != null && _value[r] != null)
             {
-                buf.append(',');
+                if (r != 0)
+                    buf.append(',');
                 buf.append(_key[r]);
                 buf.append('=');
-                buf.append(_value[r].toString());
+                buf.append(String.valueOf(_value[r]));
             }
         }
-        if (buf.length() == 0)
-            return "{}";
-
-        buf.setCharAt(0, '{');
         buf.append('}');
         return buf.toString();
     }
@@ -529,12 +505,13 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
         }
     }
 
-    static class Growing<V> extends AbstractTrie<V>
+    @Deprecated
+    public static class Growing<V> extends AbstractTrie<V>
     {
         private final int _growby;
         private ArrayTernaryTrie<V> _trie;
 
-        Growing(boolean insensitive, int capacity, int growby)
+        public Growing(boolean insensitive, int capacity, int growby)
         {
             super(insensitive);
             _growby = growby;

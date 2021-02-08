@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -46,11 +46,7 @@ public class OneWebAppWithJsp
         // the webapp will unpack itself.
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        Path warFile = JettyDemoBase.resolve("webapps/demo-jetty.war");
-        if (!Files.exists(warFile))
-        {
-            throw new FileNotFoundException(warFile.toString());
-        }
+        Path warFile = JettyDemos.find("demo-jsp-webapp/target/demo-jsp-webapp-@VER@.war");
         webapp.setWarResource(new PathResource(warFile));
         webapp.setExtractWAR(true);
 

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -68,7 +68,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     private MethodHandle pongHandle;
     private JavaxWebSocketMessageMetadata textMetadata;
     private JavaxWebSocketMessageMetadata binaryMetadata;
-    private UpgradeRequest upgradeRequest;
+    private final UpgradeRequest upgradeRequest;
     private EndpointConfig endpointConfig;
     private final Map<Byte, RegisteredMessageHandler> messageHandlerMap = new HashMap<>();
     private MessageSink textSink;
@@ -79,6 +79,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     protected byte dataType = OpCode.UNDEFINED;
 
     public JavaxWebSocketFrameHandler(JavaxWebSocketContainer container,
+                                      UpgradeRequest upgradeRequest,
                                       Object endpointInstance,
                                       MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
                                       JavaxWebSocketMessageMetadata textMetadata,
@@ -89,6 +90,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         this.logger = LoggerFactory.getLogger(endpointInstance.getClass());
 
         this.container = container;
+        this.upgradeRequest = upgradeRequest;
         if (endpointInstance instanceof ConfiguredEndpoint)
         {
             RuntimeException oops = new RuntimeException("ConfiguredEndpoint needs to be unwrapped");
@@ -96,7 +98,6 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             throw oops;
         }
         this.endpointInstance = endpointInstance;
-
         this.openHandle = openHandle;
         this.closeHandle = closeHandle;
         this.errorHandle = errorHandle;
@@ -634,11 +635,6 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             default:
                 throw new ProtocolException("Unable to process continuation during dataType " + dataType);
         }
-    }
-
-    public void setUpgradeRequest(UpgradeRequest upgradeRequest)
-    {
-        this.upgradeRequest = upgradeRequest;
     }
 
     public UpgradeRequest getUpgradeRequest()

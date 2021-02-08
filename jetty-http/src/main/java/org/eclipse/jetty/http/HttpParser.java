@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -109,7 +109,6 @@ public class HttpParser
         .with(new HttpField(HttpHeader.ACCEPT_ENCODING, "gzip"))
         .with(new HttpField(HttpHeader.ACCEPT_ENCODING, "gzip, deflate"))
         .with(new HttpField(HttpHeader.ACCEPT_ENCODING, "gzip, deflate, br"))
-        .with(new HttpField(HttpHeader.ACCEPT_ENCODING, "gzip,deflate,sdch"))
         .with(new HttpField(HttpHeader.ACCEPT_LANGUAGE, "en-US,enq=0.5"))
         .with(new HttpField(HttpHeader.ACCEPT_LANGUAGE, "en-GB,en-USq=0.8,enq=0.6"))
         .with(new HttpField(HttpHeader.ACCEPT_LANGUAGE, "en-AU,enq=0.9,it-ITq=0.8,itq=0.7,en-GBq=0.6,en-USq=0.5"))
@@ -1058,19 +1057,11 @@ public class HttpParser
                 if (addToFieldCache && _header != null && _valueString != null)
                 {
                     if (_fieldCache == null)
-                    {
-                        _fieldCache = (getHeaderCacheSize() > 0 && (_version != null && _version == HttpVersion.HTTP_1_1))
-                            ? new Index.Builder<HttpField>()
-                            .caseSensitive(false)
-                            .mutable()
-                            .maxCapacity(getHeaderCacheSize())
-                            .build()
-                            : NO_CACHE;
-                    }
+                        _fieldCache = Index.buildCaseSensitiveMutableVisibleAsciiAlphabet(getHeaderCacheSize());
 
                     if (_field == null)
                         _field = new HttpField(_header, caseInsensitiveHeader(_headerString, _header.asString()), _valueString);
-                    if (!_fieldCache.put(_field))
+                    if (_field.getValue().length() < getHeaderCacheSize() && !_fieldCache.put(_field))
                     {
                         _fieldCache.clear();
                         _fieldCache.put(_field);
@@ -1694,8 +1685,8 @@ public class HttpParser
                     {
                         _contentChunk = buffer.asReadOnlyBuffer();
 
-                        // limit content by expected size
-                        if (remaining > content)
+                        // limit content by expected size if _contentLength is >= 0 (i.e.: not infinite)
+                        if (_contentLength > -1 && remaining > content)
                         {
                             // We can cast remaining to an int as we know that it is smaller than
                             // or equal to length which is already an int.
@@ -1895,6 +1886,13 @@ public class HttpParser
         _headerBytes = 0;
         _host = false;
         _headerComplete = false;
+    }
+
+    public void servletUpgrade()
+    {
+        setState(State.CONTENT);
+        _endOfContent = EndOfContent.UNKNOWN_CONTENT;
+        _contentLength = -1;
     }
 
     protected void setState(State state)

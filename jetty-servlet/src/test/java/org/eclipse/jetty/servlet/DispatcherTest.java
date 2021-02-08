@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -475,10 +475,15 @@ public class DispatcherTest
     {
         _contextHandler.addServlet(new ServletHolder("TestServlet", MappingServlet.class), "/TestServlet");
         _contextHandler.addServlet(new ServletHolder("DispatchServlet", AsyncDispatch2TestServlet.class), "/DispatchServlet");
+        _contextHandler.addServlet(new ServletHolder("DispatchServlet2", AsyncDispatch2TestServlet.class), "/DispatchServlet2");
 
+        // TODO Test TCK hack for https://github.com/eclipse-ee4j/jakartaee-tck/issues/585
         String response = _connector.getResponse("GET /context/DispatchServlet HTTP/1.0\n\n");
-        // TODO This is to pass the current TCK.  This has been challenged in https://github.com/eclipse-ee4j/jakartaee-tck/issues/585
         assertThat(response, containsString("matchValue=DispatchServlet, pattern=/DispatchServlet, servletName=DispatchServlet, mappingMatch=EXACT"));
+
+        // TODO Test how it should work after fix for https://github.com/eclipse-ee4j/jakartaee-tck/issues/585
+        String response2 = _connector.getResponse("GET /context/DispatchServlet2 HTTP/1.0\n\n");
+        assertThat(response2, containsString("matchValue=TestServlet, pattern=/TestServlet, servletName=TestServlet, mappingMatch=EXACT"));
     }
 
     public static class WrappingFilter implements Filter

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -61,6 +61,7 @@ import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,7 +84,7 @@ import org.slf4j.LoggerFactory;
  *     assertEquals(0, run1.getExitValue());
  *
  *     // Install a web application.
- *     File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
+ *     File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-simple-webapp:war:" + jettyVersion);
  *     distribution.installWarFile(war, "test");
  *
  *     // The second run starts the distribution.
@@ -96,7 +97,7 @@ import org.slf4j.LoggerFactory;
  *         // Make an HTTP request to the web application.
  *         HttpClient client = new HttpClient();
  *         client.start();
- *         ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
+ *         ContentResponse response = client.GET("http://localhost:" + port + "/test/index.html");
  *         assertEquals(HttpStatus.OK_200, response.getStatus());
  *     }
  * }
@@ -152,9 +153,26 @@ public class JettyHomeTester
         commands.add("-Djava.io.tmpdir=" + workDir.toAbsolutePath().toString());
         commands.add("-jar");
         commands.add(config.jettyHome.toAbsolutePath() + "/start.jar");
-        // we get artifacts from local repo first
+
         args = new ArrayList<>(args);
-        args.add("maven.local.repo=" + System.getProperty("mavenRepoPath"));
+
+        if (StringUtil.isNotBlank(config.mavenLocalRepository))
+        {
+            args.add("maven.local.repo=" + config.mavenLocalRepository);
+        }
+        else if (StringUtil.isNotBlank(System.getProperty("mavenRepoPath")))
+        {
+            // we get artifacts from local repo first
+            args.add("maven.local.repo=" + System.getProperty("mavenRepoPath"));
+        }
+
+        // if this JVM has `maven.repo.uri` defined, make sure to propagate it to child
+        String remoteRepoUri = System.getProperty("maven.repo.uri");
+        if (remoteRepoUri != null)
+        {
+            args.add("maven.repo.uri=" + remoteRepoUri);
+        }
+        
         commands.addAll(args);
 
         LOGGER.info("Executing: {}", commands);

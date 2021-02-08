@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -66,6 +66,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     // events like timeout: we get notified and either schedule onError or release the
     // blocking semaphore.
     private HttpInput.Content _content;
+    private boolean _servletUpgrade;
 
     public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport)
     {
@@ -262,10 +263,19 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     {
         if (LOG.isDebugEnabled())
             LOG.debug("received early EOF, content = {}", _content);
-        EofException failure = new EofException("Early EOF");
-        if (_content != null)
-            _content.failed(failure);
-        _content = new HttpInput.ErrorContent(failure);
+        if (_servletUpgrade)
+        {
+            if (_content != null)
+                _content.succeeded();
+            _content = EOF;
+        }
+        else
+        {
+            EofException failure = new EofException("Early EOF");
+            if (_content != null)
+                _content.failed(failure);
+            _content = new HttpInput.ErrorContent(failure);
+        }
     }
 
     @Override
@@ -500,31 +510,24 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
                 case EXPECT:
                 {
-                    if (HttpVersion.HTTP_1_1.equals(_requestBuilder.version()))
+                    if (!HttpHeaderValue.parseCsvIndex(value, t ->
                     {
-                        HttpHeaderValue expect = HttpHeaderValue.CACHE.get(value);
-                        if (expect == HttpHeaderValue.CONTINUE)
+                        switch (t)
                         {
-                            _expect100Continue = true;
+                            case CONTINUE:
+                                _expect100Continue = true;
+                                return true;
+                            case PROCESSING:
+                                _expect102Processing = true;
+                                return true;
+                            default:
+                                return false;
                         }
-                        else if (expect == HttpHeaderValue.PROCESSING)
-                        {
-                            _expect102Processing = true;
-                        }
-                        else
-                        {
-                            String[] values = field.getValues();
-                            for (int i = 0; values != null && i < values.length; i++)
-                            {
-                                expect = HttpHeaderValue.CACHE.get(values[i].trim());
-                                if (expect == HttpHeaderValue.CONTINUE)
-                                    _expect100Continue = true;
-                                else if (expect == HttpHeaderValue.PROCESSING)
-                                    _expect102Processing = true;
-                                else
-                                    _unknownExpectation = true;
-                            }
-                        }
+                    }, s -> false))
+                    {
+                        _unknownExpectation = true;
+                        _expect100Continue = false;
+                        _expect102Processing = false;
                     }
                     break;
                 }
@@ -562,6 +565,16 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         if (_content != null && !_content.isSpecial())
             throw new AssertionError("unconsumed content: " + _content);
         _content = null;
+        _servletUpgrade = false;
+    }
+
+    public void servletUpgrade()
+    {
+        if (_content != null && (!_content.isSpecial() || !_content.isEof()))
+            throw new IllegalStateException("Cannot perform servlet upgrade with unconsumed content");
+        _content = null;
+        _servletUpgrade = true;
+        _httpConnection.getParser().servletUpgrade();
     }
 
     @Override

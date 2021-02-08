@@ -48,6 +48,25 @@ jetty-10.0.0.beta3 - 21 October 2020
  + 5475 Update to spifly 1.3.2 and asm 9
  + 5480 NPE from WebInfConfiguration.deconfigure during WebAppContext shutdown
 
+jetty-9.4.36.v20210114 - 14 January 2021
+ + 5310 Jetty Http2 client discards the response fames when there is GOAWAY and
+   sends RST_STREAM
+ + 5499 Improve temporary buffer usage for WebSocket PerMessageDeflate.
+ + 5633 Allow to configure HttpClient request authority
+ + 5689 Jetty ssl keystorePath doesn't work with absolute path
+ + 5755 Cannot configure maxDynamicTableSize on HTTP2Client
+ + 5783 Fix ConnectionStatistics.*Rate() methods
+ + 5785 Reduce log level for WebSocket connections closed by clients
+ + 5794 ServerConnector leaks closed sockets which can lead to file descriptor
+   exhaustion
+ + 5824 Build up of ConstraintMappings when stopping and starting WebAppContext
+ + 5830 Jetty-util contains wrong Import-Package
+ + 5844 --download flag to jetty-start causes NullPointerException
+ + 5845 Use UTF-8 encoding for client basic auth if requested
+ + 5855 HttpClient may not send queued requests
+ + 5870 jetty-maven-plugin fails to run ServletContainerInitializer on Windows
+   due to URI case comparison bug
+
 jetty-9.4.35.v20201120 - 20 November 2020
  + 4711 Reset trailers on recycled response
  + 5486 PropertyFileLoginModule retains PropertyUserStores

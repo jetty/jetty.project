@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -47,6 +47,7 @@ import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletRequestAttributeEvent;
 import javax.servlet.ServletRequestAttributeListener;
@@ -61,6 +62,7 @@ import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpUpgradeHandler;
 import javax.servlet.http.Part;
 import javax.servlet.http.PushBuilder;
+import javax.servlet.http.WebConnection;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
@@ -78,6 +80,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
@@ -288,7 +291,7 @@ public class Request implements HttpServletRequest
         return !isPush() && getHttpChannel().getHttpTransport().isPushSupported();
     }
 
-    private static EnumSet<HttpHeader> NOT_PUSHED_HEADERS = EnumSet.of(
+    private static final EnumSet<HttpHeader> NOT_PUSHED_HEADERS = EnumSet.of(
         HttpHeader.IF_MATCH,
         HttpHeader.IF_RANGE,
         HttpHeader.IF_UNMODIFIED_SINCE,
@@ -853,7 +856,7 @@ public class Request implements HttpServletRequest
     public long getDateHeader(String name)
     {
         HttpFields fields = _httpFields;
-        return fields == null ? null : fields.getDateField(name);
+        return fields == null ? -1 : fields.getDateField(name);
     }
 
     @Override
@@ -1062,7 +1065,7 @@ public class Request implements HttpServletRequest
         List<String> vals = getParameters().getValues(name);
         if (vals == null)
             return null;
-        return vals.toArray(new String[vals.size()]);
+        return vals.toArray(new String[0]);
     }
 
     public MultiMap<String> getQueryParameters()
@@ -2076,7 +2079,7 @@ public class Request implements HttpServletRequest
      * Set the character encoding used for the query string. This call will effect the return of getQueryString and getParamaters. It must be called before any
      * getParameter methods.
      *
-     * The request attribute "org.eclipse.jetty.server.server.Request.queryEncoding" may be set as an alternate method of calling setQueryEncoding.
+     * The request attribute "org.eclipse.jetty.server.Request.queryEncoding" may be set as an alternate method of calling setQueryEncoding.
      *
      * @param queryEncoding the URI query character encoding
      */
@@ -2140,6 +2143,11 @@ public class Request implements HttpServletRequest
     {
         if (_asyncNotSupportedSource != null)
             throw new IllegalStateException("!asyncSupported: " + _asyncNotSupportedSource);
+        return forceStartAsync();
+    }
+
+    private AsyncContextState forceStartAsync()
+    {
         HttpChannelState state = getHttpChannelState();
         if (_async == null)
             _async = new AsyncContextState(state);
@@ -2372,7 +2380,95 @@ public class Request implements HttpServletRequest
     @Override
     public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException
     {
-        throw new ServletException("HttpServletRequest.upgrade() not supported in Jetty");
+        Response response = _channel.getResponse();
+        if (response.getStatus() != HttpStatus.SWITCHING_PROTOCOLS_101)
+            throw new IllegalStateException("Response status should be 101");
+        if (response.getHeader("Upgrade") == null)
+            throw new IllegalStateException("Missing Upgrade header");
+        if (!"Upgrade".equalsIgnoreCase(response.getHeader("Connection")))
+            throw new IllegalStateException("Invalid Connection header");
+        if (response.isCommitted())
+            throw new IllegalStateException("Cannot upgrade committed response");
+        if (_metaData == null || _metaData.getHttpVersion() != HttpVersion.HTTP_1_1)
+            throw new IllegalStateException("Only requests over HTTP/1.1 can be upgraded");
+
+        ServletOutputStream outputStream = response.getOutputStream();
+        ServletInputStream inputStream = getInputStream();
+        HttpChannelOverHttp httpChannel11 = (HttpChannelOverHttp)_channel;
+        HttpConnection httpConnection = (HttpConnection)_channel.getConnection();
+
+        T upgradeHandler;
+        try
+        {
+            upgradeHandler = handlerClass.getDeclaredConstructor().newInstance();
+        }
+        catch (Exception e)
+        {
+            throw new ServletException("Unable to instantiate handler class", e);
+        }
+
+        httpChannel11.servletUpgrade(); // tell the HTTP 1.1 channel that it is now handling an upgraded servlet
+        AsyncContext asyncContext = forceStartAsync(); // force the servlet in async mode
+
+        outputStream.flush(); // commit the 101 response
+        httpConnection.getGenerator().servletUpgrade(); // tell the generator it can send data as-is
+        httpConnection.addEventListener(new Connection.Listener()
+        {
+            @Override
+            public void onClosed(Connection connection)
+            {
+                try
+                {
+                    asyncContext.complete();
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("error during upgrade AsyncContext complete", e);
+                }
+                try
+                {
+                    upgradeHandler.destroy();
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("error during upgrade HttpUpgradeHandler destroy", e);
+                }
+            }
+
+            @Override
+            public void onOpened(Connection connection)
+            {
+            }
+        });
+
+        upgradeHandler.init(new WebConnection()
+        {
+            @Override
+            public void close() throws Exception
+            {
+                try
+                {
+                    inputStream.close();
+                }
+                finally
+                {
+                    outputStream.close();
+                }
+            }
+
+            @Override
+            public ServletInputStream getInputStream()
+            {
+                return inputStream;
+            }
+
+            @Override
+            public ServletOutputStream getOutputStream()
+            {
+                return outputStream;
+            }
+        });
+        return upgradeHandler;
     }
 
     /**
@@ -2419,9 +2515,9 @@ public class Request implements HttpServletRequest
         // TODO This is to pass the current TCK.  This has been challenged in https://github.com/eclipse-ee4j/jakartaee-tck/issues/585
         if (_dispatcherType == DispatcherType.ASYNC)
         {
-            Object async = getAttribute(AsyncContext.ASYNC_MAPPING);
-            if (async != null)
-                return (ServletPathMapping)async;
+            ServletPathMapping async = (ServletPathMapping)getAttribute(AsyncContext.ASYNC_MAPPING);
+            if (async != null && "/DispatchServlet".equals(async.getServletPath()))
+                return async;
         }
 
         // The mapping returned is normally for the current servlet.  Except during an
