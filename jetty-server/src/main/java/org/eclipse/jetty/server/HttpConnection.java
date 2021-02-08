@@ -385,6 +385,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     private boolean upgrade()
     {
+        // If we are fill interested, then a read is pending and we must abort
+        if (isFillInterested())
+        {
+            LOG.warn("Pending read in onCompleted {} {}", this, getEndPoint());
+            abort(new IllegalStateException());
+        }
+
         Connection connection = (Connection)_channel.getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
         if (connection == null)
             return false;
@@ -416,6 +423,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         if (upgrade())
             return;
 
+        // Drive to EOF, EarlyEOF or Error
+        boolean complete = _input.consumeAll();
+
         // Finish consuming the request
         // If we are still expecting
         if (_channel.isExpecting100Continue())
@@ -424,7 +434,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             _parser.close();
         }
         // else abort if we can't consume all
-        else if (_generator.isPersistent() && !_input.consumeAll())
+        else if (_generator.isPersistent() && !complete)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("unconsumed input {} {}", this, _parser);

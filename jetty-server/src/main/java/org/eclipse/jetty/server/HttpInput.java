@@ -135,6 +135,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         if (isFinished())
             return !isError();
 
+        //TODO move to early EOF and notify blocking reader
         return false;
     }
 

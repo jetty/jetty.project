@@ -23,6 +23,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
+import java.util.ResourceBundle;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
@@ -435,10 +437,22 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                         case BLOCKED:
                         case UNREADY:
                         case PENDING:
+                            LOG.warn("Pending write in complete {} {}", this, _channel);
                             // An operation is in progress, so we soft close now
                             _softClose = true;
                             // then trigger a close from onWriteComplete
                             _state = State.CLOSE;
+
+                            // But if we are blocked or there is more content to come, we must abort
+                            // Note that this allows a pending async write to complete only if it is the last write
+                            if (_apiState == ApiState.BLOCKED || !_channel.getResponse().isContentComplete(_written))
+                            {
+                                CancellationException cancelled = new CancellationException();
+                                _writeBlocker.fail(cancelled);
+                                _channel.abort(cancelled);
+                                _state = State.CLOSED;
+                            }
+
                             break;
                     }
                     break;
@@ -1351,7 +1365,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             _state = State.OPEN;
             _apiState = ApiState.BLOCKING;
-            _softClose = false;
+            _softClose = true; // Stay closed until next request
             _interceptor = _channel;
             HttpConfiguration config = _channel.getHttpConfiguration();
             _bufferSize = config.getOutputBufferSize();
