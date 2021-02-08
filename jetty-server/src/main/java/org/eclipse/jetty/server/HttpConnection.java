@@ -114,6 +114,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             LOG.debug("New HTTP Connection {}", this);
     }
 
+    @Deprecated
+    public HttpCompliance getHttpCompliance()
+    {
+        return _parser.getHttpCompliance();
+    }
+
     public HttpConfiguration getHttpConfiguration()
     {
         return _config;

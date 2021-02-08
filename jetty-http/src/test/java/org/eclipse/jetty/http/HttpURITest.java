@@ -20,9 +20,12 @@ package org.eclipse.jetty.http;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.MultiMap;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -220,5 +223,41 @@ public class HttpURITest
         assertEquals("http://user:password@example.com:8888/blah", uri.toString());
         assertEquals(uri.getAuthority(), "example.com:8888");
         assertEquals(uri.getUser(), "user:password");
+    }
+
+    public static Stream<String> pathsWithAmbiguousSegments()
+    {
+        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
+        return Stream.of(
+            "/foo/%2e%2e/bar",
+            "/foo/%2e%2e;/bar",
+            "/foo/%2e%2e;param/bar",
+            "/foo/..;/bar",
+            "/foo/..;param/bar",
+            "foo/%2e%2e/bar",
+            "%2e%2e/bar",
+            "//host/%2e%2e/bar",
+            "scheme://host/%2e%2e/bar",
+            "scheme:/%2e%2e/bar",
+            "/foo/%2e%2e",
+            "/foo/%2e%2e?query",
+            "/foo/%2e%2e#fragment",
+            "foo/%2e.",
+            ".%2e",
+            "//host/%2e%2e",
+            "scheme://host/.%2e",
+            "scheme:/%2e%2e",
+            "%2e",
+            "%2e.",
+            ".%2e",
+            "%2e%2e"
+        );
+    }
+
+    @ParameterizedTest(name = "[{index}] {0}")
+    @MethodSource("pathsWithAmbiguousSegments")
+    public void testAmbiguousSegments(String uriWithBadSegment)
+    {
+        assertTrue(new HttpURI(uriWithBadSegment).hasAmbiguousSegment());
     }
 }

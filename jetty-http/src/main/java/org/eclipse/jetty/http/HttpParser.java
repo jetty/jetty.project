@@ -311,6 +311,11 @@ public class HttpParser
         return _handler;
     }
 
+    public HttpCompliance getHttpCompliance()
+    {
+        return _compliance;
+    }
+
     /**
      * Check RFC compliance violation
      *

@@ -24,7 +24,9 @@ import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
+import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -65,6 +67,18 @@ public class HttpURI
         ASTERISK
     }
 
+    private static final Trie<Boolean> __ambiguousSegments = new ArrayTrie<>();
+
+    static
+    {
+        __ambiguousSegments.put("%2e", Boolean.TRUE);
+        __ambiguousSegments.put("%2e%2e", Boolean.TRUE);
+        __ambiguousSegments.put(".%2e", Boolean.TRUE);
+        __ambiguousSegments.put("%2e.", Boolean.TRUE);
+        __ambiguousSegments.put("..", Boolean.FALSE);
+        __ambiguousSegments.put(".", Boolean.FALSE);
+    }
+
     private String _scheme;
     private String _user;
     private String _host;
@@ -76,6 +90,8 @@ public class HttpURI
 
     String _uri;
     String _decodedPath;
+
+    boolean _ambiguousSegment;
 
     /**
      * Construct a normalized URI.
@@ -208,6 +224,8 @@ public class HttpURI
         boolean encoded = false;
         int mark = offset;
         int pathMark = 0;
+        int segment = 0;
+        boolean encodedSegment = false;
 
         for (int i = offset; i < end; i++)
         {
@@ -241,14 +259,18 @@ public class HttpURI
                             _path = "*";
                             state = State.ASTERISK;
                             break;
-
+                        case '%':
+                            encoded = encodedSegment = true;
+                            mark = pathMark = segment = i;
+                            state = State.PATH;
+                            break;
                         default:
                             mark = i;
                             if (_scheme == null)
                                 state = State.SCHEME_OR_PATH;
                             else
                             {
-                                pathMark = i;
+                                pathMark = segment = i;
                                 state = State.PATH;
                             }
                     }
@@ -269,6 +291,7 @@ public class HttpURI
 
                         case '/':
                             // must have been in a path and still are
+                            segment = i + 1;
                             state = State.PATH;
                             break;
 
@@ -288,6 +311,7 @@ public class HttpURI
                         case '%':
                             // must have be in an encoded path 
                             encoded = true;
+                            encodedSegment = true;
                             state = State.PATH;
                             break;
 
@@ -317,11 +341,13 @@ public class HttpURI
                             // was a path, look again
                             i--;
                             pathMark = mark;
+                            segment = mark + 1;
                             state = State.PATH;
                             break;
                         default:
                             // it is a path
                             pathMark = mark;
+                            segment = mark + 1;
                             state = State.PATH;
                     }
                     continue;
@@ -334,6 +360,7 @@ public class HttpURI
                         case '/':
                             _host = uri.substring(mark, i);
                             pathMark = mark = i;
+                            segment = mark + 1;
                             state = State.PATH;
                             break;
                         case ':':
@@ -396,6 +423,7 @@ public class HttpURI
                     {
                         _port = TypeUtil.parseInt(uri, mark, i - mark, 10);
                         pathMark = mark = i;
+                        segment = i + 1;
                         state = State.PATH;
                     }
                     continue;
@@ -406,21 +434,30 @@ public class HttpURI
                     switch (c)
                     {
                         case ';':
+                            checkSegment(encodedSegment, true, uri, segment, i);
                             mark = i + 1;
                             state = State.PARAM;
                             break;
                         case '?':
+                            checkSegment(encodedSegment, false, uri, segment, i);
                             _path = uri.substring(pathMark, i);
                             mark = i + 1;
                             state = State.QUERY;
                             break;
                         case '#':
+                            checkSegment(encodedSegment, false, uri, segment, i);
                             _path = uri.substring(pathMark, i);
                             mark = i + 1;
                             state = State.FRAGMENT;
                             break;
                         case '%':
                             encoded = true;
+                            encodedSegment = true;
+                            break;
+                        case '/':
+                            checkSegment(encodedSegment, false, uri, segment, i);
+                            encodedSegment = false;
+                            segment = i + 1;
                             break;
                     }
                     continue;
@@ -443,8 +480,10 @@ public class HttpURI
                             state = State.FRAGMENT;
                             break;
                         case '/':
-                            encoded = true;
                             // ignore internal params
+                            encoded = true;
+                            encodedSegment = false;
+                            segment = i + 1;
                             state = State.PATH;
                             break;
                         case ';':
@@ -516,6 +555,7 @@ public class HttpURI
                 break;
 
             case PATH:
+                checkSegment(encodedSegment, false, uri, segment, end);
                 _path = uri.substring(pathMark, end);
                 break;
 
@@ -531,6 +571,38 @@ public class HttpURI
             else
                 _decodedPath = _path.substring(0, _path.length() - _param.length() - 1);
         }
+    }
+
+    /**
+     * Check for ambiguous path segments.
+     *
+     * An ambiguous path segment is one that is perhaps technically legal, but is considered undesirable to handle
+     * due to possible ambiguity.  Examples include segments like '..;', '%2e', '%2e%2e' etc.
+     * @param segmentEncoded True if the segment is encoded
+     * @param param true if the segment has a parameter
+     * @param uri The URI string
+     * @param segment The inclusive starting index of the segment (excluding any '/')
+     * @param end The exclusive end index of the segment
+     */
+    private void checkSegment(boolean segmentEncoded, boolean param, String uri, int segment, int end)
+    {
+        // if the segment is encoded or there is a segment parameter
+        if (!_ambiguousSegment && (segmentEncoded || param))
+        {
+            // Look for possible bad segments
+            Boolean ambiguous = __ambiguousSegments.get(uri, segment, end - segment);
+
+            // A segment is ambiguous if it is always ambiguous (TRUE) or ambiguous only with params (FALSE) and we have a param
+            _ambiguousSegment |= ambiguous == Boolean.TRUE || (param && ambiguous == Boolean.FALSE);
+        }
+    }
+
+    /**
+     * @return True if the URI has a possibly ambiguous segment like '..;' or '%2e%2e'
+     */
+    public boolean hasAmbiguousSegment()
+    {
+        return _ambiguousSegment;
     }
 
     public String getScheme()
@@ -633,6 +705,8 @@ public class HttpURI
         _fragment = null;
 
         _decodedPath = null;
+
+        _ambiguousSegment = false;
     }
 
     public boolean isAbsolute()

@@ -53,7 +53,7 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
     /**
      * A Legacy compliance mode to match jetty's behavior prior to RFC2616 and RFC7230.
      */
-    LEGACY(sectionsBySpec("0,METHOD_CASE_SENSITIVE")),
+    LEGACY(sectionsBySpec("0,METHOD_CASE_SENSITIVE,AMBIGUOUS_PATH_SEGMENTS")),
 
     /**
      * The legacy RFC2616 support, which incorrectly excludes
