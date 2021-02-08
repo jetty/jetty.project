@@ -39,6 +39,10 @@ import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.server.internal.UpgradeHttpServletRequest;
 
+/**
+ * Upgrade request used for websocket negotiation.
+ * Provides getters for things like the requested extensions and subprotocols so that the headers don't have to be parsed manually.
+ */
 public class ServerUpgradeRequest
 {
     private final URI requestURI;

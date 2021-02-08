@@ -14,6 +14,8 @@
 package org.eclipse.jetty.websocket.core.server.internal;
 
 import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.security.Principal;
 import java.util.ArrayList;
@@ -30,6 +32,7 @@ import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -84,6 +87,9 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
     private final InetSocketAddress remoteAddress;
     private final String remoteName;
     private final InetSocketAddress serverAddress;
+
+    private boolean isAsyncStarted;
+    private boolean isAsyncSupported;
 
     public UpgradeHttpServletRequest(HttpServletRequest httpRequest)
     {
@@ -145,6 +151,8 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
             attributes.put(name, request.getAttribute(name));
         }
 
+        this.isAsyncStarted = request.isAsyncStarted();
+        this.isAsyncSupported = request.isAsyncSupported();
         request = null;
     }
 
@@ -197,13 +205,17 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
     @Override
     public long getDateHeader(String name)
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        return request.getDateHeader(name);
     }
 
     @Override
     public int getIntHeader(String name)
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        return request.getIntHeader(name);
     }
 
     @Override
@@ -291,31 +303,41 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
     @Override
     public String getRequestedSessionId()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        return request.getRequestedSessionId();
     }
 
     @Override
     public boolean isRequestedSessionIdValid()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        return request.isRequestedSessionIdValid();
     }
 
     @Override
     public boolean isRequestedSessionIdFromCookie()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        return request.isRequestedSessionIdFromCookie();
     }
 
     @Override
     public boolean isRequestedSessionIdFromURL()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        return request.isRequestedSessionIdFromURL();
     }
 
     @Override
     public boolean isRequestedSessionIdFromUrl()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        return request.isRequestedSessionIdFromUrl();
     }
 
     @Override
@@ -407,7 +429,7 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
     public void setAttribute(String name, Object value)
     {
         if (request == null)
-            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+            attributes.put(name, value);
         request.setAttribute(name, value);
     }
 
@@ -415,7 +437,7 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
     public void removeAttribute(String name)
     {
         if (request == null)
-            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+            attributes.remove(name);
         request.removeAttribute(name);
     }
 
@@ -476,122 +498,162 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
     }
 
     @Override
-    public boolean authenticate(HttpServletResponse response)
+    public boolean authenticate(HttpServletResponse response) throws IOException, ServletException
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        return request.authenticate(response);
     }
 
     @Override
     public String changeSessionId()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        return request.changeSessionId();
     }
 
     @Override
     public AsyncContext getAsyncContext()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        return request.getAsyncContext();
     }
 
     @Override
     public String getCharacterEncoding()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        return request.getCharacterEncoding();
     }
 
     @Override
     public int getContentLength()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        return request.getContentLength();
     }
 
     @Override
     public long getContentLengthLong()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        return request.getContentLengthLong();
     }
 
     @Override
     public String getContentType()
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        return request.getContentType();
     }
 
     @Override
-    public ServletInputStream getInputStream()
+    public ServletInputStream getInputStream() throws IOException
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        return request.getInputStream();
     }
 
     @Override
-    public Part getPart(String name)
+    public Part getPart(String name) throws IOException, ServletException
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        return request.getPart(name);
     }
 
     @Override
-    public Collection<Part> getParts()
+    public Collection<Part> getParts() throws IOException, ServletException
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        return request.getParts();
     }
 
     @Override
-    public BufferedReader getReader()
+    public BufferedReader getReader() throws IOException
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        return request.getReader();
     }
 
     @Override
     public RequestDispatcher getRequestDispatcher(String path)
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        return request.getRequestDispatcher(path);
     }
 
     @Override
     public boolean isAsyncStarted()
     {
-        return false;
+        if (request == null)
+            return isAsyncStarted;
+        return request.isAsyncStarted();
     }
 
     @Override
     public boolean isAsyncSupported()
     {
-        return false;
+        if (request == null)
+            return isAsyncSupported;
+        return request.isAsyncSupported();
     }
 
     @Override
-    public void login(String username, String password)
+    public void login(String username, String password) throws ServletException
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        request.login(username, password);
     }
 
     @Override
-    public void logout()
+    public void logout() throws ServletException
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        request.logout();
     }
 
     @Override
-    public void setCharacterEncoding(String enc)
+    public void setCharacterEncoding(String enc) throws UnsupportedEncodingException
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        request.setCharacterEncoding(enc);
     }
 
     @Override
     public AsyncContext startAsync() throws IllegalStateException
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        return request.startAsync();
     }
 
     @Override
     public AsyncContext startAsync(ServletRequest servletRequest, ServletResponse servletResponse) throws IllegalStateException
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        return request.startAsync(servletRequest, servletResponse);
     }
 
     @Override
-    public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass)
+    public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException
     {
-        throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        if (request == null)
+            throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
+        return request.upgrade(handlerClass);
     }
 }
