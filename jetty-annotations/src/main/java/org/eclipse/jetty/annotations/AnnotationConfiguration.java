@@ -388,12 +388,13 @@ public class AnnotationConfiguration extends AbstractConfiguration
         {
             Set<String> finalClassnames = new HashSet<>();
 
-            if (!_handlesTypes.isEmpty() && classMap != null)
+            if (classMap != null)
             {
                 for (Class<?> c : _handlesTypes)
                 {
-                    //find all subclasses/implementations of the classes named in @HandlesTypes
-                    addInheritedTypes(finalClassnames, classMap, (Set<String>)classMap.get(c.getName()));
+                    //find all subclasses/implementations of the classes (not annotations) named in @HandlesTypes
+                    if (!c.isAnnotation())
+                        addInheritedTypes(finalClassnames, classMap, (Set<String>)classMap.get(c.getName()));
                 }
 
                 for (String classname:_discoveredClassNames)
@@ -697,8 +698,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
                             LOG.debug("Registering annotation handler for {}", c.getName());
                         _containerInitializerAnnotationHandlers.add(new ContainerInitializerAnnotationHandler(holder, c));
                     }
-                    else //an ordinary class
-                        holder.addStartupClasses(c);
+
+                    holder.addStartupClasses(c);
                 }
             }
         }
