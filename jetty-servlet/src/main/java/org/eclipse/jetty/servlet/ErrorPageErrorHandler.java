@@ -44,13 +44,19 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
     private final Map<String, String> _errorPages = new HashMap<>(); // code or exception to URL
     private final List<ErrorCodeRange> _errorPageList = new ArrayList<>(); // list of ErrorCode by range
     protected ServletContext _servletContext;
-    private boolean _unwrapServletException = true;
+    private boolean _unwrapServletException = false;
 
+    /**
+     * @return True if ServletException is unwrapped for {@link Dispatcher#ERROR_EXCEPTION}
+     */
     public boolean isUnwrapServletException()
     {
         return _unwrapServletException;
     }
 
+    /**
+     * @param unwrapServletException True if ServletException should be unwrapped for {@link Dispatcher#ERROR_EXCEPTION}
+     */
     public void setUnwrapServletException(boolean unwrapServletException)
     {
         _unwrapServletException = unwrapServletException;
