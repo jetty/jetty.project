@@ -177,6 +177,10 @@ class AsyncContentProducer implements ContentProducer
             _rawContent.failed(x);
             _rawContent = null;
         }
+
+        HttpInput.ErrorContent errorContent = new HttpInput.ErrorContent(x);
+        _transformedContent = errorContent;
+        _rawContent = errorContent;
     }
 
     @Override
@@ -273,6 +277,13 @@ class AsyncContentProducer implements ContentProducer
             if (_rawContent.isSpecial())
             {
                 // TODO does EOF need to be passed to the interceptors?
+
+                // In case the _rawContent was set by consumeAll(), check the httpChannel
+                // to see if it has a more precise error. Otherwise, the exact same
+                // special content will be returned by the httpChannel.
+                HttpInput.Content refreshedRawContent = produceRawContent();
+                if (refreshedRawContent != null)
+                    _rawContent = refreshedRawContent;
 
                 _error = _rawContent.getError() != null;
                 if (LOG.isDebugEnabled())

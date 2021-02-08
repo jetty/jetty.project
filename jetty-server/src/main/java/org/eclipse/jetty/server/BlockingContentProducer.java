@@ -76,7 +76,9 @@ class BlockingContentProducer implements ContentProducer
     @Override
     public boolean consumeAll(Throwable x)
     {
-        return _asyncContentProducer.consumeAll(x);
+        boolean eof = _asyncContentProducer.consumeAll(x);
+        _semaphore.release();
+        return eof;
     }
 
     @Override
