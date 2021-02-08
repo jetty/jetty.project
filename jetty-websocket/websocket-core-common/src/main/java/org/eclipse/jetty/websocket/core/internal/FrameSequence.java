@@ -20,7 +20,6 @@ import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 public class FrameSequence
 {
     private final AutoLock lock = new AutoLock();
-    // TODO should we be able to get a non fin frame then get a close frame without error
     private byte state = OpCode.UNDEFINED;
 
     public void check(byte opcode, boolean fin) throws ProtocolException
@@ -40,15 +39,15 @@ public class FrameSequence
                         throw new ProtocolException("CONTINUATION after fin==true");
                     if (fin)
                         state = OpCode.UNDEFINED;
-                    return;
+                    break;
 
                 case OpCode.CLOSE:
                     state = OpCode.CLOSE;
-                    return;
+                    break;
 
                 case OpCode.PING:
                 case OpCode.PONG:
-                    return;
+                    break;
 
                 case OpCode.TEXT:
                 case OpCode.BINARY:
@@ -57,7 +56,7 @@ public class FrameSequence
                         throw new ProtocolException("DataFrame before fin==true");
                     if (!fin)
                         state = opcode;
-                    return;
+                    break;
             }
         }
     }
