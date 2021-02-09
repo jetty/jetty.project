@@ -309,7 +309,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     }
 
     /**
-     * Parse and fill data, looking for content
+     * Parse and fill data, looking for content.
+     * We do parse first, and only fill if we're out of bytes to avoid unnecessary system calls.
      */
     void parseAndFillForContent()
     {
@@ -318,11 +319,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         int filled = Integer.MAX_VALUE;
         while (_parser.inContentState())
         {
-            boolean handled = parseRequestBuffer();
+            boolean handle = parseRequestBuffer();
             // Re-check the parser state after parsing to avoid filling,
             // otherwise fillRequestBuffer() would acquire a ByteBuffer
             // that may be leaked.
-            if (handled || filled <= 0 || !_parser.inContentState())
+            if (handle || filled <= 0 || !_parser.inContentState())
                 break;
             filled = fillRequestBuffer();
         }
