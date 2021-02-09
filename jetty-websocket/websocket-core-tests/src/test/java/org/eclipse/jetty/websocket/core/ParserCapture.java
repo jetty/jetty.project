@@ -22,6 +22,7 @@ import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
+import org.eclipse.jetty.websocket.core.internal.util.FrameValidation;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -65,7 +66,7 @@ public class ParserCapture
             if (frame == null)
                 break;
 
-            coreSession.assertValidIncoming(frame);
+            FrameValidation.assertValidIncoming(frame, coreSession);
 
             if (!onFrame(frame))
                 break;
