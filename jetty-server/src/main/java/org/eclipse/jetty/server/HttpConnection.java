@@ -315,7 +315,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     void parseAndFillForContent()
     {
         // When fillRequestBuffer() is called, it must always be followed by a parseRequestBuffer() call otherwise this method
-        // doesn't trigger EOF/earlyEOF which breaks AsyncRequestReadTest.testPartialReadThenShutdown()
+        // doesn't trigger EOF/earlyEOF which breaks AsyncRequestReadTest.testPartialReadThenShutdown().
 
         // This loop was designed by a committee and voted by a majority.
         while (_parser.inContentState())
