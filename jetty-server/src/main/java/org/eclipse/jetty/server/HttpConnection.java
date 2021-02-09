@@ -319,7 +319,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         while (_parser.inContentState())
         {
             boolean handled = parseRequestBuffer();
-            if (handled || filled <= 0)
+            // Re-check the parser state after parsing to avoid filling,
+            // otherwise fillRequestBuffer() would acquire a ByteBuffer
+            // that may be leaked.
+            if (handled || filled <= 0 || !_parser.inContentState())
                 break;
             filled = fillRequestBuffer();
         }
