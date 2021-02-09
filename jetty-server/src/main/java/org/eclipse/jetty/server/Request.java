@@ -1682,7 +1682,7 @@ public class Request implements HttpServletRequest
     {
         if (_metaData == null && _input != null && _channel != null)
         {
-            _input.recycle();
+            _input.reopen();
             _channel.getResponse().getHttpOutput().reopen();
         }
         _metaData = request;
@@ -1776,7 +1776,7 @@ public class Request implements HttpServletRequest
 
         getHttpChannelState().recycle();
         _requestAttributeListeners.clear();
-        // Defer _input.recycle() until setMetaData on next request, TODO replace with recycle and reopen in 10
+        _input.recycle();
         _metaData = null;
         _httpFields = null;
         _trailers = null;
