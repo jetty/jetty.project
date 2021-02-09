@@ -15,6 +15,7 @@
 :toc-title: Operations Guide
 :breadcrumb: Home:../index.html | Operations Guide:./index.html
 :idprefix: og-
+:docinfo: private-head
 
 include::../config.adoc[]
 include::.asciidoctorconfig[]

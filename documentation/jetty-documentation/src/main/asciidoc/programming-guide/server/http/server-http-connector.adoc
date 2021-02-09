@@ -136,7 +136,11 @@ Jetty supports ALPN and encrypted HTTP/2 with this configuration:
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=tlsALPNHTTP]
 ----
 
-Note how the ``ConnectionFactory``s passed to `ServerConnector` are in order: TLS, ALPN, HTTP/1.1, HTTP/2.
+Note how the ``ConnectionFactory``s passed to `ServerConnector` are in order: TLS, ALPN, HTTP/2, HTTP/1.1.
 
 Jetty starts parsing TLS bytes so that it can obtain the ALPN extension.
 With the ALPN extension information, Jetty can negotiate a protocol and pick, among the ``ConnectionFactory``s supported by the `ServerConnector`, the `ConnectionFactory` correspondent to the negotiated protocol.
+
+The fact that the HTTP/2 protocol comes before the HTTP/1.1 protocol indicates that HTTP/2 is the preferred protocol for the server.
+
+Note also that the default protocol set in the ALPN ``ConnectionFactory``, which is used in case ALPN is not supported by the client, is HTTP/1.1 -- if the client does not support ALPN is probably an old client so HTTP/1.1 is the safest choice.
