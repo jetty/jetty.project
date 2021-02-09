@@ -79,7 +79,7 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
     }
 
     /**
-     * @param name the name of a class which should be passed to the SCI onStartup method
+     * @param names the names of classes which should be passed to the SCI onStartup method
      */
     public void addStartupClasses(String... names)
     {
@@ -217,7 +217,7 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
      * <p>
      * Beans in {@code ServletContextHandler} or {@code WebAppContext} that implement this interface
      * will be called to optionally wrap any newly created ServletContainerInitializers
-     * (before their {@link ServletContainerInitializer#onStartup(Set<Class<?>>, ServletContext)} method is called)
+     * (before their onStartup method is called)
      * </p>
      */
     public interface WrapFunction

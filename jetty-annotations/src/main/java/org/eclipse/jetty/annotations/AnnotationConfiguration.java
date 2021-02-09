@@ -338,7 +338,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
          * Classes that have annotations that are listed in @HandlesTypes
          * are discovered by the ContainerInitializerAnnotationHandler
          * and added here.
-         * @param list of classnames that have an annotation that is listed as a class in HandlesTypes
+         * @param names of classnames that have an annotation that is listed as a class in HandlesTypes
          */
         @Override
         public void addStartupClasses(String... names)
@@ -349,7 +349,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         /**
          * Classes that are listed in @HandlesTypes and found by
          * the createServletContainerInitializerAnnotationHandlers method.
-         * @param classes listed in HandlesTypes
+         * @param clazzes classes listed in HandlesTypes
          */
         @Override
         public void addStartupClasses(Class<?>... clazzes)
