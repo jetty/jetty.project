@@ -385,13 +385,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     private boolean upgrade()
     {
-        // If we are fill interested, then a read is pending and we must abort
-        if (isFillInterested())
-        {
-            LOG.warn("Pending read in onCompleted {} {}", this, getEndPoint());
-            abort(new IllegalStateException());
-        }
-
         Connection connection = (Connection)_channel.getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
         if (connection == null)
             return false;
@@ -419,6 +412,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     @Override
     public void onCompleted()
     {
+        // If we are fill interested, then a read is pending and we must abort
+        if (isFillInterested())
+        {
+            LOG.warn("Pending read in onCompleted {} {}", this, getEndPoint());
+            abort(new IllegalStateException());
+        }
+
         // Handle connection upgrades.
         if (upgrade())
             return;
