@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -1046,7 +1046,6 @@ public class XmlConfigurationTest
     }
 
     @Test
-    @Disabled
     public void testSetBadBoolean() throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration(
@@ -1054,8 +1053,10 @@ public class XmlConfigurationTest
                 "  <Set name=\"boolean\">tru</Set>" +
                 "</Configure>");
 
+        //Any string other than "true" (case insensitive) will be false
+        //according to Boolean constructor.
         NativeHolder bh = (NativeHolder)xmlConfiguration.configure();
-        assertTrue(bh.getBoolean(), "boolean['tru']");
+        assertFalse(bh.getBoolean(), "boolean['tru']");
     }
 
     @Test

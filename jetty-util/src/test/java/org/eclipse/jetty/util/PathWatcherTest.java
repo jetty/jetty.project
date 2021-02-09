@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -39,7 +39,6 @@ import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEventType;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -52,7 +51,6 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled
 @ExtendWith(WorkDirExtension.class)
 public class PathWatcherTest
 {

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -64,6 +64,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -236,6 +237,78 @@ public class ConstraintTest
         assertFalse(mappings.get(3).getConstraint().getAuthenticate());
     }
 
+    /**
+     * Test that constraint mappings added before the context starts are
+     * retained, but those that are added after the context starts are not.
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testDurableConstraints() throws Exception
+    {
+        List<ConstraintMapping> mappings =  _security.getConstraintMappings();
+        assertThat("before start", getConstraintMappings().size(), Matchers.equalTo(mappings.size()));
+        
+        _server.start();
+        
+        mappings =  _security.getConstraintMappings();
+        assertThat("after start", getConstraintMappings().size(), Matchers.equalTo(mappings.size()));
+        
+        _server.stop();
+        
+        //After a stop, just the durable mappings are left
+        mappings = _security.getConstraintMappings();
+        assertThat("after stop", getConstraintMappings().size(), Matchers.equalTo(mappings.size()));
+        
+        _server.start();
+        
+        //Verify the constraints are just the durables
+        mappings = _security.getConstraintMappings();
+        assertThat("after restart", getConstraintMappings().size(), Matchers.equalTo(mappings.size()));
+        
+        //Add a non-durable constraint
+        ConstraintMapping mapping = new ConstraintMapping();
+        mapping.setPathSpec("/xxxx/*");
+        Constraint constraint = new Constraint();
+        constraint.setAuthenticate(false);
+        constraint.setName("transient");
+        mapping.setConstraint(constraint);
+        
+        _security.addConstraintMapping(mapping);
+        
+        mappings = _security.getConstraintMappings();
+        assertThat("after addition", getConstraintMappings().size() + 1, Matchers.equalTo(mappings.size()));
+        
+        _server.stop();
+        _server.start();
+        
+        //After a stop, only the durable mappings remain
+        mappings = _security.getConstraintMappings();
+        assertThat("after addition", getConstraintMappings().size(), Matchers.equalTo(mappings.size()));
+        
+        //test that setConstraintMappings replaces all existing mappings whether durable or not
+        
+        //test setConstraintMappings in durable state
+        _server.stop();
+        _security.setConstraintMappings(Collections.singletonList(mapping));
+        mappings = _security.getConstraintMappings();
+        assertThat("after set during stop", 1, Matchers.equalTo(mappings.size()));
+        _server.start();
+        mappings = _security.getConstraintMappings();
+        assertThat("after set after start", 1, Matchers.equalTo(mappings.size()));
+       
+        //test setConstraintMappings not in durable state
+        _server.stop();
+        _server.start();
+        assertThat("no change after start", 1, Matchers.equalTo(mappings.size()));
+        _security.setConstraintMappings(getConstraintMappings());
+        mappings = _security.getConstraintMappings();
+        assertThat("durables lost", getConstraintMappings().size(), Matchers.equalTo(mappings.size()));
+        _server.stop();
+        mappings = _security.getConstraintMappings();
+        assertThat("no mappings", 0, Matchers.equalTo(mappings.size()));
+    }
+    
     /**
      * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-1
      * &#064;ServletSecurity
@@ -655,7 +728,7 @@ public class ConstraintTest
     @MethodSource("basicScenarios")
     public void testBasic(Scenario scenario) throws Exception
     {
-        List<ConstraintMapping> list = new ArrayList<>(_security.getConstraintMappings());
+        List<ConstraintMapping> list = new ArrayList<>(getConstraintMappings());
 
         Constraint constraint6 = new Constraint();
         constraint6.setAuthenticate(true);

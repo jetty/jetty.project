@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -651,7 +651,7 @@ public class HttpClientTLSTest
         HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         // Trigger the creation of a new connection, but don't use it.
-        ConnectionPoolHelper.tryCreate(connectionPool, -1);
+        ConnectionPoolHelper.tryCreate(connectionPool);
         // Verify that the connection has been created.
         while (true)
         {
@@ -747,7 +747,7 @@ public class HttpClientTLSTest
         HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         // Trigger the creation of a new connection, but don't use it.
-        ConnectionPoolHelper.tryCreate(connectionPool, -1);
+        ConnectionPoolHelper.tryCreate(connectionPool);
         // Verify that the connection has been created.
         while (true)
         {

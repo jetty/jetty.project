@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -64,10 +64,12 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
             destination.start();
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
             Connection connection = connectionPool.acquire();
-            assertNull(connection);
-            // There are no queued requests, so no connection should be created.
-            connection = peekIdleConnection(connectionPool, 1, TimeUnit.SECONDS);
-            assertNull(connection);
+            if (connection == null)
+            {
+                // There are no queued requests, so the newly created connection will be idle.
+                connection = peekIdleConnection(connectionPool, 5, TimeUnit.SECONDS);
+            }
+            assertNotNull(connection);
         }
     }
 
@@ -83,7 +85,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
             // Trigger creation of one connection.
-            ConnectionPoolHelper.tryCreate(connectionPool, 1);
+            ConnectionPoolHelper.tryCreate(connectionPool);
 
             Connection connection = ConnectionPoolHelper.acquire(connectionPool, false);
             if (connection == null)
@@ -104,7 +106,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
             // Trigger creation of one connection.
-            ConnectionPoolHelper.tryCreate(connectionPool, 1);
+            ConnectionPoolHelper.tryCreate(connectionPool);
 
             Connection connection1 = connectionPool.acquire();
             if (connection1 == null)
@@ -156,7 +158,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
             // Trigger creation of one connection.
-            ConnectionPoolHelper.tryCreate(connectionPool, 1);
+            ConnectionPoolHelper.tryCreate(connectionPool);
 
             // Make sure we entered idleCreated().
             assertTrue(idleLatch.await(5, TimeUnit.SECONDS));
@@ -167,7 +169,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
             assertNull(connection1);
 
             // Trigger creation of a second connection.
-            ConnectionPoolHelper.tryCreate(connectionPool, 1);
+            ConnectionPoolHelper.tryCreate(connectionPool);
 
             // Second attempt also returns null because we delayed idleCreated() above.
             Connection connection2 = connectionPool.acquire();
@@ -195,7 +197,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
             // Trigger creation of one connection.
-            ConnectionPoolHelper.tryCreate(connectionPool, 1);
+            ConnectionPoolHelper.tryCreate(connectionPool);
 
             Connection connection1 = connectionPool.acquire();
             if (connection1 == null)
@@ -232,7 +234,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
             // Trigger creation of one connection.
-            ConnectionPoolHelper.tryCreate(connectionPool, 1);
+            ConnectionPoolHelper.tryCreate(connectionPool);
 
             Connection connection1 = connectionPool.acquire();
             if (connection1 == null)

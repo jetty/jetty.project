@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -56,7 +56,7 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
         public String version;
         public String type;
         public String classifier;
-        private String mavenRepoUri = "https://repo1.maven.org/maven2/";
+        private String mavenRepoUri = DEFAULT_REMOTE_REPO;
 
         public String toPath()
         {
@@ -80,6 +80,7 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
         }
     }
 
+    private static final String DEFAULT_REMOTE_REPO = "https://repo1.maven.org/maven2/";
     private Path localRepositoryDir;
     private final boolean readonly;
     private String mavenRepoUri;
@@ -157,6 +158,18 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
         return null;
     }
 
+    public String getRemoteUri()
+    {
+        if (this.mavenRepoUri != null)
+        {
+            return this.mavenRepoUri;
+        }
+        else
+        {
+            return System.getProperty("maven.repo.uri", DEFAULT_REMOTE_REPO);
+        }
+    }
+
     public Coordinates getCoordinates(URI uri)
     {
         if (!"maven".equalsIgnoreCase(uri.getScheme()))
@@ -194,14 +207,7 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
         coords.version = parts[2];
         coords.type = "jar";
         coords.classifier = null;
-        if (this.mavenRepoUri != null)
-        {
-            coords.mavenRepoUri = this.mavenRepoUri;
-        }
-        else
-        {
-            coords.mavenRepoUri = System.getProperty("maven.repo.uri", coords.mavenRepoUri);
-        }
+        coords.mavenRepoUri = getRemoteUri();
 
         if (parts.length >= 4)
         {

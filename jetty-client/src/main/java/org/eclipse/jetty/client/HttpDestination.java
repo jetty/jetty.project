@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -109,7 +109,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     protected void doStart() throws Exception
     {
         this.connectionPool = newConnectionPool(client);
-        addBean(connectionPool);
+        addBean(connectionPool, true);
         super.doStart();
         Sweeper sweeper = client.getBean(Sweeper.class);
         if (sweeper != null && connectionPool instanceof Sweeper.Sweepable)
@@ -311,9 +311,8 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
 
     private void send(boolean create)
     {
-        if (getHttpExchanges().isEmpty())
-            return;
-        process(create);
+        if (!getHttpExchanges().isEmpty())
+            process(create);
     }
 
     private void process(boolean create)
@@ -321,7 +320,10 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         // The loop is necessary in case of a new multiplexed connection,
         // when a single thread notified of the connection opening must
         // process all queued exchanges.
-        // In other cases looping is a work-stealing optimization.
+        // It is also necessary when thread T1 cannot acquire a connection
+        // (for example, it has been stolen by thread T2 and the pool has
+        // enough pending reservations). T1 returns without doing anything
+        // and therefore it is T2 that must send both queued requests.
         while (true)
         {
             Connection connection;
@@ -331,14 +333,15 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                 connection = connectionPool.acquire();
             if (connection == null)
                 break;
-            ProcessResult result = process(connection);
-            if (result == ProcessResult.FINISH)
+            boolean proceed = process(connection);
+            if (proceed)
+                create = false;
+            else
                 break;
-            create = result == ProcessResult.RESTART;
         }
     }
 
-    private ProcessResult process(Connection connection)
+    private boolean process(Connection connection)
     {
         HttpClient client = getHttpClient();
         HttpExchange exchange = getHttpExchanges().poll();
@@ -354,7 +357,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                     LOG.debug("{} is stopping", client);
                 connection.close();
             }
-            return ProcessResult.FINISH;
+            return false;
         }
         else
         {
@@ -372,9 +375,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                 // is created. Aborting the exchange a second time will result in
                 // a no-operation, so we just abort here to cover that edge case.
                 exchange.abort(cause);
-                return getHttpExchanges().size() > 0
-                    ?  (released ? ProcessResult.CONTINUE : ProcessResult.RESTART)
-                    : ProcessResult.FINISH;
+                return getQueuedRequestCount() > 0;
             }
 
             SendFailure failure = send(connection, exchange);
@@ -382,7 +383,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             {
                 // Aggressively send other queued requests
                 // in case connections are multiplexed.
-                return getQueuedRequestCount() > 0 ? ProcessResult.CONTINUE : ProcessResult.FINISH;
+                return getQueuedRequestCount() > 0;
             }
 
             if (LOG.isDebugEnabled())
@@ -392,10 +393,10 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                 // Resend this exchange, likely on another connection,
                 // and return false to avoid to re-enter this method.
                 send(exchange);
-                return ProcessResult.FINISH;
+                return false;
             }
             request.abort(failure.failure);
-            return getHttpExchanges().size() > 0 ? ProcessResult.RESTART : ProcessResult.FINISH;
+            return getQueuedRequestCount() > 0;
         }
     }
 
@@ -474,7 +475,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             // Process queued requests that may be waiting.
             // We may create a connection that is not
             // needed, but it will eventually idle timeout.
-            process(true);
+            send(true);
         }
         return removed;
     }
@@ -541,8 +542,8 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             asString(),
             hashCode(),
             proxy == null ? "" : "(via " + proxy + ")",
-            exchanges.size(),
-            connectionPool);
+            getQueuedRequestCount(),
+            getConnectionPool());
     }
 
     /**
@@ -609,10 +610,5 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                 }
             }
         }
-    }
-
-    private enum ProcessResult
-    {
-        RESTART, CONTINUE, FINISH
     }
 }
