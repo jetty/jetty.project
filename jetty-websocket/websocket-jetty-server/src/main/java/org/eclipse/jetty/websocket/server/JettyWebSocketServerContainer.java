@@ -124,9 +124,8 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
             throw new WebSocketException("Duplicate WebSocket Mapping for PathSpec");
 
         WebSocketUpgradeFilter.ensureFilter(contextHandler.getServletContext());
-        webSocketMappings.addMapping(ps,
-            (req, resp) -> creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp)),
-            frameHandlerFactory, customizer);
+        WebSocketCreator coreCreator = (req, resp) -> creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp));
+        webSocketMappings.addMapping(ps, coreCreator, frameHandlerFactory, customizer);
     }
 
     public void addMapping(String pathSpec, final Class<?> endpointClass)
