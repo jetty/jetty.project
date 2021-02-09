@@ -316,16 +316,17 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     {
         // When fillRequestBuffer() is called, it must always be followed by a parseRequestBuffer() call otherwise this method
         // doesn't trigger EOF/earlyEOF which breaks AsyncRequestReadTest.testPartialReadThenShutdown()
-        int filled = Integer.MAX_VALUE;
+
+        // This loop was designed by a committee and voted by a majority.
         while (_parser.inContentState())
         {
-            boolean handle = parseRequestBuffer();
+            if (parseRequestBuffer())
+                break;
             // Re-check the parser state after parsing to avoid filling,
             // otherwise fillRequestBuffer() would acquire a ByteBuffer
             // that may be leaked.
-            if (handle || filled <= 0 || !_parser.inContentState())
+            if (_parser.inContentState() && fillRequestBuffer() <= 0)
                 break;
-            filled = fillRequestBuffer();
         }
     }
 
