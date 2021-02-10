@@ -778,7 +778,7 @@ public class StartArgs
             }
             else
             {
-                cmd.addRawArg("-cp");
+                cmd.addRawArg("--class-path");
                 cmd.addRawArg(classpath.toString());
             }
         }
