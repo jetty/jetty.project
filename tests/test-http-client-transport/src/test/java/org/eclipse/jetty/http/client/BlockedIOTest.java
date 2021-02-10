@@ -109,7 +109,8 @@ public class BlockedIOTest extends AbstractTest<TransportScenario>
 
         DeferredContentProvider contentProvider = new DeferredContentProvider();
         CountDownLatch ok = new CountDownLatch(2);
-        scenario.client.POST(scenario.newURI())
+        scenario.client.newRequest(scenario.newURI())
+            .method("POST")
             .content(contentProvider)
             .onResponseContent((response, content) ->
             {
