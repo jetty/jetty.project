@@ -14,11 +14,19 @@
 document.addEventListener('DOMContentLoaded', () => dynamicTOC());
 
 function dynamicTOC() {
-    // Bind a click listener to all section titles.
     const content = document.getElementById('content');
+    // Bind a click listener to all section titles.
     const sectionTitles = content.querySelectorAll('a.link');
     for (const sectionTitle of sectionTitles) {
         sectionTitle.addEventListener('click', event => collapseThenExpand(event.target.hash));
+    }
+    // Bind a click listener to all inline links to documentation sections.
+    const inlineLinks = content.querySelectorAll('p > a');
+    for (const inlineLink of inlineLinks) {
+        const hash = inlineLink.hash || '';
+        if (hash.startsWith('#')) {
+            inlineLink.addEventListener('click', event => collapseThenExpand(event.target.hash));
+        }
     }
 
     // Bind a click listener to all TOC titles.

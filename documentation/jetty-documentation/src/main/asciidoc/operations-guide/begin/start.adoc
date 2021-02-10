@@ -12,7 +12,7 @@
 //
 
 [[og-begin-start]]
-==== Starting Eclipse Jetty
+==== Starting Jetty
 
 // TODO: Consider: old_docs/startup/*.adoc
 
@@ -20,13 +20,18 @@
 
 Eclipse Jetty as a standalone server has no graphical user interface, so configuring and running the server is done from the command line.
 
-Recall from the xref:og-begin-arch[Eclipse Jetty standalone server architecture section] that Jetty is based on xref:og-modules[modules], that provides features, and on xref:og-begin-arch-jetty-base[`$JETTY_BASE`], the place where you configure which module (and therefore which feature) you want to enable, and where you configure module parameters.
+Recall from the xref:og-arch[architecture section] that Jetty is based on xref:og-modules[modules], that provides features, and on xref:og-arch-jetty-base[`$JETTY_BASE`], the place where you configure which module (and therefore which feature) you want to enable, and where you configure module parameters.
 
-Jetty is started by executing `$JETTY_HOME/start.jar`, but first we need to create a `$JETTY_BASE`:
+Jetty is started by executing `$JETTY_HOME/start.jar` from within a `$JETTY_BASE` directory, so first we need to create a `$JETTY_BASE`:
 
 ----
 $ JETTY_BASE=/path/to/jetty.base
 $ cd $JETTY_BASE
+----
+
+If you try to start Jetty from an empty `$JETTY_BASE` you get:
+
+----
 $ java -jar $JETTY_HOME/start.jar
 ----
 
@@ -35,18 +40,17 @@ $ java -jar $JETTY_HOME/start.jar
 include::jetty[]
 ----
 
-The error is normal, since the `$JETTY_BASE` you just created is empty and therefore there is no configuration to use to assemble the Jetty server.
+Jetty exited complaining that there are no modules enabled, since the `$JETTY_BASE` you just created is empty and therefore there is no configuration to read to assemble the Jetty server.
 
-However, it shows that `start.jar` takes parameters, whose details can be found in xref:og-start-jar[this section].
+However, it shows that `start.jar` takes parameters, whose details can be found in xref:og-start[this section].
 
 You can explore what modules are available out of the box via:
 
 ----
 $ java -jar $JETTY_HOME/start.jar --list-modules=*
 ----
-// TODO: add output of the --list-modules command?
 
-Try to enable the `http` module (see also xref:og-protocols-http[this section] for additional information):
+Let's try to enable the `http` module (see also xref:og-protocols-http[this section] for additional information):
 
 ----
 $ java -jar $JETTY_HOME/start.jar --add-module=http
@@ -131,4 +135,4 @@ NOTE: If you want to enable support for different protocols such as secure HTTP/
 The Jetty server is now up and running, but it has no web applications deployed, so it just replies with `404 Not Found` to every request.
 It is time to xref:og-begin-deploy[deploy your web applications] to Jetty.
 
-For more detailed information about the Jetty start system, you can read the xref:og-start-details[Jetty start system] section.
+For more detailed information about the Jetty start mechanism, you can read the xref:og-arch-start[Jetty start mechanism] section.

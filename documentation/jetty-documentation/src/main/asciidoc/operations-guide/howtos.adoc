@@ -11,10 +11,13 @@
 // ========================================================================
 //
 
-[[og-start-details]]
-=== Starting Eclipse Jetty: Details
+[[og-howtos]]
+=== Eclipse Jetty How-Tos
 
-// TODO: how start.jar builds a classpath, etc.
-//  how command line overrides base, that overrides home
-//  how you can start Jetty on-the-fly without modules or ini files
-//  etc.
+* xref:og-protocols-http[Configure Clear-Text HTTP/1.1]
+* xref:og-protocols-https[Configure Secure HTTP/1.1 (https)]
+* xref:og-protocols-http2c[Configure Clear-Text HTTP/2]
+* xref:og-protocols-http2s[Configure Secure HTTP/2]
+* xref:og-protocols-proxy[Configure Jetty Behind a Load Balancer or Reverse Proxy]
+* xref:og-logging[Configure Jetty Logging]
+* xref:og-troubleshooting[Troubleshooting]
