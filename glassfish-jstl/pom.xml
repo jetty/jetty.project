@@ -5,12 +5,12 @@
     <version>11.0.1-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>apache-jstl</artifactId>
-  <name>Apache :: JSTL module</name>
-  <url>http://tomcat.apache.org/taglibs/standard/</url>
+  <artifactId>glassfish-jstl</artifactId>
+  <name>Glassfish :: JSTL module</name>
+  <url>https://projects.eclipse.org/projects/ee4j.glassfish</url>
   <packaging>jar</packaging>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.apache.jstl</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.glassfish.jstl</bundle-symbolic-name>
   </properties>
 
   <build>
@@ -49,10 +49,9 @@
       </exclusions>
     </dependency>
 
-
     <dependency>
-      <groupId>org.mortbay.jasper</groupId>
-      <artifactId>taglibs-standard</artifactId>
+      <groupId>org.glassfish.web</groupId>
+      <artifactId>jakarta.servlet.jsp.jstl</artifactId>
     </dependency>
 
     <dependency>

@@ -142,7 +142,7 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @Test
-    public void testSimpleWebAppWithJSP() throws Exception
+    public void testSimpleWebAppWithJSPandJSTL() throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
@@ -155,7 +155,7 @@ public class DistributionTests extends AbstractJettyHomeTest
         String[] args1 = {
             "--create-start-ini",
             "--approve-all-licenses",
-            "--add-modules=resources,server,http,webapp,deploy,jsp,jmx,servlet,servlets"
+            "--add-modules=resources,server,http,webapp,deploy,jsp,jstl,jmx,servlet,servlets"
         };
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
@@ -174,9 +174,9 @@ public class DistributionTests extends AbstractJettyHomeTest
                 assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
                 startHttpClient();
-                ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
+                ContentResponse response = client.GET("http://localhost:" + port + "/test/jstl.jsp");
                 assertEquals(HttpStatus.OK_200, response.getStatus());
-                assertThat(response.getContentAsString(), containsString("JSP Examples"));
+                assertThat(response.getContentAsString(), containsString("JSTL Example"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));
             }
         }

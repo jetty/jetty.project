@@ -46,10 +46,10 @@ Modules for tag '*':
         LIB: lib/apache-jsp/*.jar
     Enabled: transitive provider of apache-jsp for jsp
 
-     Module: apache-jstl
-           : Enables the apache version of JSTL
-        LIB: lib/apache-jstl/*.jar
-    Enabled: transitive provider of apache-jstl for jstl
+     Module: glassfish-jstl
+           : Enables the Glassfish version of JSTL
+        LIB: lib/glassfish-jstl/*.jar
+    Enabled: transitive provider of glassfish-jstl for jstl
 
      Module: cdi2
            : Jetty setup to support Weld/CDI2 with WELD inside the webapp
@@ -145,7 +145,7 @@ Modules for tag '*':
 
      Module: jstl
            : Enables JSTL for all webapplications deployed on the server
-     Depend: jsp, apache-jstl
+     Depend: jsp, glassfish-jstl
     Enabled: ${jetty.base}\start.d\jstl.ini
 
      Module: jvm

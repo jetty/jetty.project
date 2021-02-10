@@ -127,7 +127,7 @@
                 org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
               </excludeGroupIds>
               <excludeArtifactIds>
-                apache-jsp,apache-jstl,jetty-start,jetty-slf4j-impl
+                apache-jsp,glassfish-jstl,jetty-start,jetty-slf4j-impl
               </excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
@@ -145,7 +145,7 @@
                 org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
               </excludeGroupIds>
               <excludeArtifactIds>
-                apache-jsp,apache-jstl,jetty-start
+                apache-jsp,glassfish-jstl,jetty-start
               </excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
@@ -376,32 +376,30 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-apache-jstl-deps</id>
+            <id>copy-glassfish-jstl-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <excludeGroupIds>org.glassfish.web</excludeGroupIds>
-              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,taglibs-standard</includeArtifactIds>
+              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
               <prependGroupId>true</prependGroupId>
               <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/apache-jstl</outputDirectory>
+              <outputDirectory>${assembly-directory}/lib/glassfish-jstl</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-apache-jstl-src-deps</id>
+            <id>copy-glassfish-jstl-src-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <excludeGroupIds>org.glassfish.web</excludeGroupIds>
-              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,taglibs-standard</includeArtifactIds>
+              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
               <prependGroupId>true</prependGroupId>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/apache-jstl</outputDirectory>
+              <outputDirectory>${source-assembly-directory}/lib/glassfish-jstl</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -630,7 +628,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>apache-jstl</artifactId>
+      <artifactId>glassfish-jstl</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
