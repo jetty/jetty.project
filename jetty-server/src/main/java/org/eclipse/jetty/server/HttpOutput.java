@@ -70,7 +70,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     enum State
     {
         OPEN,     // Open
-        CLOSE,    // Close needed from onWriteCompletion
+        CLOSE,    // Close needed from onWriteComplete
         CLOSING,  // Close in progress after close API called
         CLOSED    // Closed
     }
@@ -309,7 +309,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             {
                 // Somebody called close or complete while we were writing.
                 // We can now send a (probably empty) last buffer and then when it completes
-                // onWriteCompletion will be called again to actually execute the _completeCallback
+                // onWriteComplete will be called again to actually execute the _completeCallback
                 _state = State.CLOSING;
                 closeContent = BufferUtil.hasContent(_aggregate) ? _aggregate : BufferUtil.EMPTY_BUFFER;
             }
