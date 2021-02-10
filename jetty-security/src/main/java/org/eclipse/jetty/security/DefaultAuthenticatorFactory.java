@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.security;
 
+import java.util.Collection;
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
@@ -21,8 +22,12 @@ import org.eclipse.jetty.security.authentication.ClientCertAuthenticator;
 import org.eclipse.jetty.security.authentication.ConfigurableSpnegoAuthenticator;
 import org.eclipse.jetty.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
+import org.eclipse.jetty.security.authentication.SslClientCertAuthenticator;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The Default Authenticator Factory.
@@ -31,6 +36,7 @@ import org.eclipse.jetty.util.security.Constraint;
  * <li>{@link org.eclipse.jetty.security.authentication.DigestAuthenticator}</li>
  * <li>{@link org.eclipse.jetty.security.authentication.FormAuthenticator}</li>
  * <li>{@link org.eclipse.jetty.security.authentication.ClientCertAuthenticator}</li>
+ * <li>{@link SslClientCertAuthenticator}</li>
  * </ul>
  * All authenticators derived from {@link org.eclipse.jetty.security.authentication.LoginAuthenticator} are
  * wrapped with a {@link org.eclipse.jetty.security.authentication.DeferredAuthentication}
@@ -45,6 +51,9 @@ import org.eclipse.jetty.util.security.Constraint;
  */
 public class DefaultAuthenticatorFactory implements Authenticator.Factory
 {
+
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultAuthenticatorFactory.class);
+
     LoginService _loginService;
 
     @Override
@@ -64,7 +73,25 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
         else if (Constraint.__NEGOTIATE_AUTH.equalsIgnoreCase(auth)) // see Bug #377076
             authenticator = new ConfigurableSpnegoAuthenticator(Constraint.__NEGOTIATE_AUTH);
         if (Constraint.__CERT_AUTH.equalsIgnoreCase(auth) || Constraint.__CERT_AUTH2.equalsIgnoreCase(auth))
-            authenticator = new ClientCertAuthenticator();
+        {
+            Collection<SslContextFactory> sslContextFactories = server.getBeans(SslContextFactory.class);
+            if (sslContextFactories.size() != 1)
+            {
+                if (sslContextFactories.size() > 1)
+                {
+                    LOG.info("Multiple SslContextFactory instances discovered. Directly configure a SslClientCertAuthenticator to use one.");
+                }
+                else
+                {
+                    LOG.debug("No SslContextFactory instances discovered. Directly configure a SslClientCertAuthenticator to use one.");
+                }
+                authenticator = new ClientCertAuthenticator();
+            }
+            else
+            {
+                authenticator = new SslClientCertAuthenticator(sslContextFactories.iterator().next());
+            }
+        }
 
         return authenticator;
     }
