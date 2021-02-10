@@ -29,6 +29,7 @@ import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
+import org.eclipse.jetty.websocket.core.internal.util.FrameValidation;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -399,7 +400,7 @@ public class GeneratorTest
         BufferUtil.flipToFlush(bb, 0);
 
         closeFrame.setPayload(bb);
-        assertThrows(ProtocolException.class, () -> coreSession.assertValidOutgoing(closeFrame));
+        assertThrows(ProtocolException.class, () -> FrameValidation.assertValidOutgoing(closeFrame, coreSession));
     }
 
     /**
@@ -640,7 +641,7 @@ public class GeneratorTest
 
         Frame pingFrame = new Frame(OpCode.PING);
         pingFrame.setPayload(ByteBuffer.wrap(bytes));
-        assertThrows(WebSocketException.class, () -> coreSession.assertValidOutgoing(pingFrame));
+        assertThrows(WebSocketException.class, () -> FrameValidation.assertValidOutgoing(pingFrame, coreSession));
     }
 
     /**
@@ -654,7 +655,7 @@ public class GeneratorTest
 
         Frame pongFrame = new Frame(OpCode.PONG);
         pongFrame.setPayload(ByteBuffer.wrap(bytes));
-        assertThrows(WebSocketException.class, () -> coreSession.assertValidOutgoing(pongFrame));
+        assertThrows(WebSocketException.class, () -> FrameValidation.assertValidOutgoing(pongFrame, coreSession));
     }
 
     /**

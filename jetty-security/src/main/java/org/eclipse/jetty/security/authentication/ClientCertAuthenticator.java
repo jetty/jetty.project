@@ -35,6 +35,10 @@ import org.eclipse.jetty.util.security.CertificateValidator;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
 
+@Deprecated
+/**
+ * @deprecated Prefer using {@link SslClientCertAuthenticator}
+ */
 public class ClientCertAuthenticator extends LoginAuthenticator
 {
     /**

@@ -26,11 +26,11 @@ import org.slf4j.LoggerFactory;
 public class AbstractExtension implements Extension
 {
     private final Logger log;
+    private CoreSession coreSession;
     private ByteBufferPool bufferPool;
     private ExtensionConfig config;
     private OutgoingFrames nextOutgoing;
     private IncomingFrames nextIncoming;
-    private Configuration configuration;
     private DeflaterPool deflaterPool;
     private InflaterPool inflaterPool;
 
@@ -165,12 +165,17 @@ public class AbstractExtension implements Extension
     @Override
     public void setCoreSession(CoreSession coreSession)
     {
-        this.configuration = coreSession;
+        this.coreSession = coreSession;
+    }
+
+    public CoreSession getCoreSession()
+    {
+        return coreSession;
     }
 
     protected Configuration getConfiguration()
     {
-        return configuration;
+        return coreSession;
     }
 
     @Override
