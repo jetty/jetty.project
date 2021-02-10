@@ -23,6 +23,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Destroyable;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,13 +43,17 @@ public class HttpInput extends ServletInputStream implements Runnable
     private boolean _consumedEof;
     private ReadListener _readListener;
     private long _contentConsumed;
+    private final AutoLock _lock = new AutoLock();
 
     public HttpInput(HttpChannelState state)
     {
-        _channelState = state;
-        _asyncContentProducer = new AsyncContentProducer(state.getHttpChannel());
-        _blockingContentProducer = new BlockingContentProducer(_asyncContentProducer);
-        _contentProducer = _blockingContentProducer;
+        try (AutoLock lock = _lock.lock())
+        {
+            _channelState = state;
+            _asyncContentProducer = new AsyncContentProducer(state.getHttpChannel());
+            _blockingContentProducer = new BlockingContentProducer(_asyncContentProducer);
+            _contentProducer = _blockingContentProducer;
+        }
     }
 
     public void recycle()
@@ -59,13 +64,16 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     public void reopen()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("reopen {}", this);
-        _blockingContentProducer.recycle();
-        _contentProducer = _blockingContentProducer;
-        _consumedEof = false;
-        _readListener = null;
-        _contentConsumed = 0;
+        try (AutoLock lock = _lock.lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("reopen {}", this);
+            _blockingContentProducer.recycle();
+            _contentProducer = _blockingContentProducer;
+            _consumedEof = false;
+            _readListener = null;
+            _contentConsumed = 0;
+        }
     }
 
     /**
@@ -73,7 +81,10 @@ public class HttpInput extends ServletInputStream implements Runnable
      */
     public Interceptor getInterceptor()
     {
-        return _contentProducer.getInterceptor();
+        try (AutoLock lock = _lock.lock())
+        {
+            return _contentProducer.getInterceptor();
+        }
     }
 
     /**
@@ -83,9 +94,12 @@ public class HttpInput extends ServletInputStream implements Runnable
      */
     public void setInterceptor(Interceptor interceptor)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("setting interceptor to {} on {}", interceptor, this);
-        _contentProducer.setInterceptor(interceptor);
+        try (AutoLock lock = _lock.lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("setting interceptor to {} on {}", interceptor, this);
+            _contentProducer.setInterceptor(interceptor);
+        }
     }
 
     /**
@@ -96,23 +110,26 @@ public class HttpInput extends ServletInputStream implements Runnable
      */
     public void addInterceptor(Interceptor interceptor)
     {
-        Interceptor currentInterceptor = _contentProducer.getInterceptor();
-        if (currentInterceptor == null)
+        try (AutoLock lock = _lock.lock())
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("adding single interceptor: {} on {}", interceptor, this);
-            _contentProducer.setInterceptor(interceptor);
-        }
-        else
-        {
-            ChainedInterceptor chainedInterceptor = new ChainedInterceptor(currentInterceptor, interceptor);
-            if (LOG.isDebugEnabled())
-                LOG.debug("adding chained interceptor: {} on {}", chainedInterceptor, this);
-            _contentProducer.setInterceptor(chainedInterceptor);
+            Interceptor currentInterceptor = _contentProducer.getInterceptor();
+            if (currentInterceptor == null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("adding single interceptor: {} on {}", interceptor, this);
+                _contentProducer.setInterceptor(interceptor);
+            }
+            else
+            {
+                ChainedInterceptor chainedInterceptor = new ChainedInterceptor(currentInterceptor, interceptor);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("adding chained interceptor: {} on {}", chainedInterceptor, this);
+                _contentProducer.setInterceptor(chainedInterceptor);
+            }
         }
     }
 
-    public int get(Content content, byte[] bytes, int offset, int length)
+    private int get(Content content, byte[] bytes, int offset, int length)
     {
         int consumed = content.get(bytes, offset, length);
         _contentConsumed += consumed;
@@ -121,42 +138,57 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     public long getContentConsumed()
     {
-        return _contentConsumed;
+        try (AutoLock lock = _lock.lock())
+        {
+            return _contentConsumed;
+        }
     }
 
     public long getContentReceived()
     {
-        return _contentProducer.getRawContentArrived();
+        try (AutoLock lock = _lock.lock())
+        {
+            return _contentProducer.getRawContentArrived();
+        }
     }
 
     public boolean consumeAll()
     {
-        IOException failure = new IOException("Unconsumed content");
-        if (LOG.isDebugEnabled())
-            LOG.debug("consumeAll {}", this, failure);
-        boolean atEof = _contentProducer.consumeAll(failure);
-        if (atEof)
-            _consumedEof = true;
+        try (AutoLock lock = _lock.lock())
+        {
+            IOException failure = new IOException("Unconsumed content");
+            if (LOG.isDebugEnabled())
+                LOG.debug("consumeAll {}", this, failure);
+            boolean atEof = _contentProducer.consumeAll(failure);
+            if (atEof)
+                _consumedEof = true;
 
-        if (isFinished())
-            return !isError();
+            if (isFinished())
+                return !isError();
 
-        return false;
+            return false;
+        }
     }
 
     public boolean isError()
     {
-        boolean error = _contentProducer.isError();
-        if (LOG.isDebugEnabled())
-            LOG.debug("isError={} {}", error, this);
-        return error;
+        try (AutoLock lock = _lock.lock())
+        {
+            boolean error = _contentProducer.isError();
+            if (LOG.isDebugEnabled())
+                LOG.debug("isError={} {}", error, this);
+            return error;
+        }
     }
 
     public boolean isAsync()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("isAsync read listener {} {}", _readListener, this);
-        return _readListener != null;
+        try (AutoLock lock = _lock.lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("isAsync read listener {} {}", _readListener, this);
+            return _readListener != null;
+        }
     }
 
     /* ServletInputStream */
@@ -164,94 +196,112 @@ public class HttpInput extends ServletInputStream implements Runnable
     @Override
     public boolean isFinished()
     {
-        boolean finished = _consumedEof;
-        if (LOG.isDebugEnabled())
-            LOG.debug("isFinished={} {}", finished, this);
-        return finished;
+        try (AutoLock lock = _lock.lock())
+        {
+            boolean finished = _consumedEof;
+            if (LOG.isDebugEnabled())
+                LOG.debug("isFinished={} {}", finished, this);
+            return finished;
+        }
     }
 
     @Override
     public boolean isReady()
     {
-        boolean ready = _contentProducer.isReady();
-        if (LOG.isDebugEnabled())
-            LOG.debug("isReady={} {}", ready, this);
-        return ready;
+        try (AutoLock lock = _lock.lock())
+        {
+            boolean ready = _contentProducer.isReady();
+            if (LOG.isDebugEnabled())
+                LOG.debug("isReady={} {}", ready, this);
+            return ready;
+        }
     }
 
     @Override
     public void setReadListener(ReadListener readListener)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("setting read listener to {} {}", readListener, this);
-        if (_readListener != null)
-            throw new IllegalStateException("ReadListener already set");
-        _readListener = Objects.requireNonNull(readListener);
-        //illegal if async not started
-        if (!_channelState.isAsyncStarted())
-            throw new IllegalStateException("Async not started");
+        try (AutoLock lock = _lock.lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("setting read listener to {} {}", readListener, this);
+            if (_readListener != null)
+                throw new IllegalStateException("ReadListener already set");
+            _readListener = Objects.requireNonNull(readListener);
+            //illegal if async not started
+            if (!_channelState.isAsyncStarted())
+                throw new IllegalStateException("Async not started");
 
-        _contentProducer = _asyncContentProducer;
-        // trigger content production
-        if (isReady() && _channelState.onReadEof()) // onReadEof b/c we want to transition from WAITING to WOKEN
-            scheduleReadListenerNotification(); // this is needed by AsyncServletIOTest.testStolenAsyncRead
+            _contentProducer = _asyncContentProducer;
+            // trigger content production
+            if (isReady() && _channelState.onReadEof()) // onReadEof b/c we want to transition from WAITING to WOKEN
+                scheduleReadListenerNotification(); // this is needed by AsyncServletIOTest.testStolenAsyncRead
+        }
     }
 
     public boolean onContentProducible()
     {
-        return _contentProducer.onContentProducible();
+        try (AutoLock lock = _lock.lock())
+        {
+            return _contentProducer.onContentProducible();
+        }
     }
 
     @Override
     public int read() throws IOException
     {
-        int read = read(_oneByteBuffer, 0, 1);
-        if (read == 0)
-            throw new IOException("unready read=0");
-        return read < 0 ? -1 : _oneByteBuffer[0] & 0xFF;
+        try (AutoLock lock = _lock.lock())
+        {
+            int read = read(_oneByteBuffer, 0, 1);
+            if (read == 0)
+                throw new IOException("unready read=0");
+            return read < 0 ? -1 : _oneByteBuffer[0] & 0xFF;
+        }
     }
 
     @Override
     public int read(byte[] b, int off, int len) throws IOException
     {
-        // Calculate minimum request rate for DoS protection
-        _contentProducer.checkMinDataRate();
-
-        Content content = _contentProducer.nextContent();
-        if (content == null)
-            throw new IllegalStateException("read on unready input");
-        if (!content.isSpecial())
+        try (AutoLock lock = _lock.lock())
         {
-            int read = get(content, b, off, len);
+            // Calculate minimum request rate for DoS protection
+            _contentProducer.checkMinDataRate();
+
+            Content content = _contentProducer.nextContent();
+            if (content == null)
+                throw new IllegalStateException("read on unready input");
+            if (!content.isSpecial())
+            {
+                int read = get(content, b, off, len);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("read produced {} byte(s) {}", read, this);
+                if (content.isEmpty())
+                    _contentProducer.reclaim(content);
+                return read;
+            }
+
+            Throwable error = content.getError();
             if (LOG.isDebugEnabled())
-                LOG.debug("read produced {} byte(s) {}", read, this);
-            if (content.isEmpty())
-                _contentProducer.reclaim(content);
-            return read;
-        }
+                LOG.debug("read error={} {}", error, this);
+            if (error != null)
+            {
+                if (error instanceof IOException)
+                    throw (IOException)error;
+                throw new IOException(error);
+            }
 
-        Throwable error = content.getError();
-        if (LOG.isDebugEnabled())
-            LOG.debug("read error={} {}", error, this);
-        if (error != null)
-        {
-            if (error instanceof IOException)
-                throw (IOException)error;
-            throw new IOException(error);
-        }
+            if (content.isEof())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("read at EOF, setting consumed EOF to true {}", this);
+                _consumedEof = true;
+                // If EOF do we need to wake for allDataRead callback?
+                if (onContentProducible())
+                    scheduleReadListenerNotification();
+                return -1;
+            }
 
-        if (content.isEof())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("read at EOF, setting consumed EOF to true {}", this);
-            _consumedEof = true;
-            // If EOF do we need to wake for allDataRead callback?
-            if (onContentProducible())
-                scheduleReadListenerNotification();
-            return -1;
+            throw new AssertionError("no data, no error and not EOF");
         }
-
-        throw new AssertionError("no data, no error and not EOF");
     }
 
     private void scheduleReadListenerNotification()
@@ -267,21 +317,27 @@ public class HttpInput extends ServletInputStream implements Runnable
      */
     public boolean hasContent()
     {
-        // Do not call _contentProducer.available() as it calls HttpChannel.produceContent()
-        // which is forbidden by this method's contract.
-        boolean hasContent = _contentProducer.hasContent();
-        if (LOG.isDebugEnabled())
-            LOG.debug("hasContent={} {}", hasContent, this);
-        return hasContent;
+        try (AutoLock lock = _lock.lock())
+        {
+            // Do not call _contentProducer.available() as it calls HttpChannel.produceContent()
+            // which is forbidden by this method's contract.
+            boolean hasContent = _contentProducer.hasContent();
+            if (LOG.isDebugEnabled())
+                LOG.debug("hasContent={} {}", hasContent, this);
+            return hasContent;
+        }
     }
 
     @Override
     public int available()
     {
-        int available = _contentProducer.available();
-        if (LOG.isDebugEnabled())
-            LOG.debug("available={} {}", available, this);
-        return available;
+        try (AutoLock lock = _lock.lock())
+        {
+            int available = _contentProducer.available();
+            if (LOG.isDebugEnabled())
+                LOG.debug("available={} {}", available, this);
+            return available;
+        }
     }
 
     /* Runnable */
@@ -293,19 +349,26 @@ public class HttpInput extends ServletInputStream implements Runnable
     @Override
     public void run()
     {
-        // Call isReady() to make sure that if not ready we register for fill interest.
-        if (!_contentProducer.isReady())
+        Content content;
+        ReadListener readListener;
+        try (AutoLock lock = _lock.lock())
         {
+            // Call isReady() to make sure that if not ready we register for fill interest.
+            if (!_contentProducer.isReady())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("running but not ready {}", this);
+                return;
+            }
+            content = _contentProducer.nextContent();
             if (LOG.isDebugEnabled())
-                LOG.debug("running but not ready {}", this);
-            return;
+                LOG.debug("running on content {} {}", content, this);
+
+            readListener = this._readListener;
         }
-        Content content = _contentProducer.nextContent();
-        if (LOG.isDebugEnabled())
-            LOG.debug("running on content {} {}", content, this);
 
         // This check is needed when a request is started async but no read listener is registered.
-        if (_readListener == null)
+        if (readListener == null)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("running without a read listener {}", this);
@@ -322,7 +385,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                     LOG.debug("running error={} {}", error, this);
                 // TODO is this necessary to add here?
                 _channelState.getHttpChannel().getResponse().getHttpFields().add(HttpConnection.CONNECTION_CLOSE);
-                _readListener.onError(error);
+                readListener.onError(error);
             }
             else if (content.isEof())
             {
@@ -330,13 +393,13 @@ public class HttpInput extends ServletInputStream implements Runnable
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("running at EOF {}", this);
-                    _readListener.onAllDataRead();
+                    readListener.onAllDataRead();
                 }
                 catch (Throwable x)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("running failed onAllDataRead {}", this, x);
-                    _readListener.onError(x);
+                    readListener.onError(x);
                 }
             }
         }
@@ -346,13 +409,13 @@ public class HttpInput extends ServletInputStream implements Runnable
                 LOG.debug("running has content {}", this);
             try
             {
-                _readListener.onDataAvailable();
+                readListener.onDataAvailable();
             }
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("running failed onDataAvailable {}", this, x);
-                _readListener.onError(x);
+                readListener.onError(x);
             }
         }
     }
