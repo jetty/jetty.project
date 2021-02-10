@@ -72,6 +72,21 @@ public class NBitIntegerTest
         testEncode(8, 255 + 0x00 + 0x80 * 0x80, "Ff808001");
     }
 
+    @Test
+    public void test()
+    {
+        ByteBuffer buffer = BufferUtil.allocate(100);
+        BufferUtil.clearToFill(buffer);
+        buffer.put((byte)0x00);
+        NBitInteger.encode(buffer, 7, 4);
+        BufferUtil.flipToFlush(buffer, 0);
+        System.err.println(BufferUtil.toDetailString(buffer));
+
+        buffer.position(1);
+        int decode = NBitInteger.decode(buffer, 7);
+        System.err.println(decode);
+    }
+
     public void testEncode(int n, int i, String expected)
     {
         ByteBuffer buf = BufferUtil.allocate(16);

@@ -13,22 +13,11 @@
 
 package org.eclipse.jetty.http3.qpack;
 
-import org.eclipse.jetty.http.HostPortHttpField;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http3.qpack.table.StaticTable;
-
-public class AuthorityHttpField extends HostPortHttpField
+public interface DecoderStream
 {
-    public static final String AUTHORITY = StaticTable.STATIC_TABLE[1][0];
+    void sendSectionAcknowledgment(int streamId);
 
-    public AuthorityHttpField(String authority)
-    {
-        super(HttpHeader.C_AUTHORITY, AUTHORITY, authority);
-    }
+    void sendStreamCancellation(int streamId);
 
-    @Override
-    public String toString()
-    {
-        return String.format("%s(preparsed h=%s p=%d)", super.toString(), getHost(), getPort());
-    }
+    void sendInsertCountIncrement(int increment);
 }

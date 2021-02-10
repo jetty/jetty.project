@@ -1,3 +1,16 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
 package org.eclipse.jetty.http3.qpack.table;
 
 import java.util.HashMap;
@@ -83,10 +96,10 @@ public class StaticTable
 
     public static final int STATIC_SIZE = STATIC_TABLE.length - 1;
 
-    private final Map<HttpField, Entry> __staticFieldMap = new HashMap<>();
-    private final Index<StaticEntry> __staticNameMap;
-    private final StaticEntry[] __staticTableByHeader = new StaticEntry[HttpHeader.values().length];
-    private final StaticEntry[] __staticTable = new StaticEntry[STATIC_TABLE.length];
+    private final Map<HttpField, Entry> _staticFieldMap = new HashMap<>();
+    private final Index<StaticEntry> _staticNameMap;
+    private final StaticEntry[] _staticTableByHeader = new StaticEntry[HttpHeader.values().length];
+    private final StaticEntry[] _staticTable = new StaticEntry[STATIC_TABLE.length];
 
     public StaticTable()
     {
@@ -135,10 +148,10 @@ public class StaticTable
             if (entry == null)
                 entry = new StaticEntry(i, header == null ? new HttpField(STATIC_TABLE[i][0], value) : new HttpField(header, name, value));
 
-            __staticTable[i] = entry;
+            _staticTable[i] = entry;
 
             if (entry._field.getValue() != null)
-                __staticFieldMap.put(entry._field, entry);
+                _staticFieldMap.put(entry._field, entry);
 
             if (!added.contains(entry._field.getName()))
             {
@@ -146,39 +159,39 @@ public class StaticTable
                 staticNameMapBuilder.with(entry._field.getName(), entry);
             }
         }
-        __staticNameMap = staticNameMapBuilder.build();
+        _staticNameMap = staticNameMapBuilder.build();
 
         for (HttpHeader h : HttpHeader.values())
         {
-            StaticEntry entry = __staticNameMap.get(h.asString());
+            StaticEntry entry = _staticNameMap.get(h.asString());
             if (entry != null)
-                __staticTableByHeader[h.ordinal()] = entry;
+                _staticTableByHeader[h.ordinal()] = entry;
         }
     }
 
     public Entry get(HttpField field)
     {
-        return __staticFieldMap.get(field);
+        return _staticFieldMap.get(field);
     }
 
     public Entry get(String name)
     {
-        return __staticNameMap.get(name);
+        return _staticNameMap.get(name);
     }
 
     public Entry get(int index)
     {
-        if (index >= __staticTable.length)
+        if (index >= _staticTable.length)
             return null;
-        return __staticTable[index];
+        return _staticTable[index];
     }
 
     public Entry get(HttpHeader header)
     {
         int index = header.ordinal();
-        if (index >= __staticTableByHeader.length)
+        if (index >= _staticTableByHeader.length)
             return null;
-        return __staticTableByHeader[index];
+        return _staticTableByHeader[index];
     }
 
     @SuppressWarnings("unused")
