@@ -17,11 +17,12 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Non-blocking {@link ContentProducer} implementation. Calling {@link #nextContent()} will never block
+ * Non-blocking {@link ContentProducer} implementation. Calling {@link ContentProducer#nextContent(AutoLock)} will never block
  * but will return null when there is no available content.
  */
 class AsyncContentProducer implements ContentProducer
@@ -192,8 +193,11 @@ class AsyncContentProducer implements ContentProducer
     }
 
     @Override
-    public HttpInput.Content nextContent()
+    public HttpInput.Content nextContent(AutoLock lock)
     {
+        if (!lock.isHeldByCurrentThread())
+            throw new IllegalStateException("nextContent must be called with the lock held");
+
         HttpInput.Content content = nextTransformedContent();
         if (LOG.isDebugEnabled())
             LOG.debug("nextContent = {} {}", content, this);

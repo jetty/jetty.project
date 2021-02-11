@@ -28,8 +28,8 @@ import java.util.zip.GZIPOutputStream;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.handler.gzip.GzipHttpInputInterceptor;
-import org.eclipse.jetty.util.compression.CompressionPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.hamcrest.core.Is;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -176,6 +176,7 @@ public class AsyncContentProducerTest
         int isReadyFalseCount = 0;
         int isReadyTrueCount = 0;
         Throwable error = null;
+        AutoLock lock = new AutoLock();
 
         while (true)
         {
@@ -184,13 +185,17 @@ public class AsyncContentProducerTest
             else
                 isReadyFalseCount++;
 
-            HttpInput.Content content = contentProducer.nextContent();
-            nextContentCount++;
-            if (content == null)
+            HttpInput.Content content;
+            try (AutoLock autoLock = lock.lock())
             {
-                barrier.await(5, TimeUnit.SECONDS);
-                content = contentProducer.nextContent();
+                content = contentProducer.nextContent(lock);
                 nextContentCount++;
+                if (content == null)
+                {
+                    barrier.await(5, TimeUnit.SECONDS);
+                    content = contentProducer.nextContent(lock);
+                    nextContentCount++;
+                }
             }
             assertThat(content, notNullValue());
 

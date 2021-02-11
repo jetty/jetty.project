@@ -15,11 +15,12 @@ package org.eclipse.jetty.server;
 
 import java.util.concurrent.Semaphore;
 
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Blocking implementation of {@link ContentProducer}. Calling {@link #nextContent()} will block when
+ * Blocking implementation of {@link ContentProducer}. Calling {@link ContentProducer#nextContent(AutoLock)} will block when
  * there is no available content but will never return null.
  */
 class BlockingContentProducer implements ContentProducer
@@ -82,11 +83,11 @@ class BlockingContentProducer implements ContentProducer
     }
 
     @Override
-    public HttpInput.Content nextContent()
+    public HttpInput.Content nextContent(AutoLock lock)
     {
         while (true)
         {
-            HttpInput.Content content = _asyncContentProducer.nextContent();
+            HttpInput.Content content = _asyncContentProducer.nextContent(lock);
             if (LOG.isDebugEnabled())
                 LOG.debug("nextContent async producer returned {}", content);
             if (content != null)
@@ -103,13 +104,31 @@ class BlockingContentProducer implements ContentProducer
             if (LOG.isDebugEnabled())
                 LOG.debug("nextContent async producer is not ready, waiting on semaphore {}", _semaphore);
 
+            int lockReentranceCount = 0;
             try
             {
+                // Do not hold the lock during the wait on the semaphore.
+                // The lock must be unlocked more than once because it is
+                // reentrant so it fan be acquired multiple times by the
+                // same thread, so it can still be held by the thread after
+                // a single unlock call.
+                while (lock.isHeldByCurrentThread())
+                {
+                    lock.close();
+                    lockReentranceCount++;
+                }
                 _semaphore.acquire();
             }
             catch (InterruptedException e)
             {
                 return new HttpInput.ErrorContent(e);
+            }
+            finally
+            {
+                // Re-lock the lock as many times as it was held
+                // before the unlock preceding the semaphore acquisition.
+                for (int i = 0; i < lockReentranceCount; i++)
+                    lock.lock();
             }
         }
     }

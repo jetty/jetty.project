@@ -248,7 +248,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             // Calculate minimum request rate for DoS protection
             _contentProducer.checkMinDataRate();
 
-            Content content = _contentProducer.nextContent();
+            Content content = _contentProducer.nextContent(lock);
             if (content == null)
                 throw new IllegalStateException("read on unready input");
             if (!content.isSpecial())
@@ -341,7 +341,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                     LOG.debug("running but not ready {}", this);
                 return;
             }
-            content = _contentProducer.nextContent();
+            content = _contentProducer.nextContent(lock);
             if (LOG.isDebugEnabled())
                 LOG.debug("running on content {} {}", content, this);
         }

@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.server;
 
+import org.eclipse.jetty.util.thread.AutoLock;
+
 /**
  * ContentProducer is the bridge between {@link HttpInput} and {@link HttpChannel}.
  * It wraps a {@link HttpChannel} and uses the {@link HttpChannel#needContent()},
@@ -94,8 +96,10 @@ public interface ContentProducer
      * After this call, state can be either of UNREADY or IDLE.
      * @return the next content that can be read from or null if the implementation does not block
      * and has no available content.
+     * @param lock The lock that is currently held. It will be released if this call has to block for the
+     * duration of the internal blocking.
      */
-    HttpInput.Content nextContent();
+    HttpInput.Content nextContent(AutoLock lock);
 
     /**
      * Free up the content by calling {@link HttpInput.Content#succeeded()} on it
@@ -105,7 +109,7 @@ public interface ContentProducer
 
     /**
      * Check if this {@link ContentProducer} instance has some content that can be read without blocking.
-     * If there is some, the next call to {@link #nextContent()} will not block.
+     * If there is some, the next call to {@link #nextContent(AutoLock)} will not block.
      * If there isn't any and the implementation does not block, this method will trigger a
      * {@link javax.servlet.ReadListener} callback once some content is available.
      * This call is always non-blocking.

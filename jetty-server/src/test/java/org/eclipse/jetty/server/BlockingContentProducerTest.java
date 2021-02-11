@@ -27,6 +27,7 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.handler.gzip.GzipHttpInputInterceptor;
 import org.eclipse.jetty.util.compression.InflaterPool;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -174,9 +175,14 @@ public class BlockingContentProducerTest
         int nextContentCount = 0;
         String consumedString = "";
         Throwable error = null;
+        AutoLock lock = new AutoLock();
         while (true)
         {
-            HttpInput.Content content = contentProducer.nextContent();
+            HttpInput.Content content;
+            try (AutoLock autoLock = lock.lock())
+            {
+                content = contentProducer.nextContent(lock);
+            }
             nextContentCount++;
 
             if (content.isSpecial())
