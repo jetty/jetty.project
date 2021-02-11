@@ -72,8 +72,11 @@ public class AsyncContentProducerTest
 
         ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, new HttpInput.EofContent(), scheduledExecutorService, barrier));
 
-        Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, contentProducer, (buffers.length + 1) * 2, 0, 4, barrier);
-        assertThat(error, nullValue());
+        try (AutoLock lock = contentProducer.lock())
+        {
+            Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, contentProducer, (buffers.length + 1) * 2, 0, 4, barrier);
+            assertThat(error, nullValue());
+        }
     }
 
     @Test
@@ -91,8 +94,11 @@ public class AsyncContentProducerTest
 
         ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, new HttpInput.ErrorContent(expectedError), scheduledExecutorService, barrier));
 
-        Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, contentProducer, (buffers.length + 1) * 2, 0, 4, barrier);
-        assertThat(error, Is.is(expectedError));
+        try (AutoLock lock = contentProducer.lock())
+        {
+            Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, contentProducer, (buffers.length + 1) * 2, 0, 4, barrier);
+            assertThat(error, Is.is(expectedError));
+        }
     }
 
     @Test
@@ -113,10 +119,13 @@ public class AsyncContentProducerTest
         CyclicBarrier barrier = new CyclicBarrier(2);
 
         ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, new HttpInput.EofContent(), scheduledExecutorService, barrier));
-        contentProducer.setInterceptor(new GzipHttpInputInterceptor(inflaterPool, new ArrayByteBufferPool(1, 1, 2), 32));
+        try (AutoLock lock = contentProducer.lock())
+        {
+            contentProducer.setInterceptor(new GzipHttpInputInterceptor(inflaterPool, new ArrayByteBufferPool(1, 1, 2), 32));
 
-        Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, contentProducer, (buffers.length + 1) * 2, 0, 4, barrier);
-        assertThat(error, nullValue());
+            Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, contentProducer, (buffers.length + 1) * 2, 0, 4, barrier);
+            assertThat(error, nullValue());
+        }
     }
 
     @Test
@@ -137,10 +146,13 @@ public class AsyncContentProducerTest
         CyclicBarrier barrier = new CyclicBarrier(2);
 
         ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, new HttpInput.EofContent(), scheduledExecutorService, barrier));
-        contentProducer.setInterceptor(new GzipHttpInputInterceptor(inflaterPool, new ArrayByteBufferPool(1, 1, 2), 1));
+        try (AutoLock lock = contentProducer.lock())
+        {
+            contentProducer.setInterceptor(new GzipHttpInputInterceptor(inflaterPool, new ArrayByteBufferPool(1, 1, 2), 1));
 
-        Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, contentProducer, totalContentBytesCount + buffers.length + 2, 25, 4, barrier);
-        assertThat(error, nullValue());
+            Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, contentProducer, totalContentBytesCount + buffers.length + 2, 25, 4, barrier);
+            assertThat(error, nullValue());
+        }
     }
 
     @Test
@@ -162,10 +174,13 @@ public class AsyncContentProducerTest
         CyclicBarrier barrier = new CyclicBarrier(2);
 
         ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, new HttpInput.ErrorContent(expectedError), scheduledExecutorService, barrier));
-        contentProducer.setInterceptor(new GzipHttpInputInterceptor(inflaterPool, new ArrayByteBufferPool(1, 1, 2), 32));
+        try (AutoLock lock = contentProducer.lock())
+        {
+            contentProducer.setInterceptor(new GzipHttpInputInterceptor(inflaterPool, new ArrayByteBufferPool(1, 1, 2), 32));
 
-        Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, contentProducer, (buffers.length + 1) * 2, 0, 4, barrier);
-        assertThat(error, Is.is(expectedError));
+            Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, contentProducer, (buffers.length + 1) * 2, 0, 4, barrier);
+            assertThat(error, Is.is(expectedError));
+        }
     }
 
     private Throwable readAndAssertContent(int totalContentBytesCount, String originalContentString, ContentProducer contentProducer, int totalContentCount, int readyCount, int notReadyCount, CyclicBarrier barrier) throws InterruptedException, BrokenBarrierException, TimeoutException
@@ -176,7 +191,6 @@ public class AsyncContentProducerTest
         int isReadyFalseCount = 0;
         int isReadyTrueCount = 0;
         Throwable error = null;
-        AutoLock lock = new AutoLock();
 
         while (true)
         {
@@ -185,17 +199,13 @@ public class AsyncContentProducerTest
             else
                 isReadyFalseCount++;
 
-            HttpInput.Content content;
-            try (AutoLock autoLock = lock.lock())
+            HttpInput.Content content = contentProducer.nextContent();
+            nextContentCount++;
+            if (content == null)
             {
-                content = contentProducer.nextContent(lock);
+                barrier.await(5, TimeUnit.SECONDS);
+                content = contentProducer.nextContent();
                 nextContentCount++;
-                if (content == null)
-                {
-                    barrier.await(5, TimeUnit.SECONDS);
-                    content = contentProducer.nextContent(lock);
-                    nextContentCount++;
-                }
             }
             assertThat(content, notNullValue());
 

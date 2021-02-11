@@ -27,6 +27,13 @@ import org.eclipse.jetty.util.thread.AutoLock;
 public interface ContentProducer
 {
     /**
+     * Lock this instance. The lock must be held before any method of this instance's
+     * method be called, and must be manually released afterward.
+     * @return the lock that is guarding this instance.
+     */
+    AutoLock lock();
+
+    /**
      * Reset all internal state and clear any held resources.
      */
     void recycle();
@@ -96,10 +103,8 @@ public interface ContentProducer
      * After this call, state can be either of UNREADY or IDLE.
      * @return the next content that can be read from or null if the implementation does not block
      * and has no available content.
-     * @param lock The lock that is currently held. It will be released if this call has to block for the
-     * duration of the internal blocking.
      */
-    HttpInput.Content nextContent(AutoLock lock);
+    HttpInput.Content nextContent();
 
     /**
      * Free up the content by calling {@link HttpInput.Content#succeeded()} on it
@@ -109,7 +114,7 @@ public interface ContentProducer
 
     /**
      * Check if this {@link ContentProducer} instance has some content that can be read without blocking.
-     * If there is some, the next call to {@link #nextContent(AutoLock)} will not block.
+     * If there is some, the next call to {@link #nextContent()} will not block.
      * If there isn't any and the implementation does not block, this method will trigger a
      * {@link javax.servlet.ReadListener} callback once some content is available.
      * This call is always non-blocking.

@@ -39,7 +39,6 @@ public class HttpInput extends ServletInputStream implements Runnable
     private final byte[] _oneByteBuffer = new byte[1];
     private final BlockingContentProducer _blockingContentProducer;
     private final AsyncContentProducer _asyncContentProducer;
-    private final AutoLock _contentProducerLock = new AutoLock();
     private final HttpChannelState _channelState;
     private final LongAdder _contentConsumed = new LongAdder();
     private volatile ContentProducer _contentProducer;
@@ -62,13 +61,16 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     public void reopen()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("reopen {}", this);
-        _blockingContentProducer.recycle();
-        _contentProducer = _blockingContentProducer;
-        _consumedEof = false;
-        _readListener = null;
-        _contentConsumed.reset();
+        try (AutoLock lock = _contentProducer.lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("reopen {}", this);
+            _blockingContentProducer.recycle();
+            _contentProducer = _blockingContentProducer;
+            _consumedEof = false;
+            _readListener = null;
+            _contentConsumed.reset();
+        }
     }
 
     /**
@@ -76,7 +78,7 @@ public class HttpInput extends ServletInputStream implements Runnable
      */
     public Interceptor getInterceptor()
     {
-        try (AutoLock lock = _contentProducerLock.lock())
+        try (AutoLock lock = _contentProducer.lock())
         {
             return _contentProducer.getInterceptor();
         }
@@ -89,7 +91,7 @@ public class HttpInput extends ServletInputStream implements Runnable
      */
     public void setInterceptor(Interceptor interceptor)
     {
-        try (AutoLock lock = _contentProducerLock.lock())
+        try (AutoLock lock = _contentProducer.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("setting interceptor to {} on {}", interceptor, this);
@@ -105,7 +107,7 @@ public class HttpInput extends ServletInputStream implements Runnable
      */
     public void addInterceptor(Interceptor interceptor)
     {
-        try (AutoLock lock = _contentProducerLock.lock())
+        try (AutoLock lock = _contentProducer.lock())
         {
             Interceptor currentInterceptor = _contentProducer.getInterceptor();
             if (currentInterceptor == null)
@@ -138,7 +140,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     public long getContentReceived()
     {
-        try (AutoLock lock = _contentProducerLock.lock())
+        try (AutoLock lock = _contentProducer.lock())
         {
             return _contentProducer.getRawContentArrived();
         }
@@ -146,7 +148,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     public boolean consumeAll()
     {
-        try (AutoLock lock = _contentProducerLock.lock())
+        try (AutoLock lock = _contentProducer.lock())
         {
             IOException failure = new IOException("Unconsumed content");
             if (LOG.isDebugEnabled())
@@ -164,7 +166,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     public boolean isError()
     {
-        try (AutoLock lock = _contentProducerLock.lock())
+        try (AutoLock lock = _contentProducer.lock())
         {
             boolean error = _contentProducer.isError();
             if (LOG.isDebugEnabled())
@@ -194,7 +196,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     @Override
     public boolean isReady()
     {
-        try (AutoLock lock = _contentProducerLock.lock())
+        try (AutoLock lock = _contentProducer.lock())
         {
             boolean ready = _contentProducer.isReady();
             if (LOG.isDebugEnabled())
@@ -223,15 +225,16 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     public boolean onContentProducible()
     {
-        // This is the only _contentProducer method call that must not
-        // happen under a lock as it is used to release blocking calls.
-        return _contentProducer.onContentProducible();
+        try (AutoLock lock = _contentProducer.lock())
+        {
+            return _contentProducer.onContentProducible();
+        }
     }
 
     @Override
     public int read() throws IOException
     {
-        try (AutoLock lock = _contentProducerLock.lock())
+        try (AutoLock lock = _contentProducer.lock())
         {
             int read = read(_oneByteBuffer, 0, 1);
             if (read == 0)
@@ -243,12 +246,12 @@ public class HttpInput extends ServletInputStream implements Runnable
     @Override
     public int read(byte[] b, int off, int len) throws IOException
     {
-        try (AutoLock lock = _contentProducerLock.lock())
+        try (AutoLock lock = _contentProducer.lock())
         {
             // Calculate minimum request rate for DoS protection
             _contentProducer.checkMinDataRate();
 
-            Content content = _contentProducer.nextContent(lock);
+            Content content = _contentProducer.nextContent();
             if (content == null)
                 throw new IllegalStateException("read on unready input");
             if (!content.isSpecial())
@@ -299,7 +302,7 @@ public class HttpInput extends ServletInputStream implements Runnable
      */
     public boolean hasContent()
     {
-        try (AutoLock lock = _contentProducerLock.lock())
+        try (AutoLock lock = _contentProducer.lock())
         {
             // Do not call _contentProducer.available() as it calls HttpChannel.produceContent()
             // which is forbidden by this method's contract.
@@ -313,7 +316,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     @Override
     public int available()
     {
-        try (AutoLock lock = _contentProducerLock.lock())
+        try (AutoLock lock = _contentProducer.lock())
         {
             int available = _contentProducer.available();
             if (LOG.isDebugEnabled())
@@ -332,7 +335,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     public void run()
     {
         Content content;
-        try (AutoLock lock = _contentProducerLock.lock())
+        try (AutoLock lock = _contentProducer.lock())
         {
             // Call isReady() to make sure that if not ready we register for fill interest.
             if (!_contentProducer.isReady())
@@ -341,7 +344,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                     LOG.debug("running but not ready {}", this);
                 return;
             }
-            content = _contentProducer.nextContent(lock);
+            content = _contentProducer.nextContent();
             if (LOG.isDebugEnabled())
                 LOG.debug("running on content {} {}", content, this);
         }

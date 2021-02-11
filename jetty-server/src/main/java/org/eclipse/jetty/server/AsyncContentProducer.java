@@ -22,13 +22,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Non-blocking {@link ContentProducer} implementation. Calling {@link ContentProducer#nextContent(AutoLock)} will never block
+ * Non-blocking {@link ContentProducer} implementation. Calling {@link ContentProducer#nextContent()} will never block
  * but will return null when there is no available content.
  */
 class AsyncContentProducer implements ContentProducer
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncContentProducer.class);
 
+    private final AutoLock _lock = new AutoLock();
     private final HttpChannel _httpChannel;
     private HttpInput.Interceptor _interceptor;
     private HttpInput.Content _rawContent;
@@ -43,8 +44,15 @@ class AsyncContentProducer implements ContentProducer
     }
 
     @Override
+    public AutoLock lock()
+    {
+        return _lock.lock();
+    }
+
+    @Override
     public void recycle()
     {
+        assertLocked();
         if (LOG.isDebugEnabled())
             LOG.debug("recycling {}", this);
         _interceptor = null;
@@ -58,18 +66,21 @@ class AsyncContentProducer implements ContentProducer
     @Override
     public HttpInput.Interceptor getInterceptor()
     {
+        assertLocked();
         return _interceptor;
     }
 
     @Override
     public void setInterceptor(HttpInput.Interceptor interceptor)
     {
+        assertLocked();
         this._interceptor = interceptor;
     }
 
     @Override
     public int available()
     {
+        assertLocked();
         HttpInput.Content content = nextTransformedContent();
         int available = content == null ? 0 : content.remaining();
         if (LOG.isDebugEnabled())
@@ -80,6 +91,7 @@ class AsyncContentProducer implements ContentProducer
     @Override
     public boolean hasContent()
     {
+        assertLocked();
         boolean hasContent = _rawContent != null;
         if (LOG.isDebugEnabled())
             LOG.debug("hasContent = {} {}", hasContent, this);
@@ -89,6 +101,7 @@ class AsyncContentProducer implements ContentProducer
     @Override
     public boolean isError()
     {
+        assertLocked();
         if (LOG.isDebugEnabled())
             LOG.debug("isError = {} {}", _error, this);
         return _error;
@@ -97,6 +110,7 @@ class AsyncContentProducer implements ContentProducer
     @Override
     public void checkMinDataRate()
     {
+        assertLocked();
         long minRequestDataRate = _httpChannel.getHttpConfiguration().getMinRequestDataRate();
         if (LOG.isDebugEnabled())
             LOG.debug("checkMinDataRate [m={},t={}] {}", minRequestDataRate, _firstByteTimeStamp, this);
@@ -128,6 +142,7 @@ class AsyncContentProducer implements ContentProducer
     @Override
     public long getRawContentArrived()
     {
+        assertLocked();
         if (LOG.isDebugEnabled())
             LOG.debug("getRawContentArrived = {} {}", _rawContentArrived, this);
         return _rawContentArrived;
@@ -136,6 +151,7 @@ class AsyncContentProducer implements ContentProducer
     @Override
     public boolean consumeAll(Throwable x)
     {
+        assertLocked();
         if (LOG.isDebugEnabled())
             LOG.debug("consumeAll [e={}] {}", x, this);
         failCurrentContent(x);
@@ -187,17 +203,16 @@ class AsyncContentProducer implements ContentProducer
     @Override
     public boolean onContentProducible()
     {
+        assertLocked();
         if (LOG.isDebugEnabled())
             LOG.debug("onContentProducible {}", this);
         return _httpChannel.getState().onReadReady();
     }
 
     @Override
-    public HttpInput.Content nextContent(AutoLock lock)
+    public HttpInput.Content nextContent()
     {
-        if (!lock.isHeldByCurrentThread())
-            throw new IllegalStateException("nextContent must be called with the lock held");
-
+        assertLocked();
         HttpInput.Content content = nextTransformedContent();
         if (LOG.isDebugEnabled())
             LOG.debug("nextContent = {} {}", content, this);
@@ -209,6 +224,7 @@ class AsyncContentProducer implements ContentProducer
     @Override
     public void reclaim(HttpInput.Content content)
     {
+        assertLocked();
         if (LOG.isDebugEnabled())
             LOG.debug("reclaim {} {}", content, this);
         if (_transformedContent == content)
@@ -223,6 +239,7 @@ class AsyncContentProducer implements ContentProducer
     @Override
     public boolean isReady()
     {
+        assertLocked();
         HttpInput.Content content = nextTransformedContent();
         if (content != null)
         {
@@ -365,6 +382,12 @@ class AsyncContentProducer implements ContentProducer
         if (LOG.isDebugEnabled())
             LOG.debug("produceRawContent produced {} {}", content, this);
         return content;
+    }
+
+    private void assertLocked()
+    {
+        if (!_lock.isHeldByCurrentThread())
+            throw new IllegalStateException("nextContent must be called within a critical block");
     }
 
     @Override

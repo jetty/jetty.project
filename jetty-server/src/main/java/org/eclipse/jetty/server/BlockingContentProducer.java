@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Blocking implementation of {@link ContentProducer}. Calling {@link ContentProducer#nextContent(AutoLock)} will block when
+ * Blocking implementation of {@link ContentProducer}. Calling {@link ContentProducer#nextContent()} will block when
  * there is no available content but will never return null.
  */
 class BlockingContentProducer implements ContentProducer
@@ -33,6 +33,12 @@ class BlockingContentProducer implements ContentProducer
     BlockingContentProducer(AsyncContentProducer delegate)
     {
         _asyncContentProducer = delegate;
+    }
+
+    @Override
+    public AutoLock lock()
+    {
+        return _asyncContentProducer.lock();
     }
 
     @Override
@@ -83,11 +89,11 @@ class BlockingContentProducer implements ContentProducer
     }
 
     @Override
-    public HttpInput.Content nextContent(AutoLock lock)
+    public HttpInput.Content nextContent()
     {
         while (true)
         {
-            HttpInput.Content content = _asyncContentProducer.nextContent(lock);
+            HttpInput.Content content = _asyncContentProducer.nextContent();
             if (LOG.isDebugEnabled())
                 LOG.debug("nextContent async producer returned {}", content);
             if (content != null)
@@ -104,18 +110,19 @@ class BlockingContentProducer implements ContentProducer
             if (LOG.isDebugEnabled())
                 LOG.debug("nextContent async producer is not ready, waiting on semaphore {}", _semaphore);
 
-            int lockReentranceCount = 0;
+            AutoLock lock = _asyncContentProducer.lock();
+            // Start the counter at -1 b/c acquiring the lock increases the hold count by 1.
+            int lockHoldCount = -1;
             try
             {
-                // Do not hold the lock during the wait on the semaphore.
-                // The lock must be unlocked more than once because it is
-                // reentrant so it fan be acquired multiple times by the
-                // same thread, so it can still be held by the thread after
-                // a single unlock call.
+                // Do not hold the lock during the wait on the semaphore;
+                // the lock must be unlocked more than once because it is
+                // reentrant so it can be acquired multiple times by the same
+                // thread, hence it can still be held after a single unlock.
                 while (lock.isHeldByCurrentThread())
                 {
                     lock.close();
-                    lockReentranceCount++;
+                    lockHoldCount++;
                 }
                 _semaphore.acquire();
             }
@@ -127,7 +134,7 @@ class BlockingContentProducer implements ContentProducer
             {
                 // Re-lock the lock as many times as it was held
                 // before the unlock preceding the semaphore acquisition.
-                for (int i = 0; i < lockReentranceCount; i++)
+                for (int i = 0; i < lockHoldCount; i++)
                     lock.lock();
             }
         }
