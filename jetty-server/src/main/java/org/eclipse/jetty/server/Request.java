@@ -65,6 +65,7 @@ import javax.servlet.http.Part;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpComplianceSection;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
@@ -1822,9 +1823,10 @@ public class Request implements HttpServletRequest
         {
             // TODO replace in jetty-10 with HttpCompliance from the HttpConfiguration
             Connection connection = _channel.getConnection();
-            boolean allow = connection instanceof HttpConnection
-                ? ((HttpConnection)connection).getHttpCompliance().sections().contains(HttpComplianceSection.AMBIGUOUS_PATH_SEGMENTS)
-                : _channel.getServer().getAttribute(HttpComplianceSection.AMBIGUOUS_PATH_SEGMENTS.toString()) == Boolean.TRUE;
+            HttpCompliance compliance = connection instanceof HttpConnection
+                ? ((HttpConnection)connection).getHttpCompliance()
+                : _channel.getConnector().getBean(HttpCompliance.class);
+            boolean allow = compliance != null && !compliance.sections().contains(HttpComplianceSection.NO_AMBIGUOUS_PATH_SEGMENTS);
             if (!allow)
                 throw new BadMessageException("Ambiguous segment in URI");
         }
