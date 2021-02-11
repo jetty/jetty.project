@@ -21,8 +21,14 @@ import java.nio.ByteBuffer;
 public class EncoderInstructionParser
 {
     private final Handler _handler;
+    private final NBitStringParser _stringParser;
     private final NBitIntegerParser _integerParser;
     private State _state = State.PARSING;
+    private Operation _operation = Operation.NONE;
+
+    private boolean _referenceDynamicTable;
+    private int _index;
+    private String _name;
 
     private enum State
     {
@@ -33,25 +39,41 @@ public class EncoderInstructionParser
         DUPLICATE
     }
 
+    private enum Operation
+    {
+        NONE,
+        INDEX,
+        NAME,
+        VALUE,
+    }
+
     public interface Handler
     {
         void onSetDynamicTableCapacity(int capacity);
 
         void onDuplicate(int index);
+
+        void onInsertNameWithReference(int nameIndex, boolean isDynamicTableIndex, String value);
+
+        void onInsertWithLiteralName(String name, String value);
     }
 
     public EncoderInstructionParser(Handler handler)
     {
         _handler = handler;
+        _stringParser = new NBitStringParser();
         _integerParser = new NBitIntegerParser();
     }
 
-    public void parse(ByteBuffer buffer)
+    public void parse(ByteBuffer buffer) throws QpackException
     {
+        if (buffer == null || !buffer.hasRemaining())
+            return;
+
         switch (_state)
         {
             case PARSING:
-                byte firstByte = buffer.slice().get();
+                byte firstByte = buffer.get(buffer.position());
                 if ((firstByte & 0x80) != 0)
                 {
                     _state = State.REFERENCED_NAME;
@@ -95,25 +117,76 @@ public class EncoderInstructionParser
         }
     }
 
-    private void parseInsertNameWithReference(ByteBuffer buffer)
+    private void parseInsertNameWithReference(ByteBuffer buffer) throws QpackException
     {
-        // TODO
-        // Single bit boolean whether reference is to dynamic or static table.
-        // Index with 6-bit prefix.
-        // Single bit wither it is huffman encoded.
-        // Length of the encoded string.
-        // The string itself.
+        while (true)
+        {
+            switch (_operation)
+            {
+                case NONE:
+                    byte firstByte = buffer.get(buffer.position());
+                    _referenceDynamicTable = (firstByte & 0x40) == 0;
+                    _operation = Operation.INDEX;
+                    continue;
+
+                case INDEX:
+                    _index = _integerParser.decode(buffer, 6);
+                    if (_index < 0)
+                        return;
+
+                    _stringParser.setPrefix(8);
+                    _operation = Operation.VALUE;
+                    continue;
+
+                case VALUE:
+                    String value = _stringParser.decode(buffer);
+                    if (value == null)
+                        return;
+                    _operation = Operation.NONE;
+                    _state = State.PARSING;
+                    _handler.onInsertNameWithReference(_index, _referenceDynamicTable, value);
+                    return;
+
+                default:
+                    throw new IllegalStateException(_operation.name());
+            }
+        }
     }
 
-    private void parseInsertWithLiteralName(ByteBuffer buffer)
+    private void parseInsertWithLiteralName(ByteBuffer buffer) throws QpackException
     {
-        // TODO
-        // Single bit whether name is huffman encoded.
-        // Length of name with 5-bit prefix.
-        // Name bytes.
-        // Single bit whether value is huffman encoded.
-        // Value length with 7-bit prefix.
-        // Value bytes.
+        while (true)
+        {
+            switch (_operation)
+            {
+                case NONE:
+                    _stringParser.setPrefix(6);
+                    _operation = Operation.NAME;
+                    continue;
+
+                case NAME:
+                    _name = _stringParser.decode(buffer);
+                    if (_name == null)
+                        return;
+
+                    _stringParser.setPrefix(8);
+                    _operation = Operation.VALUE;
+                    continue;
+
+                case VALUE:
+                    String value = _stringParser.decode(buffer);
+                    if (value == null)
+                        return;
+
+                    _operation = Operation.NONE;
+                    _state = State.PARSING;
+                    _handler.onInsertWithLiteralName(_name, value);
+                    return;
+
+                default:
+                    throw new IllegalStateException(_operation.name());
+            }
+        }
     }
 
     private void parseDuplicate(ByteBuffer buffer)
