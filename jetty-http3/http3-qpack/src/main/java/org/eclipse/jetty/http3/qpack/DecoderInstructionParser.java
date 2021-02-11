@@ -53,11 +53,14 @@ public class DecoderInstructionParser
 
     public void parse(ByteBuffer buffer)
     {
+        if (buffer == null || !buffer.hasRemaining())
+            return;
+
         switch (_state)
         {
             case PARSING:
                 // Get first byte without incrementing the buffers position.
-                byte firstByte = buffer.slice().get();
+                byte firstByte = buffer.get(buffer.position());
                 if ((firstByte & 0x80) != 0)
                 {
                     _state = State.SECTION_ACKNOWLEDGEMENT;
