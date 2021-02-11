@@ -384,7 +384,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
 
         // Handle connection upgrades
-        if (_channel.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
+        else if (_channel.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
         {
             Connection connection = (Connection)_channel.getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
             if (connection != null)

@@ -436,8 +436,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             // If we can't complete due to the API state, then abort
             if (error != null)
             {
-                _writeBlocker.fail(error);
                 _channel.abort(error);
+                _writeBlocker.fail(error);
                 _state = State.CLOSED;
             }
             else
