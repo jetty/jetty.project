@@ -210,10 +210,10 @@ public class HttpInput extends ServletInputStream implements Runnable
             LOG.debug("setting read listener to {} {}", readListener, this);
         if (_readListener != null)
             throw new IllegalStateException("ReadListener already set");
-        _readListener = Objects.requireNonNull(readListener);
         //illegal if async not started
         if (!_channelState.isAsyncStarted())
             throw new IllegalStateException("Async not started");
+        _readListener = Objects.requireNonNull(readListener);
 
         _contentProducer = _asyncContentProducer;
         // trigger content production
