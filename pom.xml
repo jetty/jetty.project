@@ -1591,6 +1591,39 @@
         <spotbugs.skip>true</spotbugs.skip>
       </properties>
     </profile>
+    <profile>
+      <id>dash</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.eclipse.dash</groupId>
+            <artifactId>license-tool-plugin</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+            <inherited>false</inherited>
+            <configuration>
+              <dash.summary>DEPENDENCIES</dash.summary>
+            </configuration>
+            <executions>
+              <execution>
+                <id>license-check</id>
+                <phase>validate</phase>
+                <goals>
+                  <goal>license-check</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+      <pluginRepositories>
+        <pluginRepository>
+          <!-- Temporary until published to maven central -->
+          <id>repo.eclipse.org</id>
+          <name>Eclipse - Snapshots</name>
+          <url>https://repo.eclipse.org/content/repositories/snapshots/</url>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
   </profiles>
 
   <issueManagement>
