@@ -89,11 +89,13 @@ public class EncoderInstructionParser
                 else if ((firstByte & 0x20) != 0)
                 {
                     _state = State.SET_CAPACITY;
+                    _integerParser.setPrefix(5);
                     parseSetDynamicTableCapacity(buffer);
                 }
                 else
                 {
                     _state = State.DUPLICATE;
+                    _integerParser.setPrefix(5);
                     parseDuplicate(buffer);
                 }
                 break;
@@ -129,24 +131,27 @@ public class EncoderInstructionParser
                     byte firstByte = buffer.get(buffer.position());
                     _referenceDynamicTable = (firstByte & 0x40) == 0;
                     _operation = Operation.INDEX;
+                    _integerParser.setPrefix(6);
                     continue;
 
                 case INDEX:
-                    _index = _integerParser.decode(buffer, 6);
+                    _index = _integerParser.decode(buffer);
                     if (_index < 0)
                         return;
 
-                    _stringParser.setPrefix(8);
                     _operation = Operation.VALUE;
+                    _stringParser.setPrefix(8);
                     continue;
 
                 case VALUE:
                     String value = _stringParser.decode(buffer);
                     if (value == null)
                         return;
-                    _operation = Operation.NONE;
-                    _state = State.PARSING;
-                    _handler.onInsertNameWithReference(_index, _referenceDynamicTable, value);
+
+                    int index = _index;
+                    boolean dynamic = _referenceDynamicTable;
+                    reset();
+                    _handler.onInsertNameWithReference(index, dynamic, value);
                     return;
 
                 default:
@@ -162,8 +167,8 @@ public class EncoderInstructionParser
             switch (_operation)
             {
                 case NONE:
-                    _stringParser.setPrefix(6);
                     _operation = Operation.NAME;
+                    _stringParser.setPrefix(6);
                     continue;
 
                 case NAME:
@@ -171,8 +176,8 @@ public class EncoderInstructionParser
                     if (_name == null)
                         return;
 
-                    _stringParser.setPrefix(8);
                     _operation = Operation.VALUE;
+                    _stringParser.setPrefix(8);
                     continue;
 
                 case VALUE:
@@ -180,9 +185,9 @@ public class EncoderInstructionParser
                     if (value == null)
                         return;
 
-                    _operation = Operation.NONE;
-                    _state = State.PARSING;
-                    _handler.onInsertWithLiteralName(_name, value);
+                    String name = _name;
+                    reset();
+                    _handler.onInsertWithLiteralName(name, value);
                     return;
 
                 default:
@@ -193,21 +198,32 @@ public class EncoderInstructionParser
 
     private void parseDuplicate(ByteBuffer buffer)
     {
-        int index = _integerParser.decode(buffer, 5);
+        int index = _integerParser.decode(buffer);
         if (index >= 0)
         {
-            _state = State.PARSING;
+            reset();
             _handler.onDuplicate(index);
         }
     }
 
     private void parseSetDynamicTableCapacity(ByteBuffer buffer)
     {
-        int capacity = _integerParser.decode(buffer, 5);
+        int capacity = _integerParser.decode(buffer);
         if (capacity >= 0)
         {
-            _state = State.PARSING;
+            reset();
             _handler.onSetDynamicTableCapacity(capacity);
         }
+    }
+
+    public void reset()
+    {
+        _stringParser.reset();
+        _integerParser.reset();
+        _state = State.PARSING;
+        _operation = Operation.NONE;
+        _referenceDynamicTable = false;
+        _index = -1;
+        _name = null;
     }
 }

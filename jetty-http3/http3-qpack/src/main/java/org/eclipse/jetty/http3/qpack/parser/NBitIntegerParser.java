@@ -22,7 +22,12 @@ public class NBitIntegerParser
     private int _multiplier;
     private boolean _started;
 
-    public int decode(ByteBuffer buffer, int prefix)
+    public void setPrefix(int prefix)
+    {
+        _prefix = prefix;
+    }
+
+    public int decode(ByteBuffer buffer)
     {
         if (!_started)
         {
@@ -30,7 +35,6 @@ public class NBitIntegerParser
                 return -1;
 
             _started = true;
-            _prefix = prefix;
             _multiplier = 1;
             int nbits = 0xFF >>> (8 - _prefix);
             _total = buffer.get() & nbits;

@@ -19,6 +19,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http3.qpack.generator.Instruction;
 import org.eclipse.jetty.http3.qpack.table.Entry;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
@@ -57,6 +58,13 @@ public class QpackDecoder
     public void setLocalMaxDynamicTableSize(int localMaxdynamciTableSize)
     {
         _localMaxDynamicTableSize = localMaxdynamciTableSize;
+    }
+
+    public interface Handler
+    {
+        void onMetadata(MetaData metaData);
+
+        void onInstruction(Instruction instruction);
     }
 
     public MetaData decode(ByteBuffer buffer) throws QpackException.SessionException, QpackException.StreamException
