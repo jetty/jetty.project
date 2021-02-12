@@ -37,10 +37,12 @@ public class NBitIntegerParserTest
         ByteBuffer buffer1 = BufferUtil.toBuffer(bytes, 0, 2);
         ByteBuffer buffer2 = BufferUtil.toBuffer(bytes, 2, 1);
 
-        int value = parser.decode(buffer1, 7);
+        parser.setPrefix(7);
+        int value = parser.decode(buffer1);
         assertThat(value, is(-1));
 
-        value = parser.decode(buffer2, 7);
+        parser.setPrefix(7);
+        value = parser.decode(buffer2);
         assertThat(value, is(1337));
     }
 }

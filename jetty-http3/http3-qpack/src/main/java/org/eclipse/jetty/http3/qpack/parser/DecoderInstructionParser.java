@@ -26,11 +26,11 @@ public class DecoderInstructionParser
 
     private final Handler _handler;
     private final NBitIntegerParser _integerParser;
-    private State _state = State.PARSING;
+    private State _state = State.IDLE;
 
     private enum State
     {
-        PARSING,
+        IDLE,
         SECTION_ACKNOWLEDGEMENT,
         STREAM_CANCELLATION,
         INSERT_COUNT_INCREMENT
@@ -58,22 +58,25 @@ public class DecoderInstructionParser
 
         switch (_state)
         {
-            case PARSING:
+            case IDLE:
                 // Get first byte without incrementing the buffers position.
                 byte firstByte = buffer.get(buffer.position());
                 if ((firstByte & 0x80) != 0)
                 {
                     _state = State.SECTION_ACKNOWLEDGEMENT;
+                    _integerParser.setPrefix(SECTION_ACKNOWLEDGEMENT_PREFIX);
                     parseSectionAcknowledgment(buffer);
                 }
                 else if ((firstByte & 0x40) != 0)
                 {
                     _state = State.STREAM_CANCELLATION;
+                    _integerParser.setPrefix(STREAM_CANCELLATION_PREFIX);
                     parseStreamCancellation(buffer);
                 }
                 else
                 {
                     _state = State.INSERT_COUNT_INCREMENT;
+                    _integerParser.setPrefix(INSERT_COUNT_INCREMENT_PREFIX);
                     parseInsertCountIncrement(buffer);
                 }
                 break;
@@ -97,31 +100,37 @@ public class DecoderInstructionParser
 
     private void parseSectionAcknowledgment(ByteBuffer buffer)
     {
-        int streamId = _integerParser.decode(buffer, SECTION_ACKNOWLEDGEMENT_PREFIX);
+        int streamId = _integerParser.decode(buffer);
         if (streamId >= 0)
         {
-            _state = State.PARSING;
+            reset();
             _handler.onSectionAcknowledgement(streamId);
         }
     }
 
     private void parseStreamCancellation(ByteBuffer buffer)
     {
-        int streamId = _integerParser.decode(buffer, STREAM_CANCELLATION_PREFIX);
+        int streamId = _integerParser.decode(buffer);
         if (streamId >= 0)
         {
-            _state = State.PARSING;
+            reset();
             _handler.onStreamCancellation(streamId);
         }
     }
 
     private void parseInsertCountIncrement(ByteBuffer buffer)
     {
-        int increment = _integerParser.decode(buffer, INSERT_COUNT_INCREMENT_PREFIX);
+        int increment = _integerParser.decode(buffer);
         if (increment >= 0)
         {
-            _state = State.PARSING;
+            reset();
             _handler.onInsertCountIncrement(increment);
         }
+    }
+
+    public void reset()
+    {
+        _state = State.IDLE;
+        _integerParser.reset();
     }
 }

@@ -59,10 +59,11 @@ public class NBitStringParser
                     byte firstByte = buffer.get(buffer.position());
                     _huffman = ((0x80 >>> (8 - _prefix)) & firstByte) != 0;
                     _state = State.LENGTH;
+                    _integerParser.setPrefix(_prefix - 1);
                     continue;
 
                 case LENGTH:
-                    _length = _integerParser.decode(buffer, _prefix - 1);
+                    _length = _integerParser.decode(buffer);
                     if (_length < 0)
                         return null;
                     _state = State.VALUE;
