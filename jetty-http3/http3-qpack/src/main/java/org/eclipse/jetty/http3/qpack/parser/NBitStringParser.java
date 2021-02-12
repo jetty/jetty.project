@@ -11,9 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack;
+package org.eclipse.jetty.http3.qpack.parser;
 
 import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.http3.qpack.HuffmanDecoder;
+import org.eclipse.jetty.http3.qpack.QpackException;
 
 public class NBitStringParser
 {
