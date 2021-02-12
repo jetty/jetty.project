@@ -119,6 +119,6 @@ public class SampleStatistic
     @Override
     public String toString()
     {
-        return String.format("%s@%x{count=%d,mean=%d,total=%d,stddev=%f}", getClass().getSimpleName(), hashCode(), getCount(), getMax(), getTotal(), getStdDev());
+        return String.format("%s@%x{count=%d,max=%d,mean=%f,total=%d,stddev=%f}", getClass().getSimpleName(), hashCode(), getCount(), getMax(), getMean(), getTotal(), getStdDev());
     }
 }
