@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.Queue;
 
+import org.eclipse.jetty.http3.qpack.parser.DecoderInstructionParser;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.junit.jupiter.api.Test;

@@ -11,9 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack;
+package org.eclipse.jetty.http3.qpack.parser;
 
 import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.http3.qpack.QpackException;
 
 /**
  * Receives instructions coming from the remote Decoder as a sequence of unframed instructions.
