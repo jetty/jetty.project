@@ -28,7 +28,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class IncomingDecoderStreamTest
+public class EncoderInstructionParserTest
 {
     public static class DebugHandler implements EncoderInstructionParser.Handler
     {
