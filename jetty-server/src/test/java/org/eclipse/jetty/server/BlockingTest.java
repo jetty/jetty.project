@@ -28,6 +28,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.zip.GZIPOutputStream;
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
@@ -43,6 +44,8 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
+import org.hamcrest.Matchers;
+import org.hamcrest.core.Is;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -51,6 +54,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.Is.is;
@@ -67,7 +71,6 @@ public class BlockingTest
     {
         server = new Server();
         connector = new ServerConnector(server);
-        connector.setPort(8888);
         server.addConnector(connector);
 
         context = new ContextHandler("/ctx");
@@ -161,7 +164,6 @@ public class BlockingTest
     }
 
     @Test
-    @Disabled("broken because of 5605")
     public void testBlockingReadAndBlockingWriteGzipped() throws Exception
     {
         AtomicReference<Thread> threadRef = new AtomicReference<>();
@@ -184,18 +186,16 @@ public class BlockingTest
                             for (int i = 0; i < 5; i++)
                             {
                                 int b = baseRequest.getHttpInput().read();
-                                System.out.println(b);
+                                assertThat(b, not(is(-1)));
                             }
-                            System.out.println("handler read bytes");
                             outputStream.write("All read.".getBytes(StandardCharsets.UTF_8));
-                            System.out.println("handler wrote bytes");
                             barrier.await(); // notify that all bytes were read
                             baseRequest.getHttpInput().read(); // this read should throw IOException as the client has closed the connection
                             throw new AssertionError("should have thrown IOException");
                         }
                         catch (Exception e)
                         {
-                            throw new RuntimeException(e);
+                            //throw new RuntimeException(e);
                         }
                         finally
                         {
@@ -205,7 +205,7 @@ public class BlockingTest
                             }
                             catch (Exception e2)
                             {
-                                e2.printStackTrace();
+                                //e2.printStackTrace();
                             }
                             asyncContext.complete();
                         }
@@ -250,11 +250,9 @@ public class BlockingTest
             socket.setSoLinger(true, 0); // send TCP RST upon close instead of FIN
             OutputStream out = socket.getOutputStream();
             out.write(request.toString().getBytes(StandardCharsets.ISO_8859_1));
-            System.out.println("request sent");
             barrier.await(); // wait for handler thread to be started
             barrier.await(); // wait for all bytes of the request to be read
         }
-        System.out.println("client connection closed");
         threadRef.get().join(5000);
         assertThat("handler thread should not be alive anymore", threadRef.get().isAlive(), is(false));
     }
