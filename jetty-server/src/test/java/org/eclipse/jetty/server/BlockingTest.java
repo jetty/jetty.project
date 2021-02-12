@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -22,12 +23,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.zip.GZIPOutputStream;
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -35,9 +40,12 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -59,7 +67,7 @@ public class BlockingTest
     {
         server = new Server();
         connector = new ServerConnector(server);
-        connector.setPort(0);
+        connector.setPort(8888);
         server.addConnector(connector);
 
         context = new ContextHandler("/ctx");
@@ -150,6 +158,105 @@ public class BlockingTest
             assertTrue(stopped.await(10, TimeUnit.SECONDS));
             assertThat(readException.get(), instanceOf(IOException.class));
         }
+    }
+
+    @Test
+    @Disabled("broken because of 5605")
+    public void testBlockingReadAndBlockingWriteGzipped() throws Exception
+    {
+        AtomicReference<Thread> threadRef = new AtomicReference<>();
+        CyclicBarrier barrier = new CyclicBarrier(2);
+
+        AbstractHandler handler = new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                try
+                {
+                    baseRequest.setHandled(true);
+                    final AsyncContext asyncContext = baseRequest.startAsync();
+                    final ServletOutputStream outputStream = response.getOutputStream();
+                    final Thread thread = new Thread(() ->
+                    {
+                        try
+                        {
+                            for (int i = 0; i < 5; i++)
+                            {
+                                int b = baseRequest.getHttpInput().read();
+                                System.out.println(b);
+                            }
+                            System.out.println("handler read bytes");
+                            outputStream.write("All read.".getBytes(StandardCharsets.UTF_8));
+                            System.out.println("handler wrote bytes");
+                            barrier.await(); // notify that all bytes were read
+                            baseRequest.getHttpInput().read(); // this read should throw IOException as the client has closed the connection
+                            throw new AssertionError("should have thrown IOException");
+                        }
+                        catch (Exception e)
+                        {
+                            throw new RuntimeException(e);
+                        }
+                        finally
+                        {
+                            try
+                            {
+                                outputStream.close();
+                            }
+                            catch (Exception e2)
+                            {
+                                e2.printStackTrace();
+                            }
+                            asyncContext.complete();
+                        }
+                    });
+                    threadRef.set(thread);
+                    thread.start();
+                    barrier.await(); // notify that handler thread has started
+
+                    response.setStatus(200);
+                    response.setContentType("text/plain");
+                    response.getOutputStream().print("OK\r\n");
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+            }
+        };
+        GzipHandler gzipHandler = new GzipHandler();
+        gzipHandler.setMinGzipSize(1);
+        gzipHandler.setHandler(handler);
+        context.setHandler(gzipHandler);
+        // using the GzipHandler is mandatory to reproduce the
+//        context.setHandler(handler);
+        server.start();
+
+        StringBuilder request = new StringBuilder();
+        // partial chunked request
+        request.append("POST /ctx/path/info HTTP/1.1\r\n")
+            .append("Host: localhost\r\n")
+            .append("Accept-Encoding: gzip, *\r\n")
+            .append("Content-Type: test/data\r\n")
+            .append("Transfer-Encoding: chunked\r\n")
+            .append("\r\n")
+            .append("10\r\n")
+            .append("01234")
+        ;
+
+        int port = connector.getLocalPort();
+        try (Socket socket = new Socket("localhost", port))
+        {
+            socket.setSoLinger(true, 0); // send TCP RST upon close instead of FIN
+            OutputStream out = socket.getOutputStream();
+            out.write(request.toString().getBytes(StandardCharsets.ISO_8859_1));
+            System.out.println("request sent");
+            barrier.await(); // wait for handler thread to be started
+            barrier.await(); // wait for all bytes of the request to be read
+        }
+        System.out.println("client connection closed");
+        threadRef.get().join(5000);
+        assertThat("handler thread should not be alive anymore", threadRef.get().isAlive(), is(false));
     }
 
     @Test
