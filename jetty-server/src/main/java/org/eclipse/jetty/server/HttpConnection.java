@@ -423,10 +423,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             LOG.warn("Pending read in onCompleted {} {}", this, getEndPoint());
             abort(new IllegalStateException());
         }
-
-        // Handle connection upgrades.
-        if (upgrade())
-            return;
+        else
+        {
+            // Handle connection upgrades.
+            if (upgrade())
+                return;
+        }
 
         // Drive to EOF, EarlyEOF or Error
         boolean complete = _input.consumeAll();
