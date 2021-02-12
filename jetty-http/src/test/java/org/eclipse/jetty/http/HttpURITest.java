@@ -20,17 +20,20 @@ package org.eclipse.jetty.http;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.MultiMap;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -239,6 +242,8 @@ public class HttpURITest
             "//host/%2e%2e/bar",
             "scheme://host/%2e%2e/bar",
             "scheme:/%2e%2e/bar",
+            "/foo/%2E.",
+            "/foo/.%2E",
             "/foo/%2e%2e",
             "/foo/%2e%2e?query",
             "/foo/%2e%2e#fragment",
@@ -251,7 +256,7 @@ public class HttpURITest
             "%2e.",
             ".%2e",
             "%2e%2e"
-        );
+            );
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
@@ -259,5 +264,87 @@ public class HttpURITest
     public void testAmbiguousSegments(String uriWithBadSegment)
     {
         assertTrue(new HttpURI(uriWithBadSegment).hasAmbiguousSegment());
+    }
+
+    public static Stream<String> pathsWithNonAmbiguousSegments()
+    {
+        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
+        return Stream.of(
+            "/foo/../bar",
+            "/foo/..",
+            "/foo/..#frag",
+            "/foo/..?query",
+            "./foo",
+            "/./foo",
+            "http:./foo",
+            "//host/./foo"
+            );
+    }
+
+    @ParameterizedTest(name = "[{index}] {0}")
+    @MethodSource("pathsWithNonAmbiguousSegments")
+    public void testNonAmbiguousSegments(String uriWithBadSegment)
+    {
+        assertFalse(new HttpURI(uriWithBadSegment).hasAmbiguousSegment());
+    }
+
+    public static Stream<Arguments> uriData()
+    {
+        return Arrays.stream(new Object[][]
+            {
+                {"http://host/path/info", "/path/info", false},
+                {"http://host/../path/info", null, false},
+                {"http://host/path/../info", "/info", false},
+                {"http://host/path/./info", "/path/info", false},
+                {"//host/path/info", "/path/info", false},
+                {"//host/../path/info", null, false},
+                {"//host/path/../info", "/info", false},
+                {"//host/path/./info", "/path/info", false},
+                {"/path/info", "/path/info", false},
+                {"/../path/info", null, false},
+                {"/path/../info", "/info", false},
+                {"/path/./info", "/path/info", false},
+                {"../path/info", null, false},
+                {"path/../info", "info", false},
+                {"path/./info", "path/info", false},
+
+                {"/path/%2e/info", "/path/./info", true},
+                {"/path/%2e%2e/info", "/path/../info", true},
+                {"/path/%2e%2e;/info", "/path/../info", true},
+                {"/path/.;/info", "/path/./info", true},
+                {"/path/.;param/info", "/path/./info", true},
+                {"/path/..;/info", "/path/../info", true},
+                {"/path/..;param/info", "/path/../info", true},
+
+                {"%2e/info", "./info", true},
+                {"%2e%2e/info", "../info", true},
+                {"%2e%2e;/info", "../info", true},
+                {".;/info", "./info", true},
+                {".;param/info", "./info", true},
+                {"..;/info", "../info", true},
+                {"..;param/info", "../info", true},
+
+                {"/path/%2f/info", "/path///info", true},
+                {"%2f/info", "//info", true},
+                {"%2F/info", "//info", true},
+
+                {"/path/%XX/info", null, false},
+            }).map(Arguments::of);
+    }
+
+    @ParameterizedTest
+    @MethodSource("uriData")
+    public void testDecodedPath(String input, String decodedPath, boolean ambiguous)
+    {
+        try
+        {
+            HttpURI uri = new HttpURI(input);
+            assertThat(uri.getDecodedPath(), is(decodedPath));
+            assertThat(uri.hasAmbiguousSegment(), is(ambiguous));
+        }
+        catch (Exception e)
+        {
+            assertThat(decodedPath, nullValue());
+        }
     }
 }

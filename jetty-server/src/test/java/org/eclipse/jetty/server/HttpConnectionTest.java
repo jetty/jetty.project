@@ -500,7 +500,7 @@ public class HttpConnectionTest
     public void testBadPathDotDotPath() throws Exception
     {
         String response = connector.getResponse("GET /ooops/../../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
-        checkContains(response, 0, "HTTP/1.1 400 Bad URI");
+        checkContains(response, 0, "HTTP/1.1 400 ");
     }
 
     @Test
@@ -521,14 +521,14 @@ public class HttpConnectionTest
     public void testBadDotDotPath() throws Exception
     {
         String response = connector.getResponse("GET ../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
-        checkContains(response, 0, "HTTP/1.1 400 Bad URI");
+        checkContains(response, 0, "HTTP/1.1 400 ");
     }
 
     @Test
     public void testBadSlashDotDotPath() throws Exception
     {
         String response = connector.getResponse("GET /../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
-        checkContains(response, 0, "HTTP/1.1 400 Bad URI");
+        checkContains(response, 0, "HTTP/1.1 400 ");
     }
 
     @Test
