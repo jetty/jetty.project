@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.util.concurrent.Semaphore;
-
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,12 +25,13 @@ class BlockingContentProducer implements ContentProducer
 {
     private static final Logger LOG = LoggerFactory.getLogger(BlockingContentProducer.class);
 
-    private final Semaphore _semaphore = new Semaphore(0);
     private final AsyncContentProducer _asyncContentProducer;
+    private final AsyncContentProducer.LockedSemaphore _semaphore;
 
     BlockingContentProducer(AsyncContentProducer delegate)
     {
         _asyncContentProducer = delegate;
+        _semaphore = _asyncContentProducer.newLockedSemaphore();
     }
 
     @Override
@@ -110,32 +109,13 @@ class BlockingContentProducer implements ContentProducer
             if (LOG.isDebugEnabled())
                 LOG.debug("nextContent async producer is not ready, waiting on semaphore {}", _semaphore);
 
-            AutoLock lock = _asyncContentProducer.lock();
-            // Start the counter at -1 b/c acquiring the lock increases the hold count by 1.
-            int lockHoldCount = -1;
             try
             {
-                // Do not hold the lock during the wait on the semaphore;
-                // the lock must be unlocked more than once because it is
-                // reentrant so it can be acquired multiple times by the same
-                // thread, hence it can still be held after a single unlock.
-                while (lock.isHeldByCurrentThread())
-                {
-                    lock.close();
-                    lockHoldCount++;
-                }
                 _semaphore.acquire();
             }
             catch (InterruptedException e)
             {
                 return new HttpInput.ErrorContent(e);
-            }
-            finally
-            {
-                // Re-lock the lock as many times as it was held
-                // before the unlock preceding the semaphore acquisition.
-                for (int i = 0; i < lockHoldCount; i++)
-                    lock.lock();
             }
         }
     }
@@ -170,6 +150,7 @@ class BlockingContentProducer implements ContentProducer
     @Override
     public boolean onContentProducible()
     {
+        _semaphore.assertLocked();
         // In blocking mode, the dispatched thread normally does not have to be rescheduled as it is normally in state
         // DISPATCHED blocked on the semaphore that just needs to be released for the dispatched thread to resume. This is why
         // this method always returns false.

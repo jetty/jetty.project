@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
@@ -387,7 +388,7 @@ class AsyncContentProducer implements ContentProducer
     private void assertLocked()
     {
         if (!_lock.isHeldByCurrentThread())
-            throw new IllegalStateException("nextContent must be called within a critical block");
+            throw new IllegalStateException("ContentProducer must be called within lock scope");
     }
 
     @Override
@@ -402,5 +403,54 @@ class AsyncContentProducer implements ContentProducer
             _error,
             _httpChannel
         );
+    }
+
+    LockedSemaphore newLockedSemaphore()
+    {
+        return new LockedSemaphore();
+    }
+
+    /**
+     * A semaphore that assumes working under {@link AsyncContentProducer#lock()} scope.
+     */
+    class LockedSemaphore
+    {
+        private final Condition _condition;
+        private int _permits;
+
+        private LockedSemaphore()
+        {
+            this._condition = _lock.newCondition();
+        }
+
+        void assertLocked()
+        {
+            if (!_lock.isHeldByCurrentThread())
+                throw new IllegalStateException("LockedSemaphore must be called within lock scope");
+        }
+
+        void drainPermits()
+        {
+            _permits = 0;
+        }
+
+        void acquire() throws InterruptedException
+        {
+            while (_permits == 0)
+                _condition.await();
+            _permits--;
+        }
+
+        void release()
+        {
+            _permits++;
+            _condition.signal();
+        }
+
+        @Override
+        public String toString()
+        {
+            return getClass().getSimpleName() + " permits=" + _permits;
+        }
     }
 }
