@@ -1507,9 +1507,9 @@ public class StartArgs
                 properties.setProperty("java.version.platform", Integer.toString(ver.getPlatform()), source);
 
                 // features built into java.
-                // TODO: Remove in Jetty 10+
+                // In Jetty 10+ these will always be true, but still need to stick around for users that
+                // want to move between Jetty 9.4.x and 10.0.x+
                 properties.setProperty("runtime.feature.alpn", Boolean.toString(isMethodAvailable(javax.net.ssl.SSLParameters.class, "getApplicationProtocols", null)), source);
-                // TODO: Remove in Jetty 10+
                 properties.setProperty("runtime.feature.jpms", Boolean.toString(isClassAvailable("java.lang.ModuleLayer")), source);
 
                 // @deprecated - below will be removed in Jetty 10.x
