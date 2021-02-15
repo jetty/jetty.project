@@ -99,11 +99,9 @@ public class HttpURI
     private String _param;
     private String _query;
     private String _fragment;
-
-    String _uri;
-    String _decodedPath;
-
-    boolean _ambiguousSegment;
+    private String _uri;
+    private String _decodedPath;
+    private boolean _ambiguousSegment;
 
     /**
      * Construct a normalized URI.
@@ -136,6 +134,7 @@ public class HttpURI
         _scheme = scheme;
         _host = host;
         _port = port;
+        parse(State.PATH, path, 0, path.length());
         _path = path;
         _param = param;
         _query = query;
@@ -146,6 +145,7 @@ public class HttpURI
     {
         this(uri._scheme, uri._host, uri._port, uri._path, uri._param, uri._query, uri._fragment);
         _uri = uri._uri;
+        _ambiguousSegment = uri._ambiguousSegment;
     }
 
     public HttpURI(String uri)
@@ -157,38 +157,42 @@ public class HttpURI
     public HttpURI(URI uri)
     {
         _uri = null;
-
         _scheme = uri.getScheme();
         _host = uri.getHost();
         if (_host == null && uri.getRawSchemeSpecificPart().startsWith("//"))
             _host = "";
         _port = uri.getPort();
         _user = uri.getUserInfo();
-        _path = uri.getRawPath();
-
-        _decodedPath = uri.getPath();
-        if (_decodedPath != null)
-        {
-            int p = _decodedPath.lastIndexOf(';');
-            if (p >= 0)
-                _param = _decodedPath.substring(p + 1);
-        }
+        String path = uri.getRawPath();
+        if (path != null)
+            parse(State.PATH, path, 0, path.length());
         _query = uri.getRawQuery();
         _fragment = uri.getFragment();
-
-        _decodedPath = null;
     }
 
     public HttpURI(String scheme, String host, int port, String pathQuery)
     {
         _uri = null;
-
         _scheme = scheme;
         _host = host;
         _port = port;
-
         if (pathQuery != null)
             parse(State.PATH, pathQuery, 0, pathQuery.length());
+    }
+
+    public void clear()
+    {
+        _uri = null;
+        _scheme = null;
+        _user = null;
+        _host = null;
+        _port = -1;
+        _path = null;
+        _param = null;
+        _query = null;
+        _fragment = null;
+        _decodedPath = null;
+        _ambiguousSegment = false;
     }
 
     public void parse(String uri)
@@ -333,6 +337,8 @@ public class HttpURI
                             _path = uri.substring(mark, i);
                             state = State.FRAGMENT;
                             break;
+                        default:
+                            break;
                     }
                     continue;
                 }
@@ -388,9 +394,10 @@ public class HttpURI
                             _user = uri.substring(mark, i);
                             mark = i + 1;
                             break;
-
                         case '[':
                             state = State.IPV6;
+                            break;
+                        default:
                             break;
                     }
                     continue;
@@ -415,8 +422,9 @@ public class HttpURI
                                 state = State.PATH;
                             }
                             break;
+                        default:
+                            break;
                     }
-
                     continue;
                 }
                 case PORT:
@@ -510,6 +518,8 @@ public class HttpURI
                             // multiple parameters
                             mark = i + 1;
                             break;
+                        default:
+                            break;
                     }
                     continue;
                 }
@@ -532,6 +542,8 @@ public class HttpURI
                     _fragment = uri.substring(mark, end);
                     i = end;
                 }
+                default:
+                    break;
             }
         }
 
@@ -570,6 +582,8 @@ public class HttpURI
             case QUERY:
                 _query = uri.substring(mark, end);
                 break;
+            default:
+                break;
         }
 
         if (!encoded && !dot)
@@ -579,7 +593,20 @@ public class HttpURI
             else
                 _decodedPath = _path.substring(0, _path.length() - _param.length() - 1);
         }
+        else if (_path != null)
+        {
+            String canonical = URIUtil.canonicalPath(_path);
+            if (canonical == null)
+                throw new BadMessageException("Bad URI");
+            _decodedPath = URIUtil.decodePath(canonical);
+        }
     }
+
+    private void decodePath()
+    {
+
+    }
+
 
     /**
      * Check for ambiguous path segments.
@@ -641,13 +668,6 @@ public class HttpURI
      */
     public String getDecodedPath()
     {
-        if (_decodedPath == null && _path != null)
-        {
-            String canonical = URIUtil.canonicalPath(_path);
-            if (canonical == null)
-                throw new BadMessageException("Bad URI");
-            _decodedPath = URIUtil.decodePath(canonical);
-        }
         return _decodedPath;
     }
 
@@ -703,23 +723,6 @@ public class HttpURI
             UrlEncoded.decodeTo(_query, parameters, encoding);
     }
 
-    public void clear()
-    {
-        _uri = null;
-
-        _scheme = null;
-        _host = null;
-        _port = -1;
-        _path = null;
-        _param = null;
-        _query = null;
-        _fragment = null;
-
-        _decodedPath = null;
-
-        _ambiguousSegment = false;
-    }
-
     public boolean isAbsolute()
     {
         return _scheme != null && !_scheme.isEmpty();
@@ -771,6 +774,12 @@ public class HttpURI
         if (!(o instanceof HttpURI))
             return false;
         return toString().equals(o.toString());
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return toString().hashCode();
     }
 
     public void setScheme(String scheme)

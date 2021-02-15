@@ -56,11 +56,12 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
     LEGACY(sectionsBySpec("0,METHOD_CASE_SENSITIVE")),
 
     /**
-     * The legacy RFC2616 support, which incorrectly excludes
+     * The legacy RFC2616 support, which excludes
      * {@link HttpComplianceSection#METHOD_CASE_SENSITIVE},
      * {@link HttpComplianceSection#FIELD_COLON},
      * {@link HttpComplianceSection#TRANSFER_ENCODING_WITH_CONTENT_LENGTH},
-     * {@link HttpComplianceSection#MULTIPLE_CONTENT_LENGTHS},
+     * {@link HttpComplianceSection#MULTIPLE_CONTENT_LENGTHS} and
+     * {@link HttpComplianceSection#NO_AMBIGUOUS_PATH_SEGMENTS}.
      */
     RFC2616_LEGACY(sectionsBySpec("RFC2616,-FIELD_COLON,-METHOD_CASE_SENSITIVE,-TRANSFER_ENCODING_WITH_CONTENT_LENGTH,-MULTIPLE_CONTENT_LENGTHS,-NO_AMBIGUOUS_PATH_SEGMENTS")),
 
@@ -70,7 +71,9 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
     RFC2616(sectionsBySpec("RFC2616")),
 
     /**
-     * Jetty's current RFC7230 support, which incorrectly excludes  {@link HttpComplianceSection#METHOD_CASE_SENSITIVE}
+     * Jetty's current RFC7230 support, which excludes
+     * {@link HttpComplianceSection#METHOD_CASE_SENSITIVE} and
+     * {@link HttpComplianceSection#NO_AMBIGUOUS_PATH_SEGMENTS}.
      */
     RFC7230_LEGACY(sectionsBySpec("RFC7230,-METHOD_CASE_SENSITIVE,-NO_AMBIGUOUS_PATH_SEGMENTS")),
 
