@@ -475,8 +475,6 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
             webappClass = findLoadedClass(name);
             if (webappClass != null)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("found webapp loaded {}", webappClass);
                 return webappClass;
             }
 
@@ -493,8 +491,6 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                     // If the webapp is allowed to see this class
                     if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isServerClass(parentClass))
                     {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("PLP parent loaded {}", parentClass);
                         return parentClass;
                     }
                 }
@@ -515,8 +511,6 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                     webappClass = this.findClass(name);
                     if (resolve)
                         resolveClass(webappClass);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("PLP webapp loaded {}", webappClass);
                     return webappClass;
                 }
                 catch (ClassNotFoundException e)
@@ -545,8 +539,6 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                     // If the webapp is allowed to see this class
                     if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isServerClass(parentClass))
                     {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("WAP parent loaded {}", parentClass);
                         return parentClass;
                     }
                 }
@@ -654,9 +646,6 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         {
             content = url.openStream();
             byte[] bytes = IO.readBytes(content);
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("foundClass({}) url={} cl={}", name, url, this);
 
             for (ClassFileTransformer transformer : _transformers)
             {
