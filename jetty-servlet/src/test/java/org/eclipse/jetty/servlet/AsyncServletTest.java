@@ -706,7 +706,7 @@ public class AsyncServletTest
                 // ignored
             }
 
-            historyAdd(request.getDispatcherType() + " " + URIUtil.addPathQuery(request.getRequestURI(),request.getQueryString()));
+            historyAdd(request.getDispatcherType() + " " + URIUtil.addPathQuery(request.getRequestURI(), request.getQueryString()));
             if (request instanceof ServletRequestWrapper || response instanceof ServletResponseWrapper)
                 historyAdd("wrapped" + ((request instanceof ServletRequestWrapper) ? " REQ" : "") + ((response instanceof ServletResponseWrapper) ? " RSP" : ""));
 

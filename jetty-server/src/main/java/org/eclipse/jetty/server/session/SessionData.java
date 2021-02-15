@@ -461,10 +461,10 @@ public class SessionData implements Serializable
         out.writeUTF(_id); //session id
         out.writeUTF(_contextPath); //context path
         out.writeUTF(_vhost); //first vhost
-        out.writeLong(_accessed);//accessTime
+        out.writeLong(_accessed); //accessTime
         out.writeLong(_lastAccessed); //lastAccessTime
         out.writeLong(_created); //time created
-        out.writeLong(_cookieSet);//time cookie was set
+        out.writeLong(_cookieSet); //time cookie was set
         out.writeUTF(_lastNode); //name of last node managing
         out.writeLong(_expiry);
         out.writeLong(_maxInactiveMs);
@@ -476,10 +476,10 @@ public class SessionData implements Serializable
         _id = in.readUTF();
         _contextPath = in.readUTF();
         _vhost = in.readUTF();
-        _accessed = in.readLong();//accessTime
+        _accessed = in.readLong(); //accessTime
         _lastAccessed = in.readLong(); //lastAccessTime
         _created = in.readLong(); //time created
-        _cookieSet = in.readLong();//time cookie was set
+        _cookieSet = in.readLong(); //time cookie was set
         _lastNode = in.readUTF(); //last managing node
         _expiry = in.readLong();
         _maxInactiveMs = in.readLong();

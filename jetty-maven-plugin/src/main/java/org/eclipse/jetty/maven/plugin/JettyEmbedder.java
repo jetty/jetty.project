@@ -45,7 +45,7 @@ public class JettyEmbedder extends AbstractLifeCycle
     protected boolean exitVm;
     protected boolean stopAtShutdown;
     protected List<File> jettyXmlFiles;
-    protected Map<String,String> jettyProperties;
+    protected Map<String, String> jettyProperties;
     protected ShutdownMonitor shutdownMonitor;
     protected int stopPort;
     protected String stopKey;

@@ -83,7 +83,7 @@ public class ClusteredSessionMigrationTest extends AbstractTestBase
             cacheFactory2.setSaveOnCreate(true);
             SessionDataStoreFactory storeFactory2 = createSessionDataStoreFactory();
 
-            TestServer server2 = new TestServer(0,TestServer.DEFAULT_MAX_INACTIVE, TestServer.DEFAULT_SCAVENGE_SEC,
+            TestServer server2 = new TestServer(0, TestServer.DEFAULT_MAX_INACTIVE, TestServer.DEFAULT_SCAVENGE_SEC,
                 cacheFactory2, storeFactory2);
             server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
 

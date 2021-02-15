@@ -61,7 +61,7 @@ public class ServletLifeCycleTest
 
         ServletHandler sh = context.getServletHandler();
         sh.addListener(new ListenerHolder(TestListener.class)); //added directly to ServletHandler
-        context.addEventListener(context.getServletContext().createListener(TestListener2.class));//create,decorate and add listener to context - no holder!
+        context.addEventListener(context.getServletContext().createListener(TestListener2.class)); //create,decorate and add listener to context - no holder!
 
         sh.addFilterWithMapping(TestFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         sh.addFilterWithMapping(new FilterHolder(context.getServletContext().createFilter(TestFilter2.class)), "/*", EnumSet.of(DispatcherType.REQUEST));

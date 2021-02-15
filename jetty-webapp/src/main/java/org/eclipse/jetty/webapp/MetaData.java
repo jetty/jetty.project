@@ -56,7 +56,7 @@ public class MetaData
     protected final List<Resource> _webInfJars = new ArrayList<>();
     protected final List<Resource> _orderedContainerResources = new ArrayList<>();
     protected final List<Resource> _orderedWebInfResources = new ArrayList<>();
-    protected Ordering _ordering;//can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
+    protected Ordering _ordering; //can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
     protected boolean _allowDuplicateFragmentNames = false;
     protected boolean _validateXml = false;
 
@@ -492,7 +492,7 @@ public class MetaData
         List<Resource> resources = new ArrayList<>();
         resources.add(EmptyResource.INSTANCE); //always apply annotations with no resource first
         resources.addAll(_orderedContainerResources); //next all annotations from container path
-        resources.addAll(_webInfClasses);//next everything from web-inf classes
+        resources.addAll(_webInfClasses); //next everything from web-inf classes
         resources.addAll(getWebInfResources(isOrdered())); //finally annotations (in order) from webinf path 
 
         for (Resource r : resources)

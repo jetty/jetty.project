@@ -745,7 +745,7 @@ public class ConstraintTest
         constraint8.setRoles(new String[]{"foo"});
         ConstraintMapping mapping8 = new ConstraintMapping();
         mapping8.setPathSpec("/omit/*");
-        mapping8.setConstraint(constraint8);//requests for all methods must be in role "foo"
+        mapping8.setConstraint(constraint8); //requests for all methods must be in role "foo"
         list.add(mapping8);
 
         Set<String> knownRoles = new HashSet<>();
