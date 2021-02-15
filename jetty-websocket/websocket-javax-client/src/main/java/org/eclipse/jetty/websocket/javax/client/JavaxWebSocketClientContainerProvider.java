@@ -71,23 +71,10 @@ public class JavaxWebSocketClientContainerProvider extends ContainerProvider
     }
 
     // See: https://github.com/eclipse-ee4j/websocket-api/issues/212
-    private WebSocketContainer registerShutdown(JavaxWebSocketClientContainer container)
+    private void registerShutdown(JavaxWebSocketClientContainer container)
     {
-        // Register as JVM runtime shutdown hook?
+        // Register as JVM runtime shutdown hook.
         ShutdownThread.register(container);
-
-        if (!container.isStarted())
-        {
-            try
-            {
-                container.start();
-            }
-            catch (Exception e)
-            {
-                throw new RuntimeException("Unable to start Client Container", e);
-            }
-        }
-
-        return container;
+        LifeCycle.start(container);
     }
 }
