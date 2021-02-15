@@ -156,10 +156,10 @@ public class Scanner extends AbstractLifeCycle
     class Visitor implements FileVisitor<Path>
     {
         Map<String, TimeNSize> scanInfoMap;
-        IncludeExcludeSet<PathMatcher,Path> rootIncludesExcludes;
+        IncludeExcludeSet<PathMatcher, Path> rootIncludesExcludes;
         Path root;
-        
-        public Visitor(Path root, IncludeExcludeSet<PathMatcher,Path> rootIncludesExcludes, Map<String, TimeNSize> scanInfoMap)
+
+        public Visitor(Path root, IncludeExcludeSet<PathMatcher, Path> rootIncludesExcludes, Map<String, TimeNSize> scanInfoMap)
         {
             this.root = root;
             this.rootIncludesExcludes = rootIncludesExcludes;
@@ -668,7 +668,7 @@ public class Scanner extends AbstractLifeCycle
             Path p = entry.getKey();
             try
             {
-                Files.walkFileTree(p, EnumSet.allOf(FileVisitOption.class),_scanDepth, new Visitor(p, entry.getValue(), _currentScan));
+                Files.walkFileTree(p, EnumSet.allOf(FileVisitOption.class), _scanDepth, new Visitor(p, entry.getValue(), _currentScan));
             }
             catch (IOException e)
             {

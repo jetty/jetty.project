@@ -78,7 +78,7 @@ public class LeakDetector<T> extends AbstractLifeCycle implements Runnable
         String id = id(resource);
         LeakInfo info = resources.putIfAbsent(id, new LeakInfo(resource, id));
         // Leak detected, prior acquire exists (not released) or id clash.
-        return info == null;// Normal behavior.
+        return info == null; // Normal behavior.
     }
 
     /**

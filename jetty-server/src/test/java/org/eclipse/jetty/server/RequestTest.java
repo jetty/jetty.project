@@ -636,7 +636,7 @@ public class RequestTest
         System.out.println(request);
 
         String responses = _connector.getResponse(request);
-        assertThat(responses,startsWith("HTTP/1.1 200"));
+        assertThat(responses, startsWith("HTTP/1.1 200"));
     }
 
     /**

@@ -154,7 +154,7 @@ public class TestJettyOSGiBootHTTP2
             httpClient.start();
 
             ContentResponse response = httpClient.GET("https://localhost:" + port + "/jsp/jstl.jsp");
-            assertEquals(HttpStatus.OK_200,response.getStatus());
+            assertEquals(HttpStatus.OK_200, response.getStatus());
             String body = response.getContentAsString();
             assertTrue("Body contains \"JSTL Example\": " + body, body.contains("JSTL Example"));
         }

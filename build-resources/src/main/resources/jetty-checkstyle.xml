@@ -98,7 +98,7 @@
 
     <!-- Member Name Format -->
     <module name="MemberName">
-      <property name="format" value="^[_a-z][a-zA-Z0-9]*$"/>
+      <property name="format" value="^[_a-z][a-zA-Z0-9]*$" />
     </module>
 
     <!-- require braces is disabled - we don't enforce that in Jetty
@@ -107,10 +107,15 @@
     </module>
      -->
 
+    <!-- Enforced Whitespace After specific tokens -->
+    <module name="WhitespaceAfter">
+      <property name="tokens" value="COMMA, SEMI, LITERAL_IF, LITERAL_ELSE, LITERAL_WHILE, LITERAL_DO, LITERAL_FOR, DO_WHILE" />
+    </module>
+
     <!-- No Whitespace After specific tokens -->
     <module name="NoWhitespaceAfter">
-      <property name="tokens" value="ARRAY_INIT, AT, INC, DEC, UNARY_MINUS, UNARY_PLUS, BNOT, LNOT, DOT, ARRAY_DECLARATOR, INDEX_OP, TYPECAST"/>
-      <property name="allowLineBreaks" value="true"/>
+      <property name="tokens" value="ARRAY_INIT, AT, INC, DEC, UNARY_MINUS, UNARY_PLUS, BNOT, LNOT, DOT, ARRAY_DECLARATOR, INDEX_OP, TYPECAST" />
+      <property name="allowLineBreaks" value="true" />
     </module>
 
     <!-- No Whitespace Before specific tokens -->

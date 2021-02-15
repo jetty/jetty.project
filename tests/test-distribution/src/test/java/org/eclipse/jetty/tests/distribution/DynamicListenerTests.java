@@ -62,16 +62,16 @@ public class DynamicListenerTests
             File war = distribution.resolveArtifact("org.eclipse.jetty:test-jetty-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
-            Path etc = Paths.get(jettyBase.toString(),"etc");
+            Path etc = Paths.get(jettyBase.toString(), "etc");
             if (!Files.exists(etc))
             {
                 Files.createDirectory(etc);
             }
 
             Files.copy(Paths.get("src/test/resources/realm.ini"),
-                       Paths.get(jettyBase.toString(),"start.d").resolve("realm.ini"));
+                Paths.get(jettyBase.toString(), "start.d").resolve("realm.ini"));
             Files.copy(Paths.get("src/test/resources/realm.properties"),
-                       etc.resolve("realm.properties"));
+                etc.resolve("realm.properties"));
             Files.copy(Paths.get("src/test/resources/test-realm.xml"),
                        etc.resolve("test-realm.xml"));
 

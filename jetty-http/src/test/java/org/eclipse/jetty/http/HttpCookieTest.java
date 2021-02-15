@@ -215,7 +215,7 @@ public class HttpCookieTest
         @Override
         public void setAttribute(String name, Object object)
         {
-            _attributes.put(name,object);
+            _attributes.put(name, object);
         }
 
         @Override

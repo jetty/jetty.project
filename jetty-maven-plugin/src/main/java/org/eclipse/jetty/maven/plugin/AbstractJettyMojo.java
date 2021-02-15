@@ -473,7 +473,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
                         }
                         catch (Exception e)
                         {
-                            getLog().error("Error reconfiguring/restarting webapp after change in watched files",e);
+                            getLog().error("Error reconfiguring/restarting webapp after change in watched files", e);
                         }
                     }
                 });

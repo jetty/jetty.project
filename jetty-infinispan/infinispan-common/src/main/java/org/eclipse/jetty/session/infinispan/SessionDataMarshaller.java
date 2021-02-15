@@ -108,15 +108,15 @@ public class SessionDataMarshaller
     @Override
     public InfinispanSessionData readFrom(ProtoStreamReader in) throws IOException
     {
-        int version = in.readInt("version");// version of serialized session
+        int version = in.readInt("version"); // version of serialized session
         String id = in.readString("id"); // session id
         String cpath = in.readString("contextPath"); // context path
         String vhost = in.readString("vhost"); // first vhost
 
-        long accessed = in.readLong("accessed");// accessTime
+        long accessed = in.readLong("accessed"); // accessTime
         long lastAccessed = in.readLong("lastAccessed"); // lastAccessTime
         long created = in.readLong("created"); // time created
-        long cookieSet = in.readLong("cookieSet");// time cookie was set
+        long cookieSet = in.readLong("cookieSet"); // time cookie was set
         String lastNode = in.readString("lastNode"); // name of last node
         // managing
 
@@ -147,10 +147,10 @@ public class SessionDataMarshaller
         out.writeString("contextPath", sdata.getContextPath()); // context path
         out.writeString("vhost", sdata.getVhost()); // first vhost
 
-        out.writeLong("accessed", sdata.getAccessed());// accessTime
+        out.writeLong("accessed", sdata.getAccessed()); // accessTime
         out.writeLong("lastAccessed", sdata.getLastAccessed()); // lastAccessTime
         out.writeLong("created", sdata.getCreated()); // time created
-        out.writeLong("cookieSet", sdata.getCookieSet());// time cookie was set
+        out.writeLong("cookieSet", sdata.getCookieSet()); // time cookie was set
         out.writeString("lastNode", sdata.getLastNode()); // name of last node
         // managing
 

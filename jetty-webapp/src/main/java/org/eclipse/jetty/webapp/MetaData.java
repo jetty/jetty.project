@@ -58,7 +58,7 @@ public class MetaData
     protected final List<Resource> _webInfJars = new ArrayList<>();
     protected final List<Resource> _orderedContainerResources = new ArrayList<>();
     protected final List<Resource> _orderedWebInfResources = new ArrayList<>();
-    protected Ordering _ordering;//can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
+    protected Ordering _ordering; //can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
     protected boolean _allowDuplicateFragmentNames = false;
     protected boolean _validateXml = false;
 
