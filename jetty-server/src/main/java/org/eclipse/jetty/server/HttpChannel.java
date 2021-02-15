@@ -701,9 +701,20 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
 
         if (isCommitted())
+        {
             abort(failure);
+        }
         else
-            _state.onError(failure);
+        {
+            try
+            {
+                _state.onError(failure);
+            }
+            catch (IllegalStateException e)
+            {
+                abort(failure);
+            }
+        }
     }
 
     /**
