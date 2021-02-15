@@ -135,7 +135,6 @@ public class HttpURI
         _host = host;
         _port = port;
         parse(State.PATH, path, 0, path.length());
-        _path = path;
         _param = param;
         _query = query;
         _fragment = fragment;
@@ -143,8 +142,16 @@ public class HttpURI
 
     public HttpURI(HttpURI uri)
     {
-        this(uri._scheme, uri._host, uri._port, uri._path, uri._param, uri._query, uri._fragment);
+        _scheme = uri._scheme;
+        _user = uri._user;
+        _host = uri._host;
+        _port = uri._port;
+        _path = uri._path;
+        _param = uri._param;
+        _query = uri._query;
+        _fragment = uri._fragment;
         _uri = uri._uri;
+        _decodedPath = uri._decodedPath;
         _ambiguousSegment = uri._ambiguousSegment;
     }
 
@@ -805,8 +812,9 @@ public class HttpURI
     public void setPath(String path)
     {
         _uri = null;
-        _path = path;
-        _decodedPath = null;
+        _path = null;
+        if (path != null)
+            parse(State.PATH, path, 0, path.length());
     }
 
     public void setPathQuery(String path)
