@@ -195,7 +195,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
                 }
                 catch (Exception e)
                 {
-                    getLog().error("Error reconfiguring/restarting webapp after change in watched files",e);
+                    getLog().error("Error reconfiguring/restarting webapp after change in watched files", e);
                 }
             }
         });
@@ -223,7 +223,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
             scanner.addFile(new File(webApp.getOverrideDescriptor()).toPath());
         }
 
-        File jettyWebXmlFile = findJettyWebXmlFile(new File(webAppSourceDirectory,"WEB-INF"));
+        File jettyWebXmlFile = findJettyWebXmlFile(new File(webAppSourceDirectory, "WEB-INF"));
         if (jettyWebXmlFile != null)
         {
             scanner.addFile(jettyWebXmlFile.toPath());

@@ -732,22 +732,22 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 statement.setString(2, cp); //context path
 
                 statement.setString(3, _context.getVhost()); //first vhost
-                statement.setString(4, data.getLastNode());//my node id
-                statement.setLong(5, data.getAccessed());//accessTime
+                statement.setString(4, data.getLastNode()); //my node id
+                statement.setLong(5, data.getAccessed()); //accessTime
                 statement.setLong(6, data.getLastAccessed()); //lastAccessTime
                 statement.setLong(7, data.getCreated()); //time created
-                statement.setLong(8, data.getCookieSet());//time cookie was set
+                statement.setLong(8, data.getCookieSet()); //time cookie was set
                 statement.setLong(9, data.getLastSaved()); //last saved time
                 statement.setLong(10, data.getExpiry());
                 statement.setLong(11, data.getMaxInactiveMs());
 
                 try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    ObjectOutputStream oos = new ObjectOutputStream(baos))
+                     ObjectOutputStream oos = new ObjectOutputStream(baos))
                 {
                     SessionData.serializeAttributes(data, oos);
                     byte[] bytes = baos.toByteArray();
                     ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-                    statement.setBinaryStream(12, bais, bytes.length);//attribute map as blob
+                    statement.setBinaryStream(12, bais, bytes.length); //attribute map as blob
                 }
 
                 statement.executeUpdate();
@@ -765,21 +765,21 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             connection.setAutoCommit(true);
             try (PreparedStatement statement = _sessionTableSchema.getUpdateSessionStatement(connection, data.getId(), _context))
             {
-                statement.setString(1, data.getLastNode());//should be my node id
-                statement.setLong(2, data.getAccessed());//accessTime
+                statement.setString(1, data.getLastNode()); //should be my node id
+                statement.setLong(2, data.getAccessed()); //accessTime
                 statement.setLong(3, data.getLastAccessed()); //lastAccessTime
                 statement.setLong(4, data.getLastSaved()); //last saved time
                 statement.setLong(5, data.getExpiry());
                 statement.setLong(6, data.getMaxInactiveMs());
 
                 try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    ObjectOutputStream oos = new ObjectOutputStream(baos))
+                     ObjectOutputStream oos = new ObjectOutputStream(baos))
                 {
                     SessionData.serializeAttributes(data, oos);
                     byte[] bytes = baos.toByteArray();
                     try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes))
                     {
-                        statement.setBinaryStream(7, bais, bytes.length);//attribute map as blob
+                        statement.setBinaryStream(7, bais, bytes.length); //attribute map as blob
                     }
                 }
 
@@ -819,7 +819,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                         expiredSessionKeys.add(sessionId);
                         if (LOG.isDebugEnabled())
                             LOG.debug("{} - Found expired sessionId={}, in context={}, expiry={}",
-                                _context.getWorkerName(), sessionId, _context.getCanonicalContextPath(),exp);
+                                _context.getWorkerName(), sessionId, _context.getCanonicalContextPath(), exp);
                     }
                 }
             }
@@ -887,7 +887,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                                                                                                            _context.getVhost(), timeLimit))
             {
                 if (LOG.isDebugEnabled()) 
-                    LOG.debug("{}- Searching for sessions for context {} expired before {}",_context.getWorkerName(),_context.getCanonicalContextPath(), timeLimit);
+                    LOG.debug("{}- Searching for sessions for context {} expired before {}", _context.getWorkerName(), _context.getCanonicalContextPath(), timeLimit);
 
                 try (ResultSet result = selectExpiredSessions.executeQuery())
                 {
@@ -898,7 +898,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                         expired.add(sessionId);
                         if (LOG.isDebugEnabled())
                             LOG.debug("{}- Found expired sessionId={} for context={} expiry={}",
-                                _context.getWorkerName(),sessionId,_context.getCanonicalContextPath(), exp);
+                                _context.getWorkerName(), sessionId, _context.getCanonicalContextPath(), exp);
                     }
                 }
             }
@@ -921,7 +921,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             connection.setAutoCommit(true);
             int rows = statement.executeUpdate();
             if (LOG.isDebugEnabled())
-                LOG.debug("Deleted {} orphaned sessions",rows);
+                LOG.debug("Deleted {} orphaned sessions", rows);
         }
         catch (Exception e)
         {

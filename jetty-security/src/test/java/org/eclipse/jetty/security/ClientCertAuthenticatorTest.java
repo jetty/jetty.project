@@ -155,7 +155,7 @@ public class ClientCertAuthenticatorTest
     @Test
     public void authzPass() throws Exception
     {
-        HttpsURLConnection.setDefaultHostnameVerifier((s,sslSession) -> true);
+        HttpsURLConnection.setDefaultHostnameVerifier((s, sslSession) -> true);
         SslContextFactory.Server cf = createServerSslContextFactory("cacerts.jks", "changeit");
         cf.start();
         HttpsURLConnection.setDefaultSSLSocketFactory(cf.getSslContext().getSocketFactory());

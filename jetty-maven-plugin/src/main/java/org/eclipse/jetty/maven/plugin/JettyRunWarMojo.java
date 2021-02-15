@@ -201,7 +201,7 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
                     }
                     catch (Exception e)
                     {
-                        getLog().error("Error reconfiguring/restarting webapp after change in watched files",e);
+                        getLog().error("Error reconfiguring/restarting webapp after change in watched files", e);
                     }
                 }
             });

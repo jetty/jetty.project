@@ -48,12 +48,12 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
 
     private static Field FILE_FIELD = null;
 
-    private static Field BUNDLE_FILE_FIELD_FOR_DIR_ZIP_BUNDLE_ENTRY = null;// ZipBundleFile
+    private static Field BUNDLE_FILE_FIELD_FOR_DIR_ZIP_BUNDLE_ENTRY = null; // ZipBundleFile
 
     // inside
     // DirZipBundleEntry
 
-    private static Field ZIP_FILE_FILED_FOR_ZIP_BUNDLE_FILE = null;// ZipFile
+    private static Field ZIP_FILE_FILED_FOR_ZIP_BUNDLE_FILE = null; // ZipFile
 
     private static final String[] FILE_BUNDLE_ENTRY_CLASSES = {
         "org.eclipse.osgi.baseadaptor.bundlefile.FileBundleEntry", "org.eclipse.osgi.storage.bundlefile.FileBundleEntry"

@@ -113,7 +113,7 @@ public class HttpInputIntegrationTest
         SslConnectionFactory ssl = new SslConnectionFactory(__sslContextFactory, h1.getProtocol() /*TODO alpn.getProtocol()*/);
 
         // HTTP/2 Connector
-        ServerConnector http2 = new ServerConnector(__server, ssl,/*TODO alpn,h2,*/ h1);
+        ServerConnector http2 = new ServerConnector(__server, ssl, /*TODO alpn,h2,*/ h1);
         http2.setIdleTimeout(5000);
         __server.addConnector(http2);
 

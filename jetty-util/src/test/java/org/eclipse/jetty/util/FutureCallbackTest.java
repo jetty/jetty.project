@@ -175,7 +175,7 @@ public class FutureCallbackTest
 
         latch.await();
         long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        CancellationException e = assertThrows(CancellationException.class,() -> fcb.get(10000, TimeUnit.MILLISECONDS));
+        CancellationException e = assertThrows(CancellationException.class, () -> fcb.get(10000, TimeUnit.MILLISECONDS));
         assertThat(e.getCause(), Matchers.instanceOf(CancellationException.class));
 
         assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, Matchers.greaterThan(10L));

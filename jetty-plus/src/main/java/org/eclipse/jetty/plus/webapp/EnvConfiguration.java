@@ -249,7 +249,7 @@ public class EnvConfiguration extends AbstractConfiguration
         {
             ee.bindToENC(ee.getJndiName());
             Name namingEntryName = NamingEntryUtil.makeNamingEntryName(null, ee);
-            NamingUtil.bind(envCtx, namingEntryName.toString(), ee);//also save the EnvEntry in the context so we can check it later
+            NamingUtil.bind(envCtx, namingEntryName.toString(), ee); //also save the EnvEntry in the context so we can check it later
         }
     }
 

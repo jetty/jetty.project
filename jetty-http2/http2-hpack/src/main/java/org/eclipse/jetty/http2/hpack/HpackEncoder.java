@@ -203,7 +203,7 @@ public class HpackEncoder
                     encode(buffer, HttpScheme.HTTPS.is(scheme) ? C_SCHEME_HTTPS : C_SCHEME_HTTP);
                     encode(buffer, new HttpField(HttpHeader.C_PATH, request.getURI().getPathQuery()));
                     if (protocol != null)
-                        encode(buffer,new HttpField(HttpHeader.C_PROTOCOL,protocol));
+                        encode(buffer, new HttpField(HttpHeader.C_PROTOCOL, protocol));
                 }
             }
             else if (metadata.isResponse())

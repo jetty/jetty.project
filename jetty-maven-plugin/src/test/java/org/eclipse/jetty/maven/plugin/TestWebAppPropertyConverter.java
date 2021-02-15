@@ -110,7 +110,7 @@ public class TestWebAppPropertyConverter
         assertEquals("false", props.get(WebAppPropertyConverter.TMP_DIR_PERSIST));
         assertEquals(classesDir.getAbsolutePath(), props.get(WebAppPropertyConverter.CLASSES_DIR));
         assertEquals(testClassesDir.getAbsolutePath(), props.get(WebAppPropertyConverter.TEST_CLASSES_DIR));
-        assertEquals(String.join(",", jar1.getAbsolutePath(),jar2.getAbsolutePath()), props.get(WebAppPropertyConverter.LIB_JARS));
+        assertEquals(String.join(",", jar1.getAbsolutePath(), jar2.getAbsolutePath()), props.get(WebAppPropertyConverter.LIB_JARS));
         assertEquals(war.getAbsolutePath(), props.get(WebAppPropertyConverter.WAR_FILE));
         assertEquals(WebAppContext.WEB_DEFAULTS_XML, props.get(WebAppPropertyConverter.DEFAULTS_DESCRIPTOR));
         assertEquals(String.join(",", override1.getAbsolutePath(), override2.getAbsolutePath()), props.get(WebAppPropertyConverter.OVERRIDE_DESCRIPTORS));
@@ -129,7 +129,7 @@ public class TestWebAppPropertyConverter
         props.setProperty(WebAppPropertyConverter.CLASSES_DIR, classesDir.getAbsolutePath());
         props.setProperty(WebAppPropertyConverter.CONTEXT_PATH, "/foo");
         props.setProperty(WebAppPropertyConverter.CONTEXT_XML, contextXml);
-        props.setProperty(WebAppPropertyConverter.LIB_JARS, String.join(",", jar1.getAbsolutePath(),jar2.getAbsolutePath()));
+        props.setProperty(WebAppPropertyConverter.LIB_JARS, String.join(",", jar1.getAbsolutePath(), jar2.getAbsolutePath()));
         props.setProperty(WebAppPropertyConverter.OVERRIDE_DESCRIPTORS, String.join(",", override1.getAbsolutePath(), override2.getAbsolutePath()));
         //props.setProperty(WebAppPropertyConverter.QUICKSTART_WEB_XML, value);
         props.setProperty(WebAppPropertyConverter.TEST_CLASSES_DIR, testClassesDir.getAbsolutePath());

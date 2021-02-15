@@ -404,7 +404,7 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     case ASYNC_DISPATCH:
                     {
-                        dispatch(DispatcherType.ASYNC,() -> getServer().handleAsync(this));
+                        dispatch(DispatcherType.ASYNC, () -> getServer().handleAsync(this));
                         break;
                     }
 
@@ -443,7 +443,7 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 break;
                             }
 
-                            dispatch(DispatcherType.ERROR,() ->
+                            dispatch(DispatcherType.ERROR, () ->
                             {
                                 errorHandler.handle(null, _request, _request, _response);
                                 _request.setHandled(true);

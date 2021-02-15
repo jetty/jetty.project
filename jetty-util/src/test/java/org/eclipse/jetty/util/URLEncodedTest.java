@@ -68,7 +68,7 @@ public class URLEncodedTest
             urlEncoded.clear();
             UrlEncoded.decodeTo("Name1=Value1", urlEncoded, UrlEncoded.ENCODING);
             assertEquals(1, urlEncoded.size(), "simple param size");
-            assertEquals("Name1=Value1", UrlEncoded.encode(urlEncoded,UrlEncoded.ENCODING, false), "simple encode");
+            assertEquals("Name1=Value1", UrlEncoded.encode(urlEncoded, UrlEncoded.ENCODING, false), "simple encode");
             assertEquals("Value1", urlEncoded.getString("Name1"), "simple get");
         }));
 
@@ -78,7 +78,7 @@ public class URLEncodedTest
             urlEncoded.clear();
             UrlEncoded.decodeTo("Name2=", urlEncoded, UrlEncoded.ENCODING);
             assertEquals(1, urlEncoded.size(), "dangling param size");
-            assertEquals("Name2", UrlEncoded.encode(urlEncoded,UrlEncoded.ENCODING, false), "dangling encode");
+            assertEquals("Name2", UrlEncoded.encode(urlEncoded, UrlEncoded.ENCODING, false), "dangling encode");
             assertEquals("", urlEncoded.getString("Name2"), "dangling get");
         }));
 
@@ -88,7 +88,7 @@ public class URLEncodedTest
             urlEncoded.clear();
             UrlEncoded.decodeTo("Name3", urlEncoded, UrlEncoded.ENCODING);
             assertEquals(1, urlEncoded.size(), "noValue param size");
-            assertEquals("Name3", UrlEncoded.encode(urlEncoded,UrlEncoded.ENCODING, false), "noValue encode");
+            assertEquals("Name3", UrlEncoded.encode(urlEncoded, UrlEncoded.ENCODING, false), "noValue encode");
             assertEquals("", urlEncoded.getString("Name3"), "noValue get");
         }));
 
@@ -98,7 +98,7 @@ public class URLEncodedTest
             urlEncoded.clear();
             UrlEncoded.decodeTo("Name4=V\u0629lue+4%21", urlEncoded, UrlEncoded.ENCODING);
             assertEquals(1, urlEncoded.size(), "encoded param size");
-            assertEquals("Name4=V%D8%A9lue+4%21", UrlEncoded.encode(urlEncoded,UrlEncoded.ENCODING, false), "encoded encode");
+            assertEquals("Name4=V%D8%A9lue+4%21", UrlEncoded.encode(urlEncoded, UrlEncoded.ENCODING, false), "encoded encode");
             assertEquals("V\u0629lue 4!", urlEncoded.getString("Name4"), "encoded get");
         }));
 
@@ -108,7 +108,7 @@ public class URLEncodedTest
             urlEncoded.clear();
             UrlEncoded.decodeTo("Name4=Value%2B4%21", urlEncoded, UrlEncoded.ENCODING);
             assertEquals(1, urlEncoded.size(), "encoded param size");
-            assertEquals("Name4=Value%2B4%21", UrlEncoded.encode(urlEncoded,UrlEncoded.ENCODING, false), "encoded encode");
+            assertEquals("Name4=Value%2B4%21", UrlEncoded.encode(urlEncoded, UrlEncoded.ENCODING, false), "encoded encode");
             assertEquals("Value+4!", urlEncoded.getString("Name4"), "encoded get");
         }));
 
@@ -118,7 +118,7 @@ public class URLEncodedTest
             urlEncoded.clear();
             UrlEncoded.decodeTo("Name4=Value+4%21%20%214", urlEncoded, UrlEncoded.ENCODING);
             assertEquals(1, urlEncoded.size(), "encoded param size");
-            assertEquals("Name4=Value+4%21+%214", UrlEncoded.encode(urlEncoded,UrlEncoded.ENCODING, false), "encoded encode");
+            assertEquals("Name4=Value+4%21+%214", UrlEncoded.encode(urlEncoded, UrlEncoded.ENCODING, false), "encoded encode");
             assertEquals("Value 4! !4", urlEncoded.getString("Name4"), "encoded get");
         }));
 
@@ -128,9 +128,9 @@ public class URLEncodedTest
             urlEncoded.clear();
             UrlEncoded.decodeTo("Name5=aaa&Name6=bbb", urlEncoded, UrlEncoded.ENCODING);
             assertEquals(2, urlEncoded.size(), "multi param size");
-            assertTrue(UrlEncoded.encode(urlEncoded,UrlEncoded.ENCODING, false).equals("Name5=aaa&Name6=bbb") ||
-                    UrlEncoded.encode(urlEncoded,UrlEncoded.ENCODING, false).equals("Name6=bbb&Name5=aaa"),
-                "multi encode " + UrlEncoded.encode(urlEncoded,UrlEncoded.ENCODING, false));
+            assertTrue(UrlEncoded.encode(urlEncoded, UrlEncoded.ENCODING, false).equals("Name5=aaa&Name6=bbb") ||
+                    UrlEncoded.encode(urlEncoded, UrlEncoded.ENCODING, false).equals("Name6=bbb&Name5=aaa"),
+                "multi encode " + UrlEncoded.encode(urlEncoded, UrlEncoded.ENCODING, false));
             assertEquals("aaa", urlEncoded.getString("Name5"), "multi get");
             assertEquals("bbb", urlEncoded.getString("Name6"), "multi get");
         }));
@@ -140,7 +140,7 @@ public class URLEncodedTest
             MultiMap<String> urlEncoded = new MultiMap<>();
             urlEncoded.clear();
             UrlEncoded.decodeTo("Name7=aaa&Name7=b%2Cb&Name7=ccc", urlEncoded, UrlEncoded.ENCODING);
-            assertEquals("Name7=aaa&Name7=b%2Cb&Name7=ccc", UrlEncoded.encode(urlEncoded,UrlEncoded.ENCODING, false), "multi encode");
+            assertEquals("Name7=aaa&Name7=b%2Cb&Name7=ccc", UrlEncoded.encode(urlEncoded, UrlEncoded.ENCODING, false), "multi encode");
             assertEquals("aaa,b,b,ccc", urlEncoded.getString("Name7"), "list get all");
             assertEquals("aaa", urlEncoded.getValues("Name7").get(0), "list get");
             assertEquals("b,b", urlEncoded.getValues("Name7").get(1), "list get");
@@ -153,7 +153,7 @@ public class URLEncodedTest
             urlEncoded.clear();
             UrlEncoded.decodeTo("Name8=xx%2C++yy++%2Czz", urlEncoded, UrlEncoded.ENCODING);
             assertEquals(1, urlEncoded.size(), "encoded param size");
-            assertEquals("Name8=xx%2C++yy++%2Czz", UrlEncoded.encode(urlEncoded,UrlEncoded.ENCODING, false), "encoded encode");
+            assertEquals("Name8=xx%2C++yy++%2Czz", UrlEncoded.encode(urlEncoded, UrlEncoded.ENCODING, false), "encoded encode");
             assertEquals("xx,  yy  ,zz", urlEncoded.getString("Name8"), "encoded get");
         }));
 

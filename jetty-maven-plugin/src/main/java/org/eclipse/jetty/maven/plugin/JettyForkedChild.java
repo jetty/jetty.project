@@ -67,7 +67,7 @@ public class JettyForkedChild extends AbstractLifeCycle
     public void configure(String[] args)
         throws Exception
     {
-        Map<String,String> jettyProperties = new HashMap<>();
+        Map<String, String> jettyProperties = new HashMap<>();
         
         for (int i = 0; i < args.length; i++)
         {

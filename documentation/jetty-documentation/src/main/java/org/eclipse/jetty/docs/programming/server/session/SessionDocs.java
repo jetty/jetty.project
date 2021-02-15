@@ -250,7 +250,7 @@ public class SessionDocs
         //Make a factory for memcached L2 caches for SessionData
         MemcachedSessionDataMapFactory mapFactory = new MemcachedSessionDataMapFactory();
         mapFactory.setExpirySec(0); //items in memcached don't expire
-        mapFactory.setHeartbeats(true);//tell memcached to use heartbeats
+        mapFactory.setHeartbeats(true); //tell memcached to use heartbeats
         mapFactory.setAddresses(new InetSocketAddress("localhost", 11211)); //use a local memcached instance
         mapFactory.setWeights(new int[] {100}); //set the weighting
         

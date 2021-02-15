@@ -397,7 +397,7 @@ public class JettyHomeForker extends AbstractForker
             JarResource res = (JarResource)JarResource.newJarResource(Resource.newResource(jettyHomeZip));
             res.copyTo(baseDir);
             //zip will unpack to target/jetty-home-<VERSION>
-            jettyHome = new File(baseDir,"jetty-home-" + version);
+            jettyHome = new File(baseDir, "jetty-home-" + version);
         }
     }
 }

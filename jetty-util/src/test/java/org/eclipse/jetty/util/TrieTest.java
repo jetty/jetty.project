@@ -93,7 +93,7 @@ public class TrieTest
 
         for (boolean caseSensitive : new boolean[] {true, false})
         {
-            impls.add(new ArrayTrie<Integer>(caseSensitive,128));
+            impls.add(new ArrayTrie<Integer>(caseSensitive, 128));
             impls.add(new ArrayTernaryTrie<Integer>(caseSensitive, 128));
             impls.add(new TreeTrie<>(caseSensitive));
         }

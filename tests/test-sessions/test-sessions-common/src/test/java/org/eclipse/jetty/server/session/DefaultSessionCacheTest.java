@@ -271,7 +271,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(context.getSessionHandler());
 
-        TestSessionDataStore store = new TestSessionDataStore(true);//fake passivation
+        TestSessionDataStore store = new TestSessionDataStore(true); //fake passivation
         cache.setSessionDataStore(store);
         context.getSessionHandler().setSessionCache(cache);
 
@@ -487,11 +487,11 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         //test  EVICT_ON_SESSION_EXIT with requests still active.
         //this should not affect the session because it this is an idle test only
         SessionData data2 = store.newSessionData("567", now, now - TimeUnit.SECONDS.toMillis(30), now - TimeUnit.SECONDS.toMillis(40), TimeUnit.MINUTES.toMillis(10));
-        data2.setExpiry(now + TimeUnit.DAYS.toMillis(1));//not expired
+        data2.setExpiry(now + TimeUnit.DAYS.toMillis(1)); //not expired
         Session session2 = cache.newSession(data2);
-        cache.add("567", session2);//ensure session is in cache
+        cache.add("567", session2); //ensure session is in cache
         cache.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
-        session2.access(System.currentTimeMillis());//simulate 1 request in session
+        session2.access(System.currentTimeMillis()); //simulate 1 request in session
         assertTrue(cache.contains("567"));
         cache.checkInactiveSession(session2);
         assertTrue(cache.contains("567")); //not evicted

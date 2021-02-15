@@ -108,7 +108,7 @@ public class PartialRFC2616Test
             checkContains(get, 0, "Content-Type: text/html", "GET _content");
             checkContains(get, 0, "<html>", "GET body");
             int cli = get.indexOf("Content-Length");
-            String contentLength = get.substring(cli,get.indexOf("\r",cli));
+            String contentLength = get.substring(cli, get.indexOf("\r", cli));
 
             String head = connector.getResponse("HEAD /R1 HTTP/1.0\n" + "Host: localhost\n" + "\n");
             checkContains(head, 0, "HTTP/1.1 200", "HEAD");
