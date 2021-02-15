@@ -33,7 +33,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -219,103 +218,46 @@ public class HttpURITest
         assertEquals("http:/path/info", uri.toString());
     }
 
-    @Test
-    public void testBasicAuthCredentials() throws Exception
-    {
-        HttpURI uri = new HttpURI("http://user:password@example.com:8888/blah");
-        assertEquals("http://user:password@example.com:8888/blah", uri.toString());
-        assertEquals(uri.getAuthority(), "example.com:8888");
-        assertEquals(uri.getUser(), "user:password");
-    }
-
-    public static Stream<String> pathsWithAmbiguousSegments()
-    {
-        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
-        return Stream.of(
-            "/foo/%2e%2e/bar",
-            "/foo/%2e%2e;/bar",
-            "/foo/%2e%2e;param/bar",
-            "/foo/..;/bar",
-            "/foo/..;param/bar",
-            "foo/%2e%2e/bar",
-            "%2e%2e/bar",
-            "//host/%2e%2e/bar",
-            "scheme://host/%2e%2e/bar",
-            "scheme:/%2e%2e/bar",
-            "/foo/%2E.",
-            "/foo/.%2E",
-            "/foo/%2e%2e",
-            "/foo/%2e%2e?query",
-            "/foo/%2e%2e#fragment",
-            "foo/%2e.",
-            ".%2e",
-            "//host/%2e%2e",
-            "scheme://host/.%2e",
-            "scheme:/%2e%2e",
-            "%2e",
-            "%2e.",
-            ".%2e",
-            "%2e%2e"
-            );
-    }
-
-    @ParameterizedTest(name = "[{index}] {0}")
-    @MethodSource("pathsWithAmbiguousSegments")
-    public void testAmbiguousSegments(String uriWithBadSegment)
-    {
-        assertTrue(new HttpURI(uriWithBadSegment).hasAmbiguousSegment());
-    }
-
-    public static Stream<String> pathsWithNonAmbiguousSegments()
-    {
-        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
-        return Stream.of(
-            "/foo/../bar",
-            "/foo/..",
-            "/foo/..#frag",
-            "/foo/..?query",
-            "./foo",
-            "/./foo",
-            "http:./foo",
-            "//host/./foo"
-            );
-    }
-
-    @ParameterizedTest(name = "[{index}] {0}")
-    @MethodSource("pathsWithNonAmbiguousSegments")
-    public void testNonAmbiguousSegments(String uriWithBadSegment)
-    {
-        assertFalse(new HttpURI(uriWithBadSegment).hasAmbiguousSegment());
-    }
-
-    public static Stream<Arguments> uriData()
+    public static Stream<Arguments> decodePathTests()
     {
         return Arrays.stream(new Object[][]
             {
+                // Simple path example
                 {"http://host/path/info", "/path/info", false},
+                {"//host/path/info", "/path/info", false},
+                {"/path/info", "/path/info", false},
+
+                // legal non ambiguous relative paths
                 {"http://host/../path/info", null, false},
                 {"http://host/path/../info", "/info", false},
                 {"http://host/path/./info", "/path/info", false},
-                {"//host/path/info", "/path/info", false},
-                {"//host/../path/info", null, false},
                 {"//host/path/../info", "/info", false},
                 {"//host/path/./info", "/path/info", false},
-                {"/path/info", "/path/info", false},
-                {"/../path/info", null, false},
                 {"/path/../info", "/info", false},
                 {"/path/./info", "/path/info", false},
-                {"../path/info", null, false},
                 {"path/../info", "info", false},
                 {"path/./info", "path/info", false},
 
+                // illegal paths
+                {"//host/../path/info", null, false},
+                {"/../path/info", null, false},
+                {"../path/info", null, false},
+                {"/path/%XX/info", null, false},
+                {"/path/%2/F/info", null, false},
+
+                // ambiguous dot encodings or parameter inclusions
+                {"scheme://host/path/%2e/info", "/path/./info", true},
+                {"scheme:/path/%2e/info", "/path/./info", true},
                 {"/path/%2e/info", "/path/./info", true},
+                {"path/%2e/info/", "path/./info/", true},
                 {"/path/%2e%2e/info", "/path/../info", true},
                 {"/path/%2e%2e;/info", "/path/../info", true},
+                {"/path/%2e%2e;param/info", "/path/../info", true},
+                {"/path/%2e%2e;param;other/info;other", "/path/../info", true},
                 {"/path/.;/info", "/path/./info", true},
                 {"/path/.;param/info", "/path/./info", true},
                 {"/path/..;/info", "/path/../info", true},
                 {"/path/..;param/info", "/path/../info", true},
-
                 {"%2e/info", "./info", true},
                 {"%2e%2e/info", "../info", true},
                 {"%2e%2e;/info", "../info", true},
@@ -323,17 +265,21 @@ public class HttpURITest
                 {".;param/info", "./info", true},
                 {"..;/info", "../info", true},
                 {"..;param/info", "../info", true},
+                {"%2e", ".", true},
+                {"%2e.", "..", true},
+                {".%2e", "..", true},
+                {"%2e%2e", "..", true},
 
+                // ambiguous segment separators
                 {"/path/%2f/info", "/path///info", true},
                 {"%2f/info", "//info", true},
                 {"%2F/info", "//info", true},
 
-                {"/path/%XX/info", null, false},
             }).map(Arguments::of);
     }
 
     @ParameterizedTest
-    @MethodSource("uriData")
+    @MethodSource("decodePathTests")
     public void testDecodedPath(String input, String decodedPath, boolean ambiguous)
     {
         try
