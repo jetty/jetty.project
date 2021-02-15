@@ -1507,9 +1507,10 @@ public class StartArgs
                 properties.setProperty("java.version.platform", Integer.toString(ver.getPlatform()), source);
 
                 // features built into java.
-                properties.setProperty("java.feature.alpn", Boolean.toString(ver.getPlatform() >= 9), source);
-                properties.setProperty("java.feature.jpms", Boolean.toString(ver.getPlatform() >= 9), source);
-                properties.setProperty("java.feature.loom", Boolean.toString(ver.getPlatform() >= 16), source);
+                // TODO: Remove in Jetty 10+
+                properties.setProperty("runtime.feature.alpn", Boolean.toString(isMethodAvailable(javax.net.ssl.SSLParameters.class, "getApplicationProtocols", null)), source);
+                // TODO: Remove in Jetty 10+
+                properties.setProperty("runtime.feature.jpms", Boolean.toString(isClassAvailable("java.lang.ModuleLayer")), source);
 
                 // @deprecated - below will be removed in Jetty 10.x
                 properties.setProperty("java.version.major", Integer.toString(ver.getMajor()), "Deprecated");
@@ -1528,6 +1529,32 @@ public class StartArgs
         if (key.equals("maven.repo.uri"))
         {
             this.mavenBaseUri = value;
+        }
+    }
+
+    private boolean isMethodAvailable(Class<?> clazz, String methodName, Class<?>[] params)
+    {
+        try
+        {
+            clazz.getMethod(methodName, params);
+            return true;
+        }
+        catch (NoSuchMethodException e)
+        {
+            return false;
+        }
+    }
+
+    private boolean isClassAvailable(String clazzname)
+    {
+        try
+        {
+            Class.forName(clazzname, false, this.getClass().getClassLoader());
+            return true;
+        }
+        catch (ClassNotFoundException e)
+        {
+            return false;
         }
     }
 
