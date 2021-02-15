@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>9.4.33-SNAPSHOT</version>
+  <version>9.4.37-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
@@ -16,8 +16,8 @@
     <compiler.target>1.8</compiler.target>
     <jetty.url>https://eclipse.org/jetty</jetty.url>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <build-support.version>1.4</build-support.version>
-    <checkstyle.version>8.36.2</checkstyle.version>
+    <build-support.version>1.5</build-support.version>
+    <checkstyle.version>8.37</checkstyle.version>
     <slf4j.version>1.7.30</slf4j.version>
     <log4j2.version>2.11.2</log4j2.version>
     <disruptor.version>3.4.2</disruptor.version>
@@ -26,20 +26,22 @@
     <alpn.api.version>1.1.3.v20160715</alpn.api.version>
     <jsp.version>8.5.54</jsp.version>
     <infinispan.version>9.4.8.Final</infinispan.version>
+    <infinispan.protostream.version>4.3.4.Final</infinispan.protostream.version>
+    <gson.version>2.8.6</gson.version>
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <conscrypt.version>2.5.1</conscrypt.version>
     <asm.version>9.0</asm.version>
     <jmh.version>1.26</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
-    <tycho-version>1.4.0</tycho-version>
+    <tycho-version>2.1.0</tycho-version>
     <junit.version>5.7.0</junit.version>
     <maven.version>3.6.3</maven.version>
-    <maven.resolver.version>1.3.1</maven.resolver.version>
+    <maven.resolver.version>1.6.1</maven.resolver.version>
     <javax.servlet.api.version>3.1.0</javax.servlet.api.version>
     <weld.version>3.1.5.Final</weld.version>
     <jboss.logging.version>3.4.1.Final</jboss.logging.version>
     <jetty.perf-helper.version>1.0.6</jetty.perf-helper.version>
-    <ant.version>1.10.8</ant.version>
+    <ant.version>1.10.9</ant.version>
     <unix.socket.tmp></unix.socket.tmp>
     <!-- enable or not TestTracker junit5 extension i.e log message when test method is starting -->
     <jetty.testtracker.log>false</jetty.testtracker.log>
@@ -52,7 +54,7 @@
     <maven.resources.plugin.version>3.2.0</maven.resources.plugin.version>
     <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
     <maven.war.plugin.version>3.3.1</maven.war.plugin.version>
-    <maven.plugin-tools.version>3.5.2</maven.plugin-tools.version>
+    <maven.plugin-tools.version>3.6.0</maven.plugin-tools.version>
     <maven.install.plugin.version>3.0.0-M1</maven.install.plugin.version>
     <maven.deploy.plugin.version>3.0.0-M1</maven.deploy.plugin.version>
 
@@ -65,7 +67,8 @@
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <settingsPath>src/it/settings.xml</settingsPath>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
-    <testcontainers.version>1.15.0-rc2</testcontainers.version>
+    <testcontainers.version>1.15.1</testcontainers.version>
+    <maria.version>2.7.0</maria.version>
   </properties>
 
   <licenses>
@@ -250,37 +253,6 @@
         </executions>
       </plugin>
       <plugin>
-        <artifactId>maven-pmd-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>named-logging-enforcement</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-            <configuration>
-              <verbose>true</verbose>
-            </configuration>
-          </execution>
-        </executions>
-        <configuration>
-          <linkXRef>false</linkXRef>
-          <targetJdk>1.8</targetJdk>
-          <rulesets>
-            <ruleset>jetty/pmd_logging_ruleset.xml</ruleset>
-          </rulesets>
-          <analysisCache>true</analysisCache>
-          <showPmdLog>false</showPmdLog>
-        </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>org.eclipse.jetty.toolchain</groupId>
-            <artifactId>jetty-build-support</artifactId>
-            <version>${build-support.version}</version>
-          </dependency>
-        </dependencies>
-      </plugin>
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-release-plugin</artifactId>
         <configuration>
@@ -334,7 +306,7 @@
           <aggregate>true</aggregate>
           <strictCheck>true</strictCheck>
           <properties>
-            <copyright-range>${project.inceptionYear}-2020</copyright-range>
+            <copyright-range>${project.inceptionYear}-2021</copyright-range>
           </properties>
         </configuration>
         <executions>
@@ -463,7 +435,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-antrun-plugin</artifactId>
-          <version>1.8</version>
+          <version>3.0.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -517,7 +489,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>3.0.0-M2</version>
+          <version>3.0.0-M3</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -559,7 +531,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.1.2</version>
+          <version>3.2.0</version>
           <configuration>
             <archive>
               <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
@@ -575,7 +547,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.2.0</version>
           <configuration>
             <source>8</source>
             <charset>UTF-8</charset>
@@ -592,7 +564,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jxr-plugin</artifactId>
-          <version>2.5</version>
+          <version>3.0.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -601,13 +573,8 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-pmd-plugin</artifactId>
-          <version>3.13.0</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-project-info-reports-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>3.1.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -623,6 +590,9 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-resources-plugin</artifactId>
           <version>${maven.resources.plugin.version}</version>
+          <configuration>
+            <propertiesEncoding>${project.build.sourceEncoding}</propertiesEncoding>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -632,7 +602,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-site-plugin</artifactId>
-          <version>3.7.1</version>
+          <version>3.9.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -668,6 +638,10 @@
               <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
               <jetty.testtracker.log>${jetty.testtracker.log}</jetty.testtracker.log>
             </systemPropertyVariables>
+            <!-- The LC_ALL env variable must have some UTF variant otherwise creating and/or reading files with non-ascii names doesn't work -->
+            <environmentVariables>
+              <LC_ALL>en_US.UTF-8</LC_ALL>
+            </environmentVariables>
           </configuration>
         </plugin>
         <plugin>
@@ -678,7 +652,7 @@
         <plugin>
           <groupId>org.eclipse.jetty.toolchain</groupId>
           <artifactId>jetty-version-maven-plugin</artifactId>
-          <version>2.6</version>
+          <version>2.7</version>
         </plugin>
         <plugin>
           <groupId>org.jacoco</groupId>
@@ -712,7 +686,7 @@
               <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
               <Bundle-Classpath>.</Bundle-Classpath>
-              <Bundle-Copyright>Copyright (c) 2008-2020 Mort Bay Consulting Pty Ltd and others.</Bundle-Copyright>
+              <Bundle-Copyright>Copyright (c) 2008-2021 Mort Bay Consulting Pty Ltd and others.</Bundle-Copyright>
               <_provider-policy><![CDATA[$<range;[===,=+)>]]></_provider-policy>
               <_consumer-policy><![CDATA[$<range;[===,+)>]]></_consumer-policy>
             </instructions>
@@ -726,12 +700,51 @@
         <plugin>
           <groupId>org.asciidoctor</groupId>
           <artifactId>asciidoctor-maven-plugin</artifactId>
-          <version>1.5.6</version>
+          <version>2.1.0</version>
+          <dependencies>
+            <dependency>
+              <groupId>org.asciidoctor</groupId>
+              <artifactId>asciidoctorj-diagram</artifactId>
+              <version>2.0.5</version>
+            </dependency>
+          </dependencies>
+          <configuration>
+            <backend>html5</backend>
+            <requires>
+              <require>asciidoctor-diagram</require>
+            </requires>
+            <attributes>
+              <JDURL>http://www.eclipse.org/jetty/javadoc/${project.version}</JDURL>
+              <JXURL>http://download.eclipse.org/jetty/stable-9/xref</JXURL>
+              <SRCDIR>${basedir}/..</SRCDIR>
+              <GITBROWSEURL>https://github.com/eclipse/jetty.project/tree/jetty-9.4.x</GITBROWSEURL>
+              <GITDOCURL>https://github.com/eclipse/jetty.project/tree/jetty-10.0.x-doc-refactor/jetty-documentation/src/main/asciidoc</GITDOCURL>
+              <MVNCENTRAL>http://central.maven.org/maven2</MVNCENTRAL>
+              <VERSION>${project.version}</VERSION>
+              <TIMESTAMP>${maven.build.timestamp}</TIMESTAMP>
+              <toc>left</toc>
+              <icons>font</icons>
+            </attributes>
+          </configuration>
+          <executions>
+            <execution>
+              <id>index</id>
+              <phase>generate-resources</phase>
+              <goals>
+                <goal>process-asciidoc</goal>
+              </goals>
+              <configuration>
+                <sourceDirectory>src/main/asciidoc</sourceDirectory>
+                <sourceDocumentName>index.adoc</sourceDocumentName>
+                <outputDirectory>${project.build.directory}/html</outputDirectory>
+              </configuration>
+            </execution>
+          </executions>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>appassembler-maven-plugin</artifactId>
-          <version>2.0.0</version>
+          <version>2.1.0</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
@@ -745,24 +758,8 @@
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
-          <artifactId>clirr-maven-plugin</artifactId>
-          <version>2.8</version>
-        </plugin>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
-          <version>1.6.0</version>
-        </plugin>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>findbugs-maven-plugin</artifactId>
-          <version>3.0.5</version>
-          <configuration>
-            <findbugsXmlOutput>true</findbugsXmlOutput>
-            <xmlOutput>true</xmlOutput>
-            <effort>Max</effort>
-            <onlyAnalyze>org.eclipse.jetty.*</onlyAnalyze>
-          </configuration>
+          <version>3.0.0</version>
         </plugin>
         <plugin>
           <groupId>org.eclipse.m2e</groupId>
@@ -893,19 +890,6 @@
                 <pluginExecution>
                   <pluginExecutionFilter>
                     <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-pmd-plugin</artifactId>
-                    <versionRange>[2.5,)</versionRange>
-                    <goals>
-                      <goal>check</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore />
-                  </action>
-                </pluginExecution>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-remote-resources-plugin</artifactId>
                     <versionRange>[1.0,)</versionRange>
                     <goals>
@@ -936,7 +920,7 @@
         <plugin>
           <groupId>org.mortbay.jetty</groupId>
           <artifactId>h2spec-maven-plugin</artifactId>
-          <version>1.0.0</version>
+          <version>1.0.3</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -1084,6 +1068,7 @@
         <artifactId>junit-jupiter</artifactId>
         <version>${junit.version}</version>
       </dependency>
+      <!-- Test Container Deps -->
       <dependency>
         <groupId>org.testcontainers</groupId>
         <artifactId>testcontainers</artifactId>
@@ -1097,7 +1082,7 @@
       <dependency>
         <groupId>net.java.dev.jna</groupId>
         <artifactId>jna</artifactId>
-        <version>5.5.0</version>
+        <version>5.6.0</version>
       </dependency>
       <!-- Old Deps -->
       <dependency>
@@ -1140,21 +1125,11 @@
         <artifactId>jnr-unixsocket</artifactId>
         <version>0.38.3</version>
       </dependency>
-      <dependency>
-        <groupId>org.apache.derby</groupId>
-        <artifactId>derby</artifactId>
-        <version>10.14.2.0</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.derby</groupId>
-        <artifactId>derbytools</artifactId>
-        <version>10.14.2.0</version>
-      </dependency>
       <!-- avoid depending on a range dependency from a transitive dependency -->
       <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-core</artifactId>
-        <version>1.0.1</version>
+        <version>1.33.1</version>
       </dependency>
       <dependency>
         <groupId>org.apache.ant</groupId>
@@ -1180,27 +1155,18 @@
               <artifactId>maven-compiler-plugin</artifactId>
               <configuration>
                 <showWarnings>true</showWarnings>
-                <compilerId>javac-with-errorprone</compilerId>
-                <forceJavacCompilerUse>true</forceJavacCompilerUse>
-                <compilerArgs>
-                  <arg>-XepAllErrorsAsWarnings</arg>
-                  <arg>-Xep:OperatorPrecedence:OFF</arg>
+                <compilerArgs combine.children="append">
+                  <arg>-XDcompilePolicy=simple</arg>
+                  <arg>-Xplugin:ErrorProne -XepAllErrorsAsWarnings</arg>
                 </compilerArgs>
+                <annotationProcessorPaths>
+                  <path>
+                    <groupId>com.google.errorprone</groupId>
+                    <artifactId>error_prone_core</artifactId>
+                    <version>2.4.0</version>
+                  </path>
+                </annotationProcessorPaths>
               </configuration>
-              <dependencies>
-                <dependency>
-                  <groupId>org.codehaus.plexus</groupId>
-                  <artifactId>plexus-compiler-javac-errorprone</artifactId>
-                  <version>2.8.2</version>
-                </dependency>
-                <!-- override plexus-compiler-javac-errorprone's dependency on
-                     Error Prone with the latest version -->
-                <dependency>
-                  <groupId>com.google.errorprone</groupId>
-                  <artifactId>error_prone_core</artifactId>
-                  <version>2.2.0</version>
-                </dependency>
-              </dependencies>
             </plugin>
           </plugins>
         </pluginManagement>
@@ -1213,7 +1179,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-project-info-reports-plugin</artifactId>
-            <version>3.0.0</version>
+            <version>3.1.1</version>
           </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
@@ -1233,7 +1199,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-site-plugin</artifactId>
-            <version>3.7.1</version>
+            <version>3.9.1</version>
             <executions>
               <execution>
                 <id>build-site</id>
@@ -1245,34 +1211,6 @@
             </executions>
           </plugin>
         </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>jdk8</id>
-      <activation>
-        <jdk>[1.8,1.9)</jdk>
-      </activation>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>org.codehaus.mojo</groupId>
-              <artifactId>clirr-maven-plugin</artifactId>
-              <version>2.8</version>
-              <configuration>
-                <htmlOutputFile>clirr-report.html</htmlOutputFile>
-                <xmlOutputFile>${project.build.directory}/clirr-report.xml</xmlOutputFile>
-                <failOnError>true</failOnError>
-                <failOnWarning>true</failOnWarning>
-                <failOnInfo>false</failOnInfo>
-                <logResults>true</logResults>
-                <minSeverity>info</minSeverity>
-                <comparisonVersion>9.4.6.v20170531</comparisonVersion>
-                <ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>
-              </configuration>
-            </plugin>
-          </plugins>
-        </pluginManagement>
       </build>
     </profile>
     <profile>
@@ -1393,6 +1331,13 @@
       <properties>
         <settingsPath>${env.GLOBAL_MVN_SETTINGS}</settingsPath>
         <surefire.rerunFailingTestsCount>3</surefire.rerunFailingTestsCount>
+        <spotbugs.failOnError>false</spotbugs.failOnError>
+        <!-- Defines a SpotBugs threshold. Use "Low" to discover low-priority bugs -->
+        <spotbugs.threshold>Medium</spotbugs.threshold>
+        <!-- Defines a SpotBugs effort. Use "Max" to maximize the scan depth -->
+        <spotbugs.effort>Default</spotbugs.effort>
+        <spotbugs.skip>false</spotbugs.skip>
+        <spotbugs.onlyAnalyze>org.eclipse.jetty.*</spotbugs.onlyAnalyze>
       </properties>
       <modules>
         <module>aggregates/jetty-all</module>
@@ -1401,15 +1346,43 @@
         <pluginManagement>
           <plugins>
             <plugin>
+              <groupId>com.github.spotbugs</groupId>
+              <artifactId>spotbugs-maven-plugin</artifactId>
+              <version>4.1.4</version>
+            </plugin>
+            <plugin>
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-surefire-plugin</artifactId>
               <version>${maven.surefire.version}</version>
               <configuration>
-                <excludedGroups>external</excludedGroups>
+                <excludedGroups>external, large-disk-resource</excludedGroups>
               </configuration>
             </plugin>
           </plugins>
         </pluginManagement>
+        <plugins>
+          <plugin>
+            <groupId>com.github.spotbugs</groupId>
+            <artifactId>spotbugs-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>spotbugs</id>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+                <phase>verify</phase>
+                <configuration>
+                  <skip>${spotbugs.skip}</skip>
+                  <failOnError>${spotbugs.failOnError}</failOnError>
+                  <xmlOutput>true</xmlOutput>
+                  <spotbugsXmlOutput>false</spotbugsXmlOutput>
+                  <effort>${spotbugs.effort}</effort>
+                  <threshold>${spotbugs.threshold}</threshold>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
       </build>
     </profile>
     <profile>
@@ -1578,6 +1551,15 @@
         </repository>
       </repositories>
     </profile>
+    <profile>
+      <id>fast</id>
+      <properties>
+        <skipTests>true</skipTests>
+        <checkstyle.skip>true</checkstyle.skip>
+        <enforcer.skip>true</enforcer.skip>
+        <license.skip>true</license.skip>
+      </properties>
+    </profile>
   </profiles>
 
   <issueManagement>
@@ -1667,6 +1649,14 @@
       <organization>Webtide, LLC</organization>
       <organizationUrl>https://webtide.com</organizationUrl>
       <timezone>Australia/Brisbane</timezone>
+    </developer>
+    <developer>
+      <id>lorban</id>
+      <name>Ludovic Orban</name>
+      <email>lorban@bitronix.be</email>
+      <organization>Webtide, LLC</organization>
+      <organizationUrl>https://webtide.com</organizationUrl>
+      <timezone>1</timezone>
     </developer>
   </developers>
 

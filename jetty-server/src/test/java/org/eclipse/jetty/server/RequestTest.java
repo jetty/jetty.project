@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
@@ -635,7 +636,7 @@ public class RequestTest
         System.out.println(request);
 
         String responses = _connector.getResponse(request);
-        assertThat(responses,startsWith("HTTP/1.1 200"));
+        assertThat(responses, startsWith("HTTP/1.1 200"));
     }
 
     /**
@@ -1837,9 +1838,9 @@ public class RequestTest
 
     private static long getFileCount(Path path)
     {
-        try
+        try (Stream<Path> s = Files.list(path))
         {
-            return Files.list(path).count();
+            return s.count();
         }
         catch (IOException e)
         {

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -321,7 +321,9 @@ public class StreamCloseTest extends AbstractTest
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
                 if ("GET".equals(request.getMethod()))
                 {
-                    ((HTTP2Session)stream.getSession()).getEndPoint().close();
+                    // Only shutdown the output, since closing the EndPoint causes a call to
+                    // stop() on different thread which tries to concurrently fail the stream.
+                    ((HTTP2Session)stream.getSession()).getEndPoint().shutdownOutput();
                     // Try to write something to force an error.
                     stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1024), true), Callback.NOOP);
                 }

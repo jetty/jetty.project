@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -63,7 +63,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         @SuppressWarnings("unchecked")
         Promise<Session> promise = (Promise<Session>)context.get(SESSION_PROMISE_CONTEXT_KEY);
 
-        Generator generator = new Generator(byteBufferPool);
+        Generator generator = new Generator(byteBufferPool, client.getMaxDynamicTableSize(), client.getMaxHeaderBlockFragment());
         FlowControlStrategy flowControl = client.getFlowControlStrategyFactory().newFlowControlStrategy();
         HTTP2ClientSession session = new HTTP2ClientSession(scheduler, endPoint, generator, listener, flowControl);
         session.setMaxRemoteStreams(client.getMaxConcurrentPushedStreams());
@@ -93,20 +93,6 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         }
 
         @Override
-        public long getMessagesIn()
-        {
-            HTTP2ClientSession session = (HTTP2ClientSession)getSession();
-            return session.getStreamsOpened();
-        }
-
-        @Override
-        public long getMessagesOut()
-        {
-            HTTP2ClientSession session = (HTTP2ClientSession)getSession();
-            return session.getStreamsClosed();
-        }
-
-        @Override
         public void onOpen()
         {
             Map<Integer, Integer> settings = listener.onPreface(getSession());
@@ -125,15 +111,11 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
             ISession session = getSession();
 
             int windowDelta = client.getInitialSessionRecvWindow() - FlowControlStrategy.DEFAULT_WINDOW_SIZE;
+            session.updateRecvWindow(windowDelta);
             if (windowDelta > 0)
-            {
-                session.updateRecvWindow(windowDelta);
                 session.frames(null, Arrays.asList(prefaceFrame, settingsFrame, new WindowUpdateFrame(0, windowDelta)), this);
-            }
             else
-            {
                 session.frames(null, Arrays.asList(prefaceFrame, settingsFrame), this);
-            }
         }
 
         @Override

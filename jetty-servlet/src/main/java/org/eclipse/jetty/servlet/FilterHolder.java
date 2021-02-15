@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -222,7 +222,8 @@ public class FilterHolder extends Holder<Filter>
     @Override
     public String toString()
     {
-        return String.format("%s@%x==%s,inst=%b,async=%b", getName(), hashCode(), getClassName(), _filter != null, isAsyncSupported());
+        return String.format("%s==%s@%x{inst=%b,async=%b,src=%s}",
+            getName(), getClassName(), hashCode(), _filter != null, isAsyncSupported(), getSource());
     }
 
     public FilterRegistration.Dynamic getRegistration()

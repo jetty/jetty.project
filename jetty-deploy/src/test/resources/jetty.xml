@@ -1,8 +1,27 @@
 <?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<!-- =============================================================== --><!-- Documentation of this file format can be found at:              --><!-- https://www.eclipse.org/jetty/documentation/current/        --><!--                                                                 --><!-- Additional configuration files are available in $JETTY_HOME/etc --><!-- and can be mixed in. See start.ini file for the default         --><!-- configuration files.                                            --><!--                                                                 --><!-- For a description of the configuration mechanism, see the       --><!-- output of:                                                      --><!--   java -jar start.jar -?                                        --><!-- =============================================================== -->
+<!-- =============================================================== -->
+<!-- Documentation of this file format can be found at:              -->
+<!-- https://www.eclipse.org/jetty/documentation/current/        -->
+<!--                                                                 -->
+<!-- Additional configuration files are available in $JETTY_HOME/etc -->
+<!-- and can be mixed in. See start.ini file for the default         -->
+<!-- configuration files.                                            -->
+<!--                                                                 -->
+<!-- For a description of the configuration mechanism, see the       -->
+<!-- output of:                                                      -->
+<!--   java -jar start.jar -?                                        -->
+<!-- =============================================================== -->
 
-<!-- =============================================================== --><!-- Configure a Jetty Server instance with an ID "Server"           --><!-- Other configuration files may also configure the "Server"       --><!-- ID, in which case they are adding configuration to the same     --><!-- instance.  If other configuration have a different ID, they     --><!-- will create and configure another instance of Jetty.            --><!-- Consult the javadoc of o.e.j.server.Server for all              --><!-- configuration that may be set here.                             --><!-- =============================================================== -->
+<!-- =============================================================== -->
+<!-- Configure a Jetty Server instance with an ID "Server"           -->
+<!-- Other configuration files may also configure the "Server"       -->
+<!-- ID, in which case they are adding configuration to the same     -->
+<!-- instance.  If other configuration have a different ID, they     -->
+<!-- will create and configure another instance of Jetty.            -->
+<!-- Consult the javadoc of o.e.j.server.Server for all              -->
+<!-- configuration that may be set here.                             -->
+<!-- =============================================================== -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
     <!-- =========================================================== -->

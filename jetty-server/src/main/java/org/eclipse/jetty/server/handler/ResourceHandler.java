@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -226,10 +226,15 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         {
             if (_defaultStylesheet == null)
             {
-                _defaultStylesheet = Resource.newResource(this.getClass().getResource("/jetty-dir.css"));
+                _defaultStylesheet = getDefaultStylesheet();
             }
             return _defaultStylesheet;
         }
+    }
+
+    public static Resource getDefaultStylesheet()
+    {
+        return Resource.newResource(ResourceHandler.class.getResource("/jetty-dir.css"));
     }
 
     public String[] getWelcomeFiles()

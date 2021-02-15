@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -71,13 +71,10 @@ public class Licensing
         System.err.printf(" + contains software not covered by the Eclipse Public License!%n");
         System.err.printf(" + has not been audited for compliance with its license%n");
 
-        for (String key : licenseMap.keySet())
+        for (Map.Entry<String, List<String>> entry : licenseMap.entrySet())
         {
-            System.err.printf("%n Module: %s%n", key);
-            for (String line : licenseMap.get(key))
-            {
-                System.err.printf("  + %s%n", line);
-            }
+            System.err.printf("%n Module: %s%n", entry.getKey());
+            entry.getValue().forEach(line -> System.err.printf("  + %s%n", line));
         }
 
         boolean licenseAck = false;

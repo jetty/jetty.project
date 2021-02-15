@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -127,7 +127,7 @@ public class HttpInputIntegrationTest
         SslConnectionFactory ssl = new SslConnectionFactory(__sslContextFactory, h1.getProtocol() /*TODO alpn.getProtocol()*/);
 
         // HTTP/2 Connector
-        ServerConnector http2 = new ServerConnector(__server, ssl,/*TODO alpn,h2,*/ h1);
+        ServerConnector http2 = new ServerConnector(__server, ssl, /*TODO alpn,h2,*/ h1);
         http2.setIdleTimeout(4000);
         __server.addConnector(http2);
 

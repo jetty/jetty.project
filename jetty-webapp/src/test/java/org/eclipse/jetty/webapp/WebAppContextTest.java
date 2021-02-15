@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -365,10 +365,14 @@ public class WebAppContextTest
         WebAppClassLoader webAppClassLoader = (WebAppClassLoader)contextClassLoader;
         Path extLibsDir = MavenTestingUtils.getTestResourcePathDir("ext");
         extLibsDir = extLibsDir.toAbsolutePath();
-        List<Path> expectedPaths = Files.list(extLibsDir)
-            .filter(Files::isRegularFile)
-            .filter((path) -> path.toString().endsWith(".jar"))
-            .collect(Collectors.toList());
+        List<Path> expectedPaths;
+        try (Stream<Path> s = Files.list(extLibsDir))
+        {
+            expectedPaths = s
+                .filter(Files::isRegularFile)
+                .filter((path) -> path.toString().endsWith(".jar"))
+                .collect(Collectors.toList());
+        }
         List<Path> actualPaths = new ArrayList<>();
         for (URL url : webAppClassLoader.getURLs())
         {

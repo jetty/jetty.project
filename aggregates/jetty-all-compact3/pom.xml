@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.33-SNAPSHOT</version>
+    <version>9.4.37-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -37,7 +37,7 @@
             <configuration>
               <excludes>**/MANIFEST.MF,javax/**</excludes>
               <excludeArtifactIds>javax,jetty-test-helper</excludeArtifactIds>
-              <excludeGroupIds>javax,org.eclipse.jetty.orbit,org.slf4j,org.ow2.asm,org.junit</excludeGroupIds>
+              <excludeGroupIds>javax,org.eclipse.jetty.orbit,org.slf4j,org.ow2.asm,org.junit,org.apiguardian,org.opentest4j,org.hamcrest</excludeGroupIds>
               <outputDirectory>${project.build.directory}/classes</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>
@@ -51,13 +51,23 @@
             </goals>
             <configuration>
               <classifier>sources</classifier>
-              <includes>**/*</includes>
+              <includes>org/eclipse/jetty/**</includes>
               <excludes>
-                META-INF/**, **/Servlet3Continuation*, **/Jetty6Continuation*, **/AppContextLeakPreventer*.java, **/AWTLeakPreventer*.java, **/IntrospectorCleaner*.java, **/PostConstructAnnotationHandler*.java, **/PreDestroyAnnotationHandler*.java, **/ResourceAnnotationHandler*.java, **/ResourcesAnnotationHandler*.java
+                META-INF/**,
+                **/module-info.class,
+                **/Servlet3Continuation*,
+                **/Jetty6Continuation*,
+                **/AppContextLeakPreventer*.java,
+                **/AWTLeakPreventer*.java,
+                **/IntrospectorCleaner*.java,
+                **/PostConstructAnnotationHandler*.java,
+                **/PreDestroyAnnotationHandler*.java,
+                **/ResourceAnnotationHandler*.java,
+                **/ResourcesAnnotationHandler*.java
               </excludes>
               <includeGroupIds>org.eclipse.jetty,org.eclipse.jetty.websocket</includeGroupIds>
               <excludeArtifactIds>javax,jetty-test-helper</excludeArtifactIds>
-              <excludeGroupIds>javax,org.eclipse.jetty.orbit,org.slf4j,org.ow2.asm,org.junit</excludeGroupIds>
+              <excludeGroupIds>javax,org.eclipse.jetty.orbit,org.slf4j,org.ow2.asm,org.junit,org.apiguardian,org.opentest4j,org.hamcrest</excludeGroupIds>
               <outputDirectory>${project.build.directory}/sources</outputDirectory>
               <overWriteReleases>true</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>
@@ -101,17 +111,6 @@
         </executions>
       </plugin>
     </plugins>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-pmd-plugin</artifactId>
-          <configuration>
-            <skip>true</skip>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
   </build>
 
   <dependencies>

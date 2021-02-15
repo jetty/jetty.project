@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -884,9 +884,9 @@ public class MultiPartInputStreamTest
         assertEquals("Joe Blow", new String(os.toByteArray()));
         assertEquals(8, field1.getSize());
 
-        assertNotNull(((MultiPartInputStreamParser.MultiPart)field1).getBytes());//in internal buffer
+        assertNotNull(((MultiPartInputStreamParser.MultiPart)field1).getBytes()); //in internal buffer
         field1.write("field1.txt");
-        assertNull(((MultiPartInputStreamParser.MultiPart)field1).getBytes());//no longer in internal buffer
+        assertNull(((MultiPartInputStreamParser.MultiPart)field1).getBytes()); //no longer in internal buffer
         File f = new File(_dirname + File.separator + "field1.txt");
         assertTrue(f.exists());
         field1.write("another_field1.txt"); //write after having already written

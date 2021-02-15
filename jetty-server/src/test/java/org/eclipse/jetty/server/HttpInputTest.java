@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -498,7 +498,8 @@ public class HttpInputTest
         assertThat(_in.read(), equalTo((int)'A'));
 
         assertFalse(_in.consumeAll());
-        assertThat(_in.getContentConsumed(), equalTo(8L));
+        assertThat(_in.getContentConsumed(), equalTo(1L));
+        assertThat(_in.getContentReceived(), equalTo(8L));
 
         assertThat(_history.poll(), equalTo("Content succeeded AB"));
         assertThat(_history.poll(), equalTo("Content succeeded CD"));
@@ -520,7 +521,8 @@ public class HttpInputTest
         assertThat(_in.read(), equalTo((int)'A'));
 
         assertTrue(_in.consumeAll());
-        assertThat(_in.getContentConsumed(), equalTo(8L));
+        assertThat(_in.getContentConsumed(), equalTo(1L));
+        assertThat(_in.getContentReceived(), equalTo(8L));
 
         assertThat(_history.poll(), equalTo("Content succeeded AB"));
         assertThat(_history.poll(), equalTo("Content succeeded CD"));

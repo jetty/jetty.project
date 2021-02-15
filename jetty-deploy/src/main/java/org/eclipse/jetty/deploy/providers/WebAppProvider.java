@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -107,7 +107,7 @@ public class WebAppProvider extends ScanningAppProvider
                     return false;
 
                 //is it a sccs dir?
-                return !"cvs".equals(lowername) && !"cvsroot".equals(lowername);// OK to deploy it then
+                return !"cvs".equals(lowername) && !"cvsroot".equals(lowername); // OK to deploy it then
             }
 
             // else is it a war file

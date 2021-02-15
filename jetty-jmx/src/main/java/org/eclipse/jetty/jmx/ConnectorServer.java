@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -42,6 +42,7 @@ import javax.management.remote.rmi.RMIConnectorServer;
 import javax.rmi.ssl.SslRMIClientSocketFactory;
 
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -243,7 +244,15 @@ public class ConnectorServer extends AbstractLifeCycle
             if (_sslContextFactory == null)
             {
                 ServerSocket server = new ServerSocket();
-                server.bind(new InetSocketAddress(address, port));
+                try
+                {
+                    server.bind(new InetSocketAddress(address, port));
+                }
+                catch (Throwable e)
+                {
+                    IO.close(server);
+                    throw e;
+                }
                 return server;
             }
             else

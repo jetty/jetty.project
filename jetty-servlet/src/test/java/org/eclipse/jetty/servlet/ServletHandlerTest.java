@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,18 +18,29 @@
 
 package org.eclipse.jetty.servlet;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.Container;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -504,10 +515,10 @@ public class ServletHandlerTest
         mappings = handler.getFilterMappings();
         assertNotNull(mappings);
         assertEquals(4, mappings.length);
-        assertTrue(fm4 == mappings[0]);//isMatchAfter = false;
-        assertTrue(fm5 == mappings[1]);//isMatchAfter = false;
-        assertTrue(fm1 == mappings[2]);//ordinary
-        assertTrue(fm3 == mappings[3]);//isMatchAfter = true;
+        assertTrue(fm4 == mappings[0]); //isMatchAfter = false;
+        assertTrue(fm5 == mappings[1]); //isMatchAfter = false;
+        assertTrue(fm1 == mappings[2]); //ordinary
+        assertTrue(fm3 == mappings[3]); //isMatchAfter = true;
 
         //add a non-programmatic one
         FilterHolder f = new FilterHolder(Source.EMBEDDED);
@@ -557,7 +568,7 @@ public class ServletHandlerTest
         assertEquals(7, mappings.length);
         assertTrue(fm4 == mappings[0]); //isMatchAfter = false;
         assertTrue(fm5 == mappings[1]); //isMatchAfter = false;
-        assertTrue(pfm2 == mappings[2]);//isMatchAfter = false;
+        assertTrue(pfm2 == mappings[2]); //isMatchAfter = false;
         assertTrue(fm1 == mappings[3]); //ordinary
         assertTrue(fm == mappings[4]);  //ordinary
         assertTrue(fm3 == mappings[5]); //isMatchAfter = true;
@@ -607,10 +618,10 @@ public class ServletHandlerTest
         mappings = handler.getFilterMappings();
         assertNotNull(mappings);
         assertEquals(4, mappings.length);
-        assertTrue(fh4 == mappings[0].getFilterHolder());//isMatchAfter = false;
-        assertTrue(fh5 == mappings[1].getFilterHolder());//isMatchAfter = false;
-        assertTrue(fh1 == mappings[2].getFilterHolder());//ordinary
-        assertTrue(fh3 == mappings[3].getFilterHolder());//isMatchAfter = true;
+        assertTrue(fh4 == mappings[0].getFilterHolder()); //isMatchAfter = false;
+        assertTrue(fh5 == mappings[1].getFilterHolder()); //isMatchAfter = false;
+        assertTrue(fh1 == mappings[2].getFilterHolder()); //ordinary
+        assertTrue(fh3 == mappings[3].getFilterHolder()); //isMatchAfter = true;
 
         //add a non-programmatic one
         FilterHolder f = new FilterHolder(Source.EMBEDDED);
@@ -656,7 +667,7 @@ public class ServletHandlerTest
         assertEquals(7, mappings.length);
         assertTrue(fh4 == mappings[0].getFilterHolder()); //isMatchAfter = false;
         assertTrue(fh5 == mappings[1].getFilterHolder()); //isMatchAfter = false;
-        assertTrue(pf2 == mappings[2].getFilterHolder());//isMatchAfter = false;
+        assertTrue(pf2 == mappings[2].getFilterHolder()); //isMatchAfter = false;
         assertTrue(fh1 == mappings[3].getFilterHolder()); //ordinary
         assertTrue(f == mappings[4].getFilterHolder());  //ordinary
         assertTrue(fh3 == mappings[5].getFilterHolder()); //isMatchAfter = true;
@@ -730,4 +741,111 @@ public class ServletHandlerTest
         assertTrue(removeResults.contains(sh1));
         assertTrue(removeResults.contains(lh1));
     }
+
+    @Test
+    public void testServletMappings() throws Exception
+    {
+        Server server = new Server();
+        ServletHandler handler = new ServletHandler();
+        server.setHandler(handler);
+        for (final String mapping : new String[] {"/", "/foo", "/bar/*", "*.bob"})
+        {
+            handler.addServletWithMapping(new ServletHolder(new HttpServlet()
+            {
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+                {
+                    resp.getOutputStream().println("mapping='" + mapping + "'");
+                }
+            }), mapping);
+        }
+        // add servlet with no mapping
+        handler.addServlet(new ServletHolder(new HttpServlet() {}));
+
+        LocalConnector connector = new LocalConnector(server);
+        server.addConnector(connector);
+
+        server.start();
+
+        assertThat(connector.getResponse("GET /default HTTP/1.0\r\n\r\n"), containsString("mapping='/'"));
+        assertThat(connector.getResponse("GET /foo HTTP/1.0\r\n\r\n"), containsString("mapping='/foo'"));
+        assertThat(connector.getResponse("GET /bar HTTP/1.0\r\n\r\n"), containsString("mapping='/bar/*'"));
+        assertThat(connector.getResponse("GET /bar/bob HTTP/1.0\r\n\r\n"), containsString("mapping='/bar/*'"));
+        assertThat(connector.getResponse("GET /bar/foo.bob HTTP/1.0\r\n\r\n"), containsString("mapping='/bar/*'"));
+        assertThat(connector.getResponse("GET /other/foo.bob HTTP/1.0\r\n\r\n"), containsString("mapping='*.bob'"));
+    }
+
+    @Test
+    public void testFilterMappings() throws Exception
+    {
+        Server server = new Server();
+        ServletHandler handler = new ServletHandler();
+        server.setHandler(handler);
+
+        ServletHolder foo = new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                resp.getOutputStream().println("FOO");
+            }
+        });
+        foo.setName("foo");
+        handler.addServletWithMapping(foo, "/foo/*");
+
+        ServletHolder def = new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                resp.getOutputStream().println("default");
+            }
+        });
+        def.setName("default");
+        handler.addServletWithMapping(def, "/");
+
+        for (final String mapping : new String[]{"/*", "/foo", "/bar/*", "*.bob"})
+        {
+            handler.addFilterWithMapping(new FilterHolder((TestFilter)(request, response, chain) ->
+            {
+                response.getOutputStream().print("path-" + mapping + "-");
+                chain.doFilter(request, response);
+            }), mapping, EnumSet.of(DispatcherType.REQUEST));
+        }
+
+        FilterHolder fooFilter = new FilterHolder((TestFilter)(request, response, chain) ->
+        {
+            response.getOutputStream().print("name-foo-");
+            chain.doFilter(request, response);
+        });
+        fooFilter.setName("fooFilter");
+        FilterMapping named = new FilterMapping();
+        named.setFilterHolder(fooFilter);
+        named.setServletName("foo");
+        handler.addFilter(fooFilter, named);
+
+        LocalConnector connector = new LocalConnector(server);
+        server.addConnector(connector);
+
+        server.start();
+
+        assertThat(connector.getResponse("GET /default HTTP/1.0\r\n\r\n"), containsString("path-/*-default"));
+        assertThat(connector.getResponse("GET /foo HTTP/1.0\r\n\r\n"), containsString("path-/*-path-/foo-name-foo-FOO"));
+        assertThat(connector.getResponse("GET /foo/bar HTTP/1.0\r\n\r\n"), containsString("path-/*-name-foo-FOO"));
+        assertThat(connector.getResponse("GET /foo/bar.bob HTTP/1.0\r\n\r\n"), containsString("path-/*-path-*.bob-name-foo-FOO"));
+        assertThat(connector.getResponse("GET /other.bob HTTP/1.0\r\n\r\n"), containsString("path-/*-path-*.bob-default"));
+    }
+
+    private interface TestFilter extends Filter
+    {
+        default void init(FilterConfig filterConfig) throws ServletException
+        {
+        }
+
+        @Override
+        default void destroy()
+        {
+        }
+    }
+
 }

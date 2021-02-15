@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.ZipFile;
 
 import org.eclipse.jetty.toolchain.test.FS;
@@ -264,7 +265,10 @@ public class JarResourceTest
 
     private List<Path> listFiles(Path dir) throws IOException
     {
-        return Files.list(dir).collect(Collectors.toList());
+        try (Stream<Path> s = Files.list(dir))
+        {
+            return s.collect(Collectors.toList());
+        }
     }
 
     private List<Path> listFiles(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException

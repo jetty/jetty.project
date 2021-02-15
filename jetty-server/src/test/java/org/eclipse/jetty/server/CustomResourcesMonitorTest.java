@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -146,9 +146,8 @@ public class CustomResourcesMonitorTest
         @Override
         public boolean isLowOnResources()
         {
-            try
+            try (Stream<Path> paths = Files.list(_pathToMonitor))
             {
-                Stream<Path> paths = Files.list(_pathToMonitor);
                 List<Path> content = paths.collect(Collectors.toList());
                 if (!content.isEmpty())
                 {

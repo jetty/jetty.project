@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package org.eclipse.jetty.tests.distribution;
 
 import java.io.File;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -34,11 +35,14 @@ import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -302,6 +306,129 @@ public class DistributionTests extends AbstractDistributionTest
         finally
         {
             IO.delete(jettyBase.toFile());
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"http", "https"})
+    public void testWebsocketClientInWebappProvidedByServer(String scheme) throws Exception
+    {
+        Path jettyBase = Files.createTempDirectory("jetty_base");
+        String jettyVersion = System.getProperty("jettyVersion");
+        DistributionTester distribution = DistributionTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        String[] args1 = {
+            "--create-startd",
+            "--approve-all-licenses",
+            "--add-to-start=resources,server,webapp,deploy,jsp,jmx,servlet,servlets,websocket," + scheme
+        };
+        try (DistributionTester.Run run1 = distribution.start(args1))
+        {
+            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            File webApp = distribution.resolveArtifact("org.eclipse.jetty.tests:test-websocket-client-provided-webapp:war:" + jettyVersion);
+            distribution.installWarFile(webApp, "test");
+
+            int port = distribution.freePort();
+            String[] args2 = {
+                "jetty.http.port=" + port,
+                "jetty.ssl.port=" + port,
+                // "jetty.server.dumpAfterStart=true",
+            };
+
+            try (DistributionTester.Run run2 = distribution.start(args2))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
+
+                // We should get the correct configuration from the jetty-websocket-httpclient.xml file.
+                startHttpClient(scheme.equals("https"));
+                URI serverUri = URI.create(scheme + "://localhost:" + port + "/test");
+                ContentResponse response = client.GET(serverUri);
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                String content = response.getContentAsString();
+                assertThat(content, containsString("WebSocketEcho: success"));
+                assertThat(content, containsString("ConnectTimeout: 4999"));
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"http", "https"})
+    public void testWebsocketClientInWebapp(String scheme) throws Exception
+    {
+        Path jettyBase = Files.createTempDirectory("jetty_base");
+        String jettyVersion = System.getProperty("jettyVersion");
+        DistributionTester distribution = DistributionTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        String[] args1 = {
+            "--create-startd",
+            "--approve-all-licenses",
+            "--add-to-start=resources,server,webapp,deploy,jsp,jmx,servlet,servlets,websocket," + scheme
+        };
+        try (DistributionTester.Run run1 = distribution.start(args1))
+        {
+            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            File webApp = distribution.resolveArtifact("org.eclipse.jetty.tests:test-websocket-client-webapp:war:" + jettyVersion);
+            distribution.installWarFile(webApp, "test");
+
+            int port = distribution.freePort();
+            String[] args2 = {
+                "jetty.http.port=" + port,
+                "jetty.ssl.port=" + port,
+                // We must hide the websocket classes from the webapp if we are to include websocket client jars in WEB-INF/lib.
+                "jetty.webapp.addServerClasses+=,+org.eclipse.jetty.websocket.",
+                "jetty.webapp.addSystemClasses+=,-org.eclipse.jetty.websocket.",
+                // "jetty.server.dumpAfterStart=true",
+                };
+
+            try (DistributionTester.Run run2 = distribution.start(args2))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
+
+                // We should get the correct configuration from the jetty-websocket-httpclient.xml file.
+                startHttpClient(scheme.equals("https"));
+                URI serverUri = URI.create(scheme + "://localhost:" + port + "/test");
+                ContentResponse response = client.GET(serverUri);
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                String content = response.getContentAsString();
+                assertThat(content, containsString("WebSocketEcho: success"));
+                assertThat(content, containsString("ConnectTimeout: 4999"));
+            }
+        }
+    }
+
+    @Test
+    @Tag("external")
+    public void testDownload() throws Exception
+    {
+        Path jettyBase = Files.createTempDirectory("jetty_base");
+        String jettyVersion = System.getProperty("jettyVersion");
+        DistributionTester distribution = DistributionTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        String outPath = "etc/maven-metadata.xml";
+        String[] args1 = {
+            "--download=https://repo1.maven.org/maven2/org/eclipse/jetty/maven-metadata.xml|" + outPath
+        };
+        try (DistributionTester.Run run = distribution.start(args1))
+        {
+            assertTrue(run.awaitConsoleLogsFor("Base directory was modified", 15, TimeUnit.SECONDS));
+            Path target = jettyBase.resolve(outPath);
+            assertTrue(Files.exists(target), "could not create " + target);
         }
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -102,7 +102,7 @@ public class OpenIdAuthenticationTest
         OpenIdConfiguration configuration = new OpenIdConfiguration(openIdProvider.getProvider(), CLIENT_ID, CLIENT_SECRET);
 
         // Configure OpenIdLoginService optionally providing a base LoginService to provide user roles
-        OpenIdLoginService loginService = new OpenIdLoginService(configuration);//, hashLoginService);
+        OpenIdLoginService loginService = new OpenIdLoginService(configuration);
         securityHandler.setLoginService(loginService);
 
         Authenticator authenticator = new OpenIdAuthenticator(configuration, "/error");

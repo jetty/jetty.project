@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,12 +28,10 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class FutureCallbackTest
 {
@@ -182,7 +180,7 @@ public class FutureCallbackTest
 
         latch.await();
         long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        CancellationException e = assertThrows(CancellationException.class,() -> fcb.get(10000, TimeUnit.MILLISECONDS));
+        CancellationException e = assertThrows(CancellationException.class, () -> fcb.get(10000, TimeUnit.MILLISECONDS));
         assertThat(e.getCause(), Matchers.instanceOf(CancellationException.class));
 
         assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, Matchers.greaterThan(10L));

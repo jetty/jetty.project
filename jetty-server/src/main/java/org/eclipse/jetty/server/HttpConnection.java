@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -408,28 +408,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             // close to seek EOF
             _parser.close();
         }
-        else if (_parser.inContentState() && _generator.isPersistent())
+        // else abort if we can't consume all
+        else if (_generator.isPersistent() && !_input.consumeAll())
         {
-            // Try to progress without filling.
-            parseRequestBuffer();
-            if (_parser.inContentState())
-            {
-                // If we are async, then we have problems to complete neatly
-                if (_input.isAsync())
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{}unconsumed input while async {}", _parser.isChunking() ? "Possible " : "", this);
-                    _channel.abort(new IOException("unconsumed input"));
-                }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{}unconsumed input {}", _parser.isChunking() ? "Possible " : "", this);
-                    // Complete reading the request
-                    if (!_input.consumeAll())
-                        _channel.abort(new IOException("unconsumed input"));
-                }
-            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("unconsumed input {} {}", this, _parser);
+            _channel.abort(new IOException("unconsumed input"));
         }
 
         // Reset the channel, parsers and generator

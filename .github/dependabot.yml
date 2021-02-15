@@ -4,7 +4,10 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      time: "14:00"
     target-branch: "jetty-9.4.x"
+    # Encourage more pull requests from oldest branch
+    open-pull-requests-limit: 20
 
   - package-ecosystem: "github-actions"
     directory: "/"

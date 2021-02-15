@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -224,11 +224,13 @@ public class SearchPatternTest
     public void testExampleFrom4673()
     {
         SearchPattern pattern = SearchPattern.compile("\r\n------WebKitFormBoundaryhXfFAMfUnUKhmqT8".getBytes(StandardCharsets.US_ASCII));
-        byte[] data = new byte[]{118,97,108,117,101,49,
-                                 '\r','\n','-','-','-','-',
-                                 0,0,0,0,0,0,0,0,0,0,
-                                 0,0,0,0,0,0,0,0,0,0,
-                                 0,0,0,0,0,0,0,0,0,0};
+        byte[] data = new byte[]{
+            118, 97, 108, 117, 101, 49,
+            '\r', '\n', '-', '-', '-', '-',
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        };
         int length = 12;
 
         int partialMatch = pattern.endsWith(data, 0, length);

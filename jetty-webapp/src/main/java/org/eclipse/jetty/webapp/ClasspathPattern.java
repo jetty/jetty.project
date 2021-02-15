@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -43,8 +43,6 @@ import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -69,8 +67,6 @@ import org.eclipse.jetty.util.resource.Resource;
 
 public class ClasspathPattern extends AbstractSet<String>
 {
-    private static final Logger LOG = Log.getLogger(ClasspathPattern.class);
-
     static class Entry
     {
         private final String _pattern;
@@ -697,9 +693,8 @@ public class ClasspathPattern extends AbstractSet<String>
         {
             return combine(_packageOrNamePatterns, clazz.getName(), _locations, () -> TypeUtil.getLocationOfClass(clazz));
         }
-        catch (Exception e)
+        catch (Exception ignored)
         {
-            LOG.warn(e);
         }
         return false;
     }
@@ -719,9 +714,8 @@ public class ClasspathPattern extends AbstractSet<String>
             {
                 return URIUtil.getJarSource(url.toURI());
             }
-            catch (URISyntaxException e)
+            catch (URISyntaxException ignored)
             {
-                LOG.ignore(e);
                 return null;
             }
         });

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -1240,10 +1240,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             // context request must end with /
             baseRequest.setHandled(true);
-            if (baseRequest.getQueryString() != null)
-                response.sendRedirect(baseRequest.getRequestURI() + "/?" + baseRequest.getQueryString());
-            else
-                response.sendRedirect(baseRequest.getRequestURI() + "/");
+            String queryString = baseRequest.getQueryString();
+            baseRequest.getResponse().sendRedirect(
+                HttpServletResponse.SC_MOVED_TEMPORARILY,
+                baseRequest.getRequestURI() + (queryString == null ? "/" : ("/?" + queryString)),
+                true);
             return false;
         }
 

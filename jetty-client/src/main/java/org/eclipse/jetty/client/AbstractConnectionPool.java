@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,15 +20,21 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -46,10 +52,12 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
 {
     private static final Logger LOG = Log.getLogger(AbstractConnectionPool.class);
 
+    private final AtomicInteger pending = new AtomicInteger();
     private final HttpDestination destination;
     private final Callback requester;
     private final Pool<Connection> pool;
     private boolean maximizeConnections;
+    private volatile long maxDurationNanos = 0L;
 
     /**
      * @deprecated use {@link #AbstractConnectionPool(HttpDestination, int, boolean, Callback)} instead
@@ -82,12 +90,44 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     @Override
     public CompletableFuture<Void> preCreateConnections(int connectionCount)
     {
-        CompletableFuture<?>[] futures = new CompletableFuture[connectionCount];
+        if (LOG.isDebugEnabled())
+            LOG.debug("Pre-creating connections {}/{}", connectionCount, getMaxConnectionCount());
+
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         for (int i = 0; i < connectionCount; i++)
         {
-            futures[i] = tryCreateAsync(getMaxConnectionCount());
+            Pool<Connection>.Entry entry = pool.reserve();
+            if (entry == null)
+                break;
+            pending.incrementAndGet();
+            Promise.Completable<Connection> future = new FutureConnection(entry);
+            futures.add(future);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Pre-creating connection {}/{} at {}", futures.size(), getMaxConnectionCount(), entry);
+            destination.newConnection(future);
         }
-        return CompletableFuture.allOf(futures);
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+    }
+
+    /**
+     * <p>Get the max usage duration in milliseconds of the pool's connections.
+     * Values {@code 0} and negative mean that there is no limit.</p>
+     * <p>This only guarantees that a connection cannot be acquired after the configured
+     * duration elapses, so that is only enforced when {@link #acquire()} is called.
+     * If a pool stays completely idle for a duration longer than the value
+     * returned by this method, the max duration will not be enforced.
+     * It's up to the idle timeout mechanism (see {@link HttpClient#getIdleTimeout()})
+     * to handle closing idle connections.</p>
+     */
+    @ManagedAttribute(value = "The maximum duration in milliseconds a connection can be used for before it gets closed")
+    public long getMaxDuration()
+    {
+        return TimeUnit.NANOSECONDS.toMillis(maxDurationNanos);
+    }
+
+    public void setMaxDuration(long maxDurationInMs)
+    {
+        this.maxDurationNanos = TimeUnit.MILLISECONDS.toNanos(maxDurationInMs);
     }
 
     protected int getMaxMultiplex()
@@ -148,7 +188,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     @ManagedAttribute(value = "The number of pending connections", readonly = true)
     public int getPendingConnectionCount()
     {
-        return pool.getReservedCount();
+        return pending.get();
     }
 
     @Override
@@ -190,88 +230,82 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
      * <p>Returns an idle connection, if available;
      * if an idle connection is not available, and the given {@code create} parameter is {@code true}
      * or {@link #isMaximizeConnections()} is {@code true},
-     * then schedules the opening of a new connection, if possible within the configuration of this
+     * then attempts to open a new connection, if possible within the configuration of this
      * connection pool (for example, if it does not exceed the max connection count);
-     * otherwise returns {@code null}.</p>
+     * otherwise it attempts to open a new connection, if the number of queued requests is
+     * greater than the number of pending connections;
+     * if no connection is available even after the attempts to open, return {@code null}.</p>
+     * <p>The {@code create} parameter is just a hint: the connection may be created even if
+     * {@code false}, or may not be created even if {@code true}.</p>
      *
-     * @param create whether to schedule the opening of a connection if no idle connections are available
+     * @param create a hint to attempt to open a new connection if no idle connections are available
      * @return an idle connection or {@code null} if no idle connections are available
-     * @see #tryCreate(int)
+     * @see #tryCreate(boolean)
      */
     protected Connection acquire(boolean create)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Acquiring create={} on {}", create, this);
         Connection connection = activate();
-        if (connection == null && (create || isMaximizeConnections()))
+        if (connection == null)
         {
-            tryCreate(destination.getQueuedRequestCount());
+            tryCreate(create);
             connection = activate();
         }
         return connection;
     }
 
     /**
-     * <p>Schedules the opening of a new connection.</p>
-     * <p>Whether a new connection is scheduled for opening is determined by the {@code maxPending} parameter:
-     * if {@code maxPending} is greater than the current number of connections scheduled for opening,
-     * then this method returns without scheduling the opening of a new connection;
-     * if {@code maxPending} is negative, a new connection is always scheduled for opening.</p>
+     * <p>Tries to create a new connection.</p>
+     * <p>Whether a new connection is created is determined by the {@code create} parameter
+     * and a count of demand and supply, where the demand is derived from the number of
+     * queued requests, and the supply is the number of pending connections time the
+     * {@link #getMaxMultiplex()} factor: if the demand is less than the supply, the
+     * connection will not be created.</p>
+     * <p>Since the number of queued requests used to derive the demand may be a stale
+     * value, it is possible that few more connections than strictly necessary may be
+     * created, but enough to satisfy the demand.</p>
      *
-     * @param maxPending the max desired number of connections scheduled for opening,
-     * or a negative number to always trigger the opening of a new connection
+     * @param create a hint to request to create a connection
      */
-    protected void tryCreate(int maxPending)
-    {
-        tryCreateAsync(maxPending);
-    }
-
-    private CompletableFuture<Void> tryCreateAsync(int maxPending)
+    protected void tryCreate(boolean create)
     {
         int connectionCount = getConnectionCount();
         if (LOG.isDebugEnabled())
-            LOG.debug("Try creating connection {}/{} with {}/{} pending", connectionCount, getMaxConnectionCount(), getPendingConnectionCount(), maxPending);
+            LOG.debug("Try creating connection {}/{} with {} pending", connectionCount, getMaxConnectionCount(), getPendingConnectionCount());
 
-        Pool<Connection>.Entry entry = pool.reserve(maxPending);
+        // If we have already pending sufficient multiplexed connections, then do not create another.
+        int multiplexed = getMaxMultiplex();
+        while (true)
+        {
+            int pending = this.pending.get();
+            int supply = pending * multiplexed;
+            int demand = destination.getQueuedRequestCount() + (create ? 1 : 0);
+
+            boolean tryCreate = isMaximizeConnections() || supply < demand;
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Try creating({}) connection, pending/demand/supply: {}/{}/{}, result={}", create, pending, demand, supply, tryCreate);
+
+            if (!tryCreate)
+                return;
+
+            if (this.pending.compareAndSet(pending, pending + 1))
+                break;
+        }
+
+        // Create the connection.
+        Pool<Connection>.Entry entry = pool.reserve();
         if (entry == null)
-            return CompletableFuture.completedFuture(null);
+        {
+            pending.decrementAndGet();
+            return;
+        }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Creating connection {}/{}", connectionCount, getMaxConnectionCount());
-
-        CompletableFuture<Void> future = new CompletableFuture<>();
-        destination.newConnection(new Promise<Connection>()
-        {
-            @Override
-            public void succeeded(Connection connection)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Connection {}/{} creation succeeded {}", connectionCount, getMaxConnectionCount(), connection);
-                if (!(connection instanceof Attachable))
-                {
-                    failed(new IllegalArgumentException("Invalid connection object: " + connection));
-                    return;
-                }
-                ((Attachable)connection).setAttachment(entry);
-                onCreated(connection);
-                entry.enable(connection, false);
-                idle(connection, false);
-                future.complete(null);
-                proceed();
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Connection {}/{} creation failed", connectionCount, getMaxConnectionCount(), x);
-                entry.remove();
-                future.completeExceptionally(x);
-                requester.failed(x);
-            }
-        });
-
-        return future;
+            LOG.debug("Creating connection {}/{} at {}", connectionCount, getMaxConnectionCount(), entry);
+        Promise<Connection> future = new FutureConnection(entry);
+        destination.newConnection(future);
     }
 
     protected void proceed()
@@ -281,16 +315,35 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
 
     protected Connection activate()
     {
-        Pool<Connection>.Entry entry = pool.acquire();
-        if (entry != null)
+        while (true)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Activated {} {}", entry, pool);
-            Connection connection = entry.getPooled();
-            acquired(connection);
-            return connection;
+            Pool<Connection>.Entry entry = pool.acquire();
+            if (entry != null)
+            {
+                Connection connection = entry.getPooled();
+
+                long maxDurationNanos = this.maxDurationNanos;
+                if (maxDurationNanos > 0L)
+                {
+                    EntryHolder holder = (EntryHolder)((Attachable)connection).getAttachment();
+                    if (holder.isExpired(maxDurationNanos))
+                    {
+                        boolean canClose = remove(connection, true);
+                        if (canClose)
+                            IO.close(connection);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Connection removed{} due to expiration {} {}", (canClose ? " and closed" : ""), entry, pool);
+                        continue;
+                    }
+                }
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Activated {} {}", entry, pool);
+                acquired(connection);
+                return connection;
+            }
+            return null;
         }
-        return null;
     }
 
     @Override
@@ -299,11 +352,10 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         if (!(connection instanceof Attachable))
             throw new IllegalArgumentException("Invalid connection object: " + connection);
         Attachable attachable = (Attachable)connection;
-        @SuppressWarnings("unchecked")
-        Pool<Connection>.Entry entry = (Pool<Connection>.Entry)attachable.getAttachment();
-        if (entry == null)
+        EntryHolder holder = (EntryHolder)attachable.getAttachment();
+        if (holder == null)
             return false;
-        return !entry.isIdle();
+        return !holder.entry.isIdle();
     }
 
     @Override
@@ -320,13 +372,12 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         if (!(connection instanceof Attachable))
             throw new IllegalArgumentException("Invalid connection object: " + connection);
         Attachable attachable = (Attachable)connection;
-        @SuppressWarnings("unchecked")
-        Pool<Connection>.Entry entry = (Pool<Connection>.Entry)attachable.getAttachment();
-        if (entry == null)
+        EntryHolder holder = (EntryHolder)attachable.getAttachment();
+        if (holder == null)
             return true;
-        boolean reusable = pool.release(entry);
+        boolean reusable = pool.release(holder.entry);
         if (LOG.isDebugEnabled())
-            LOG.debug("Released ({}) {} {}", reusable, entry, pool);
+            LOG.debug("Released ({}) {} {}", reusable, holder.entry, pool);
         if (reusable)
             return true;
         remove(connection);
@@ -344,14 +395,14 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         if (!(connection instanceof Attachable))
             throw new IllegalArgumentException("Invalid connection object: " + connection);
         Attachable attachable = (Attachable)connection;
-        @SuppressWarnings("unchecked")
-        Pool<Connection>.Entry entry = (Pool<Connection>.Entry)attachable.getAttachment();
-        if (entry == null)
+        EntryHolder holder = (EntryHolder)attachable.getAttachment();
+        if (holder == null)
             return false;
-        attachable.setAttachment(null);
-        boolean removed = pool.remove(entry);
+        boolean removed = pool.remove(holder.entry);
+        if (removed)
+            attachable.setAttachment(null);
         if (LOG.isDebugEnabled())
-            LOG.debug("Removed ({}) {} {}", removed, entry, pool);
+            LOG.debug("Removed ({}) {} {}", removed, holder.entry, pool);
         if (removed || force)
         {
             released(connection);
@@ -424,33 +475,96 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     @Override
     public boolean sweep()
     {
-        pool.values().stream().filter(entry -> entry.getPooled() instanceof Sweeper.Sweepable).forEach(entry ->
-        {
-            Connection connection = entry.getPooled();
-            if (((Sweeper.Sweepable)connection).sweep())
+        pool.values().stream()
+            .map(Pool.Entry::getPooled)
+            .filter(connection -> connection instanceof Sweeper.Sweepable)
+            .forEach(connection ->
             {
-                boolean removed = remove(connection);
-                LOG.warn("Connection swept: {}{}{} from active connections{}{}",
-                    connection,
-                    System.lineSeparator(),
-                    removed ? "Removed" : "Not removed",
-                    System.lineSeparator(),
-                    dump());
-            }
-        });
+                if (((Sweeper.Sweepable)connection).sweep())
+                {
+                    boolean removed = remove(connection);
+                    LOG.warn("Connection swept: {}{}{} from active connections{}{}",
+                        connection,
+                        System.lineSeparator(),
+                        removed ? "Removed" : "Not removed",
+                        System.lineSeparator(),
+                        dump());
+                }
+            });
         return false;
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x[c=%d/%d/%d,a=%d,i=%d]",
+        return String.format("%s@%x[c=%d/%d/%d,a=%d,i=%d,q=%d]",
             getClass().getSimpleName(),
             hashCode(),
             getPendingConnectionCount(),
             getConnectionCount(),
             getMaxConnectionCount(),
             getActiveConnectionCount(),
-            getIdleConnectionCount());
+            getIdleConnectionCount(),
+            destination.getQueuedRequestCount());
+    }
+
+    private class FutureConnection extends Promise.Completable<Connection>
+    {
+        private final Pool<Connection>.Entry reserved;
+
+        public FutureConnection(Pool<Connection>.Entry reserved)
+        {
+            this.reserved = reserved;
+        }
+
+        @Override
+        public void succeeded(Connection connection)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Connection creation succeeded {}: {}", reserved, connection);
+            if (connection instanceof Attachable)
+            {
+                ((Attachable)connection).setAttachment(new EntryHolder(reserved));
+                onCreated(connection);
+                pending.decrementAndGet();
+                reserved.enable(connection, false);
+                idle(connection, false);
+                complete(null);
+                proceed();
+            }
+            else
+            {
+                // reduce pending on failure and if not multiplexing also reduce demand
+                failed(new IllegalArgumentException("Invalid connection object: " + connection));
+            }
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Connection creation failed {}", reserved, x);
+            // reduce pending on failure and if not multiplexing also reduce demand
+            pending.decrementAndGet();
+            reserved.remove();
+            completeExceptionally(x);
+            requester.failed(x);
+        }
+    }
+
+    private static class EntryHolder
+    {
+        private final Pool<Connection>.Entry entry;
+        private final long creationTimestamp = System.nanoTime();
+
+        private EntryHolder(Pool<Connection>.Entry entry)
+        {
+            this.entry = Objects.requireNonNull(entry);
+        }
+
+        private boolean isExpired(long timeoutNanos)
+        {
+            return System.nanoTime() - creationTimestamp >= timeoutNanos;
+        }
     }
 }

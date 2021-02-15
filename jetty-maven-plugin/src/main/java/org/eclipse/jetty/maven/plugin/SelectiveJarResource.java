@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -47,7 +47,7 @@ import org.eclipse.jetty.util.resource.JarResource;
 public class SelectiveJarResource extends JarResource
 {
     private static final Logger LOG = Log.getLogger(SelectiveJarResource.class);
-    public static final List<String> DEFAULT_INCLUDES = Arrays.asList("**");// No includes supplied, so set it to 'matches all'
+    public static final List<String> DEFAULT_INCLUDES = Arrays.asList("**"); // No includes supplied, so set it to 'matches all'
     public static final List<String> DEFAULT_EXCLUDES = Collections.emptyList(); //No includes, set to no exclusions
 
     List<String> _includes = null;

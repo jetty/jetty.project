@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,17 +32,26 @@ import java.util.Set;
 @Deprecated
 public abstract class ExtensionFactory implements Iterable<Class<? extends Extension>>
 {
-    private ServiceLoader<Extension> extensionLoader = ServiceLoader.load(Extension.class);
-    private Map<String, Class<? extends Extension>> availableExtensions;
+    private final Map<String, Class<? extends Extension>> availableExtensions;
 
     public ExtensionFactory()
     {
         availableExtensions = new HashMap<>();
-        for (Extension ext : extensionLoader)
+        Iterator<Extension> iterator = ServiceLoader.load(Extension.class).iterator();
+        while (true)
         {
-            if (ext != null)
+            try
             {
-                availableExtensions.put(ext.getName(), ext.getClass());
+                if (!iterator.hasNext())
+                    break;
+
+                Extension ext = iterator.next();
+                if (ext != null)
+                    availableExtensions.put(ext.getName(), ext.getClass());
+            }
+            catch (Throwable ignored)
+            {
+                // Ignored.
             }
         }
     }

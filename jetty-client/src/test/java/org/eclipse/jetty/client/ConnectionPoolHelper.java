@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.client;
 
 import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.Destination;
 
 public class ConnectionPoolHelper
 {
@@ -28,8 +27,8 @@ public class ConnectionPoolHelper
         return connectionPool.acquire(create);
     }
 
-    public static void tryCreate(AbstractConnectionPool connectionPool, int pending)
+    public static void tryCreate(AbstractConnectionPool connectionPool)
     {
-        connectionPool.tryCreate(pending);
+        connectionPool.tryCreate(true);
     }
 }

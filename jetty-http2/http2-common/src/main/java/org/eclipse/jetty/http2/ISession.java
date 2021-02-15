@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -44,8 +44,9 @@ public interface ISession extends Session
      * <p>Removes the given {@code stream}.</p>
      *
      * @param stream the stream to remove
+     * @return whether the stream was removed
      */
-    void removeStream(IStream stream);
+    boolean removeStream(IStream stream);
 
     /**
      * <p>Sends the given list of frames to create a new {@link Stream}.</p>

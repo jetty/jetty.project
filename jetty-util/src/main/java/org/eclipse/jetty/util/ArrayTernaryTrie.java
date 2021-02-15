@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -365,6 +365,12 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
     {
         if (b.hasArray())
             return getBest(0, b.array(), b.arrayOffset() + b.position() + offset, len);
+        return getBest(0, b, offset, len);
+    }
+
+    @Override
+    public V getBest(byte[] b, int offset, int len)
+    {
         return getBest(0, b, offset, len);
     }
 

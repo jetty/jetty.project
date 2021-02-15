@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -521,21 +521,8 @@ public class ServletHandler extends ScopedHandler
         FilterChain chain = null;
 
         // find the servlet
-        if (target.startsWith("/"))
-        {
-            if (servletHolder != null && _filterMappings != null && _filterMappings.length > 0)
-                chain = getFilterChain(baseRequest, target, servletHolder);
-        }
-        else
-        {
-            if (servletHolder != null)
-            {
-                if (_filterMappings != null && _filterMappings.length > 0)
-                {
-                    chain = getFilterChain(baseRequest, null, servletHolder);
-                }
-            }
-        }
+        if (servletHolder != null && _filterMappings != null && _filterMappings.length > 0)
+            chain = getFilterChain(baseRequest, target.startsWith("/") ? target : null, servletHolder);
 
         if (LOG.isDebugEnabled())
             LOG.debug("chain={}", chain);
@@ -593,6 +580,7 @@ public class ServletHandler extends ScopedHandler
 
     protected FilterChain getFilterChain(Request baseRequest, String pathInContext, ServletHolder servletHolder)
     {
+        Objects.requireNonNull(servletHolder);
         String key = pathInContext == null ? servletHolder.getName() : pathInContext;
         int dispatch = FilterMapping.dispatch(baseRequest.getDispatcherType());
 
@@ -608,16 +596,20 @@ public class ServletHandler extends ScopedHandler
         // The mappings lists have been reversed to make this simple and fast.
         FilterChain chain = null;
 
-        if (servletHolder != null && _filterNameMappings != null && !_filterNameMappings.isEmpty())
+        if (_filterNameMappings != null && !_filterNameMappings.isEmpty())
         {
             if (_wildFilterNameMappings != null)
                 for (FilterMapping mapping : _wildFilterNameMappings)
                     chain = newFilterChain(mapping.getFilterHolder(), chain == null ? new ChainEnd(servletHolder) : chain);
 
-            for (FilterMapping mapping : _filterNameMappings.get(servletHolder.getName()))
+            List<FilterMapping> nameMappings = _filterNameMappings.get(servletHolder.getName());
+            if (nameMappings != null)
             {
-                if (mapping.appliesTo(dispatch))
-                    chain = newFilterChain(mapping.getFilterHolder(), chain == null ? new ChainEnd(servletHolder) : chain);
+                for (FilterMapping mapping : nameMappings)
+                {
+                    if (mapping.appliesTo(dispatch))
+                        chain = newFilterChain(mapping.getFilterHolder(), chain == null ? new ChainEnd(servletHolder) : chain);
+                }
             }
         }
 
@@ -824,7 +816,7 @@ public class ServletHandler extends ScopedHandler
     {
         if (listeners != null)
             initializeHolders(listeners);
-        updateBeans(_listeners,listeners);
+        updateBeans(_listeners, listeners);
         _listeners = listeners;
     }
 
@@ -1499,7 +1491,7 @@ public class ServletHandler extends ScopedHandler
      */
     public void setFilterMappings(FilterMapping[] filterMappings)
     {
-        updateBeans(_filterMappings,filterMappings);
+        updateBeans(_filterMappings, filterMappings);
         _filterMappings = filterMappings;
         if (isRunning())
             updateMappings();
@@ -1510,7 +1502,7 @@ public class ServletHandler extends ScopedHandler
     {
         if (holders != null)
             initializeHolders(holders);
-        updateBeans(_filters,holders);
+        updateBeans(_filters, holders);
         _filters = holders;
         updateNameMappings();
         invalidateChainsCache();
@@ -1521,7 +1513,7 @@ public class ServletHandler extends ScopedHandler
      */
     public void setServletMappings(ServletMapping[] servletMappings)
     {
-        updateBeans(_servletMappings,servletMappings);
+        updateBeans(_servletMappings, servletMappings);
         _servletMappings = servletMappings;
         if (isRunning())
             updateMappings();
@@ -1537,7 +1529,7 @@ public class ServletHandler extends ScopedHandler
     {
         if (holders != null)
             initializeHolders(holders);
-        updateBeans(_servlets,holders);
+        updateBeans(_servlets, holders);
         _servlets = holders;
         updateNameMappings();
         invalidateChainsCache();
@@ -1622,6 +1614,7 @@ public class ServletHandler extends ScopedHandler
 
         ChainEnd(ServletHolder holder)
         {
+            Objects.requireNonNull(holder);
             _servletHolder = holder;
         }
 

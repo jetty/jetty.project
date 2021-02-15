@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -59,7 +59,7 @@ public class XmlAppendable
     {
         _out = out;
         _indent = indent;
-        _out.append("<?xml version=\"1.0\" encoding=\"" + encoding + "\"?>\n");
+        _out.append("<?xml version=\"1.0\" encoding=\"").append(encoding).append("\"?>\n");
     }
 
     public XmlAppendable openTag(String tag, Map<String, String> attributes) throws IOException
@@ -153,11 +153,10 @@ public class XmlAppendable
 
     private void attributes(Map<String, String> attributes) throws IOException
     {
-        for (String k : attributes.keySet())
+        for (Map.Entry<String, String> entry : attributes.entrySet())
         {
-            String v = attributes.get(k);
-            _out.append(' ').append(k).append("=\"");
-            content(v);
+            _out.append(' ').append(entry.getKey()).append("=\"");
+            content(entry.getValue());
             _out.append('"');
         }
     }

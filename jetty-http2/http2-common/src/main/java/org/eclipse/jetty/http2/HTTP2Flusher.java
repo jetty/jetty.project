@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -365,7 +365,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         // If the failure came from within the
         // flusher, we need to close the connection.
         if (closed == null)
-            session.abort(x);
+            session.onWriteFailure(x);
     }
 
     void terminate(Throwable cause)
@@ -376,7 +376,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             closed = terminated;
             terminated = cause;
             if (LOG.isDebugEnabled())
-                LOG.debug("{}", closed != null ? "Terminated" : "Terminating");
+                LOG.debug("{} {}", closed != null ? "Terminated" : "Terminating", this);
         }
         if (closed == null)
             iterate();

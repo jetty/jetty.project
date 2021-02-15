@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,7 @@ package org.eclipse.jetty.util.component;
 
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -280,13 +281,9 @@ public abstract class AbstractLifeCycle implements LifeCycle
     @Override
     public String toString()
     {
-        Class<?> clazz = getClass();
-        String name = clazz.getSimpleName();
-        if ((name == null || name.length() == 0) && clazz.getSuperclass() != null)
-        {
-            clazz = clazz.getSuperclass();
-            name = clazz.getSimpleName();
-        }
+        String name = getClass().getSimpleName();
+        if (StringUtil.isBlank(name) && getClass().getSuperclass() != null)
+            name = getClass().getSuperclass().getSimpleName();
         return String.format("%s@%x{%s}", name, hashCode(), getState());
     }
 }

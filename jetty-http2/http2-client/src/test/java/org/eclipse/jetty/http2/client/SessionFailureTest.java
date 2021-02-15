@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -84,8 +84,8 @@ public class SessionFailureTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                // Forcibly close the connection.
-                ((HTTP2Session)stream.getSession()).getEndPoint().close();
+                // Forcibly shutdown the output to fail the write below.
+                ((HTTP2Session)stream.getSession()).getEndPoint().shutdownOutput();
                 // Now try to write something: it should fail.
                 stream.headers(frame, new Callback()
                 {

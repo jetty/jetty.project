@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -861,5 +861,21 @@ public class HttpGeneratorServerTest
         String headers = BufferUtil.toString(header);
         assertThat(headers, containsString(HttpHeaderValue.KEEP_ALIVE.asString()));
         assertThat(headers, containsString(customValue));
+    }
+
+    @Test
+    public void testKeepAliveWithClose() throws Exception
+    {
+        HttpGenerator generator = new HttpGenerator();
+        HttpFields fields = new HttpFields();
+        fields.put(HttpHeader.CONNECTION,
+            HttpHeaderValue.KEEP_ALIVE.asString() + ", other, " + HttpHeaderValue.CLOSE.asString());
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_0, 200, "OK", fields, -1);
+        ByteBuffer header = BufferUtil.allocate(4096);
+        HttpGenerator.Result result = generator.generateResponse(info, false, header, null, null, true);
+        assertSame(HttpGenerator.Result.FLUSH, result);
+        String headers = BufferUtil.toString(header);
+        assertThat(headers, containsString("Connection: other, close\r\n"));
+        assertThat(headers, not(containsString("keep-alive")));
     }
 }

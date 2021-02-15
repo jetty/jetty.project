@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -164,8 +164,15 @@ public class ALPNNegotiationTest extends AbstractALPNTest
                 encrypted.flip();
             }
             assertEquals(21, encrypted.get());
+            // TLS 1.3 may send 2 alerts: "user_canceled" followed by "close_notify".
             encrypted.clear();
-            assertEquals(-1, channel.read(encrypted));
+            read = channel.read(encrypted);
+            if (read > 0)
+            {
+                encrypted.clear();
+                read = channel.read(encrypted);
+            }
+            assertEquals(-1, read);
         }
     }
 

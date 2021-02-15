@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,6 +35,7 @@ public class AbstractTest
 {
     protected Server server;
     protected ServerConnector connector;
+    protected HTTP2Client http2Client;
     protected HttpClient client;
 
     protected void start(ServerSessionListener listener) throws Exception
@@ -63,12 +64,13 @@ public class AbstractTest
         server.addConnector(connector);
     }
 
-    protected void prepareClient() throws Exception
+    protected void prepareClient()
     {
-        client = new HttpClient(new HttpClientTransportOverHTTP2(new HTTP2Client()), null);
+        http2Client = new HTTP2Client();
+        client = new HttpClient(new HttpClientTransportOverHTTP2(http2Client), null);
         QueuedThreadPool clientExecutor = new QueuedThreadPool();
         clientExecutor.setName("client");
-        client.setExecutor(clientExecutor);
+        this.client.setExecutor(clientExecutor);
     }
 
     @AfterEach

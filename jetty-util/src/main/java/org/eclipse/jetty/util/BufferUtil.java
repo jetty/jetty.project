@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -133,6 +133,24 @@ public class BufferUtil
         ByteBuffer buf = ByteBuffer.allocateDirect(capacity);
         buf.limit(0);
         return buf;
+    }
+
+    /**
+     * Deep copy of a buffer
+     *
+     * @param buffer The buffer to copy
+     * @return A copy of the buffer
+     */
+    public static ByteBuffer copy(ByteBuffer buffer)
+    {
+        if (buffer == null)
+            return null;
+        int p = buffer.position();
+        ByteBuffer clone = buffer.isDirect() ? ByteBuffer.allocateDirect(buffer.remaining()) : ByteBuffer.allocate(buffer.remaining());
+        clone.put(buffer);
+        clone.flip();
+        buffer.position(p);
+        return clone;
     }
 
     /**

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -333,10 +333,11 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 
             try
             {
-                _certs = getSslSessionData().getCerts();
+                SslSessionData sslSessionData = getSslSessionData();
+                _certs = sslSessionData.getCerts();
                 _cipherSuite = _session.getCipherSuite();
-                _keySize = getSslSessionData().getKeySize();
-                _sessionId = getSslSessionData().getIdStr();
+                _keySize = sslSessionData.getKeySize();
+                _sessionId = sslSessionData.getIdStr();
                 _sessionAttribute = getSslSessionAttribute();
             }
             catch (Exception e)

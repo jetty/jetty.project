@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -134,6 +134,8 @@ public class HTTP2Client extends ContainerLifeCycle
     private int maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
     private int maxConcurrentPushedStreams = 32;
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
+    private int maxDynamicTableSize = 4096;
+    private int maxHeaderBlockFragment = 0;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
 
     @Override
@@ -370,6 +372,28 @@ public class HTTP2Client extends ContainerLifeCycle
     public void setMaxSettingsKeys(int maxSettingsKeys)
     {
         this.maxSettingsKeys = maxSettingsKeys;
+    }
+
+    @ManagedAttribute("The HPACK dynamic table maximum size")
+    public int getMaxDynamicTableSize()
+    {
+        return maxDynamicTableSize;
+    }
+
+    public void setMaxDynamicTableSize(int maxDynamicTableSize)
+    {
+        this.maxDynamicTableSize = maxDynamicTableSize;
+    }
+
+    @ManagedAttribute("The max size of header block fragments")
+    public int getMaxHeaderBlockFragment()
+    {
+        return maxHeaderBlockFragment;
+    }
+
+    public void setMaxHeaderBlockFragment(int maxHeaderBlockFragment)
+    {
+        this.maxHeaderBlockFragment = maxHeaderBlockFragment;
     }
 
     public void connect(InetSocketAddress address, Session.Listener listener, Promise<Session> promise)

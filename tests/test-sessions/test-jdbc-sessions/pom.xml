@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-sessions-parent</artifactId>
-    <version>9.4.33-SNAPSHOT</version>
+    <version>9.4.37-SNAPSHOT</version>
   </parent>
   <artifactId>test-jdbc-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: JDBC</name>
@@ -83,7 +83,7 @@
     <dependency>
       <groupId>org.mariadb.jdbc</groupId>
       <artifactId>mariadb-java-client</artifactId>
-      <version>2.6.0</version>
+      <version>${maria.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

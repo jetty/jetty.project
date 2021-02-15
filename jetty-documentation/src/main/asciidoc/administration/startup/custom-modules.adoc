@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -240,8 +240,8 @@ INFO  : server          initialized in ${jetty.base}/start.d/server.ini
 INFO  : Base directory was modified
 ----
 
-____
 [NOTE]
+====
 It is important to keep in mind that when activating a dependency, Jetty does not just go one layer down.
 If a dependent module also has dependencies they too will be enabled.
-____
+====

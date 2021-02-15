@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -44,21 +44,21 @@ public class MetaData
     public static final String ORDERED_LIBS = "javax.servlet.context.orderedLibs";
     public static final Resource NON_FRAG_RESOURCE = EmptyResource.INSTANCE;
 
-    protected Map<String, OriginInfo> _origins = new HashMap<String, OriginInfo>();
+    protected Map<String, OriginInfo> _origins = new HashMap<>();
     protected WebDescriptor _webDefaultsRoot;
     protected WebDescriptor _webXmlRoot;
-    protected final List<WebDescriptor> _webOverrideRoots = new ArrayList<WebDescriptor>();
+    protected final List<WebDescriptor> _webOverrideRoots = new ArrayList<>();
     protected boolean _metaDataComplete;
-    protected final List<DescriptorProcessor> _descriptorProcessors = new ArrayList<DescriptorProcessor>();
-    protected final List<FragmentDescriptor> _webFragmentRoots = new ArrayList<FragmentDescriptor>();
-    protected final Map<String, FragmentDescriptor> _webFragmentNameMap = new HashMap<String, FragmentDescriptor>();
-    protected final Map<Resource, FragmentDescriptor> _webFragmentResourceMap = new HashMap<Resource, FragmentDescriptor>();
-    protected final Map<Resource, List<DiscoveredAnnotation>> _annotations = new HashMap<Resource, List<DiscoveredAnnotation>>();
-    protected final List<Resource> _webInfClasses = new ArrayList<Resource>();
-    protected final List<Resource> _webInfJars = new ArrayList<Resource>();
-    protected final List<Resource> _orderedContainerResources = new ArrayList<Resource>();
-    protected final List<Resource> _orderedWebInfResources = new ArrayList<Resource>();
-    protected Ordering _ordering;//can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
+    protected final List<DescriptorProcessor> _descriptorProcessors = new ArrayList<>();
+    protected final List<FragmentDescriptor> _webFragmentRoots = new ArrayList<>();
+    protected final Map<String, FragmentDescriptor> _webFragmentNameMap = new HashMap<>();
+    protected final Map<Resource, FragmentDescriptor> _webFragmentResourceMap = new HashMap<>();
+    protected final Map<Resource, List<DiscoveredAnnotation>> _annotations = new HashMap<>();
+    protected final List<Resource> _webInfClasses = new ArrayList<>();
+    protected final List<Resource> _webInfJars = new ArrayList<>();
+    protected final List<Resource> _orderedContainerResources = new ArrayList<>();
+    protected final List<Resource> _orderedWebInfResources = new ArrayList<>();
+    protected Ordering _ordering; //can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
     protected boolean _allowDuplicateFragmentNames = false;
     protected boolean _validateXml = false;
 
@@ -333,12 +333,8 @@ public class MetaData
         if (resource == null || !_webInfJars.contains(resource))
             resource = EmptyResource.INSTANCE;
 
-        List<DiscoveredAnnotation> list = _annotations.get(resource);
-        if (list == null)
-        {
-            list = new ArrayList<DiscoveredAnnotation>();
-            _annotations.put(resource, list);
-        }
+        List<DiscoveredAnnotation> list =
+            _annotations.computeIfAbsent(resource, k -> new ArrayList<>());
         list.add(annotation);
     }
 
@@ -378,7 +374,7 @@ public class MetaData
         if (getOrdering() != null)
         {
             orderedWebInfJars = getOrderedWebInfJars();
-            List<String> orderedLibs = new ArrayList<String>();
+            List<String> orderedLibs = new ArrayList<>();
             for (Resource webInfJar : orderedWebInfJars)
             {
                 //get just the name of the jar file
@@ -545,10 +541,10 @@ public class MetaData
             return null;
 
         Resource jar = null;
-        for (Resource r : _webFragmentResourceMap.keySet())
+        for (Map.Entry<Resource, FragmentDescriptor> entry : _webFragmentResourceMap.entrySet())
         {
-            if (_webFragmentResourceMap.get(r).equals(f))
-                jar = r;
+            if (entry.getValue().equals(f))
+                jar = entry.getKey();
         }
         return jar;
     }

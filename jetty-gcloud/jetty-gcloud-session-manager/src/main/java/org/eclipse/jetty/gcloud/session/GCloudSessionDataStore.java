@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -781,7 +781,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                 if (e.isRetryable())
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Datastore put retry {} waiting {}ms", attempts, backoff);
+                        LOG.debug(String.format("Datastore put retry=%s backoff=%s", attempts, backoff), e);
 
                     try
                     {

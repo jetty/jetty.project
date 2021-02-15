@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -434,11 +434,12 @@ public class ResourceCollection extends Resource
     public String[] list()
     {
         assertResourcesSet();
-
         HashSet<String> set = new HashSet<>();
         for (Resource r : _resources)
         {
-            Collections.addAll(set, r.list());
+            String[] list = r.list();
+            if (list != null)
+                Collections.addAll(set, list);
         }
         String[] result = set.toArray(new String[0]);
         Arrays.sort(result);

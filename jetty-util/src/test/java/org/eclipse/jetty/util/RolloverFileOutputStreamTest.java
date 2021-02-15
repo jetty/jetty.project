@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,7 +31,7 @@ import java.time.temporal.TemporalAccessor;
 import java.util.Arrays;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -379,6 +379,9 @@ public class RolloverFileOutputStreamTest
 
     private String[] ls(Path path) throws IOException
     {
-        return Files.list(path).map(p -> p.getFileName().toString()).collect(Collectors.toList()).toArray(new String[0]);
+        try (Stream<Path> s = Files.list(path))
+        {
+            return s.map(p -> p.getFileName().toString()).toArray(String[]::new);
+        }
     }
 }

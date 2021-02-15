@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,7 @@ package org.eclipse.jetty.io;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -41,12 +42,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -447,6 +451,64 @@ public class IOTest
         {
             assertEquals(0, buffer.remaining());
         }
+    }
+
+    @Test
+    public void testDeleteNull()
+    {
+        assertFalse(IO.delete(null));
+    }
+
+    @Test
+    public void testDeleteNonExistentFile(TestInfo testInfo)
+    {
+        File dir = MavenTestingUtils.getTargetTestingDir(testInfo.getDisplayName());
+        FS.ensureEmpty(dir);
+        File noFile = new File(dir, "nada");
+        assertFalse(IO.delete(noFile));
+    }
+
+    @Test
+    public void testIsEmptyNull()
+    {
+        assertTrue(IO.isEmptyDir(null));
+    }
+
+    @Test
+    public void testIsEmptyDoesNotExist(TestInfo testInfo)
+    {
+        File dir = MavenTestingUtils.getTargetTestingDir(testInfo.getDisplayName());
+        FS.ensureEmpty(dir);
+        File noFile = new File(dir, "nada");
+        assertTrue(IO.isEmptyDir(noFile));
+    }
+
+    @Test
+    public void testIsEmptyExistButAsFile(TestInfo testInfo) throws IOException
+    {
+        File dir = MavenTestingUtils.getTargetTestingDir(testInfo.getDisplayName());
+        FS.ensureEmpty(dir);
+        File file = new File(dir, "nada");
+        FS.touch(file);
+        assertFalse(IO.isEmptyDir(file));
+    }
+
+    @Test
+    public void testIsEmptyExistAndIsEmpty(TestInfo testInfo)
+    {
+        File dir = MavenTestingUtils.getTargetTestingDir(testInfo.getDisplayName());
+        FS.ensureEmpty(dir);
+        assertTrue(IO.isEmptyDir(dir));
+    }
+
+    @Test
+    public void testIsEmptyExistAndHasContent(TestInfo testInfo) throws IOException
+    {
+        File dir = MavenTestingUtils.getTargetTestingDir(testInfo.getDisplayName());
+        FS.ensureEmpty(dir);
+        File file = new File(dir, "nada");
+        FS.touch(file);
+        assertFalse(IO.isEmptyDir(dir));
     }
 
     @Test

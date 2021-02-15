@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -42,7 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.junit.jupiter.api.condition.OS.LINUX;
 import static org.junit.jupiter.api.condition.OS.MAC;
@@ -139,8 +138,8 @@ public class ContextHandlerGetResourceTest
     public void testBadPath() throws Exception
     {
         final String path = "bad";
-        assertThrows(MalformedURLException.class,() -> context.getResource(path));
-        assertThrows(MalformedURLException.class,() -> context.getServletContext().getResource(path));
+        assertThrows(MalformedURLException.class, () -> context.getResource(path));
+        assertThrows(MalformedURLException.class, () -> context.getServletContext().getResource(path));
     }
 
     @Test

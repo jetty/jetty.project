@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,10 +23,12 @@ import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * ClusteredSessionScavengingTest
  */
+@Testcontainers(disabledWithoutDocker = true)
 public class RemoteClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
 

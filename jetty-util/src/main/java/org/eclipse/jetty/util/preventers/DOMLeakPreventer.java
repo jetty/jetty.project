@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,7 +30,10 @@ import javax.xml.parsers.DocumentBuilderFactory;
  *
  * Note that according to the bug report, a heap dump may not identify the GCRoot, making
  * it difficult to identify the cause of the leak.
+ * 
+ * @deprecated reported as fixed in jdk 7, see https://bugs.java.com/bugdatabase/view_bug.do?bug_id=6916498
  */
+@Deprecated
 public class DOMLeakPreventer extends AbstractLeakPreventer
 {
 

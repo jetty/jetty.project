@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -91,7 +91,10 @@ public abstract class WebSocketServlet extends HttpServlet
     {
         try
         {
+            ServletContext ctx = getServletContext();
+            ctx.removeAttribute(WebSocketServletFactory.class.getName());
             factory.stop();
+            factory = null;
         }
         catch (Exception ignore)
         {
@@ -135,11 +138,8 @@ public abstract class WebSocketServlet extends HttpServlet
 
             ServletContext ctx = getServletContext();
             factory = WebSocketServletFactory.Loader.load(ctx, policy);
-
             configure(factory);
-
             factory.start();
-
             ctx.setAttribute(WebSocketServletFactory.class.getName(), factory);
         }
         catch (Exception x)
