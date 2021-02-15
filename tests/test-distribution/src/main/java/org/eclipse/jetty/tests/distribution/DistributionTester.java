@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -152,9 +152,19 @@ public class DistributionTester
         commands.add("-Djava.io.tmpdir=" + workDir.toAbsolutePath().toString());
         commands.add("-jar");
         commands.add(config.jettyHome.toAbsolutePath() + "/start.jar");
-        // we get artifacts from local repo first
+
         args = new ArrayList<>(args);
+
+        // we get artifacts from local repo first
         args.add("maven.local.repo=" + System.getProperty("mavenRepoPath"));
+
+        // if this JVM has `maven.repo.uri` defined, make sure to propagate it to child
+        String remoteRepoUri = System.getProperty("maven.repo.uri");
+        if (remoteRepoUri != null)
+        {
+            args.add("maven.repo.uri=" + remoteRepoUri);
+        }
+
         commands.addAll(args);
 
         LOGGER.info("Executing: {}", commands);

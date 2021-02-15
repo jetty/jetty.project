@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -345,11 +345,12 @@ public class FileSystemResourceTest
             assertThat("Ref A1 exists", refA1.exists(), is(true));
             assertThat("Ref A2 exists", refA2.exists(), is(true));
             assertThat("Ref O1 exists", refO1.exists(), is(true));
-    
-            assertThat("Ref A1 alias", refA1.isAlias(), is(false));
-            assertThat("Ref A2 alias", refA2.isAlias(), is(false));
-            assertThat("Ref O1 alias", refO1.isAlias(), is(false));
-            
+            if (LINUX.isCurrentOs())
+            {
+                assertThat("Ref A1 alias", refA1.isAlias(), is(false));
+                assertThat("Ref A2 alias", refA2.isAlias(), is(false));
+                assertThat("Ref O1 alias", refO1.isAlias(), is(false));
+            }
             assertThat("Ref A1 contents", toString(refA1), is("hi a-with-circle"));
             assertThat("Ref A2 contents", toString(refA2), is("hi a-with-two-dots"));
             assertThat("Ref O1 contents", toString(refO1), is("hi o-with-two-dots"));

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -44,11 +44,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.statistic.SampleStatistic;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
@@ -86,6 +89,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     private Selector _selector;
     private Deque<SelectorUpdate> _updates = new ArrayDeque<>();
     private Deque<SelectorUpdate> _updateable = new ArrayDeque<>();
+    private final SampleStatistic _keyStats = new SampleStatistic();
 
     public ManagedSelector(SelectorManager selectorManager, int id)
     {
@@ -142,6 +146,36 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
 
         super.doStop();
+    }
+
+    @ManagedAttribute(value = "Total number of keys", readonly = true)
+    public int getTotalKeys()
+    {
+        return _selector.keys().size();
+    }
+
+    @ManagedAttribute(value = "Average number of selected keys", readonly = true)
+    public double getAverageSelectedKeys()
+    {
+        return _keyStats.getMean();
+    }
+
+    @ManagedAttribute(value = "Maximum number of selected keys", readonly = true)
+    public double getMaxSelectedKeys()
+    {
+        return _keyStats.getMax();
+    }
+
+    @ManagedAttribute(value = "Total number of select() calls", readonly = true)
+    public long getSelectCount()
+    {
+        return _keyStats.getCount();
+    }
+
+    @ManagedOperation(value = "Resets the statistics", impact = "ACTION")
+    public void resetStats()
+    {
+        _keyStats.reset();
     }
 
     protected int nioSelect(Selector selector, boolean now) throws IOException
@@ -586,9 +620,12 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                         }
 
                         _keys = selector.selectedKeys();
-                        _cursor = _keys.isEmpty() ? Collections.emptyIterator() : _keys.iterator();
+                        int selectedKeys = _keys.size();
+                        if (selectedKeys > 0)
+                            _keyStats.record(selectedKeys);
+                        _cursor = selectedKeys > 0 ? _keys.iterator() : Collections.emptyIterator();
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Selector {} processing {} keys, {} updates", selector, _keys.size(), updates);
+                            LOG.debug("Selector {} processing {} keys, {} updates", selector, selectedKeys, updates);
 
                         return true;
                     }

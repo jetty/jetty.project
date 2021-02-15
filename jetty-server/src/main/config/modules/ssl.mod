@@ -87,26 +87,30 @@ basehome:modules/ssl/keystore|etc/keystore
 ## SSL JSSE Provider
 # jetty.sslContext.provider=
 
-## Keystore file path (relative to $jetty.base)
+## KeyStore file path (relative to $jetty.base)
 # jetty.sslContext.keyStorePath=etc/keystore
+## KeyStore absolute file path
+# jetty.sslContext.keyStoreAbsolutePath=${jetty.base}/etc/keystore
 
-## Truststore file path (relative to $jetty.base)
+## TrustStore file path (relative to $jetty.base)
 # jetty.sslContext.trustStorePath=etc/keystore
+## TrustStore absolute file path
+# jetty.sslContext.trustStoreAbsolutePath=${jetty.base}/etc/keystore
 
-## Keystore password
+## KeyStore password
 # jetty.sslContext.keyStorePassword=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
 
-## Keystore type and provider
+## KeyStore type and provider
 # jetty.sslContext.keyStoreType=JKS
 # jetty.sslContext.keyStoreProvider=
 
 ## KeyManager password
 # jetty.sslContext.keyManagerPassword=OBF:1u2u1wml1z7s1z7a1wnl1u2g
 
-## Truststore password
+## TrustStore password
 # jetty.sslContext.trustStorePassword=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
 
-## Truststore type and provider
+## TrustStore type and provider
 # jetty.sslContext.trustStoreType=JKS
 # jetty.sslContext.trustStoreProvider=
 
