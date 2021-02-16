@@ -218,6 +218,65 @@ public class HttpURITest
         assertEquals("http:/path/info", uri.toString());
     }
 
+    @Test
+    public void testSetters() throws Exception
+    {
+        HttpURI uri = new HttpURI();
+        assertEquals("", uri.toString());
+
+        uri = new HttpURI(null, null, 0, null, null, null, null);
+        assertEquals("", uri.toString());
+
+        uri.setPath("/path/info");
+        assertEquals("/path/info", uri.toString());
+
+        uri.setAuthority("host", 8080);
+        assertEquals("//host:8080/path/info", uri.toString());
+
+        uri.setParam("param");
+        assertEquals("//host:8080/path/info;param", uri.toString());
+
+        uri.setQuery("a=b");
+        assertEquals("//host:8080/path/info;param?a=b", uri.toString());
+
+        uri.setScheme("http");
+        assertEquals("http://host:8080/path/info;param?a=b", uri.toString());
+
+        uri.setPathQuery("/other;xxx/path;ppp?query");
+        assertEquals("http://host:8080/other;xxx/path;ppp?query", uri.toString());
+
+        assertThat(uri.getScheme(), is("http"));
+        assertThat(uri.getAuthority(), is("host:8080"));
+        assertThat(uri.getHost(), is("host"));
+        assertThat(uri.getPort(), is(8080));
+        assertThat(uri.getPath(), is("/other;xxx/path;ppp"));
+        assertThat(uri.getDecodedPath(), is("/other/path"));
+        assertThat(uri.getParam(), is("ppp"));
+        assertThat(uri.getQuery(), is("query"));
+        assertThat(uri.getPathQuery(), is("/other;xxx/path;ppp?query"));
+
+        uri.setPathQuery(null);
+        assertEquals("http://host:8080", uri.toString());
+
+        uri.setPathQuery("/other;xxx/path;ppp?query");
+        assertEquals("http://host:8080/other;xxx/path;ppp?query", uri.toString());
+
+        uri.setScheme(null);
+        assertEquals("//host:8080/other;xxx/path;ppp?query", uri.toString());
+
+        uri.setAuthority(null,-1);
+        assertEquals("/other;xxx/path;ppp?query", uri.toString());
+
+        uri.setParam(null);
+        assertEquals("/other;xxx/path?query", uri.toString());
+
+        uri.setQuery(null);
+        assertEquals("/other;xxx/path", uri.toString());
+
+        uri.setPath(null);
+        assertEquals("", uri.toString());
+    }
+
     public static Stream<Arguments> decodePathTests()
     {
         return Arrays.stream(new Object[][]

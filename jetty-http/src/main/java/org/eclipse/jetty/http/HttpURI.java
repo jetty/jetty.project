@@ -23,6 +23,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.MultiMap;
@@ -134,10 +135,14 @@ public class HttpURI
         _scheme = scheme;
         _host = host;
         _port = port;
-        parse(State.PATH, path, 0, path.length());
-        _param = param;
-        _query = query;
-        _fragment = fragment;
+        if (path != null)
+            parse(State.PATH, path, 0, path.length());
+        if (param != null)
+            _param = param;
+        if (query != null)
+            _query = query;
+        if (fragment != null)
+            _fragment = fragment;
     }
 
     public HttpURI(HttpURI uri)
@@ -548,6 +553,7 @@ public class HttpURI
                 {
                     _fragment = uri.substring(mark, end);
                     i = end;
+                    break;
                 }
                 default:
                     break;
@@ -608,12 +614,6 @@ public class HttpURI
             _decodedPath = URIUtil.decodePath(canonical);
         }
     }
-
-    private void decodePath()
-    {
-
-    }
-
 
     /**
      * Check for ambiguous path segments.
@@ -685,10 +685,14 @@ public class HttpURI
 
     public void setParam(String param)
     {
-        _param = param;
-        if (_path != null && !_path.contains(_param))
+        if (!Objects.equals(_param,param))
         {
-            _path += ";" + _param;
+            if (_param != null && _path.endsWith(";" + _param))
+                _path = _path.substring(0, _path.length() - 1 - _param.length());
+            _param = param;
+            if (_param != null)
+                _path = (_path == null ? "" : _path) + ";" + _param;
+            _uri = null;
         }
     }
 
@@ -824,6 +828,7 @@ public class HttpURI
         _decodedPath = null;
         _param = null;
         _fragment = null;
+        _query = null;
         if (path != null)
             parse(State.PATH, path, 0, path.length());
     }
