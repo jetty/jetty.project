@@ -264,7 +264,7 @@ public class HttpURITest
         uri.setScheme(null);
         assertEquals("//host:8080/other;xxx/path;ppp?query", uri.toString());
 
-        uri.setAuthority(null,-1);
+        uri.setAuthority(null, -1);
         assertEquals("/other;xxx/path;ppp?query", uri.toString());
 
         uri.setParam(null);
