@@ -461,7 +461,7 @@ public class ErrorHandler extends AbstractHandler
     {
         Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
         Object servlet = request.getAttribute(Dispatcher.ERROR_SERVLET_NAME);
-        Map<String,String> json = new HashMap<>();
+        Map<String, String> json = new HashMap<>();
 
         json.put("url", request.getRequestURI());
         json.put("status", Integer.toString(code));

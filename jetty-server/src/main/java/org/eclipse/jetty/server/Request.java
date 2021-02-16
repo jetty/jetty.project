@@ -334,7 +334,7 @@ public class Request implements HttpServletRequest
             id = getRequestedSessionId();
         }
 
-        Map<String,String> cookies = new HashMap<>();
+        Map<String, String> cookies = new HashMap<>();
         Cookie[] existingCookies = getCookies();
         if (existingCookies != null)
         {
@@ -363,7 +363,7 @@ public class Request implements HttpServletRequest
         if (!cookies.isEmpty())
         {
             StringBuilder buff = new StringBuilder();
-            for (Map.Entry<String,String> entry : cookies.entrySet())
+            for (Map.Entry<String, String> entry : cookies.entrySet())
             {
                 if (buff.length() > 0)
                     buff.append("; ");

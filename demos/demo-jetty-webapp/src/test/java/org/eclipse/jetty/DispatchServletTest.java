@@ -113,7 +113,7 @@ public class DispatchServletTest
         context.addServlet(DefaultServlet.class, "/");
 
         String[] selfRefs =
-            {"/dispatch/forward", "/dispatch/includeS", "/dispatch/includeW", "/dispatch/includeN",};
+            {"/dispatch/forward", "/dispatch/includeS", "/dispatch/includeW", "/dispatch/includeN"};
 
         /*
          * Number of nested dispatch requests. 220 is a good value, as it won't

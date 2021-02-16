@@ -111,7 +111,7 @@ public class SerializedInfinispanSessionDataStoreTest extends AbstractSessionDat
         ((InfinispanSessionDataStore)store).setCache(null);
 
         //test that loading it fails
-        assertThrows(UnreadableSessionDataException.class,() -> store.load("222"));
+        assertThrows(UnreadableSessionDataException.class, () -> store.load("222"));
     }
 
     @Override

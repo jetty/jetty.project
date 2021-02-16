@@ -488,7 +488,7 @@ public class HttpConfiguration implements Dumpable
      */
     public void addFormEncodedMethod(String method)
     {
-        _formEncodedMethods.put(method,Boolean.TRUE);
+        _formEncodedMethods.put(method, Boolean.TRUE);
     }
 
     /**

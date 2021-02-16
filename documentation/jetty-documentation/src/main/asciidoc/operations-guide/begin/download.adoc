@@ -12,7 +12,7 @@
 //
 
 [[og-begin-download]]
-==== Downloading Eclipse Jetty
+==== Downloading Jetty
 
 The Eclipse Jetty distribution is available for download from link:https://www.eclipse.org/jetty/download.html[]
 

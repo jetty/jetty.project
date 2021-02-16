@@ -63,9 +63,9 @@ public class DynamicListenerTests
             }
 
             Files.copy(Paths.get("src/test/resources/realm.ini"),
-                       Paths.get(jettyBase.toString(),"start.d").resolve("realm.ini"));
+                Paths.get(jettyBase.toString(), "start.d").resolve("realm.ini"));
             Files.copy(Paths.get("src/test/resources/realm.properties"),
-                       etc.resolve("realm.properties"));
+                etc.resolve("realm.properties"));
             Files.copy(Paths.get("src/test/resources/test-realm.xml"),
                        etc.resolve("test-realm.xml"));
 

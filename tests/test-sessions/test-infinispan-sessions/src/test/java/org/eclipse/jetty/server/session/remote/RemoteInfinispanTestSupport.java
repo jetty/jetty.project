@@ -65,14 +65,14 @@ public class RemoteInfinispanTestSupport
             String infinispanVersion = System.getProperty("infinispan.docker.image.version", "9.4.8.Final");
             infinispan =
                 new GenericContainer(System.getProperty("infinispan.docker.image.name", "jboss/infinispan-server") +
-                                         ":" + infinispanVersion)
-                    .withEnv("APP_USER","theuser")
-                    .withEnv("APP_PASS","foobar")
+                    ":" + infinispanVersion)
+                    .withEnv("APP_USER", "theuser")
+                    .withEnv("APP_PASS", "foobar")
                     .withEnv("MGMT_USER", "admin")
                     .withEnv("MGMT_PASS", "admin")
                     .waitingFor(new LogMessageWaitStrategy()
-                                    .withRegEx(".*Infinispan Server.*started in.*\\s"))
-                    .withExposedPorts(4712,4713,8088,8089,8443,9990,9993,11211,11222,11223,11224)
+                        .withRegEx(".*Infinispan Server.*started in.*\\s"))
+                    .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
                     .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG));
             infinispan.start();
             String host = infinispan.getContainerIpAddress();
@@ -155,7 +155,7 @@ public class RemoteInfinispanTestSupport
 
     public void setup() throws Exception
     {
-        _cache = _manager.administration().getOrCreateCache(_name,(String)null);
+        _cache = _manager.administration().getOrCreateCache(_name, (String)null);
     }
 
     public void teardown() throws Exception

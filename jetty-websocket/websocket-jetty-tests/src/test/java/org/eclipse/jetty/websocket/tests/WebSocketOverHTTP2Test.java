@@ -347,8 +347,8 @@ public class WebSocketOverHTTP2Test
             });
             factory.addMapping("/ws/connectionClose", (request, response) ->
             {
-                UpgradeHttpServletRequest servletRequest = (UpgradeHttpServletRequest)request.getHttpServletRequest();
-                Request baseRequest = servletRequest.getBaseRequest();
+                UpgradeHttpServletRequest upgradeRequest = (UpgradeHttpServletRequest)request.getHttpServletRequest();
+                Request baseRequest = (Request)upgradeRequest.getHttpServletRequest();
                 baseRequest.getHttpChannel().getEndPoint().close();
                 return new EchoSocket();
             });

@@ -11,13 +11,14 @@ Jetty is available under an open source link:LICENSE.txt[LICENSE], and the full 
 The Jetty documentation is available at link:https://www.eclipse.org/jetty/documentation[].
 
 // tag::quick[]
-==== Quick Jetty Setup
+==== Quick Setup
 
 Jetty is distributed in an artifact that expands in a directory called `$JETTY_HOME`, which should not be modified.
 
-Configuration for Jetty is typically done in one (or more) other directories called `$JETTY_BASE`.
+Configuration for Jetty is typically done in a directory called `$JETTY_BASE`.
+There may be more than one `$JETTY_BASE` directories with different configurations.
 
-The following commands can be used to setup a `$JETTY_BASE` directory that supports deployment of `+*.war+` files and a clear-text HTTP connector:
+The following commands can be used to set up a `$JETTY_BASE` directory that supports deployment of `+*.war+` files and a clear-text HTTP connector:
 
 ----
 $ export JETTY_HOME=/path/to/jetty-home
@@ -26,7 +27,7 @@ $ cd /path/to/jetty-base
 $ java -jar $JETTY_HOME/start.jar --add-module=server,http,deploy
 ----
 
-This will create a `$JETTY_BASE/start.d/` directory and other directories that contain the configuration of the server, including the `$JETTY_BASE/webapps/` directory, in which standard `+*.war+` files can be deployed.
+The last command creates a `$JETTY_BASE/start.d/` directory and other directories that contain the configuration of the server, including the `$JETTY_BASE/webapps/` directory, in which standard `+*.war+` files can be deployed.
 
 To deploy Jetty's demo web applications, run this command:
 
@@ -40,9 +41,9 @@ Now you can start the Jetty server with:
 $ java -jar $JETTY_HOME/start.jar
 ----
 
-Point your browser at `+http://localhost:8080+` to see the web applications deployed in Jetty.
+Point your browser at `+http://localhost:8080+` to see the demo web applications deployed in Jetty.
 
-The Jetty server can be stopped with `ctrl-c` in the terminal window.
+The Jetty server can be stopped with `ctrl+c` in the terminal window.
 // end::quick[]
 
 For more information about how to start Jetty, run this command (or go to the link:https://www.eclipse.org/jetty/documentation[documentation]):
@@ -50,4 +51,3 @@ For more information about how to start Jetty, run this command (or go to the li
 ----
 $ java -jar $JETTY_HOME/start.jar --help
 ----
-

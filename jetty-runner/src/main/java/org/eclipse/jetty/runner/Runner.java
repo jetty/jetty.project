@@ -277,7 +277,7 @@ public class Runner
                     _configFiles.add(args[++i]);
                     break;
                 case "--lib":
-                    ++i;//skip
+                    ++i; //skip
 
                     break;
                 case "--jar":
@@ -285,7 +285,7 @@ public class Runner
 
                     break;
                 case "--classes":
-                    ++i;//skip
+                    ++i; //skip
 
                     break;
                 case "--stats":

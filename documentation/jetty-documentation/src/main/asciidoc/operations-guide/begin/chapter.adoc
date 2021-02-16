@@ -12,16 +12,17 @@
 //
 
 [[og-begin]]
-=== Introduction to Eclipse Jetty
+=== Getting Started
 
-This section will get you started with Eclipse Jetty.
+If you are new to Eclipse Jetty, read on to download, install, start and deploy web applications to Jetty.
 
 include::../../../../../../../jetty-home/src/main/resources/README.adoc[tags=quick]
 
-The following sections will guide you in details about downloading, installing and starting Jetty, as well as deploying your web applications to Jetty.
+The following sections will guide you in details about xref:og-begin-download[downloading], xref:og-begin-install[installing] and xref:og-begin-start[starting] Jetty, and xref:og-begin-deploy[deploying] your web applications to Jetty.
+
+Read the xref:og-arch[Jetty architecture section] for more information about Jetty modules, `$JETTY_HOME`, `$JETTY_BASE` and how to customize and start Jetty.
 
 include::download.adoc[]
 include::install.adoc[]
-include::architecture.adoc[]
 include::start.adoc[]
 include::deploy.adoc[]

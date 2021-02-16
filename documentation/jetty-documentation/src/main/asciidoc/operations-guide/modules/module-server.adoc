@@ -37,3 +37,6 @@ See also the xref:og-troubleshooting-dump[Jetty Server Dump] section for more in
 Whether to perform a `Server.dump()` operation before the `Server` stops.
 The output of the dump operation is sent to `System.err`.
 See also the xref:og-troubleshooting-dump[Jetty Server Dump] section for more information.
+
+`jetty.server.stopAtShutdown`::
+Whether to call `Server.stop()` through a JVM shutdown hook when the JVM exits.

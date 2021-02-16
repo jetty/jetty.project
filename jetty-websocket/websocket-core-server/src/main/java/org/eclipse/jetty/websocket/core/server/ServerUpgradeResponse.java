@@ -26,6 +26,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
+/**
+ * Upgrade response used for websocket negotiation.
+ * Allows setting of extensions and subprotocol without using headers directly.
+ */
 public class ServerUpgradeResponse
 {
     private final HttpServletResponse response;

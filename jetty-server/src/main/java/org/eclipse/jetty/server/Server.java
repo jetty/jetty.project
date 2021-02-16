@@ -614,7 +614,7 @@ public class Server extends HandlerWrapper implements Attributes
                     {
                         encodedPathQuery = URIUtil.canonicalPath(URIUtil.addEncodedPaths(encodedContextPath, encodedPathQuery));
                         if (encodedPathQuery == null)
-                            throw new BadMessageException(500,"Bad dispatch path");
+                            throw new BadMessageException(500, "Bad dispatch path");
                     }
                 }
 

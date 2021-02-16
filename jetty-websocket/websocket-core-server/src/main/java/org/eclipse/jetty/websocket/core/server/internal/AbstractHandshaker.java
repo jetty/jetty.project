@@ -59,7 +59,11 @@ public abstract class AbstractHandshaker implements Handshaker
         if (!validateRequest(request))
             return false;
 
-        WebSocketNegotiation negotiation = newNegotiation(request, response, components);
+        // After negotiation these can be set to copy data from request and disable unavailable methods.
+        UpgradeHttpServletRequest upgradeRequest = new UpgradeHttpServletRequest(request);
+        UpgradeHttpServletResponse upgradeResponse = new UpgradeHttpServletResponse(response);
+
+        WebSocketNegotiation negotiation = newNegotiation(upgradeRequest, upgradeResponse, components);
         if (LOG.isDebugEnabled())
             LOG.debug("negotiation {}", negotiation);
         negotiation.negotiate();
@@ -127,7 +131,7 @@ public abstract class AbstractHandshaker implements Handshaker
         Negotiated negotiated = new Negotiated(baseRequest.getHttpURI().toURI(), protocol, baseRequest.isSecure(), extensionStack, WebSocketConstants.SPEC_VERSION_STRING);
 
         // Create the Session
-        WebSocketCoreSession coreSession = newWebSocketCoreSession(request, handler, negotiated, components);
+        WebSocketCoreSession coreSession = newWebSocketCoreSession(upgradeRequest, handler, negotiated, components);
         if (defaultCustomizer != null)
             defaultCustomizer.customize(coreSession);
         negotiator.customize(coreSession);
@@ -158,6 +162,10 @@ public abstract class AbstractHandshaker implements Handshaker
         baseResponse.flushBuffer();
 
         baseRequest.setAttribute(HttpTransport.UPGRADE_CONNECTION_ATTRIBUTE, connection);
+
+        // Save state from request/response and remove reference to the base request/response.
+        upgradeRequest.upgrade();
+        upgradeResponse.upgrade();
 
         if (LOG.isDebugEnabled())
             LOG.debug("upgrade connection={} session={} framehandler={}", connection, coreSession, handler);

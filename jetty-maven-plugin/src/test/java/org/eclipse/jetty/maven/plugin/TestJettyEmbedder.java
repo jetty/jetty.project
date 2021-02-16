@@ -83,7 +83,7 @@ public class TestJettyEmbedder
         Path baseResource = workDir.getEmptyPathDir();
         webApp.setBaseResource(Resource.newResource(baseResource));
         Server server = new Server();
-        Map<String,String> jettyProperties = new HashMap<>();
+        Map<String, String> jettyProperties = new HashMap<>();
         jettyProperties.put("jetty.server.dumpAfterStart", "false");
 
         ContextHandler otherHandler = new ContextHandler();

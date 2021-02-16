@@ -37,6 +37,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +51,7 @@ import org.testcontainers.utility.MountableFile;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Disabled
 @Testcontainers
 public class AutobahnTests
 {
@@ -80,7 +82,7 @@ public class AutobahnTests
         try (GenericContainer<?> container = new GenericContainer<>(DockerImageName.parse("jettyproject/autobahn-testsuite:latest"))
             .withCommand("/bin/bash", "-c", "wstest -m fuzzingserver -s /config/fuzzingserver.json")
             .withExposedPorts(9001)
-            .withCopyFileToContainer(MountableFile.forHostPath(fuzzingServer),"/config/fuzzingserver.json")
+            .withCopyFileToContainer(MountableFile.forHostPath(fuzzingServer), "/config/fuzzingserver.json")
             .withLogConsumer(new Slf4jLogConsumer(LOG))
             .withStartupTimeout(Duration.ofHours(2)))
         {
@@ -113,7 +115,7 @@ public class AutobahnTests
         try (GenericContainer<?> container = new GenericContainer<>(DockerImageName.parse("jettyproject/autobahn-testsuite:latest"))
             .withCommand("/bin/bash", "-c", "wstest -m fuzzingclient -s /config/fuzzingclient.json" + FileSignalWaitStrategy.END_COMMAND)
             .withLogConsumer(new Slf4jLogConsumer(LOG))
-            .withCopyFileToContainer(MountableFile.forHostPath(fuzzingClient),"/config/fuzzingclient.json")
+            .withCopyFileToContainer(MountableFile.forHostPath(fuzzingClient), "/config/fuzzingclient.json")
             .withStartupCheckStrategy(strategy)
             .withStartupTimeout(Duration.ofHours(2)))
         {
@@ -238,7 +240,7 @@ public class AutobahnTests
 
             if (r.failed())
             {
-                addFailure(testcase,r);
+                addFailure(testcase, r);
                 failures++;
             }
             root.addChild(testcase);

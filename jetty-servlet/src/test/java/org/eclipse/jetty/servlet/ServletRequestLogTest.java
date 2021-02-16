@@ -599,6 +599,6 @@ public class ServletRequestLogTest
     private void assertRequestLog(final String expectedLogEntry, CaptureLog captureLog)
     {
         assertThat("Request log size", captureLog.captured, not(empty()));
-        assertThat("Request log entry",captureLog.captured.get(0), is(expectedLogEntry));
+        assertThat("Request log entry", captureLog.captured.get(0), is(expectedLogEntry));
     }
 }

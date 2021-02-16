@@ -12,17 +12,17 @@
 //
 
 [[og-begin-deploy]]
-==== Deploying Web Applications to Eclipse Jetty
+==== Deploying Web Applications
 
 For the purpose of deploying web applications to Jetty, there are two types of resources that can be deployed:
 
-* Standard Web Application Archives, in the form of `+*.war+` files or `+*.war+` directories, defined by the Servlet specification.
+* Standard Web Application Archives, in the form of `+*.war+` files or web application directories, defined by the Servlet specification.
 Their deployment is described in xref:og-begin-deploy-war[this section].
 * Jetty context XML files, that allow you to customize the deployment of standard web applications, and also allow you use Jetty components, and possibly custom components written by you, to assemble your web applications.
 Their deployment is described in xref:og-deploy[this section].
 
 [[og-begin-deploy-war]]
-===== Deploying Standard +*.war+ Web Applications
+===== Deploying +*.war+ Files
 
 A standard Servlet web application is packaged in either a `+*.war+` file or in a directory with the structure of a `+*.war+` file.
 
@@ -100,5 +100,8 @@ include::jetty[setupArgs="--add-modules=http,deploy,demo-simple",highlight="WebA
 Note the highlighted line that logs the deployment of `demo-simple.war`.
 
 Now you can access the web application by pointing your browser to `+http://localhost:8080/demo-simple+`.
+
+[[og-begin-deploy-war-advanced]]
+===== Advanced Deployment
 
 If you want to customize the deployment of your web application, for example by specifying a `contextPath` different from the file/directory name, or by specifying JNDI entries, or by specifying virtual hosts, etc. read xref:og-deploy[this section].

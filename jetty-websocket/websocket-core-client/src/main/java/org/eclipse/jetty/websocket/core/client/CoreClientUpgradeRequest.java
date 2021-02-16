@@ -37,6 +37,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -432,7 +433,8 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
         customizer.customize(coreSession);
 
         HttpClient httpClient = wsClient.getHttpClient();
-        WebSocketConnection wsConnection = new WebSocketConnection(endPoint, httpClient.getExecutor(), httpClient.getScheduler(), httpClient.getByteBufferPool(), coreSession);
+        ByteBufferPool bufferPool = wsClient.getWebSocketComponents().getBufferPool();
+        WebSocketConnection wsConnection = new WebSocketConnection(endPoint, httpClient.getExecutor(), httpClient.getScheduler(), bufferPool, coreSession);
         wsClient.getEventListeners().forEach(wsConnection::addEventListener);
         coreSession.setWebSocketConnection(wsConnection);
         notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(this, response));

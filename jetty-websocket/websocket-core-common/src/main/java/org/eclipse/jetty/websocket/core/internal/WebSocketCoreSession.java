@@ -43,11 +43,10 @@ import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
-import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketWriteTimeoutException;
-import org.eclipse.jetty.websocket.core.internal.Parser.ParsedFrame;
+import org.eclipse.jetty.websocket.core.internal.util.FrameValidation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,106 +106,6 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     public boolean isDemanding()
     {
         return demanding;
-    }
-
-    public void assertValidIncoming(Frame frame)
-    {
-        assertValidFrame(frame);
-
-        // Validate frame size.
-        if (maxFrameSize > 0 && frame.getPayloadLength() > maxFrameSize)
-            throw new MessageTooLargeException("Cannot handle payload lengths larger than " + maxFrameSize);
-
-        // Assert Incoming Frame Behavior Required by RFC-6455 / Section 5.1
-        switch (behavior)
-        {
-            case SERVER:
-                if (!frame.isMasked())
-                    throw new ProtocolException("Client MUST mask all frames (RFC-6455: Section 5.1)");
-                break;
-
-            case CLIENT:
-                if (frame.isMasked())
-                    throw new ProtocolException("Server MUST NOT mask any frames (RFC-6455: Section 5.1)");
-                break;
-
-            default:
-                throw new IllegalStateException(behavior.toString());
-        }
-
-        /*
-         * RFC 6455 Section 5.5.1
-         * close frame payload is specially formatted which is checked in CloseStatus
-         */
-        if (frame.getOpCode() == OpCode.CLOSE)
-        {
-            if (!(frame instanceof ParsedFrame)) // already check in parser
-                CloseStatus.getCloseStatus(frame); // return ignored as get used to validate there is a closeStatus
-        }
-    }
-
-    public void assertValidOutgoing(Frame frame) throws CloseException
-    {
-        assertValidFrame(frame);
-
-        // Validate frame size (allowed to be over max frame size if autoFragment is true).
-        if (!autoFragment && maxFrameSize > 0 && frame.getPayloadLength() > maxFrameSize)
-            throw new MessageTooLargeException("Cannot handle payload lengths larger than " + maxFrameSize);
-
-        /*
-         * RFC 6455 Section 5.5.1
-         * close frame payload is specially formatted which is checked in CloseStatus
-         */
-        if (frame.getOpCode() == OpCode.CLOSE)
-        {
-            if (!(frame instanceof ParsedFrame)) // already check in parser
-            {
-                CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
-                if (!CloseStatus.isTransmittableStatusCode(closeStatus.getCode()) && (closeStatus.getCode() != CloseStatus.NO_CODE))
-                {
-                    throw new ProtocolException("Frame has non-transmittable status code");
-                }
-            }
-        }
-    }
-
-    public void assertValidFrame(Frame frame)
-    {
-        if (!OpCode.isKnown(frame.getOpCode()))
-            throw new ProtocolException("Unknown opcode: " + frame.getOpCode());
-
-        int payloadLength = frame.getPayloadLength();
-        if (frame.isControlFrame())
-        {
-            if (!frame.isFin())
-                throw new ProtocolException("Fragmented Control Frame [" + OpCode.name(frame.getOpCode()) + "]");
-
-            if (payloadLength > Frame.MAX_CONTROL_PAYLOAD)
-                throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed [" + Frame.MAX_CONTROL_PAYLOAD + "]");
-
-            if (frame.isRsv1())
-                throw new ProtocolException("Cannot have RSV1==true on Control frames");
-            if (frame.isRsv2())
-                throw new ProtocolException("Cannot have RSV2==true on Control frames");
-            if (frame.isRsv3())
-                throw new ProtocolException("Cannot have RSV3==true on Control frames");
-        }
-        else
-        {
-            /*
-             * RFC 6455 Section 5.2
-             *
-             * MUST be 0 unless an extension is negotiated that defines meanings for non-zero values. If a nonzero value is received and none of the negotiated
-             * extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
-             */
-            ExtensionStack extensionStack = negotiated.getExtensions();
-            if (frame.isRsv1() && !extensionStack.isRsv1Used())
-                throw new ProtocolException("RSV1 not allowed to be set");
-            if (frame.isRsv2() && !extensionStack.isRsv2Used())
-                throw new ProtocolException("RSV2 not allowed to be set");
-            if (frame.isRsv3() && !extensionStack.isRsv3Used())
-                throw new ProtocolException("RSV3 not allowed to be set");
-        }
     }
 
     public ExtensionStack getExtensionStack()
@@ -501,6 +400,24 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
         connection.demand(n);
     }
 
+    @Override
+    public boolean isRsv1Used()
+    {
+        return getExtensionStack().isRsv1Used();
+    }
+
+    @Override
+    public boolean isRsv2Used()
+    {
+        return getExtensionStack().isRsv2Used();
+    }
+
+    @Override
+    public boolean isRsv3Used()
+    {
+        return getExtensionStack().isRsv3Used();
+    }
+
     public WebSocketConnection getConnection()
     {
         return connection;
@@ -519,7 +436,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
 
         try
         {
-            assertValidIncoming(frame);
+            FrameValidation.assertValidIncoming(frame, this);
         }
         catch (Throwable t)
         {
@@ -546,7 +463,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
 
         try
         {
-            assertValidOutgoing(frame);
+            FrameValidation.assertValidOutgoing(frame, this);
         }
         catch (Throwable t)
         {
