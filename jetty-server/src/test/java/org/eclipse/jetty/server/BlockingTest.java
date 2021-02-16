@@ -56,11 +56,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class BlockingTest
 {
     private Server server;
-    ServerConnector connector;
+    private ServerConnector connector;
     private ContextHandler context;
 
     @BeforeEach
-    void setUp()
+    public void setUp()
     {
         server = new Server();
         connector = new ServerConnector(server);
@@ -75,7 +75,7 @@ public class BlockingTest
     }
 
     @AfterEach
-    void tearDown() throws Exception
+    public void tearDown() throws Exception
     {
         server.stop();
     }
@@ -142,7 +142,7 @@ public class BlockingTest
         int port = connector.getLocalPort();
         try (Socket socket = new Socket("localhost", port))
         {
-            socket.setSoTimeout(1000000);
+            socket.setSoTimeout(10000);
             OutputStream out = socket.getOutputStream();
             out.write(request.toString().getBytes(StandardCharsets.ISO_8859_1));
 
@@ -222,7 +222,7 @@ public class BlockingTest
         int port = connector.getLocalPort();
         try (Socket socket = new Socket("localhost", port))
         {
-            socket.setSoTimeout(1000000);
+            socket.setSoTimeout(10000);
             OutputStream out = socket.getOutputStream();
             out.write(request.toString().getBytes(StandardCharsets.ISO_8859_1));
 
@@ -307,7 +307,7 @@ public class BlockingTest
         int port = connector.getLocalPort();
         try (Socket socket = new Socket("localhost", port))
         {
-            socket.setSoTimeout(1000000);
+            socket.setSoTimeout(10000);
             OutputStream out = socket.getOutputStream();
             out.write(request.toString().getBytes(StandardCharsets.ISO_8859_1));
 
@@ -388,7 +388,7 @@ public class BlockingTest
         int port = connector.getLocalPort();
         try (Socket socket = new Socket("localhost", port))
         {
-            socket.setSoTimeout(1000000);
+            socket.setSoTimeout(10000);
             OutputStream out = socket.getOutputStream();
             out.write(request.toString().getBytes(StandardCharsets.ISO_8859_1));
 
@@ -460,7 +460,7 @@ public class BlockingTest
         int port = connector.getLocalPort();
         try (Socket socket = new Socket("localhost", port))
         {
-            socket.setSoTimeout(1000000);
+            socket.setSoTimeout(10000);
             OutputStream out = socket.getOutputStream();
             out.write(request.toString().getBytes(StandardCharsets.ISO_8859_1));
 

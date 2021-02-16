@@ -380,7 +380,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         if (isFillInterested())
         {
             LOG.warn("Pending read in onCompleted {} {}", this, getEndPoint());
-            abort(new IllegalStateException());
+            abort(new IllegalStateException("Pending read in onCompleted"));
         }
 
         // Handle connection upgrades
