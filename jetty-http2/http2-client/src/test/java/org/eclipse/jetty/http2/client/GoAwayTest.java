@@ -372,51 +372,51 @@ public class GoAwayTest extends AbstractTest
         CountDownLatch serverGoAwayLatch = new CountDownLatch(1);
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
         start(new ServerSessionListener.Adapter()
-        {
-            @Override
-            public void onAccept(Session session)
             {
-                serverSessionRef.set(session);
-            }
-
-            @Override
-            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
-            {
-                AtomicInteger dataFrames = new AtomicInteger();
-                return new Stream.Listener.Adapter()
+                @Override
+                public void onAccept(Session session)
                 {
-                    @Override
-                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                    serverSessionRef.set(session);
+                }
+
+                @Override
+                public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+                {
+                    AtomicInteger dataFrames = new AtomicInteger();
+                    return new Stream.Listener.Adapter()
                     {
-                        // Do not consume the data for this stream (i.e. don't succeed the callback).
-                        // Only send the response when receiving the first DATA frame.
-                        if (dataFrames.incrementAndGet() == 1)
+                        @Override
+                        public void onData(Stream stream, DataFrame frame, Callback callback)
                         {
-                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
-                            stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                            // Do not consume the data for this stream (i.e. don't succeed the callback).
+                            // Only send the response when receiving the first DATA frame.
+                            if (dataFrames.incrementAndGet() == 1)
+                            {
+                                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                                stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                            }
                         }
-                    }
-                };
-            }
+                    };
+                }
 
-            @Override
-            public void onGoAway(Session session, GoAwayFrame frame)
-            {
-                serverGoAwayLatch.countDown();
-            }
+                @Override
+                public void onGoAway(Session session, GoAwayFrame frame)
+                {
+                    serverGoAwayLatch.countDown();
+                }
 
-            @Override
-            public void onClose(Session session, GoAwayFrame frame)
+                @Override
+                public void onClose(Session session, GoAwayFrame frame)
+                {
+                    serverCloseLatch.countDown();
+                }
+            }, h2 ->
             {
-                serverCloseLatch.countDown();
-            }
-        }, h2 ->
-        {
-            // Use the simple, predictable, strategy for window updates.
-            h2.setFlowControlStrategyFactory(SimpleFlowControlStrategy::new);
-            h2.setInitialSessionRecvWindow(flowControlWindow);
-            h2.setInitialStreamRecvWindow(flowControlWindow);
-        });
+                // Use the simple, predictable, strategy for window updates.
+                h2.setFlowControlStrategyFactory(SimpleFlowControlStrategy::new);
+                h2.setInitialSessionRecvWindow(flowControlWindow);
+                h2.setInitialStreamRecvWindow(flowControlWindow);
+            });
 
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);

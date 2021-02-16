@@ -363,8 +363,7 @@ public class HttpURITest
                 {"/path/%2f/info", "/path///info", true},
                 {"%2f/info", "//info", true},
                 {"%2F/info", "//info", true},
-
-                }).map(Arguments::of);
+            }).map(Arguments::of);
     }
 
     @ParameterizedTest
