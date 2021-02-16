@@ -685,7 +685,7 @@ public class HttpURI
 
     public void setParam(String param)
     {
-        if (!Objects.equals(_param,param))
+        if (!Objects.equals(_param, param))
         {
             if (_param != null && _path.endsWith(";" + _param))
                 _path = _path.substring(0, _path.length() - 1 - _param.length());
