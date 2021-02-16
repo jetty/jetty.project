@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.util.thread;
 
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -36,7 +38,10 @@ import org.eclipse.jetty.util.log.Logger;
 public class ShutdownThread extends Thread
 {
     private static final Logger LOG = Log.getLogger(ShutdownThread.class);
-    private static final ShutdownThread _thread = new ShutdownThread();
+    private static final ShutdownThread _thread = PrivilegedThreadFactory.newThread(() ->
+    {
+        return new ShutdownThread();
+    });
 
     private boolean _hooked;
     private final List<LifeCycle> _lifeCycles = new CopyOnWriteArrayList<LifeCycle>();

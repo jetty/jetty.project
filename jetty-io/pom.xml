@@ -3,13 +3,14 @@
   <parent>
     <artifactId>jetty-project</artifactId>
     <groupId>org.eclipse.jetty</groupId>
-    <version>9.4.36-SNAPSHOT</version>
+    <version>9.4.37-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-io</artifactId>
   <name>Jetty :: IO Utility</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.io</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.io.*</spotbugs.onlyAnalyze>
   </properties>
   <dependencies>
     <dependency>
@@ -23,15 +24,4 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.io.*</onlyAnalyze>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 </project>

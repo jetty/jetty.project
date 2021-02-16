@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,7 +31,7 @@ import javax.annotation.Resources;
 public class ResourceB extends ResourceA
 {
     @Resource(mappedName = "resB")
-    private Integer f;//test no inheritance of private fields
+    private Integer f; //test no inheritance of private fields
 
     @Resource
     private Integer p = new Integer(8); //test no injection because no value

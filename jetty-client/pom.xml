@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.36-SNAPSHOT</version>
+    <version>9.4.37-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -11,16 +11,10 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>
     <jetty.test.policy.loc>target/test-policy</jetty.test.policy.loc>
+    <spotbugs.onlyAnalyze>org.eclipse.client.*</spotbugs.onlyAnalyze>
   </properties>
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.client.*</onlyAnalyze>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>

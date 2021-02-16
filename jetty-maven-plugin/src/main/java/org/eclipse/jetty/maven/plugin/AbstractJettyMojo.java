@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -473,7 +473,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
                         }
                         catch (Exception e)
                         {
-                            getLog().error("Error reconfiguring/restarting webapp after change in watched files",e);
+                            getLog().error("Error reconfiguring/restarting webapp after change in watched files", e);
                         }
                     }
                 });

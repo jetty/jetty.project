@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.36-SNAPSHOT</version>
+    <version>9.4.37-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-continuation</artifactId>
@@ -10,16 +10,10 @@
   <description>Asynchronous API</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.continuation</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.continuation.*</spotbugs.onlyAnalyze>
   </properties>
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.continuation.*</onlyAnalyze>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
   <dependencies>

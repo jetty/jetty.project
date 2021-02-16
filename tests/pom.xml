@@ -4,13 +4,16 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.36-SNAPSHOT</version>
+    <version>9.4.37-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.eclipse.jetty.tests</groupId>
   <artifactId>tests-parent</artifactId>
   <name>Jetty Tests :: Parent</name>
   <packaging>pom</packaging>
+  <properties>
+    <spotbugs.skip>true</spotbugs.skip>
+  </properties>
   <build>
     <pluginManagement>
       <plugins>
@@ -35,22 +38,6 @@
           <artifactId>maven-javadoc-plugin</artifactId>
           <configuration>
             <!-- No point building javadoc on testing projects -->
-            <skip>true</skip>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>findbugs-maven-plugin</artifactId>
-          <configuration>
-            <!-- No Point running Findbugs on testing projects -->
-            <skip>true</skip>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>clirr-maven-plugin</artifactId>
-          <configuration>
-            <!-- No point running clirr on test projects -->
             <skip>true</skip>
           </configuration>
         </plugin>

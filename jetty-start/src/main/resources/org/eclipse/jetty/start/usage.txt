@@ -184,7 +184,7 @@ Advanced Commands:
                    Advanced usage, If the file does not exist at the given
                    location, download it from the given http URI.
                    Notes: location is always relative to ${jetty.base}.
-                          you might need to escape the slash "\|" to use
+                          you might need to escape the pipe "\|" to use
                           this on some environments.
   maven.repo.uri=[url]
                   The url to use to download Maven dependencies.

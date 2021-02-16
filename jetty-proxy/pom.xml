@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.36-SNAPSHOT</version>
+    <version>9.4.37-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-proxy</artifactId>
@@ -10,18 +10,8 @@
   <description>Jetty Proxy</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.proxy</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.proxy.*</spotbugs.onlyAnalyze>
   </properties>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.proxy.*</onlyAnalyze>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
   <dependencies>
     <dependency>
       <groupId>javax.servlet</groupId>

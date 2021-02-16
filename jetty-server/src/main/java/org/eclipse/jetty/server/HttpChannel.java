@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -393,7 +393,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     case ASYNC_DISPATCH:
                     {
-                        dispatch(DispatcherType.ASYNC,() -> getServer().handleAsync(this));
+                        dispatch(DispatcherType.ASYNC, () -> getServer().handleAsync(this));
                         break;
                     }
 
@@ -432,7 +432,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 break;
                             }
 
-                            dispatch(DispatcherType.ERROR,() ->
+                            dispatch(DispatcherType.ERROR, () ->
                             {
                                 errorHandler.handle(null, _request, _request, _response);
                                 _request.setHandled(true);

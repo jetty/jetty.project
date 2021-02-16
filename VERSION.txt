@@ -1,4 +1,23 @@
-jetty-9.4.36-SNAPSHOT
+jetty-9.4.37-SNAPSHOT
+
+jetty-9.4.36.v20210114 - 14 January 2021
+ + 5310 Jetty Http2 client discards the response fames when there is GOAWAY and
+   sends RST_STREAM
+ + 5499 Improve temporary buffer usage for WebSocket PerMessageDeflate.
+ + 5633 Allow to configure HttpClient request authority
+ + 5689 Jetty ssl keystorePath doesn't work with absolute path
+ + 5755 Cannot configure maxDynamicTableSize on HTTP2Client
+ + 5783 Fix ConnectionStatistics.*Rate() methods
+ + 5785 Reduce log level for WebSocket connections closed by clients
+ + 5794 ServerConnector leaks closed sockets which can lead to file descriptor
+   exhaustion
+ + 5824 Build up of ConstraintMappings when stopping and starting WebAppContext
+ + 5830 Jetty-util contains wrong Import-Package
+ + 5844 --download flag to jetty-start causes NullPointerException
+ + 5845 Use UTF-8 encoding for client basic auth if requested
+ + 5855 HttpClient may not send queued requests
+ + 5870 jetty-maven-plugin fails to run ServletContainerInitializer on Windows
+   due to URI case comparison bug
 
 jetty-9.4.35.v20201120 - 20 November 2020
  + 4711 Reset trailers on recycled response
@@ -6,7 +25,8 @@ jetty-9.4.35.v20201120 - 20 November 2020
  + 5539 StatisticsServlet output is not valid
  + 5562 ArrayTernaryTrie consumes too much memory
  + 5575 Add SEARCH as a known HttpMethod
- + 5605 CVE-2020-27218 java.io.IOException: unconsumed input during http request parsing
+ + 5605 CVE-2020-27218 java.io.IOException: unconsumed input during http
+   request parsing
  + 5633 Allow to configure HttpClient request authority
 
 jetty-9.4.34.v20201102 - 02 November 2020
@@ -11312,7 +11332,31 @@ jetty-1.1
 jetty-1.0.1
  + Bug fixes
 
-jetty-1.0
+jetty-1.0 - Jan 1998
+ + MBServlerV5 renamed to Jetty
  + First release in com.mortbay package structure
  + Included Util, JDBC, HTML, HTTP, Jetty
 
+MBServler-V4.5Beta
+  + Using It JSDK1.0Beta API
+  + Improved HTML package.
+  + Filter mechanism inspired by JigSaw
+
+MBServler-V4
+ + JeevesA1.2 servlet API
+ + Better configuration and setup for embedding in other Java applications.
+ + Util classes from Intelligent Switched Systems.
+
+MBServler-V1 / IssueTracker 3.1
+ + The IssueTracker HTTP server has been separated from the Issue Tracker application and updated to the java.servlet interface. It is now called MBServler
+ + JDBC module
+
+IssueTracker-2.0
+ + Faster HTTP server
+ + Basic authentication
+ + User management
+
+IssueTracker-1.0 - Jan 1995
+ + Won the Australian Java Programming Contest!
+ + HTTP Server
+ + Issue tracking application

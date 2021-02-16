@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,6 +34,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -42,6 +43,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class ResourceTest
@@ -296,5 +298,31 @@ public class ResourceTest
         String globReference = testDir.toAbsolutePath().toString() + File.separator + '*';
         Resource globResource = Resource.newResource(globReference);
         assertNotNull(globResource, "Should have produced a Resource");
+    }
+
+    @Test
+    @EnabledOnOs(OS.WINDOWS)
+    public void testEqualsWindowsAltUriSyntax() throws Exception
+    {
+        URI a = new URI("file:/C:/foo/bar");
+        URI b = new URI("file:///C:/foo/bar");
+
+        Resource ra = Resource.newResource(a);
+        Resource rb = Resource.newResource(b);
+
+        assertEquals(rb, ra);
+    }
+
+    @Test
+    @EnabledOnOs(OS.WINDOWS)
+    public void testEqualsWindowsCaseInsensitiveDrive() throws Exception
+    {
+        URI a = new URI("file:///c:/foo/bar");
+        URI b = new URI("file:///C:/foo/bar");
+        
+        Resource ra = Resource.newResource(a);
+        Resource rb = Resource.newResource(b);
+
+        assertEquals(rb, ra);
     }
 }

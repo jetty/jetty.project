@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -271,8 +271,16 @@ public class ShutdownMonitor
         try
         {
             ServerSocket serverSocket = new ServerSocket();
-            serverSocket.setReuseAddress(true);
-            serverSocket.bind(new InetSocketAddress(InetAddress.getByName(host), port));
+            try
+            {
+                serverSocket.setReuseAddress(true);
+                serverSocket.bind(new InetSocketAddress(InetAddress.getByName(host), port));
+            }
+            catch (Throwable e)
+            {
+                IO.close(serverSocket);
+                throw e;
+            }
             if (port == 0)
             {
                 port = serverSocket.getLocalPort();

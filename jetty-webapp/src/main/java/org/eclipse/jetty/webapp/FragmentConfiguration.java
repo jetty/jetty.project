@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -71,16 +71,9 @@ public class FragmentConfiguration extends AbstractConfiguration
         Map<Resource, Resource> frags = (Map<Resource, Resource>)context.getAttribute(FRAGMENT_RESOURCES);
         if (frags != null)
         {
-            for (Resource key : frags.keySet())
+            for (Map.Entry<Resource, Resource> entry : frags.entrySet())
             {
-                if (key.isDirectory()) //tolerate the case where the library is a directory, not a jar. useful for OSGi for example
-                {
-                    metaData.addFragment(key, frags.get(key));
-                }
-                else //the standard case: a jar most likely inside WEB-INF/lib
-                {
-                    metaData.addFragment(key, frags.get(key));
-                }
+                metaData.addFragment(entry.getKey(), entry.getValue());
             }
         }
     }

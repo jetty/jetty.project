@@ -3,7 +3,7 @@
   <parent>
     <artifactId>jetty-project</artifactId>
     <groupId>org.eclipse.jetty</groupId>
-    <version>9.4.36-SNAPSHOT</version>
+    <version>9.4.37-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-home</artifactId>
@@ -14,6 +14,7 @@
     <assembly-directory>${basedir}/target/jetty-home</assembly-directory>
     <source-assembly-directory>${basedir}/target/jetty-home-sources</source-assembly-directory>
     <jetty-setuid-version>1.0.4</jetty-setuid-version>
+    <spotbugs.skip>true</spotbugs.skip>
   </properties>
 
   <build>
@@ -529,22 +530,6 @@
             </configuration>
           </execution>
         </executions>
-      </plugin>
-      <!-- No point performing PMD in assembly project -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-pmd-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-      <!-- No point performing Findbugs in assembly project -->
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
       </plugin>
     </plugins>
   </build>

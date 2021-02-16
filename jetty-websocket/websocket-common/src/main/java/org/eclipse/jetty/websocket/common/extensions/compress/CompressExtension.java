@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.extensions.compress;
 
-import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -28,6 +27,8 @@ import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 import java.util.zip.ZipException;
 
+import org.eclipse.jetty.io.ByteBufferAccumulator;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.compression.DeflaterPool;
@@ -162,7 +163,7 @@ public abstract class CompressExtension extends AbstractExtension
         ByteBuffer buffer = getBufferPool().acquire(accumulator.getLength(), false);
         try
         {
-            BufferUtil.flipToFill(buffer);
+            BufferUtil.clearToFill(buffer);
             accumulator.transferTo(buffer);
             newFrame.setPayload(buffer);
             nextIncomingFrame(newFrame);
@@ -176,19 +177,15 @@ public abstract class CompressExtension extends AbstractExtension
     protected ByteAccumulator newByteAccumulator()
     {
         int maxSize = Math.max(getPolicy().getMaxTextMessageSize(), getPolicy().getMaxBinaryMessageSize());
-        return new ByteAccumulator(maxSize);
+        return new ByteAccumulator(maxSize, getBufferPool());
     }
 
     protected void decompress(ByteAccumulator accumulator, ByteBuffer buf) throws DataFormatException
     {
-        if ((buf == null) || (!buf.hasRemaining()))
-        {
+        if (BufferUtil.isEmpty(buf))
             return;
-        }
-        byte[] output = new byte[DECOMPRESS_BUF_SIZE];
 
         Inflater inflater = getInflater();
-
         while (buf.hasRemaining() && inflater.needsInput())
         {
             if (!supplyInput(inflater, buf))
@@ -198,22 +195,17 @@ public abstract class CompressExtension extends AbstractExtension
                 return;
             }
 
-            int read;
-            while ((read = inflater.inflate(output)) >= 0)
+            while (true)
             {
-                if (read == 0)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Decompress: read 0 {}", toDetail(inflater));
+                ByteBuffer buffer = accumulator.ensureBuffer(DECOMPRESS_BUF_SIZE);
+                int read = inflater.inflate(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.capacity() - buffer.limit());
+                buffer.limit(buffer.limit() + read);
+                accumulator.addLength(read);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Decompressed {} bytes into buffer {} from {}", read, BufferUtil.toDetailString(buffer), toDetail(inflater));
+
+                if (read <= 0)
                     break;
-                }
-                else
-                {
-                    // do something with output
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Decompressed {} bytes: {}", read, toDetail(inflater));
-                    accumulator.copyChunk(output, 0, read);
-                }
             }
         }
 
@@ -441,7 +433,6 @@ public abstract class CompressExtension extends AbstractExtension
             notifyCallbackFailure(current.callback, x);
             // If something went wrong, very likely the compression context
             // will be invalid, so we need to fail this IteratingCallback.
-            LOG.warn(x);
             super.failed(x);
         }
 
@@ -483,7 +474,9 @@ public abstract class CompressExtension extends AbstractExtension
             // Get a chunk of the payload to avoid to blow
             // the heap if the payload is a huge mapped file.
             Frame frame = entry.frame;
+            boolean fin = frame.isFin();
             ByteBuffer data = frame.getPayload();
+            Deflater deflater = getDeflater();
 
             if (data == null)
                 data = BufferUtil.EMPTY_BUFFER;
@@ -493,39 +486,46 @@ public abstract class CompressExtension extends AbstractExtension
             if (LOG.isDebugEnabled())
                 LOG.debug("Compressing {}: {} bytes in {} bytes chunk", entry, remaining, outputLength);
 
-            boolean needsCompress = true;
-
-            Deflater deflater = getDeflater();
-
-            if (deflater.needsInput() && !supplyInput(deflater, data))
+            ByteBuffer payload = BufferUtil.EMPTY_BUFFER;
+            WriteCallback callback = this;
+            if (!deflater.needsInput() || supplyInput(deflater, data))
             {
-                // no input supplied
-                needsCompress = false;
-            }
-
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-
-            byte[] output = new byte[outputLength];
-
-            boolean fin = frame.isFin();
-
-            // Compress the data
-            while (needsCompress)
-            {
-                int compressed = deflater.deflate(output, 0, outputLength, Deflater.SYNC_FLUSH);
-
-                // Append the output for the eventual frame.
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Wrote {} bytes to output buffer", compressed);
-                out.write(output, 0, compressed);
-
-                if (compressed < outputLength)
+                ByteBufferPool bufferPool = getBufferPool();
+                try (ByteBufferAccumulator accumulator = new ByteBufferAccumulator(bufferPool, false))
                 {
-                    needsCompress = false;
+                    while (true)
+                    {
+                        ByteBuffer buffer = accumulator.ensureBuffer(8, outputLength);
+                        int compressed = deflater.deflate(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.capacity() - buffer.limit(), Deflater.SYNC_FLUSH);
+                        buffer.limit(buffer.limit() + compressed);
+
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Wrote {} bytes to output buffer", accumulator);
+
+                        if (compressed <= 0)
+                            break;
+                    }
+
+                    ByteBuffer buffer = accumulator.takeByteBuffer();
+                    payload = buffer;
+                    callback = new WriteCallback()
+                    {
+                        @Override
+                        public void writeFailed(Throwable x)
+                        {
+                            bufferPool.release(buffer);
+                            Flusher.this.writeFailed(x);
+                        }
+
+                        @Override
+                        public void writeSuccess()
+                        {
+                            bufferPool.release(buffer);
+                            Flusher.this.writeSuccess();
+                        }
+                    };
                 }
             }
-
-            ByteBuffer payload = ByteBuffer.wrap(out.toByteArray());
 
             if (payload.remaining() > 0)
             {
@@ -575,8 +575,7 @@ public abstract class CompressExtension extends AbstractExtension
             }
             chunk.setPayload(payload);
             chunk.setFin(fin);
-
-            nextOutgoingFrame(chunk, this, entry.batchMode);
+            nextOutgoingFrame(chunk, callback, entry.batchMode);
         }
 
         @Override

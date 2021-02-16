@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.4.36-SNAPSHOT</version>
+    <version>9.4.37-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-httpservice</artifactId>
@@ -10,6 +10,7 @@
   <description>Jetty OSGi HttpService bundle</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.httpservice</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.osgi.httpservice.*</spotbugs.onlyAnalyze>
   </properties>
   <dependencies>
     <dependency>
@@ -68,13 +69,6 @@
             </Import-Package>
             <_nouses>true</_nouses>
           </instructions>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.osgi.httpservice.*</onlyAnalyze>
         </configuration>
       </plugin>
     </plugins>

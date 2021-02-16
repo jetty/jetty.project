@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,8 +19,6 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -29,6 +27,7 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
+import org.eclipse.jetty.util.statistic.RateCounter;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
 /**
@@ -43,28 +42,29 @@ public class ConnectionStatistics extends AbstractLifeCycle implements Connectio
 {
     private final CounterStatistic _connections = new CounterStatistic();
     private final SampleStatistic _connectionsDuration = new SampleStatistic();
-    private final LongAdder _rcvdBytes = new LongAdder();
-    private final AtomicLong _bytesInStamp = new AtomicLong();
-    private final LongAdder _sentBytes = new LongAdder();
-    private final AtomicLong _bytesOutStamp = new AtomicLong();
+
+    private final LongAdder _bytesIn = new LongAdder();
+    private final LongAdder _bytesOut = new LongAdder();
     private final LongAdder _messagesIn = new LongAdder();
-    private final AtomicLong _messagesInStamp = new AtomicLong();
     private final LongAdder _messagesOut = new LongAdder();
-    private final AtomicLong _messagesOutStamp = new AtomicLong();
+    private final RateCounter _bytesInRate = new RateCounter();
+    private final RateCounter _bytesOutRate = new RateCounter();
+    private final RateCounter _messagesInRate = new RateCounter();
+    private final RateCounter _messagesOutRate = new RateCounter();
 
     @ManagedOperation(value = "Resets the statistics", impact = "ACTION")
     public void reset()
     {
         _connections.reset();
         _connectionsDuration.reset();
-        _rcvdBytes.reset();
-        _bytesInStamp.set(System.nanoTime());
-        _sentBytes.reset();
-        _bytesOutStamp.set(System.nanoTime());
+        _bytesIn.reset();
+        _bytesOut.reset();
         _messagesIn.reset();
-        _messagesInStamp.set(System.nanoTime());
         _messagesOut.reset();
-        _messagesOutStamp.set(System.nanoTime());
+        _bytesInRate.reset();
+        _bytesOutRate.reset();
+        _messagesInRate.reset();
+        _messagesOutRate.reset();
     }
 
     @Override
@@ -89,53 +89,63 @@ public class ConnectionStatistics extends AbstractLifeCycle implements Connectio
             return;
 
         _connections.decrement();
-
-        long elapsed = System.currentTimeMillis() - connection.getCreatedTimeStamp();
-        _connectionsDuration.record(elapsed);
+        _connectionsDuration.record(System.currentTimeMillis() - connection.getCreatedTimeStamp());
 
         long bytesIn = connection.getBytesIn();
         if (bytesIn > 0)
-            _rcvdBytes.add(bytesIn);
+        {
+            _bytesIn.add(bytesIn);
+            _bytesInRate.add(bytesIn);
+        }
+
         long bytesOut = connection.getBytesOut();
         if (bytesOut > 0)
-            _sentBytes.add(bytesOut);
+        {
+            _bytesOut.add(bytesOut);
+            _bytesOutRate.add(bytesOut);
+        }
 
         long messagesIn = connection.getMessagesIn();
         if (messagesIn > 0)
+        {
             _messagesIn.add(messagesIn);
+            _messagesInRate.add(messagesIn);
+        }
+
         long messagesOut = connection.getMessagesOut();
         if (messagesOut > 0)
+        {
             _messagesOut.add(messagesOut);
+            _messagesOutRate.add(messagesOut);
+        }
     }
 
     @ManagedAttribute("Total number of bytes received by tracked connections")
     public long getReceivedBytes()
     {
-        return _rcvdBytes.sum();
+        return _bytesIn.sum();
     }
 
     @ManagedAttribute("Total number of bytes received per second since the last invocation of this method")
     public long getReceivedBytesRate()
     {
-        long now = System.nanoTime();
-        long then = _bytesInStamp.getAndSet(now);
-        long elapsed = TimeUnit.NANOSECONDS.toMillis(now - then);
-        return elapsed == 0 ? 0 : getReceivedBytes() * 1000 / elapsed;
+        long rate = _bytesInRate.getRate();
+        _bytesInRate.reset();
+        return rate;
     }
 
     @ManagedAttribute("Total number of bytes sent by tracked connections")
     public long getSentBytes()
     {
-        return _sentBytes.sum();
+        return _bytesOut.sum();
     }
 
     @ManagedAttribute("Total number of bytes sent per second since the last invocation of this method")
     public long getSentBytesRate()
     {
-        long now = System.nanoTime();
-        long then = _bytesOutStamp.getAndSet(now);
-        long elapsed = TimeUnit.NANOSECONDS.toMillis(now - then);
-        return elapsed == 0 ? 0 : getSentBytes() * 1000 / elapsed;
+        long rate = _bytesOutRate.getRate();
+        _bytesOutRate.reset();
+        return rate;
     }
 
     @ManagedAttribute("The max duration of a connection in ms")
@@ -183,10 +193,9 @@ public class ConnectionStatistics extends AbstractLifeCycle implements Connectio
     @ManagedAttribute("Total number of messages received per second since the last invocation of this method")
     public long getReceivedMessagesRate()
     {
-        long now = System.nanoTime();
-        long then = _messagesInStamp.getAndSet(now);
-        long elapsed = TimeUnit.NANOSECONDS.toMillis(now - then);
-        return elapsed == 0 ? 0 : getReceivedMessages() * 1000 / elapsed;
+        long rate = _messagesInRate.getRate();
+        _messagesInRate.reset();
+        return rate;
     }
 
     @ManagedAttribute("The total number of messages sent")
@@ -198,10 +207,9 @@ public class ConnectionStatistics extends AbstractLifeCycle implements Connectio
     @ManagedAttribute("Total number of messages sent per second since the last invocation of this method")
     public long getSentMessagesRate()
     {
-        long now = System.nanoTime();
-        long then = _messagesOutStamp.getAndSet(now);
-        long elapsed = TimeUnit.NANOSECONDS.toMillis(now - then);
-        return elapsed == 0 ? 0 : getSentMessages() * 1000 / elapsed;
+        long rate = _messagesOutRate.getRate();
+        _messagesOutRate.reset();
+        return rate;
     }
 
     @Override
