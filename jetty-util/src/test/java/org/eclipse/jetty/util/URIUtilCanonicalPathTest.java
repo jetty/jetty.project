@@ -29,6 +29,10 @@ public class URIUtilCanonicalPathTest
     {
         String[][] canonical =
             {
+                // Examples from RFC
+                {"/a/b/c/./../../g", "/a/g"},
+                {"mid/content=5/../6", "mid/6"},
+
                 // Basic examples (no changes expected)
                 {"/hello.html", "/hello.html"},
                 {"/css/main.css", "/css/main.css"},
@@ -51,8 +55,12 @@ public class URIUtilCanonicalPathTest
                 {"/aaa/./bbb/", "/aaa/bbb/"},
                 {"/aaa/./bbb", "/aaa/bbb"},
                 {"./bbb/", "bbb/"},
+                {"./aaa", "aaa"},
+                {"./aaa/", "aaa/"},
+                {"/./aaa/", "/aaa/"},
                 {"./aaa/../bbb/", "bbb/"},
                 {"/foo/.", "/foo/"},
+                {"/foo/./", "/foo/"},
                 {"./", ""},
                 {".", ""},
                 {".//", "/"},
@@ -116,6 +124,10 @@ public class URIUtilCanonicalPathTest
                 {"/foo/.;/bar", "/foo/.;/bar"},
                 {"/foo/..;/bar", "/foo/..;/bar"},
                 {"/foo/..;/..;/bar", "/foo/..;/..;/bar"},
+
+                // Trailing / is preserved
+                {"/foo/bar/..", "/foo/"},
+                {"/foo/bar/../", "/foo/"},
             };
 
         ArrayList<Arguments> ret = new ArrayList<>();
@@ -130,6 +142,6 @@ public class URIUtilCanonicalPathTest
     @MethodSource("data")
     public void testCanonicalPath(String input, String expectedResult)
     {
-        assertThat("Canonical", URIUtil.canonicalPath(input), is(expectedResult));
+        assertThat(URIUtil.canonicalPath(input), is(expectedResult));
     }
 }

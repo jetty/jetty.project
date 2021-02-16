@@ -67,6 +67,7 @@ import javax.servlet.http.WebConnection;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HostPortHttpField;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookie.SetCookieHttpField;
 import org.eclipse.jetty.http.HttpField;
@@ -1684,7 +1685,10 @@ public class Request implements HttpServletRequest
         _method = request.getMethod();
         _httpFields = request.getFields();
         final HttpURI uri = request.getURI();
-
+        
+        if (uri.hasAmbiguousSegment() && !_channel.getHttpConfiguration().getHttpCompliance().allows(HttpCompliance.Violation.AMBIGUOUS_PATH_SEGMENTS))
+            throw new BadMessageException("Ambiguous segment in URI");
+        
         if (uri.isAbsolute() && uri.hasAuthority() && uri.getPath() != null)
         {
             _uri = uri;
@@ -1723,7 +1727,7 @@ public class Request implements HttpServletRequest
             // TODO this is not really right for CONNECT
             path = _uri.isAbsolute() ? "/" : null;
         else if (encoded.startsWith("/"))
-            path = (encoded.length() == 1) ? "/" : URIUtil.canonicalPath(_uri.getDecodedPath());
+            path = (encoded.length() == 1) ? "/" : _uri.getDecodedPath();
         else if ("*".equals(encoded) || HttpMethod.CONNECT.is(getMethod()))
             path = encoded;
         else
