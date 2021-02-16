@@ -112,7 +112,7 @@ public class DefaultServletTest
 
         connector = new LocalConnector(server);
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
-        connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC7230_LEGACY); // allow ambiguous path segments
+        connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.RFC7230_LEGACY); // allow ambiguous path segments
 
         File extraJarResources = MavenTestingUtils.getTestResourceFile(ODD_JAR);
         URL[] urls = new URL[]{extraJarResources.toURI().toURL()};
