@@ -391,7 +391,7 @@ public interface HttpURI
          * by {@link URIUtil#canonicalPath(String)}.  Thus this class flags such ambiguous
          * path segments, so that they may be rejected by the server if so configured.
          */
-        private final static Index<Boolean> __ambiguousSegments = new Index.Builder<Boolean>()
+        private static final Index<Boolean> __ambiguousSegments = new Index.Builder<Boolean>()
             .caseSensitive(false)
             .with("%2e", Boolean.TRUE)
             .with("%2e%2e", Boolean.TRUE)
