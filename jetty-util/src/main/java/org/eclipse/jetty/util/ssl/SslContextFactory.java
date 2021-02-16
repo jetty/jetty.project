@@ -2001,6 +2001,14 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
             return 0;
     }
 
+    public void validateCerts(X509Certificate[] certs) throws Exception
+    {
+        KeyStore trustStore = loadTrustStore(_trustStoreResource);
+        Collection<? extends CRL> crls = loadCRL(_crlPath);
+        CertificateValidator validator = new CertificateValidator(trustStore, crls);
+        validator.validate(certs);
+    }
+
     @Override
     public String toString()
     {

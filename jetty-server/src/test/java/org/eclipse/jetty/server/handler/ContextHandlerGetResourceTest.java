@@ -133,8 +133,8 @@ public class ContextHandlerGetResourceTest
     public void testBadPath() throws Exception
     {
         final String path = "bad";
-        assertThrows(MalformedURLException.class,() -> context.getResource(path));
-        assertThrows(MalformedURLException.class,() -> context.getServletContext().getResource(path));
+        assertThrows(MalformedURLException.class, () -> context.getResource(path));
+        assertThrows(MalformedURLException.class, () -> context.getServletContext().getResource(path));
     }
 
     @Test

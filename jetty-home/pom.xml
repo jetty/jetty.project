@@ -444,7 +444,7 @@
               <excludeArtifactIds>infinispan-embedded,infinispan-remote,jetty-test-helper,alpn-api,javax.security.auth.message,javax.activation</excludeArtifactIds>
               <classifier>config</classifier>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
-              <excludes>META-INF/**</excludes>
+              <excludes>META-INF/**,webapps/**,start.d/**,start.ini</excludes>
               <outputDirectory>${assembly-directory}</outputDirectory>
             </configuration>
           </execution>

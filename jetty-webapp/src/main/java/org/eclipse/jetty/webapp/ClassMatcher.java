@@ -65,8 +65,6 @@ import org.slf4j.LoggerFactory;
 
 public class ClassMatcher extends AbstractSet<String>
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ClassMatcher.class);
-
     public static class Entry
     {
         private final String _pattern;
@@ -722,9 +720,8 @@ public class ClassMatcher extends AbstractSet<String>
         {
             return combine(_patterns, clazz.getName(), _locations, () -> TypeUtil.getLocationOfClass(clazz));
         }
-        catch (Exception e)
+        catch (Exception ignored)
         {
-            LOG.warn("Unable to match against {}", clazz, e);
         }
         return false;
     }
@@ -744,14 +741,13 @@ public class ClassMatcher extends AbstractSet<String>
             {
                 return URIUtil.getJarSource(url.toURI());
             }
-            catch (URISyntaxException e)
+            catch (URISyntaxException ignored)
             {
-                LOG.trace("IGNORED", e);
                 return null;
             }
         });
     }
-    
+
     /**
      * Match a class against inclusions and exclusions by name and location.
      * Name based checks are performed before location checks. For a class to match,

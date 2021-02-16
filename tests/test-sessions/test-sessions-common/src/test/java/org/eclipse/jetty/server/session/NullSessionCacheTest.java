@@ -93,8 +93,8 @@ public class NullSessionCacheTest extends AbstractSessionCacheTest
         SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
         data.setExpiry(now + TimeUnit.DAYS.toMillis(1));
         Session session = cache.newSession(null, data); //mimic a request making a session
-        cache.add("1234", session); 
-        assertFalse(cache.contains("1234"));//null cache doesn't actually retain the session
+        cache.add("1234", session);
+        assertFalse(cache.contains("1234")); //null cache doesn't actually retain the session
         
         //mimic releasing the session after the request is finished
         cache.release("1234", session);

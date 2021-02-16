@@ -30,7 +30,7 @@ public class ResourceA implements javax.servlet.Servlet
     private Integer k;
 
     @Resource(name = "myf", mappedName = "resB") //test giving both a name and mapped name from the environment
-    private Integer f;//test a non inherited field that needs injection
+    private Integer f; //test a non inherited field that needs injection
 
     @Resource(mappedName = "resA") //test the default naming scheme but using a mapped name from the environment
     private Integer g;

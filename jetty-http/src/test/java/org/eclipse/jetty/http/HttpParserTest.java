@@ -82,13 +82,13 @@ public class HttpParserTest
     {
         for (HttpMethod m : HttpMethod.values())
         {
-            assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString().substring(0,2))));
+            assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString().substring(0, 2))));
             assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString())));
             assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString() + "FOO")));
             assertEquals(m, HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString() + " ")));
             assertEquals(m, HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString() + " /foo/bar")));
 
-            assertNull(HttpMethod.lookAheadGet(m.asString().substring(0,2).getBytes(), 0,2));
+            assertNull(HttpMethod.lookAheadGet(m.asString().substring(0, 2).getBytes(), 0, 2));
             assertNull(HttpMethod.lookAheadGet(m.asString().getBytes(), 0, m.asString().length()));
             assertNull(HttpMethod.lookAheadGet((m.asString() + "FOO").getBytes(), 0, m.asString().length() + 3));
             assertEquals(m, HttpMethod.lookAheadGet(("\n" + m.asString() + " ").getBytes(), 1, m.asString().length() + 2));

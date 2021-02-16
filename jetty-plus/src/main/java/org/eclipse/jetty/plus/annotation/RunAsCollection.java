@@ -30,7 +30,7 @@ public class RunAsCollection
     private static final Logger LOG = LoggerFactory.getLogger(RunAsCollection.class);
 
     public static final String RUNAS_COLLECTION = "org.eclipse.jetty.runAsCollection";
-    private ConcurrentMap<String, RunAs> _runAsMap = new ConcurrentHashMap<String, RunAs>();//map of classname to run-as
+    private ConcurrentMap<String, RunAs> _runAsMap = new ConcurrentHashMap<String, RunAs>(); //map of classname to run-as
 
     public void add(RunAs runAs)
     {

@@ -21,8 +21,11 @@ include::../config.adoc[]
 include::.asciidoctorconfig[]
 include::introduction.adoc[]
 include::begin/chapter.adoc[]
-
+include::architecture/chapter.adoc[]
+include::features.adoc[]
+include::howtos.adoc[]
 include::start/chapter.adoc[]
+
 include::deploy/chapter.adoc[]
 include::protocols/chapter.adoc[]
 include::keystore/chapter.adoc[]

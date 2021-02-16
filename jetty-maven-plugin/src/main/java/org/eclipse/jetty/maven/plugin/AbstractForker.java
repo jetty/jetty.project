@@ -30,7 +30,7 @@ public abstract class AbstractForker extends AbstractLifeCycle
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractForker.class);
     
-    protected Map<String,String> env;
+    protected Map<String, String> env;
     
     protected String jvmArgs;
     
@@ -40,7 +40,7 @@ public abstract class AbstractForker extends AbstractLifeCycle
     
     protected List<File> jettyXmlFiles;
     
-    protected Map<String,String> jettyProperties;
+    protected Map<String, String> jettyProperties;
     
     protected int stopPort;
     
@@ -58,7 +58,7 @@ public abstract class AbstractForker extends AbstractLifeCycle
     
     protected File workDir;
     
-    protected Map<String,String> systemProperties;
+    protected Map<String, String> systemProperties;
     
     protected abstract ProcessBuilder  createCommand();
     

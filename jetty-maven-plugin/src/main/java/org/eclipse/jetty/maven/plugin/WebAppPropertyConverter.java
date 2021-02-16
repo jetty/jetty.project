@@ -184,7 +184,7 @@ public class WebAppPropertyConverter
      * 
      * @throws Exception
      */
-    public static void fromProperties(MavenWebAppContext webApp, Properties webAppProperties, Server server, Map<String,String> jettyProperties)
+    public static void fromProperties(MavenWebAppContext webApp, Properties webAppProperties, Server server, Map<String, String> jettyProperties)
         throws Exception
     {
         if (webApp == null)
@@ -308,7 +308,7 @@ public class WebAppPropertyConverter
      * @param jettyProperties jetty properties to use if there is a context xml file to apply
      * @throws Exception
      */
-    public static void fromProperties(MavenWebAppContext webApp, File propsFile, Server server, Map<String,String> jettyProperties)
+    public static void fromProperties(MavenWebAppContext webApp, File propsFile, Server server, Map<String, String> jettyProperties)
         throws Exception
     {
 

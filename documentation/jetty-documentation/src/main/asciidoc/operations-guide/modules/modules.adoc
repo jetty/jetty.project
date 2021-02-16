@@ -20,3 +20,20 @@ TODO
 //  * old_docs/startup/startup-modules.adoc
 //  * old_docs/startup/custom-modules.adoc
 //
+
+[[og-modules-custom]]
+==== Custom Jetty Modules
+
+TODO
+
+//The `[jpms]` section has the following format:
+//
+//[source, screen, subs="{sub-order}"]
+//....
+//[jpms]
+//add-modules: <module name>(,<module name>)*
+//patch-module: <module>=<file>(:<file>)*
+//add-opens: <module>/<package>=<target-module>(,<target-module>)*
+//add-exports: <module>/<package>=<target-module>(,<target-module>)*
+//add-reads: <module>=<target-module>(,<target-module>)*
+//....

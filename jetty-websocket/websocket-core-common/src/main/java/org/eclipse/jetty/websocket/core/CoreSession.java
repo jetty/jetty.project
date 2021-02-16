@@ -77,8 +77,7 @@ public interface CoreSession extends OutgoingFrames, Configuration
     Behavior getBehavior();
 
     /**
-     * TODO
-     * @return
+     * @return the WebSocketComponents instance in use for this Connection.
      */
     WebSocketComponents getWebSocketComponents();
 
@@ -165,6 +164,21 @@ public interface CoreSession extends OutgoingFrames, Configuration
      * {@link FrameHandler#onFrame(Frame, Callback)}).  May not be negative.
      */
     void demand(long n);
+
+    /**
+     * @return true if an extension has been negotiated which uses the RSV1 bit.
+     */
+    boolean isRsv1Used();
+
+    /**
+     * @return true if an extension has been negotiated which uses the RSV2 bit.
+     */
+    boolean isRsv2Used();
+
+    /**
+     * @return true if an extension has been negotiated which uses the RSV3 bit.
+     */
+    boolean isRsv3Used();
 
     class Empty extends ConfigurationCustomizer implements CoreSession
     {
@@ -272,6 +286,24 @@ public interface CoreSession extends OutgoingFrames, Configuration
         public void sendFrame(Frame frame, Callback callback, boolean batch)
         {
             callback.succeeded();
+        }
+
+        @Override
+        public boolean isRsv1Used()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean isRsv2Used()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean isRsv3Used()
+        {
+            return false;
         }
     }
 }

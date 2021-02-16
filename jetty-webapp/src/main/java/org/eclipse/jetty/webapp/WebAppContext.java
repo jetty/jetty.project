@@ -751,37 +751,25 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @Override
     public boolean isServerClass(Class<?> clazz)
     {
-        boolean result = _serverClasses.match(clazz);
-        if (LOG.isDebugEnabled())
-            LOG.debug("isServerClass=={} {}", result, clazz);
-        return result;
+        return _serverClasses.match(clazz);
     }
 
     @Override
     public boolean isSystemClass(Class<?> clazz)
     {
-        boolean result = _systemClasses.match(clazz);
-        if (LOG.isDebugEnabled())
-            LOG.debug("isSystemClass=={} {}", result, clazz);
-        return result;
+        return _systemClasses.match(clazz);
     }
 
     @Override
     public boolean isServerResource(String name, URL url)
     {
-        boolean result = _serverClasses.match(name, url);
-        if (LOG.isDebugEnabled())
-            LOG.debug("isServerResource=={} {} {}", result, name, url);
-        return result;
+        return _serverClasses.match(name, url);
     }
 
     @Override
     public boolean isSystemResource(String name, URL url)
     {
-        boolean result = _systemClasses.match(name, url);
-        if (LOG.isDebugEnabled())
-            LOG.debug("isSystemResource=={} {} {}", result, name, url);
-        return result;
+        return _systemClasses.match(name, url);
     }
 
     @Override

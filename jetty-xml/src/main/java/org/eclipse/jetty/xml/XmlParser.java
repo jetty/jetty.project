@@ -430,7 +430,7 @@ public class XmlParser
             if (LOG.isDebugEnabled())
                 LOG.warn("SAX Parse Issue", ex);
             else
-                LOG.warn("SAX Parse Issue @{} : {}",getLocationString(ex), ex.toString());
+                LOG.warn("SAX Parse Issue @{} : {}", getLocationString(ex), ex.toString());
         }
 
         @Override
@@ -442,7 +442,7 @@ public class XmlParser
             if (LOG.isDebugEnabled())
                 LOG.error("SAX Parse Issue", ex);
             else
-                LOG.error("SAX Parse Issue @{} : {}",getLocationString(ex), ex.toString());
+                LOG.error("SAX Parse Issue @{} : {}", getLocationString(ex), ex.toString());
         }
 
         @Override

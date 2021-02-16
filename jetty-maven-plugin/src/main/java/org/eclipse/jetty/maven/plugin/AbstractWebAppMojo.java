@@ -195,7 +195,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * Optional jetty properties to put on the command line
      */
     @Parameter
-    protected Map<String,String> jettyProperties;
+    protected Map<String, String> jettyProperties;
 
     
     /**
@@ -219,7 +219,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * Optional.
      */
     @Parameter
-    protected Map<String,String> systemProperties;
+    protected Map<String, String> systemProperties;
 
     /**
      * Controls how to run jetty. Valid values are EMBED,FORK,HOME.
@@ -272,7 +272,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * Extra environment variables to be passed to the forked process
      */
     @Parameter
-    protected Map<String,String> env = new HashMap<String,String>();
+    protected Map<String, String> env = new HashMap<>();
 
     /**
      * Arbitrary jvm args to pass to the forked process
@@ -381,7 +381,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     /**
      * System properties from both systemPropertyFile and systemProperties.
      */
-    protected Map<String,String> mergedSystemProperties;
+    protected Map<String, String> mergedSystemProperties;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException
@@ -566,10 +566,10 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * @return united properties map
      * @throws MojoExecutionException
      */
-    protected Map<String,String> mergeSystemProperties()
+    protected Map<String, String> mergeSystemProperties()
         throws MojoExecutionException
     {
-        Map<String,String> properties = new HashMap<>();
+        Map<String, String> properties = new HashMap<>();
         
         //Get the properties from any file first
         if (systemPropertiesFile != null)
@@ -583,7 +583,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
             }
             catch (Exception e)
             {
-                throw new MojoExecutionException("Problem applying system properties from file " + systemPropertiesFile.getName(),e);
+                throw new MojoExecutionException("Problem applying system properties from file " + systemPropertiesFile.getName(), e);
             }
         }
         //Allow systemProperties defined in the pom to override the file
@@ -599,7 +599,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     {
         if (mergedSystemProperties != null)
         {
-            for (Map.Entry<String,String> e : mergedSystemProperties.entrySet())
+            for (Map.Entry<String, String> e : mergedSystemProperties.entrySet())
             {
                 if (!StringUtil.isEmpty(e.getKey()) && !StringUtil.isEmpty(e.getValue()))
                 {
@@ -785,7 +785,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         if (webApp.getTempDirectory() == null)
         {
             File target = new File(project.getBuild().getDirectory());
-            File tmp = new File(target,"tmp");
+            File tmp = new File(target, "tmp");
             if (!tmp.exists())
             {
                 if (!tmp.mkdirs())

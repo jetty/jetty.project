@@ -219,11 +219,13 @@ public class SearchPatternTest
     public void testExampleFrom4673()
     {
         SearchPattern pattern = SearchPattern.compile("\r\n------WebKitFormBoundaryhXfFAMfUnUKhmqT8".getBytes(StandardCharsets.US_ASCII));
-        byte[] data = new byte[]{118,97,108,117,101,49,
-                                 '\r','\n','-','-','-','-',
-                                 0,0,0,0,0,0,0,0,0,0,
-                                 0,0,0,0,0,0,0,0,0,0,
-                                 0,0,0,0,0,0,0,0,0,0};
+        byte[] data = new byte[]{
+            118, 97, 108, 117, 101, 49,
+            '\r', '\n', '-', '-', '-', '-',
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        };
         int length = 12;
 
         int partialMatch = pattern.endsWith(data, 0, length);

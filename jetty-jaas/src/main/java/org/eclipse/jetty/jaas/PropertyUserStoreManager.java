@@ -77,7 +77,7 @@ public class PropertyUserStoreManager extends AbstractLifeCycle
     @Override
     protected void doStop() throws Exception
     {
-        for (Map.Entry<String,PropertyUserStore> entry: _propertyUserStores.entrySet())
+        for (Map.Entry<String, PropertyUserStore> entry : _propertyUserStores.entrySet())
         {
             try
             {

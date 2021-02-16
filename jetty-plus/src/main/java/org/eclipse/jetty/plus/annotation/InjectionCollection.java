@@ -38,7 +38,7 @@ public class InjectionCollection
 
     public static final String INJECTION_COLLECTION = "org.eclipse.jetty.injectionCollection";
 
-    private final ConcurrentMap<String, Set<Injection>> _injectionMap = new ConcurrentHashMap<>();//map of classname to injections
+    private final ConcurrentMap<String, Set<Injection>> _injectionMap = new ConcurrentHashMap<>(); //map of classname to injections
 
     public void add(Injection injection)
     {
