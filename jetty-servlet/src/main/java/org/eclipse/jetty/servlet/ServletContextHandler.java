@@ -505,34 +505,43 @@ public class ServletContextHandler extends ContextHandler
     {
         return getServletHandler().addFilterWithMapping(filterClass, pathSpec, dispatches);
     }
-    
+
     /**
-     * Utility Method to allow for manual execution of {@link javax.servlet.ServletContainerInitializer} when using Embedded Jetty.
-     * @param containerInitializer the ServletContainerInitializer to register.
-     * @see Initializer
+     * Convenience method to programmatically add a {@link javax.servlet.ServletContainerInitializer}.
+     * @param sci the ServletContainerInitializer to register.
+     * @return the ServletContainerInitializerHolder that was created
      */
-    public void addServletContainerInitializer(ServletContainerInitializer containerInitializer)
+    public ServletContainerInitializerHolder addServletContainerInitializer(ServletContainerInitializer sci)
     {
         if (!isStopped())
             throw new IllegalStateException("ServletContainerInitializers should be added before starting");
 
-        addServletContainerInitializer(new ServletContainerInitializerHolder(containerInitializer));
+        ServletContainerInitializerHolder holder = new ServletContainerInitializerHolder(sci);
+        addServletContainerInitializer(holder);
+        return holder;
     }
 
     /**
-     * Utility Method to allow for manual execution of {@link javax.servlet.ServletContainerInitializer} when using Embedded Jetty.
+     * Convenience method to programmatically add a {@link javax.servlet.ServletContainerInitializer}.
      * @param sci the ServletContainerInitializer to register.
      * @param classes the Set of application classes.
-     * @see Initializer
+     * @return the ServletContainerInitializerHolder that was created
      */
-    public void addServletContainerInitializer(ServletContainerInitializer sci, Class<?>... classes)
+    public ServletContainerInitializerHolder addServletContainerInitializer(ServletContainerInitializer sci, Class<?>... classes)
     {
         if (!isStopped())
             throw new IllegalStateException("ServletContainerInitializers should be added before starting");
 
-        addServletContainerInitializer(new ServletContainerInitializerHolder(sci, classes));
+        ServletContainerInitializerHolder holder = new ServletContainerInitializerHolder(sci, classes);
+        addServletContainerInitializer(holder);
+        return holder;
     }
     
+    /**
+     * Convenience method to programmatically add a list of {@link javax.servlet.ServletContainerInitializer}.
+     * The initializers are guaranteed to be called in the order they are passed into this method.
+     * @param sciHolders the ServletContainerInitializerHolders
+     */
     public void addServletContainerInitializer(ServletContainerInitializerHolder... sciHolders)
     {
         ServletContainerInitializerStarter starter = getBean(ServletContainerInitializerStarter.class);

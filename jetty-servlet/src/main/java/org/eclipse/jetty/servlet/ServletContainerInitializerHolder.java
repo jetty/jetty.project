@@ -33,7 +33,6 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Holds a ServletContainerInitializer.
- *
  */
 public class ServletContainerInitializerHolder extends BaseHolder<ServletContainerInitializer>
 {
@@ -83,7 +82,7 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
      */
     public void addStartupClasses(String... names)
     {
-        for (String n:names)
+        for (String n : names)
             _startupClassNames.add(n);
     }
 
@@ -92,14 +91,14 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
      */
     public void addStartupClasses(Class<?>... clazzes)
     {
-        for (Class<?> c:clazzes)
+        for (Class<?> c : clazzes)
             _startupClasses.add(c);
     }
     
     protected Set<Class<?>> resolveStartupClasses() throws Exception
     {
         Set<Class<?>> classes = new HashSet<>();
-        for (String name:_startupClassNames)
+        for (String name : _startupClassNames)
         {
             classes.add(Loader.loadClass(name)); //TODO catch CNFE?
         }

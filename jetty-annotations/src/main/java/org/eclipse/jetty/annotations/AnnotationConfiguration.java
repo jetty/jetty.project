@@ -330,7 +330,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
             super(source, sci);
             //take the classes and set them aside until we can calculate all of their
             //subclasses as necessary
-            //_applicableClasses.addAll(Arrays.asList(startupClasses).stream().map(Class::getName).collect(Collectors.toSet()));
             _handlesTypes.addAll(_startupClasses);
         }
         
@@ -357,7 +356,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
             _handlesTypes.addAll(Arrays.asList(clazzes));
         }
 
-        //TODO check if necessary
         @Override
         protected Set<Class<?>> resolveStartupClasses() throws Exception
         {

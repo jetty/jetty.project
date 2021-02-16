@@ -18,5 +18,4 @@ module org.eclipse.jetty.quickstart
     requires jetty.servlet.api;
     requires transitive org.eclipse.jetty.annotations;
     requires org.slf4j;
-    requires org.eclipse.jetty.servlet;
 }
