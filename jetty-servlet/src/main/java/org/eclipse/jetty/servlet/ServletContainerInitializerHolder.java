@@ -82,7 +82,7 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
      */
     public void addStartupClasses(String... names)
     {
-        _startupClassNames.addAll(names);
+        _startupClassNames.addAll(Arrays.asList(names));
     }
 
     /**
@@ -90,7 +90,7 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
      */
     public void addStartupClasses(Class<?>... clazzes)
     {
-        _startupClasses.addAll(clazzes);
+        _startupClasses.addAll(Arrays.asList(clazzes));
     }
     
     protected Set<Class<?>> resolveStartupClasses() throws Exception

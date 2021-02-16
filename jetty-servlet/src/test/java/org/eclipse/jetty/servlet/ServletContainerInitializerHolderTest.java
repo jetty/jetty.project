@@ -88,18 +88,18 @@ public class ServletContainerInitializerHolderTest
     {
         //test for backward compatibility of string format
         String sci0 = "ContainerInitializer{org.eclipse.jetty.servlet.ServletContainerInitializerHolderTest$SimpleSCI,interested=[],applicable=[],annotated=[]}";
-        ServletContainerInitializerHolder holder = ServletContainerInitializerHolder.fromString(Thread.currentThread().getContextClassLoader(),sci0);
+        ServletContainerInitializerHolder holder = ServletContainerInitializerHolder.fromString(Thread.currentThread().getContextClassLoader(), sci0);
         assertEquals(sci0, holder.toString());
         
         //test with no classes
         String sci1 = "ContainerInitializer{org.eclipse.jetty.servlet.ServletContainerInitializerHolderTest$SimpleSCI,interested=[]}";
         String sci1Expected = "ContainerInitializer{org.eclipse.jetty.servlet.ServletContainerInitializerHolderTest$SimpleSCI,interested=[],applicable=[],annotated=[]}";
-        holder = ServletContainerInitializerHolder.fromString(Thread.currentThread().getContextClassLoader(),sci1);
+        holder = ServletContainerInitializerHolder.fromString(Thread.currentThread().getContextClassLoader(), sci1);
         assertEquals(sci1Expected, holder.toString());
 
         //test with some startup classes
         String sci2 = "ContainerInitializer{org.eclipse.jetty.servlet.ServletContainerInitializerHolderTest$SimpleSCI,interested=[java.lang.String, java.lang.Integer]}";
-        holder = ServletContainerInitializerHolder.fromString(Thread.currentThread().getContextClassLoader(),sci2);
+        holder = ServletContainerInitializerHolder.fromString(Thread.currentThread().getContextClassLoader(), sci2);
 
         final Matcher matcher2 = ServletContainerInitializerHolder.__pattern.matcher(holder.toString());
         matcher2.matches();
@@ -110,7 +110,7 @@ public class ServletContainerInitializerHolderTest
 
         //test with old format with startup classes
         String sci3 = "ContainerInitializer{org.eclipse.jetty.servlet.ServletContainerInitializerHolderTest$SimpleSCI,interested=[java.lang.String, java.lang.Integer],applicable=[java.lang.Boolean],annotated=[java.lang.Long]}";
-        holder = ServletContainerInitializerHolder.fromString(Thread.currentThread().getContextClassLoader(),sci3);
+        holder = ServletContainerInitializerHolder.fromString(Thread.currentThread().getContextClassLoader(), sci3);
         final Matcher matcher3 = ServletContainerInitializerHolder.__pattern.matcher(holder.toString());
         matcher3.matches();
         assertEquals("org.eclipse.jetty.servlet.ServletContainerInitializerHolderTest$SimpleSCI", matcher3.group(1));
