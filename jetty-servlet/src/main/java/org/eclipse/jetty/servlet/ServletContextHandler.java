@@ -1638,7 +1638,6 @@ public class ServletContextHandler extends ContextHandler
      * ServletContainerInitializers by starting their corresponding
      * ServletContainerInitializerHolders when this bean is itself started.
      * Note that the SCIs will be started in order of addition.
-     *
      */
     public static class ServletContainerInitializerStarter extends ContainerLifeCycle implements ServletContainerInitializerCaller
     {
@@ -1666,7 +1665,7 @@ public class ServletContextHandler extends ContextHandler
         {
             //remove all of the non-programmatic holders
             Collection<ServletContainerInitializerHolder> holders = getServletContainerInitializerHolders();
-            for (ServletContainerInitializerHolder h:holders)
+            for (ServletContainerInitializerHolder h : holders)
             {
                 if (h.getSource().getOrigin() != Source.Origin.EMBEDDED)
                     removeBean(h);

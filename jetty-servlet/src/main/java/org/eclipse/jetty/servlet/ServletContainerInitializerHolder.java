@@ -82,8 +82,7 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
      */
     public void addStartupClasses(String... names)
     {
-        for (String n : names)
-            _startupClassNames.add(n);
+        _startupClassNames.addAll(names);
     }
 
     /**
@@ -91,8 +90,7 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
      */
     public void addStartupClasses(Class<?>... clazzes)
     {
-        for (Class<?> c : clazzes)
-            _startupClasses.add(c);
+        _startupClasses.addAll(clazzes);
     }
     
     protected Set<Class<?>> resolveStartupClasses() throws Exception
@@ -192,7 +190,7 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
             for (String name:classnames)
                 classes.add(loader.loadClass(name));
             
-            holder.addStartupClasses((Class<?>[])classes.toArray(new Class<?>[0]));
+            holder.addStartupClasses(classes.toArray(new Class<?>[0]));
             
             return holder;
         }

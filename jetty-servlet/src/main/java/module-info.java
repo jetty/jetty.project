@@ -27,5 +27,4 @@ module org.eclipse.jetty.servlet
     requires static java.desktop;
     // Only required if using JMX.
     requires static org.eclipse.jetty.jmx;
-    requires org.eclipse.jetty.util;
 }
