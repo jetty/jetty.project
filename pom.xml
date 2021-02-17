@@ -26,7 +26,7 @@
     <servlet.api.version>5.0.2</servlet.api.version>
     <!-- change version in jetty-websocket/websocket-jakarta-server/src/main/config/modules/websocket-jakarta.mod -->
     <websocket.api.version>2.0.0</websocket.api.version>
-    <jsp.version>10.0.0-M10</jsp.version>
+    <jsp.version>10.0.2</jsp.version>
     <jstl.version>2.0.0</jstl.version>
     <jsp.api.version>3.0</jsp.api.version>
     <annotation-api.version>2.0.0</annotation-api.version>
