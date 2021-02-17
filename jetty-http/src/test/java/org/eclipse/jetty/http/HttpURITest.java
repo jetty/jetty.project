@@ -256,6 +256,9 @@ public class HttpURITest
         assertThat(uri.getPathQuery(), is("/other;xxx/path;ppp?query"));
 
         uri.setPathQuery(null);
+        assertEquals("http://host:8080?query", uri.toString()); // Yes silly result!
+
+        uri.setQuery(null);
         assertEquals("http://host:8080", uri.toString());
 
         uri.setPathQuery("/other;xxx/path;ppp?query");
