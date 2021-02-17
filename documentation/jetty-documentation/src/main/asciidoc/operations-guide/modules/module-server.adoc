@@ -12,7 +12,7 @@
 //
 
 [[og-module-server]]
-==== Module `server`
+===== Module `server`
 
 The `server` module provides generic server support, and configures generic HTTP properties that apply to all HTTP protocols, the scheduler properties and the server specific properties.
 

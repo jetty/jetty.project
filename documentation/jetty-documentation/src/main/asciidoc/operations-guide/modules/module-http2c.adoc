@@ -12,7 +12,7 @@
 //
 
 [[og-module-http2c]]
-==== Module `http2c`
+===== Module `http2c`
 
 The `http2c` module enables support for the clear-text HTTP/2 protocol.
 

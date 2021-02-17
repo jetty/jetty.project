@@ -11,16 +11,6 @@
  * ========================================================================
  */
 
-.hidden {
-    display: none;
-}
-.toc-current, .toc-current * {
-    font-weight: bold;
-}
-.toc-item {
-    padding-right: 0.4em;
-}
-.toc-toggle {
-    padding-right: 0.4em;
-    cursor: pointer;
+.listingblock > .title {
+    font-style: normal;
 }

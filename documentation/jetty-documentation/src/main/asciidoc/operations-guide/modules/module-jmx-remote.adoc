@@ -12,7 +12,7 @@
 //
 
 [[og-module-jmx-remote]]
-==== Module `jmx-remote`
+===== Module `jmx-remote`
 
 The `jmx-remote` module provides remote access to JMX clients.
 

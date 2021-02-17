@@ -18,22 +18,22 @@ Report Commands:
                    dependent jars, then exits.
 
   --list-classpath
-                   Prints the classpath information that will be used to
-                   start Jetty.
+                   Prints the class-path (or module-path) information that
+                   will be used to start Jetty.
 
   --list-config
                    Lists the resolved configuration that will be used to
                    start Jetty.
                    Output includes:
-                     o  Enabled jetty modules
-                     o  Java Environment
-                     o  Jetty Environment
+                     o  Enabled Jetty modules
+                     o  Java environment
+                     o  Jetty environment
                      o  Config file search order
-                     o  JVM Arguments
-                     o  System Properties
+                     o  JVM arguments
+                     o  System properties
                      o  Properties
-                     o  Java Classpath
-                     o  XML Configuration files
+                     o  Java class-path or module-path
+                     o  XML configuration files
 
   --list-modules
                    Lists the modules defined in ${jetty.base}/modules/*.mod
@@ -75,7 +75,7 @@ Report Commands:
 Configure Commands:
 -------------------
 
-  --add-modules=<modulename>(,<modulename>)*
+  --add-modules=<moduleName>(,<moduleName>)*
                    Adds the given modules to the list of modules enabled at
                    when Jetty starts.
                    Transitive dependencies are followed and dependent
@@ -133,7 +133,7 @@ Configure Commands:
 Options:
 --------
 
-  --module=<modulename>(,<modulename>)*
+  --module=<moduleName>(,<moduleName>)*
                    Enables a module for this execution.
                    To enable a module for all future executions, use the
                    --add-modules command.
@@ -142,8 +142,8 @@ Options:
                    the --add-modules command.
 
   --lib=<classpath>
-                   Adds the specified classpath entries to the the server
-                   classpath.
+                   Adds the specified class-path entries to the the server
+                   class-path (or module-path).
 
   --download=<http-uri>|<location>
                    Downloads a file from the given HTTP URI, if it does
@@ -153,8 +153,8 @@ Options:
                    some shell environments.
 
   --exec
-                   Executes the generated command line (see --dry-run) in
-                   a sub process.
+                   Executes the generated command line in a forked JVM
+                   (see the --dry-run command).
                    This can be used when ${jetty.base}/start.d/*.ini files
                    contain -D, -X or -XX arguments, but creates an extra
                    JVM process.
@@ -168,6 +168,15 @@ Options:
   --commands=<filename>
                    Uses each line of the specified file as arguments on the
                    JVM command line.
+
+  --jpms
+                   Starts Jetty in JPMS mode in a forked JVM (see also the
+                   --dry-run command).
+                   The library *.jar files are set on the forked JVM module-path
+                   (rather than the forked JVM class-path), while directories
+                   are set on the forked JVM class-path.
+                   The main class is specified with the JPMS option
+                   --module <moduleName>/<mainClassName>.
 
   --debug
                    Enables debug output of the startup execution.
@@ -188,7 +197,7 @@ Options:
                    Useful for enabling modules from a script, so that it
                    does not require user interaction.
 
-  --skip-file-validation=<modulename>(,<modulename>)*
+  --skip-file-validation=<moduleName>(,<moduleName>)*
                    Disables the creation of files as specified by the
                    [files] section of the specified modules.
                    Useful if a logging module specifies a *.properties
@@ -241,11 +250,11 @@ Options:
                   or in the [ini] section of a *.mod file.
 
                   <name>=<value>
-                    Sets the property unconditionally.
+                    Sets the property value unconditionally.
                   <name>+=<value>
                     Appends the given value to the existing value.
                   <name>?=<value>
-                    Sets the property only if it is not already set.
+                    Sets the property value only if it is not already set.
 
   -D<name>=<value>
                   Specifies a system property, as well as a start property.

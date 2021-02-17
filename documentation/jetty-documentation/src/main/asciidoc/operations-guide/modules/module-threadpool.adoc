@@ -12,7 +12,7 @@
 //
 
 [[og-module-threadpool]]
-==== Module `threadpool`
+===== Module `threadpool`
 
 The `threadpool` module allows you to configure the server-wide thread pool.
 

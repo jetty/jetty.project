@@ -12,7 +12,7 @@
 //
 
 [[og-module-http-forwarded]]
-==== Module `http-forwarded`
+===== Module `http-forwarded`
 
 The `http-forwarded` module provides support for processing the `Forwarded` HTTP header (defined in link:https://tools.ietf.org/html/rfc7239[RFC 7239]) and the now obsoleted `X-Forwarded-*` HTTP headers.
 
