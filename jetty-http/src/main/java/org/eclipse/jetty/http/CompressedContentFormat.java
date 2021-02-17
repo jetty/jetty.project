@@ -31,7 +31,7 @@ public class CompressedContentFormat
      * "org.eclipse.jetty.http.CompressedContentFormat.ETAG_SEPARATOR" System property. If changed, it should be changed to a string
      * that will not be found in a normal etag or at least is very unlikely to be a substring of a normal etag.
      */
-    public static final String ETAG_SEPARATOR = System.getProperty(CompressedContentFormat.class.getCanonicalName() + ".ETAG_SEPARATOR", "--");
+    public static final String ETAG_SEPARATOR = System.getProperty(CompressedContentFormat.class.getName() + ".ETAG_SEPARATOR", "--");
 
     public static final CompressedContentFormat GZIP = new CompressedContentFormat("gzip", ".gz");
     public static final CompressedContentFormat BR = new CompressedContentFormat("br", ".br");
