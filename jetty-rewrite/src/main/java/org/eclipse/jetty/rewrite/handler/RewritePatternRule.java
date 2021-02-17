@@ -90,13 +90,15 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
     @Override
     public void applyURI(Request request, String oldURI, String newURI) throws IOException
     {
+        String queryString = request.getQueryString();
         if (_query == null)
         {
             request.setURIPathQuery(newURI);
+            if (queryString != null)
+                request.setQueryString(queryString);
         }
         else
         {
-            String queryString = request.getQueryString();
             if (queryString != null)
                 queryString = queryString + "&" + _query;
             else
