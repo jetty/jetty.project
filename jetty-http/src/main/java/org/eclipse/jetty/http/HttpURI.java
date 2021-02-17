@@ -705,6 +705,7 @@ public interface HttpURI
             _path = null;
             _decodedPath = null;
             _param = null;
+            _query = null;
             if (pathQuery != null)
                 parse(State.PATH, pathQuery);
             return this;
