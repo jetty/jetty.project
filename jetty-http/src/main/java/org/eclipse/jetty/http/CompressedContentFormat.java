@@ -18,8 +18,21 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.Objects;
+
+import org.eclipse.jetty.util.StringUtil;
+
 public class CompressedContentFormat
 {
+    /**
+     * The separator within an etag used to indicate a compressed variant. By default the separator is "--"
+     * So etag for compressed resource that normally has an etag of <code>W/"28c772d6"</code>
+     * is <code>W/"28c772d6--gzip"</code>.  The separator may be changed by the
+     * "org.eclipse.jetty.http.CompressedContentFormat.ETAG_SEPARATOR" System property. If changed, it should be changed to a string
+     * that will not be found in a normal etag or at least is very unlikely to be a substring of a normal etag.
+     */
+    public static final String ETAG_SEPARATOR = System.getProperty(CompressedContentFormat.class.getName() + ".ETAG_SEPARATOR", "--");
+
     public static final CompressedContentFormat GZIP = new CompressedContentFormat("gzip", ".gz");
     public static final CompressedContentFormat BR = new CompressedContentFormat("br", ".br");
     public static final CompressedContentFormat[] NONE = new CompressedContentFormat[0];
@@ -32,11 +45,11 @@ public class CompressedContentFormat
 
     public CompressedContentFormat(String encoding, String extension)
     {
-        _encoding = encoding;
-        _extension = extension;
-        _etag = "--" + encoding;
+        _encoding = StringUtil.asciiToLowerCase(encoding);
+        _extension = StringUtil.asciiToLowerCase(extension);
+        _etag = ETAG_SEPARATOR + _encoding;
         _etagQuote = _etag + "\"";
-        _contentEncoding = new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING, encoding);
+        _contentEncoding = new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING, _encoding);
     }
 
     @Override
@@ -45,12 +58,13 @@ public class CompressedContentFormat
         if (!(o instanceof CompressedContentFormat))
             return false;
         CompressedContentFormat ccf = (CompressedContentFormat)o;
-        if (_encoding == null && ccf._encoding != null)
-            return false;
-        if (_extension == null && ccf._extension != null)
-            return false;
+        return Objects.equals(_encoding, ccf._encoding) && Objects.equals(_extension, ccf._extension);
+    }
 
-        return _encoding.equalsIgnoreCase(ccf._encoding) && _extension.equalsIgnoreCase(ccf._extension);
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(_encoding, _extension);
     }
 
     public static boolean tagEquals(String etag, String tag)
@@ -58,9 +72,9 @@ public class CompressedContentFormat
         if (etag.equals(tag))
             return true;
 
-        int dashdash = tag.indexOf("--");
-        if (dashdash > 0 && dashdash == etag.length() - 1)
-            return etag.regionMatches(0, tag, 0, dashdash);
+        int separator = tag.lastIndexOf(ETAG_SEPARATOR);
+        if (separator > 0 && separator == etag.length() - 1)
+            return etag.regionMatches(0, tag, 0, separator);
         return false;
     }
 }
