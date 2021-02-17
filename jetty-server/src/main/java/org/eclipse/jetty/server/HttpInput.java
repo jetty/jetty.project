@@ -720,12 +720,17 @@ public class HttpInput extends ServletInputStream implements Runnable
                 {
                     produceContent();
                     if (_content == null && _intercepted == null && _inputQ.isEmpty())
+                    {
+                        _state = EARLY_EOF;
+                        _inputQ.notify();
                         return false;
+                    }
                 }
                 catch (Throwable e)
                 {
                     LOG.debug(e);
                     _state = new ErrorState(e);
+                    _inputQ.notify();
                     return false;
                 }
             }
