@@ -828,10 +828,9 @@ public class HttpURI
         _decodedPath = null;
         _param = null;
         _fragment = null;
-        /* TODO
-         * The query is not cleared here, so old values may be retained if there is no query in
-         * the pathQuery. This is probably a bug, but other code now expects this behaviour, so
-         * we will keep it in 9 and fix in 10.
+        /*
+         * The query is not cleared here and old values may be retained if there is no query in
+         * the pathQuery. This has been fixed in 10, but left as is here to preserve behaviour in 9.
          */
         if (pathQuery != null)
             parse(State.PATH, pathQuery, 0, pathQuery.length());
