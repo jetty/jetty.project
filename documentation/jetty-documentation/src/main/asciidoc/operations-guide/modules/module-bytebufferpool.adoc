@@ -12,7 +12,7 @@
 //
 
 [[og-module-bytebufferpool]]
-==== Module `bytebufferpool`
+===== Module `bytebufferpool`
 
 The `bytebufferpool` module allows you to configure the server-wide `ByteBuffer` pool.
 Pooling ``ByteBuffer``s results in less memory usage and less pressure on the Garbage Collector.

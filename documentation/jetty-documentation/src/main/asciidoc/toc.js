@@ -18,14 +18,14 @@ function dynamicTOC() {
     // Bind a click listener to all section titles.
     const sectionTitles = content.querySelectorAll('a.link');
     for (const sectionTitle of sectionTitles) {
-        sectionTitle.addEventListener('click', event => collapseThenExpand(event.target.hash));
+        sectionTitle.addEventListener('click', event => collapseThenExpand(hash(event.target)));
     }
     // Bind a click listener to all inline links to documentation sections.
     const inlineLinks = content.querySelectorAll('p > a');
     for (const inlineLink of inlineLinks) {
-        const hash = inlineLink.hash || '';
-        if (hash.startsWith('#')) {
-            inlineLink.addEventListener('click', event => collapseThenExpand(event.target.hash));
+        const linkHash = inlineLink.hash || '';
+        if (linkHash.startsWith('#')) {
+            inlineLink.addEventListener('click', event => collapseThenExpand(hash(event.target)));
         }
     }
 
@@ -33,7 +33,7 @@ function dynamicTOC() {
     const toc = document.getElementById('toc');
     const tocTitles = toc.querySelectorAll('a');
     for (const tocTitle of tocTitles) {
-        tocTitle.addEventListener('click', event => collapseThenExpand(event.target.hash));
+        tocTitle.addEventListener('click', event => collapseThenExpand(hash(event.target)));
     }
 
     // Add the icons to TOC nodes.
@@ -56,6 +56,11 @@ function dynamicTOC() {
     }
 
     collapseThenExpand(document.location.hash);
+}
+
+function hash(element) {
+    const a = element.closest('a');
+    return a ? a.hash : null;
 }
 
 function collapseThenExpand(hash) {

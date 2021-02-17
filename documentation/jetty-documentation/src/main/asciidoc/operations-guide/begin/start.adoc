@@ -14,10 +14,6 @@
 [[og-begin-start]]
 ==== Starting Jetty
 
-// TODO: Consider: old_docs/startup/*.adoc
-
-// So far, what below is the content of old_docs/startup/startup-modules.adoc
-
 Eclipse Jetty as a standalone server has no graphical user interface, so configuring and running the server is done from the command line.
 
 Recall from the xref:og-arch[architecture section] that Jetty is based on xref:og-modules[modules], that provides features, and on xref:og-arch-jetty-base[`$JETTY_BASE`], the place where you configure which module (and therefore which feature) you want to enable, and where you configure module parameters.

@@ -12,7 +12,7 @@
 //
 
 [[og-module-http2]]
-==== Module `http2`
+===== Module `http2`
 
 The `http2` module enables support for the secure HTTP/2 protocol.
 

@@ -12,12 +12,12 @@
 //
 
 [[og-module-ssl]]
-==== Module `ssl`
+===== Module `ssl`
 
 The `ssl` module provides the secure connector, and allows you to configure the KeyStore properties and the TLS parameters, and depends on the xref:og-module-server[`server` module].
 
 [[og-module-ssl-connector]]
-===== Secure Connector Properties
+====== Secure Connector Properties
 
 The module properties to configure the secure connector are:
 
@@ -45,7 +45,7 @@ include::{JETTY_HOME}/modules/ssl.mod[tags=documentation-ssl-context]
 ----
 
 [[og-module-ssl-keystore-tls]]
-===== KeyStore Properties and TLS Properties
+====== KeyStore Properties and TLS Properties
 
 Among the configurable properties, the most relevant are:
 

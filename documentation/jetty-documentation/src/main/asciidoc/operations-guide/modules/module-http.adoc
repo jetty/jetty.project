@@ -12,7 +12,7 @@
 //
 
 [[og-module-http]]
-==== Module `http`
+===== Module `http`
 
 The `http` module provides the clear-text connector and support for the clear-text HTTP/1.1 protocol, and depends on the xref:og-module-server[`server` module].
 
@@ -34,7 +34,7 @@ The number of threads that compete to accept connections -- default -1 (i.e. an 
 The number of NIO selectors (with an associated thread) that manage connections -- default -1 (i.e. a select heuristic decides the value based on the number of cores).
 
 [[og-module-http-acceptors]]
-===== Configuration of Acceptors
+====== Configuration of Acceptors
 
 Accepting connections is a blocking operation, so a thread is blocked in the `accept()` call until a connection is accepted, and other threads are blocked on the lock acquired just before the `accept()` call.
 
@@ -47,7 +47,7 @@ Servers that manage a very high number of connections that may (naturally) come 
 // TODO: expand on acceptors=0 and non-blocking accepts
 
 [[og-module-http-selectors]]
-===== Configuration of Selectors
+====== Configuration of Selectors
 
 Performing a NIO `select()` call is a blocking operation, where the selecting thread is blocked in the `select()` call until at least one connection is ready to be processed for an I/O operation.
 There are 4 I/O operations: ready to be accepted, ready to be connected, ready to be read and ready to be written.

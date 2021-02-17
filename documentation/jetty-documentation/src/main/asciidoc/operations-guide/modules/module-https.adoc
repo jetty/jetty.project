@@ -12,7 +12,7 @@
 //
 
 [[og-module-https]]
-==== Module `https`
+===== Module `https`
 
 The `https` module provides the HTTP/1.1 protocol to the xref:og-module-ssl[`ssl` module].
 

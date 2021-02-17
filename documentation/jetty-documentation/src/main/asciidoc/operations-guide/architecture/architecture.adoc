@@ -50,7 +50,7 @@ For more detailed information about the Jetty module system, see xref:og-modules
 
 Instead of managing multiple Jetty distributions out of many locations, it is possible to maintain a separation between the binary installation of the standalone Jetty, known as `$JETTY_HOME`, and the customizations for your specific environment(s), known as `$JETTY_BASE`.
 
-This separation between the binary installation directory and the specific configuration directory allows to manage multiple, different, server configurations, and allows for quick, drop-in upgrades of Jetty.
+This separation between the binary installation directory and the specific configuration directory allows managing multiple, different, server configurations, and allows for quick, drop-in upgrades of Jetty.
 
 There should always only be *one* `$JETTY_HOME` (per version of Jetty), but there can be many `$JETTY_BASE` directories that reference it.
 

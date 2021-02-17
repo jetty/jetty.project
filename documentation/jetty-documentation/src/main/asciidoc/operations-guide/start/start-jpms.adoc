@@ -45,11 +45,9 @@ Create the `$JETTY_BASE/modules/jpms.mod` file:
 include::jpms.mod[]
 ----
 
-The `[ini]` section with `--jpms` is equivalent to passing the `--jpms` option to the command line.
+The `[ini]` section with `--jpms` is equivalent to passing the `--jpms` option to the command line (see also xref:og-modules-directive-ini[this section]).
 
-The `[jpms]` section allows you to specify additional JPMS configuration, for example additional `--add-modules` options, or `--add-opens` options, etc.
-
-// TODO: add a link to the custom module section and the [jpms] section in there, see old_docs/startup/startup-jpms.adoc.
+The `[jpms]` section allows you to specify additional JPMS configuration, for example additional `--add-modules` options, or `--add-opens` options, etc. (see also xref:og-modules-directive-jpms[this section]).
 
 Then enable it:
 

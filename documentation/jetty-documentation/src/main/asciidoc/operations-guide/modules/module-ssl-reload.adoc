@@ -12,7 +12,7 @@
 //
 
 [[og-module-ssl-reload]]
-==== Module `ssl-reload`
+===== Module `ssl-reload`
 
 The `ssl-reload` module provides a periodic scanning of the directory where the KeyStore file resides.
 When the scanning detects a change to the KeyStore file, the correspondent `SslContextFactory.Server` component is reloaded with the new KeyStore configuration.

@@ -14,5 +14,4 @@
 [[quick-start-configure]]
 == An Introduction to Jetty Configuration
 
-include::how-to-configure.adoc[]
 include::what-to-configure.adoc[]
