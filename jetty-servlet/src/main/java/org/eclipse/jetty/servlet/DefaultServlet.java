@@ -283,7 +283,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         _resourceService.setContentFactory(contentFactory);
         _resourceService.setWelcomeFactory(this);
 
-        List<String> gzipEquivalentFileExtensions = new ArrayList<String>();
+        List<String> gzipEquivalentFileExtensions = new ArrayList<>();
         String otherGzipExtensions = getInitParameter("otherGzipFileExtensions");
         if (otherGzipExtensions != null)
         {

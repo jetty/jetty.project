@@ -832,7 +832,7 @@ public class ResourceService
             if (_acceptRanges)
                 f.put(ACCEPT_RANGES);
 
-            if (_cacheControl != null)
+            if (_cacheControl != null && !response.containsHeader(HttpHeader.CACHE_CONTROL.asString()))
                 f.put(_cacheControl);
         }
         else
@@ -841,7 +841,7 @@ public class ResourceService
             if (_acceptRanges)
                 response.setHeader(ACCEPT_RANGES.getName(), ACCEPT_RANGES.getValue());
 
-            if (_cacheControl != null)
+            if (_cacheControl != null && !response.containsHeader(HttpHeader.CACHE_CONTROL.name()))
                 response.setHeader(_cacheControl.getName(), _cacheControl.getValue());
         }
     }
