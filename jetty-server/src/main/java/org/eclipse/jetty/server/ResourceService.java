@@ -850,19 +850,19 @@ public class ResourceService
             Response r = (Response)response;
             r.putHeaders(content, contentLength, _etags);
             HttpFields.Mutable f = r.getHttpFields();
-            if (_acceptRanges)
+            if (_acceptRanges && !response.containsHeader(HttpHeader.ACCEPT_RANGES.asString()))
                 f.put(ACCEPT_RANGES);
 
-            if (_cacheControl != null)
+            if (_cacheControl != null && !response.containsHeader(HttpHeader.CACHE_CONTROL.asString()))
                 f.put(_cacheControl);
         }
         else
         {
             Response.putHeaders(response, content, contentLength, _etags);
-            if (_acceptRanges)
+            if (_acceptRanges && !response.containsHeader(HttpHeader.ACCEPT_RANGES.name()))
                 response.setHeader(ACCEPT_RANGES.getName(), ACCEPT_RANGES.getValue());
 
-            if (_cacheControl != null)
+            if (_cacheControl != null && !response.containsHeader(HttpHeader.CACHE_CONTROL.name()))
                 response.setHeader(_cacheControl.getName(), _cacheControl.getValue());
         }
     }

@@ -119,6 +119,7 @@ import org.slf4j.LoggerFactory;
  * If a ETag is present in the Response headers, and GzipHandler is compressing the
  * contents, it will add the {@code --gzip} suffix before the Response headers are committed
  * and sent to the User Agent.
+ * Note that the suffix used is determined by {@link CompressedContentFormat#ETAG_SEPARATOR}
  * </p>
  * <p>
  * This implementation relies on an Jetty internal {@link org.eclipse.jetty.server.HttpOutput.Interceptor}
