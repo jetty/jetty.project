@@ -236,6 +236,13 @@ public class HttpURITest
         assertEquals("p2", uri.getParam());
         assertEquals("name=value", uri.getQuery());
 
+        uri = builder.pathQuery("/f%30%30;p0/bar;p1;p2").asImmutable();
+        assertEquals("http://host:8888/f%30%30;p0/bar;p1;p2", uri.toString());
+        assertEquals("/f%30%30;p0/bar;p1;p2", uri.getPath());
+        assertEquals("/f00/bar", uri.getDecodedPath());
+        assertEquals("p2", uri.getParam());
+        assertEquals(null, uri.getQuery());
+
         uri = builder.query("other=123456").asImmutable();
         assertEquals("http://host:8888/f%30%30;p0/bar;p1;p2?other=123456", uri.toString());
         assertEquals("/f%30%30;p0/bar;p1;p2", uri.getPath());
