@@ -300,9 +300,6 @@ public class HttpURITest
 
         uri = HttpURI.from("http://host/path/.info");
         assertEquals("/path/.info", uri.getDecodedPath());
-        assertEquals("http://host:8080?query", uri.toString()); // Yes silly result!
-
-        uri.setQuery(null);
 
         uri = HttpURI.from("http://host/path/./info");
         assertEquals("/path/info", uri.getDecodedPath());
