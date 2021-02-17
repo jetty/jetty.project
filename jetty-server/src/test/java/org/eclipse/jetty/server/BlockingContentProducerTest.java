@@ -20,13 +20,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.handler.gzip.GzipHttpInputInterceptor;
 import org.eclipse.jetty.util.compression.InflaterPool;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,13 +63,16 @@ public class BlockingContentProducerTest
         final int totalContentBytesCount = countRemaining(buffers);
         final String originalContentString = asString(buffers);
 
-        AtomicReference<ContentProducer> ref = new AtomicReference<>();
-        ArrayDelayedHttpChannel httpChannel = new ArrayDelayedHttpChannel(buffers, new HttpInput.EofContent(), scheduledExecutorService, () -> ref.get().onContentProducible());
+        ContentListener contentListener = new ContentListener();
+        ArrayDelayedHttpChannel httpChannel = new ArrayDelayedHttpChannel(buffers, new HttpInput.EofContent(), scheduledExecutorService, contentListener);
         ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(httpChannel));
-        ref.set(contentProducer);
+        contentListener.setContentProducer(contentProducer);
 
-        Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, buffers.length + 1, contentProducer);
-        assertThat(error, nullValue());
+        try (AutoLock lock = contentProducer.lock())
+        {
+            Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, buffers.length + 1, contentProducer);
+            assertThat(error, nullValue());
+        }
     }
 
     @Test
@@ -83,13 +86,16 @@ public class BlockingContentProducerTest
         final String originalContentString = asString(buffers);
         final Throwable expectedError = new EofException("Early EOF");
 
-        AtomicReference<ContentProducer> ref = new AtomicReference<>();
-        ArrayDelayedHttpChannel httpChannel = new ArrayDelayedHttpChannel(buffers, new HttpInput.ErrorContent(expectedError), scheduledExecutorService, () -> ref.get().onContentProducible());
+        ContentListener contentListener = new ContentListener();
+        ArrayDelayedHttpChannel httpChannel = new ArrayDelayedHttpChannel(buffers, new HttpInput.ErrorContent(expectedError), scheduledExecutorService, contentListener);
         ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(httpChannel));
-        ref.set(contentProducer);
+        contentListener.setContentProducer(contentProducer);
 
-        Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, buffers.length + 1, contentProducer);
-        assertThat(error, is(expectedError));
+        try (AutoLock lock = contentProducer.lock())
+        {
+            Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, buffers.length + 1, contentProducer);
+            assertThat(error, is(expectedError));
+        }
     }
 
     @Test
@@ -107,14 +113,18 @@ public class BlockingContentProducerTest
         buffers[1] = gzipByteBuffer(uncompressedBuffers[1]);
         buffers[2] = gzipByteBuffer(uncompressedBuffers[2]);
 
-        AtomicReference<ContentProducer> ref = new AtomicReference<>();
-        ArrayDelayedHttpChannel httpChannel = new ArrayDelayedHttpChannel(buffers, new HttpInput.EofContent(), scheduledExecutorService, () -> ref.get().onContentProducible());
+        ContentListener contentListener = new ContentListener();
+        ArrayDelayedHttpChannel httpChannel = new ArrayDelayedHttpChannel(buffers, new HttpInput.EofContent(), scheduledExecutorService, contentListener);
         ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(httpChannel));
-        ref.set(contentProducer);
-        contentProducer.setInterceptor(new GzipHttpInputInterceptor(inflaterPool, new ArrayByteBufferPool(1, 1, 2), 32));
+        contentListener.setContentProducer(contentProducer);
 
-        Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, buffers.length + 1, contentProducer);
-        assertThat(error, nullValue());
+        try (AutoLock lock = contentProducer.lock())
+        {
+            contentProducer.setInterceptor(new GzipHttpInputInterceptor(inflaterPool, new ArrayByteBufferPool(1, 1, 2), 32));
+
+            Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, buffers.length + 1, contentProducer);
+            assertThat(error, nullValue());
+        }
     }
 
     @Test
@@ -132,14 +142,18 @@ public class BlockingContentProducerTest
         buffers[1] = gzipByteBuffer(uncompressedBuffers[1]);
         buffers[2] = gzipByteBuffer(uncompressedBuffers[2]);
 
-        AtomicReference<ContentProducer> ref = new AtomicReference<>();
-        ArrayDelayedHttpChannel httpChannel = new ArrayDelayedHttpChannel(buffers, new HttpInput.EofContent(), scheduledExecutorService, () -> ref.get().onContentProducible());
+        ContentListener contentListener = new ContentListener();
+        ArrayDelayedHttpChannel httpChannel = new ArrayDelayedHttpChannel(buffers, new HttpInput.EofContent(), scheduledExecutorService, contentListener);
         ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(httpChannel));
-        ref.set(contentProducer);
-        contentProducer.setInterceptor(new GzipHttpInputInterceptor(inflaterPool, new ArrayByteBufferPool(1, 1, 2), 1));
+        contentListener.setContentProducer(contentProducer);
 
-        Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, totalContentBytesCount + 1, contentProducer);
-        assertThat(error, nullValue());
+        try (AutoLock lock = contentProducer.lock())
+        {
+            contentProducer.setInterceptor(new GzipHttpInputInterceptor(inflaterPool, new ArrayByteBufferPool(1, 1, 2), 1));
+
+            Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, totalContentBytesCount + 1, contentProducer);
+            assertThat(error, nullValue());
+        }
     }
 
     @Test
@@ -158,14 +172,18 @@ public class BlockingContentProducerTest
         buffers[1] = gzipByteBuffer(uncompressedBuffers[1]);
         buffers[2] = gzipByteBuffer(uncompressedBuffers[2]);
 
-        AtomicReference<ContentProducer> ref = new AtomicReference<>();
-        ArrayDelayedHttpChannel httpChannel = new ArrayDelayedHttpChannel(buffers, new HttpInput.ErrorContent(expectedError), scheduledExecutorService, () -> ref.get().onContentProducible());
+        ContentListener contentListener = new ContentListener();
+        ArrayDelayedHttpChannel httpChannel = new ArrayDelayedHttpChannel(buffers, new HttpInput.ErrorContent(expectedError), scheduledExecutorService, contentListener);
         ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(httpChannel));
-        ref.set(contentProducer);
-        contentProducer.setInterceptor(new GzipHttpInputInterceptor(inflaterPool, new ArrayByteBufferPool(1, 1, 2), 32));
+        contentListener.setContentProducer(contentProducer);
 
-        Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, buffers.length + 1, contentProducer);
-        assertThat(error, is(expectedError));
+        try (AutoLock lock = contentProducer.lock())
+        {
+            contentProducer.setInterceptor(new GzipHttpInputInterceptor(inflaterPool, new ArrayByteBufferPool(1, 1, 2), 32));
+
+            Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, buffers.length + 1, contentProducer);
+            assertThat(error, is(expectedError));
+        }
     }
 
     private Throwable readAndAssertContent(int totalContentBytesCount, String originalContentString, int totalContentCount, ContentProducer contentProducer)
@@ -241,9 +259,26 @@ public class BlockingContentProducerTest
         }
     }
 
-    private interface ContentListener
+    private static class ContentListener
     {
-        void onContent();
+        private ContentProducer contentProducer;
+
+        private ContentListener()
+        {
+        }
+
+        private void onContent()
+        {
+            try (AutoLock lock = contentProducer.lock())
+            {
+                contentProducer.onContentProducible();
+            }
+        }
+
+        private void setContentProducer(ContentProducer contentProducer)
+        {
+            this.contentProducer = contentProducer;
+        }
     }
 
     private static class ArrayDelayedHttpChannel extends HttpChannel

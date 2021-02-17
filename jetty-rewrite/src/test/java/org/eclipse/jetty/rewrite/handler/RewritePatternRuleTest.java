@@ -25,7 +25,7 @@ import static org.hamcrest.Matchers.is;
 public class RewritePatternRuleTest extends AbstractRuleTestCase
 {
     // TODO: Parameterize
-    private String[][] _tests =
+    private final String[][] _tests =
         {
             {"/foo/bar", "/", "/replace"},
             {"/foo/bar", "/*", "/replace/foo/bar"},
@@ -93,8 +93,8 @@ public class RewritePatternRuleTest extends AbstractRuleTestCase
         assertThat("result matches expected", result, is(replacement));
 
         rewritePatternRule.applyURI(_request, null, result);
-        assertThat("queryString matches expected", _request.getQueryString(), is(queryString));
         assertThat("request URI matches expected", _request.getRequestURI(), is(replacement));
+        assertThat("queryString matches expected", _request.getQueryString(), is(queryString));
     }
 
     @Test

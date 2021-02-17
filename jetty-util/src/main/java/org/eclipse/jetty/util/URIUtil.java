@@ -778,11 +778,9 @@ public class URIUtil
     }
 
     /**
-     * Convert a decoded path to a canonical form.
+     * Convert an encoded path to a canonical form.
      * <p>
      * All instances of "." and ".." are factored out.
-     * </p>
-     * <p>
      * Null is returned if the path tries to .. above its root.
      * </p>
      *
@@ -791,31 +789,35 @@ public class URIUtil
      */
     public static String canonicalPath(String path)
     {
+        // See https://tools.ietf.org/html/rfc3986#section-5.2.4
+
         if (path == null || path.isEmpty())
             return path;
 
-        boolean slash = true;
         int end = path.length();
         int i = 0;
+        int dots = 0;
 
-        loop:
-        while (i < end)
+        loop: while (i < end)
         {
             char c = path.charAt(i);
             switch (c)
             {
                 case '/':
-                    slash = true;
+                    dots = 0;
                     break;
 
                 case '.':
-                    if (slash)
+                    if (dots == 0)
+                    {
+                        dots = 1;
                         break loop;
-                    slash = false;
+                    }
+                    dots = -1;
                     break;
 
                 default:
-                    slash = false;
+                    dots = -1;
             }
 
             i++;
@@ -827,7 +829,6 @@ public class URIUtil
         StringBuilder canonical = new StringBuilder(path.length());
         canonical.append(path, 0, i);
 
-        int dots = 1;
         i++;
         while (i <= end)
         {
@@ -835,14 +836,18 @@ public class URIUtil
             switch (c)
             {
                 case '\0':
+                    if (dots == 2)
+                    {
+                        if (canonical.length() < 2)
+                            return null;
+                        canonical.setLength(canonical.length() - 1);
+                        canonical.setLength(canonical.lastIndexOf("/") + 1);
+                    }
+                    break;
+
                 case '/':
                     switch (dots)
                     {
-                        case 0:
-                            if (c != '\0')
-                                canonical.append(c);
-                            break;
-
                         case 1:
                             break;
 
@@ -854,36 +859,42 @@ public class URIUtil
                             break;
 
                         default:
-                            while (dots-- > 0)
-                            {
-                                canonical.append('.');
-                            }
-                            if (c != '\0')
-                                canonical.append(c);
+                            canonical.append(c);
                     }
-
-                    slash = true;
                     dots = 0;
                     break;
 
                 case '.':
-                    if (dots > 0)
-                        dots++;
-                    else if (slash)
-                        dots = 1;
-                    else
-                        canonical.append('.');
-                    slash = false;
+                    switch (dots)
+                    {
+                        case 0:
+                            dots = 1;
+                            break;
+                        case 1:
+                            dots = 2;
+                            break;
+                        case 2:
+                            canonical.append("...");
+                            dots = -1;
+                            break;
+                        default:
+                            canonical.append('.');
+                    }
                     break;
 
                 default:
-                    while (dots-- > 0)
+                    switch (dots)
                     {
-                        canonical.append('.');
+                        case 1:
+                            canonical.append('.');
+                            break;
+                        case 2:
+                            canonical.append("..");
+                            break;
+                        default:
                     }
                     canonical.append(c);
-                    dots = 0;
-                    slash = false;
+                    dots = -1;
             }
 
             i++;

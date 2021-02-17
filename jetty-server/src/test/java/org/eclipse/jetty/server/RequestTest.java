@@ -1812,6 +1812,28 @@ public class RequestTest
     }
 
     @Test
+    public void testAmbiguousPaths() throws Exception
+    {
+        _handler._checker = (request, response) -> true;
+
+        String request = "GET /ambiguous/..;/path HTTP/1.0\r\n" +
+            "Host: whatever\r\n" +
+            "\r\n";
+
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.RFC7230);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.RFC7230_LEGACY);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.RFC2616);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.RFC2616_LEGACY);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+    }
+    
+    @Test
     public void testPushBuilder() throws Exception
     {
         String uri = "/foo/something";
