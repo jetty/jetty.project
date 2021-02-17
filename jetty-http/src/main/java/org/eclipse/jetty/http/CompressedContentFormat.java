@@ -47,9 +47,9 @@ public class CompressedContentFormat
     {
         _encoding = StringUtil.asciiToLowerCase(encoding);
         _extension = StringUtil.asciiToLowerCase(extension);
-        _etag = ETAG_SEPARATOR + encoding;
+        _etag = ETAG_SEPARATOR + _encoding;
         _etagQuote = _etag + "\"";
-        _contentEncoding = new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING, encoding);
+        _contentEncoding = new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING, _encoding);
     }
 
     @Override
