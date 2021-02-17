@@ -65,6 +65,8 @@ import javax.servlet.http.Part;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
+import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.HttpComplianceSection;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -77,6 +79,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
@@ -1815,6 +1818,19 @@ public class Request implements HttpServletRequest
 
         setMethod(request.getMethod());
         HttpURI uri = request.getURI();
+
+        if (uri.hasAmbiguousSegment())
+        {
+            // TODO replace in jetty-10 with HttpCompliance from the HttpConfiguration
+            Connection connection = _channel.getConnection();
+            HttpCompliance compliance = connection instanceof HttpConnection
+                ? ((HttpConnection)connection).getHttpCompliance()
+                : _channel.getConnector().getBean(HttpCompliance.class);
+            boolean allow = compliance != null && !compliance.sections().contains(HttpComplianceSection.NO_AMBIGUOUS_PATH_SEGMENTS);
+            if (!allow)
+                throw new BadMessageException("Ambiguous segment in URI");
+        }
+
         _originalURI = uri.isAbsolute() && request.getHttpVersion() != HttpVersion.HTTP_2 ? uri.toString() : uri.getPathQuery();
 
         String encoded = uri.getPath();
@@ -1826,7 +1842,7 @@ public class Request implements HttpServletRequest
         }
         else if (encoded.startsWith("/"))
         {
-            path = (encoded.length() == 1) ? "/" : URIUtil.canonicalPath(uri.getDecodedPath());
+            path = (encoded.length() == 1) ? "/" : uri.getDecodedPath();
         }
         else if ("*".equals(encoded) || HttpMethod.CONNECT.is(getMethod()))
         {
