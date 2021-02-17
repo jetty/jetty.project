@@ -780,7 +780,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             return Collections.emptySet();
 
         Set<String> uncoveredPaths = new HashSet<>();
-        for (Entry<String,Map<String, RoleInfo>> entry : _constraintMap.entrySet())
+        for (Entry<String, Map<String, RoleInfo>> entry : _constraintMap.entrySet())
         {
             Map<String, RoleInfo> methodMappings = entry.getValue();
 

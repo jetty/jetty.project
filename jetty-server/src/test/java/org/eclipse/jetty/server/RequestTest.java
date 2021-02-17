@@ -636,7 +636,7 @@ public class RequestTest
         System.out.println(request);
 
         String responses = _connector.getResponse(request);
-        assertThat(responses,startsWith("HTTP/1.1 200"));
+        assertThat(responses, startsWith("HTTP/1.1 200"));
     }
 
     /**
@@ -1834,6 +1834,28 @@ public class RequestTest
         assertEquals(0, request.getQueryParameters().size());
         assertNotNull(request.getParameterMap());
         assertEquals(0, request.getParameterMap().size());
+    }
+
+    @Test
+    public void testAmbiguousPaths() throws Exception
+    {
+        _handler._checker = (request, response) -> true;
+
+        String request = "GET /ambiguous/..;/path HTTP/1.0\r\n" +
+            "Host: whatever\r\n" +
+            "\r\n";
+
+        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC7230);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+
+        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC7230_LEGACY);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+
+        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+
+        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616_LEGACY);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
     }
 
     private static long getFileCount(Path path)

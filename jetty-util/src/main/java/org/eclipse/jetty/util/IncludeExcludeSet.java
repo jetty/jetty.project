@@ -253,7 +253,7 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
      *     <li>Both sets have no includes OR at least one of the items is included in its respective set</li>
      * </ul>
      */
-    public static <T1,T2> boolean matchCombined(T1 item1, IncludeExcludeSet<?,T1> set1, T2 item2, IncludeExcludeSet<?,T2> set2)
+    public static <T1, T2> boolean matchCombined(T1 item1, IncludeExcludeSet<?, T1> set1, T2 item2, IncludeExcludeSet<?, T2> set2)
     {
         Boolean match1 = set1.isIncludedAndNotExcluded(item1);
         Boolean match2 = set2.isIncludedAndNotExcluded(item2);

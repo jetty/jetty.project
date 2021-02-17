@@ -691,7 +691,7 @@ public class ResourceService
                 putHeaders(response, content, Response.USE_KNOWN_CONTENT_LENGTH);
 
                 // write the content asynchronously if supported
-                if (request.isAsyncSupported() && content.getContentLengthValue() > response.getBufferSize())
+                if (request.isAsyncSupported())
                 {
                     final AsyncContext context = request.startAsync();
                     context.setTimeout(0);

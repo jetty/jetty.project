@@ -20,9 +20,14 @@ package org.eclipse.jetty.http;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.MultiMap;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -214,11 +219,137 @@ public class HttpURITest
     }
 
     @Test
-    public void testBasicAuthCredentials() throws Exception
+    public void testSetters() throws Exception
     {
-        HttpURI uri = new HttpURI("http://user:password@example.com:8888/blah");
-        assertEquals("http://user:password@example.com:8888/blah", uri.toString());
-        assertEquals(uri.getAuthority(), "example.com:8888");
-        assertEquals(uri.getUser(), "user:password");
+        HttpURI uri = new HttpURI();
+        assertEquals("", uri.toString());
+
+        uri = new HttpURI(null, null, 0, null, null, null, null);
+        assertEquals("", uri.toString());
+
+        uri.setPath("/path/info");
+        assertEquals("/path/info", uri.toString());
+
+        uri.setAuthority("host", 8080);
+        assertEquals("//host:8080/path/info", uri.toString());
+
+        uri.setParam("param");
+        assertEquals("//host:8080/path/info;param", uri.toString());
+
+        uri.setQuery("a=b");
+        assertEquals("//host:8080/path/info;param?a=b", uri.toString());
+
+        uri.setScheme("http");
+        assertEquals("http://host:8080/path/info;param?a=b", uri.toString());
+
+        uri.setPathQuery("/other;xxx/path;ppp?query");
+        assertEquals("http://host:8080/other;xxx/path;ppp?query", uri.toString());
+
+        assertThat(uri.getScheme(), is("http"));
+        assertThat(uri.getAuthority(), is("host:8080"));
+        assertThat(uri.getHost(), is("host"));
+        assertThat(uri.getPort(), is(8080));
+        assertThat(uri.getPath(), is("/other;xxx/path;ppp"));
+        assertThat(uri.getDecodedPath(), is("/other/path"));
+        assertThat(uri.getParam(), is("ppp"));
+        assertThat(uri.getQuery(), is("query"));
+        assertThat(uri.getPathQuery(), is("/other;xxx/path;ppp?query"));
+
+        uri.setPathQuery(null);
+        assertEquals("http://host:8080", uri.toString());
+
+        uri.setPathQuery("/other;xxx/path;ppp?query");
+        assertEquals("http://host:8080/other;xxx/path;ppp?query", uri.toString());
+
+        uri.setScheme(null);
+        assertEquals("//host:8080/other;xxx/path;ppp?query", uri.toString());
+
+        uri.setAuthority(null, -1);
+        assertEquals("/other;xxx/path;ppp?query", uri.toString());
+
+        uri.setParam(null);
+        assertEquals("/other;xxx/path?query", uri.toString());
+
+        uri.setQuery(null);
+        assertEquals("/other;xxx/path", uri.toString());
+
+        uri.setPath(null);
+        assertEquals("", uri.toString());
+    }
+
+    public static Stream<Arguments> decodePathTests()
+    {
+        return Arrays.stream(new Object[][]
+            {
+                // Simple path example
+                {"http://host/path/info", "/path/info", false},
+                {"//host/path/info", "/path/info", false},
+                {"/path/info", "/path/info", false},
+
+                // legal non ambiguous relative paths
+                {"http://host/../path/info", null, false},
+                {"http://host/path/../info", "/info", false},
+                {"http://host/path/./info", "/path/info", false},
+                {"//host/path/../info", "/info", false},
+                {"//host/path/./info", "/path/info", false},
+                {"/path/../info", "/info", false},
+                {"/path/./info", "/path/info", false},
+                {"path/../info", "info", false},
+                {"path/./info", "path/info", false},
+
+                // illegal paths
+                {"//host/../path/info", null, false},
+                {"/../path/info", null, false},
+                {"../path/info", null, false},
+                {"/path/%XX/info", null, false},
+                {"/path/%2/F/info", null, false},
+
+                // ambiguous dot encodings or parameter inclusions
+                {"scheme://host/path/%2e/info", "/path/./info", true},
+                {"scheme:/path/%2e/info", "/path/./info", true},
+                {"/path/%2e/info", "/path/./info", true},
+                {"path/%2e/info/", "path/./info/", true},
+                {"/path/%2e%2e/info", "/path/../info", true},
+                {"/path/%2e%2e;/info", "/path/../info", true},
+                {"/path/%2e%2e;param/info", "/path/../info", true},
+                {"/path/%2e%2e;param;other/info;other", "/path/../info", true},
+                {"/path/.;/info", "/path/./info", true},
+                {"/path/.;param/info", "/path/./info", true},
+                {"/path/..;/info", "/path/../info", true},
+                {"/path/..;param/info", "/path/../info", true},
+                {"%2e/info", "./info", true},
+                {"%2e%2e/info", "../info", true},
+                {"%2e%2e;/info", "../info", true},
+                {".;/info", "./info", true},
+                {".;param/info", "./info", true},
+                {"..;/info", "../info", true},
+                {"..;param/info", "../info", true},
+                {"%2e", ".", true},
+                {"%2e.", "..", true},
+                {".%2e", "..", true},
+                {"%2e%2e", "..", true},
+
+                // ambiguous segment separators
+                {"/path/%2f/info", "/path///info", true},
+                {"%2f/info", "//info", true},
+                {"%2F/info", "//info", true},
+
+            }).map(Arguments::of);
+    }
+
+    @ParameterizedTest
+    @MethodSource("decodePathTests")
+    public void testDecodedPath(String input, String decodedPath, boolean ambiguous)
+    {
+        try
+        {
+            HttpURI uri = new HttpURI(input);
+            assertThat(uri.getDecodedPath(), is(decodedPath));
+            assertThat(uri.hasAmbiguousSegment(), is(ambiguous));
+        }
+        catch (Exception e)
+        {
+            assertThat(decodedPath, nullValue());
+        }
     }
 }

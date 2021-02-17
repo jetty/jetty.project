@@ -107,7 +107,7 @@ public class WebAppProvider extends ScanningAppProvider
                     return false;
 
                 //is it a sccs dir?
-                return !"cvs".equals(lowername) && !"cvsroot".equals(lowername);// OK to deploy it then
+                return !"cvs".equals(lowername) && !"cvsroot".equals(lowername); // OK to deploy it then
             }
 
             // else is it a war file

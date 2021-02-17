@@ -21,11 +21,9 @@ package org.eclipse.jetty.plus.annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.eclipse.jetty.util.log.Log;
@@ -45,7 +43,7 @@ public class InjectionCollection
 
     public static final String INJECTION_COLLECTION = "org.eclipse.jetty.injectionCollection";
 
-    private final ConcurrentMap<String, Set<Injection>> _injectionMap = new ConcurrentHashMap<>();//map of classname to injections
+    private final ConcurrentMap<String, Set<Injection>> _injectionMap = new ConcurrentHashMap<>(); //map of classname to injections
 
     public void add(Injection injection)
     {

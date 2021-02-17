@@ -115,7 +115,7 @@ public abstract class AbstractSessionDataStoreTest
             Class fooclazz = Class.forName("Foo", true, _contextClassLoader);
             //create a session
             long now = System.currentTimeMillis();
-            data = store.newSessionData("1234", 100, now, now - 1, -1);//never expires
+            data = store.newSessionData("1234", 100, now, now - 1, -1); //never expires
             data.setLastNode(sessionContext.getWorkerName());
 
             //Make an attribute that uses the class only known to the webapp classloader
@@ -175,7 +175,7 @@ public abstract class AbstractSessionDataStoreTest
 
         //create a session
         long now = System.currentTimeMillis();
-        SessionData data = store.newSessionData("1234", 100, 200, 199, -1);//never expires
+        SessionData data = store.newSessionData("1234", 100, 200, 199, -1); //never expires
         data.setAttribute("a", "b");
         data.setLastNode(sessionContext.getWorkerName());
         data.setLastSaved(400); //make it look like it was previously saved by the store
@@ -253,7 +253,7 @@ public abstract class AbstractSessionDataStoreTest
             Class factoryclazz = Class.forName("ProxyableFactory", true, _contextClassLoader);
             //create a session
             long now = System.currentTimeMillis();
-            data = store.newSessionData("1234", 100, now, now - 1, -1);//never expires
+            data = store.newSessionData("1234", 100, now, now - 1, -1); //never expires
             data.setLastNode(sessionContext.getWorkerName());
             Method m = factoryclazz.getMethod("newProxyable", ClassLoader.class);
             Object proxy = m.invoke(null, _contextClassLoader);
@@ -322,7 +322,7 @@ public abstract class AbstractSessionDataStoreTest
 
         //persist a session that is not expired
         long now = System.currentTimeMillis();
-        SessionData data = store.newSessionData("1234", 100, now, now - 1, -1);//never expires
+        SessionData data = store.newSessionData("1234", 100, now, now - 1, -1); //never expires
         data.setLastNode(sessionContext.getWorkerName());
         persistSession(data);
 
@@ -355,7 +355,7 @@ public abstract class AbstractSessionDataStoreTest
 
         //persist a session that is expired
         long now = System.currentTimeMillis();
-        SessionData data = store.newSessionData("678", 100, now - 20, now - 30, 10);//10 sec max idle
+        SessionData data = store.newSessionData("678", 100, now - 20, now - 30, 10); //10 sec max idle
         data.setLastNode(sessionContext.getWorkerName());
         data.setExpiry(RECENT_TIMESTAMP); //make it expired recently
         persistSession(data);

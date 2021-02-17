@@ -50,9 +50,9 @@ public class ServletHolderTest
         ServletHolder holder = new ServletHolder(Source.JAVAX_API);
         ServletRegistration reg = holder.getRegistration();
 
-        assertThrows(IllegalArgumentException.class,() ->  reg.setInitParameter(null, "foo"));
+        assertThrows(IllegalArgumentException.class, () -> reg.setInitParameter(null, "foo"));
 
-        assertThrows(IllegalArgumentException.class,() -> reg.setInitParameter("foo", null));
+        assertThrows(IllegalArgumentException.class, () -> reg.setInitParameter("foo", null));
 
         reg.setInitParameter("foo", "bar");
         assertFalse(reg.setInitParameter("foo", "foo"));
@@ -60,8 +60,8 @@ public class ServletHolderTest
         Set<String> clash = reg.setInitParameters(Collections.singletonMap("foo", "bax"));
         assertTrue(clash != null && clash.size() == 1, "should be one clash");
 
-        assertThrows(IllegalArgumentException.class,() ->  reg.setInitParameters(Collections.singletonMap((String)null, "bax")));
-        assertThrows(IllegalArgumentException.class,() ->  reg.setInitParameters(Collections.singletonMap("foo", (String)null)));
+        assertThrows(IllegalArgumentException.class, () -> reg.setInitParameters(Collections.singletonMap((String)null, "bax")));
+        assertThrows(IllegalArgumentException.class, () -> reg.setInitParameters(Collections.singletonMap("foo", (String)null)));
 
         Set<String> clash2 = reg.setInitParameters(Collections.singletonMap("FOO", "bax"));
         assertTrue(clash2.isEmpty(), "should be no clash");
