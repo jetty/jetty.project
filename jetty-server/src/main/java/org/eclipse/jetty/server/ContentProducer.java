@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.server;
 
+import org.eclipse.jetty.util.thread.AutoLock;
+
 /**
  * ContentProducer is the bridge between {@link HttpInput} and {@link HttpChannel}.
  * It wraps a {@link HttpChannel} and uses the {@link HttpChannel#needContent()},
@@ -24,6 +26,13 @@ package org.eclipse.jetty.server;
  */
 public interface ContentProducer
 {
+    /**
+     * Lock this instance. The lock must be held before any method of this instance's
+     * method be called, and must be manually released afterward.
+     * @return the lock that is guarding this instance.
+     */
+    AutoLock lock();
+
     /**
      * Reset all internal state and clear any held resources.
      */

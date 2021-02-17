@@ -273,8 +273,11 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         @Override
         protected void onCompleteFailure(Throwable x)
         {
-            _deflaterEntry.release();
-            _deflaterEntry = null;
+            if (_deflaterEntry != null)
+            {
+                _deflaterEntry.release();
+                _deflaterEntry = null;
+            }
             super.onCompleteFailure(x);
         }
 

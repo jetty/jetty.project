@@ -309,19 +309,24 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     }
 
     /**
-     * Parse and fill data, looking for content
+     * Parse and fill data, looking for content.
+     * We do parse first, and only fill if we're out of bytes to avoid unnecessary system calls.
      */
     void parseAndFillForContent()
     {
         // When fillRequestBuffer() is called, it must always be followed by a parseRequestBuffer() call otherwise this method
-        // doesn't trigger EOF/earlyEOF which breaks AsyncRequestReadTest.testPartialReadThenShutdown()
-        int filled = Integer.MAX_VALUE;
+        // doesn't trigger EOF/earlyEOF which breaks AsyncRequestReadTest.testPartialReadThenShutdown().
+
+        // This loop was designed by a committee and voted by a majority.
         while (_parser.inContentState())
         {
-            boolean handled = parseRequestBuffer();
-            if (handled || filled <= 0)
+            if (parseRequestBuffer())
                 break;
-            filled = fillRequestBuffer();
+            // Re-check the parser state after parsing to avoid filling,
+            // otherwise fillRequestBuffer() would acquire a ByteBuffer
+            // that may be leaked.
+            if (_parser.inContentState() && fillRequestBuffer() <= 0)
+                break;
         }
     }
 
@@ -412,9 +417,21 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     @Override
     public void onCompleted()
     {
-        // Handle connection upgrades.
-        if (upgrade())
-            return;
+        // If we are fill interested, then a read is pending and we must abort
+        if (isFillInterested())
+        {
+            LOG.warn("Pending read in onCompleted {} {}", this, getEndPoint());
+            abort(new IllegalStateException());
+        }
+        else
+        {
+            // Handle connection upgrades.
+            if (upgrade())
+                return;
+        }
+
+        // Drive to EOF, EarlyEOF or Error
+        boolean complete = _input.consumeAll();
 
         // Finish consuming the request
         // If we are still expecting
@@ -424,7 +441,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             _parser.close();
         }
         // else abort if we can't consume all
-        else if (_generator.isPersistent() && !_input.consumeAll())
+        else if (_generator.isPersistent() && !complete)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("unconsumed input {} {}", this, _parser);

@@ -1681,6 +1681,11 @@ public class Request implements HttpServletRequest
      */
     public void setMetaData(MetaData.Request request)
     {
+        if (_metaData == null && _input != null && _channel != null)
+        {
+            _input.reopen();
+            _channel.getResponse().getHttpOutput().reopen();
+        }
         _metaData = request;
         _method = request.getMethod();
         _httpFields = request.getFields();
