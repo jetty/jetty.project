@@ -26,6 +26,7 @@ import java.util.Enumeration;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+<<<<<<< HEAD
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
@@ -39,6 +40,7 @@ import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.LocalConnector;
@@ -82,7 +84,7 @@ public class GzipHandlerTest
     private static final String __micro = __content.substring(0, 10);
 
     private static final String __contentETag = String.format("W/\"%x\"", __content.hashCode());
-    private static final String __contentETagGzip = String.format("W/\"%x--gzip\"", __content.hashCode());
+    private static final String __contentETagGzip = String.format("W/\"%x" + CompressedContentFormat.GZIP._etag + "\"", __content.hashCode());
     private static final String __icontent = "BEFORE" + __content + "AFTER";
 
     private Server _server;
@@ -585,7 +587,7 @@ public class GzipHandlerTest
         request.setURI("/ctx/content");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host", "tester");
-        request.setHeader("If-Match", "WrongEtag--gzip");
+        request.setHeader("If-Match", "WrongEtag" + CompressedContentFormat.GZIP._etag);
         request.setHeader("accept-encoding", "gzip");
 
         response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
