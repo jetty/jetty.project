@@ -23,8 +23,11 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
+import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -65,6 +68,30 @@ public class HttpURI
         ASTERISK
     }
 
+    /**
+     * The concept of URI path parameters was originally specified in
+     * <a href="https://tools.ietf.org/html/rfc2396#section-3.3">RFC2396</a>, but that was
+     * obsoleted by
+     * <a href="https://tools.ietf.org/html/rfc3986#section-3.3">RFC3986</a> which removed
+     * a normative definition of path parameters. Specifically it excluded them from the
+     * <a href="https://tools.ietf.org/html/rfc3986#section-5.2.4">Remove Dot Segments</a>
+     * algorithm.  This results in some ambiguity as dot segments can result from later
+     * parameter removal or % encoding expansion, that are not removed from the URI
+     * by {@link URIUtil#canonicalPath(String)}.  Thus this class flags such ambiguous
+     * path segments, so that they may be rejected by the server if so configured.
+     */
+    private static final Trie<Boolean> __ambiguousSegments = new ArrayTrie<>();
+
+    static
+    {
+        __ambiguousSegments.put("%2e", Boolean.TRUE);
+        __ambiguousSegments.put("%2e%2e", Boolean.TRUE);
+        __ambiguousSegments.put(".%2e", Boolean.TRUE);
+        __ambiguousSegments.put("%2e.", Boolean.TRUE);
+        __ambiguousSegments.put("..", Boolean.FALSE);
+        __ambiguousSegments.put(".", Boolean.FALSE);
+    }
+
     private String _scheme;
     private String _user;
     private String _host;
@@ -73,9 +100,9 @@ public class HttpURI
     private String _param;
     private String _query;
     private String _fragment;
-
-    String _uri;
-    String _decodedPath;
+    private String _uri;
+    private String _decodedPath;
+    private boolean _ambiguousSegment;
 
     /**
      * Construct a normalized URI.
@@ -108,16 +135,29 @@ public class HttpURI
         _scheme = scheme;
         _host = host;
         _port = port;
-        _path = path;
-        _param = param;
-        _query = query;
-        _fragment = fragment;
+        if (path != null)
+            parse(State.PATH, path, 0, path.length());
+        if (param != null)
+            _param = param;
+        if (query != null)
+            _query = query;
+        if (fragment != null)
+            _fragment = fragment;
     }
 
     public HttpURI(HttpURI uri)
     {
-        this(uri._scheme, uri._host, uri._port, uri._path, uri._param, uri._query, uri._fragment);
+        _scheme = uri._scheme;
+        _user = uri._user;
+        _host = uri._host;
+        _port = uri._port;
+        _path = uri._path;
+        _param = uri._param;
+        _query = uri._query;
+        _fragment = uri._fragment;
         _uri = uri._uri;
+        _decodedPath = uri._decodedPath;
+        _ambiguousSegment = uri._ambiguousSegment;
     }
 
     public HttpURI(String uri)
@@ -129,38 +169,42 @@ public class HttpURI
     public HttpURI(URI uri)
     {
         _uri = null;
-
         _scheme = uri.getScheme();
         _host = uri.getHost();
         if (_host == null && uri.getRawSchemeSpecificPart().startsWith("//"))
             _host = "";
         _port = uri.getPort();
         _user = uri.getUserInfo();
-        _path = uri.getRawPath();
-
-        _decodedPath = uri.getPath();
-        if (_decodedPath != null)
-        {
-            int p = _decodedPath.lastIndexOf(';');
-            if (p >= 0)
-                _param = _decodedPath.substring(p + 1);
-        }
+        String path = uri.getRawPath();
+        if (path != null)
+            parse(State.PATH, path, 0, path.length());
         _query = uri.getRawQuery();
         _fragment = uri.getFragment();
-
-        _decodedPath = null;
     }
 
     public HttpURI(String scheme, String host, int port, String pathQuery)
     {
         _uri = null;
-
         _scheme = scheme;
         _host = host;
         _port = port;
-
         if (pathQuery != null)
             parse(State.PATH, pathQuery, 0, pathQuery.length());
+    }
+
+    public void clear()
+    {
+        _uri = null;
+        _scheme = null;
+        _user = null;
+        _host = null;
+        _port = -1;
+        _path = null;
+        _param = null;
+        _query = null;
+        _fragment = null;
+        _decodedPath = null;
+        _ambiguousSegment = false;
     }
 
     public void parse(String uri)
@@ -205,9 +249,12 @@ public class HttpURI
 
     private void parse(State state, final String uri, final int offset, final int end)
     {
-        boolean encoded = false;
-        int mark = offset;
-        int pathMark = 0;
+        int mark = offset; // the start of the current section being parsed
+        int pathMark = 0; // the start of the path section
+        int segment = 0; // the start of the current segment within the path
+        boolean encoded = false; // set to true if the path contains % encoded characters
+        boolean dot = false; // set to true if the path containers . or .. segments
+        int escapedSlash = 0; // state of parsing a %2f
 
         for (int i = offset; i < end; i++)
         {
@@ -241,21 +288,30 @@ public class HttpURI
                             _path = "*";
                             state = State.ASTERISK;
                             break;
-
+                        case '%':
+                            encoded = true;
+                            escapedSlash = 1;
+                            mark = pathMark = segment = i;
+                            state = State.PATH;
+                            break;
+                        case '.' :
+                            dot = true;
+                            pathMark = segment = i;
+                            state = State.PATH;
+                            break;
                         default:
                             mark = i;
                             if (_scheme == null)
                                 state = State.SCHEME_OR_PATH;
                             else
                             {
-                                pathMark = i;
+                                pathMark = segment = i;
                                 state = State.PATH;
                             }
                     }
 
                     continue;
                 }
-
                 case SCHEME_OR_PATH:
                 {
                     switch (c)
@@ -266,40 +322,38 @@ public class HttpURI
                             // Start again with scheme set
                             state = State.START;
                             break;
-
                         case '/':
                             // must have been in a path and still are
+                            segment = i + 1;
                             state = State.PATH;
                             break;
-
                         case ';':
                             // must have been in a path 
                             mark = i + 1;
                             state = State.PARAM;
                             break;
-
                         case '?':
                             // must have been in a path 
                             _path = uri.substring(mark, i);
                             mark = i + 1;
                             state = State.QUERY;
                             break;
-
                         case '%':
                             // must have be in an encoded path 
                             encoded = true;
+                            escapedSlash = 1;
                             state = State.PATH;
                             break;
-
                         case '#':
                             // must have been in a path 
                             _path = uri.substring(mark, i);
                             state = State.FRAGMENT;
                             break;
+                        default:
+                            break;
                     }
                     continue;
                 }
-
                 case HOST_OR_PATH:
                 {
                     switch (c)
@@ -310,23 +364,26 @@ public class HttpURI
                             state = State.HOST;
                             break;
 
+                        case '%':
                         case '@':
                         case ';':
                         case '?':
                         case '#':
+                        case '.':
                             // was a path, look again
                             i--;
                             pathMark = mark;
+                            segment = mark + 1;
                             state = State.PATH;
                             break;
                         default:
                             // it is a path
                             pathMark = mark;
+                            segment = mark + 1;
                             state = State.PATH;
                     }
                     continue;
                 }
-
                 case HOST:
                 {
                     switch (c)
@@ -334,6 +391,7 @@ public class HttpURI
                         case '/':
                             _host = uri.substring(mark, i);
                             pathMark = mark = i;
+                            segment = mark + 1;
                             state = State.PATH;
                             break;
                         case ':':
@@ -348,14 +406,14 @@ public class HttpURI
                             _user = uri.substring(mark, i);
                             mark = i + 1;
                             break;
-
                         case '[':
                             state = State.IPV6;
+                            break;
+                        default:
                             break;
                     }
                     continue;
                 }
-
                 case IPV6:
                 {
                     switch (c)
@@ -376,11 +434,11 @@ public class HttpURI
                                 state = State.PATH;
                             }
                             break;
+                        default:
+                            break;
                     }
-
                     continue;
                 }
-
                 case PORT:
                 {
                     if (c == '@')
@@ -396,36 +454,57 @@ public class HttpURI
                     {
                         _port = TypeUtil.parseInt(uri, mark, i - mark, 10);
                         pathMark = mark = i;
+                        segment = i + 1;
                         state = State.PATH;
                     }
                     continue;
                 }
-
                 case PATH:
                 {
                     switch (c)
                     {
                         case ';':
+                            checkSegment(uri, segment, i, true);
                             mark = i + 1;
                             state = State.PARAM;
                             break;
                         case '?':
+                            checkSegment(uri, segment, i, false);
                             _path = uri.substring(pathMark, i);
                             mark = i + 1;
                             state = State.QUERY;
                             break;
                         case '#':
+                            checkSegment(uri, segment, i, false);
                             _path = uri.substring(pathMark, i);
                             mark = i + 1;
                             state = State.FRAGMENT;
                             break;
+                        case '/':
+                            checkSegment(uri, segment, i, false);
+                            segment = i + 1;
+                            break;
+                        case '.':
+                            dot |= segment == i;
+                            break;
                         case '%':
                             encoded = true;
+                            escapedSlash = 1;
+                            break;
+                        case '2':
+                            escapedSlash = escapedSlash == 1 ? 2 : 0;
+                            break;
+                        case 'f':
+                        case 'F':
+                            _ambiguousSegment |= (escapedSlash == 2);
+                            escapedSlash = 0;
+                            break;
+                        default:
+                            escapedSlash = 0;
                             break;
                     }
                     continue;
                 }
-
                 case PARAM:
                 {
                     switch (c)
@@ -444,17 +523,18 @@ public class HttpURI
                             break;
                         case '/':
                             encoded = true;
-                            // ignore internal params
+                            segment = i + 1;
                             state = State.PATH;
                             break;
                         case ';':
                             // multiple parameters
                             mark = i + 1;
                             break;
+                        default:
+                            break;
                     }
                     continue;
                 }
-
                 case QUERY:
                 {
                     if (c == '#')
@@ -465,17 +545,18 @@ public class HttpURI
                     }
                     continue;
                 }
-
                 case ASTERISK:
                 {
                     throw new IllegalArgumentException("Bad character '*'");
                 }
-
                 case FRAGMENT:
                 {
                     _fragment = uri.substring(mark, end);
                     i = end;
+                    break;
                 }
+                default:
+                    break;
             }
         }
 
@@ -486,51 +567,78 @@ public class HttpURI
             case SCHEME_OR_PATH:
                 _path = uri.substring(mark, end);
                 break;
-
             case HOST_OR_PATH:
                 _path = uri.substring(mark, end);
                 break;
-
             case HOST:
                 if (end > mark)
                     _host = uri.substring(mark, end);
                 break;
-
             case IPV6:
                 throw new IllegalArgumentException("No closing ']' for ipv6 in " + uri);
-
             case PORT:
                 _port = TypeUtil.parseInt(uri, mark, end - mark, 10);
                 break;
-
             case ASTERISK:
                 break;
-
             case FRAGMENT:
                 _fragment = uri.substring(mark, end);
                 break;
-
             case PARAM:
                 _path = uri.substring(pathMark, end);
                 _param = uri.substring(mark, end);
                 break;
-
             case PATH:
+                checkSegment(uri, segment, end, false);
                 _path = uri.substring(pathMark, end);
                 break;
-
             case QUERY:
                 _query = uri.substring(mark, end);
                 break;
+            default:
+                break;
         }
 
-        if (!encoded)
+        if (!encoded && !dot)
         {
             if (_param == null)
                 _decodedPath = _path;
             else
                 _decodedPath = _path.substring(0, _path.length() - _param.length() - 1);
         }
+        else if (_path != null)
+        {
+            String canonical = URIUtil.canonicalPath(_path);
+            if (canonical == null)
+                throw new BadMessageException("Bad URI");
+            _decodedPath = URIUtil.decodePath(canonical);
+        }
+    }
+
+    /**
+     * Check for ambiguous path segments.
+     *
+     * An ambiguous path segment is one that is perhaps technically legal, but is considered undesirable to handle
+     * due to possible ambiguity.  Examples include segments like '..;', '%2e', '%2e%2e' etc.
+     * @param uri The URI string
+     * @param segment The inclusive starting index of the segment (excluding any '/')
+     * @param end The exclusive end index of the segment
+     */
+    private void checkSegment(String uri, int segment, int end, boolean param)
+    {
+        if (!_ambiguousSegment)
+        {
+            Boolean ambiguous = __ambiguousSegments.get(uri, segment, end - segment);
+            _ambiguousSegment |= ambiguous == Boolean.TRUE   || (param && ambiguous == Boolean.FALSE);
+        }
+    }
+
+    /**
+     * @return True if the URI has a possibly ambiguous segment like '..;' or '%2e%2e'
+     */
+    public boolean hasAmbiguousSegment()
+    {
+        return _ambiguousSegment;
     }
 
     public String getScheme()
@@ -561,10 +669,12 @@ public class HttpURI
         return _path;
     }
 
+    /**
+     * @return The decoded canonical path.
+     * @see URIUtil#canonicalPath(String)
+     */
     public String getDecodedPath()
     {
-        if (_decodedPath == null && _path != null)
-            _decodedPath = URIUtil.decodePath(_path);
         return _decodedPath;
     }
 
@@ -575,10 +685,14 @@ public class HttpURI
 
     public void setParam(String param)
     {
-        _param = param;
-        if (_path != null && !_path.contains(_param))
+        if (!Objects.equals(_param, param))
         {
-            _path += ";" + _param;
+            if (_param != null && _path.endsWith(";" + _param))
+                _path = _path.substring(0, _path.length() - 1 - _param.length());
+            _param = param;
+            if (_param != null)
+                _path = (_path == null ? "" : _path) + ";" + _param;
+            _uri = null;
         }
     }
 
@@ -618,21 +732,6 @@ public class HttpURI
             UrlEncoded.decodeUtf8To(_query, parameters);
         else
             UrlEncoded.decodeTo(_query, parameters, encoding);
-    }
-
-    public void clear()
-    {
-        _uri = null;
-
-        _scheme = null;
-        _host = null;
-        _port = -1;
-        _path = null;
-        _param = null;
-        _query = null;
-        _fragment = null;
-
-        _decodedPath = null;
     }
 
     public boolean isAbsolute()
@@ -688,6 +787,12 @@ public class HttpURI
         return toString().equals(o.toString());
     }
 
+    @Override
+    public int hashCode()
+    {
+        return toString().hashCode();
+    }
+
     public void setScheme(String scheme)
     {
         _scheme = scheme;
@@ -711,19 +816,24 @@ public class HttpURI
     public void setPath(String path)
     {
         _uri = null;
-        _path = path;
-        _decodedPath = null;
+        _path = null;
+        if (path != null)
+            parse(State.PATH, path, 0, path.length());
     }
 
-    public void setPathQuery(String path)
+    public void setPathQuery(String pathQuery)
     {
         _uri = null;
         _path = null;
         _decodedPath = null;
         _param = null;
         _fragment = null;
-        if (path != null)
-            parse(State.PATH, path, 0, path.length());
+        /*
+         * The query is not cleared here and old values may be retained if there is no query in
+         * the pathQuery. This has been fixed in 10, but left as is here to preserve behaviour in 9.
+         */
+        if (pathQuery != null)
+            parse(State.PATH, pathQuery, 0, pathQuery.length());
     }
 
     public void setQuery(String query)

@@ -56,13 +56,14 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
     LEGACY(sectionsBySpec("0,METHOD_CASE_SENSITIVE")),
 
     /**
-     * The legacy RFC2616 support, which incorrectly excludes
+     * The legacy RFC2616 support, which excludes
      * {@link HttpComplianceSection#METHOD_CASE_SENSITIVE},
      * {@link HttpComplianceSection#FIELD_COLON},
      * {@link HttpComplianceSection#TRANSFER_ENCODING_WITH_CONTENT_LENGTH},
-     * {@link HttpComplianceSection#MULTIPLE_CONTENT_LENGTHS},
+     * {@link HttpComplianceSection#MULTIPLE_CONTENT_LENGTHS} and
+     * {@link HttpComplianceSection#NO_AMBIGUOUS_PATH_SEGMENTS}.
      */
-    RFC2616_LEGACY(sectionsBySpec("RFC2616,-FIELD_COLON,-METHOD_CASE_SENSITIVE,-TRANSFER_ENCODING_WITH_CONTENT_LENGTH,-MULTIPLE_CONTENT_LENGTHS")),
+    RFC2616_LEGACY(sectionsBySpec("RFC2616,-FIELD_COLON,-METHOD_CASE_SENSITIVE,-TRANSFER_ENCODING_WITH_CONTENT_LENGTH,-MULTIPLE_CONTENT_LENGTHS,-NO_AMBIGUOUS_PATH_SEGMENTS")),
 
     /**
      * The strict RFC2616 support mode
@@ -70,9 +71,11 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
     RFC2616(sectionsBySpec("RFC2616")),
 
     /**
-     * Jetty's current RFC7230 support, which incorrectly excludes  {@link HttpComplianceSection#METHOD_CASE_SENSITIVE}
+     * Jetty's current RFC7230 support, which excludes
+     * {@link HttpComplianceSection#METHOD_CASE_SENSITIVE} and
+     * {@link HttpComplianceSection#NO_AMBIGUOUS_PATH_SEGMENTS}.
      */
-    RFC7230_LEGACY(sectionsBySpec("RFC7230,-METHOD_CASE_SENSITIVE")),
+    RFC7230_LEGACY(sectionsBySpec("RFC7230,-METHOD_CASE_SENSITIVE,-NO_AMBIGUOUS_PATH_SEGMENTS")),
 
     /**
      * The RFC7230 support mode
@@ -123,11 +126,6 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
                 i++;
                 break;
 
-            case "*":
-                i++;
-                sections = EnumSet.allOf(HttpComplianceSection.class);
-                break;
-
             case "RFC2616":
                 sections = EnumSet.complementOf(EnumSet.of(
                     HttpComplianceSection.NO_FIELD_FOLDING,
@@ -135,6 +133,7 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
                 i++;
                 break;
 
+            case "*":
             case "RFC7230":
                 i++;
                 sections = EnumSet.allOf(HttpComplianceSection.class);
@@ -152,11 +151,6 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
             if (exclude)
                 element = element.substring(1);
             HttpComplianceSection section = HttpComplianceSection.valueOf(element);
-            if (section == null)
-            {
-                LOG.warn("Unknown section '" + element + "' in HttpCompliance spec: " + spec);
-                continue;
-            }
             if (exclude)
                 sections.remove(section);
             else
