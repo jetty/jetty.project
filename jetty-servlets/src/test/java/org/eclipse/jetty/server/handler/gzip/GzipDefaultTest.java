@@ -145,7 +145,7 @@ public class GzipDefaultTest
             //A HEAD request should have similar headers, but no body
             response = tester.executeRequest("HEAD", "/context/file.txt", 5, TimeUnit.SECONDS);
             assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
-            assertThat("ETag", response.get("ETag"), containsString(CompressedContentFormat.GZIP._etag));
+            assertThat("ETag", response.get("ETag"), containsString(CompressedContentFormat.GZIP._etagExtension));
             assertThat("Content encoding", response.get("Content-Encoding"), containsString("gzip"));
             assertNull(response.get("Content-Length"), "Content length");
 

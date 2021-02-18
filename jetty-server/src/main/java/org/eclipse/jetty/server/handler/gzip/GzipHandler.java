@@ -36,7 +36,6 @@ import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
@@ -159,7 +158,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public static final int BREAK_EVEN_GZIP_SIZE = 23;
     private static final Logger LOG = Log.getLogger(GzipHandler.class);
     private static final HttpField X_CE_GZIP = new PreEncodedHttpField("X-Content-Encoding", "gzip");
-    private static final HttpField TE_CHUNKED = new PreEncodedHttpField(HttpHeader.TRANSFER_ENCODING, HttpHeaderValue.CHUNKED.asString());
     private static final Pattern COMMA_GZIP = Pattern.compile(".*, *gzip");
 
     private int _poolCapacity = -1;
@@ -477,7 +475,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public String[] getExcludedAgentPatterns()
     {
         Set<String> excluded = _agentPatterns.getExcluded();
-        return excluded.toArray(new String[excluded.size()]);
+        return excluded.toArray(new String[0]);
     }
 
     /**
@@ -489,7 +487,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public String[] getExcludedMethods()
     {
         Set<String> excluded = _methods.getExcluded();
-        return excluded.toArray(new String[excluded.size()]);
+        return excluded.toArray(new String[0]);
     }
 
     /**
@@ -501,7 +499,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public String[] getExcludedMimeTypes()
     {
         Set<String> excluded = _mimeTypes.getExcluded();
-        return excluded.toArray(new String[excluded.size()]);
+        return excluded.toArray(new String[0]);
     }
 
     /**
@@ -513,7 +511,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public String[] getExcludedPaths()
     {
         Set<String> excluded = _paths.getExcluded();
-        return excluded.toArray(new String[excluded.size()]);
+        return excluded.toArray(new String[0]);
     }
 
     /**
@@ -525,7 +523,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public String[] getIncludedAgentPatterns()
     {
         Set<String> includes = _agentPatterns.getIncluded();
-        return includes.toArray(new String[includes.size()]);
+        return includes.toArray(new String[0]);
     }
 
     /**
@@ -537,7 +535,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public String[] getIncludedMethods()
     {
         Set<String> includes = _methods.getIncluded();
-        return includes.toArray(new String[includes.size()]);
+        return includes.toArray(new String[0]);
     }
 
     /**
@@ -549,7 +547,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public String[] getIncludedMimeTypes()
     {
         Set<String> includes = _mimeTypes.getIncluded();
-        return includes.toArray(new String[includes.size()]);
+        return includes.toArray(new String[0]);
     }
 
     /**
@@ -561,7 +559,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public String[] getIncludedPaths()
     {
         Set<String> includes = _paths.getIncluded();
-        return includes.toArray(new String[includes.size()]);
+        return includes.toArray(new String[0]);
     }
 
     /**
@@ -689,23 +687,21 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         }
 
         // Special handling for etags
-        for (ListIterator<HttpField> fields = baseRequest.getHttpFields().listIterator(); fields.hasNext(); )
+        if (!StringUtil.isEmpty(CompressedContentFormat.ETAG_SEPARATOR))
         {
-            HttpField field = fields.next();
-            if (field.getHeader() == HttpHeader.IF_NONE_MATCH || field.getHeader() == HttpHeader.IF_MATCH)
+            for (ListIterator<HttpField> fields = baseRequest.getHttpFields().listIterator(); fields.hasNext(); )
             {
-                String etag = field.getValue();
-                int i = etag.indexOf(CompressedContentFormat.GZIP._etagQuote);
-                if (i > 0)
+                HttpField field = fields.next();
+                if (field.getHeader() == HttpHeader.IF_NONE_MATCH || field.getHeader() == HttpHeader.IF_MATCH)
                 {
-                    baseRequest.setAttribute("o.e.j.s.h.gzip.GzipHandler.etag", etag);
-                    while (i >= 0)
+                    String etags = field.getValue();
+                    String etagsNoSuffix = CompressedContentFormat.GZIP.stripSuffixes(etags);
+                    if (!etagsNoSuffix.equals(etags))
                     {
-                        etag = etag.substring(0, i) + etag.substring(i + CompressedContentFormat.GZIP._etag.length());
-                        i = etag.indexOf(CompressedContentFormat.GZIP._etagQuote, i);
+                        fields.set(new HttpField(field.getHeader(), etagsNoSuffix));
+                        if (field.getHeader() == HttpHeader.IF_MATCH)
+                            baseRequest.setAttribute("o.e.j.s.h.gzip.GzipHandler.etag", etags);
                     }
-
-                    fields.set(new HttpField(field.getHeader(), etag));
                 }
             }
         }

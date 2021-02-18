@@ -27,6 +27,7 @@ import java.util.zip.Deflater;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.HttpChannel;
@@ -150,7 +151,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
             LOG.debug("{} exclude by status {}", this, sc);
             noCompression();
 
-            if (sc == 304)
+            if (sc == HttpStatus.NOT_MODIFIED_304)
             {
                 String requestEtags = (String)_channel.getRequest().getAttribute("o.e.j.s.h.gzip.GzipHandler.etag");
                 String responseEtag = response.getHttpFields().get(HttpHeader.ETAG);
@@ -217,7 +218,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
                 return;
             }
 
-            fields.put(GZIP._contentEncoding);
+            fields.put(GZIP.getContentEncoding());
             _crc.reset();
 
             // Adjust headers
@@ -245,8 +246,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
 
     private String etagGzip(String etag)
     {
-        int end = etag.length() - 1;
-        return (etag.charAt(end) == '"') ? etag.substring(0, end) + GZIP._etag + '"' : etag + GZIP._etag;
+        return GZIP.etag(etag);
     }
 
     public void noCompression()
