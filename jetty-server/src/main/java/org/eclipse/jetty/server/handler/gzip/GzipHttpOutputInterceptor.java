@@ -153,7 +153,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
 
             if (sc == HttpStatus.NOT_MODIFIED_304)
             {
-                String requestEtags = (String)_channel.getRequest().getAttribute("o.e.j.s.h.gzip.GzipHandler.etag");
+                String requestEtags = (String)_channel.getRequest().getAttribute(GzipHandler.GZIP_HANDLER_ETAGS);
                 String responseEtag = response.getHttpFields().get(HttpHeader.ETAG);
                 if (requestEtags != null && responseEtag != null)
                 {

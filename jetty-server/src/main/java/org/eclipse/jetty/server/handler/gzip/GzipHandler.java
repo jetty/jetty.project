@@ -152,6 +152,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class GzipHandler extends HandlerWrapper implements GzipFactory
 {
+    public static final String GZIP_HANDLER_ETAGS = "o.e.j.s.h.gzip.GzipHandler.etag";
     public static final String GZIP = "gzip";
     public static final String DEFLATE = "deflate";
     public static final int DEFAULT_MIN_GZIP_SIZE = 32;
@@ -699,8 +700,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
                     if (!etagsNoSuffix.equals(etags))
                     {
                         fields.set(new HttpField(field.getHeader(), etagsNoSuffix));
-                        if (field.getHeader() == HttpHeader.IF_MATCH)
-                            baseRequest.setAttribute("o.e.j.s.h.gzip.GzipHandler.etag", etags);
+                        baseRequest.setAttribute(GZIP_HANDLER_ETAGS, etags);
                     }
                 }
             }

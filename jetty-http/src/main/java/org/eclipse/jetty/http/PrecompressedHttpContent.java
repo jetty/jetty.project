@@ -167,7 +167,9 @@ public class PrecompressedHttpContent implements HttpContent
     @Override
     public String toString()
     {
-        return String.format("PrecompressedHttpContent@%x{e=%s,r=%s|%s,lm=%s|%s,ct=%s}", hashCode(), _format,
+        return String.format("%s@%x{e=%s,r=%s|%s,lm=%s|%s,ct=%s}",
+            this.getClass().getSimpleName(), hashCode(),
+            _format,
             _content.getResource(), _precompressedContent.getResource(),
             _content.getResource().lastModified(), _precompressedContent.getResource().lastModified(),
             getContentType());

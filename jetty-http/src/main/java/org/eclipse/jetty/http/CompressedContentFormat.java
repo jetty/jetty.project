@@ -82,6 +82,10 @@ public class CompressedContentFormat
         return _contentEncoding;
     }
 
+    /** Get an etag with suffix that represents this compressed type.
+     * @param etag An etag
+     * @return An etag with compression suffix, or the etag itself if no suffix is configured.
+     */
     public String etag(String etag)
     {
         if (StringUtil.isEmpty(ETAG_SEPARATOR))
@@ -98,6 +102,11 @@ public class CompressedContentFormat
         return Objects.hash(_encoding, _extension);
     }
 
+    /** Check etags for equality, accounting for quoting and compression suffixes.
+     * @param etag An etag without a compression suffix
+     * @param etagWithSuffix An etag optionally with a compression suffix.
+     * @return True if the tags are equal.
+     */
     public static boolean tagEquals(String etag, String etagWithSuffix)
     {
         // Handle simple equality

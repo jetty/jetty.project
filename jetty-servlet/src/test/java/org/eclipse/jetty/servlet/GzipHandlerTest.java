@@ -88,7 +88,7 @@ public class GzipHandlerTest
     private static final String __micro = __content.substring(0, 10);
 
     private static final String __contentETag = String.format("W/\"%x\"", __content.hashCode());
-    private static final String __contentETagGzip = String.format("W/\"%x" + CompressedContentFormat.GZIP._etagExtension + "\"", __content.hashCode());
+    private static final String __contentETagGzip = String.format("W/\"%x" + CompressedContentFormat.GZIP.getEtagSuffix() + "\"", __content.hashCode());
     private static final String __icontent = "BEFORE" + __content + "AFTER";
 
     private Server _server;
@@ -592,7 +592,7 @@ public class GzipHandlerTest
         request.setURI("/ctx/content");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host", "tester");
-        request.setHeader("If-Match", "WrongEtag" + CompressedContentFormat.GZIP._etagExtension);
+        request.setHeader("If-Match", "WrongEtag" + CompressedContentFormat.GZIP.getEtagSuffix());
         request.setHeader("accept-encoding", "gzip");
 
         response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
