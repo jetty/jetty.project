@@ -13,84 +13,79 @@
 
 package org.eclipse.jetty.http3.qpack.table;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http3.qpack.QpackContext;
+import org.eclipse.jetty.http3.qpack.QpackException;
 
 public class DynamicTable
 {
     public static final int FIRST_INDEX = StaticTable.STATIC_SIZE + 1;
-    private int _maxDynamicTableSizeInBytes;
-    private int _dynamicTableSizeInBytes;
+    private int _maxCapacity;
+    private int _capacity;
+    private int _absoluteIndex;
 
     private final Map<HttpField, Entry> _fieldMap = new HashMap<>();
     private final Map<String, Entry> _nameMap = new HashMap<>();
-    private final int _growby;
+    private final List<Entry> _entries = new ArrayList<>();
 
-    private Entry[] _entries;
-    private int _numEntries;
-    private int _offset;
+    private final Map<Integer, StreamInfo> streamInfoMap = new HashMap<>();
 
-    public DynamicTable(int maxSize)
+    public static class StreamInfo
     {
-        _maxDynamicTableSizeInBytes = maxSize;
-        int initCapacity = 10 + maxSize / (32 + 10 + 10);
-        _entries = new Entry[initCapacity];
-        _growby = initCapacity;
+        private int streamId;
+        private final List<Integer> referencedEntries = new ArrayList<>();
+        private int potentiallyBlockedStreams = 0;
+    }
+
+    public DynamicTable()
+    {
     }
 
     public Entry add(Entry entry)
     {
+        evict();
+
         int size = entry.getSize();
-        if (size > _maxDynamicTableSizeInBytes)
+        if (size + _capacity > _maxCapacity)
         {
             if (QpackContext.LOG.isDebugEnabled())
-                QpackContext.LOG.debug(String.format("HdrTbl[%x] !added size %d>%d", hashCode(), size, _maxDynamicTableSizeInBytes));
-            evictAll();
+                QpackContext.LOG.debug(String.format("HdrTbl[%x] !added size %d>%d", hashCode(), size, _maxCapacity));
             return null;
         }
-        _dynamicTableSizeInBytes += size;
+        _capacity += size;
 
-        if (_numEntries == _entries.length)
-        {
-            Entry[] entries = new Entry[_entries.length + _growby];
-            for (int i = 0; i < _numEntries; i++)
-            {
-                int slot = (_offset + i) % _entries.length;
-                entries[i] = _entries[slot];
-                entries[i].setIndex(i);
-            }
-            _entries = entries;
-            _offset = 0;
-        }
-        int slot = (_numEntries++ + _offset) % _entries.length;
-        _entries[slot] = entry;
-        entry.setIndex(slot);
-
+        // Set the Entries absolute index which will never change.
+        entry.setIndex(_absoluteIndex++);
+        _entries.add(0, entry);
         _fieldMap.put(entry.getHttpField(), entry);
         _nameMap.put(entry.getHttpField().getLowerCaseName(), entry);
 
         if (QpackContext.LOG.isDebugEnabled())
             QpackContext.LOG.debug(String.format("HdrTbl[%x] added %s", hashCode(), entry));
-        evict();
         return entry;
     }
 
     public int index(Entry entry)
     {
-        return StaticTable.STATIC_SIZE + _numEntries - (entry.getIndex() - _offset + _entries.length) % _entries.length;
+        // TODO: should we improve efficiency of this by storing in the entry itself.
+        return _entries.indexOf(entry);
+    }
+
+    public Entry getAbsolute(int absoluteIndex) throws QpackException
+    {
+        if (absoluteIndex < 0)
+            throw new QpackException.CompressionException("Invalid Index");
+        return _entries.stream().filter(e -> e.getIndex() == absoluteIndex).findFirst().orElse(null);
     }
 
     public Entry get(int index)
     {
-        int d = index - StaticTable.STATIC_SIZE - 1;
-        if (d < 0 || d >= _numEntries)
-            return null;
-        int slot = (_offset + _numEntries - d - 1) % _entries.length;
-        return _entries[slot];
+        return _entries.get(index);
     }
 
     public Entry get(String name)
@@ -105,66 +100,91 @@ public class DynamicTable
 
     public int getSize()
     {
-        return _dynamicTableSizeInBytes;
+        return _capacity;
     }
 
     public int getMaxSize()
     {
-        return _maxDynamicTableSizeInBytes;
+        return _maxCapacity;
     }
 
     public int getNumEntries()
     {
-        return _numEntries;
+        return _entries.size();
+    }
+
+    public int getInsertCount()
+    {
+        return _absoluteIndex;
     }
 
     public void setCapacity(int capacity)
     {
         if (QpackContext.LOG.isDebugEnabled())
-            QpackContext.LOG.debug(String.format("HdrTbl[%x] resized max=%d->%d", hashCode(), _maxDynamicTableSizeInBytes, capacity));
-        _maxDynamicTableSizeInBytes = capacity;
+            QpackContext.LOG.debug(String.format("HdrTbl[%x] resized max=%d->%d", hashCode(), _maxCapacity, capacity));
+        _maxCapacity = capacity;
         evict();
+    }
+
+    private boolean canReference(Entry entry)
+    {
+        int evictionThreshold = getEvictionThreshold();
+        int lowestReferencableIndex = -1;
+        int remainingCapacity = _capacity;
+        for (int i = 0; i < _entries.size(); i++)
+        {
+            if (remainingCapacity <= evictionThreshold)
+            {
+                lowestReferencableIndex = i;
+                break;
+            }
+
+            remainingCapacity -= _entries.get(i).getSize();
+        }
+
+        return index(entry) >= lowestReferencableIndex;
     }
 
     private void evict()
     {
-        while (_dynamicTableSizeInBytes > _maxDynamicTableSizeInBytes)
+        int evictionThreshold = getEvictionThreshold();
+        for (Entry e : _entries)
         {
-            Entry entry = _entries[_offset];
-            _entries[_offset] = null;
-            _offset = (_offset + 1) % _entries.length;
-            _numEntries--;
+            // We only evict when the table is getting full.
+            if (_capacity < evictionThreshold)
+                return;
+
+            // We can only evict if there are no references outstanding to this entry.
+            if (e.getReferenceCount() != 0)
+                return;
+
+            // Remove this entry.
             if (QpackContext.LOG.isDebugEnabled())
-                QpackContext.LOG.debug(String.format("HdrTbl[%x] evict %s", hashCode(), entry));
-            _dynamicTableSizeInBytes -= entry.getSize();
-            entry.setIndex(-1);
-            _fieldMap.remove(entry.getHttpField());
-            String lc = entry.getHttpField().getLowerCaseName();
-            if (entry == _nameMap.get(lc))
-                _nameMap.remove(lc);
+                QpackContext.LOG.debug(String.format("HdrTbl[%x] evict %s", hashCode(), e));
+
+            Entry removedEntry = _entries.remove(0);
+            if (removedEntry != e)
+                throw new IllegalStateException("Corruption in DynamicTable");
+            _fieldMap.remove(e.getHttpField());
+            String name = e.getHttpField().getLowerCaseName();
+            if (e == _nameMap.get(name))
+                _nameMap.remove(name);
+
+            _capacity -= e.getSize();
         }
+
         if (QpackContext.LOG.isDebugEnabled())
-            QpackContext.LOG.debug(String.format("HdrTbl[%x] entries=%d, size=%d, max=%d", hashCode(), getNumEntries(), _dynamicTableSizeInBytes, _maxDynamicTableSizeInBytes));
+            QpackContext.LOG.debug(String.format("HdrTbl[%x] entries=%d, size=%d, max=%d", hashCode(), getNumEntries(), _capacity, _maxCapacity));
     }
 
-    private void evictAll()
+    private int getEvictionThreshold()
     {
-        if (QpackContext.LOG.isDebugEnabled())
-            QpackContext.LOG.debug(String.format("HdrTbl[%x] evictAll", hashCode()));
-        if (getNumEntries() > 0)
-        {
-            _fieldMap.clear();
-            _nameMap.clear();
-            _offset = 0;
-            _numEntries = 0;
-            _dynamicTableSizeInBytes = 0;
-            Arrays.fill(_entries, null);
-        }
+        return _maxCapacity * 3 / 4;
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x{entries=%d,size=%d,max=%d}", getClass().getSimpleName(), hashCode(), getNumEntries(), _dynamicTableSizeInBytes, _maxDynamicTableSizeInBytes);
+        return String.format("%s@%x{entries=%d,size=%d,max=%d}", getClass().getSimpleName(), hashCode(), getNumEntries(), _capacity, _maxCapacity);
     }
 }

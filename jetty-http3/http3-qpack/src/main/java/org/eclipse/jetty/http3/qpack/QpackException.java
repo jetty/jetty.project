@@ -30,7 +30,7 @@ public abstract class QpackException extends Exception
      */
     public static class StreamException extends QpackException
     {
-        StreamException(String messageFormat, Object... args)
+        public StreamException(String messageFormat, Object... args)
         {
             super(messageFormat, args);
         }
@@ -43,7 +43,7 @@ public abstract class QpackException extends Exception
      */
     public static class SessionException extends QpackException
     {
-        SessionException(String messageFormat, Object... args)
+        public SessionException(String messageFormat, Object... args)
         {
             super(messageFormat, args);
         }

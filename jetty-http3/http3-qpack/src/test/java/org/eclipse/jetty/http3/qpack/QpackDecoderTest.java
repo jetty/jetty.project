@@ -54,16 +54,19 @@ public class QpackDecoderTest
      +-------------------------------+
      */
 
+    private final DecoderTestHandler handler = new DecoderTestHandler();
+
     @Test
     public void testDecodeD3() throws Exception
     {
-        QpackDecoder decoder = new QpackDecoder(4096, 8192);
+        QpackDecoder decoder = new QpackDecoder(handler, 4096, 8192);
 
         // First request
         String encoded = "828684410f7777772e6578616d706c652e636f6d";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
-        MetaData.Request request = (MetaData.Request)decoder.decode(buffer);
+        decoder.decode(buffer);
+        MetaData.Request request = (MetaData.Request)handler.getMetaData();
 
         assertEquals("GET", request.getMethod());
         assertEquals(HttpScheme.HTTP.asString(), request.getURI().getScheme());
@@ -75,7 +78,8 @@ public class QpackDecoderTest
         encoded = "828684be58086e6f2d6361636865";
         buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
-        request = (MetaData.Request)decoder.decode(buffer);
+        decoder.decode(buffer);
+        request = (MetaData.Request)handler.getMetaData();
 
         assertEquals("GET", request.getMethod());
         assertEquals(HttpScheme.HTTP.asString(), request.getURI().getScheme());
@@ -90,7 +94,8 @@ public class QpackDecoderTest
         encoded = "828785bf400a637573746f6d2d6b65790c637573746f6d2d76616c7565";
         buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
-        request = (MetaData.Request)decoder.decode(buffer);
+        decoder.decode(buffer);
+        request = (MetaData.Request)handler.getMetaData();
 
         assertEquals("GET", request.getMethod());
         assertEquals(HttpScheme.HTTPS.asString(), request.getURI().getScheme());
@@ -105,13 +110,14 @@ public class QpackDecoderTest
     @Test
     public void testDecodeD4() throws Exception
     {
-        QpackDecoder decoder = new QpackDecoder(4096, 8192);
+        QpackDecoder decoder = new QpackDecoder(handler, 4096, 8192);
 
         // First request
         String encoded = "828684418cf1e3c2e5f23a6ba0ab90f4ff";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
-        MetaData.Request request = (MetaData.Request)decoder.decode(buffer);
+        decoder.decode(buffer);
+        MetaData.Request request = (MetaData.Request)handler.getMetaData();
 
         assertEquals("GET", request.getMethod());
         assertEquals(HttpScheme.HTTP.asString(), request.getURI().getScheme());
@@ -123,7 +129,8 @@ public class QpackDecoderTest
         encoded = "828684be5886a8eb10649cbf";
         buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
-        request = (MetaData.Request)decoder.decode(buffer);
+        decoder.decode(buffer);
+        request = (MetaData.Request)handler.getMetaData();
 
         assertEquals("GET", request.getMethod());
         assertEquals(HttpScheme.HTTP.asString(), request.getURI().getScheme());
@@ -140,14 +147,15 @@ public class QpackDecoderTest
     {
         String value = "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==";
 
-        QpackDecoder decoder = new QpackDecoder(4096, 8192);
+        QpackDecoder decoder = new QpackDecoder(handler, 4096, 8192);
         String encoded = "8682418cF1E3C2E5F23a6bA0Ab90F4Ff841f0822426173696320515778685a475270626a70766347567549484e6c633246745a513d3d";
         byte[] bytes = TypeUtil.fromHexString(encoded);
         byte[] array = new byte[bytes.length + 1];
         System.arraycopy(bytes, 0, array, 1, bytes.length);
         ByteBuffer buffer = ByteBuffer.wrap(array, 1, bytes.length).slice();
 
-        MetaData.Request request = (MetaData.Request)decoder.decode(buffer);
+        decoder.decode(buffer);
+        MetaData.Request request = (MetaData.Request)handler.getMetaData();
 
         assertEquals("GET", request.getMethod());
         assertEquals(HttpScheme.HTTP.asString(), request.getURI().getScheme());
@@ -162,7 +170,7 @@ public class QpackDecoderTest
     @Test
     public void testDecodeHuffmanWithArrayOffset() throws Exception
     {
-        QpackDecoder decoder = new QpackDecoder(4096, 8192);
+        QpackDecoder decoder = new QpackDecoder(handler, 4096, 8192);
 
         String encoded = "8286418cf1e3c2e5f23a6ba0ab90f4ff84";
         byte[] bytes = TypeUtil.fromHexString(encoded);
@@ -170,7 +178,8 @@ public class QpackDecoderTest
         System.arraycopy(bytes, 0, array, 1, bytes.length);
         ByteBuffer buffer = ByteBuffer.wrap(array, 1, bytes.length).slice();
 
-        MetaData.Request request = (MetaData.Request)decoder.decode(buffer);
+        decoder.decode(buffer);
+        MetaData.Request request = (MetaData.Request)handler.getMetaData();
 
         assertEquals("GET", request.getMethod());
         assertEquals(HttpScheme.HTTP.asString(), request.getURI().getScheme());
@@ -186,8 +195,9 @@ public class QpackDecoderTest
         String encoded = "886196C361Be940b6a65B6850400B8A00571972e080a62D1Bf5f87497cA589D34d1f9a0f0d0234327690Aa69D29aFcA954D3A5358980Ae112e0f7c880aE152A9A74a6bF3";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
-        QpackDecoder decoder = new QpackDecoder(4096, 8192);
-        MetaData.Response response = (MetaData.Response)decoder.decode(buffer);
+        QpackDecoder decoder = new QpackDecoder(handler, 4096, 8192);
+        decoder.decode(buffer);
+        MetaData.Response response = (MetaData.Response)handler.getMetaData();
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.getFields().size(), is(6));
@@ -204,8 +214,9 @@ public class QpackDecoderTest
     {
         String encoded = "203f136687A0E41d139d090760881c6490B2Cd39Ba7f";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
-        QpackDecoder decoder = new QpackDecoder(4096, 8192);
-        MetaData metaData = decoder.decode(buffer);
+        QpackDecoder decoder = new QpackDecoder(handler, 4096, 8192);
+        decoder.decode(buffer);
+        MetaData metaData = handler.getMetaData();
         assertThat(metaData.getFields().get(HttpHeader.HOST), is("localhost0"));
         assertThat(metaData.getFields().get(HttpHeader.COOKIE), is("abcdefghij"));
         assertThat(decoder.getQpackContext().getMaxDynamicTableSize(), is(50));
@@ -226,7 +237,7 @@ public class QpackDecoderTest
 
         String encoded = "203f136687A0E41d139d090760881c6490B2Cd39Ba7f20";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
-        QpackDecoder decoder = new QpackDecoder(4096, 8192);
+        QpackDecoder decoder = new QpackDecoder(handler, 4096, 8192);
         try
         {
             decoder.decode(buffer);
@@ -244,8 +255,9 @@ public class QpackDecoderTest
         String encoded = "3f610f17FfEc02Df3990A190A0D4Ee5b3d2940Ec98Aa4a62D127D29e273a0aA20dEcAa190a503b262d8a2671D4A2672a927aA874988a2471D05510750c951139EdA2452a3a548cAa1aA90bE4B228342864A9E0D450A5474a92992a1aA513395448E3A0Aa17B96cFe3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f14E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F353F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F54f";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
-        QpackDecoder decoder = new QpackDecoder(128, 8192);
-        MetaData metaData = decoder.decode(buffer);
+        QpackDecoder decoder = new QpackDecoder(handler, 128, 8192);
+        decoder.decode(buffer);
+        MetaData metaData = handler.getMetaData();
 
         assertThat(decoder.getQpackContext().getDynamicTableSize(), is(0));
         assertThat(metaData.getFields().get("host"), Matchers.startsWith("This is a very large field"));
@@ -257,7 +269,7 @@ public class QpackDecoderTest
         String encoded = "BE";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
-        QpackDecoder decoder = new QpackDecoder(128, 8192);
+        QpackDecoder decoder = new QpackDecoder(handler, 128, 8192);
 
         try
         {
@@ -442,12 +454,13 @@ public class QpackDecoderTest
     @Test
     public void testHuffmanEncodedStandard() throws Exception
     {
-        QpackDecoder decoder = new QpackDecoder(4096, 8192);
+        QpackDecoder decoder = new QpackDecoder(handler, 4096, 8192);
 
         String encoded = "82868441" + "83" + "49509F";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
-        MetaData.Request request = (MetaData.Request)decoder.decode(buffer);
+        decoder.decode(buffer);
+        MetaData.Request request = (MetaData.Request)handler.getMetaData();
 
         assertEquals("GET", request.getMethod());
         assertEquals(HttpScheme.HTTP.asString(), request.getURI().getScheme());
@@ -460,7 +473,7 @@ public class QpackDecoderTest
     @Test
     public void testHuffmanEncodedExtraPadding()
     {
-        QpackDecoder decoder = new QpackDecoder(4096, 8192);
+        QpackDecoder decoder = new QpackDecoder(handler, 4096, 8192);
 
         String encoded = "82868441" + "84" + "49509FFF";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
@@ -472,7 +485,7 @@ public class QpackDecoderTest
     @Test
     public void testHuffmanEncodedZeroPadding()
     {
-        QpackDecoder decoder = new QpackDecoder(4096, 8192);
+        QpackDecoder decoder = new QpackDecoder(handler, 4096, 8192);
 
         String encoded = "82868441" + "83" + "495090";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
@@ -485,7 +498,7 @@ public class QpackDecoderTest
     @Test
     public void testHuffmanEncodedWithEOS()
     {
-        QpackDecoder decoder = new QpackDecoder(4096, 8192);
+        QpackDecoder decoder = new QpackDecoder(handler, 4096, 8192);
 
         String encoded = "82868441" + "87" + "497FFFFFFF427F";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
@@ -497,7 +510,7 @@ public class QpackDecoderTest
     @Test
     public void testHuffmanEncodedOneIncompleteOctet()
     {
-        QpackDecoder decoder = new QpackDecoder(4096, 8192);
+        QpackDecoder decoder = new QpackDecoder(handler, 4096, 8192);
 
         String encoded = "82868441" + "81" + "FE";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
@@ -509,7 +522,7 @@ public class QpackDecoderTest
     @Test
     public void testHuffmanEncodedTwoIncompleteOctet()
     {
-        QpackDecoder decoder = new QpackDecoder(4096, 8192);
+        QpackDecoder decoder = new QpackDecoder(handler, 4096, 8192);
 
         String encoded = "82868441" + "82" + "FFFE";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
@@ -521,7 +534,7 @@ public class QpackDecoderTest
     @Test
     public void testZeroLengthName()
     {
-        QpackDecoder decoder = new QpackDecoder(4096, 8192);
+        QpackDecoder decoder = new QpackDecoder(handler, 4096, 8192);
 
         String encoded = "00000130";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
@@ -532,11 +545,12 @@ public class QpackDecoderTest
     @Test
     public void testZeroLengthValue() throws Exception
     {
-        QpackDecoder decoder = new QpackDecoder(4096, 8192);
+        QpackDecoder decoder = new QpackDecoder(handler, 4096, 8192);
 
         String encoded = "00016800";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
-        MetaData metaData = decoder.decode(buffer);
+        decoder.decode(buffer);
+        MetaData metaData = handler.getMetaData();
         assertThat(metaData.getFields().size(), is(1));
         assertThat(metaData.getFields().get("h"), is(""));
     }
@@ -544,7 +558,7 @@ public class QpackDecoderTest
     @Test
     public void testUpperCaseName()
     {
-        QpackDecoder decoder = new QpackDecoder(4096, 8192);
+        QpackDecoder decoder = new QpackDecoder(handler, 4096, 8192);
 
         String encoded = "0001480130";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
@@ -555,7 +569,7 @@ public class QpackDecoderTest
     @Test
     public void testWhiteSpaceName()
     {
-        QpackDecoder decoder = new QpackDecoder(4096, 8192);
+        QpackDecoder decoder = new QpackDecoder(handler, 4096, 8192);
 
         String encoded = "0001200130";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));

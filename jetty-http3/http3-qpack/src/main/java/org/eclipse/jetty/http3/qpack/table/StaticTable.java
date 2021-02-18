@@ -150,13 +150,13 @@ public class StaticTable
 
             _staticTable[i] = entry;
 
-            if (entry._field.getValue() != null)
-                _staticFieldMap.put(entry._field, entry);
+            if (entry.getHttpField().getValue() != null)
+                _staticFieldMap.put(entry.getHttpField(), entry);
 
-            if (!added.contains(entry._field.getName()))
+            if (!added.contains(entry.getHttpField().getName()))
             {
-                added.add(entry._field.getName());
-                staticNameMapBuilder.with(entry._field.getName(), entry);
+                added.add(entry.getHttpField().getName());
+                staticNameMapBuilder.with(entry.getHttpField().getName(), entry);
             }
         }
         _staticNameMap = staticNameMapBuilder.build();

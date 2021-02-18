@@ -41,11 +41,13 @@ public class QpackTest
     static final HttpField XPowerJetty = new PreEncodedHttpField(HttpHeader.X_POWERED_BY, "jetty");
     static final HttpField Date = new PreEncodedHttpField(HttpHeader.DATE, DateGenerator.formatDate(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())));
 
+    private final DecoderTestHandler handler = new DecoderTestHandler();
+
     @Test
     public void encodeDecodeResponseTest() throws Exception
     {
         QpackEncoder encoder = new QpackEncoder();
-        QpackDecoder decoder = new QpackDecoder(4096, 8192);
+        QpackDecoder decoder = new QpackDecoder(handler, 4096, 8192);
         ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
 
         HttpFields.Mutable fields0 = HttpFields.build()
@@ -62,9 +64,10 @@ public class QpackTest
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer, original0);
         BufferUtil.flipToFlush(buffer, 0);
-        Response decoded0 = (Response)decoder.decode(buffer);
-        
-        Response nullToEmpty = new MetaData.Response(HttpVersion.HTTP_2, 200, 
+        decoder.decode(buffer);
+        Response decoded0 = (Response)handler.getMetaData();
+
+        Response nullToEmpty = new MetaData.Response(HttpVersion.HTTP_2, 200,
             fields0.put(new HttpField(HttpHeader.CONTENT_ENCODING, "")));
         assertMetaDataResponseSame(nullToEmpty, decoded0);
 
@@ -72,7 +75,8 @@ public class QpackTest
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer, original0);
         BufferUtil.flipToFlush(buffer, 0);
-        Response decoded0b = (Response)decoder.decode(buffer);
+        decoder.decode(buffer);
+        Response decoded0b = (Response)handler.getMetaData();
 
         assertMetaDataResponseSame(nullToEmpty, decoded0b);
 
@@ -90,7 +94,8 @@ public class QpackTest
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer, original1);
         BufferUtil.flipToFlush(buffer, 0);
-        Response decoded1 = (Response)decoder.decode(buffer);
+        decoder.decode(buffer);
+        Response decoded1 = (Response)handler.getMetaData();
 
         assertMetaDataResponseSame(original1, decoded1);
         assertEquals("custom-key", decoded1.getFields().getField("Custom-Key").getName());
@@ -100,7 +105,7 @@ public class QpackTest
     public void encodeDecodeTooLargeTest() throws Exception
     {
         QpackEncoder encoder = new QpackEncoder();
-        QpackDecoder decoder = new QpackDecoder(4096, 164);
+        QpackDecoder decoder = new QpackDecoder(handler, 4096, 164);
         ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
 
         HttpFields fields0 = HttpFields.build()
@@ -111,7 +116,8 @@ public class QpackTest
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer, original0);
         BufferUtil.flipToFlush(buffer, 0);
-        MetaData decoded0 = decoder.decode(buffer);
+        decoder.decode(buffer);
+        MetaData decoded0 = handler.getMetaData();
 
         assertMetaDataSame(original0, decoded0);
 
@@ -139,11 +145,11 @@ public class QpackTest
     public void encodeDecodeNonAscii() throws Exception
     {
         QpackEncoder encoder = new QpackEncoder();
-        QpackDecoder decoder = new QpackDecoder(4096, 8192);
+        QpackDecoder decoder = new QpackDecoder(handler, 4096, 8192);
         ByteBuffer buffer = BufferUtil.allocate(16 * 1024);
 
         HttpFields fields0 = HttpFields.build()
-        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
+            // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
             .add("Cookie", "[\uD842\uDF9F]")
             .add("custom-key", "[\uD842\uDF9F]");
         Response original0 = new MetaData.Response(HttpVersion.HTTP_2, 200, fields0);
@@ -151,16 +157,17 @@ public class QpackTest
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer, original0);
         BufferUtil.flipToFlush(buffer, 0);
-        Response decoded0 = (Response)decoder.decode(buffer);
+        decoder.decode(buffer);
+        Response decoded0 = (Response)handler.getMetaData();
 
         assertMetaDataSame(original0, decoded0);
     }
-    
+
     @Test
     public void evictReferencedFieldTest() throws Exception
     {
         QpackEncoder encoder = new QpackEncoder(200, 200);
-        QpackDecoder decoder = new QpackDecoder(200, 1024);
+        QpackDecoder decoder = new QpackDecoder(handler, 200, 1024);
         ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
 
         String longEnoughToBeEvicted = "012345678901234567890123456789012345678901234567890";
@@ -173,7 +180,8 @@ public class QpackTest
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer, original0);
         BufferUtil.flipToFlush(buffer, 0);
-        MetaData decoded0 = decoder.decode(buffer);
+        decoder.decode(buffer);
+        MetaData decoded0 = handler.getMetaData();
 
         assertEquals(2, encoder.getQpackContext().getNumEntries());
         assertEquals(2, decoder.getQpackContext().getNumEntries());
@@ -190,7 +198,8 @@ public class QpackTest
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer, original1);
         BufferUtil.flipToFlush(buffer, 0);
-        MetaData decoded1 = decoder.decode(buffer);
+        decoder.decode(buffer);
+        MetaData decoded1 = handler.getMetaData();
         assertMetaDataSame(original1, decoded1);
 
         assertEquals(2, encoder.getQpackContext().getNumEntries());
@@ -203,7 +212,7 @@ public class QpackTest
     public void testHopHeadersAreRemoved() throws Exception
     {
         QpackEncoder encoder = new QpackEncoder();
-        QpackDecoder decoder = new QpackDecoder(4096, 16384);
+        QpackDecoder decoder = new QpackDecoder(handler, 4096, 16384);
 
         HttpFields input = HttpFields.build()
             .add(HttpHeader.ACCEPT, "*")
@@ -219,7 +228,8 @@ public class QpackTest
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, input));
         BufferUtil.flipToFlush(buffer, 0);
-        MetaData metaData = decoder.decode(buffer);
+        decoder.decode(buffer);
+        MetaData metaData = handler.getMetaData();
         HttpFields output = metaData.getFields();
 
         assertEquals(1, output.size());
@@ -230,7 +240,7 @@ public class QpackTest
     public void testTETrailers() throws Exception
     {
         QpackEncoder encoder = new QpackEncoder();
-        QpackDecoder decoder = new QpackDecoder(4096, 16384);
+        QpackDecoder decoder = new QpackDecoder(handler, 4096, 16384);
 
         String teValue = "trailers";
         String trailerValue = "Custom";
@@ -243,7 +253,7 @@ public class QpackTest
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, input));
         BufferUtil.flipToFlush(buffer, 0);
-        MetaData metaData = decoder.decode(buffer);
+        MetaData metaData = handler.getMetaData();
         HttpFields output = metaData.getFields();
 
         assertEquals(2, output.size());
@@ -255,7 +265,7 @@ public class QpackTest
     public void testColonHeaders() throws Exception
     {
         QpackEncoder encoder = new QpackEncoder();
-        QpackDecoder decoder = new QpackDecoder(4096, 16384);
+        QpackDecoder decoder = new QpackDecoder(handler, 4096, 16384);
 
         HttpFields input = HttpFields.build()
             .add(":status", "200")
