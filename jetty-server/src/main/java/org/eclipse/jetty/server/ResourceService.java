@@ -138,7 +138,7 @@ public class ResourceService
     public void setPrecompressedFormats(CompressedContentFormat[] precompressedFormats)
     {
         _precompressedFormats = precompressedFormats;
-        _preferredEncodingOrder = stream(_precompressedFormats).map(f -> f._encoding).toArray(String[]::new);
+        _preferredEncodingOrder = stream(_precompressedFormats).map(f -> f.getEncoding()).toArray(String[]::new);
     }
 
     public void setEncodingCacheSize(int encodingCacheSize)
@@ -279,7 +279,7 @@ public class ResourceService
                     if (LOG.isDebugEnabled())
                         LOG.debug("precompressed={}", precompressedContent);
                     content = precompressedContent;
-                    response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), precompressedContentEncoding._encoding);
+                    response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), precompressedContentEncoding.getEncoding());
                 }
             }
 
@@ -352,7 +352,7 @@ public class ResourceService
         {
             for (CompressedContentFormat format : availableFormats)
             {
-                if (format._encoding.equals(encoding))
+                if (format.getEncoding().equals(encoding))
                     return format;
             }
 
@@ -526,9 +526,9 @@ public class ResourceService
                     if (etag != null)
                     {
                         QuotedCSV quoted = new QuotedCSV(true, ifm);
-                        for (String tag : quoted)
+                        for (String etagWithSuffix : quoted)
                         {
-                            if (CompressedContentFormat.tagEquals(etag, tag))
+                            if (CompressedContentFormat.tagEquals(etag, etagWithSuffix))
                             {
                                 match = true;
                                 break;
