@@ -1528,10 +1528,14 @@ public class StartArgs
             {
                 JavaVersion ver = JavaVersion.parse(value);
                 properties.setProperty("java.version.platform", Integer.toString(ver.getPlatform()), source);
+
                 // @deprecated - below will be removed in Jetty 10.x
                 properties.setProperty("java.version.major", Integer.toString(ver.getMajor()), "Deprecated");
                 properties.setProperty("java.version.minor", Integer.toString(ver.getMinor()), "Deprecated");
                 properties.setProperty("java.version.micro", Integer.toString(ver.getMicro()), "Deprecated");
+
+                // ALPN feature exists
+                properties.setProperty("runtime.feature.alpn", Boolean.toString(isMethodAvailable(javax.net.ssl.SSLParameters.class, "getApplicationProtocols", null)), source);
             }
             catch (Throwable x)
             {
@@ -1545,6 +1549,19 @@ public class StartArgs
         if (key.equals("maven.repo.uri"))
         {
             this.mavenBaseUri = value;
+        }
+    }
+
+    private boolean isMethodAvailable(Class<?> clazz, String methodName, Class<?>[] params)
+    {
+        try
+        {
+            clazz.getMethod(methodName, params);
+            return true;
+        }
+        catch (NoSuchMethodException e)
+        {
+            return false;
         }
     }
 
