@@ -22,6 +22,7 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.Request;
 
 public class ForceRequestHeaderValueRule extends Rule
@@ -66,8 +67,13 @@ public class ForceRequestHeaderValueRule extends Rule
         }
 
         Request baseRequest = Request.getBaseRequest(httpServletRequest);
-        baseRequest.getHttpFields().remove(headerName);
-        baseRequest.getHttpFields().add(headerName, forcedValue);
+        if (baseRequest == null)
+            return null;
+
+        HttpFields.Mutable replacement = HttpFields.build(baseRequest.getHttpFields())
+            .remove(headerName)
+            .add(headerName, forcedValue);
+        baseRequest.setHttpFields(replacement);
         return target;
     }
 }

@@ -139,7 +139,7 @@ public class ForceRequestHeaderValueRuleTest
     public void testThreeAcceptHeadersRequest() throws Exception
     {
         rule.setHeaderName("Accept");
-        rule.setForcedValue("*/*");
+        rule.setForcedValue("text/*");
 
         StringBuilder request = new StringBuilder();
         request.append("GET /echo/foo HTTP/1.1\r\n");
@@ -153,7 +153,7 @@ public class ForceRequestHeaderValueRuleTest
         String rawResponse = connector.getResponse(request.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertEquals(200, response.getStatus());
-        assertThat(response.getContent(), containsString("[Accept]: [*/*]"));
+        assertThat(response.getContent(), containsString("[Accept]: [text/*]"));
         assertThat(response.getContent(), containsString("[Host]: [local]"));
         assertThat(response.getContent(), containsString("[Connection]: [closed]"));
     }
@@ -162,7 +162,7 @@ public class ForceRequestHeaderValueRuleTest
     public void testInterleavedAcceptHeadersRequest() throws Exception
     {
         rule.setHeaderName("Accept");
-        rule.setForcedValue("*/*");
+        rule.setForcedValue("application/*");
 
         StringBuilder request = new StringBuilder();
         request.append("GET /echo/foo HTTP/1.1\r\n");
@@ -178,7 +178,7 @@ public class ForceRequestHeaderValueRuleTest
         String rawResponse = connector.getResponse(request.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertEquals(200, response.getStatus());
-        assertThat(response.getContent(), containsString("[Accept]: [*/*]"));
+        assertThat(response.getContent(), containsString("[Accept]: [application/*]"));
         assertThat(response.getContent(), containsString("[Accept-Charset]: [iso-8859-5, unicode-1-1;q=0.8]"));
         assertThat(response.getContent(), containsString("[Accept-Encoding]: [gzip;q=1.0, identity; q=0.5, *;q=0]"));
         assertThat(response.getContent(), containsString("[Host]: [local]"));
