@@ -220,8 +220,11 @@ public class MainTest
     {
         Path distPath = MavenTestingUtils.getTestResourceDir("dist-home").toPath().toRealPath();
         Path homePath = MavenTestingUtils.getTargetTestingPath().resolve("dist home with spaces");
-        IO.copy(distPath.toFile(), homePath.toFile());
-        Files.createFile(homePath.resolve("lib/a library.jar"));
+        if (!Files.exists(homePath))
+        {
+            IO.copy(distPath.toFile(), homePath.toFile());
+            Files.createFile(homePath.resolve("lib/a library.jar"));
+        }
 
         List<String> cmdLineArgs = new ArrayList<>();
         cmdLineArgs.add("user.dir=" + homePath);
