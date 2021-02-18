@@ -13,12 +13,15 @@
 
 package org.eclipse.jetty.http3.qpack.table;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.eclipse.jetty.http.HttpField;
 
 public class Entry
 {
-    final HttpField _field;
-    private int _slot; // The index within it's array
+    private final HttpField _field;
+    private int _absoluteIndex;
+    private AtomicInteger _referenceCount = new AtomicInteger(0);
 
     public Entry()
     {
@@ -33,7 +36,7 @@ public class Entry
     public Entry(int index, HttpField field)
     {
         _field = field;
-        _slot = index;
+        _absoluteIndex = index;
     }
 
     public int getSize()
@@ -44,17 +47,22 @@ public class Entry
 
     public void setIndex(int index)
     {
-        _slot = index;
+        _absoluteIndex = index;
     }
 
     public int getIndex()
     {
-        return _slot;
+        return _absoluteIndex;
     }
 
     public HttpField getHttpField()
     {
         return _field;
+    }
+
+    public int getReferenceCount()
+    {
+        return _referenceCount.get();
     }
 
     public boolean isStatic()
@@ -70,6 +78,6 @@ public class Entry
     @Override
     public String toString()
     {
-        return String.format("{%s,%d,%s,%x}", isStatic() ? "S" : "D", _slot, _field, hashCode());
+        return String.format("{%s,%d,%s,%x}", isStatic() ? "S" : "D", _absoluteIndex, _field, hashCode());
     }
 }

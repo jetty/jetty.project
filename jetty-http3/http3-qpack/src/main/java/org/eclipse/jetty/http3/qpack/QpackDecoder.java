@@ -14,14 +14,24 @@
 package org.eclipse.jetty.http3.qpack;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http3.qpack.generator.DuplicateInstruction;
+import org.eclipse.jetty.http3.qpack.generator.IndexedNameEntryInstruction;
+import org.eclipse.jetty.http3.qpack.generator.InsertCountIncrementInstruction;
 import org.eclipse.jetty.http3.qpack.generator.Instruction;
+import org.eclipse.jetty.http3.qpack.generator.LiteralNameEntryInstruction;
+import org.eclipse.jetty.http3.qpack.generator.SectionAcknowledgmentInstruction;
+import org.eclipse.jetty.http3.qpack.generator.SetCapacityInstruction;
+import org.eclipse.jetty.http3.qpack.parser.EncodedFieldSection;
+import org.eclipse.jetty.http3.qpack.parser.NBitIntegerParser;
+import org.eclipse.jetty.http3.qpack.table.DynamicTable;
 import org.eclipse.jetty.http3.qpack.table.Entry;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.http3.qpack.table.StaticTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,29 +45,27 @@ public class QpackDecoder
     public static final HttpField.LongValueHttpField CONTENT_LENGTH_0 =
         new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH, 0L);
 
+    private final Handler _handler;
     private final QpackContext _context;
     private final MetaDataBuilder _builder;
-    private int _localMaxDynamicTableSize;
+
+    private final List<EncodedFieldSection> _encodedFieldSections = new ArrayList<>();
+    private final NBitIntegerParser _integerDecoder = new NBitIntegerParser();
 
     /**
      * @param localMaxDynamicTableSize The maximum allowed size of the local dynamic header field table.
      * @param maxHeaderSize The maximum allowed size of a headers block, expressed as total of all name and value characters, plus 32 per field
      */
-    public QpackDecoder(int localMaxDynamicTableSize, int maxHeaderSize)
+    public QpackDecoder(Handler handler, int localMaxDynamicTableSize, int maxHeaderSize)
     {
         _context = new QpackContext(localMaxDynamicTableSize);
-        _localMaxDynamicTableSize = localMaxDynamicTableSize;
         _builder = new MetaDataBuilder(maxHeaderSize);
+        _handler = handler;
     }
 
     public QpackContext getQpackContext()
     {
         return _context;
-    }
-
-    public void setLocalMaxDynamicTableSize(int localMaxdynamciTableSize)
-    {
-        _localMaxDynamicTableSize = localMaxdynamciTableSize;
     }
 
     public interface Handler
@@ -67,7 +75,7 @@ public class QpackDecoder
         void onInstruction(Instruction instruction);
     }
 
-    public MetaData decode(ByteBuffer buffer) throws QpackException.SessionException, QpackException.StreamException
+    public void decode(ByteBuffer buffer) throws QpackException
     {
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("CtxTbl[%x] decoding %d octets", _context.hashCode(), buffer.remaining()));
@@ -76,213 +84,117 @@ public class QpackDecoder
         if (buffer.remaining() > _builder.getMaxSize())
             throw new QpackException.SessionException("431 Request Header Fields too large");
 
-        boolean emitted = false;
+        int encodedInsertCount = _integerDecoder.decode(buffer);
+        if (encodedInsertCount < 0)
+            throw new QpackException.CompressionException("Could not parse Required Insert Count");
 
-        while (buffer.hasRemaining())
+        boolean signBit = (buffer.get(buffer.position()) & 0x80) != 0;
+        int deltaBase = _integerDecoder.decode(buffer);
+        if (deltaBase < 0)
+            throw new QpackException.CompressionException("Could not parse Delta Base");
+
+        // Decode the Required Insert Count using the DynamicTable state.
+        DynamicTable dynamicTable = _context.getDynamicTable();
+        int insertCount = dynamicTable.getInsertCount();
+        int maxDynamicTableSize = dynamicTable.getMaxSize();
+        int requiredInsertCount = decodeInsertCount(encodedInsertCount, insertCount, maxDynamicTableSize);
+
+        int base = signBit ? requiredInsertCount - deltaBase - 1 : requiredInsertCount + deltaBase;
+        EncodedFieldSection encodedFieldSection = new EncodedFieldSection(requiredInsertCount, base);
+        encodedFieldSection.parse(buffer);
+
+        int streamId = -1;
+
+        if (encodedFieldSection.getRequiredInsertCount() >= insertCount)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("decode {}", BufferUtil.toHexString(buffer));
-
-            byte b = buffer.get();
-            if (b < 0)
-            {
-                // 7.1 indexed if the high bit is set
-                int index = NBitInteger.decode(buffer, 7);
-                Entry entry = _context.get(index);
-                if (entry == null)
-                    throw new QpackException.SessionException("Unknown index %d", index);
-
-                if (entry.isStatic())
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("decode IdxStatic {}", entry);
-                    // emit field
-                    emitted = true;
-                    _builder.emit(entry.getHttpField());
-
-                    // TODO copy and add to reference set if there is room
-                    // _context.add(entry.getHttpField());
-                }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("decode Idx {}", entry);
-                    // emit
-                    emitted = true;
-                    _builder.emit(entry.getHttpField());
-                }
-            }
-            else
-            {
-                // look at the first nibble in detail
-                byte f = (byte)((b & 0xF0) >> 4);
-                String name;
-                HttpHeader header;
-                String value;
-
-                boolean indexed;
-                int nameIndex;
-
-                switch (f)
-                {
-                    case 2: // 7.3
-                    case 3: // 7.3
-                        // change table size
-                        int size = NBitInteger.decode(buffer, 5);
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("decode resize={}", size);
-                        if (size > _localMaxDynamicTableSize)
-                            throw new IllegalArgumentException();
-                        if (emitted)
-                            throw new QpackException.CompressionException("Dynamic table resize after fields");
-                        _context.resize(size);
-                        continue;
-
-                    case 0: // 7.2.2
-                    case 1: // 7.2.3
-                        indexed = false;
-                        nameIndex = NBitInteger.decode(buffer, 4);
-                        break;
-
-                    case 4: // 7.2.1
-                    case 5: // 7.2.1
-                    case 6: // 7.2.1
-                    case 7: // 7.2.1
-                        indexed = true;
-                        nameIndex = NBitInteger.decode(buffer, 6);
-                        break;
-
-                    default:
-                        throw new IllegalStateException();
-                }
-
-                boolean huffmanName = false;
-
-                // decode the name
-                if (nameIndex > 0)
-                {
-                    Entry nameEntry = _context.get(nameIndex);
-                    name = nameEntry.getHttpField().getName();
-                    header = nameEntry.getHttpField().getHeader();
-                }
-                else
-                {
-                    huffmanName = (buffer.get() & 0x80) == 0x80;
-                    int length = NBitInteger.decode(buffer, 7);
-                    _builder.checkSize(length, huffmanName);
-                    if (huffmanName)
-                        name = Huffman.decode(buffer, length);
-                    else
-                        name = toASCIIString(buffer, length);
-                    check:
-                    for (int i = name.length(); i-- > 0; )
-                    {
-                        char c = name.charAt(i);
-                        if (c > 0xff)
-                        {
-                            _builder.streamException("Illegal header name %s", name);
-                            break;
-                        }
-                        HttpTokens.Token token = HttpTokens.TOKENS[0xFF & c];
-                        switch (token.getType())
-                        {
-                            case ALPHA:
-                                if (c >= 'A' && c <= 'Z')
-                                {
-                                    _builder.streamException("Uppercase header name %s", name);
-                                    break check;
-                                }
-                                break;
-
-                            case COLON:
-                            case TCHAR:
-                            case DIGIT:
-                                break;
-
-                            default:
-                                _builder.streamException("Illegal header name %s", name);
-                                break check;
-                        }
-                    }
-                    header = HttpHeader.CACHE.get(name);
-                }
-
-                // decode the value
-                boolean huffmanValue = (buffer.get() & 0x80) == 0x80;
-                int length = NBitInteger.decode(buffer, 7);
-                _builder.checkSize(length, huffmanValue);
-                if (huffmanValue)
-                    value = Huffman.decode(buffer, length);
-                else
-                    value = toASCIIString(buffer, length);
-
-                // Make the new field
-                HttpField field;
-                if (header == null)
-                {
-                    // just make a normal field and bypass header name lookup
-                    field = new HttpField(null, name, value);
-                }
-                else
-                {
-                    // might be worthwhile to create a value HttpField if it is indexed
-                    // and/or of a type that may be looked up multiple times.
-                    switch (header)
-                    {
-                        case C_STATUS:
-                            if (indexed)
-                                field = new HttpField.IntValueHttpField(header, name, value);
-                            else
-                                field = new HttpField(header, name, value);
-                            break;
-
-                        case C_AUTHORITY:
-                            field = new AuthorityHttpField(value);
-                            break;
-
-                        case CONTENT_LENGTH:
-                            if ("0".equals(value))
-                                field = CONTENT_LENGTH_0;
-                            else
-                                field = new HttpField.LongValueHttpField(header, name, value);
-                            break;
-
-                        default:
-                            field = new HttpField(header, name, value);
-                            break;
-                    }
-                }
-
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("decoded '{}' by {}/{}/{}",
-                        field,
-                        nameIndex > 0 ? "IdxName" : (huffmanName ? "HuffName" : "LitName"),
-                        huffmanValue ? "HuffVal" : "LitVal",
-                        indexed ? "Idx" : "");
-                }
-
-                // emit the field
-                emitted = true;
-                _builder.emit(field);
-
-                // if indexed add to dynamic table
-                if (indexed)
-                    _context.add(field);
-            }
+            MetaData metadata = encodedFieldSection.decode(_context, _builder);
+            _handler.onMetadata(metadata);
+            _handler.onInstruction(new SectionAcknowledgmentInstruction(streamId));
         }
-
-        return _builder.build();
+        else
+        {
+            _encodedFieldSections.add(encodedFieldSection);
+        }
     }
 
-    public static String toASCIIString(ByteBuffer buffer, int length)
+    public void onInstruction(Instruction instruction) throws QpackException
     {
-        StringBuilder builder = new StringBuilder(length);
-        for (int i = 0; i < length; ++i)
+        StaticTable staticTable = _context.getStaticTable();
+        DynamicTable dynamicTable = _context.getDynamicTable();
+        if (instruction instanceof SetCapacityInstruction)
         {
-            builder.append((char)(0x7F & buffer.get()));
+            int capacity = ((SetCapacityInstruction)instruction).getCapacity();
+            dynamicTable.setCapacity(capacity);
         }
-        return builder.toString();
+        else if (instruction instanceof DuplicateInstruction)
+        {
+            DuplicateInstruction duplicate = (DuplicateInstruction)instruction;
+            Entry entry = dynamicTable.get(duplicate.getIndex());
+
+            // Add the new Entry to the DynamicTable.
+            if (dynamicTable.add(entry) == null)
+                throw new QpackException.StreamException("No space in DynamicTable");
+            _handler.onInstruction(new InsertCountIncrementInstruction(1));
+        }
+        else if (instruction instanceof IndexedNameEntryInstruction)
+        {
+            IndexedNameEntryInstruction nameEntryInstruction = (IndexedNameEntryInstruction)instruction;
+            int index = nameEntryInstruction.getIndex();
+            String value = nameEntryInstruction.getValue();
+            Entry referencedEntry = nameEntryInstruction.isDynamic() ? dynamicTable.get(index) : staticTable.get(index);
+
+            // Add the new Entry to the DynamicTable.
+            Entry entry = new Entry(new HttpField(referencedEntry.getHttpField().getHeader(), referencedEntry.getHttpField().getName(), value));
+            if (dynamicTable.add(entry) == null)
+                throw new QpackException.StreamException("No space in DynamicTable");
+            _handler.onInstruction(new InsertCountIncrementInstruction(1));
+        }
+        else if (instruction instanceof LiteralNameEntryInstruction)
+        {
+            LiteralNameEntryInstruction literalEntryInstruction = (LiteralNameEntryInstruction)instruction;
+            String name = literalEntryInstruction.getName();
+            String value = literalEntryInstruction.getValue();
+            Entry entry = new Entry(new HttpField(name, value));
+
+            // Add the new Entry to the DynamicTable.
+            if (dynamicTable.add(entry) == null)
+                throw new QpackException.StreamException("No space in DynamicTable");
+            _handler.onInstruction(new InsertCountIncrementInstruction(1));
+        }
+        else
+        {
+            throw new IllegalStateException("Invalid Encoder Instruction");
+        }
+    }
+
+    private static int decodeInsertCount(int encInsertCount, int totalNumInserts, int maxTableCapacity) throws QpackException
+    {
+        if (encInsertCount == 0)
+            return 0;
+
+        int maxEntries = maxTableCapacity / 32;
+        int fullRange = 2 * maxEntries;
+        if (encInsertCount > fullRange)
+            throw new QpackException.CompressionException("encInsertCount > fullRange");
+
+        // MaxWrapped is the largest possible value of ReqInsertCount that is 0 mod 2 * MaxEntries.
+        int maxValue = totalNumInserts + maxEntries;
+        int maxWrapped = (maxValue / fullRange) * fullRange;
+        int reqInsertCount = maxWrapped + encInsertCount - 1;
+
+        // If reqInsertCount exceeds maxValue, the Encoder's value must have wrapped one fewer time.
+        if (reqInsertCount > maxValue)
+        {
+            if (reqInsertCount <= fullRange)
+                throw new QpackException.CompressionException("reqInsertCount <= fullRange");
+            reqInsertCount -= fullRange;
+        }
+
+        // Value of 0 must be encoded as 0.
+        if (reqInsertCount == 0)
+            throw new QpackException.CompressionException("reqInsertCount == 0");
+
+        return reqInsertCount;
     }
 
     @Override
