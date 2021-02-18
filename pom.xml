@@ -436,6 +436,13 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-antrun-plugin</artifactId>
           <version>3.0.0</version>
+          <dependencies>
+            <dependency>
+              <groupId>org.apache.ant</groupId>
+              <artifactId>ant</artifactId>
+              <version>${ant.version}</version>
+            </dependency>
+          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -522,6 +529,13 @@
               <localRepo>${localRepoPath}</localRepo>
             </filterProperties>
           </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.apache.ant</groupId>
+              <artifactId>ant</artifactId>
+              <version>${ant.version}</version>
+            </dependency>
+          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
