@@ -74,7 +74,7 @@
     <!-- springboot is only used for jetty-maven-plugin it test
     otherwise depending on Spring Boot might be chicken and egg issue :) -->
     <springboot.version>2.1.1.RELEASE</springboot.version>
-    <jackson-databind.version>2.9.9</jackson-databind.version>
+    <jackson-databind.version>2.9.10.7</jackson-databind.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <settingsPath>src/it/settings.xml</settingsPath>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
