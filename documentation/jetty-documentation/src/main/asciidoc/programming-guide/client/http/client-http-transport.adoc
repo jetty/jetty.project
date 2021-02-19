@@ -12,7 +12,7 @@
 //
 
 [[pg-client-http-transport]]
-=== HttpClient Pluggable Transports
+==== HttpClient Pluggable Transports
 
 Jetty's `HttpClient` can be configured to use different transports to carry the semantic of HTTP requests and responses.
 
@@ -57,7 +57,7 @@ Applications are typically not aware of the actual protocol being used.
 This allows them to write their logic against a high-level API that hides the details of the specific protocol being used over the network.
 
 [[pg-client-http-transport-http11]]
-==== HTTP/1.1 Transport
+===== HTTP/1.1 Transport
 
 HTTP/1.1 is the default transport.
 
@@ -74,7 +74,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPCli
 ----
 
 [[pg-client-http-transport-http2]]
-==== HTTP/2 Transport
+===== HTTP/2 Transport
 
 The HTTP/2 transport can be configured in this way:
 
@@ -88,7 +88,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPCli
 `HttpClientTransportOverHTTP2` uses `HTTP2Client` to format high-level semantic HTTP requests (like "GET resource /index.html") into the HTTP/2 specific format.
 
 [[pg-client-http-transport-fcgi]]
-==== FastCGI Transport
+===== FastCGI Transport
 
 The FastCGI transport can be configured in this way:
 
@@ -102,7 +102,7 @@ In order to make requests using the FastCGI transport, you need to have a FastCG
 The FastCGI transport is primarily used by Jetty's xref:fastcgi[FastCGI support] to serve PHP pages (WordPress for example).
 
 [[pg-client-http-transport-dynamic]]
-==== Dynamic Transport
+===== Dynamic Transport
 
 The static transports work well if you know in advance the protocol you want to speak with the server, or if the server only supports one protocol (such as FastCGI).
 

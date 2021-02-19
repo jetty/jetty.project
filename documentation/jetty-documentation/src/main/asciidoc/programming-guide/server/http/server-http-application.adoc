@@ -12,19 +12,19 @@
 //
 
 [[pg-server-http-application]]
-=== Writing HTTP Server Applications
+===== Writing HTTP Server Applications
 
 Writing HTTP applications is typically simple, especially when using blocking APIs.
 However, there are subtle cases where it is worth clarifying what a server application should do to obtain the desired results when run by Jetty.
 
 [[pg-server-http-application-1xx]]
-==== Sending 1xx Responses
+====== Sending 1xx Responses
 
 The link:https://tools.ietf.org/html/rfc7231#section-5.1.1[HTTP/1.1 RFC] allows for `1xx` informational responses to be sent before a real content response.
 Unfortunately the servlet specification does not provide a way for these to be sent, so Jetty has had to provide non-standard handling of these headers.
 
 [[pg-server-http-application-100]]
-===== 100 Continue
+====== 100 Continue
 
 The `100 Continue` response should be sent by the server when a client sends a request with an `Expect: 100-continue` header, as the client will not send the body of the request until the `100 Continue` response has been sent.
 
@@ -39,7 +39,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPSer
 ----
 
 [[jetty-102-processing]]
-===== 102 Processing
+====== 102 Processing
 
 link:https://tools.ietf.org/html/rfc2518[RFC 2518] defined the `102 Processing` status code that can be sent:
 

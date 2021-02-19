@@ -12,7 +12,7 @@
 //
 
 [[pg-client-http-cookie]]
-=== HttpClient Cookie Support
+==== HttpClient Cookie Support
 
 Jetty's `HttpClient` supports cookies out of the box.
 
@@ -65,7 +65,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPCli
 The example above will retain only cookies that come from the `google.com` domain or sub-domains.
 
 // TODO: move this section to server-side
-==== Special Characters in Cookies
+===== Special Characters in Cookies
 
 Jetty is compliant with link:https://tools.ietf.org/html/rfc6265[RFC6265], and as such care must be taken when setting a cookie value that includes special characters such as `;`.
 

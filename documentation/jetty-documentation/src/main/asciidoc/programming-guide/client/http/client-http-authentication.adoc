@@ -12,7 +12,7 @@
 //
 
 [[pg-client-http-authentication]]
-=== HttpClient Authentication Support
+==== HttpClient Authentication Support
 
 Jetty's `HttpClient` supports the `BASIC` and `DIGEST` authentication mechanisms defined by link:https://tools.ietf.org/html/rfc7235[RFC 7235], as well as the SPNEGO authentication mechanism defined in link:https://tools.ietf.org/html/rfc4559[RFC 4559].
 
@@ -76,5 +76,5 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPCli
 See also the xref:pg-client-http-proxy-authentication[proxy authentication section] for further information about how authentication works with HTTP proxies.
 
 [[pg-client-http-authentication-spnego]]
-=== HttpClient SPNEGO Authentication Support
+===== HttpClient SPNEGO Authentication Support
 TODO

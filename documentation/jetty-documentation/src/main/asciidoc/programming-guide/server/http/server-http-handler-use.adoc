@@ -12,7 +12,7 @@
 //
 
 [[pg-server-http-handler-use]]
-==== Using Provided Handlers
+===== Jetty Handlers
 
 Web applications are the unit of deployment in an HTTP server or Servlet container such as Jetty.
 
@@ -40,13 +40,10 @@ Web applications can be written using exclusively the Servlet APIs, since develo
 Embedded web applications based on the Servlet APIs are described in xref:pg-server-http-handler-use-servlet[this section].
 
 Embedded web applications may also require additional features such as access to Jetty specific APIs, or utility features such as redirection from HTTP to HTTPS, support for `gzip` content compression, etc.
-The Jetty Server Libraries provides a number of out-of-the-box __Handler__s that implement the most common functionalities and are described in xref:pg-server-http-handler-use-util[this section].
-
-[[pg-server-http-handler-use-util]]
-==== Custom and Utility Handlers
+The Jetty Server Libraries provides a number of out-of-the-box __Handler__s that implement the most common functionalities and are described in xref:pg-server-http-handler-use[this section].
 
 [[pg-server-http-handler-use-util-context]]
-===== ContextHandler
+====== ContextHandler
 
 `ContextHandler` is a `Handler` that represents a _context_ for a web application.
 It is a `HandlerWrapper` that performs some action before and after delegating to the nested `Handler`.
@@ -69,7 +66,7 @@ Server
 ----
 
 [[pg-server-http-handler-use-util-context-collection]]
-===== ContextHandlerCollection
+====== ContextHandlerCollection
 
 Server applications may need to deploy to Jetty more than one web application.
 
@@ -100,7 +97,7 @@ Server
 ----
 
 [[pg-server-http-handler-use-util-resource-handler]]
-===== ResourceHandler -- Static Content
+====== ResourceHandler -- Static Content
 
 Static content such as images or files (HTML, JavaScript, CSS) can be sent by Jetty very efficiently because Jetty can write the content asynchronously, using direct ``ByteBuffer``s to minimize data copy, and using a memory cache for faster access to the data to send.
 
@@ -139,7 +136,7 @@ If the resource is not found, `ResourceHandler` will not call `Request.setHandle
 See also xref:pg-server-http-handler-use-util-default-handler[how to use] `DefaultHandler`.
 
 [[pg-server-http-handler-use-util-gzip-handler]]
-===== GzipHandler
+====== GzipHandler
 
 `GzipHandler` provides supports for automatic decompression of compressed request content and automatic compression of response content.
 
@@ -189,7 +186,7 @@ Server
 // TODO: does ServletContextHandler really need a special configuration?
 
 [[pg-server-http-handler-use-util-rewrite-handler]]
-===== RewriteHandler
+====== RewriteHandler
 
 `RewriteHandler` provides support for URL rewriting, very similarly to link:https://httpd.apache.org/docs/current/mod/mod_rewrite.html[Apache's mod_rewrite] or link:https://nginx.org/en/docs/http/ngx_http_rewrite_module.html[Nginx rewrite module].
 
@@ -230,7 +227,7 @@ Server
 ----
 
 [[pg-server-http-handler-use-util-stats-handler]]
-===== StatisticsHandler
+====== StatisticsHandler
 
 `StatisticsHandler` gathers and exposes a number of statistic values related to request processing such as:
 
@@ -262,7 +259,7 @@ Server
 ----
 
 [[pg-server-http-handler-use-util-secure-handler]]
-===== SecuredRedirectHandler -- Redirect from HTTP to HTTPS
+====== SecuredRedirectHandler -- Redirect from HTTP to HTTPS
 
 `SecuredRedirectHandler` allows to redirect requests made with the `http` scheme (and therefore to the clear-text port) to the `https` scheme (and therefore to the encrypted port).
 
@@ -278,7 +275,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPSer
 ----
 
 [[pg-server-http-handler-use-util-default-handler]]
-===== DefaultHandler
+====== DefaultHandler
 
 `DefaultHandler` is a terminal `Handler` that always calls `Request.setHandled(true)` and performs the following:
 
@@ -312,10 +309,10 @@ NOTE: `DefaultHandler` just sends a nicer HTTP `404` response in case of wrong r
 Jetty will send an HTTP `404` response anyway if `DefaultHandler` is not used.
 
 [[pg-server-http-handler-use-servlet]]
-==== Servlet API Handlers
+===== Servlet API Handlers
 
 [[pg-server-http-handler-use-servlet-context]]
-===== ServletContextHandler
+====== ServletContextHandler
 
 ``Handler``s are easy to write, but often web applications have already been written using the Servlet APIs, using ``Servlet``s and ``Filter``s.
 
@@ -360,7 +357,7 @@ Server applications must be careful when creating the `Handler` tree to put ``Se
 // TODO: introduce the fact that ServletContextHandler can have a class loader that may be used to "isolate" web application classes.
 
 [[pg-server-http-handler-use-webapp-context]]
-===== WebAppContext
+====== WebAppContext
 
 `WebAppContext` is a `ServletContextHandler` that auto configures itself by reading a `web.xml` Servlet configuration file.
 
@@ -374,7 +371,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPSer
 ----
 
 [[pg-server-http-handler-use-webapp-context-class-loading]]
-====== WebAppContext Class Loading
+.WebAppContext Class Loading
 
 The Servlet specification requires that a web application class loader must load the web application classes from `WEB-INF/classes` and `WEB_INF/lib`.
 The web application class loader is special because it behaves differently from typical class loaders: where typical class loaders first delegate to their parent class loader and then try to find the class locally, the web application class loader first tries to find the class locally and then delegates to the parent class loader.
@@ -404,7 +401,7 @@ However, Jetty picks good defaults and allows server applications to customize _
 // TODO: add a section about how to setup JSP support
 
 [[pg-server-http-handler-use-default-servlet]]
-===== DefaultServlet -- Static Content for Servlets
+====== DefaultServlet -- Static Content for Servlets
 
 If you have a xref:pg-server-http-handler-use-servlet-context[Servlet web application], you may want to use a `DefaultServlet` instead of `ResourceHandler`.
 The features are similar, but `DefaultServlet` is more commonly used to serve static files for Servlet web applications.

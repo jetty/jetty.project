@@ -12,12 +12,12 @@
 //
 
 [[pg-client-http-api]]
-=== HttpClient API Usage
+==== HttpClient API Usage
 
 `HttpClient` provides two types of APIs: a blocking API and a non-blocking API.
 
 [[pg-client-http-blocking]]
-==== HttpClient Blocking APIs
+===== HttpClient Blocking APIs
 
 The simpler way to perform a HTTP request is the following:
 
@@ -77,7 +77,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPCli
 In the example above, when the 5 seconds expire, the request/response cycle is aborted and a `java.util.concurrent.TimeoutException` is thrown.
 
 [[pg-client-http-non-blocking]]
-==== HttpClient Non-Blocking APIs
+===== HttpClient Non-Blocking APIs
 
 So far we have shown how to use Jetty HTTP client in a blocking style -- that is, the thread that issues the request blocks until the request/response conversation is complete.
 
@@ -134,9 +134,6 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPCli
 This makes Jetty HTTP client suitable for HTTP load testing because, for example, you can accurately time every step of the request/response conversation (thus knowing where the request/response time is really spent).
 
 Have a look at the link:{JDURL}/org/eclipse/jetty/client/api/Request.Listener.html[`Request.Listener`] class to know about request events, and to the link:{JDURL}/org/eclipse/jetty/client/api/Response.Listener.html[`Response.Listener`] class to know about response events.
-
-[[pg-client-http-content]]
-==== HttpClient Content Handling
 
 [[pg-client-http-content-request]]
 ===== Request Content Handling

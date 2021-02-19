@@ -13,6 +13,7 @@
 
 [[pg-server-session-datastore-mongo]]
 ===== The MongoSessionDataStore
+
 The `MongoSessionDataStore` supports persistence of `SessionData` in a nosql database.
 
 The best description for the document model for session information is found in the javadoc for the link:{JDURL}/org/eclipse/jetty/nosql/mongodb/MongoSessionDataStore.html[MongoSessionDataStore].

@@ -12,7 +12,7 @@
 //
 
 [[pg-arch-jmx]]
-== Jetty JMX Support
+=== Jetty JMX Support
 
 The Java Management Extensions (JMX) APIs are standard API for managing and monitoring resources such as applications, devices, services, and the Java Virtual Machine itself.
 
@@ -38,7 +38,7 @@ The Maven coordinates for the Jetty JMX support are:
 </dependency>
 ----
 
-=== Enabling JMX Support
+==== Enabling JMX Support
 
 Enabling JMX support is always recommended because it provides valuable information about the system, both for monitoring purposes and for troubleshooting purposes in case of problems.
 
@@ -67,7 +67,7 @@ In these cases, you have to enable xref:pg-arch-jmx-remote[JMX Remote Access].
 // TODO: add a section about how to expose logging once #4830 is fixed.
 
 [[pg-arch-jmx-remote]]
-=== Enabling JMX Remote Access
+==== Enabling JMX Remote Access
 
 There are two ways of enabling remote connectivity so that JMC can connect to the remote JVM to visualize MBeans.
 
@@ -148,7 +148,7 @@ include::{doc_code}/org/eclipse/jetty/docs/programming/JMXDocs.java[tags=remote]
 ----
 
 [[pg-arch-jmx-remote-authorization]]
-==== JMX Remote Access Authorization
+===== JMX Remote Access Authorization
 
 The standard `JMXConnectorServer` provides several options to authorize access, for example via JAAS or via configuration files.
 For a complete guide to controlling authentication and authorization in JMX, see https://docs.oracle.com/en/java/javase/11/management/[the official JMX documentation].
@@ -242,7 +242,7 @@ When you configure `ConnectorServer` in this way, you must set the system proper
 This is required because when the RMI server is exported, its address and port are stored in the RMI stub. You want the address in the RMI stub to be `localhost` so that when the RMI stub is downloaded to the remote client, the RMI communication will go through the SSH tunnel.
 
 [[pg-arch-jmx-annotation]]
-=== Jetty JMX Annotations
+==== Jetty JMX Annotations
 
 The Jetty JMX support, and in particular `MBeanContainer`, is notified every time a bean is added to the component tree.
 
@@ -278,24 +278,24 @@ For each type -- class or interface, the corresponding `+*.jmx.*MBean+` is looke
 For each type, the scan looks for the class-level annotation `@ManagedObject`.
 If it is found, the scan looks for method-level `@ManagedAttribute` and `@ManagedOperation` annotations; otherwise it skips the current type and moves to the next type to scan.
 
-==== @ManagedObject
+===== @ManagedObject
 
 The `@ManagedObject` annotation is used on a class at the top level to indicate that it should be exposed as an MBean.
 It has only one attribute to it which is used as the description of the MBean.
 
-==== @ManagedAttribute
+===== @ManagedAttribute
 
 The `@ManagedAttribute` annotation is used to indicate that a given method is exposed as a JMX attribute.
 This annotation is placed always on the getter method of a given attribute.
 Unless the `readonly` attribute is set to `true` in the annotation, a corresponding setter is looked up following normal naming conventions.
 For example if this annotation is on a method called `String getFoo()` then a method called `void setFoo(String)` would be looked up, and if found wired as the setter for the JMX attribute.
 
-==== @ManagedOperation
+===== @ManagedOperation
 
 The `@ManagedOperation` annotation is used to indicate that a given method is exposed as a JMX operation.
 A JMX operation has an _impact_ that can be `INFO` if the operation returns a value without modifying the object, `ACTION` if the operation does not return a value but modifies the object, and "ACTION_INFO" if the operation both returns a value and modifies the object.
 If the _impact_ is not specified, it has the default value of `UNKNOWN`.
 
-==== @Name
+===== @Name
 
 The `@Name` annotation is used to assign a name and description to parameters in method signatures so that when rendered by JMX consoles it is clearer what the parameter meaning is.

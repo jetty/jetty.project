@@ -12,7 +12,7 @@
 //
 
 [[pg-client-http-configuration]]
-=== HttpClient Configuration
+==== HttpClient Configuration
 
 `HttpClient` has a quite large number of configuration parameters.
 Please refer to the `HttpClient` link:{JDURL}/org/eclipse/jetty/client/HttpClient.html[javadocs] for the complete list of configurable parameters.
@@ -26,7 +26,7 @@ The most common parameters are:
 * `HttpClient.maxRequestsQueuedPerDestination`: the max number of requests queued (defaults to 1024).
 
 [[pg-client-http-configuration-tls]]
-==== HttpClient TLS Configuration
+===== HttpClient TLS Configuration
 
 `HttpClient` supports HTTPS requests out-of-the-box like a browser does.
 
@@ -64,9 +64,9 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPCli
 Please refer to the `SslContextFactory.Client` link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.Client.html[javadocs] for the complete list of configurable parameters.
 
 [[pg-client-http-configuration-tls-truststore]]
-==== HttpClient TLS TrustStore Configuration
+====== HttpClient TLS TrustStore Configuration
 TODO
 
 [[pg-client-http-configuration-tls-client-certs]]
-==== HttpClient TLS Client Certificates Configuration
+====== HttpClient TLS Client Certificates Configuration
 TODO

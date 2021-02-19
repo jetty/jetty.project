@@ -12,7 +12,7 @@
 //
 
 [[pg-client-http-intro]]
-=== HttpClient Introduction
+==== HttpClient Introduction
 
 The Jetty HTTP client module provides easy-to-use APIs and utility classes to perform HTTP (or HTTPS) requests.
 
