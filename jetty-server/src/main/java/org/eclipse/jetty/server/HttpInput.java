@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -720,12 +720,17 @@ public class HttpInput extends ServletInputStream implements Runnable
                 {
                     produceContent();
                     if (_content == null && _intercepted == null && _inputQ.isEmpty())
+                    {
+                        _state = EARLY_EOF;
+                        _inputQ.notify();
                         return false;
+                    }
                 }
                 catch (Throwable e)
                 {
                     LOG.debug(e);
                     _state = new ErrorState(e);
+                    _inputQ.notify();
                     return false;
                 }
             }

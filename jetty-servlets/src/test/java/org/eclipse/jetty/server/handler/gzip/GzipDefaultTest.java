@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -145,7 +145,7 @@ public class GzipDefaultTest
             //A HEAD request should have similar headers, but no body
             response = tester.executeRequest("HEAD", "/context/file.txt", 5, TimeUnit.SECONDS);
             assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
-            assertThat("ETag", response.get("ETag"), containsString(CompressedContentFormat.GZIP._etag));
+            assertThat("ETag", response.get("ETag"), containsString(CompressedContentFormat.GZIP.getEtagSuffix()));
             assertThat("Content encoding", response.get("Content-Encoding"), containsString("gzip"));
             assertNull(response.get("Content-Length"), "Content length");
 

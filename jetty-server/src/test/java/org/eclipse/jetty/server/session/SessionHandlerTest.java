@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,7 +35,7 @@ public class SessionHandlerTest
         SessionHandler sessionHandler = new SessionHandler();
         sessionHandler.setSessionTrackingModes(new HashSet<>(Arrays.asList(SessionTrackingMode.COOKIE, SessionTrackingMode.URL)));
         sessionHandler.setSessionTrackingModes(Collections.singleton(SessionTrackingMode.SSL));
-        assertThrows(IllegalArgumentException.class,() ->
+        assertThrows(IllegalArgumentException.class, () ->
             sessionHandler.setSessionTrackingModes(new HashSet<>(Arrays.asList(SessionTrackingMode.SSL, SessionTrackingMode.URL))));
     }
 }

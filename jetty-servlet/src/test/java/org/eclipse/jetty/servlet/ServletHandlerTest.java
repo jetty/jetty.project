@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -518,10 +518,10 @@ public class ServletHandlerTest
         mappings = handler.getFilterMappings();
         assertNotNull(mappings);
         assertEquals(4, mappings.length);
-        assertEquals(fm4, mappings[0]);//isMatchAfter = false;
-        assertEquals(fm5, mappings[1]);//isMatchAfter = false;
-        assertEquals(fm1, mappings[2]);//ordinary
-        assertEquals(fm3, mappings[3]);//isMatchAfter = true;
+        assertEquals(fm4, mappings[0]); //isMatchAfter = false;
+        assertEquals(fm5, mappings[1]); //isMatchAfter = false;
+        assertEquals(fm1, mappings[2]); //ordinary
+        assertEquals(fm3, mappings[3]); //isMatchAfter = true;
 
         //add a non-programmatic one
         FilterHolder f = new FilterHolder(Source.EMBEDDED);
@@ -569,13 +569,13 @@ public class ServletHandlerTest
         mappings = handler.getFilterMappings();
         assertNotNull(mappings);
         assertEquals(7, mappings.length);
-        assertEquals(fm4, mappings[0]); //isMatchAfter = false;
-        assertEquals(fm5, mappings[1]); //isMatchAfter = false;
-        assertEquals(pfm2, mappings[2]);//isMatchAfter = false;
-        assertEquals(fm1, mappings[3]); //ordinary
-        assertEquals(fm, mappings[4]);  //ordinary
-        assertEquals(fm3, mappings[5]); //isMatchAfter = true;
-        assertEquals(pfm, mappings[6]); //isMatchAfter = true;
+        assertEquals(fm4, mappings[0]);  //isMatchAfter = false;
+        assertEquals(fm5, mappings[1]);  //isMatchAfter = false;
+        assertEquals(pfm2, mappings[2]); //isMatchAfter = false;
+        assertEquals(fm1, mappings[3]);  //ordinary
+        assertEquals(fm, mappings[4]);   //ordinary
+        assertEquals(fm3, mappings[5]);  //isMatchAfter = true;
+        assertEquals(pfm, mappings[6]);  //isMatchAfter = true;
     }
 
     @Test
@@ -621,10 +621,10 @@ public class ServletHandlerTest
         mappings = handler.getFilterMappings();
         assertNotNull(mappings);
         assertEquals(4, mappings.length);
-        assertEquals(fh4, mappings[0].getFilterHolder());//isMatchAfter = false;
-        assertEquals(fh5, mappings[1].getFilterHolder());//isMatchAfter = false;
-        assertEquals(fh1, mappings[2].getFilterHolder());//ordinary
-        assertEquals(fh3, mappings[3].getFilterHolder());//isMatchAfter = true;
+        assertEquals(fh4, mappings[0].getFilterHolder()); //isMatchAfter = false;
+        assertEquals(fh5, mappings[1].getFilterHolder()); //isMatchAfter = false;
+        assertEquals(fh1, mappings[2].getFilterHolder()); //ordinary
+        assertEquals(fh3, mappings[3].getFilterHolder()); //isMatchAfter = true;
 
         //add a non-programmatic one
         FilterHolder f = new FilterHolder(Source.EMBEDDED);
@@ -670,11 +670,11 @@ public class ServletHandlerTest
         assertEquals(7, mappings.length);
         assertEquals(fh4, mappings[0].getFilterHolder()); //isMatchAfter = false;
         assertEquals(fh5, mappings[1].getFilterHolder()); //isMatchAfter = false;
-        assertEquals(pf2, mappings[2].getFilterHolder());//isMatchAfter = false;
+        assertEquals(pf2, mappings[2].getFilterHolder()); //isMatchAfter = false;
         assertEquals(fh1, mappings[3].getFilterHolder()); //ordinary
-        assertEquals(f, mappings[4].getFilterHolder());  //ordinary
+        assertEquals(f, mappings[4].getFilterHolder());   //ordinary
         assertEquals(fh3, mappings[5].getFilterHolder()); //isMatchAfter = true;
-        assertEquals(pf, mappings[6].getFilterHolder()); //isMatchAfter = true;
+        assertEquals(pf, mappings[6].getFilterHolder());  //isMatchAfter = true;
     }
     
     @Test

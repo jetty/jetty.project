@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -65,6 +65,8 @@ import javax.servlet.http.Part;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
+import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.HttpComplianceSection;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -77,6 +79,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
@@ -1811,10 +1814,28 @@ public class Request implements HttpServletRequest
      */
     public void setMetaData(org.eclipse.jetty.http.MetaData.Request request)
     {
+        if (_metaData == null && _input != null && _channel != null)
+        {
+            _input.recycle();
+            _channel.getResponse().getHttpOutput().reopen();
+        }
         _metaData = request;
 
         setMethod(request.getMethod());
         HttpURI uri = request.getURI();
+
+        if (uri.hasAmbiguousSegment())
+        {
+            // TODO replace in jetty-10 with HttpCompliance from the HttpConfiguration
+            Connection connection = _channel.getConnection();
+            HttpCompliance compliance = connection instanceof HttpConnection
+                ? ((HttpConnection)connection).getHttpCompliance()
+                : _channel.getConnector().getBean(HttpCompliance.class);
+            boolean allow = compliance != null && !compliance.sections().contains(HttpComplianceSection.NO_AMBIGUOUS_PATH_SEGMENTS);
+            if (!allow)
+                throw new BadMessageException("Ambiguous segment in URI");
+        }
+
         _originalURI = uri.isAbsolute() && request.getHttpVersion() != HttpVersion.HTTP_2 ? uri.toString() : uri.getPathQuery();
 
         String encoded = uri.getPath();
@@ -1826,7 +1847,7 @@ public class Request implements HttpServletRequest
         }
         else if (encoded.startsWith("/"))
         {
-            path = (encoded.length() == 1) ? "/" : URIUtil.canonicalPath(uri.getDecodedPath());
+            path = (encoded.length() == 1) ? "/" : uri.getDecodedPath();
         }
         else if ("*".equals(encoded) || HttpMethod.CONNECT.is(getMethod()))
         {
@@ -1879,7 +1900,7 @@ public class Request implements HttpServletRequest
 
         getHttpChannelState().recycle();
         _requestAttributeListeners.clear();
-        _input.recycle();
+        // Defer _input.recycle() until setMetaData on next request, TODO replace with recycle and reopen in 10
         _metaData = null;
         _originalURI = null;
         _contextPath = null;
@@ -2193,7 +2214,7 @@ public class Request implements HttpServletRequest
      * Set the character encoding used for the query string. This call will effect the return of getQueryString and getParamaters. It must be called before any
      * getParameter methods.
      *
-     * The request attribute "org.eclipse.jetty.server.server.Request.queryEncoding" may be set as an alternate method of calling setQueryEncoding.
+     * The request attribute "org.eclipse.jetty.server.Request.queryEncoding" may be set as an alternate method of calling setQueryEncoding.
      *
      * @param queryEncoding the URI query character encoding
      */

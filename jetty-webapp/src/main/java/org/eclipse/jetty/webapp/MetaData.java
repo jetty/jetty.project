@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -58,7 +58,7 @@ public class MetaData
     protected final List<Resource> _webInfJars = new ArrayList<>();
     protected final List<Resource> _orderedContainerResources = new ArrayList<>();
     protected final List<Resource> _orderedWebInfResources = new ArrayList<>();
-    protected Ordering _ordering;//can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
+    protected Ordering _ordering; //can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
     protected boolean _allowDuplicateFragmentNames = false;
     protected boolean _validateXml = false;
 

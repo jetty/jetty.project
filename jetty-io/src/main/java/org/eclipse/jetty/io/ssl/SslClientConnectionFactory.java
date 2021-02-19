@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,6 +34,9 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
+/**
+ * <p>A ClientConnectionFactory that creates client-side {@link SslConnection} instances.</p>
+ */
 public class SslClientConnectionFactory implements ClientConnectionFactory
 {
     public static final String SSL_CONTEXT_FACTORY_CONTEXT_KEY = "ssl.context.factory";
@@ -120,7 +123,10 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
     {
         String host = (String)context.get(SSL_PEER_HOST_CONTEXT_KEY);
         int port = (Integer)context.get(SSL_PEER_PORT_CONTEXT_KEY);
-        SSLEngine engine = sslContextFactory.newSSLEngine(host, port);
+
+        SSLEngine engine = sslContextFactory instanceof SslEngineFactory
+            ? ((SslEngineFactory)sslContextFactory).newSslEngine(host, port, context)
+            : sslContextFactory.newSSLEngine(host, port);
         engine.setUseClientMode(true);
         context.put(SSL_ENGINE_CONTEXT_KEY, engine);
 
@@ -153,6 +159,25 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
             connector.getBeans(SslHandshakeListener.class).forEach(sslConnection::addHandshakeListener);
         }
         return ClientConnectionFactory.super.customize(connection, context);
+    }
+
+    /**
+     * <p>A factory for {@link SSLEngine} objects.</p>
+     * <p>Typically implemented by {@link SslContextFactory.Client}
+     * to support more flexible creation of SSLEngine instances.</p>
+     */
+    public interface SslEngineFactory
+    {
+        /**
+         * <p>Creates a new {@link SSLEngine} instance for the given peer host and port,
+         * and with the given context to help the creation of the SSLEngine.</p>
+         *
+         * @param host the peer host
+         * @param port the peer port
+         * @param context the {@link ClientConnectionFactory} context
+         * @return a new SSLEngine instance
+         */
+        public SSLEngine newSslEngine(String host, int port, Map<String, Object> context);
     }
 
     private class HTTPSHandshakeListener implements SslHandshakeListener

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -112,6 +112,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _recordHttpComplianceViolations = recordComplianceViolations;
         if (LOG.isDebugEnabled())
             LOG.debug("New HTTP Connection {}", this);
+    }
+
+    @Deprecated
+    public HttpCompliance getHttpCompliance()
+    {
+        return _parser.getHttpCompliance();
     }
 
     public HttpConfiguration getHttpConfiguration()
@@ -376,8 +382,15 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     @Override
     public void onCompleted()
     {
+        // If we are fill interested, then a read is pending and we must abort
+        if (isFillInterested())
+        {
+            LOG.warn("Pending read in onCompleted {} {}", this, getEndPoint());
+            _channel.abort(new IOException("Pending read in onCompleted"));
+        }
+
         // Handle connection upgrades
-        if (_channel.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
+        else if (_channel.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
         {
             Connection connection = (Connection)_channel.getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
             if (connection != null)
@@ -401,6 +414,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             }
         }
 
+        // Drive to EOF, EarlyEOF or Error
+        boolean complete = _input.consumeAll();
+
         // Finish consuming the request
         // If we are still expecting
         if (_channel.isExpecting100Continue())
@@ -409,7 +425,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             _parser.close();
         }
         // else abort if we can't consume all
-        else if (_generator.isPersistent() && !_input.consumeAll())
+        else if (_generator.isPersistent() && !complete)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("unconsumed input {} {}", this, _parser);
