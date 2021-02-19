@@ -22,6 +22,7 @@ import javax.servlet.ServletContext;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.annotations.ServletContainerInitializersStarter;
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
+import org.eclipse.jetty.servlet.ServletContainerInitializerHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
@@ -171,9 +172,10 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
 
             case AnnotationConfiguration.CONTAINER_INITIALIZERS:
             {
-                for (String i : values)
+                for (String s : values)
                 {
-                    visitContainerInitializer(context, new ContainerInitializer(Thread.currentThread().getContextClassLoader(), i));
+                    visitServletContainerInitializerHolder(context, 
+                        ServletContainerInitializerHolder.fromString(Thread.currentThread().getContextClassLoader(), s));
                 }
                 break;
             }
@@ -216,6 +218,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
 
+    @Deprecated
     public void visitContainerInitializer(WebAppContext context, ContainerInitializer containerInitializer)
     {
         if (containerInitializer == null)
@@ -239,6 +242,19 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
             context.setAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER, starter);
             context.addBean(starter, true);
         }
+    }
+    
+    /**
+     * Ensure the ServletContainerInitializerHolder will be started by adding it to the context.
+     * 
+     * @param context the context to which to add the ServletContainerInitializerHolder
+     * @param sciHolder the ServletContainerInitializerHolder
+     */
+    public void visitServletContainerInitializerHolder(WebAppContext context, ServletContainerInitializerHolder sciHolder)
+    {
+        if (sciHolder == null)
+            return;
+        context.addServletContainerInitializer(sciHolder);
     }
 
     public void visitMetaInfResource(WebAppContext context, Resource dir)

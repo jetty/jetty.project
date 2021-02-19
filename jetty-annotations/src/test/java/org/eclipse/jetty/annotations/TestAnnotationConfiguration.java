@@ -16,10 +16,18 @@ package org.eclipse.jetty.annotations;
 import java.io.File;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import javax.servlet.ServletContainerInitializer;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
 
+import org.eclipse.jetty.annotations.AnnotationConfiguration.ClassInheritanceMap;
+import org.eclipse.jetty.annotations.AnnotationConfiguration.DiscoveredServletContainerInitializerHolder;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.JAR;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -30,6 +38,8 @@ import org.eclipse.jetty.webapp.WebDescriptor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -46,7 +56,7 @@ public class TestAnnotationConfiguration
             else
                 assertFalse(_discoverableAnnotationHandlers.isEmpty());
         }
-    }
+    }    
 
     public File web25;
 
@@ -188,6 +198,57 @@ public class TestAnnotationConfiguration
             assertEquals("com.acme.ServerServletContainerInitializer", scis.get(0).getClass().getName()); //container path
             assertEquals("com.acme.webinf.WebInfClassServletContainerInitializer", scis.get(1).getClass().getName()); // web-inf
             assertEquals("com.acme.initializer.FooInitializer", scis.get(2).getClass().getName()); //web-inf jar no web-fragment
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old);
+        }
+    }
+    
+    @Test
+    public void testClassScanHandlersForSCIs() throws Exception
+    {
+        //test that SCIs with a @HandlesTypes that is an annotation registers
+        //handlers for the scanning phase that will capture the class hierarchy,
+        //and also capture all classes that contain the annotation
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(webAppLoader);
+
+        try
+        {
+            class MyAnnotationConfiguration extends AnnotationConfiguration
+            {
+
+                @Override
+                public void createServletContainerInitializerAnnotationHandlers(WebAppContext context, List<ServletContainerInitializer> scis) throws Exception
+                {
+                    super.createServletContainerInitializerAnnotationHandlers(context, scis);
+                    //check class hierarchy scanner handler is registered
+                    assertNotNull(_classInheritanceHandler);
+                    //check 
+                    assertEquals(1, _containerInitializerAnnotationHandlers.size());
+                    ContainerInitializerAnnotationHandler handler = _containerInitializerAnnotationHandlers.get(0);
+                    assertThat(handler._holder.toString(), containsString("com.acme.initializer.FooInitializer"));
+                    assertEquals("com.acme.initializer.Foo", handler._annotation.getName());
+                }
+            }
+            
+            MyAnnotationConfiguration config = new MyAnnotationConfiguration();
+            
+            WebAppContext context = new WebAppContext();
+            List<ServletContainerInitializer> scis;
+
+            context.setClassLoader(webAppLoader);
+            context.getMetaData().addWebInfResource(Resource.newResource(testSciJar.toURI().toURL()));
+            context.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web31true)));
+            context.getMetaData().setWebInfClassesResources(classes);
+            context.getServletContext().setEffectiveMajorVersion(3);
+            context.getServletContext().setEffectiveMinorVersion(1);
+            scis = config.getNonExcludedInitializers(context);
+            assertNotNull(scis);
+            assertEquals(3, scis.size());
+            
+            config.createServletContainerInitializerAnnotationHandlers(context, scis); 
         }
         finally
         {

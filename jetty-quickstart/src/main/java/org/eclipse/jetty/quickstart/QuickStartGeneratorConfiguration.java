@@ -43,6 +43,7 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ListenerHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler.JspConfig;
+import org.eclipse.jetty.servlet.ServletContextHandler.ServletContainerInitializerStarter;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
@@ -168,7 +169,11 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         // The library order
         addContextParamFromAttribute(context, out, ServletContext.ORDERED_LIBS);
         //the servlet container initializers
-        addContextParamFromAttribute(context, out, AnnotationConfiguration.CONTAINER_INITIALIZERS);
+        //addContextParamFromAttribute(context, out, AnnotationConfiguration.CONTAINER_INITIALIZERS);
+        //TODO think of better label rather than the unused attribute, also how to retrieve the scis
+        ServletContainerInitializerStarter sciStarter = context.getBean(ServletContainerInitializerStarter.class);
+        addContextParamFromCollection(context, out, AnnotationConfiguration.CONTAINER_INITIALIZERS,
+            sciStarter == null ? Collections.emptySet() : sciStarter.getServletContainerInitializerHolders());
         //the tlds discovered
         addContextParamFromAttribute(context, out, MetaInfConfiguration.METAINF_TLDS, normalizer);
         //the META-INF/resources discovered
@@ -602,18 +607,14 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         out.closeTag();
     }
 
-    /**
-     * Turn attribute into context-param to store.
-     */
-    private void addContextParamFromAttribute(WebAppContext context, XmlAppendable out, String attribute) throws IOException
+    private void addContextParamFromCollection(WebAppContext context, XmlAppendable out, String name, Collection<?> collection)
+        throws IOException
     {
-        Object o = context.getAttribute(attribute);
-        if (o == null)
+        if (collection == null)
             return;
 
-        Collection<?> c = (o instanceof Collection) ? (Collection<?>)o : Collections.singletonList(o);
         StringBuilder v = new StringBuilder();
-        for (Object i : c)
+        for (Object i : collection)
         {
             if (i != null)
             {
@@ -625,9 +626,22 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             }
         }
         out.openTag("context-param")
-            .tag("param-name", attribute)
+            .tag("param-name", name)
             .tagCDATA("param-value", v.toString())
             .closeTag();
+    }
+    
+    /**
+     * Turn attribute into context-param to store.
+     */
+    private void addContextParamFromAttribute(WebAppContext context, XmlAppendable out, String attribute) throws IOException
+    {
+        Object o = context.getAttribute(attribute);
+        if (o == null)
+            return;
+
+        Collection<?> c = (o instanceof Collection) ? (Collection<?>)o : Collections.singletonList(o);
+        addContextParamFromCollection(context, out, attribute, c);
     }
 
     /**
