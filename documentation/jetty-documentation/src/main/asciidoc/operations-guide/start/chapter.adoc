@@ -39,11 +39,17 @@ include::start-start.adoc[]
 include::start-jpms.adoc[]
 include::start-stop.adoc[]
 
-==== Logging and Debugging
+==== Start Mechanism Logging
 
 The steps performed by the Jetty start mechanism are logged by the `StartLog` class, that outputs directly, by default, to `System.err`.
 
 This is necessary to avoid that the Jetty start mechanism depend on logging libraries that may clash with those defined by Jetty logging modules, when Jetty is started in-VM.
+
+[NOTE]
+====
+This section is about the logging performed by the Jetty start mechanism _before_ it configures and starts Jetty.
+See the xref:og-logging[logging section] for information about logging when Jetty starts.
+====
 
 You can enable DEBUG level logging with the `--debug` command line option, for both the _tool_ and _start_ modes:
 

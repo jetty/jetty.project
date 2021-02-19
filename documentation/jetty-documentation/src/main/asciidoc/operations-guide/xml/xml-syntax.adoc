@@ -338,8 +338,7 @@ You must give a unique `id` attribute to the objects you want to reference.
 [[og-xml-syntax-property]]
 ===== `<Property>`
 
-Element `<Property>` retrieves the value of the Jetty module property specified by the `name` attribute, and it is mostly used when creating xref:og-modules[custom Jetty modules] or when using xref:og-deploy-jetty[Jetty context XML files].
-// TODO: xref to the custom module section.
+Element `<Property>` retrieves the value of the Jetty module property specified by the `name` attribute, and it is mostly used when creating xref:og-modules-custom[custom Jetty modules] or when using xref:og-deploy-jetty[Jetty context XML files].
 
 The `deprecated` attribute allows you to specify a comma separated list of old, deprecated, property names for backward compatibility.
 

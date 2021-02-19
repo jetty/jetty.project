@@ -48,7 +48,7 @@ CachingSessionDataStore::
 is an L2 cache of session data.
 A `SessionCache` can use a `CachingSessionDataStore` as its backing store.
 
-More details on these concepts can be found in the link:{PROGGUIDE}/server/sessions/sessions[Programming Guide].
+More details on these concepts can be found in the xref:{prog_guide}#pg-server-session[Programming Guide].
 
 [NOTE]
 ====

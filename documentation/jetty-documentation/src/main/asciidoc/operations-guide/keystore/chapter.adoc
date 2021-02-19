@@ -12,7 +12,7 @@
 //
 
 [[og-keystore]]
-=== Configuring KeyStores
+=== Configuring SSL/TLS KeyStores
 
 A KeyStore is a file on the file system that contains a private key and a public certificate, along with the certificate chain of the certificate authorities that issued the certificate.
 The private key, the public certificate and the certificate chain, but more generally the items present in a KeyStore, are typically referred to as "cryptographic material".

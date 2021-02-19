@@ -23,6 +23,8 @@
 :sectlinks:
 :sectanchors:
 
+:source-highlighter: coderay
+
 // Use fonts for admonitions.
 :icons: font
 

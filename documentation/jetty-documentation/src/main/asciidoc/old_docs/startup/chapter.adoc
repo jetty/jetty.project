@@ -14,6 +14,5 @@
 [[startup]]
 == Starting Jetty
 
-include::custom-modules.adoc[]
 include::startup-unix-service.adoc[]
 include::startup-windows-service.adoc[]

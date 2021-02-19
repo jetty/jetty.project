@@ -12,7 +12,7 @@
 //
 
 [[og-protocols-http2s]]
-==== Configuring Secure HTTP/2
+==== Secure HTTP/2
 
 When you enable secure HTTP/2 you typically want to enable also secure HTTP/1.1, for backwards compatibility reasons: in this way, old browsers or other clients that do not support HTTP/2 will be able to connect to your server.
 
