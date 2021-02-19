@@ -34,6 +34,7 @@ import java.util.function.Consumer;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.servlet.HttpConstraintElement;
 import javax.servlet.HttpMethodConstraintElement;
@@ -78,7 +79,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
@@ -1808,7 +1808,7 @@ public class ConstraintTest
         Logger.getAnonymousLogger().info("Uncovered method for /specific/method is expected");
         _server.start();
 
-        assertThat(_security.getPathsWithUncoveredHttpMethods(), contains("/specific/method"));
+        assertThat(_security.getPathsWithUncoveredHttpMethods().stream().map(PathSpec::getDeclaration).collect(Collectors.toSet()), Matchers.hasItem("/specific/method"));
 
         String response;
         response = _connector.getResponse("GET /ctx/specific/method HTTP/1.0\r\n\r\n");
