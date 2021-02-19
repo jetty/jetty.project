@@ -1,9 +1,22 @@
-jetty-9.4.37-SNAPSHOT
+jetty-9.4.37.v20210219 - 19 February 2021
+ + 4275 Path Normalization/Traversal - Context Matching
+ + 5492 Add ability to manage start modules by java feature
+ + 5605 Blocked IO Thread not woken
+ + 5787 Make ManagedSelector report better JMX data
+ + 5851 org.eclipse.jetty.websocket.servlet.WebSocketServlet cleanup
+ + 5859 Classloader leaks from ShutdownThread and QueuedThreadPool
+ + 5909 Cannot disable HTTP OPTIONS Method
+ + 5937 Unnecessary blocking in ResourceService
+ + 5950 Deadlock due to logging inside classloaders
+ + 5973 Proxy client TLS authentication example
+ + 5977 Cache-Control header set by a filter is override by the value from
+   DefaultServlet configuration
+ + 5979 Configurable gzip Etag extension
 
 jetty-9.4.36.v20210114 - 14 January 2021
  + 5310 Jetty Http2 client discards the response fames when there is GOAWAY and
    sends RST_STREAM
- + 5499 Improve temporary buffer usage for WebSocket PerMessageDeflate.
+ + 5499 Improve temporary buffer usage for WebSocket PerMessageDeflate
  + 5633 Allow to configure HttpClient request authority
  + 5689 Jetty ssl keystorePath doesn't work with absolute path
  + 5755 Cannot configure maxDynamicTableSize on HTTP2Client
@@ -13,7 +26,7 @@ jetty-9.4.36.v20210114 - 14 January 2021
    exhaustion
  + 5824 Build up of ConstraintMappings when stopping and starting WebAppContext
  + 5830 Jetty-util contains wrong Import-Package
- + 5844 --download flag to jetty-start causes NullPointerException
+ + 5844 download flag to jetty-start causes NullPointerException
  + 5845 Use UTF-8 encoding for client basic auth if requested
  + 5855 HttpClient may not send queued requests
  + 5870 jetty-maven-plugin fails to run ServletContainerInitializer on Windows
@@ -11332,31 +11345,24 @@ jetty-1.1
 jetty-1.0.1
  + Bug fixes
 
-jetty-1.0 - Jan 1998
+jetty-1.0 - 01 January 1998
  + MBServlerV5 renamed to Jetty
  + First release in com.mortbay package structure
- + Included Util, JDBC, HTML, HTTP, Jetty
-
-MBServler-V4.5Beta
-  + Using It JSDK1.0Beta API
-  + Improved HTML package.
-  + Filter mechanism inspired by JigSaw
-
-MBServler-V4
+ + Included Util, JDBC, HTML, HTTP, Jetty MBServler-V4.5Beta + Using It
+   JSDK1.0Beta API + Improved HTML package. + Filter mechanism inspired by
+   JigSaw MBServler-V4
  + JeevesA1.2 servlet API
  + Better configuration and setup for embedding in other Java applications.
- + Util classes from Intelligent Switched Systems.
-
-MBServler-V1 / IssueTracker 3.1
- + The IssueTracker HTTP server has been separated from the Issue Tracker application and updated to the java.servlet interface. It is now called MBServler
- + JDBC module
-
-IssueTracker-2.0
+ + Util classes from Intelligent Switched Systems. MBServler-V1 / IssueTracker
+   3.1
+ + The IssueTracker HTTP server has been separated from the Issue Tracker
+   application and updated to the java.servlet interface. It is now called
+   MBServler
+ + JDBC module IssueTracker-2.0
  + Faster HTTP server
  + Basic authentication
- + User management
-
-IssueTracker-1.0 - Jan 1995
+ + User management IssueTracker-1.0 - Jan 1995
  + Won the Australian Java Programming Contest!
  + HTTP Server
  + Issue tracking application
+
