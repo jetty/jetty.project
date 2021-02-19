@@ -41,6 +41,7 @@ public class QpackTest
     static final HttpField XPowerJetty = new PreEncodedHttpField(HttpHeader.X_POWERED_BY, "jetty");
     static final HttpField Date = new PreEncodedHttpField(HttpHeader.DATE, DateGenerator.formatDate(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())));
 
+    private final int streamId = -1;
     private final DecoderTestHandler handler = new DecoderTestHandler();
 
     @Test
@@ -64,7 +65,7 @@ public class QpackTest
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer, original0);
         BufferUtil.flipToFlush(buffer, 0);
-        decoder.decode(buffer);
+        decoder.decode(streamId, buffer);
         Response decoded0 = (Response)handler.getMetaData();
 
         Response nullToEmpty = new MetaData.Response(HttpVersion.HTTP_2, 200,
@@ -75,7 +76,7 @@ public class QpackTest
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer, original0);
         BufferUtil.flipToFlush(buffer, 0);
-        decoder.decode(buffer);
+        decoder.decode(streamId, buffer);
         Response decoded0b = (Response)handler.getMetaData();
 
         assertMetaDataResponseSame(nullToEmpty, decoded0b);
@@ -94,7 +95,7 @@ public class QpackTest
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer, original1);
         BufferUtil.flipToFlush(buffer, 0);
-        decoder.decode(buffer);
+        decoder.decode(streamId, buffer);
         Response decoded1 = (Response)handler.getMetaData();
 
         assertMetaDataResponseSame(original1, decoded1);
@@ -116,7 +117,7 @@ public class QpackTest
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer, original0);
         BufferUtil.flipToFlush(buffer, 0);
-        decoder.decode(buffer);
+        decoder.decode(streamId, buffer);
         MetaData decoded0 = handler.getMetaData();
 
         assertMetaDataSame(original0, decoded0);
@@ -132,7 +133,7 @@ public class QpackTest
         BufferUtil.flipToFlush(buffer, 0);
         try
         {
-            decoder.decode(buffer);
+            decoder.decode(streamId, buffer);
             fail();
         }
         catch (QpackException.SessionException e)
@@ -157,7 +158,7 @@ public class QpackTest
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer, original0);
         BufferUtil.flipToFlush(buffer, 0);
-        decoder.decode(buffer);
+        decoder.decode(streamId, buffer);
         Response decoded0 = (Response)handler.getMetaData();
 
         assertMetaDataSame(original0, decoded0);
@@ -180,7 +181,7 @@ public class QpackTest
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer, original0);
         BufferUtil.flipToFlush(buffer, 0);
-        decoder.decode(buffer);
+        decoder.decode(streamId, buffer);
         MetaData decoded0 = handler.getMetaData();
 
         assertEquals(2, encoder.getQpackContext().getNumEntries());
@@ -198,7 +199,7 @@ public class QpackTest
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer, original1);
         BufferUtil.flipToFlush(buffer, 0);
-        decoder.decode(buffer);
+        decoder.decode(streamId, buffer);
         MetaData decoded1 = handler.getMetaData();
         assertMetaDataSame(original1, decoded1);
 
@@ -228,7 +229,7 @@ public class QpackTest
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, input));
         BufferUtil.flipToFlush(buffer, 0);
-        decoder.decode(buffer);
+        decoder.decode(streamId, buffer);
         MetaData metaData = handler.getMetaData();
         HttpFields output = metaData.getFields();
 
@@ -279,7 +280,7 @@ public class QpackTest
         encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, input));
 
         BufferUtil.flipToFlush(buffer, 0);
-        assertThrows(QpackException.StreamException.class, () -> decoder.decode(buffer));
+        assertThrows(QpackException.StreamException.class, () -> decoder.decode(streamId, buffer));
     }
 
     private void assertMetaDataResponseSame(MetaData.Response expected, MetaData.Response actual)

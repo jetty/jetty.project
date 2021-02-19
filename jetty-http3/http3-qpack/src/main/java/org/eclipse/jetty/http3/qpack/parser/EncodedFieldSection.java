@@ -29,13 +29,20 @@ public class EncodedFieldSection
     private final NBitStringParser _stringParser = new NBitStringParser();
     private final List<EncodedField> _encodedFields = new ArrayList<>();
 
+    private final int _streamId;
     private final int _requiredInsertCount;
     private final int _base;
 
-    public EncodedFieldSection(int requiredInsertCount, int base)
+    public EncodedFieldSection(int streamId, int requiredInsertCount, int base)
     {
+        _streamId = streamId;
         _requiredInsertCount = requiredInsertCount;
         _base = base;
+    }
+
+    public int getStreamId()
+    {
+        return _streamId;
     }
 
     public int getRequiredInsertCount()

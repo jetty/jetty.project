@@ -75,7 +75,7 @@ public class QpackDecoder
         void onInstruction(Instruction instruction);
     }
 
-    public void decode(ByteBuffer buffer) throws QpackException
+    public void decode(int streamId, ByteBuffer buffer) throws QpackException
     {
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("CtxTbl[%x] decoding %d octets", _context.hashCode(), buffer.remaining()));
@@ -99,11 +99,10 @@ public class QpackDecoder
         int maxDynamicTableSize = dynamicTable.getMaxSize();
         int requiredInsertCount = decodeInsertCount(encodedInsertCount, insertCount, maxDynamicTableSize);
 
+        // Parse the buffer into an Encoded Field Section.
         int base = signBit ? requiredInsertCount - deltaBase - 1 : requiredInsertCount + deltaBase;
-        EncodedFieldSection encodedFieldSection = new EncodedFieldSection(requiredInsertCount, base);
+        EncodedFieldSection encodedFieldSection = new EncodedFieldSection(streamId, requiredInsertCount, base);
         encodedFieldSection.parse(buffer);
-
-        int streamId = -1;
 
         if (encodedFieldSection.getRequiredInsertCount() >= insertCount)
         {
@@ -114,6 +113,20 @@ public class QpackDecoder
         else
         {
             _encodedFieldSections.add(encodedFieldSection);
+        }
+    }
+
+    private void checkEncodedFieldSections() throws QpackException
+    {
+        int insertCount = _context.getDynamicTable().getInsertCount();
+        for (EncodedFieldSection encodedFieldSection : _encodedFieldSections)
+        {
+            if (encodedFieldSection.getRequiredInsertCount() <= insertCount)
+            {
+                MetaData metadata = encodedFieldSection.decode(_context, _builder);
+                _handler.onMetadata(metadata);
+                _handler.onInstruction(new SectionAcknowledgmentInstruction(encodedFieldSection.getStreamId()));
+            }
         }
     }
 
@@ -135,6 +148,7 @@ public class QpackDecoder
             if (dynamicTable.add(entry) == null)
                 throw new QpackException.StreamException("No space in DynamicTable");
             _handler.onInstruction(new InsertCountIncrementInstruction(1));
+            checkEncodedFieldSections();
         }
         else if (instruction instanceof IndexedNameEntryInstruction)
         {
@@ -148,6 +162,7 @@ public class QpackDecoder
             if (dynamicTable.add(entry) == null)
                 throw new QpackException.StreamException("No space in DynamicTable");
             _handler.onInstruction(new InsertCountIncrementInstruction(1));
+            checkEncodedFieldSections();
         }
         else if (instruction instanceof LiteralNameEntryInstruction)
         {
@@ -160,6 +175,7 @@ public class QpackDecoder
             if (dynamicTable.add(entry) == null)
                 throw new QpackException.StreamException("No space in DynamicTable");
             _handler.onInstruction(new InsertCountIncrementInstruction(1));
+            checkEncodedFieldSections();
         }
         else
         {
