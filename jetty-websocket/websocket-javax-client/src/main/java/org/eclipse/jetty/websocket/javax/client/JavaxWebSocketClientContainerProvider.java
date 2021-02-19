@@ -51,7 +51,7 @@ public class JavaxWebSocketClientContainerProvider extends ContainerProvider
      * </p>
      */
     @Override
-    public WebSocketContainer getContainer()
+    protected WebSocketContainer getContainer()
     {
         return getContainer(null);
     }
