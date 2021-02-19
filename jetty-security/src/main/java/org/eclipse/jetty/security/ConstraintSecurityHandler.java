@@ -852,7 +852,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * Constraints can be added to the ConstraintSecurityHandler before the
      * associated context is started. These constraints should persist across
      * a stop/start. Others can be added after the associated context is starting
-     * (eg by a web.xml/web-fragment.xml, annotation or javax.servlet api call) -
+     * (eg by a web.xml/web-fragment.xml, annotation or jakarta.servlet api call) -
      * these should not be persisted across a stop/start as they will be re-added on
      * the restart.
      *

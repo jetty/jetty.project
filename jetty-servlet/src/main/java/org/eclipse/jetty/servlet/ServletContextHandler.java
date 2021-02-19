@@ -507,7 +507,7 @@ public class ServletContextHandler extends ContextHandler
     }
 
     /**
-     * Convenience method to programmatically add a {@link javax.servlet.ServletContainerInitializer}.
+     * Convenience method to programmatically add a {@link ServletContainerInitializer}.
      * @param sci the ServletContainerInitializer to register.
      * @return the ServletContainerInitializerHolder that was created
      */
@@ -522,7 +522,7 @@ public class ServletContextHandler extends ContextHandler
     }
 
     /**
-     * Convenience method to programmatically add a {@link javax.servlet.ServletContainerInitializer}.
+     * Convenience method to programmatically add a {@link ServletContainerInitializer}.
      * @param sci the ServletContainerInitializer to register.
      * @param classes the Set of application classes.
      * @return the ServletContainerInitializerHolder that was created
@@ -538,7 +538,7 @@ public class ServletContextHandler extends ContextHandler
     }
     
     /**
-     * Convenience method to programmatically add a list of {@link javax.servlet.ServletContainerInitializer}.
+     * Convenience method to programmatically add a list of {@link ServletContainerInitializer}.
      * The initializers are guaranteed to be called in the order they are passed into this method.
      * @param sciHolders the ServletContainerInitializerHolders
      */
