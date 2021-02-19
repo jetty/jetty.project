@@ -31,6 +31,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Deprecated
 public class ContainerInitializer
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContainerInitializer.class);
