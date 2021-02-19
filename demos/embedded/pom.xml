@@ -123,7 +123,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>apache-jstl</artifactId>
+      <artifactId>glassfish-jstl</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
