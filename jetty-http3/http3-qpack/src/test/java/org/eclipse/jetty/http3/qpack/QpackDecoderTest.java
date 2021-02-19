@@ -54,6 +54,7 @@ public class QpackDecoderTest
      +-------------------------------+
      */
 
+    private final int streamId = -1;
     private final DecoderTestHandler handler = new DecoderTestHandler();
 
     @Test
@@ -65,7 +66,7 @@ public class QpackDecoderTest
         String encoded = "828684410f7777772e6578616d706c652e636f6d";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
-        decoder.decode(buffer);
+        decoder.decode(streamId, buffer);
         MetaData.Request request = (MetaData.Request)handler.getMetaData();
 
         assertEquals("GET", request.getMethod());
@@ -78,7 +79,7 @@ public class QpackDecoderTest
         encoded = "828684be58086e6f2d6361636865";
         buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
-        decoder.decode(buffer);
+        decoder.decode(streamId, buffer);
         request = (MetaData.Request)handler.getMetaData();
 
         assertEquals("GET", request.getMethod());
@@ -94,7 +95,7 @@ public class QpackDecoderTest
         encoded = "828785bf400a637573746f6d2d6b65790c637573746f6d2d76616c7565";
         buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
-        decoder.decode(buffer);
+        decoder.decode(streamId, buffer);
         request = (MetaData.Request)handler.getMetaData();
 
         assertEquals("GET", request.getMethod());
@@ -116,7 +117,7 @@ public class QpackDecoderTest
         String encoded = "828684418cf1e3c2e5f23a6ba0ab90f4ff";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
-        decoder.decode(buffer);
+        decoder.decode(streamId, buffer);
         MetaData.Request request = (MetaData.Request)handler.getMetaData();
 
         assertEquals("GET", request.getMethod());
@@ -129,7 +130,7 @@ public class QpackDecoderTest
         encoded = "828684be5886a8eb10649cbf";
         buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
-        decoder.decode(buffer);
+        decoder.decode(streamId, buffer);
         request = (MetaData.Request)handler.getMetaData();
 
         assertEquals("GET", request.getMethod());
@@ -154,7 +155,7 @@ public class QpackDecoderTest
         System.arraycopy(bytes, 0, array, 1, bytes.length);
         ByteBuffer buffer = ByteBuffer.wrap(array, 1, bytes.length).slice();
 
-        decoder.decode(buffer);
+        decoder.decode(streamId, buffer);
         MetaData.Request request = (MetaData.Request)handler.getMetaData();
 
         assertEquals("GET", request.getMethod());
@@ -178,7 +179,7 @@ public class QpackDecoderTest
         System.arraycopy(bytes, 0, array, 1, bytes.length);
         ByteBuffer buffer = ByteBuffer.wrap(array, 1, bytes.length).slice();
 
-        decoder.decode(buffer);
+        decoder.decode(streamId, buffer);
         MetaData.Request request = (MetaData.Request)handler.getMetaData();
 
         assertEquals("GET", request.getMethod());
@@ -196,7 +197,7 @@ public class QpackDecoderTest
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
         QpackDecoder decoder = new QpackDecoder(handler, 4096, 8192);
-        decoder.decode(buffer);
+        decoder.decode(streamId, buffer);
         MetaData.Response response = (MetaData.Response)handler.getMetaData();
 
         assertThat(response.getStatus(), is(200));
@@ -215,7 +216,7 @@ public class QpackDecoderTest
         String encoded = "203f136687A0E41d139d090760881c6490B2Cd39Ba7f";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
         QpackDecoder decoder = new QpackDecoder(handler, 4096, 8192);
-        decoder.decode(buffer);
+        decoder.decode(streamId, buffer);
         MetaData metaData = handler.getMetaData();
         assertThat(metaData.getFields().get(HttpHeader.HOST), is("localhost0"));
         assertThat(metaData.getFields().get(HttpHeader.COOKIE), is("abcdefghij"));
@@ -240,7 +241,7 @@ public class QpackDecoderTest
         QpackDecoder decoder = new QpackDecoder(handler, 4096, 8192);
         try
         {
-            decoder.decode(buffer);
+            decoder.decode(streamId, buffer);
             fail();
         }
         catch (CompressionException e)
@@ -256,7 +257,7 @@ public class QpackDecoderTest
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
         QpackDecoder decoder = new QpackDecoder(handler, 128, 8192);
-        decoder.decode(buffer);
+        decoder.decode(streamId, buffer);
         MetaData metaData = handler.getMetaData();
 
         assertThat(decoder.getQpackContext().getDynamicTableSize(), is(0));
@@ -273,7 +274,7 @@ public class QpackDecoderTest
 
         try
         {
-            decoder.decode(buffer);
+            decoder.decode(streamId, buffer);
             fail();
         }
         catch (SessionException e)
@@ -459,7 +460,7 @@ public class QpackDecoderTest
         String encoded = "82868441" + "83" + "49509F";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
-        decoder.decode(buffer);
+        decoder.decode(streamId, buffer);
         MetaData.Request request = (MetaData.Request)handler.getMetaData();
 
         assertEquals("GET", request.getMethod());
@@ -477,7 +478,7 @@ public class QpackDecoderTest
 
         String encoded = "82868441" + "84" + "49509FFF";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
-        CompressionException ex = assertThrows(CompressionException.class, () -> decoder.decode(buffer));
+        CompressionException ex = assertThrows(CompressionException.class, () -> decoder.decode(streamId, buffer));
         assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
     }
 
@@ -490,7 +491,7 @@ public class QpackDecoderTest
         String encoded = "82868441" + "83" + "495090";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
-        CompressionException ex = assertThrows(CompressionException.class, () -> decoder.decode(buffer));
+        CompressionException ex = assertThrows(CompressionException.class, () -> decoder.decode(streamId, buffer));
         assertThat(ex.getMessage(), Matchers.containsString("Incorrect padding"));
     }
 
@@ -503,7 +504,7 @@ public class QpackDecoderTest
         String encoded = "82868441" + "87" + "497FFFFFFF427F";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
-        CompressionException ex = assertThrows(CompressionException.class, () -> decoder.decode(buffer));
+        CompressionException ex = assertThrows(CompressionException.class, () -> decoder.decode(streamId, buffer));
         assertThat(ex.getMessage(), Matchers.containsString("EOS in content"));
     }
 
@@ -515,7 +516,7 @@ public class QpackDecoderTest
         String encoded = "82868441" + "81" + "FE";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
-        CompressionException ex = assertThrows(CompressionException.class, () -> decoder.decode(buffer));
+        CompressionException ex = assertThrows(CompressionException.class, () -> decoder.decode(streamId, buffer));
         assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
     }
 
@@ -527,7 +528,7 @@ public class QpackDecoderTest
         String encoded = "82868441" + "82" + "FFFE";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
-        CompressionException ex = assertThrows(CompressionException.class, () -> decoder.decode(buffer));
+        CompressionException ex = assertThrows(CompressionException.class, () -> decoder.decode(streamId, buffer));
         assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
     }
 
@@ -538,7 +539,7 @@ public class QpackDecoderTest
 
         String encoded = "00000130";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
-        SessionException ex = assertThrows(SessionException.class, () -> decoder.decode(buffer));
+        SessionException ex = assertThrows(SessionException.class, () -> decoder.decode(streamId, buffer));
         assertThat(ex.getMessage(), Matchers.containsString("Header size 0"));
     }
 
@@ -549,7 +550,7 @@ public class QpackDecoderTest
 
         String encoded = "00016800";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
-        decoder.decode(buffer);
+        decoder.decode(streamId, buffer);
         MetaData metaData = handler.getMetaData();
         assertThat(metaData.getFields().size(), is(1));
         assertThat(metaData.getFields().get("h"), is(""));
@@ -562,7 +563,7 @@ public class QpackDecoderTest
 
         String encoded = "0001480130";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
-        StreamException ex = assertThrows(StreamException.class, () -> decoder.decode(buffer));
+        StreamException ex = assertThrows(StreamException.class, () -> decoder.decode(streamId, buffer));
         assertThat(ex.getMessage(), Matchers.containsString("Uppercase header"));
     }
 
@@ -573,7 +574,7 @@ public class QpackDecoderTest
 
         String encoded = "0001200130";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
-        StreamException ex = assertThrows(StreamException.class, () -> decoder.decode(buffer));
+        StreamException ex = assertThrows(StreamException.class, () -> decoder.decode(streamId, buffer));
         assertThat(ex.getMessage(), Matchers.containsString("Illegal header"));
     }
 }
