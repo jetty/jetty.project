@@ -18,7 +18,7 @@ Each context can have a single `SessionHandler`.
 The purpose of the `SessionHandler` is to interact with the `Request` and `Response` to create, maintain and propagate sessions.
 It also calls the context-level session listeners at appropriate points in the session lifecycle.
 
-===== Configuration =====
+===== Configuration
 
 The majority of configuration for the link:{JDURL}/org/eclipse/jetty/server/session/SessionHandler.html[SessionHandler] can be done via `web.xml` `<session-config>` declarations, or the `javax.servlet.SessionCookieConfig` api.
 There are also a few jetty-specific configuration options that we will cover here:
@@ -128,7 +128,7 @@ This can also be configured by:
 * using the `javax.servlet.SessionCookieConfig.setPath(String)` method
 * defining the `<session-config><cookie-config><path/></cookie-config></session-config>` element in `web.xml`
 
-===== Statistics =====
+===== Statistics
 
 Some statistics about the sessions for a context can be obtained from the `SessionHandler`, either by calling the methods directly or via `jmx`:
 

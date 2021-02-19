@@ -37,7 +37,7 @@ The Maven artifact coordinates for the HTTP/2 client library are the following:
 include::../../http2.adoc[tag=multiplex]
 
 [[pg-server-http2-flow-control]]
-===== HTTP/2 Flow Control
+==== HTTP/2 Flow Control
 
 include::../../http2.adoc[tag=flowControl]
 

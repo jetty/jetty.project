@@ -14,6 +14,8 @@
 [[og-xml]]
 === Jetty XML
 
+// TODO: merge this small section into the syntax and maybe call it "Jetty XML Reference".
+
 The Jetty XML format is a straightforward mapping of XML elements to Java APIs so that any object can be instantiated and getters, setters, and methods can be called.
 
 The Jetty XML format is very similar to that of frameworks like Spring or Plexus, although it predates all of them and it's typically more powerful as it can invoke any Java API.

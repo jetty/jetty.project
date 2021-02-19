@@ -12,7 +12,7 @@
 //
 
 [[pg-server-http-handler]]
-=== Server Handlers
+==== Server Handlers
 
 An `org.eclipse.jetty.server.Handler` is the component that processes incoming HTTP requests and eventually produces HTTP responses.
 

@@ -12,7 +12,6 @@
 //
 
 [[pg-server-session-architecture]]
-
 ==== Session Architecture
 
 Terminology::

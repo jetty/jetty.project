@@ -12,7 +12,7 @@
 //
 
 [[pg-server-http-security]]
-==== Securing HTTP Server Applications
+===== Securing HTTP Server Applications
 
 // TODO: ConstraintSecurityHandler and Authenticators and LoginServices
 TODO

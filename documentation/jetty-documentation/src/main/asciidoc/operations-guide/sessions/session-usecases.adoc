@@ -22,7 +22,7 @@ If you wish to pare back support for sessions because you know your app doesn't 
 * enable the xref:og-session-base[base sessions module] and xref:og-session-base[configure the scavenge interval] to 0 to prevent scavenging
 * enable the xref:og-session-cache-null[null session cache module] to prevent sessions being cached in memory
 
-If you wish to do any further minimization, you should consult the link:{PROGGUIDE}[Programming Guide].
+If you wish to do any further minimization, you should consult the xref:{prog_guide}#pg-server-session[Programming Guide].
 
 ===== Clustering with a Sticky Load Balancer
 

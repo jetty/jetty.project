@@ -12,7 +12,7 @@
 //
 
 [[og-protocols-https]]
-==== Configuring Secure HTTP/1.1
+==== Secure HTTP/1.1
 
 Secure HTTP/1.1 is enabled with both the `ssl` and `https` Jetty modules with the following command (issued from within the `$JETTY_BASE` directory):
 

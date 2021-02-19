@@ -12,7 +12,7 @@
 //
 
 [[pg-server-http-handler-implement]]
-==== Implementing Handler
+===== Implementing Handler
 
 The `Handler` API consist fundamentally of just one method:
 
@@ -29,7 +29,7 @@ Applications may wrap the request or response (or both) and forward the wrapped 
 This is the reason why there are two request parameters in the `Handler` APIs: the first is the unwrapped, original, request that also gives access to Jetty-specific APIs, while the second is the application-wrapped Servlet request.
 
 [[pg-server-http-handler-impl-hello]]
-===== Hello World Handler
+====== Hello World Handler
 
 A simple "Hello World" `Handler` is the following:
 
@@ -41,7 +41,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPSer
 Such a simple `Handler` extends from `AbstractHandler` and can access the request and response main features, such as reading request headers and content, or writing response headers and content.
 
 [[pg-server-http-handler-impl-filter]]
-===== Filtering Handler
+====== Filtering Handler
 
 A filtering `Handler` is a handler that perform some modification to the request or response, and then either forwards the request to another `Handler` or produces an error response:
 

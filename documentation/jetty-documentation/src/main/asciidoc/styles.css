@@ -11,6 +11,10 @@
  * ========================================================================
  */
 
+#header, #content, #footnotes, #footer {
+    max-width: 80em;
+}
+
 .listingblock > .title {
     font-style: normal;
 }

@@ -12,7 +12,7 @@
 //
 
 [[pg-client-http-proxy]]
-=== HttpClient Proxy Support
+==== HttpClient Proxy Support
 
 Jetty's `HttpClient` can be configured to use proxies to connect to destinations.
 
@@ -33,7 +33,7 @@ Configured in this way, `HttpClient` makes requests to the HTTP proxy (for plain
 Proxying is supported for both HTTP/1.1 and HTTP/2.
 
 [[pg-client-http-proxy-authentication]]
-==== Proxy Authentication Support
+===== Proxy Authentication Support
 
 Jetty's `HttpClient` supports proxy authentication in the same way it supports xref:pg-client-http-authentication[server authentication].
 

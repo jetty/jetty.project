@@ -12,7 +12,7 @@
 //
 
 [[og-protocols-proxy]]
-==== Configuring Eclipse Jetty Behind a Load Balancer or Reverse Proxy
+==== Jetty Behind a Load Balancer or Reverse Proxy
 
 You may need to configure one or more Jetty instances behind an _intermediary_, typically a load balancer such as link:https://haproxy.org[HAProxy], or a reverse proxy such as link:https://httpd.apache.org[Apache HTTP Server] or link:https://nginx.org[Nginx].
 
@@ -58,7 +58,7 @@ In both methods, web applications that call `HttpServletRequest.getRemoteAddr()`
 Likewise, `HttpServletRequest.getRemotePort()` will return the remote client IP port as specified by the client information sent by the intermediary, and `HttpServletRequest.isSecure()` will return whether the client made a secure request using the `https` scheme as specified by the client information sent by the intermediary.
 
 [[og-protocols-proxy-forwarded]]
-===== Configuring Jetty for the Forwarded Header
+===== Configuring the Forwarded Header
 
 The `Forwarded` HTTP header is added by the intermediary with information about the client and the client request, for example:
 
@@ -92,7 +92,7 @@ With the `http-forwarded` Jetty module enabled, Jetty interprets the `Forwarded`
 For further information about configuring the `http-forwarded` Jetty module, see xref:og-module-http-forwarded[this section].
 
 [[og-protocols-proxy-protocol]]
-===== Configuring Jetty for the Proxy Protocol
+===== Configuring the Proxy Protocol
 
 The link:https://www.haproxy.org/download/2.2/doc/proxy-protocol.txt[Proxy Protocol] is the _de facto_ standard, introduced by link:https://haproxy.org[HAProxy], to communicate client information to backend servers via the TCP connection, rather than via HTTP headers.
 
@@ -174,7 +174,7 @@ include::jetty[setupArgs="--add-modules=https,test-keystore,proxy-protocol-ssl",
 Note how in the example above the list of protocols for the secure connector is first `proxy`, then `ssl` and then `http/1.1`.
 
 [[og-protocols-proxy-haproxy]]
-===== Configuring HAProxy and Jetty for HTTP/1.1 and HTTP/2
+===== HAProxy and Jetty with HTTP/1.1 and HTTP/2
 
 link:https://haproxy.org[HAProxy] is an open source solution that offers load balancing and proxying for TCP and HTTP based application, and can be used as a replacement for Apache or Nginx when these are used as reverse proxies.
 

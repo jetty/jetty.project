@@ -12,7 +12,7 @@
 //
 
 [[pg-server-http-connector]]
-=== Server Connectors
+==== Server Connectors
 
 A `Connector` is the component that handles incoming requests from clients, and works in conjunction with `ConnectionFactory` instances.
 
@@ -50,7 +50,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPSer
 ----
 
 [[pg-server-http-connector-protocol]]
-==== Configuring Protocols
+===== Configuring Protocols
 
 For each accepted TCP connection, `ServerConnector` asks a `ConnectionFactory` to create a `Connection` object that handles the network traffic on that TCP connection, parsing and generating bytes for a specific protocol (see xref:pg-arch-io[this section] for more details about `Connection` objects).
 
@@ -58,7 +58,7 @@ A `ServerConnector` can be configured with one or more ``ConnectionFactory``s.
 If no `ConnectionFactory` is specified then `HttpConnectionFactory` is implicitly configured.
 
 [[pg-server-http-connector-protocol-http11]]
-===== Configuring Clear-Text HTTP/1.1
+====== Clear-Text HTTP/1.1
 
 `HttpConnectionFactory` creates `HttpConnection` objects that parse bytes and generate bytes for the HTTP/1.1 protocol.
 
@@ -70,7 +70,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPSer
 ----
 
 [[pg-server-http-connector-protocol-http11-tls]]
-===== Configuring Encrypted HTTP/1.1 (https)
+====== Encrypted HTTP/1.1 (https)
 
 Supporting encrypted HTTP/1.1 (that is, requests with the `https` scheme) is supported by configuring an `SslContextFactory` that has access to the keyStore containing the private server key and public server certificate, in this way:
 
@@ -79,30 +79,8 @@ Supporting encrypted HTTP/1.1 (that is, requests with the `https` scheme) is sup
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=tlsHttp11]
 ----
 
-[[pg-server-http-connector-protocol-proxy-http11]]
-===== Configuring Jetty behind a Load Balancer
-
-It is often the case that Jetty receives connections from a load balancer configured to distribute the load among many Jetty backend servers.
-
-From the Jetty point of view, all the connections arrive from the load balancer, rather than the real clients, but is possible to configure the load balancer to forward the real client IP address and port to the backend Jetty server using the link:https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt[PROXY protocol].
-
-NOTE: The PROXY protocol is widely supported by load balancers such as link:http://cbonte.github.io/haproxy-dconv/2.2/configuration.html#5.2-send-proxy[HAProxy] (via its `send-proxy` directive), link:https://docs.nginx.com/nginx/admin-guide/load-balancer/using-proxy-protocol[Nginx](via its `proxy_protocol on` directive) and others.
-
-To support this case, Jetty can be configured in this way:
-
-[source,java,indent=0]
-----
-include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=proxyHTTP]
-----
-
-Note how the ``ConnectionFactory``s passed to `ServerConnector` are in order: first PROXY, then HTTP/1.1.
-Note also how the PROXY `ConnectionFactory` needs to know its _next_ protocol (in this example, HTTP/1.1).
-
-Each `ConnectionFactory` is asked to create a `Connection` object for each accepted TCP connection; the `Connection` objects will be chained together to handle the bytes, each for its own protocol.
-Therefore the `ProxyConnection` will handle the PROXY protocol bytes and `HttpConnection` will handle the HTTP/1.1 bytes producing a request object and response object that will be processed by ``Handler``s.
-
 [[pg-server-http-connector-protocol-http2]]
-===== Configuring Clear-Text HTTP/2
+====== Clear-Text HTTP/2
 
 It is well known that the HTTP ports are `80` (for clear-text HTTP) and `443` for encrypted HTTP.
 By using those ports, a client had _prior knowledge_ that the server would speak, respectively, the HTTP/1.x protocol and the TLS protocol (and, after decryption, the HTTP/1.x protocol).
@@ -125,7 +103,7 @@ This configuration is also typical when Jetty is installed in backend servers be
 When Jetty is behind a load balancer, you can always prepend the PROXY protocol as described in xref:pg-server-http-connector-protocol-proxy-http11[this section].
 
 [[pg-server-http-connector-protocol-http2-tls]]
-===== Configuring Encrypted HTTP/2
+====== Encrypted HTTP/2
 
 When using encrypted HTTP/2, the unencrypted protocol is negotiated by client and server using an extension to the TLS protocol called ALPN.
 
@@ -144,3 +122,25 @@ With the ALPN extension information, Jetty can negotiate a protocol and pick, am
 The fact that the HTTP/2 protocol comes before the HTTP/1.1 protocol indicates that HTTP/2 is the preferred protocol for the server.
 
 Note also that the default protocol set in the ALPN ``ConnectionFactory``, which is used in case ALPN is not supported by the client, is HTTP/1.1 -- if the client does not support ALPN is probably an old client so HTTP/1.1 is the safest choice.
+
+[[pg-server-http-connector-protocol-proxy-http11]]
+====== Jetty Behind a Load Balancer
+
+It is often the case that Jetty receives connections from a load balancer configured to distribute the load among many Jetty backend servers.
+
+From the Jetty point of view, all the connections arrive from the load balancer, rather than the real clients, but is possible to configure the load balancer to forward the real client IP address and port to the backend Jetty server using the link:https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt[PROXY protocol].
+
+NOTE: The PROXY protocol is widely supported by load balancers such as link:http://cbonte.github.io/haproxy-dconv/2.2/configuration.html#5.2-send-proxy[HAProxy] (via its `send-proxy` directive), link:https://docs.nginx.com/nginx/admin-guide/load-balancer/using-proxy-protocol[Nginx](via its `proxy_protocol on` directive) and others.
+
+To support this case, Jetty can be configured in this way:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=proxyHTTP]
+----
+
+Note how the ``ConnectionFactory``s passed to `ServerConnector` are in order: first PROXY, then HTTP/1.1.
+Note also how the PROXY `ConnectionFactory` needs to know its _next_ protocol (in this example, HTTP/1.1).
+
+Each `ConnectionFactory` is asked to create a `Connection` object for each accepted TCP connection; the `Connection` objects will be chained together to handle the bytes, each for its own protocol.
+Therefore the `ProxyConnection` will handle the PROXY protocol bytes and `HttpConnection` will handle the HTTP/1.1 bytes producing a request object and response object that will be processed by ``Handler``s.

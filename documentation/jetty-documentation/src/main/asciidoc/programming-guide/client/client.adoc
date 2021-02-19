@@ -29,6 +29,7 @@ These are the available client libraries:
 
 If you are interested in the low-level details of how the Eclipse Jetty client libraries work, or are interested in writing a custom protocol, look at the xref:pg-client-io-arch[Client I/O Architecture].
 
+include::client-io-arch.adoc[]
 include::http/client-http.adoc[]
 include::http2/client-http2.adoc[]
-include::client-io-arch.adoc[]
+include::websocket/client-websocket.adoc[]

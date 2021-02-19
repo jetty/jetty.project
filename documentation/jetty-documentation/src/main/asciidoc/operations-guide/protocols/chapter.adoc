@@ -12,7 +12,7 @@
 //
 
 [[og-protocols]]
-=== Configuring Eclipse Jetty Connectors and Protocols
+=== Jetty Connectors and Protocols
 
 Connectors are the network components through which Jetty accepts incoming network connections.
 

@@ -30,7 +30,7 @@ If you enable _both_ the `https` and the `http2` module, you will have a single 
 TIP: Recall from the xref:og-modules[section about modules], that only modules that are explicitly enabled get their module configuration file (`+*.ini+`) saved in `$JETTY_BASE/start.d/`, and you want `$JETTY_BASE/start.d/ssl.ini` to be present so that you can configure the connector properties, the KeyStore properties and the TLS properties.
 
 [[og-protocols-ssl-customize]]
-===== Customizing KeyStore and TLS Configuration
+===== Customizing KeyStore and SSL/TLS Configuration
 
 Secure protocols have a slightly more complicated configuration since they require to configure a _KeyStore_.
 Refer to the xref:og-keystore[KeyStore section] for more information about how to create and manage a KeyStore.
@@ -74,7 +74,7 @@ Refer to the link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html[SslC
 CAUTION: Use module properties whenever possible, and only resort to use a Jetty XML file for advanced configuration that you cannot do using module properties.
 
 [[og-protocols-ssl-customize-versions]]
-====== Customizing TLS Protocol Versions
+====== Customizing SSL/TLS Protocol Versions
 
 By default, the SSL protocols (SSL, SSLv2, SSLv3, etc.) are already excluded because they are vulnerable.
 To explicitly add the exclusion of TLSv1.0 and TLSv1.1 (that are also vulnerable -- which leaves only TLSv1.2 and TLSv1.3 available), you want to use this XML:
@@ -100,7 +100,7 @@ To explicitly add the exclusion of TLSv1.0 and TLSv1.1 (that are also vulnerable
 ----
 
 [[og-protocols-ssl-customize-ciphers]]
-====== Customizing TLS Ciphers
+====== Customizing SSL/TLS Ciphers
 
 You can precisely set the list of excluded ciphers, completely overriding Jetty's default, with this XML:
 
@@ -160,7 +160,7 @@ $ java -jar $JETTY_HOME/start.jar --add-module=ssl-reload
 For more information about the configuration of the `ssl-reload` Jetty module, see xref:og-module-ssl-reload[this section].
 
 [[og-protocols-ssl-conscrypt]]
-===== Using Conscrypt as TLS Provider
+===== Using Conscrypt as SSL/TLS Provider
 
 By default, the standard TLS provider that comes with the JDK is used.
 

@@ -131,6 +131,7 @@ This is useful to append a value to properties that accept a comma separated lis
 jetty.webapp.addServerClasses+=,com.acme
 ----
 +
+// TODO: check what happens if the property is empty and +=,value is done: is the comma stripped? If so add a sentence about this.
 <name>?=<value>::
 Sets the property value only if it is not already set.
 This is useful to define default values, for example for "version" properties, where the "version" property can be explicitly configured to a newer version, but if it is not explicitly configured it will have a default version (see also xref:og-start-configure-custom-module[here]).

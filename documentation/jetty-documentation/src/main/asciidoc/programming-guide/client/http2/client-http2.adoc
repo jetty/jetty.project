@@ -57,7 +57,7 @@ A _session_ typically has a long life -- once the TCP connection is established,
 include::../../http2.adoc[tag=multiplex]
 
 [[pg-client-http2-flow-control]]
-===== HTTP/2 Flow Control
+==== HTTP/2 Flow Control
 
 include::../../http2.adoc[tag=flowControl]
 
@@ -84,7 +84,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http2/HTTP2C
 IMPORTANT: Applications must know in advance whether they want to connect to a clear-text or encrypted port, and pass the `SslContextFactory` parameter accordingly to the `connect(...)` method.
 
 [[pg-client-http2-configure]]
-===== Configuring the Session
+==== Configuring the Session
 
 The `connect(...)` method takes a `Session.Listener` parameter.
 This listener's `onPreface(...)` method is invoked just before establishing the connection to the server to gather the client configuration to send to the server.

@@ -12,7 +12,7 @@
 //
 
 [[og-deploy]]
-=== Customizing Web Application Deployment
+=== Web Application Deployment
 
 Most of the times you want to be able to customize the deployment of your web applications, for example by changing the `contextPath`, or by adding JNDI entries, or by configuring virtual hosts, etc.
 

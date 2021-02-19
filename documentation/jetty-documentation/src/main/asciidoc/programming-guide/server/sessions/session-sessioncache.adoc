@@ -79,6 +79,7 @@ Jetty provides two `SessionCache` implementations: the link:{JDURL}/org/eclipse/
 
 [[pg-server-session-hash]]
 ===== The DefaultSessionCache
+
 The link:{JDURL}/org/eclipse/jetty/server/session/DefaultSessionCache.html[DefaultSessionCache] retains `Session` objects in memory in a `ConcurrentHashMap`.
 It is suitable for non-clustered and clustered deployments.
 For clustered deployments, a sticky load balancer is *strongly* recommended, otherwise you risk indeterminate session state as the session bounces around multiple nodes.
@@ -113,6 +114,7 @@ NOTE: If you don't configure any `SessionCache` or `SessionCacheFactory`, the `S
  
 [[pg-server-session-null]]
 ===== The NullSessionCache
+
 The link:{JDURL}/org/eclipse/jetty/server/session/NullSessionCache.html[NullSessionCache] does not actually cache any objects: each request uses a fresh `Session` object.
 It is suitable for clustered deployments without a sticky load balancer and non-clustered deployments when purely minimal support for sessions is needed.
 
@@ -133,7 +135,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/session/Sess
 
 As previously mentioned, we highly recommend that you extend the link:{JDURL}/org/eclipse/jetty/server/session/AbstractSessionCache.html[AbstractSessionCache].
 
-===== Heterogenous Caching
+===== Heterogeneous Caching
 
 Using one of the ``SessionCacheFactory``s will ensure that every time a `SessionHandler` starts it will create a new instance of the corresponding type of `SessionCache`.
 

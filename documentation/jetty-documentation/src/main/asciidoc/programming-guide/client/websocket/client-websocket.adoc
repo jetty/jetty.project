@@ -12,6 +12,6 @@
 //
 
 [[pg-client-websocket]]
-=== WebSocket Client Libraries
+=== WebSocket Client
 
 TODO

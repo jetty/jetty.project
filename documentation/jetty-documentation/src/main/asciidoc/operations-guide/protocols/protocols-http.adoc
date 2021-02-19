@@ -12,7 +12,7 @@
 //
 
 [[og-protocols-http]]
-==== Configuring Clear-Text HTTP/1.1
+==== Clear-Text HTTP/1.1
 
 Clear text HTTP/1.1 is enabled with the `http` Jetty module with the following command (issued from within the `$JETTY_BASE` directory):
 

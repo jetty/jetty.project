@@ -14,6 +14,41 @@
 [[og-arch]]
 === Architecture Overview
 
+[[og-arch-concepts]]
+==== Main Concepts
+
+Jetty is an HTTP server and Servlet Container, and supports deployments of web applications.
+
+The Jetty _server_ listens on one or more network ports using one or more __connector__s.
+
+Clients send HTTP requests for specific URIs, such as `+https://host/store/cart+`.
+
+The HTTP requests arrive to the connectors through the network; the Jetty server processes the requests and, based on their URIs, forwards them to the appropriate web application.
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+skinparam roundCorner 10
+
+scale 1.25
+
+cloud Internet as internet
+rectangle "Jetty Server" as server
+rectangle "HTTP/1.1 Connector" as http
+rectangle "HTTP/2 Connector" as http2
+rectangle "WebApp "Store"" as store
+rectangle "WebApp "Catalog"" as catalog
+
+internet -- http
+internet -- http2
+http -- server
+http2 -- server
+server -- store
+server -- catalog
+----
+
 There are three main concepts on which the Jetty standalone server is based:
 
 * The xref:og-arch-modules[Jetty _module_ system], where Jetty modules provides Jetty features.
