@@ -367,6 +367,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
                 break;
             }
             case HOME:
+            case DISTRO:
             {
                 verifyPomConfiguration();
                 if (reconfigure)

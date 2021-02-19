@@ -72,7 +72,8 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     {
         EMBED,
         FORK,
-        HOME
+        HOME,
+        DISTRO //alias for HOME
     }
 
     /**
@@ -439,6 +440,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
                 break;
             }
             case HOME:
+            case DISTRO:
             {
                 startJettyHome();
                 break;

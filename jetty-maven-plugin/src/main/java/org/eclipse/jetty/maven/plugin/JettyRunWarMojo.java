@@ -263,6 +263,7 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
                 break;
             }
             case HOME:
+            case DISTRO:
             {
                 verifyPomConfiguration();
                 if (reconfigure)
