@@ -16,6 +16,7 @@ package org.eclipse.jetty.websocket.javax.client;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
@@ -52,29 +53,26 @@ public class JavaxWebSocketClientContainerProvider extends ContainerProvider
     @Override
     protected WebSocketContainer getContainer()
     {
-        // See: https://github.com/javaee/websocket-spec/issues/212
-        // TODO: on multiple executions, do we warn?
-        // TODO: do we care?
-        // TODO: on multiple executions, do we share bufferPool/executors/etc?
-        // TODO: do we want to provide a non-standard way to configure to always return the same clientContainer based on a config somewhere? (system.property?)
+        return getContainer(null);
+    }
 
-        JavaxWebSocketClientContainer clientContainer = new JavaxWebSocketClientContainer();
-
-        // Register as JVM runtime shutdown hook?
-        ShutdownThread.register(clientContainer);
-
-        if (!clientContainer.isStarted())
-        {
-            try
-            {
-                clientContainer.start();
-            }
-            catch (Exception e)
-            {
-                throw new RuntimeException("Unable to start Client Container", e);
-            }
-        }
-
+    /**
+     * Get a new instance of a client {@link WebSocketContainer} which uses a supplied {@link HttpClient}.
+     * @param httpClient a pre-configured {@link HttpClient} to be used by the implementation.
+     * @see #getContainer()
+     */
+    public WebSocketContainer getContainer(HttpClient httpClient)
+    {
+        JavaxWebSocketClientContainer clientContainer = new JavaxWebSocketClientContainer(httpClient);
+        registerShutdown(clientContainer);
         return clientContainer;
+    }
+
+    // See: https://github.com/eclipse-ee4j/websocket-api/issues/212
+    private void registerShutdown(JavaxWebSocketClientContainer container)
+    {
+        // Register as JVM runtime shutdown hook.
+        ShutdownThread.register(container);
+        LifeCycle.start(container);
     }
 }

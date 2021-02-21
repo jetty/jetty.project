@@ -70,22 +70,12 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
      */
     public JavaxWebSocketClientContainer(final HttpClient httpClient)
     {
-        this(new WebSocketComponents(), (wsComponents) ->
-        {
-            WebSocketCoreClient coreClient = new WebSocketCoreClient(httpClient, wsComponents);
-            coreClient.getHttpClient().setName("Javax-WebSocketClient@" + Integer.toHexString(coreClient.getHttpClient().hashCode()));
-            return coreClient;
-        });
+        this(new WebSocketComponents(), (components) -> new WebSocketCoreClient(httpClient, components));
     }
 
     public JavaxWebSocketClientContainer(WebSocketComponents components)
     {
-        this(components, (wsComponents) ->
-        {
-            WebSocketCoreClient coreClient = new WebSocketCoreClient(wsComponents);
-            coreClient.getHttpClient().setName("Javax-WebSocketClient@" + Integer.toHexString(coreClient.getHttpClient().hashCode()));
-            return coreClient;
-        });
+        this(components, WebSocketCoreClient::new);
     }
 
     public JavaxWebSocketClientContainer(WebSocketComponents components, Function<WebSocketComponents, WebSocketCoreClient> coreClientFactory)

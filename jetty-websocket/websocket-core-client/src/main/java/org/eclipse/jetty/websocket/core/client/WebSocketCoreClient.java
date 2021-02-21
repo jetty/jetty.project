@@ -64,6 +64,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle
         this.httpClient = httpClient;
         this.components = webSocketComponents;
         addBean(httpClient);
+        addBean(webSocketComponents);
     }
 
     public CompletableFuture<CoreSession> connect(FrameHandler frameHandler, URI wsUri) throws IOException
