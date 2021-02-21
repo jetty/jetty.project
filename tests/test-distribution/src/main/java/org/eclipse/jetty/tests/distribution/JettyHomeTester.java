@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +62,7 @@ import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,7 +85,7 @@ import org.slf4j.LoggerFactory;
  *     assertEquals(0, run1.getExitValue());
  *
  *     // Install a web application.
- *     File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
+ *     File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-simple-webapp:war:" + jettyVersion);
  *     distribution.installWarFile(war, "test");
  *
  *     // The second run starts the distribution.
@@ -96,7 +98,7 @@ import org.slf4j.LoggerFactory;
  *         // Make an HTTP request to the web application.
  *         HttpClient client = new HttpClient();
  *         client.start();
- *         ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
+ *         ContentResponse response = client.GET("http://localhost:" + port + "/test/index.html");
  *         assertEquals(HttpStatus.OK_200, response.getStatus());
  *     }
  * }
@@ -106,7 +108,7 @@ public class JettyHomeTester
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(JettyHomeTester.class);
 
-    private Config config;
+    private final Config config;
 
     private JettyHomeTester(Config config)
     {
@@ -125,12 +127,12 @@ public class JettyHomeTester
 
     public Path getJettyBase()
     {
-        return config.jettyBase;
+        return config.getJettyBase();
     }
 
     public Path getJettyHome()
     {
-        return config.jettyHome;
+        return config.getJettyHome();
     }
 
     /**
@@ -140,21 +142,31 @@ public class JettyHomeTester
      */
     public JettyHomeTester.Run start(List<String> args) throws Exception
     {
-        File jettyBaseDir = config.jettyBase.toFile();
+        File jettyBaseDir = getJettyBase().toFile();
         Path workDir = Files.createDirectories(jettyBaseDir.toPath().resolve("work"));
 
         List<String> commands = new ArrayList<>();
         commands.add(getJavaExecutable());
-        if (!config.jvmArgs.isEmpty())
-        {
-            commands.addAll(config.jvmArgs);
-        }
+        commands.addAll(config.getJVMArgs());
         commands.add("-Djava.io.tmpdir=" + workDir.toAbsolutePath().toString());
         commands.add("-jar");
         commands.add(config.jettyHome.toAbsolutePath() + "/start.jar");
-        // we get artifacts from local repo first
+
         args = new ArrayList<>(args);
-        args.add("maven.local.repo=" + System.getProperty("mavenRepoPath"));
+
+        String mavenLocalRepository = config.getMavenLocalRepository();
+        if (StringUtil.isNotBlank(mavenLocalRepository))
+            mavenLocalRepository = System.getProperty("mavenRepoPath");
+        if (StringUtil.isNotBlank(mavenLocalRepository))
+            args.add("maven.local.repo=" + mavenLocalRepository);
+
+        // if this JVM has `maven.repo.uri` defined, make sure to propagate it to child
+        String remoteRepoUri = System.getProperty("maven.repo.uri");
+        if (remoteRepoUri != null)
+        {
+            args.add("maven.repo.uri=" + remoteRepoUri);
+        }
+
         commands.addAll(args);
 
         LOGGER.info("Executing: {}", commands);
@@ -164,7 +176,7 @@ public class JettyHomeTester
         pbCmd.directory(jettyBaseDir);
         Process process = pbCmd.start();
 
-        return new Run(process);
+        return new Run(config, process);
     }
 
     /**
@@ -241,7 +253,7 @@ public class JettyHomeTester
     private void init() throws Exception
     {
         if (config.jettyHome == null)
-            config.jettyHome = resolveHomeArtifact(config.jettyVersion);
+            config.jettyHome = resolveHomeArtifact(config.getJettyVersion());
 
         if (config.jettyBase == null)
         {
@@ -367,14 +379,39 @@ public class JettyHomeTester
         return session;
     }
 
-    private static class Config
+    public static class Config
     {
+        private final Map<String, String> mavenRemoteRepositories = new HashMap<>();
         private Path jettyBase;
         private Path jettyHome;
         private String jettyVersion;
-        private String mavenLocalRepository = System.getProperty("user.home") + "/.m2/repository";
-        private Map<String, String> mavenRemoteRepositories = new HashMap<>();
+        private String mavenLocalRepository = System.getProperty("mavenRepoPath", System.getProperty("user.home") + "/.m2/repository");
         private List<String> jvmArgs = new ArrayList<>();
+
+        public Path getJettyBase()
+        {
+            return jettyBase;
+        }
+
+        public Path getJettyHome()
+        {
+            return jettyHome;
+        }
+
+        public String getJettyVersion()
+        {
+            return jettyVersion;
+        }
+
+        public String getMavenLocalRepository()
+        {
+            return mavenLocalRepository;
+        }
+
+        public List<String> getJVMArgs()
+        {
+            return Collections.unmodifiableList(jvmArgs);
+        }
 
         @Override
         public String toString()
@@ -415,15 +452,22 @@ public class JettyHomeTester
      */
     public static class Run implements Closeable
     {
+        private final Config config;
         private final Process process;
         private final List<ConsoleStreamer> consoleStreamers = new ArrayList<>();
         private final Queue<String> logs = new ConcurrentLinkedQueue<>();
 
-        private Run(Process process)
+        private Run(Config config, Process process)
         {
+            this.config = config;
             this.process = process;
             consoleStreamers.add(startPump("STDOUT", process.getInputStream()));
             consoleStreamers.add(startPump("STDERR", process.getErrorStream()));
+        }
+
+        public Config getConfig()
+        {
+            return config;
         }
 
         private ConsoleStreamer startPump(String mode, InputStream stream)
@@ -533,7 +577,8 @@ public class JettyHomeTester
                 while (System.nanoTime() < end)
                 {
                     boolean result = logs.stream().anyMatch(s -> s.contains(txt));
-                    if (result) return true;
+                    if (result)
+                        return true;
                     Thread.sleep(250);
                 }
                 return false;
@@ -640,7 +685,7 @@ public class JettyHomeTester
 
     public static class Builder
     {
-        private Config config = new Config();
+        private final Config config = new Config();
 
         private Builder()
         {
@@ -649,7 +694,7 @@ public class JettyHomeTester
         /**
          * @param jettyVersion the version to use (format: 9.4.14.v20181114 9.4.15-SNAPSHOT).
          * The distribution will be downloaded from local repository or remote
-         * @return the {@link Builder}
+         * @return this Builder
          */
         public Builder jettyVersion(String jettyVersion)
         {
@@ -660,7 +705,7 @@ public class JettyHomeTester
         /**
          * @param jettyHome Path to the local exploded jetty distribution
          * if configured the jettyVersion parameter will not be used
-         * @return the {@link Builder}
+         * @return this Builder
          */
         public Builder jettyHome(Path jettyHome)
         {
@@ -673,7 +718,7 @@ public class JettyHomeTester
          * <p>If the path is relative, it will be resolved against the Jetty Home directory.</p>
          *
          * @param jettyBase Path to the local Jetty Base directory
-         * @return the {@link Builder}
+         * @return this Builder
          */
         public Builder jettyBase(Path jettyBase)
         {
@@ -683,7 +728,7 @@ public class JettyHomeTester
 
         /**
          * @param mavenLocalRepository Path to the local maven repository
-         * @return the {@link Builder}
+         * @return this Builder
          */
         public Builder mavenLocalRepository(String mavenLocalRepository)
         {
@@ -696,7 +741,7 @@ public class JettyHomeTester
          *
          * @param id the id
          * @param url the Maven remote repository url
-         * @return the {@link Builder}
+         * @return this Builder
          */
         public Builder addRemoteRepository(String id, String url)
         {
@@ -705,9 +750,8 @@ public class JettyHomeTester
         }
 
         /**
-         *
          * @param jvmArgs the jvm args to add
-         * @return the {@link Builder}
+         * @return this Builder
          */
         public Builder jvmArgs(List<String> jvmArgs)
         {
@@ -716,7 +760,7 @@ public class JettyHomeTester
         }
 
         /**
-         * @return an empty instance of {@link Builder}
+         * @return an empty instance of Builder
          */
         public static Builder newInstance()
         {

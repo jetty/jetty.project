@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -73,7 +73,7 @@ public class TestJettyOSGiBootHTTP2Conscrypt
         options.addAll(TestOSGiUtil.coreJettyDependencies());
         options.addAll(TestOSGiUtil.jspDependencies());
         //deploy a test webapp
-        options.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-jetty-webapp").classifier("webbundle").versionAsInProject());
+        options.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-jsp-webapp").classifier("webbundle").versionAsInProject());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-conscrypt-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("http2-client").versionAsInProject().start());
@@ -150,7 +150,7 @@ public class TestJettyOSGiBootHTTP2Conscrypt
 
             httpClient.start();
 
-            ContentResponse response = httpClient.GET("https://localhost:" + port + "/jsp/jstl.jsp");
+            ContentResponse response = httpClient.GET("https://localhost:" + port + "/demo-jsp/jstl.jsp");
             assertEquals(200, response.getStatus());
             assertTrue(response.getContentAsString().contains("JSTL Example"));
         }

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -463,6 +463,12 @@ public class HttpGenerator
             default:
                 throw new IllegalStateException();
         }
+    }
+
+    public void servletUpgrade()
+    {
+        _noContentResponse = false;
+        _state = State.COMMITTED;
     }
 
     private void prepareChunk(ByteBuffer chunk, int remaining)

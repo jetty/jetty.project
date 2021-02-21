@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="addEventListener">
+    <Arg>
+      <New class="org.eclipse.jetty.util.component.HaltLifeCycleListener" />
+    </Arg>
+  </Call>
+</Configure>

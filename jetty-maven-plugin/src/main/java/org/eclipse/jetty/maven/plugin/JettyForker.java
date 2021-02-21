@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -137,7 +137,7 @@ public class JettyForker extends AbstractForker
         if (jvmArgs != null)
         {
             String[] args = jvmArgs.split(" ");
-            for (int i = 0;args != null && i < args.length;i++)
+            for (int i = 0; args != null && i < args.length; i++)
             {
                 if (args[i] != null && !"".equals(args[i]))
                     cmd.add(args[i].trim());
@@ -146,7 +146,7 @@ public class JettyForker extends AbstractForker
 
         if (systemProperties != null)
         {
-            for (Map.Entry<String,String> e:systemProperties.entrySet())
+            for (Map.Entry<String, String> e:systemProperties.entrySet())
             {
                 cmd.add("-D" + e.getKey() + "=" + e.getValue());
             }
@@ -233,7 +233,7 @@ public class JettyForker extends AbstractForker
         File javaHomeDir = new File(System.getProperty("java.home"));
         for (String javaexe : javaexes)
         {
-            File javabin = new File(javaHomeDir,fileSeparators("bin/" + javaexe));
+            File javabin = new File(javaHomeDir, fileSeparators("bin/" + javaexe));
             if (javabin.exists() && javabin.isFile())
             {
                 return javabin.getAbsolutePath();

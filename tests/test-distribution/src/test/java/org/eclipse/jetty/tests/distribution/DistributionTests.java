@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -74,7 +74,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http"))
         {
-            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             int port = distribution.freePort();
@@ -87,7 +87,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
 
                 run2.stop();
-                assertTrue(run2.awaitFor(5, TimeUnit.SECONDS));
+                assertTrue(run2.awaitFor(10, TimeUnit.SECONDS));
             }
         }
     }
@@ -108,10 +108,10 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
+            File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-jsp-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
             try (JettyHomeTester.Run run2 = distribution.start("jetty.quickstart.mode=GENERATE"))
@@ -134,7 +134,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                     startHttpClient();
                     ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
                     assertEquals(HttpStatus.OK_200, response.getStatus());
-                    assertThat(response.getContentAsString(), containsString("Hello"));
+                    assertThat(response.getContentAsString(), containsString("JSP Examples"));
                     assertThat(response.getContentAsString(), not(containsString("<%")));
                 }
             }
@@ -159,13 +159,13 @@ public class DistributionTests extends AbstractJettyHomeTest
         };
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             // Verify that --create-start-ini works
             assertTrue(Files.exists(jettyBase.resolve("start.ini")));
 
-            File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
+            File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-jsp-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
             int port = distribution.freePort();
@@ -176,7 +176,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
                 assertEquals(HttpStatus.OK_200, response.getStatus());
-                assertThat(response.getContentAsString(), containsString("Hello"));
+                assertThat(response.getContentAsString(), containsString("JSP Examples"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));
             }
         }
@@ -198,10 +198,10 @@ public class DistributionTests extends AbstractJettyHomeTest
         };
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
+            File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-jsp-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
             int port = distribution.freePort();
@@ -216,7 +216,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
                 assertEquals(HttpStatus.OK_200, response.getStatus());
-                assertThat(response.getContentAsString(), containsString("Hello"));
+                assertThat(response.getContentAsString(), containsString("JSP Examples"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));
             }
         }
@@ -249,10 +249,10 @@ public class DistributionTests extends AbstractJettyHomeTest
         };
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
+            File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-jsp-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
             int port = distribution.freePort();
@@ -267,7 +267,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 startHttpClient(() -> new HttpClient(new HttpClientTransportOverHTTP2(h2Client)));
                 ContentResponse response = client.GET((ssl ? "https" : "http") + "://localhost:" + port + "/test/index.jsp");
                 assertEquals(HttpStatus.OK_200, response.getStatus());
-                assertThat(response.getContentAsString(), containsString("Hello"));
+                assertThat(response.getContentAsString(), containsString("JSP Examples"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));
             }
         }
@@ -308,7 +308,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             assertTrue(run1.awaitFor(30, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
+            File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-jsp-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
             try (JettyHomeTester.Run run2 = distribution.start("jetty.unixsocket.path=" + sockFile.toString()))
@@ -318,7 +318,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 startHttpClient(() -> new HttpClient(new HttpClientTransportOverUnixSockets(sockFile.toString())));
                 ContentResponse response = client.GET("http://localhost/test/index.jsp");
                 assertEquals(HttpStatus.OK_200, response.getStatus());
-                assertThat(response.getContentAsString(), containsString("Hello"));
+                assertThat(response.getContentAsString(), containsString("JSP Examples"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));
             }
         }
@@ -345,11 +345,11 @@ public class DistributionTests extends AbstractJettyHomeTest
         };
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
             assertTrue(Files.exists(jettyBase.resolve("resources/log4j2.xml")));
 
-            File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
+            File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-jsp-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
             int port = distribution.freePort();
@@ -360,7 +360,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
                 assertEquals(HttpStatus.OK_200, response.getStatus());
-                assertThat(response.getContentAsString(), containsString("Hello"));
+                assertThat(response.getContentAsString(), containsString("JSP Examples"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));
                 assertTrue(Files.exists(jettyBase.resolve("resources/log4j2.xml")));
             }
@@ -391,7 +391,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             };
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             File webApp = distribution.resolveArtifact("org.eclipse.jetty.tests:test-websocket-client-provided-webapp:war:" + jettyVersion);
@@ -440,7 +440,7 @@ public class DistributionTests extends AbstractJettyHomeTest
         };
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             File webApp = distribution.resolveArtifact("org.eclipse.jetty.tests:test-websocket-client-webapp:war:" + jettyVersion);
@@ -487,7 +487,7 @@ public class DistributionTests extends AbstractJettyHomeTest
         };
         try (JettyHomeTester.Run run = distribution.start(args1))
         {
-            assertTrue(run.awaitConsoleLogsFor("Base directory was modified", 15, TimeUnit.SECONDS));
+            assertTrue(run.awaitConsoleLogsFor("Base directory was modified", 110, TimeUnit.SECONDS));
             Path target = jettyBase.resolve(outPath);
             assertTrue(Files.exists(target), "could not create " + target);
         }
@@ -507,7 +507,7 @@ public class DistributionTests extends AbstractJettyHomeTest
         };
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             Path logFile = distribution.getJettyBase().resolve("resources").resolve("jetty-logging.properties");
@@ -532,7 +532,7 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     /**
-     * This reproduces some classloading issue with MethodHandles in JDK14-15, this has been fixed in JDK16.
+     * This reproduces some classloading issue with MethodHandles in JDK14-110, This has been fixed in JDK16.
      * @throws Exception if there is an error during the test.
      * @see <a href="https://bugs.openjdk.java.net/browse/JDK-8244090">JDK-8244090</a>
      */
@@ -552,7 +552,7 @@ public class DistributionTests extends AbstractJettyHomeTest
         };
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
-            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
             File webApp = distribution.resolveArtifact("org.eclipse.jetty.tests:test-websocket-webapp:war:" + jettyVersion);
@@ -578,20 +578,20 @@ public class DistributionTests extends AbstractJettyHomeTest
 
                 // Verify /test1 is able to establish a WebSocket connection.
                 WsListener webSocketListener = new WsListener();
-                Session session = wsClient.connect(webSocketListener, serverUri.resolve("/test1")).get(5, TimeUnit.SECONDS);
+                Session session = wsClient.connect(webSocketListener, serverUri.resolve("/test1")).get(10, TimeUnit.SECONDS);
                 session.getRemote().sendString("echo message");
-                assertThat(webSocketListener.textMessages.poll(5, TimeUnit.SECONDS), is("echo message"));
+                assertThat(webSocketListener.textMessages.poll(10, TimeUnit.SECONDS), is("echo message"));
                 session.close();
-                assertTrue(webSocketListener.closeLatch.await(5, TimeUnit.SECONDS));
+                assertTrue(webSocketListener.closeLatch.await(10, TimeUnit.SECONDS));
                 assertThat(webSocketListener.closeCode, is(StatusCode.NORMAL));
 
                 // Verify /test2 is able to establish a WebSocket connection.
                 webSocketListener = new WsListener();
-                session = wsClient.connect(webSocketListener, serverUri.resolve("/test2")).get(5, TimeUnit.SECONDS);
+                session = wsClient.connect(webSocketListener, serverUri.resolve("/test2")).get(10, TimeUnit.SECONDS);
                 session.getRemote().sendString("echo message");
-                assertThat(webSocketListener.textMessages.poll(5, TimeUnit.SECONDS), is("echo message"));
+                assertThat(webSocketListener.textMessages.poll(10, TimeUnit.SECONDS), is("echo message"));
                 session.close();
-                assertTrue(webSocketListener.closeLatch.await(5, TimeUnit.SECONDS));
+                assertTrue(webSocketListener.closeLatch.await(10, TimeUnit.SECONDS));
                 assertThat(webSocketListener.closeCode, is(StatusCode.NORMAL));
             }
         }
@@ -623,10 +623,10 @@ public class DistributionTests extends AbstractJettyHomeTest
         Path jettyBase = newTestJettyBaseDirectory();
 
         String jettyVersion = System.getProperty("jettyVersion");
-        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance() //
-            .jettyVersion(jettyVersion) //
-            .jettyBase(jettyBase) //
-            .mavenLocalRepository(System.getProperty("mavenRepoPath")) //
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String[] args = {
@@ -636,18 +636,18 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start(args))
         {
-            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            Files.copy(Paths.get("src/test/resources/log4j2.xml"), //
-                Paths.get(jettyBase.toString(), "resources").resolve("log4j2.xml"), //
+            Files.copy(Paths.get("src/test/resources/log4j2.xml"),
+                Paths.get(jettyBase.toString(), "resources").resolve("log4j2.xml"),
                 StandardCopyOption.REPLACE_EXISTING);
 
             int port = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
                 assertTrue(run2.awaitLogsFileFor(
-                    jettyBase.resolve("logs").resolve("jetty.log"), //
+                    jettyBase.resolve("logs").resolve("jetty.log"),
                     "Started Server@", 10, TimeUnit.SECONDS));
 
                 startHttpClient();
@@ -655,7 +655,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
 
                 run2.stop();
-                assertTrue(run2.awaitFor(5, TimeUnit.SECONDS));
+                assertTrue(run2.awaitFor(10, TimeUnit.SECONDS));
             }
         }
     }

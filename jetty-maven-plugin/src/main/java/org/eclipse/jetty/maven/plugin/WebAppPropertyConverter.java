@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -184,7 +184,7 @@ public class WebAppPropertyConverter
      * 
      * @throws Exception
      */
-    public static void fromProperties(MavenWebAppContext webApp, Properties webAppProperties, Server server, Map<String,String> jettyProperties)
+    public static void fromProperties(MavenWebAppContext webApp, Properties webAppProperties, Server server, Map<String, String> jettyProperties)
         throws Exception
     {
         if (webApp == null)
@@ -308,7 +308,7 @@ public class WebAppPropertyConverter
      * @param jettyProperties jetty properties to use if there is a context xml file to apply
      * @throws Exception
      */
-    public static void fromProperties(MavenWebAppContext webApp, File propsFile, Server server, Map<String,String> jettyProperties)
+    public static void fromProperties(MavenWebAppContext webApp, File propsFile, Server server, Map<String, String> jettyProperties)
         throws Exception
     {
 

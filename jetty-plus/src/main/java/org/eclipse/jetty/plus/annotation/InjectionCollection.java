@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -38,7 +38,7 @@ public class InjectionCollection
 
     public static final String INJECTION_COLLECTION = "org.eclipse.jetty.injectionCollection";
 
-    private final ConcurrentMap<String, Set<Injection>> _injectionMap = new ConcurrentHashMap<>();//map of classname to injections
+    private final ConcurrentMap<String, Set<Injection>> _injectionMap = new ConcurrentHashMap<>(); //map of classname to injections
 
     public void add(Injection injection)
     {

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,7 +13,8 @@
 
 package org.eclipse.jetty.demos;
 
-import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.webapp.Configurations;
@@ -21,7 +22,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
 
 public class OneWebApp
 {
-    public static Server createServer(int port)
+    public static Server createServer(int port) throws IOException
     {
         // Create a basic jetty server object that will listen on port 8080.
         // Note that if you set this to port 0 then a randomly available port
@@ -38,8 +39,8 @@ public class OneWebApp
         // PlusConfiguration) to choosing where the webapp will unpack itself.
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        File warFile = JettyDemoBase.resolve("webapps/demo-async-rest.war").toFile();
-        webapp.setWar(warFile.getAbsolutePath());
+        Path warFile = JettyDemos.find("demo-async-rest/demo-async-rest-webapp/target/demo-async-rest-webapp-@VER@.war");
+        webapp.setWar(warFile.toString());
 
         // A WebAppContext is a ContextHandler as well so it needs to be set to
         // the server so it is aware of where to send the appropriate requests.

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -81,8 +81,7 @@ public interface Extension extends IncomingFrames, OutgoingFrames
     void setNextOutgoingFrames(OutgoingFrames nextOutgoing);
 
     /**
-     * Set the {@link CoreSession} for this Extension.
-     * @param coreSession
+     * @param coreSession the {@link CoreSession} for this Extension.
      */
     void setCoreSession(CoreSession coreSession);
 }

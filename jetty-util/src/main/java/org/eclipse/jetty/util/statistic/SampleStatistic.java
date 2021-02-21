@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -119,6 +119,6 @@ public class SampleStatistic
     @Override
     public String toString()
     {
-        return String.format("%s@%x{count=%d,mean=%d,total=%d,stddev=%f}", getClass().getSimpleName(), hashCode(), getCount(), getMax(), getTotal(), getStdDev());
+        return String.format("%s@%x{count=%d,max=%d,mean=%f,total=%d,stddev=%f}", getClass().getSimpleName(), hashCode(), getCount(), getMax(), getMean(), getTotal(), getStdDev());
     }
 }

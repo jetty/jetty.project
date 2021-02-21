@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -31,7 +31,6 @@ import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
@@ -119,6 +118,7 @@ import org.slf4j.LoggerFactory;
  * If a ETag is present in the Response headers, and GzipHandler is compressing the
  * contents, it will add the {@code --gzip} suffix before the Response headers are committed
  * and sent to the User Agent.
+ * Note that the suffix used is determined by {@link CompressedContentFormat#ETAG_SEPARATOR}
  * </p>
  * <p>
  * This implementation relies on an Jetty internal {@link org.eclipse.jetty.server.HttpOutput.Interceptor}
@@ -149,13 +149,13 @@ import org.slf4j.LoggerFactory;
 public class GzipHandler extends HandlerWrapper implements GzipFactory
 {
     public static final EnumSet<HttpHeader> ETAG_HEADERS = EnumSet.of(HttpHeader.IF_MATCH, HttpHeader.IF_NONE_MATCH);
+    public static final String GZIP_HANDLER_ETAGS = "o.e.j.s.h.gzip.GzipHandler.etag";
     public static final String GZIP = "gzip";
     public static final String DEFLATE = "deflate";
     public static final int DEFAULT_MIN_GZIP_SIZE = 32;
     public static final int BREAK_EVEN_GZIP_SIZE = 23;
     private static final Logger LOG = LoggerFactory.getLogger(GzipHandler.class);
     private static final HttpField X_CE_GZIP = new PreEncodedHttpField("X-Content-Encoding", "gzip");
-    private static final HttpField TE_CHUNKED = new PreEncodedHttpField(HttpHeader.TRANSFER_ENCODING, HttpHeaderValue.CHUNKED.asString());
     private static final Pattern COMMA_GZIP = Pattern.compile(".*, *gzip");
 
     private InflaterPool _inflaterPool;
@@ -599,23 +599,17 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
                     case IF_MATCH:
                     case IF_NONE_MATCH:
                     {
-                        String etag = field.getValue();
-                        int i = etag.indexOf(CompressedContentFormat.GZIP._etagQuote);
-                        if (i <= 0 || alreadyGzipped)
+                        String etags = field.getValue();
+                        String etagsNoSuffix = CompressedContentFormat.GZIP.stripSuffixes(etags);
+                        if (etagsNoSuffix.equals(etags))
                             newFields.add(field);
                         else
                         {
-                            baseRequest.setAttribute("o.e.j.s.h.gzip.GzipHandler.etag", etag);
-                            while (i >= 0)
-                            {
-                                etag = etag.substring(0, i) + etag.substring(i + CompressedContentFormat.GZIP._etag.length());
-                                i = etag.indexOf(CompressedContentFormat.GZIP._etagQuote, i);
-                            }
-                            newFields.add(new HttpField(field.getHeader(), etag));
+                            newFields.add(new HttpField(field.getHeader(), etagsNoSuffix));
+                            baseRequest.setAttribute(GZIP_HANDLER_ETAGS, etags);
                         }
                         break;
                     }
-
                     case CONTENT_LENGTH:
                         newFields.add(inflated ? new HttpField("X-Content-Length", field.getValue()) : field);
                         break;

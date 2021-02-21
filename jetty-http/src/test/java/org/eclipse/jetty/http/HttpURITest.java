@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,7 +13,13 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.Arrays;
+import java.util.stream.Stream;
+
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -230,6 +236,13 @@ public class HttpURITest
         assertEquals("p2", uri.getParam());
         assertEquals("name=value", uri.getQuery());
 
+        uri = builder.pathQuery("/f%30%30;p0/bar;p1;p2").asImmutable();
+        assertEquals("http://host:8888/f%30%30;p0/bar;p1;p2", uri.toString());
+        assertEquals("/f%30%30;p0/bar;p1;p2", uri.getPath());
+        assertEquals("/f00/bar", uri.getDecodedPath());
+        assertEquals("p2", uri.getParam());
+        assertEquals(null, uri.getQuery());
+
         uri = builder.query("other=123456").asImmutable();
         assertEquals("http://host:8888/f%30%30;p0/bar;p1;p2?other=123456", uri.toString());
         assertEquals("/f%30%30;p0/bar;p1;p2", uri.getPath());
@@ -299,5 +312,80 @@ public class HttpURITest
 
         uri = HttpURI.from("http:./path/info/.");
         assertEquals("path/info/", uri.getDecodedPath());
+    }
+
+    public static Stream<Arguments> decodePathTests()
+    {
+        return Arrays.stream(new Object[][]
+            {
+                // Simple path example
+                {"http://host/path/info", "/path/info", false},
+                {"//host/path/info", "/path/info", false},
+                {"/path/info", "/path/info", false},
+
+                // legal non ambiguous relative paths
+                {"http://host/../path/info", null, false},
+                {"http://host/path/../info", "/info", false},
+                {"http://host/path/./info", "/path/info", false},
+                {"//host/path/../info", "/info", false},
+                {"//host/path/./info", "/path/info", false},
+                {"/path/../info", "/info", false},
+                {"/path/./info", "/path/info", false},
+                {"path/../info", "info", false},
+                {"path/./info", "path/info", false},
+
+                // illegal paths
+                {"//host/../path/info", null, false},
+                {"/../path/info", null, false},
+                {"../path/info", null, false},
+                {"/path/%XX/info", null, false},
+                {"/path/%2/F/info", null, false},
+
+                // ambiguous dot encodings or parameter inclusions
+                {"scheme://host/path/%2e/info", "/path/./info", true},
+                {"scheme:/path/%2e/info", "/path/./info", true},
+                {"/path/%2e/info", "/path/./info", true},
+                {"path/%2e/info/", "path/./info/", true},
+                {"/path/%2e%2e/info", "/path/../info", true},
+                {"/path/%2e%2e;/info", "/path/../info", true},
+                {"/path/%2e%2e;param/info", "/path/../info", true},
+                {"/path/%2e%2e;param;other/info;other", "/path/../info", true},
+                {"/path/.;/info", "/path/./info", true},
+                {"/path/.;param/info", "/path/./info", true},
+                {"/path/..;/info", "/path/../info", true},
+                {"/path/..;param/info", "/path/../info", true},
+                {"%2e/info", "./info", true},
+                {"%2e%2e/info", "../info", true},
+                {"%2e%2e;/info", "../info", true},
+                {".;/info", "./info", true},
+                {".;param/info", "./info", true},
+                {"..;/info", "../info", true},
+                {"..;param/info", "../info", true},
+                {"%2e", ".", true},
+                {"%2e.", "..", true},
+                {".%2e", "..", true},
+                {"%2e%2e", "..", true},
+
+                // ambiguous segment separators
+                {"/path/%2f/info", "/path///info", true},
+                {"%2f/info", "//info", true},
+                {"%2F/info", "//info", true},
+            }).map(Arguments::of);
+    }
+
+    @ParameterizedTest
+    @MethodSource("decodePathTests")
+    public void testDecodedPath(String input, String decodedPath, boolean ambiguous)
+    {
+        try
+        {
+            HttpURI uri = HttpURI.from(input);
+            assertThat(uri.getDecodedPath(), is(decodedPath));
+            assertThat(uri.hasAmbiguousSegment(), is(ambiguous));
+        }
+        catch (Exception e)
+        {
+            assertThat(decodedPath, nullValue());
+        }
     }
 }

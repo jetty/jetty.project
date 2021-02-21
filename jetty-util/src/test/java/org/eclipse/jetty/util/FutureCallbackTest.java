@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -175,7 +175,7 @@ public class FutureCallbackTest
 
         latch.await();
         long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        CancellationException e = assertThrows(CancellationException.class,() -> fcb.get(10000, TimeUnit.MILLISECONDS));
+        CancellationException e = assertThrows(CancellationException.class, () -> fcb.get(10000, TimeUnit.MILLISECONDS));
         assertThat(e.getCause(), Matchers.instanceOf(CancellationException.class));
 
         assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, Matchers.greaterThan(10L));

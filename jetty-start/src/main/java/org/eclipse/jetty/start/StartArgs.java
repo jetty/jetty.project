@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -778,7 +778,7 @@ public class StartArgs
             }
             else
             {
-                cmd.addRawArg("-cp");
+                cmd.addRawArg("--class-path");
                 cmd.addRawArg(classpath.toString());
             }
         }
@@ -1528,10 +1528,14 @@ public class StartArgs
             {
                 JavaVersion ver = JavaVersion.parse(value);
                 properties.setProperty("java.version.platform", Integer.toString(ver.getPlatform()), source);
+
                 // @deprecated - below will be removed in Jetty 10.x
                 properties.setProperty("java.version.major", Integer.toString(ver.getMajor()), "Deprecated");
                 properties.setProperty("java.version.minor", Integer.toString(ver.getMinor()), "Deprecated");
                 properties.setProperty("java.version.micro", Integer.toString(ver.getMicro()), "Deprecated");
+
+                // ALPN feature exists
+                properties.setProperty("runtime.feature.alpn", Boolean.toString(isMethodAvailable(javax.net.ssl.SSLParameters.class, "getApplicationProtocols", null)), source);
             }
             catch (Throwable x)
             {
@@ -1545,6 +1549,19 @@ public class StartArgs
         if (key.equals("maven.repo.uri"))
         {
             this.mavenBaseUri = value;
+        }
+    }
+
+    private boolean isMethodAvailable(Class<?> clazz, String methodName, Class<?>[] params)
+    {
+        try
+        {
+            clazz.getMethod(methodName, params);
+            return true;
+        }
+        catch (NoSuchMethodException e)
+        {
+            return false;
         }
     }
 

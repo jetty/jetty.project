@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -113,7 +113,7 @@ public class DispatchServletTest
         context.addServlet(DefaultServlet.class, "/");
 
         String[] selfRefs =
-            {"/dispatch/forward", "/dispatch/includeS", "/dispatch/includeW", "/dispatch/includeN",};
+            {"/dispatch/forward", "/dispatch/includeS", "/dispatch/includeW", "/dispatch/includeN"};
 
         /*
          * Number of nested dispatch requests. 220 is a good value, as it won't

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -234,7 +234,7 @@ class WebSocketProxy
             }
 
             if (failServer2Proxy)
-                server2Proxy.fail(failure,callback);
+                server2Proxy.fail(failure, callback);
             else
                 callback.failed(failure);
         }
@@ -379,7 +379,7 @@ class WebSocketProxy
                         try
                         {
                             state = State.CONNECTING;
-                            client.connect(this, serverUri).whenComplete((s,t) ->
+                            client.connect(this, serverUri).whenComplete((s, t) ->
                             {
                                 if (t != null)
                                     onConnectFailure(t, callback);
@@ -572,7 +572,7 @@ class WebSocketProxy
             }
 
             if (failClient2Proxy)
-                client2Proxy.fail(failure,callback);
+                client2Proxy.fail(failure, callback);
             else
                 callback.failed(failure);
         }

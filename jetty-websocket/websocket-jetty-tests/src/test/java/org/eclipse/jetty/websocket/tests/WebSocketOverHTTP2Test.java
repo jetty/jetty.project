@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -347,8 +347,8 @@ public class WebSocketOverHTTP2Test
             });
             factory.addMapping("/ws/connectionClose", (request, response) ->
             {
-                UpgradeHttpServletRequest servletRequest = (UpgradeHttpServletRequest)request.getHttpServletRequest();
-                Request baseRequest = servletRequest.getBaseRequest();
+                UpgradeHttpServletRequest upgradeRequest = (UpgradeHttpServletRequest)request.getHttpServletRequest();
+                Request baseRequest = (Request)upgradeRequest.getHttpServletRequest();
                 baseRequest.getHttpChannel().getEndPoint().close();
                 return new EchoSocket();
             });

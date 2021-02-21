@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.demos;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.net.URL;
+import java.nio.file.Path;
 import javax.naming.NamingException;
 
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
@@ -46,8 +46,8 @@ public class ServerWithAnnotations
         webapp.addConfiguration(new EnvConfiguration(), new PlusConfiguration(), new AnnotationConfiguration());
 
         webapp.setContextPath("/");
-        File warFile = JettyDemoBase.resolve("webapps/demo-spec.war").toFile();
-        webapp.setWar(warFile.getAbsolutePath());
+        Path warFile = JettyDemos.find("demo-spec/demo-spec-webapp/target/demo-spec-webapp-@VER@.war");
+        webapp.setWar(warFile.toString());
         webapp.setAttribute(
             "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
             ".*/jetty-servlet-api-[^/]*\\.jar$");

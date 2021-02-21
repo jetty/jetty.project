@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -138,7 +138,7 @@ public class ResourceService
     public void setPrecompressedFormats(CompressedContentFormat[] precompressedFormats)
     {
         _precompressedFormats = precompressedFormats;
-        _preferredEncodingOrder = stream(_precompressedFormats).map(f -> f._encoding).toArray(String[]::new);
+        _preferredEncodingOrder = stream(_precompressedFormats).map(f -> f.getEncoding()).toArray(String[]::new);
     }
 
     public void setEncodingCacheSize(int encodingCacheSize)
@@ -279,7 +279,7 @@ public class ResourceService
                     if (LOG.isDebugEnabled())
                         LOG.debug("precompressed={}", precompressedContent);
                     content = precompressedContent;
-                    response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), precompressedContentEncoding._encoding);
+                    response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), precompressedContentEncoding.getEncoding());
                 }
             }
 
@@ -352,7 +352,7 @@ public class ResourceService
         {
             for (CompressedContentFormat format : availableFormats)
             {
-                if (format._encoding.equals(encoding))
+                if (format.getEncoding().equals(encoding))
                     return format;
             }
 
@@ -526,9 +526,9 @@ public class ResourceService
                     if (etag != null)
                     {
                         QuotedCSV quoted = new QuotedCSV(true, ifm);
-                        for (String tag : quoted)
+                        for (String etagWithSuffix : quoted)
                         {
-                            if (CompressedContentFormat.tagEquals(etag, tag))
+                            if (CompressedContentFormat.tagEquals(etag, etagWithSuffix))
                             {
                                 match = true;
                                 break;
@@ -684,7 +684,7 @@ public class ResourceService
                 putHeaders(response, content, Response.USE_KNOWN_CONTENT_LENGTH);
 
                 // write the content asynchronously if supported
-                if (request.isAsyncSupported() && content.getContentLengthValue() > response.getBufferSize())
+                if (request.isAsyncSupported())
                 {
                     final AsyncContext context = request.startAsync();
                     context.setTimeout(0);
@@ -850,19 +850,19 @@ public class ResourceService
             Response r = (Response)response;
             r.putHeaders(content, contentLength, _etags);
             HttpFields.Mutable f = r.getHttpFields();
-            if (_acceptRanges)
+            if (_acceptRanges && !response.containsHeader(HttpHeader.ACCEPT_RANGES.asString()))
                 f.put(ACCEPT_RANGES);
 
-            if (_cacheControl != null)
+            if (_cacheControl != null && !response.containsHeader(HttpHeader.CACHE_CONTROL.asString()))
                 f.put(_cacheControl);
         }
         else
         {
             Response.putHeaders(response, content, contentLength, _etags);
-            if (_acceptRanges)
+            if (_acceptRanges && !response.containsHeader(HttpHeader.ACCEPT_RANGES.name()))
                 response.setHeader(ACCEPT_RANGES.getName(), ACCEPT_RANGES.getValue());
 
-            if (_cacheControl != null)
+            if (_cacheControl != null && !response.containsHeader(HttpHeader.CACHE_CONTROL.name()))
                 response.setHeader(_cacheControl.getName(), _cacheControl.getValue());
         }
     }

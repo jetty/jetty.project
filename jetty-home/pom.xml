@@ -444,7 +444,7 @@
               <excludeArtifactIds>infinispan-embedded,infinispan-remote,jetty-test-helper,alpn-api,javax.security.auth.message,javax.activation</excludeArtifactIds>
               <classifier>config</classifier>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
-              <excludes>META-INF/**</excludes>
+              <excludes>META-INF/**,webapps/**,start.d/**,start.ini</excludes>
               <outputDirectory>${assembly-directory}</outputDirectory>
             </configuration>
           </execution>
@@ -531,14 +531,6 @@
             </configuration>
           </execution>
         </executions>
-      </plugin>
-      <!-- No point performing PMD in assembly project -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-pmd-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
       </plugin>
     </plugins>
   </build>
@@ -834,6 +826,22 @@
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>demo-proxy-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>config</classifier>
+      <type>jar</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>demo-simple-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>config</classifier>
+      <type>jar</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>demo-jsp-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>config</classifier>
       <type>jar</type>

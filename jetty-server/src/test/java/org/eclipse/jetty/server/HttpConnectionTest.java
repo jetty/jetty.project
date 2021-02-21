@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -497,23 +497,7 @@ public class HttpConnectionTest
     public void testBadPathDotDotPath() throws Exception
     {
         String response = connector.getResponse("GET /ooops/../../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
-        checkContains(response, 0, "HTTP/1.1 400 Bad Request");
-        checkContains(response, 0, "reason: Bad URI");
-    }
-
-    @Test
-    public void testOKPathEncodedDotDotPath() throws Exception
-    {
-        String response = connector.getResponse("GET /ooops/%2e%2e/path HTTP/1.0\r\nHost: localhost:80\r\n\n");
-        checkContains(response, 0, "HTTP/1.1 200 OK");
-        checkContains(response, 0, "pathInfo=/path");
-    }
-
-    @Test
-    public void testBadPathEncodedDotDotPath() throws Exception
-    {
-        String response = connector.getResponse("GET /ooops/%2e%2e/%2e%2e/path HTTP/1.0\r\nHost: localhost:80\r\n\n");
-        checkContains(response, 0, "HTTP/1.1 400 Bad Request");
+        checkContains(response, 0, "HTTP/1.1 400 ");
         checkContains(response, 0, "reason: Bad URI");
     }
 
@@ -521,7 +505,7 @@ public class HttpConnectionTest
     public void testBadDotDotPath() throws Exception
     {
         String response = connector.getResponse("GET ../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
-        checkContains(response, 0, "HTTP/1.1 400 Bad Request");
+        checkContains(response, 0, "HTTP/1.1 400 ");
         checkContains(response, 0, "reason: Bad URI");
     }
 
@@ -529,15 +513,7 @@ public class HttpConnectionTest
     public void testBadSlashDotDotPath() throws Exception
     {
         String response = connector.getResponse("GET /../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
-        checkContains(response, 0, "HTTP/1.1 400 Bad Request");
-        checkContains(response, 0, "reason: Bad URI");
-    }
-
-    @Test
-    public void testEncodedBadDotDotPath() throws Exception
-    {
-        String response = connector.getResponse("GET %2e%2e/path HTTP/1.0\r\nHost: localhost:80\r\n\n");
-        checkContains(response, 0, "HTTP/1.1 400 Bad Request");
+        checkContains(response, 0, "HTTP/1.1 400 ");
         checkContains(response, 0, "reason: Bad URI");
     }
 

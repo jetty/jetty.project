@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -192,7 +192,7 @@ public class JarResourceTest
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
         String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";
 
-        Resource resource = new JarFileResource(URI.create(uri).toURL(),false);
+        Resource resource = new JarFileResource(URI.create(uri).toURL(), false);
         Resource rez = resource.addPath("rez/");
 
         assertThat("path /rez/ is a dir", rez.isDirectory(), is(true));
@@ -220,7 +220,7 @@ public class JarResourceTest
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
         String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";
 
-        Resource resource = new JarFileResource(URI.create(uri).toURL(),false);
+        Resource resource = new JarFileResource(URI.create(uri).toURL(), false);
         Resource rez = resource.addPath("rez/oddities/");
 
         assertThat("path /rez/oddities/ is a dir", rez.isDirectory(), is(true));
@@ -244,7 +244,7 @@ public class JarResourceTest
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
         String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";
 
-        Resource resource = new JarFileResource(URI.create(uri).toURL(),false);
+        Resource resource = new JarFileResource(URI.create(uri).toURL(), false);
         Resource anotherDir = resource.addPath("rez/another dir/");
 
         assertThat("path /rez/another dir/ is a dir", anotherDir.isDirectory(), is(true));

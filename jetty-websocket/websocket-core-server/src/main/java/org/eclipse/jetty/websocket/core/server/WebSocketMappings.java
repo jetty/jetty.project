@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -34,7 +34,6 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.server.internal.CreatorNegotiator;
-import org.eclipse.jetty.websocket.core.server.internal.Handshaker;
 import org.eclipse.jetty.websocket.core.server.internal.HandshakerSelector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,6 +123,11 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
         this.components = components;
     }
 
+    public Handshaker getHandshaker()
+    {
+        return handshaker;
+    }
+
     @Override
     public void lifeCycleStopping(LifeCycle context)
     {
@@ -176,7 +180,7 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
      */
     public void addMapping(PathSpec pathSpec, WebSocketCreator creator, FrameHandlerFactory factory, Configuration.Customizer customizer) throws WebSocketException
     {
-        mappings.put(pathSpec, new CreatorNegotiator(creator, factory, customizer));
+        mappings.put(pathSpec, WebSocketNegotiator.from(creator, factory, customizer));
     }
 
     /**
