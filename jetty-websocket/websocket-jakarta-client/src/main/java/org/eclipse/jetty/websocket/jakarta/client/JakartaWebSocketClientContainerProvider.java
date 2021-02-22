@@ -15,6 +15,7 @@ package org.eclipse.jetty.websocket.jakarta.client;
 
 import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.WebSocketContainer;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 
@@ -50,29 +51,26 @@ public class JakartaWebSocketClientContainerProvider extends ContainerProvider
     @Override
     protected WebSocketContainer getContainer()
     {
-        // See: https://github.com/javaee/websocket-spec/issues/212
-        // TODO: on multiple executions, do we warn?
-        // TODO: do we care?
-        // TODO: on multiple executions, do we share bufferPool/executors/etc?
-        // TODO: do we want to provide a non-standard way to configure to always return the same clientContainer based on a config somewhere? (system.property?)
+        return getContainer(null);
+    }
 
-        JakartaWebSocketClientContainer clientContainer = new JakartaWebSocketClientContainer();
-
-        // Register as JVM runtime shutdown hook?
-        ShutdownThread.register(clientContainer);
-
-        if (!clientContainer.isStarted())
-        {
-            try
-            {
-                clientContainer.start();
-            }
-            catch (Exception e)
-            {
-                throw new RuntimeException("Unable to start Client Container", e);
-            }
-        }
-
+    /**
+     * Get a new instance of a client {@link WebSocketContainer} which uses a supplied {@link HttpClient}.
+     * @param httpClient a pre-configured {@link HttpClient} to be used by the implementation.
+     * @see #getContainer()
+     */
+    public WebSocketContainer getContainer(HttpClient httpClient)
+    {
+        JakartaWebSocketClientContainer clientContainer = new JakartaWebSocketClientContainer(httpClient);
+        registerShutdown(clientContainer);
         return clientContainer;
+    }
+
+    // See: https://github.com/eclipse-ee4j/websocket-api/issues/212
+    private void registerShutdown(JakartaWebSocketClientContainer container)
+    {
+        // Register as JVM runtime shutdown hook.
+        ShutdownThread.register(container);
+        LifeCycle.start(container);
     }
 }
