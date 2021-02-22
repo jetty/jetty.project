@@ -264,7 +264,10 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
             }
             case HOME:
             case DISTRO:
+            case EXTERNAL:
             {
+                if (deployMode != DeploymentMode.EXTERNAL)
+                    getLog().warn(deployMode + " mode is deprecated, use mode EXTERNAL");
                 verifyPomConfiguration();
                 if (reconfigure)
                 {

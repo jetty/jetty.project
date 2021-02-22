@@ -69,7 +69,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
 
     /**
      * Only one of the following will be used, depending the mode
-     * the mojo is started in: EMBED, FORK, HOME
+     * the mojo is started in: EMBED, FORK, EXTERNAL
      */
     protected JettyEmbedder embedder;
     protected JettyForker forker;
@@ -366,9 +366,12 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
                     scanner.start();
                 break;
             }
-            case HOME:
             case DISTRO:
+            case HOME:
+            case EXTERNAL:
             {
+                if (deployMode != DeploymentMode.EXTERNAL)
+                    getLog().warn(deployMode + " mode is deprecated, use mode EXTERNAL");
                 verifyPomConfiguration();
                 if (reconfigure)
                 {
