@@ -71,7 +71,6 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     protected WebSocketCoreClient coreClient;
     protected Function<WebSocketComponents, WebSocketCoreClient> coreClientFactory;
     private final JavaxWebSocketClientFrameHandlerFactory frameHandlerFactory;
-    private boolean allowShutdownWithContextHandler = true;
 
     public JavaxWebSocketClientContainer()
     {
@@ -100,11 +99,6 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         super(components);
         this.coreClientFactory = coreClientFactory;
         this.frameHandlerFactory = new JavaxWebSocketClientFrameHandlerFactory(this);
-    }
-
-    public void allowShutdownWithContextHandler(boolean allowShutdownWithContextHandler)
-    {
-        this.allowShutdownWithContextHandler = allowShutdownWithContextHandler;
     }
 
     protected HttpClient getHttpClient()
@@ -304,7 +298,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
             LOG.debug("doClientStart() {}", this);
 
         // If we are running in Jetty register shutdown with the ContextHandler.
-        if (allowShutdownWithContextHandler && addToContextHandler())
+        if (addToContextHandler())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Shutdown registered with ContextHandler");

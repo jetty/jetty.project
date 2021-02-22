@@ -28,8 +28,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketShutdownContainer;
 import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
 import org.junit.jupiter.api.AfterEach;
@@ -42,14 +40,13 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class JavaxClientShutdownWithServerTest
+public class JavaxClientShutdownWithServerEmbeddedTest
 {
     private Server server;
     private ServletContextHandler contextHandler;
     private URI serverUri;
     private HttpClient httpClient;
     private volatile WebSocketContainer container;
-    private ContainerLifeCycle shutdownContainer;
 
     public class ContextHandlerShutdownServlet extends HttpServlet
     {
@@ -57,18 +54,6 @@ public class JavaxClientShutdownWithServerTest
         protected void doGet(HttpServletRequest req, HttpServletResponse resp)
         {
             container = ContainerProvider.getWebSocketContainer();
-        }
-    }
-
-    public class ServletContainerInitializerShutdownServlet extends HttpServlet
-    {
-        @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-        {
-            JavaxWebSocketClientContainer clientContainer = new JavaxWebSocketClientContainer();
-            clientContainer.allowShutdownWithContextHandler(false);
-            LifeCycle.start(clientContainer);
-            container = clientContainer;
         }
     }
 
@@ -81,13 +66,11 @@ public class JavaxClientShutdownWithServerTest
 
         contextHandler = new ServletContextHandler();
         contextHandler.setContextPath("/");
-        contextHandler.addServlet(new ServletHolder(new ContextHandlerShutdownServlet()), "/contextHandler");
-        contextHandler.addServlet(new ServletHolder(new ServletContainerInitializerShutdownServlet()), "/shutdownContainer");
+        contextHandler.addServlet(new ServletHolder(new ContextHandlerShutdownServlet()), "/");
         server.setHandler(contextHandler);
 
         // Because we are using embedded we must manually add the Javax WS Client Shutdown SCI.
         JavaxWebSocketShutdownContainer javaxWebSocketClientShutdown = new JavaxWebSocketShutdownContainer();
-        shutdownContainer = javaxWebSocketClientShutdown;
         contextHandler.addServletContainerInitializer(javaxWebSocketClientShutdown);
 
         server.start();
@@ -107,7 +90,7 @@ public class JavaxClientShutdownWithServerTest
     @Test
     public void testShutdownWithContextHandler() throws Exception
     {
-        ContentResponse response = httpClient.GET(serverUri.resolve("/contextHandler"));
+        ContentResponse response = httpClient.GET(serverUri);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
 
         assertNotNull(container);
@@ -117,28 +100,6 @@ public class JavaxClientShutdownWithServerTest
 
         // The container should be a bean on the ContextHandler.
         Collection<WebSocketContainer> containedBeans = contextHandler.getBeans(WebSocketContainer.class);
-        assertThat(containedBeans.size(), is(1));
-        assertThat(containedBeans.toArray()[0], is(container));
-
-        // The client should be attached to the servers LifeCycle and should stop with it.
-        server.stop();
-        assertThat(clientContainer.isRunning(), is(false));
-        assertThat(server.getContainedBeans(WebSocketContainer.class), empty());
-    }
-
-    @Test
-    public void testShutdownWithShutdownContainer() throws Exception
-    {
-        ContentResponse response = httpClient.GET(serverUri.resolve("/shutdownContainer"));
-        assertThat(response.getStatus(), is(HttpStatus.OK_200));
-
-        assertNotNull(container);
-        assertThat(container, instanceOf(JavaxWebSocketClientContainer.class));
-        JavaxWebSocketClientContainer clientContainer = (JavaxWebSocketClientContainer)container;
-        assertThat(clientContainer.isRunning(), is(true));
-
-        // The container should be a bean on the ContextHandler.
-        Collection<WebSocketContainer> containedBeans = shutdownContainer.getBeans(WebSocketContainer.class);
         assertThat(containedBeans.size(), is(1));
         assertThat(containedBeans.toArray()[0], is(container));
 

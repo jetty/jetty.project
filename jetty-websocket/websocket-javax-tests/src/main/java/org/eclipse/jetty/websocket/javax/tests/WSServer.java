@@ -17,7 +17,9 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Random;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -46,7 +48,16 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
 {
     private static final Logger LOG = LoggerFactory.getLogger(WSServer.class);
     private final Path testDir;
-    private ContextHandlerCollection contexts = new ContextHandlerCollection();
+    private final ContextHandlerCollection contexts = new ContextHandlerCollection();
+
+    public WSServer()
+    {
+        String baseDirName = Long.toString(Math.abs(new Random().nextLong()));
+        this.testDir = MavenTestingUtils.getTargetTestingPath(baseDirName);
+        if (Files.exists(testDir))
+            throw new IllegalStateException("TestDir already exists.");
+        FS.ensureDirExists(testDir);
+    }
 
     public WSServer(Path testDir)
     {

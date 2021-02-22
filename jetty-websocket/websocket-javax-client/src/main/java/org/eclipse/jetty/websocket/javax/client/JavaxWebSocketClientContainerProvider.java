@@ -67,5 +67,4 @@ public class JavaxWebSocketClientContainerProvider extends ContainerProvider
         LifeCycle.start(clientContainer);
         return clientContainer;
     }
-    
 }
