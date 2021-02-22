@@ -1,4 +1,59 @@
-jetty-11.0.1-SNAPSHOT
+jetty-11.0.2-SNAPSHOT
+
+jetty-11.0.1 - 19 February 2021
+ + 1673 jetty-demo/etc/keystore should not be distributed
+ + 4275 Path Normalization/Traversal - Context Matching
+ + 4515 Validation extension should not downcast CoreSession
+ + 5492 Add ability to manage start modules by java feature
+ + 5499 Improve temporary buffer usage for WebSocket PerMessageDeflate.
+ + 5605 Blocked IO Thread not woken
+ + 5689 Jetty ssl keystorePath doesn't work with absolute path
+ + 5706 The WebSocket ServerUpgradeResponse can produce NPE in jetty 10.
+ + 5725 Review Preventers
+ + 5752 Fix Servlet 5 Schema redirects
+ + 5755 Cannot configure maxDynamicTableSize on HTTP2Client
+ + 5757 Review Inferred vs Assumed charsets
+ + 5759 Update jakarta transaction, mail and injection apis
+ + 5761 Remove unneeded dependencies from apache-jsp module
+ + 5772 Fix jndi mail problem in jetty-11
+ + 5779 Include can set pathInContext
+ + 5783 Fix ConnectionStatistics.*Rate() methods
+ + 5784 Apache 2.0 license incorrectly stated as "secondary license" to EPL 2.0
+ + 5785 Reduce log level for WebSocket connections closed by clients
+ + 5787 Make ManagedSelector report better JMX data
+ + 5794 ServerConnector leaks closed sockets which can lead to file descriptor
+   exhaustion
+ + 5799 Allow specifying the duration an object can stay in a pool
+ + 5824 Build up of ConstraintMappings when stopping and starting WebAppContext
+ + 5830 Jetty-util contains wrong Import-Package
+ + 5844 --download flag to jetty-start causes NullPointerException
+ + 5845 Use UTF-8 encoding for client basic auth if requested
+ + 5850 NPE at Principal WebSocketSession.getUserPrincipal()
+ + 5851 org.eclipse.jetty.websocket.servlet.WebSocketServlet cleanup
+ + 5855 HttpClient may not send queued requests
+ + 5859 Classloader leaks from ShutdownThread and QueuedThreadPool
+ + 5866 Support Programmatic WebSocket upgrade in Jetty 10
+ + 5868 Cleaning up request attributes after websocket upgrade in Jetty 10 
+ + 5870 jetty-maven-plugin fails to run ServletContainerInitializer on Windows
+   due to URI case comparison bug
+ + 5872 Improve JMX support for Jetty logging
+ + 5880 Move test-simple-webapp to demos
+ + 5882 Simplify ALPN modules
+ + 5901 Starting Jetty with JPMS produces warnings about Servlet resources not
+   found
+ + 5909 Cannot disable HTTP OPTIONS Method
+ + 5933 ClientCertAuthenticator is not taking account SslContext configuration
+ + 5937 Unnecessary blocking in ResourceService
+ + 5939 Use unwrapped exception as exception type for error handling
+ + 5941 Use jakarta.servlet.jsp.jstl version 2 implementation from Eclipse
+   Glassfish
+ + 5950 Deadlock due to logging inside classloaders
+ + 5966 jetty-home should not have a webapps/ directory
+ + 5973 Proxy client TLS authentication example
+ + 5977 Cache-Control header set by a filter is override by the value from
+   DefaultServlet configuration
+ + 5979 Configurable gzip Etag extension
+ + 5992 Jetty 11 build still depends on apache-jstl
 
 jetty-11.0.0 - 02 December 2020
  + 1923 GCThreadLeakPreventer won't work with Java 9
@@ -157,7 +212,7 @@ jetty-11.0.0.beta1 - 10 July 2020
    SETTINGS Frame.
  + 4903 Give better errors for non public Websocket Endpoints
  + 4904 WebsocketClient creates more connections than needed
- + 4907
+ + 4907 
    org.eclipse.jetty.websocket.tests.SuspendResumeTest#testSuspendAfterClose
  + 4920 Restore ability to delete sessions on stop
  + 4921 Quickstart run improperly runs dynamically added context initializers
