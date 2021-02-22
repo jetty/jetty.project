@@ -20,8 +20,6 @@ package org.eclipse.jetty.util.thread;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -51,7 +49,7 @@ import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactory, SizedThreadPool, Dumpable, TryExecutor
 {
     private static final Logger LOG = Log.getLogger(QueuedThreadPool.class);
-    private static Runnable NOOP = () ->
+    private static final Runnable NOOP = () ->
     {
     };
 
@@ -158,6 +156,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     {
         if (budget != null && budget.getSizedThreadPool() != this)
             throw new IllegalArgumentException();
+        updateBean(_budget, budget);
         _budget = budget;
     }
 
@@ -425,16 +424,34 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
      * @return number of reserved threads or or -1 for heuristically determined
      * @see #setReservedThreads
      */
-    @ManagedAttribute("the number of reserved threads in the pool")
+    @ManagedAttribute("number of configured reserved threads")
     public int getReservedThreads()
     {
-        if (isStarted())
-        {
-            ReservedThreadExecutor reservedThreadExecutor = getBean(ReservedThreadExecutor.class);
-            if (reservedThreadExecutor != null)
-                return reservedThreadExecutor.getCapacity();
-        }
         return _reservedThreads;
+    }
+
+    @ManagedAttribute("maximum number of reserved threads")
+    public int getMaxReservedThreads()
+    {
+        TryExecutor tryExecutor = _tryExecutor;
+        if (tryExecutor instanceof ReservedThreadExecutor)
+        {
+            ReservedThreadExecutor reservedThreadExecutor = (ReservedThreadExecutor)tryExecutor;
+            return reservedThreadExecutor.getCapacity();
+        }
+        return 0;
+    }
+
+    @ManagedAttribute("number of available reserved threads")
+    public int getAvailableReservedThreads()
+    {
+        TryExecutor tryExecutor = _tryExecutor;
+        if (tryExecutor instanceof ReservedThreadExecutor)
+        {
+            ReservedThreadExecutor reservedThreadExecutor = (ReservedThreadExecutor)tryExecutor;
+            return reservedThreadExecutor.getAvailable();
+        }
+        return 0;
     }
 
     /**
@@ -604,8 +621,26 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     @ManagedAttribute("number of busy threads in the pool")
     public int getBusyThreads()
     {
-        int reserved = _tryExecutor instanceof ReservedThreadExecutor ? ((ReservedThreadExecutor)_tryExecutor).getAvailable() : 0;
-        return getThreads() - getIdleThreads() - reserved;
+        return getThreads() - getIdleThreads() - getAvailableReservedThreads();
+    }
+
+    @ManagedAttribute("number of potentially available threads in the pool")
+    public int getAvailableThreads()
+    {
+        return getMaxThreads() - getBusyThreads();
+    }
+
+    @ManagedAttribute("number of currently available threads in the pool")
+    public int getReadyThreads()
+    {
+        return getThreads() - getBusyThreads();
+    }
+
+    @ManagedAttribute("number of threads leased to components")
+    public int getLeasedThreads()
+    {
+        ThreadPoolBudget budget = _budget;
+        return budget == null ? 0 : budget.getLeasedThreads();
     }
 
     /**
