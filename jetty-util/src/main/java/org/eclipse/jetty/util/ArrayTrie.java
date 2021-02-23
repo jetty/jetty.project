@@ -204,6 +204,8 @@ public class ArrayTrie<V> extends AbstractTrie<V>
         for (int i = 0; i < len; i++)
         {
             char c = s.charAt(offset + i);
+            if (c > 0x7f)
+                return null;
             int index = __lookup[c & 0x7f];
             if (index >= 0)
             {
@@ -217,7 +219,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
                 char[] big = _bigIndex == null ? null : _bigIndex[t];
                 if (big == null)
                     return null;
-                t = big[c];
+                t = big[c & 0x7f];
                 if (t == 0)
                     return null;
             }
