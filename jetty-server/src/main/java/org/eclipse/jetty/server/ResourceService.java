@@ -836,7 +836,7 @@ public class ResourceService
             r.putHeaders(content, contentLength, _etags);
             HttpFields fields = r.getHttpFields();
             if (_acceptRanges && !fields.contains(HttpHeader.ACCEPT_RANGES))
-                    fields.add(ACCEPT_RANGES);
+                fields.add(ACCEPT_RANGES);
 
             if (_cacheControl != null && !fields.contains(HttpHeader.CACHE_CONTROL))
                 fields.add(_cacheControl);
