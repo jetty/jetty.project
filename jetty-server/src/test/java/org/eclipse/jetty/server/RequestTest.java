@@ -1837,11 +1837,36 @@ public class RequestTest
     }
 
     @Test
-    public void testAmbiguousPaths() throws Exception
+    public void testAmbiguousSegments() throws Exception
     {
         _handler._checker = (request, response) -> true;
 
         String request = "GET /ambiguous/..;/path HTTP/1.0\r\n" +
+            "Host: whatever\r\n" +
+            "\r\n";
+
+        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC7230);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+
+        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC7230_LEGACY);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+
+        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+
+        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616_LEGACY);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+
+        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.LAX);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+    }
+
+    @Test
+    public void testAmbiguousSeparators() throws Exception
+    {
+        _handler._checker = (request, response) -> true;
+
+        String request = "GET /ambiguous/%2f/path HTTP/1.0\r\n" +
             "Host: whatever\r\n" +
             "\r\n";
 
@@ -1856,6 +1881,7 @@ public class RequestTest
 
         _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616_LEGACY);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+
     }
 
     private static long getFileCount(Path path)
@@ -1961,7 +1987,6 @@ public class RequestTest
             ((Request)request).setHandled(true);
             try
             {
-
                 MultipartConfigElement mpce = new MultipartConfigElement(tmpDir.getAbsolutePath(), -1, -1, 2);
                 request.setAttribute(Request.MULTIPART_CONFIG_ELEMENT, mpce);
 

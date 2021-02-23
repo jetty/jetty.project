@@ -61,9 +61,9 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
      * {@link HttpComplianceSection#FIELD_COLON},
      * {@link HttpComplianceSection#TRANSFER_ENCODING_WITH_CONTENT_LENGTH},
      * {@link HttpComplianceSection#MULTIPLE_CONTENT_LENGTHS} and
-     * {@link HttpComplianceSection#NO_AMBIGUOUS_PATH_SEGMENTS}.
+     * {@link HttpComplianceSection#NO_AMBIGUOUS_PATH_SEPARATORS}.
      */
-    RFC2616_LEGACY(sectionsBySpec("RFC2616,-FIELD_COLON,-METHOD_CASE_SENSITIVE,-TRANSFER_ENCODING_WITH_CONTENT_LENGTH,-MULTIPLE_CONTENT_LENGTHS,-NO_AMBIGUOUS_PATH_SEGMENTS")),
+    RFC2616_LEGACY(sectionsBySpec("RFC2616,-FIELD_COLON,-METHOD_CASE_SENSITIVE,-TRANSFER_ENCODING_WITH_CONTENT_LENGTH,-MULTIPLE_CONTENT_LENGTHS,-NO_AMBIGUOUS_PATH_SEPARATORS")),
 
     /**
      * The strict RFC2616 support mode
@@ -75,7 +75,7 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
      * {@link HttpComplianceSection#METHOD_CASE_SENSITIVE} and
      * {@link HttpComplianceSection#NO_AMBIGUOUS_PATH_SEGMENTS}.
      */
-    RFC7230_LEGACY(sectionsBySpec("RFC7230,-METHOD_CASE_SENSITIVE,-NO_AMBIGUOUS_PATH_SEGMENTS")),
+    RFC7230_LEGACY(sectionsBySpec("RFC7230,-METHOD_CASE_SENSITIVE,-NO_AMBIGUOUS_PATH_SEPARATORS")),
 
     /**
      * The RFC7230 support mode
@@ -101,7 +101,12 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
      * Custom compliance mode that can be defined with System property <code>org.eclipse.jetty.http.HttpCompliance.CUSTOM3</code>
      */
     @Deprecated
-    CUSTOM3(sectionsByProperty("CUSTOM3"));
+    CUSTOM3(sectionsByProperty("CUSTOM3")),
+
+    /**
+     * A Legacy compliance mode permitting all.
+     */
+    LAX(sectionsBySpec("0"));
 
     public static final String VIOLATIONS_ATTR = "org.eclipse.jetty.http.compliance.violations";
 

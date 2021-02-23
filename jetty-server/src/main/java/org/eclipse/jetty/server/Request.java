@@ -1824,16 +1824,18 @@ public class Request implements HttpServletRequest
         setMethod(request.getMethod());
         HttpURI uri = request.getURI();
 
-        if (uri.hasAmbiguousSegment())
+        if (uri.isAmbiguous())
         {
-            // TODO replace in jetty-10 with HttpCompliance from the HttpConfiguration
-            Connection connection = _channel.getConnection();
+            // replaced in jetty-10 with URICompliance from the HttpConfiguration
+            Connection connection = _channel == null ? null : _channel.getConnection();
             HttpCompliance compliance = connection instanceof HttpConnection
                 ? ((HttpConnection)connection).getHttpCompliance()
-                : _channel.getConnector().getBean(HttpCompliance.class);
-            boolean allow = compliance != null && !compliance.sections().contains(HttpComplianceSection.NO_AMBIGUOUS_PATH_SEGMENTS);
-            if (!allow)
+                : _channel != null ? _channel.getConnector().getBean(HttpCompliance.class) : null;
+
+            if (uri.hasAmbiguousSegment() && (compliance == null || compliance.sections().contains(HttpComplianceSection.NO_AMBIGUOUS_PATH_SEGMENTS)))
                 throw new BadMessageException("Ambiguous segment in URI");
+            if (uri.hasAmbiguousSeparator() && (compliance == null || compliance.sections().contains(HttpComplianceSection.NO_AMBIGUOUS_PATH_SEPARATORS)))
+                throw new BadMessageException("Ambiguous separator in URI");
         }
 
         _originalURI = uri.isAbsolute() && request.getHttpVersion() != HttpVersion.HTTP_2 ? uri.toString() : uri.getPathQuery();

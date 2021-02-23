@@ -23,6 +23,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.EnumSet;
 import java.util.Objects;
 
 import org.eclipse.jetty.util.ArrayTrie;
@@ -68,6 +69,12 @@ public class HttpURI
         ASTERISK
     }
 
+    enum Ambiguous
+    {
+        SEGMENT,
+        SEPARATOR
+    }
+
     /**
      * The concept of URI path parameters was originally specified in
      * <a href="https://tools.ietf.org/html/rfc2396#section-3.3">RFC2396</a>, but that was
@@ -102,7 +109,7 @@ public class HttpURI
     private String _fragment;
     private String _uri;
     private String _decodedPath;
-    private boolean _ambiguousSegment;
+    private final EnumSet<Ambiguous> _ambiguous = EnumSet.noneOf(Ambiguous.class);
 
     /**
      * Construct a normalized URI.
@@ -157,7 +164,7 @@ public class HttpURI
         _fragment = uri._fragment;
         _uri = uri._uri;
         _decodedPath = uri._decodedPath;
-        _ambiguousSegment = uri._ambiguousSegment;
+        _ambiguous.addAll(uri._ambiguous);
     }
 
     public HttpURI(String uri)
@@ -204,7 +211,7 @@ public class HttpURI
         _query = null;
         _fragment = null;
         _decodedPath = null;
-        _ambiguousSegment = false;
+        _ambiguous.clear();
     }
 
     public void parse(String uri)
@@ -496,7 +503,8 @@ public class HttpURI
                             break;
                         case 'f':
                         case 'F':
-                            _ambiguousSegment |= (escapedSlash == 2);
+                            if (escapedSlash == 2)
+                                _ambiguous.add(Ambiguous.SEPARATOR);
                             escapedSlash = 0;
                             break;
                         default:
@@ -626,10 +634,11 @@ public class HttpURI
      */
     private void checkSegment(String uri, int segment, int end, boolean param)
     {
-        if (!_ambiguousSegment)
+        if (!_ambiguous.contains(Ambiguous.SEGMENT))
         {
             Boolean ambiguous = __ambiguousSegments.get(uri, segment, end - segment);
-            _ambiguousSegment |= ambiguous == Boolean.TRUE   || (param && ambiguous == Boolean.FALSE);
+            if (ambiguous == Boolean.TRUE   || (param && ambiguous == Boolean.FALSE))
+                _ambiguous.add(Ambiguous.SEGMENT);
         }
     }
 
@@ -638,7 +647,23 @@ public class HttpURI
      */
     public boolean hasAmbiguousSegment()
     {
-        return _ambiguousSegment;
+        return _ambiguous.contains(Ambiguous.SEGMENT);
+    }
+
+    /**
+     * @return True if the URI has a possibly ambiguous separator of %2f
+     */
+    public boolean hasAmbiguousSeparator()
+    {
+        return _ambiguous.contains(Ambiguous.SEPARATOR);
+    }
+
+    /**
+     * @return True if the URI has either an {@link #hasAmbiguousSegment()} or {@link #hasAmbiguousSeparator()}.
+     */
+    public boolean isAmbiguous()
+    {
+        return !_ambiguous.isEmpty();
     }
 
     public String getScheme()
