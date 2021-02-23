@@ -1,28 +1,22 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enables logback request log.
+Enables logback access request log.
 
 [tags]
 requestlog
-logging
-logback
 
-[depend]
+[depends]
+logging-logback
 server
-logback-impl
 resources
-
-[provide]
-requestlog-impl
 
 [xml]
 etc/jetty-logback-access.xml
 
 [files]
 logs/
-basehome:modules/logback-access/jetty-logback-access.xml|etc/jetty-logback-access.xml
-basehome:modules/logback-access/logback-access.xml|resources/logback-access.xml
+basehome:modules/logging/logback-access
 maven://ch.qos.logback/logback-access/${logback.version}|lib/logback/logback-access-${logback.version}.jar
 
 [lib]
