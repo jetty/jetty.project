@@ -75,7 +75,8 @@ public class QpackFieldPreEncoder implements HttpFieldPreEncoder
             Huffman.encodeLC(buffer, name);
         }
 
-        QpackEncoder.encodeValue(buffer, huffman, value);
+        // TODO: I think we can only encode referencing the static table or with literal representations.
+        // QpackEncoder.encodeValue(buffer, huffman, value);
 
         BufferUtil.flipToFlush(buffer, 0);
         return BufferUtil.toArray(buffer);

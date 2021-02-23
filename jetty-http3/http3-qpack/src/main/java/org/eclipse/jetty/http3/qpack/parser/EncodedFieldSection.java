@@ -270,15 +270,4 @@ public class EncodedFieldSection
             return new HttpField(field.getHeader(), field.getName(), _value);
         }
     }
-
-    // TODO: move to QpackEncoder.
-    @SuppressWarnings("unused")
-    public static int encodeInsertCount(int reqInsertCount, int maxTableCapacity)
-    {
-        if (reqInsertCount == 0)
-            return 0;
-
-        int maxEntries = maxTableCapacity / 32;
-        return (reqInsertCount % (2 * maxEntries)) + 1;
-    }
 }
