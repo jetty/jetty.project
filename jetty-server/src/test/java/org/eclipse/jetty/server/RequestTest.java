@@ -1849,15 +1849,12 @@ public class RequestTest
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
 
         _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC7230_LEGACY);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
 
         _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
 
         _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616_LEGACY);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
-
-        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.LAX);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
     }
 
