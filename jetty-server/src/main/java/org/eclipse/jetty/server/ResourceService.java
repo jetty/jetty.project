@@ -181,7 +181,13 @@ public class ResourceService
 
     public void setCacheControl(HttpField cacheControl)
     {
-        _cacheControl = cacheControl;
+        if (cacheControl == null)
+            _cacheControl = null;
+        if (cacheControl.getHeader() != HttpHeader.CACHE_CONTROL)
+            throw new IllegalArgumentException("!Cache-Control");
+        _cacheControl = cacheControl instanceof PreEncodedHttpField
+            ? cacheControl
+            : new PreEncodedHttpField(cacheControl.getHeader(), cacheControl.getValue());
     }
 
     public List<String> getGzipEquivalentFileExtensions()
@@ -828,12 +834,12 @@ public class ResourceService
         {
             Response r = (Response)response;
             r.putHeaders(content, contentLength, _etags);
-            HttpFields f = r.getHttpFields();
-            if (_acceptRanges && !response.containsHeader(HttpHeader.ACCEPT_RANGES.asString()))
-                f.put(ACCEPT_RANGES);
+            HttpFields fields = r.getHttpFields();
+            if (_acceptRanges && !fields.contains(HttpHeader.ACCEPT_RANGES))
+                    fields.put(ACCEPT_RANGES);
 
-            if (_cacheControl != null && !response.containsHeader(HttpHeader.CACHE_CONTROL.asString()))
-                f.put(_cacheControl);
+            if (_cacheControl != null && !fields.contains(HttpHeader.CACHE_CONTROL))
+                fields.put(_cacheControl);
         }
         else
         {
