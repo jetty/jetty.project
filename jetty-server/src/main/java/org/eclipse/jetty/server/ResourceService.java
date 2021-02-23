@@ -859,10 +859,10 @@ public class ResourceService
         else
         {
             Response.putHeaders(response, content, contentLength, _etags);
-            if (_acceptRanges && !response.containsHeader(HttpHeader.ACCEPT_RANGES.name()))
+            if (_acceptRanges && !response.containsHeader(HttpHeader.ACCEPT_RANGES.asString()))
                 response.setHeader(ACCEPT_RANGES.getName(), ACCEPT_RANGES.getValue());
 
-            if (_cacheControl != null && !response.containsHeader(HttpHeader.CACHE_CONTROL.name()))
+            if (_cacheControl != null && !response.containsHeader(HttpHeader.CACHE_CONTROL.asString()))
                 response.setHeader(_cacheControl.getName(), _cacheControl.getValue());
         }
     }

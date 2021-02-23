@@ -24,6 +24,7 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -41,11 +42,22 @@ public class CacheControlHeaderTest
     private Server server;
     private LocalConnector connector;
 
+    public static class SimpleResponseWrapper extends HttpServletResponseWrapper
+    {
+        public SimpleResponseWrapper(HttpServletResponse response)
+        {
+            super(response);
+        }
+    }
+
     public static class ForceCacheControlFilter implements Filter
     {
+        private boolean forceWrapper;
+
         @Override
         public void init(FilterConfig filterConfig) throws ServletException
         {
+            forceWrapper = Boolean.parseBoolean(filterConfig.getInitParameter("FORCE_WRAPPER"));
         }
 
         @Override
@@ -53,7 +65,14 @@ public class CacheControlHeaderTest
         {
             HttpServletResponse httpResponse = (HttpServletResponse)response;
             httpResponse.setHeader(HttpHeader.CACHE_CONTROL.asString(), "max-age=0,private");
-            chain.doFilter(request, response);
+            if (forceWrapper)
+            {
+                chain.doFilter(request, new SimpleResponseWrapper((HttpServletResponse)response));
+            }
+            else
+            {
+                chain.doFilter(request, response);
+            }
         }
 
         @Override
@@ -62,7 +81,7 @@ public class CacheControlHeaderTest
         }
     }
 
-    public void startServer(boolean forceFilter) throws Exception
+    public void startServer(boolean forceFilter, boolean forceWrapping) throws Exception
     {
         server = new Server();
 
@@ -79,7 +98,8 @@ public class CacheControlHeaderTest
         context.addServlet(servletHolder, "/*");
         if (forceFilter)
         {
-            context.addFilter(ForceCacheControlFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
+            FilterHolder filterHolder = context.addFilter(ForceCacheControlFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
+            filterHolder.setInitParameter("FORCE_WRAPPER", Boolean.toString(forceWrapping));
         }
         server.setHandler(context);
         server.addConnector(connector);
@@ -100,7 +120,7 @@ public class CacheControlHeaderTest
     {
         try
         {
-            startServer(true);
+            startServer(true, false);
             StringBuffer req1 = new StringBuffer();
             req1.append("GET /content.txt HTTP/1.1\r\n");
             req1.append("Host: local\r\n");
@@ -123,11 +143,38 @@ public class CacheControlHeaderTest
     }
 
     @Test
+    public void testCacheControlFilterOverrideWithWrapper() throws Exception
+    {
+        try
+        {
+            startServer(true, true);
+            StringBuffer req1 = new StringBuffer();
+            req1.append("GET /content.txt HTTP/1.1\r\n");
+            req1.append("Host: local\r\n");
+            req1.append("Accept: */*\r\n");
+            req1.append("Connection: close\r\n");
+            req1.append("\r\n");
+
+            String response = connector.getResponse(req1.toString());
+            assertThat("Response status",
+                       response,
+                       containsString("HTTP/1.1 200 OK"));
+            assertThat("Response headers",
+                       response,
+                       containsString(HttpHeader.CACHE_CONTROL.asString() + ": max-age=0,private"));
+        }
+        finally
+        {
+            stopServer();
+        }
+    }
+
+    @Test
     public void testCacheControlDefaultServlet() throws Exception
     {
         try
         {
-            startServer(false);
+            startServer(false, false);
             StringBuffer req1 = new StringBuffer();
             req1.append("GET /content.txt HTTP/1.1\r\n");
             req1.append("Host: local\r\n");
