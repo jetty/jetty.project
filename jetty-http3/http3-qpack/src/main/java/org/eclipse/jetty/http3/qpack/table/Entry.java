@@ -16,12 +16,13 @@ package org.eclipse.jetty.http3.qpack.table;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.util.StringUtil;
 
 public class Entry
 {
     private final HttpField _field;
     private int _absoluteIndex;
-    private AtomicInteger _referenceCount = new AtomicInteger(0);
+    private final AtomicInteger _referenceCount = new AtomicInteger(0);
 
     public Entry()
     {
@@ -41,8 +42,7 @@ public class Entry
 
     public int getSize()
     {
-        String value = _field.getValue();
-        return 32 + _field.getName().length() + (value == null ? 0 : value.length());
+        return 32 + StringUtil.getLength(_field.getName()) + StringUtil.getLength(_field.getValue());
     }
 
     public void setIndex(int index)
@@ -58,6 +58,11 @@ public class Entry
     public HttpField getHttpField()
     {
         return _field;
+    }
+
+    public void reference()
+    {
+        _referenceCount.incrementAndGet();
     }
 
     public int getReferenceCount()

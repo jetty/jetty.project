@@ -96,7 +96,7 @@ public class QpackDecoder
         // Decode the Required Insert Count using the DynamicTable state.
         DynamicTable dynamicTable = _context.getDynamicTable();
         int insertCount = dynamicTable.getInsertCount();
-        int maxDynamicTableSize = dynamicTable.getMaxSize();
+        int maxDynamicTableSize = dynamicTable.getCapacity();
         int requiredInsertCount = decodeInsertCount(encodedInsertCount, insertCount, maxDynamicTableSize);
 
         // Parse the buffer into an Encoded Field Section.
@@ -145,8 +145,7 @@ public class QpackDecoder
             Entry entry = dynamicTable.get(duplicate.getIndex());
 
             // Add the new Entry to the DynamicTable.
-            if (dynamicTable.add(entry) == null)
-                throw new QpackException.StreamException("No space in DynamicTable");
+            dynamicTable.add(entry);
             _handler.onInstruction(new InsertCountIncrementInstruction(1));
             checkEncodedFieldSections();
         }
@@ -159,8 +158,7 @@ public class QpackDecoder
 
             // Add the new Entry to the DynamicTable.
             Entry entry = new Entry(new HttpField(referencedEntry.getHttpField().getHeader(), referencedEntry.getHttpField().getName(), value));
-            if (dynamicTable.add(entry) == null)
-                throw new QpackException.StreamException("No space in DynamicTable");
+            dynamicTable.add(entry);
             _handler.onInstruction(new InsertCountIncrementInstruction(1));
             checkEncodedFieldSections();
         }
@@ -172,8 +170,7 @@ public class QpackDecoder
             Entry entry = new Entry(new HttpField(name, value));
 
             // Add the new Entry to the DynamicTable.
-            if (dynamicTable.add(entry) == null)
-                throw new QpackException.StreamException("No space in DynamicTable");
+            dynamicTable.add(entry);
             _handler.onInstruction(new InsertCountIncrementInstruction(1));
             checkEncodedFieldSections();
         }

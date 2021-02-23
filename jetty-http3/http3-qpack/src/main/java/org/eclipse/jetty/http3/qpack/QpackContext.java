@@ -36,12 +36,18 @@ public class QpackContext
     private static final StaticTable __staticTable = new StaticTable();
     private final DynamicTable _dynamicTable;
 
-    QpackContext(int maxDynamicTableSize)
+    public QpackContext()
     {
         _dynamicTable = new DynamicTable();
-        _dynamicTable.setCapacity(maxDynamicTableSize);
         if (LOG.isDebugEnabled())
-            LOG.debug(String.format("HdrTbl[%x] created max=%d", hashCode(), maxDynamicTableSize));
+            LOG.debug(String.format("HdrTbl[%x] created", hashCode()));
+    }
+
+    @Deprecated
+    public QpackContext(int maxDynamicTableSize)
+    {
+        this();
+        _dynamicTable.setCapacity(maxDynamicTableSize);
     }
 
     public DynamicTable getDynamicTable()
@@ -93,7 +99,17 @@ public class QpackContext
 
     public Entry add(HttpField field)
     {
-        return _dynamicTable.add(new Entry(field));
+        Entry entry = new Entry(field);
+        _dynamicTable.add(entry);
+        return entry;
+    }
+
+    public boolean canReference(Entry entry)
+    {
+        if (entry.isStatic())
+            return true;
+
+        return _dynamicTable.canReference(entry);
     }
 
     /**
@@ -117,7 +133,7 @@ public class QpackContext
      */
     public int getMaxDynamicTableSize()
     {
-        return _dynamicTable.getMaxSize();
+        return _dynamicTable.getCapacity();
     }
 
     /**
@@ -125,11 +141,8 @@ public class QpackContext
      */
     public int index(Entry entry)
     {
-        if (entry.getIndex() < 0)
-            return 0;
         if (entry.isStatic())
             return entry.getIndex();
-
         return _dynamicTable.index(entry);
     }
 

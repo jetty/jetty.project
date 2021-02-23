@@ -25,8 +25,8 @@ import org.eclipse.jetty.http3.qpack.QpackException;
 public class DynamicTable
 {
     public static final int FIRST_INDEX = StaticTable.STATIC_SIZE + 1;
-    private int _maxCapacity;
     private int _capacity;
+    private int _size;
     private int _absoluteIndex;
 
     private final Map<HttpField, Entry> _fieldMap = new HashMap<>();
@@ -39,25 +39,21 @@ public class DynamicTable
     {
         private int streamId;
         private final List<Integer> referencedEntries = new ArrayList<>();
-        private int potentiallyBlockedStreams = 0;
+        private int potentiallyBlockedStreams;
     }
 
     public DynamicTable()
     {
     }
 
-    public Entry add(Entry entry)
+    public void add(Entry entry)
     {
         evict();
 
-        int size = entry.getSize();
-        if (size + _capacity > _maxCapacity)
-        {
-            if (QpackContext.LOG.isDebugEnabled())
-                QpackContext.LOG.debug(String.format("HdrTbl[%x] !added size %d>%d", hashCode(), size, _maxCapacity));
-            return null;
-        }
-        _capacity += size;
+        int entrySize = entry.getSize();
+        if (entrySize + _size > _capacity)
+            throw new IllegalStateException("No available space");
+        _size += entrySize;
 
         // Set the Entries absolute index which will never change.
         entry.setIndex(_absoluteIndex++);
@@ -67,7 +63,6 @@ public class DynamicTable
 
         if (QpackContext.LOG.isDebugEnabled())
             QpackContext.LOG.debug(String.format("HdrTbl[%x] added %s", hashCode(), entry));
-        return entry;
     }
 
     public int index(Entry entry)
@@ -98,14 +93,26 @@ public class DynamicTable
         return _fieldMap.get(field);
     }
 
+    public int getBase()
+    {
+        if (_entries.size() == 0)
+            return _absoluteIndex;
+        return _entries.get(0).getIndex();
+    }
+
     public int getSize()
+    {
+        return _size;
+    }
+
+    public int getCapacity()
     {
         return _capacity;
     }
 
-    public int getMaxSize()
+    public int getSpace()
     {
-        return _maxCapacity;
+        return _capacity - _size;
     }
 
     public int getNumEntries()
@@ -121,16 +128,16 @@ public class DynamicTable
     public void setCapacity(int capacity)
     {
         if (QpackContext.LOG.isDebugEnabled())
-            QpackContext.LOG.debug(String.format("HdrTbl[%x] resized max=%d->%d", hashCode(), _maxCapacity, capacity));
-        _maxCapacity = capacity;
+            QpackContext.LOG.debug(String.format("HdrTbl[%x] resized max=%d->%d", hashCode(), _capacity, capacity));
+        _capacity = capacity;
         evict();
     }
 
-    private boolean canReference(Entry entry)
+    public boolean canReference(Entry entry)
     {
         int evictionThreshold = getEvictionThreshold();
         int lowestReferencableIndex = -1;
-        int remainingCapacity = _capacity;
+        int remainingCapacity = _size;
         for (int i = 0; i < _entries.size(); i++)
         {
             if (remainingCapacity <= evictionThreshold)
@@ -151,7 +158,7 @@ public class DynamicTable
         for (Entry e : _entries)
         {
             // We only evict when the table is getting full.
-            if (_capacity < evictionThreshold)
+            if (_size < evictionThreshold)
                 return;
 
             // We can only evict if there are no references outstanding to this entry.
@@ -170,21 +177,21 @@ public class DynamicTable
             if (e == _nameMap.get(name))
                 _nameMap.remove(name);
 
-            _capacity -= e.getSize();
+            _size -= e.getSize();
         }
 
         if (QpackContext.LOG.isDebugEnabled())
-            QpackContext.LOG.debug(String.format("HdrTbl[%x] entries=%d, size=%d, max=%d", hashCode(), getNumEntries(), _capacity, _maxCapacity));
+            QpackContext.LOG.debug(String.format("HdrTbl[%x] entries=%d, size=%d, max=%d", hashCode(), getNumEntries(), _size, _capacity));
     }
 
     private int getEvictionThreshold()
     {
-        return _maxCapacity * 3 / 4;
+        return _capacity * 3 / 4;
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x{entries=%d,size=%d,max=%d}", getClass().getSimpleName(), hashCode(), getNumEntries(), _capacity, _maxCapacity);
+        return String.format("%s@%x{entries=%d,size=%d,max=%d}", getClass().getSimpleName(), hashCode(), getNumEntries(), _size, _capacity);
     }
 }
