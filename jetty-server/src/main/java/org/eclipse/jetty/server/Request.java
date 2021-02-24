@@ -81,6 +81,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -1690,10 +1691,16 @@ public class Request implements HttpServletRequest
         _method = request.getMethod();
         _httpFields = request.getFields();
         final HttpURI uri = request.getURI();
-        
-        if (uri.hasAmbiguousSegment() && !_channel.getHttpConfiguration().getHttpCompliance().allows(HttpCompliance.Violation.AMBIGUOUS_PATH_SEGMENTS))
-            throw new BadMessageException("Ambiguous segment in URI");
-        
+
+        if (uri.isAmbiguous())
+        {
+            UriCompliance compliance = _channel == null || _channel.getHttpConfiguration() == null ? null : _channel.getHttpConfiguration().getUriCompliance();
+            if (uri.hasAmbiguousSegment() && (compliance == null || !compliance.allows(UriCompliance.Violation.AMBIGUOUS_PATH_SEGMENT)))
+                throw new BadMessageException("Ambiguous segment in URI");
+            if (uri.hasAmbiguousSeparator() && (compliance == null || !compliance.allows(UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR)))
+                throw new BadMessageException("Ambiguous segment in URI");
+        }
+
         if (uri.isAbsolute() && uri.hasAuthority() && uri.getPath() != null)
         {
             _uri = uri;

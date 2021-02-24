@@ -26,31 +26,23 @@ import org.slf4j.LoggerFactory;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.EnumSet.allOf;
-import static java.util.EnumSet.complementOf;
 import static java.util.EnumSet.noneOf;
-import static java.util.EnumSet.of;
 
 /**
- * HTTP compliance modes for Jetty HTTP parsing and handling.
+ * URI compliance modes for Jetty request handling.
  * A Compliance mode consists of a set of {@link Violation}s which are applied
  * when the mode is enabled.
  */
-public final class HttpCompliance implements ComplianceViolation.Mode
+public final class UriCompliance implements ComplianceViolation.Mode
 {
-    protected static final Logger LOG = LoggerFactory.getLogger(HttpCompliance.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(UriCompliance.class);
 
     // These are compliance violations, which may optionally be allowed by the compliance mode, which mean that
     // the relevant section of the RFC is not strictly adhered to.
     public enum Violation implements ComplianceViolation
     {
-        CASE_SENSITIVE_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2", "Field name is case-insensitive"),
-        CASE_INSENSITIVE_METHOD("https://tools.ietf.org/html/rfc7230#section-3.1.1", "Method is case-sensitive"),
-        HTTP_0_9("https://tools.ietf.org/html/rfc7230#appendix-A.2", "HTTP/0.9 not supported"),
-        MULTILINE_FIELD_VALUE("https://tools.ietf.org/html/rfc7230#section-3.2.4", "Line Folding not supported"),
-        MULTIPLE_CONTENT_LENGTHS("https://tools.ietf.org/html/rfc7230#section-3.3.1", "Multiple Content-Lengths"),
-        TRANSFER_ENCODING_WITH_CONTENT_LENGTH("https://tools.ietf.org/html/rfc7230#section-3.3.1", "Transfer-Encoding and Content-Length"),
-        WHITESPACE_AFTER_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2.4", "Whitespace not allowed after field name"),
-        NO_COLON_AFTER_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2", "Fields must have a Colon");
+        AMBIGUOUS_PATH_SEGMENT("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path segment"),
+        AMBIGUOUS_PATH_SEPARATOR("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path separator");
 
         private final String url;
         private final String description;
@@ -80,29 +72,19 @@ public final class HttpCompliance implements ComplianceViolation.Mode
         }
     }
 
-    public static final String VIOLATIONS_ATTR = "org.eclipse.jetty.http.compliance.violations";
-
-    public static final HttpCompliance RFC7230 = new HttpCompliance("RFC7230", noneOf(Violation.class));
-    public static final HttpCompliance RFC2616 = new HttpCompliance("RFC2616", of(Violation.HTTP_0_9, Violation.MULTILINE_FIELD_VALUE));
-    public static final HttpCompliance LEGACY = new HttpCompliance("LEGACY", complementOf(of(Violation.CASE_INSENSITIVE_METHOD)));
-    public static final HttpCompliance RFC2616_LEGACY = RFC2616.with("RFC2616_LEGACY",
-        Violation.CASE_INSENSITIVE_METHOD,
-        Violation.NO_COLON_AFTER_FIELD_NAME,
-        Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH,
-        Violation.MULTIPLE_CONTENT_LENGTHS);
-    public static final HttpCompliance RFC7230_LEGACY = RFC7230.with("RFC7230_LEGACY", Violation.CASE_INSENSITIVE_METHOD);
-
-    private static final List<HttpCompliance> KNOWN_MODES = Arrays.asList(RFC7230, RFC2616, LEGACY, RFC2616_LEGACY, RFC7230_LEGACY);
+    public static final UriCompliance SAFE = new UriCompliance("SAFE", noneOf(Violation.class));
+    public static final UriCompliance STRICT = new UriCompliance("STRICT", allOf(Violation.class));
+    private static final List<UriCompliance> KNOWN_MODES = Arrays.asList(SAFE, STRICT);
     private static final AtomicInteger __custom = new AtomicInteger();
 
-    public static HttpCompliance valueOf(String name)
+    public static UriCompliance valueOf(String name)
     {
-        for (HttpCompliance compliance : KNOWN_MODES)
+        for (UriCompliance compliance : KNOWN_MODES)
         {
             if (compliance.getName().equals(name))
                 return compliance;
         }
-        LOG.warn("Unknown HttpCompliance mode {}", name);
+        LOG.warn("Unknown UriCompliance mode {}", name);
         return null;
     }
 
@@ -117,7 +99,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
      * <dt>RFC2616</dt><dd>The set of {@link Violation}s application to https://tools.ietf.org/html/rfc2616,
      * but not https://tools.ietf.org/html/rfc7230</dd>
      * <dt>RFC7230</dt><dd>The set of {@link Violation}s application to https://tools.ietf.org/html/rfc7230</dd>
-     * <dt>name</dt><dd>Any of the known modes defined in {@link HttpCompliance#KNOWN_MODES}</dd>
+     * <dt>name</dt><dd>Any of the known modes defined in {@link UriCompliance#KNOWN_MODES}</dd>
      * </dl>
      * <p>
      * The remainder of the list can contain then names of {@link Violation}s to include them in the mode, or prefixed
@@ -127,7 +109,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
      * @param spec A string in the format of a comma separated list starting with one of the following strings:
      * @return the compliance from the string spec
      */
-    public static HttpCompliance from(String spec)
+    public static UriCompliance from(String spec)
     {
         Set<Violation> sections;
         String[] elements = spec.split("\\s*,\\s*");
@@ -143,8 +125,8 @@ public final class HttpCompliance implements ComplianceViolation.Mode
 
             default:
             {
-                HttpCompliance mode = HttpCompliance.valueOf(elements[0]);
-                sections = (mode == null) ? noneOf(HttpCompliance.Violation.class) : copyOf(mode.getAllowed());
+                UriCompliance mode = UriCompliance.valueOf(elements[0]);
+                sections = (mode == null) ? noneOf(Violation.class) : copyOf(mode.getAllowed());
             }
         }
 
@@ -161,13 +143,16 @@ public final class HttpCompliance implements ComplianceViolation.Mode
                 sections.add(section);
         }
 
-        return new HttpCompliance("CUSTOM" + __custom.getAndIncrement(), sections);
+        UriCompliance compliance = new UriCompliance("CUSTOM" + __custom.getAndIncrement(), sections);
+        if (LOG.isDebugEnabled())
+            LOG.debug("UriCompliance from {}->{}", spec, compliance);
+        return compliance;
     }
 
     private final String _name;
     private final Set<Violation> _violations;
 
-    private HttpCompliance(String name, Set<Violation> violations)
+    private UriCompliance(String name, Set<Violation> violations)
     {
         Objects.requireNonNull(violations);
         _name = name;
@@ -204,31 +189,31 @@ public final class HttpCompliance implements ComplianceViolation.Mode
     }
 
     /**
-     * Create a new HttpCompliance mode that includes the passed {@link Violation}s.
+     * Create a new UriCompliance mode that includes the passed {@link Violation}s.
      *
      * @param name The name of the new mode
      * @param violations The violations to include
-     * @return A new {@link HttpCompliance} mode.
+     * @return A new {@link UriCompliance} mode.
      */
-    public HttpCompliance with(String name, Violation... violations)
+    public UriCompliance with(String name, Violation... violations)
     {
         Set<Violation> union = _violations.isEmpty() ? EnumSet.noneOf(Violation.class) : copyOf(_violations);
         union.addAll(copyOf(violations));
-        return new HttpCompliance(name, union);
+        return new UriCompliance(name, union);
     }
 
     /**
-     * Create a new HttpCompliance mode that excludes the passed {@link Violation}s.
+     * Create a new UriCompliance mode that excludes the passed {@link Violation}s.
      *
      * @param name The name of the new mode
      * @param violations The violations to exclude
-     * @return A new {@link HttpCompliance} mode.
+     * @return A new {@link UriCompliance} mode.
      */
-    public HttpCompliance without(String name, Violation... violations)
+    public UriCompliance without(String name, Violation... violations)
     {
         Set<Violation> remainder = _violations.isEmpty() ? EnumSet.noneOf(Violation.class) : copyOf(_violations);
         remainder.removeAll(copyOf(violations));
-        return new HttpCompliance(name, remainder);
+        return new UriCompliance(name, remainder);
     }
 
     @Override
