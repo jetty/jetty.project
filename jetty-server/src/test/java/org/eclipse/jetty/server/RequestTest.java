@@ -1878,7 +1878,6 @@ public class RequestTest
 
         _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616_LEGACY);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
-
     }
 
     private static long getFileCount(Path path)
