@@ -42,7 +42,8 @@ public final class UriCompliance implements ComplianceViolation.Mode
     public enum Violation implements ComplianceViolation
     {
         AMBIGUOUS_PATH_SEGMENT("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path segment"),
-        AMBIGUOUS_PATH_SEPARATOR("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path separator");
+        AMBIGUOUS_PATH_SEPARATOR("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path separator"),
+        AMBIGUOUS_PATH_PARAMETER("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path parameter");
 
         private final String url;
         private final String description;
@@ -72,9 +73,22 @@ public final class UriCompliance implements ComplianceViolation.Mode
         }
     }
 
+    /**
+     * SAFE compliance mode that disallows all ambiguous URI Violations
+     */
     public static final UriCompliance SAFE = new UriCompliance("SAFE", noneOf(Violation.class));
+
+    /**
+     * LEGACY compliance mode that disallows only ambiguous path parameters as per Jetty-9.4
+     */
+    public static final UriCompliance LEGACY = new UriCompliance("LEGACY", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT, Violation.AMBIGUOUS_PATH_SEPARATOR));
+
+    /**
+     * STRICT compliance mode that allows all ambiguous URI Violations as per a strict reading of RFC3986
+     */
     public static final UriCompliance STRICT = new UriCompliance("STRICT", allOf(Violation.class));
-    private static final List<UriCompliance> KNOWN_MODES = Arrays.asList(SAFE, STRICT);
+
+    private static final List<UriCompliance> KNOWN_MODES = Arrays.asList(SAFE, LEGACY, STRICT);
     private static final AtomicInteger __custom = new AtomicInteger();
 
     public static UriCompliance valueOf(String name)

@@ -1699,6 +1699,8 @@ public class Request implements HttpServletRequest
                 throw new BadMessageException("Ambiguous segment in URI");
             if (uri.hasAmbiguousSeparator() && (compliance == null || !compliance.allows(UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR)))
                 throw new BadMessageException("Ambiguous segment in URI");
+            if (uri.hasAmbiguousParameter() && (compliance == null || !compliance.allows(UriCompliance.Violation.AMBIGUOUS_PATH_PARAMETER)))
+                throw new BadMessageException("Ambiguous path parameter in URI");
         }
 
         if (uri.isAbsolute() && uri.hasAuthority() && uri.getPath() != null)

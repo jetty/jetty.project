@@ -51,7 +51,8 @@ public interface HttpURI
     enum Ambiguous
     {
         SEGMENT,
-        SEPARATOR
+        SEPARATOR,
+        PARAM
     }
 
     static Mutable build()
@@ -152,6 +153,11 @@ public interface HttpURI
      * @return True if the URI has a possibly ambiguous separator of %2f
      */
     boolean hasAmbiguousSeparator();
+
+    /**
+     * @return True if the URI has a possibly ambiguous path parameter like '..;'
+     */
+    boolean hasAmbiguousParameter();
 
     default URI toURI()
     {
@@ -372,6 +378,12 @@ public interface HttpURI
         public boolean hasAmbiguousSeparator()
         {
             return _ambiguous.contains(Mutable.Ambiguous.SEPARATOR);
+        }
+
+        @Override
+        public boolean hasAmbiguousParameter()
+        {
+            return _ambiguous.contains(Ambiguous.PARAM);
         }
 
         @Override
@@ -707,6 +719,12 @@ public interface HttpURI
         public boolean hasAmbiguousSeparator()
         {
             return _ambiguous.contains(Mutable.Ambiguous.SEPARATOR);
+        }
+
+        @Override
+        public boolean hasAmbiguousParameter()
+        {
+            return _ambiguous.contains(Ambiguous.PARAM);
         }
 
         public Mutable normalize()
@@ -1241,8 +1259,10 @@ public interface HttpURI
             if (!_ambiguous.contains(Ambiguous.SEGMENT))
             {
                 Boolean ambiguous = __ambiguousSegments.get(uri, segment, end - segment);
-                if (ambiguous == Boolean.TRUE || (param && ambiguous == Boolean.FALSE))
-                    _ambiguous.add(Ambiguous.SEGMENT);
+            if (ambiguous == Boolean.TRUE)
+                _ambiguous.add(Ambiguous.SEGMENT);
+            else if (param && ambiguous == Boolean.FALSE)
+                _ambiguous.add(Ambiguous.PARAM);
             }
         }
     }
