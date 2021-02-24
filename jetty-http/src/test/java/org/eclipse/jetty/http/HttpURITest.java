@@ -370,6 +370,11 @@ public class HttpURITest
                 {"/path/%2f/info", "/path///info", true},
                 {"%2f/info", "//info", true},
                 {"%2F/info", "//info", true},
+                // Non ascii characters
+                // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
+                {"http://localhost:9000/x\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", "/x\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", false},
+                {"http://localhost:9000/\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", "/\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", false},
+                // @checkstyle-enable-check : AvoidEscapedUnicodeCharactersCheck
             }).map(Arguments::of);
     }
 

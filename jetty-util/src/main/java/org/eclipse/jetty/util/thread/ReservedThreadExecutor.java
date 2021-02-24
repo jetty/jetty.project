@@ -106,12 +106,18 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         return _executor;
     }
 
+    /**
+     * @return the maximum number of reserved threads
+     */
     @ManagedAttribute(value = "max number of reserved threads", readonly = true)
     public int getCapacity()
     {
         return _capacity;
     }
 
+    /**
+     * @return the number of threads available to {@link #tryExecute(Runnable)}
+     */
     @ManagedAttribute(value = "available reserved threads", readonly = true)
     public int getAvailable()
     {
@@ -191,8 +197,10 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     }
 
     /**
-     * @param task The task to run
-     * @return True iff a reserved thread was available and has been assigned the task to run.
+     * <p>Executes the given task if and only if a reserved thread is available.</p>
+     *
+     * @param task the task to run
+     * @return true if and only if a reserved thread was available and has been assigned the task to run.
      */
     @Override
     public boolean tryExecute(Runnable task)
