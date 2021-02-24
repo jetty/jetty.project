@@ -662,7 +662,7 @@ public class HttpURI
     }
 
     /**
-     * @return True if the URI has a possibly ambiguous separator of %2f
+     * @return True if the URI has a possibly ambiguous path parameter like '..;'
      */
     public boolean hasAmbiguousParameter()
     {

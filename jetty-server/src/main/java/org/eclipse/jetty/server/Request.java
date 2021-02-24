@@ -1837,7 +1837,7 @@ public class Request implements HttpServletRequest
             if (uri.hasAmbiguousSeparator() && (compliance == null || compliance.sections().contains(HttpComplianceSection.NO_AMBIGUOUS_PATH_SEPARATORS)))
                 throw new BadMessageException("Ambiguous separator in URI");
             if (uri.hasAmbiguousParameter() && (compliance == null || compliance.sections().contains(HttpComplianceSection.NO_AMBIGUOUS_PATH_PARAMETERS)))
-                throw new BadMessageException("Ambiguous separator in URI");
+                throw new BadMessageException("Ambiguous path parameter in URI");
         }
 
         _originalURI = uri.isAbsolute() && request.getHttpVersion() != HttpVersion.HTTP_2 ? uri.toString() : uri.getPathQuery();
