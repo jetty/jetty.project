@@ -32,7 +32,8 @@ public enum HttpComplianceSection
     NO_HTTP_0_9("https://tools.ietf.org/html/rfc7230#appendix-A.2", "No HTTP/0.9"),
     TRANSFER_ENCODING_WITH_CONTENT_LENGTH("https://tools.ietf.org/html/rfc7230#section-3.3.1", "Transfer-Encoding and Content-Length"),
     MULTIPLE_CONTENT_LENGTHS("https://tools.ietf.org/html/rfc7230#section-3.3.1", "Multiple Content-Lengths"),
-    NO_AMBIGUOUS_PATH_SEGMENTS("https://tools.ietf.org/html/rfc3986#section-3.3", "No ambiguous URI path segments");
+    NO_AMBIGUOUS_PATH_SEGMENTS("https://tools.ietf.org/html/rfc3986#section-3.3", "No ambiguous URI path segments"),
+    NO_AMBIGUOUS_PATH_SEPARATORS("https://tools.ietf.org/html/rfc3986#section-3.3", "No ambiguous URI path separators");
 
     final String url;
     final String description;

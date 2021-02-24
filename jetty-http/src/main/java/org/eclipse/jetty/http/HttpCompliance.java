@@ -22,9 +22,6 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-
 /**
  * HTTP compliance modes for Jetty HTTP parsing and handling.
  * A Compliance mode consists of a set of {@link HttpComplianceSection}s which are applied
@@ -60,10 +57,11 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
      * {@link HttpComplianceSection#METHOD_CASE_SENSITIVE},
      * {@link HttpComplianceSection#FIELD_COLON},
      * {@link HttpComplianceSection#TRANSFER_ENCODING_WITH_CONTENT_LENGTH},
-     * {@link HttpComplianceSection#MULTIPLE_CONTENT_LENGTHS} and
-     * {@link HttpComplianceSection#NO_AMBIGUOUS_PATH_SEGMENTS}.
+     * {@link HttpComplianceSection#MULTIPLE_CONTENT_LENGTHS},
+     * {@link HttpComplianceSection#NO_AMBIGUOUS_PATH_SEGMENTS} and
+     * {@link HttpComplianceSection#NO_AMBIGUOUS_PATH_SEPARATORS}.
      */
-    RFC2616_LEGACY(sectionsBySpec("RFC2616,-FIELD_COLON,-METHOD_CASE_SENSITIVE,-TRANSFER_ENCODING_WITH_CONTENT_LENGTH,-MULTIPLE_CONTENT_LENGTHS,-NO_AMBIGUOUS_PATH_SEGMENTS")),
+    RFC2616_LEGACY(sectionsBySpec("RFC2616,-FIELD_COLON,-METHOD_CASE_SENSITIVE,-TRANSFER_ENCODING_WITH_CONTENT_LENGTH,-MULTIPLE_CONTENT_LENGTHS,-NO_AMBIGUOUS_PATH_SEGMENTS,-NO_AMBIGUOUS_PATH_SEPARATORS")),
 
     /**
      * The strict RFC2616 support mode
@@ -72,10 +70,11 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
 
     /**
      * Jetty's current RFC7230 support, which excludes
-     * {@link HttpComplianceSection#METHOD_CASE_SENSITIVE} and
-     * {@link HttpComplianceSection#NO_AMBIGUOUS_PATH_SEGMENTS}.
+     * {@link HttpComplianceSection#METHOD_CASE_SENSITIVE},
+     * {@link HttpComplianceSection#NO_AMBIGUOUS_PATH_SEGMENTS} and
+     * {@link HttpComplianceSection#NO_AMBIGUOUS_PATH_SEPARATORS}.
      */
-    RFC7230_LEGACY(sectionsBySpec("RFC7230,-METHOD_CASE_SENSITIVE,-NO_AMBIGUOUS_PATH_SEGMENTS")),
+    RFC7230_LEGACY(sectionsBySpec("RFC7230,-METHOD_CASE_SENSITIVE,-NO_AMBIGUOUS_PATH_SEGMENTS,-NO_AMBIGUOUS_PATH_SEPARATORS")),
 
     /**
      * The RFC7230 support mode
@@ -104,8 +103,6 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
     CUSTOM3(sectionsByProperty("CUSTOM3"));
 
     public static final String VIOLATIONS_ATTR = "org.eclipse.jetty.http.compliance.violations";
-
-    private static final Logger LOG = Log.getLogger(HttpParser.class);
 
     private static EnumSet<HttpComplianceSection> sectionsByProperty(String property)
     {

@@ -285,73 +285,77 @@ public class HttpURITest
         return Arrays.stream(new Object[][]
             {
                 // Simple path example
-                {"http://host/path/info", "/path/info", false},
-                {"//host/path/info", "/path/info", false},
-                {"/path/info", "/path/info", false},
+                {"http://host/path/info", "/path/info", false, false},
+                {"//host/path/info", "/path/info", false, false},
+                {"/path/info", "/path/info", false, false},
 
                 // legal non ambiguous relative paths
-                {"http://host/../path/info", null, false},
-                {"http://host/path/../info", "/info", false},
-                {"http://host/path/./info", "/path/info", false},
-                {"//host/path/../info", "/info", false},
-                {"//host/path/./info", "/path/info", false},
-                {"/path/../info", "/info", false},
-                {"/path/./info", "/path/info", false},
-                {"path/../info", "info", false},
-                {"path/./info", "path/info", false},
+                {"http://host/../path/info", null, false, false},
+                {"http://host/path/../info", "/info", false, false},
+                {"http://host/path/./info", "/path/info", false, false},
+                {"//host/path/../info", "/info", false, false},
+                {"//host/path/./info", "/path/info", false, false},
+                {"/path/../info", "/info", false, false},
+                {"/path/./info", "/path/info", false, false},
+                {"path/../info", "info", false, false},
+                {"path/./info", "path/info", false, false},
 
                 // illegal paths
-                {"//host/../path/info", null, false},
-                {"/../path/info", null, false},
-                {"../path/info", null, false},
-                {"/path/%XX/info", null, false},
-                {"/path/%2/F/info", null, false},
+                {"//host/../path/info", null, false, false},
+                {"/../path/info", null, false, false},
+                {"../path/info", null, false, false},
+                {"/path/%XX/info", null, false, false},
+                {"/path/%2/F/info", null, false, false},
 
                 // ambiguous dot encodings or parameter inclusions
-                {"scheme://host/path/%2e/info", "/path/./info", true},
-                {"scheme:/path/%2e/info", "/path/./info", true},
-                {"/path/%2e/info", "/path/./info", true},
-                {"path/%2e/info/", "path/./info/", true},
-                {"/path/%2e%2e/info", "/path/../info", true},
-                {"/path/%2e%2e;/info", "/path/../info", true},
-                {"/path/%2e%2e;param/info", "/path/../info", true},
-                {"/path/%2e%2e;param;other/info;other", "/path/../info", true},
-                {"/path/.;/info", "/path/./info", true},
-                {"/path/.;param/info", "/path/./info", true},
-                {"/path/..;/info", "/path/../info", true},
-                {"/path/..;param/info", "/path/../info", true},
-                {"%2e/info", "./info", true},
-                {"%2e%2e/info", "../info", true},
-                {"%2e%2e;/info", "../info", true},
-                {".;/info", "./info", true},
-                {".;param/info", "./info", true},
-                {"..;/info", "../info", true},
-                {"..;param/info", "../info", true},
-                {"%2e", ".", true},
-                {"%2e.", "..", true},
-                {".%2e", "..", true},
-                {"%2e%2e", "..", true},
+                {"scheme://host/path/%2e/info", "/path/./info", true, false},
+                {"scheme:/path/%2e/info", "/path/./info", true, false},
+                {"/path/%2e/info", "/path/./info", true, false},
+                {"path/%2e/info/", "path/./info/", true, false},
+                {"/path/%2e%2e/info", "/path/../info", true, false},
+                {"/path/%2e%2e;/info", "/path/../info", true, false},
+                {"/path/%2e%2e;param/info", "/path/../info", true, false},
+                {"/path/%2e%2e;param;other/info;other", "/path/../info", true, false},
+                {"/path/.;/info", "/path/./info", true, false},
+                {"/path/.;param/info", "/path/./info", true, false},
+                {"/path/..;/info", "/path/../info", true, false},
+                {"/path/..;param/info", "/path/../info", true, false},
+                {"%2e/info", "./info", true, false},
+                {"%2e%2e/info", "../info", true, false},
+                {"%2e%2e;/info", "../info", true, false},
+                {".;/info", "./info", true, false},
+                {".;param/info", "./info", true, false},
+                {"..;/info", "../info", true, false},
+                {"..;param/info", "../info", true, false},
+                {"%2e", ".", true, false},
+                {"%2e.", "..", true, false},
+                {".%2e", "..", true, false},
+                {"%2e%2e", "..", true, false},
 
                 // ambiguous segment separators
-                {"/path/%2f/info", "/path///info", true},
-                {"%2f/info", "//info", true},
-                {"%2F/info", "//info", true},
+                {"/path/%2f/info", "/path///info", false, true},
+                {"%2f/info", "//info", false, true},
+                {"%2F/info", "//info", false, true},
+                {"/path/%2f../info", "/path//../info", false, true},
+                {"/path/%2f/..;/info", "/path///../info", true, true},
 
                 // Non ascii characters
-                {"http://localhost:9000/x\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", "/x\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", false},
-                {"http://localhost:9000/\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", "/\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", false},
+                {"http://localhost:9000/x\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", "/x\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", false, false},
+                {"http://localhost:9000/\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", "/\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", false, false},
             }).map(Arguments::of);
     }
 
     @ParameterizedTest
     @MethodSource("decodePathTests")
-    public void testDecodedPath(String input, String decodedPath, boolean ambiguous)
+    public void testDecodedPath(String input, String decodedPath, boolean ambiguousSegment, boolean ambiguousSeparator)
     {
         try
         {
             HttpURI uri = new HttpURI(input);
             assertThat(uri.getDecodedPath(), is(decodedPath));
-            assertThat(uri.hasAmbiguousSegment(), is(ambiguous));
+            assertThat(uri.hasAmbiguousSegment(), is(ambiguousSegment));
+            assertThat(uri.hasAmbiguousSeparator(), is(ambiguousSeparator));
+            assertThat(uri.isAmbiguous(), is(ambiguousSegment || ambiguousSeparator));
         }
         catch (Exception e)
         {
