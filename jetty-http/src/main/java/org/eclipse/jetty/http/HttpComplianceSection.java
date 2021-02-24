@@ -33,7 +33,8 @@ public enum HttpComplianceSection
     TRANSFER_ENCODING_WITH_CONTENT_LENGTH("https://tools.ietf.org/html/rfc7230#section-3.3.1", "Transfer-Encoding and Content-Length"),
     MULTIPLE_CONTENT_LENGTHS("https://tools.ietf.org/html/rfc7230#section-3.3.1", "Multiple Content-Lengths"),
     NO_AMBIGUOUS_PATH_SEGMENTS("https://tools.ietf.org/html/rfc3986#section-3.3", "No ambiguous URI path segments"),
-    NO_AMBIGUOUS_PATH_SEPARATORS("https://tools.ietf.org/html/rfc3986#section-3.3", "No ambiguous URI path separators");
+    NO_AMBIGUOUS_PATH_SEPARATORS("https://tools.ietf.org/html/rfc3986#section-3.3", "No ambiguous URI path separators"),
+    NO_AMBIGUOUS_PATH_PARAMETERS("https://tools.ietf.org/html/rfc3986#section-3.3", "No ambiguous URI path parameters");
 
     final String url;
     final String description;

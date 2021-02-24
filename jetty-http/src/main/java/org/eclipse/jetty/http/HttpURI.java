@@ -72,7 +72,8 @@ public class HttpURI
     enum Ambiguous
     {
         SEGMENT,
-        SEPARATOR
+        SEPARATOR,
+        PARAM
     }
 
     /**
@@ -637,8 +638,10 @@ public class HttpURI
         if (!_ambiguous.contains(Ambiguous.SEGMENT))
         {
             Boolean ambiguous = __ambiguousSegments.get(uri, segment, end - segment);
-            if (ambiguous == Boolean.TRUE   || (param && ambiguous == Boolean.FALSE))
+            if (ambiguous == Boolean.TRUE)
                 _ambiguous.add(Ambiguous.SEGMENT);
+            else if (param && ambiguous == Boolean.FALSE)
+                _ambiguous.add(Ambiguous.PARAM);
         }
     }
 
@@ -656,6 +659,14 @@ public class HttpURI
     public boolean hasAmbiguousSeparator()
     {
         return _ambiguous.contains(Ambiguous.SEPARATOR);
+    }
+
+    /**
+     * @return True if the URI has a possibly ambiguous path parameter like '..;'
+     */
+    public boolean hasAmbiguousParameter()
+    {
+        return _ambiguous.contains(Ambiguous.PARAM);
     }
 
     /**

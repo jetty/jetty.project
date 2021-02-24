@@ -49,6 +49,7 @@ import javax.servlet.http.Part;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.HttpComplianceSection;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
@@ -1837,7 +1838,7 @@ public class RequestTest
     }
 
     @Test
-    public void testAmbiguousSegments() throws Exception
+    public void testAmbiguousParameters() throws Exception
     {
         _handler._checker = (request, response) -> true;
 
@@ -1848,13 +1849,30 @@ public class RequestTest
         _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC7230);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
 
-        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC7230_LEGACY);
+        HttpCompliance.CUSTOM0.sections().clear();
+        HttpCompliance.CUSTOM0.sections().addAll(HttpCompliance.RFC7230.sections());
+        HttpCompliance.CUSTOM0.sections().remove(HttpComplianceSection.NO_AMBIGUOUS_PATH_PARAMETERS);
+
+        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.CUSTOM0);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+    }
+
+    @Test
+    public void testAmbiguousSegments() throws Exception
+    {
+        _handler._checker = (request, response) -> true;
+
+        String request = "GET /ambiguous/%2e%2e/path HTTP/1.0\r\n" +
+            "Host: whatever\r\n" +
+            "\r\n";
+
+        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC7230_NO_AMBIGUOUS_URIS);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+
+        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC7230);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
 
         _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
-
-        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616_LEGACY);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
     }
 
@@ -1867,16 +1885,13 @@ public class RequestTest
             "Host: whatever\r\n" +
             "\r\n";
 
-        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC7230);
+        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC7230_NO_AMBIGUOUS_URIS);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
 
-        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC7230_LEGACY);
+        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC7230);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
 
         _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
-
-        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616_LEGACY);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
     }
 

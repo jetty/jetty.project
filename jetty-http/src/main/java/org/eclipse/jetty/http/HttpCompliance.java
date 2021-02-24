@@ -61,7 +61,7 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
      * {@link HttpComplianceSection#NO_AMBIGUOUS_PATH_SEGMENTS} and
      * {@link HttpComplianceSection#NO_AMBIGUOUS_PATH_SEPARATORS}.
      */
-    RFC2616_LEGACY(sectionsBySpec("RFC2616,-FIELD_COLON,-METHOD_CASE_SENSITIVE,-TRANSFER_ENCODING_WITH_CONTENT_LENGTH,-MULTIPLE_CONTENT_LENGTHS,-NO_AMBIGUOUS_PATH_SEGMENTS,-NO_AMBIGUOUS_PATH_SEPARATORS")),
+    RFC2616_LEGACY(sectionsBySpec("RFC2616,-FIELD_COLON,-METHOD_CASE_SENSITIVE,-TRANSFER_ENCODING_WITH_CONTENT_LENGTH,-MULTIPLE_CONTENT_LENGTHS")),
 
     /**
      * The strict RFC2616 support mode
@@ -69,17 +69,20 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
     RFC2616(sectionsBySpec("RFC2616")),
 
     /**
-     * Jetty's current RFC7230 support, which excludes
-     * {@link HttpComplianceSection#METHOD_CASE_SENSITIVE},
-     * {@link HttpComplianceSection#NO_AMBIGUOUS_PATH_SEGMENTS} and
-     * {@link HttpComplianceSection#NO_AMBIGUOUS_PATH_SEPARATORS}.
+     * Jetty's legacy RFC7230 support, which excludes
+     * {@link HttpComplianceSection#METHOD_CASE_SENSITIVE}.
      */
-    RFC7230_LEGACY(sectionsBySpec("RFC7230,-METHOD_CASE_SENSITIVE,-NO_AMBIGUOUS_PATH_SEGMENTS,-NO_AMBIGUOUS_PATH_SEPARATORS")),
+    RFC7230_LEGACY(sectionsBySpec("RFC7230,-METHOD_CASE_SENSITIVE")),
 
     /**
      * The RFC7230 support mode
      */
     RFC7230(sectionsBySpec("RFC7230")),
+
+    /**
+     * The RFC7230 support mode with no ambiguous URIs
+     */
+    RFC7230_NO_AMBIGUOUS_URIS(sectionsBySpec("RFC7230,NO_AMBIGUOUS_PATH_SEGMENTS,NO_AMBIGUOUS_PATH_SEPARATORS")),
 
     /**
      * Custom compliance mode that can be defined with System property <code>org.eclipse.jetty.http.HttpCompliance.CUSTOM0</code>
@@ -124,16 +127,20 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
                 break;
 
             case "RFC2616":
+                i++;
                 sections = EnumSet.complementOf(EnumSet.of(
                     HttpComplianceSection.NO_FIELD_FOLDING,
-                    HttpComplianceSection.NO_HTTP_0_9));
-                i++;
+                    HttpComplianceSection.NO_HTTP_0_9,
+                    HttpComplianceSection.NO_AMBIGUOUS_PATH_SEGMENTS,
+                    HttpComplianceSection.NO_AMBIGUOUS_PATH_SEPARATORS));
                 break;
 
             case "*":
             case "RFC7230":
                 i++;
-                sections = EnumSet.allOf(HttpComplianceSection.class);
+                sections = EnumSet.complementOf(EnumSet.of(
+                    HttpComplianceSection.NO_AMBIGUOUS_PATH_SEGMENTS,
+                    HttpComplianceSection.NO_AMBIGUOUS_PATH_SEPARATORS));
                 break;
 
             default:
