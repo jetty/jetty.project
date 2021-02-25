@@ -30,15 +30,17 @@ import static java.util.EnumSet.noneOf;
 
 /**
  * URI compliance modes for Jetty request handling.
- * A Compliance mode consists of a set of {@link Violation}s which are applied
+ * A Compliance mode consists of a set of {@link Violation}s which are allowed
  * when the mode is enabled.
  */
 public final class UriCompliance implements ComplianceViolation.Mode
 {
     protected static final Logger LOG = LoggerFactory.getLogger(UriCompliance.class);
 
-    // These are compliance violations, which may optionally be allowed by the compliance mode, which mean that
-    // the relevant section of the RFC is not strictly adhered to.
+    /**
+     * These are URI compliance violations, which may be allowed by the compliance mode. Currently all these
+     * violations are for additional criteria in excess of the strict requirements of rfc3986.
+     */
     public enum Violation implements ComplianceViolation
     {
         /**
