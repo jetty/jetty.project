@@ -36,7 +36,9 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IncludeExclude;
+import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -185,6 +187,7 @@ public class FileBufferedResponseHandler extends HandlerWrapper
     {
         private final Interceptor _next;
         private final HttpChannel _channel;
+        private final int _outputBufferSize;
         private Boolean _aggregating;
         private File _file;
         private OutputStream _bufferedOutputStream;
@@ -193,38 +196,27 @@ public class FileBufferedResponseHandler extends HandlerWrapper
         {
             _next = interceptor;
             _channel = httpChannel;
+            _outputBufferSize = httpChannel.getHttpConfiguration().getOutputBufferSize();
         }
 
         @Override
         public void resetBuffer()
         {
-            if (_bufferedOutputStream != null)
-            {
-                try
-                {
-                    _bufferedOutputStream.close();
-                }
-                catch (IOException e)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.trace("Ignored", e);
-                }
-            }
-
             if (_file != null)
             {
                 try
                 {
                     Files.delete(_file.toPath());
                 }
-                catch (IOException e)
+                catch (Throwable t)
                 {
-                    LOG.warn("Could Not Delete File {}", _file, e);
+                    LOG.warn("Could Not Delete File {}", _file, t);
                 }
             }
 
-            _aggregating = null;
+            IO.close(_bufferedOutputStream);
             _bufferedOutputStream = null;
+            _aggregating = null;
             _file = null;
         }
 
@@ -273,9 +265,10 @@ public class FileBufferedResponseHandler extends HandlerWrapper
             {
                 aggregate(content);
             }
-            catch (IOException e)
+            catch (Throwable t)
             {
-                callback.failed(e);
+                resetBuffer();
+                callback.failed(t);
                 return;
             }
 
@@ -307,15 +300,77 @@ public class FileBufferedResponseHandler extends HandlerWrapper
         {
             try
             {
-                Callback wrappedCallback = Callback.from(callback, this::resetBuffer);
                 _bufferedOutputStream.flush();
-                ByteBuffer buffer = BufferUtil.toMappedBuffer(_file);
-                getNextInterceptor().write(buffer, true, wrappedCallback);
+                _bufferedOutputStream.close();
+                _bufferedOutputStream = null;
             }
             catch (IOException e)
             {
+                resetBuffer();
                 callback.failed(e);
+                return;
             }
+
+            // Create an iterating callback to do the writing
+            IteratingCallback icb = new IteratingCallback()
+            {
+                private final long fileLength = _file.length();
+                private int _pos = 0;
+                private ByteBuffer _buffer;
+                private boolean _last = false;
+
+                @Override
+                protected Action process() throws Exception
+                {
+                    if (_last)
+                        return Action.SUCCEEDED;
+
+                    long len = Math.min(_outputBufferSize, fileLength - _pos);
+                    _last = (_pos + len == fileLength);
+                    _buffer = BufferUtil.toMappedBuffer(_file, _pos, len);
+                    getNextInterceptor().write(_buffer, _last, this);
+                    _pos += len;
+                    return Action.SCHEDULED;
+                }
+
+                @Override
+                public void succeeded()
+                {
+                    // TODO: use cleaner API in Jetty-10.
+                    _buffer = null;
+                    super.succeeded();
+                }
+
+                @Override
+                protected void onCompleteSuccess()
+                {
+                    try
+                    {
+                        Files.delete(_file.toPath());
+                        callback.succeeded();
+                    }
+                    catch (IOException e)
+                    {
+                        callback.failed(e);
+                    }
+                }
+
+                @Override
+                protected void onCompleteFailure(Throwable cause)
+                {
+                    try
+                    {
+                        Files.delete(_file.toPath());
+                    }
+                    catch (IOException e)
+                    {
+                        cause.addSuppressed(e);
+                    }
+
+                    callback.failed(cause);
+                }
+            };
+            icb.iterate();
         }
     }
 }

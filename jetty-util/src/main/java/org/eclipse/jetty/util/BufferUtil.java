@@ -1032,9 +1032,14 @@ public class BufferUtil
 
     public static ByteBuffer toMappedBuffer(File file) throws IOException
     {
+        return toMappedBuffer(file, 0, file.length());
+    }
+
+    public static ByteBuffer toMappedBuffer(File file, int pos, long len) throws IOException
+    {
         try (FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.READ))
         {
-            return channel.map(MapMode.READ_ONLY, 0, file.length());
+            return channel.map(MapMode.READ_ONLY, pos, len);
         }
     }
 
