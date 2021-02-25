@@ -15,6 +15,7 @@ package org.eclipse.jetty.http;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.EnumSet;
 
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Index;
@@ -47,6 +48,12 @@ import org.eclipse.jetty.util.UrlEncoded;
  */
 public interface HttpURI
 {
+    enum Ambiguous
+    {
+        SEGMENT,
+        SEPARATOR
+    }
+
     static Mutable build()
     {
         return new Mutable();
@@ -131,7 +138,20 @@ public interface HttpURI
 
     boolean isAbsolute();
 
+    /**
+     * @return True if the URI has either an {@link #hasAmbiguousSegment()} or {@link #hasAmbiguousSeparator()}.
+     */
+    boolean isAmbiguous();
+
+    /**
+     * @return True if the URI has a possibly ambiguous segment like '..;' or '%2e%2e'
+     */
     boolean hasAmbiguousSegment();
+
+    /**
+     * @return True if the URI has a possibly ambiguous separator of %2f
+     */
+    boolean hasAmbiguousSeparator();
 
     default URI toURI()
     {
@@ -158,7 +178,7 @@ public interface HttpURI
         private final String _fragment;
         private String _uri;
         private String _decodedPath;
-        private boolean _ambiguousSegment;
+        private final EnumSet<Mutable.Ambiguous> _ambiguous = EnumSet.noneOf(Mutable.Ambiguous.class);
 
         private Immutable(Mutable builder)
         {
@@ -172,7 +192,7 @@ public interface HttpURI
             _fragment = builder._fragment;
             _uri = builder._uri;
             _decodedPath = builder._decodedPath;
-            _ambiguousSegment = builder._ambiguousSegment;
+            _ambiguous.addAll(builder._ambiguous);
         }
 
         private Immutable(String uri)
@@ -337,9 +357,21 @@ public interface HttpURI
         }
 
         @Override
+        public boolean isAmbiguous()
+        {
+            return !_ambiguous.isEmpty();
+        }
+
+        @Override
         public boolean hasAmbiguousSegment()
         {
-            return _ambiguousSegment;
+            return _ambiguous.contains(Mutable.Ambiguous.SEGMENT);
+        }
+
+        @Override
+        public boolean hasAmbiguousSeparator()
+        {
+            return _ambiguous.contains(Mutable.Ambiguous.SEPARATOR);
         }
 
         @Override
@@ -411,7 +443,7 @@ public interface HttpURI
         private String _fragment;
         private String _uri;
         private String _decodedPath;
-        private boolean _ambiguousSegment;
+        private final EnumSet<Ambiguous> _ambiguous = EnumSet.noneOf(Ambiguous.class);
 
         private Mutable()
         {
@@ -535,7 +567,7 @@ public interface HttpURI
             _fragment = null;
             _uri = null;
             _decodedPath = null;
-            _ambiguousSegment = false;
+            _ambiguous.clear();
             return this;
         }
 
@@ -660,9 +692,21 @@ public interface HttpURI
         }
 
         @Override
+        public boolean isAmbiguous()
+        {
+            return !_ambiguous.isEmpty();
+        }
+
+        @Override
         public boolean hasAmbiguousSegment()
         {
-            return _ambiguousSegment;
+            return _ambiguous.contains(Mutable.Ambiguous.SEGMENT);
+        }
+
+        @Override
+        public boolean hasAmbiguousSeparator()
+        {
+            return _ambiguous.contains(Mutable.Ambiguous.SEPARATOR);
         }
 
         public Mutable normalize()
@@ -766,7 +810,10 @@ public interface HttpURI
             _query = uri.getQuery();
             _uri = null;
             _decodedPath = uri.getDecodedPath();
-            _ambiguousSegment = uri.hasAmbiguousSegment();
+            if (uri.hasAmbiguousSeparator())
+                _ambiguous.add(Ambiguous.SEPARATOR);
+            if (uri.hasAmbiguousSegment())
+                _ambiguous.add(Ambiguous.SEGMENT);
             return this;
         }
 
@@ -1062,7 +1109,8 @@ public interface HttpURI
                                 break;
                             case 'f':
                             case 'F':
-                                _ambiguousSegment |= (escapedSlash == 2);
+                                if (escapedSlash == 2)
+                                    _ambiguous.add(Ambiguous.SEPARATOR);
                                 escapedSlash = 0;
                                 break;
                             default:
@@ -1183,16 +1231,18 @@ public interface HttpURI
          *
          * An ambiguous path segment is one that is perhaps technically legal, but is considered undesirable to handle
          * due to possible ambiguity.  Examples include segments like '..;', '%2e', '%2e%2e' etc.
+         *
          * @param uri The URI string
          * @param segment The inclusive starting index of the segment (excluding any '/')
          * @param end The exclusive end index of the segment
          */
         private void checkSegment(String uri, int segment, int end, boolean param)
         {
-            if (!_ambiguousSegment)
+            if (!_ambiguous.contains(Ambiguous.SEGMENT))
             {
                 Boolean ambiguous = __ambiguousSegments.get(uri, segment, end - segment);
-                _ambiguousSegment |= ambiguous == Boolean.TRUE   || (param && ambiguous == Boolean.FALSE);
+                if (ambiguous == Boolean.TRUE || (param && ambiguous == Boolean.FALSE))
+                    _ambiguous.add(Ambiguous.SEGMENT);
             }
         }
     }

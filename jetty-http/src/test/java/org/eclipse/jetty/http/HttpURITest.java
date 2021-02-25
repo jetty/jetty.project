@@ -25,13 +25,14 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class HttpURITest
 {
     @Test
-    public void testBuilder() throws Exception
+    public void testBuilder()
     {
         HttpURI uri = HttpURI.build()
             .scheme("http")
@@ -76,7 +77,7 @@ public class HttpURITest
     }
 
     @Test
-    public void testExample() throws Exception
+    public void testExample()
     {
         HttpURI uri = HttpURI.from("http://user:password@host:8888/ignored/../p%61th;ignored/info;param?query=value#fragment");
 
@@ -93,7 +94,7 @@ public class HttpURITest
     }
 
     @Test
-    public void testInvalidAddress() throws Exception
+    public void testInvalidAddress()
     {
         assertInvalidURI("http://[ffff::1:8080/", "Invalid URL; no closing ']' -- should throw exception");
         assertInvalidURI("**", "only '*', not '**'");
@@ -163,19 +164,19 @@ public class HttpURITest
     }
 
     @Test
-    public void testAt() throws Exception
+    public void testAt()
     {
         HttpURI uri = HttpURI.from("/@foo/bar");
         assertEquals("/@foo/bar", uri.getPath());
     }
 
     @Test
-    public void testParams() throws Exception
+    public void testParams()
     {
         HttpURI uri = HttpURI.from("/foo/bar");
         assertEquals("/foo/bar", uri.getPath());
         assertEquals("/foo/bar", uri.getDecodedPath());
-        assertEquals(null, uri.getParam());
+        assertNull(uri.getParam());
 
         uri = HttpURI.from("/foo/bar;jsessionid=12345");
         assertEquals("/foo/bar;jsessionid=12345", uri.getPath());
@@ -227,7 +228,7 @@ public class HttpURITest
         assertEquals("/f%30%30;p0/bar;p1;p2", uri.getPath());
         assertEquals("/f00/bar", uri.getDecodedPath());
         assertEquals("p2", uri.getParam());
-        assertEquals(null, uri.getQuery());
+        assertNull(uri.getQuery());
 
         uri = builder.pathQuery("/f%30%30;p0/bar;p1;p2?name=value").asImmutable();
         assertEquals("http://host:8888/f%30%30;p0/bar;p1;p2?name=value", uri.toString());
@@ -241,7 +242,7 @@ public class HttpURITest
         assertEquals("/f%30%30;p0/bar;p1;p2", uri.getPath());
         assertEquals("/f00/bar", uri.getDecodedPath());
         assertEquals("p2", uri.getParam());
-        assertEquals(null, uri.getQuery());
+        assertNull(uri.getQuery());
 
         uri = builder.query("other=123456").asImmutable();
         assertEquals("http://host:8888/f%30%30;p0/bar;p1;p2?other=123456", uri.toString());
@@ -252,7 +253,7 @@ public class HttpURITest
     }
 
     @Test
-    public void testSchemeAndOrAuthority() throws Exception
+    public void testSchemeAndOrAuthority()
     {
         HttpURI.Mutable builder = HttpURI.build("/path/info");
         HttpURI uri = builder.asImmutable();
@@ -272,7 +273,7 @@ public class HttpURITest
     }
 
     @Test
-    public void testBasicAuthCredentials() throws Exception
+    public void testBasicAuthCredentials()
     {
         HttpURI uri = HttpURI.from("http://user:password@example.com:8888/blah");
         assertEquals("http://user:password@example.com:8888/blah", uri.toString());
@@ -281,7 +282,7 @@ public class HttpURITest
     }
 
     @Test
-    public void testCanonicalDecoded() throws Exception
+    public void testCanonicalDecoded()
     {
         HttpURI uri = HttpURI.from("/path/.info");
         assertEquals("/path/.info", uri.getDecodedPath());
@@ -319,74 +320,79 @@ public class HttpURITest
         return Arrays.stream(new Object[][]
             {
                 // Simple path example
-                {"http://host/path/info", "/path/info", false},
-                {"//host/path/info", "/path/info", false},
-                {"/path/info", "/path/info", false},
+                {"http://host/path/info", "/path/info", false, false},
+                {"//host/path/info", "/path/info", false, false},
+                {"/path/info", "/path/info", false, false},
 
                 // legal non ambiguous relative paths
-                {"http://host/../path/info", null, false},
-                {"http://host/path/../info", "/info", false},
-                {"http://host/path/./info", "/path/info", false},
-                {"//host/path/../info", "/info", false},
-                {"//host/path/./info", "/path/info", false},
-                {"/path/../info", "/info", false},
-                {"/path/./info", "/path/info", false},
-                {"path/../info", "info", false},
-                {"path/./info", "path/info", false},
+                {"http://host/../path/info", null, false, false},
+                {"http://host/path/../info", "/info", false, false},
+                {"http://host/path/./info", "/path/info", false, false},
+                {"//host/path/../info", "/info", false, false},
+                {"//host/path/./info", "/path/info", false, false},
+                {"/path/../info", "/info", false, false},
+                {"/path/./info", "/path/info", false, false},
+                {"path/../info", "info", false, false},
+                {"path/./info", "path/info", false, false},
 
                 // illegal paths
-                {"//host/../path/info", null, false},
-                {"/../path/info", null, false},
-                {"../path/info", null, false},
-                {"/path/%XX/info", null, false},
-                {"/path/%2/F/info", null, false},
+                {"//host/../path/info", null, false, false},
+                {"/../path/info", null, false, false},
+                {"../path/info", null, false, false},
+                {"/path/%XX/info", null, false, false},
+                {"/path/%2/F/info", null, false, false},
 
                 // ambiguous dot encodings or parameter inclusions
-                {"scheme://host/path/%2e/info", "/path/./info", true},
-                {"scheme:/path/%2e/info", "/path/./info", true},
-                {"/path/%2e/info", "/path/./info", true},
-                {"path/%2e/info/", "path/./info/", true},
-                {"/path/%2e%2e/info", "/path/../info", true},
-                {"/path/%2e%2e;/info", "/path/../info", true},
-                {"/path/%2e%2e;param/info", "/path/../info", true},
-                {"/path/%2e%2e;param;other/info;other", "/path/../info", true},
-                {"/path/.;/info", "/path/./info", true},
-                {"/path/.;param/info", "/path/./info", true},
-                {"/path/..;/info", "/path/../info", true},
-                {"/path/..;param/info", "/path/../info", true},
-                {"%2e/info", "./info", true},
-                {"%2e%2e/info", "../info", true},
-                {"%2e%2e;/info", "../info", true},
-                {".;/info", "./info", true},
-                {".;param/info", "./info", true},
-                {"..;/info", "../info", true},
-                {"..;param/info", "../info", true},
-                {"%2e", ".", true},
-                {"%2e.", "..", true},
-                {".%2e", "..", true},
-                {"%2e%2e", "..", true},
+                {"scheme://host/path/%2e/info", "/path/./info", true, false},
+                {"scheme:/path/%2e/info", "/path/./info", true, false},
+                {"/path/%2e/info", "/path/./info", true, false},
+                {"path/%2e/info/", "path/./info/", true, false},
+                {"/path/%2e%2e/info", "/path/../info", true, false},
+                {"/path/%2e%2e;/info", "/path/../info", true, false},
+                {"/path/%2e%2e;param/info", "/path/../info", true, false},
+                {"/path/%2e%2e;param;other/info;other", "/path/../info", true, false},
+                {"/path/.;/info", "/path/./info", true, false},
+                {"/path/.;param/info", "/path/./info", true, false},
+                {"/path/..;/info", "/path/../info", true, false},
+                {"/path/..;param/info", "/path/../info", true, false},
+                {"%2e/info", "./info", true, false},
+                {"%2e%2e/info", "../info", true, false},
+                {"%2e%2e;/info", "../info", true, false},
+                {".;/info", "./info", true, false},
+                {".;param/info", "./info", true, false},
+                {"..;/info", "../info", true, false},
+                {"..;param/info", "../info", true, false},
+                {"%2e", ".", true, false},
+                {"%2e.", "..", true, false},
+                {".%2e", "..", true, false},
+                {"%2e%2e", "..", true, false},
 
                 // ambiguous segment separators
-                {"/path/%2f/info", "/path///info", true},
-                {"%2f/info", "//info", true},
-                {"%2F/info", "//info", true},
+                {"/path/%2f/info", "/path///info", false, true},
+                {"%2f/info", "//info", false, true},
+                {"%2F/info", "//info", false, true},
+                {"/path/%2f../info", "/path//../info", false, true},
+                {"/path/%2f/..;/info", "/path///../info", true, true},
+
                 // Non ascii characters
                 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
-                {"http://localhost:9000/x\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", "/x\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", false},
-                {"http://localhost:9000/\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", "/\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", false},
+                {"http://localhost:9000/x\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", "/x\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", false, false},
+                {"http://localhost:9000/\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", "/\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", false, false},
                 // @checkstyle-enable-check : AvoidEscapedUnicodeCharactersCheck
             }).map(Arguments::of);
     }
 
     @ParameterizedTest
     @MethodSource("decodePathTests")
-    public void testDecodedPath(String input, String decodedPath, boolean ambiguous)
+    public void testDecodedPath(String input, String decodedPath, boolean ambiguousSegment, boolean ambiguousSeparator)
     {
         try
         {
             HttpURI uri = HttpURI.from(input);
             assertThat(uri.getDecodedPath(), is(decodedPath));
-            assertThat(uri.hasAmbiguousSegment(), is(ambiguous));
+            assertThat(uri.hasAmbiguousSegment(), is(ambiguousSegment));
+            assertThat(uri.hasAmbiguousSeparator(), is(ambiguousSeparator));
+            assertThat(uri.isAmbiguous(), is(ambiguousSegment || ambiguousSeparator));
         }
         catch (Exception e)
         {
