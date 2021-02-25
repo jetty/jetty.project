@@ -41,17 +41,26 @@ public final class UriCompliance implements ComplianceViolation.Mode
     // the relevant section of the RFC is not strictly adhered to.
     public enum Violation implements ComplianceViolation
     {
+        /**
+         * Ambiguous path segments e.g. <code>/foo/%2e%2e/bar</code>
+         */
         AMBIGUOUS_PATH_SEGMENT("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path segment"),
+        /**
+         * Ambiguous path separator within a URI segment e.g. <code>/foo/b%2fr</code>
+         */
         AMBIGUOUS_PATH_SEPARATOR("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path separator"),
+        /**
+         * Ambiguous path parameters within a URI segment e.g. <code>/foo/..;/bar</code>
+         */
         AMBIGUOUS_PATH_PARAMETER("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path parameter");
 
-        private final String url;
-        private final String description;
+        private final String _url;
+        private final String _description;
 
         Violation(String url, String description)
         {
-            this.url = url;
-            this.description = description;
+            _url = url;
+            _description = description;
         }
 
         @Override
@@ -63,20 +72,20 @@ public final class UriCompliance implements ComplianceViolation.Mode
         @Override
         public String getURL()
         {
-            return url;
+            return _url;
         }
 
         @Override
         public String getDescription()
         {
-            return description;
+            return _description;
         }
     }
 
     /**
-     * SAFE compliance mode that disallows all ambiguous URI Violations
+     * The default compliance mode that extends RFC3986 compliance with additional violations to avoid ambiguous URIs
      */
-    public static final UriCompliance SAFE = new UriCompliance("SAFE", noneOf(Violation.class));
+    public static final UriCompliance DEFAULT = new UriCompliance("DEFAULT", noneOf(Violation.class));
 
     /**
      * LEGACY compliance mode that disallows only ambiguous path parameters as per Jetty-9.4
@@ -84,11 +93,25 @@ public final class UriCompliance implements ComplianceViolation.Mode
     public static final UriCompliance LEGACY = new UriCompliance("LEGACY", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT, Violation.AMBIGUOUS_PATH_SEPARATOR));
 
     /**
-     * STRICT compliance mode that allows all ambiguous URI Violations as per a strict reading of RFC3986
+     * Compliance mode that exactly follows RFC3986, including allowing all additional ambiguous URI Violations
      */
-    public static final UriCompliance STRICT = new UriCompliance("STRICT", allOf(Violation.class));
+    public static final UriCompliance RFC3986 = new UriCompliance("RFC3986", allOf(Violation.class));
 
-    private static final List<UriCompliance> KNOWN_MODES = Arrays.asList(SAFE, LEGACY, STRICT);
+    /**
+     * @deprecated equivalent to DEFAULT
+     */
+    @SuppressWarnings("DeprecatedIsStillUsed")
+    @Deprecated
+    public static final UriCompliance SAFE = new UriCompliance("SAFE", DEFAULT.getAllowed());
+
+    /**
+     * @deprecated equivalent to RFC3986
+     */
+    @SuppressWarnings("DeprecatedIsStillUsed")
+    @Deprecated
+    public static final UriCompliance STRICT = new UriCompliance("STRICT", RFC3986.getAllowed());
+
+    private static final List<UriCompliance> KNOWN_MODES = Arrays.asList(DEFAULT, LEGACY, RFC3986, STRICT, SAFE);
     private static final AtomicInteger __custom = new AtomicInteger();
 
     public static UriCompliance valueOf(String name)
@@ -105,19 +128,23 @@ public final class UriCompliance implements ComplianceViolation.Mode
     /**
      * Create compliance set from string.
      * <p>
-     * Format:
+     * Format: &lt;BASE&gt;[,[-]&lt;violation&gt;]...
      * </p>
+     * <p>BASE is one of </p>
      * <dl>
      * <dt>0</dt><dd>No {@link Violation}s</dd>
      * <dt>*</dt><dd>All {@link Violation}s</dd>
-     * <dt>RFC2616</dt><dd>The set of {@link Violation}s application to https://tools.ietf.org/html/rfc2616,
-     * but not https://tools.ietf.org/html/rfc7230</dd>
-     * <dt>RFC7230</dt><dd>The set of {@link Violation}s application to https://tools.ietf.org/html/rfc7230</dd>
-     * <dt>name</dt><dd>Any of the known modes defined in {@link UriCompliance#KNOWN_MODES}</dd>
+     * <dt>&lt;name&gt;</dt><dd>The name of a set of allowed violations from {@link UriCompliance#KNOWN_MODES}</dd>
      * </dl>
+     * </p>
      * <p>
      * The remainder of the list can contain then names of {@link Violation}s to include them in the mode, or prefixed
-     * with a '-' to exclude thm from the mode.
+     * with a '-' to exclude thm from the mode.  Examples are:
+     * <dl>
+     * <dt><code>0,AMBIGUOUS_PATH_PARAMETER</code></dt><dd>Only allow {@link Violation#AMBIGUOUS_PATH_PARAMETER}</dd>
+     * <dt><code>*,-AMBIGUOUS_PATH_PARAMETER</code></dt><dd>Only all except {@link Violation#AMBIGUOUS_PATH_PARAMETER}</dd>
+     * <dt><code>RFC3986,AMBIGUOUS_PATH_PARAMETER</code></dt><dd>Same as RFC3986 plus {@link Violation#AMBIGUOUS_PATH_PARAMETER}</dd>
+     * </dl>
      * </p>
      *
      * @param spec A string in the format of a comma separated list starting with one of the following strings:
@@ -164,19 +191,19 @@ public final class UriCompliance implements ComplianceViolation.Mode
     }
 
     private final String _name;
-    private final Set<Violation> _violations;
+    private final Set<Violation> _allowed;
 
     private UriCompliance(String name, Set<Violation> violations)
     {
         Objects.requireNonNull(violations);
         _name = name;
-        _violations = unmodifiableSet(violations.isEmpty() ? noneOf(Violation.class) : copyOf(violations));
+        _allowed = unmodifiableSet(violations.isEmpty() ? noneOf(Violation.class) : copyOf(violations));
     }
 
     @Override
     public boolean allows(ComplianceViolation violation)
     {
-        return violation instanceof Violation && _violations.contains(violation);
+        return violation instanceof Violation && _allowed.contains(violation);
     }
 
     @Override
@@ -193,7 +220,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
     @Override
     public Set<Violation> getAllowed()
     {
-        return _violations;
+        return _allowed;
     }
 
     @Override
@@ -211,7 +238,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
      */
     public UriCompliance with(String name, Violation... violations)
     {
-        Set<Violation> union = _violations.isEmpty() ? EnumSet.noneOf(Violation.class) : copyOf(_violations);
+        Set<Violation> union = _allowed.isEmpty() ? EnumSet.noneOf(Violation.class) : copyOf(_allowed);
         union.addAll(copyOf(violations));
         return new UriCompliance(name, union);
     }
@@ -225,7 +252,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
      */
     public UriCompliance without(String name, Violation... violations)
     {
-        Set<Violation> remainder = _violations.isEmpty() ? EnumSet.noneOf(Violation.class) : copyOf(_violations);
+        Set<Violation> remainder = _allowed.isEmpty() ? EnumSet.noneOf(Violation.class) : copyOf(_allowed);
         remainder.removeAll(copyOf(violations));
         return new UriCompliance(name, remainder);
     }
@@ -233,7 +260,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
     @Override
     public String toString()
     {
-        return String.format("%s%s", _name, _violations);
+        return String.format("%s%s", _name, _allowed);
     }
 
     private static Set<Violation> copyOf(Violation[] violations)
