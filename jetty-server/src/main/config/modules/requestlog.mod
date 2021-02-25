@@ -17,23 +17,26 @@ etc/jetty-requestlog.xml
 logs/
 
 [ini-template]
-## Format string
+## The CustomRequestLog format string (extended NCSA format by default).
 # jetty.requestlog.formatString=%a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t "%r" %s %B "%{Referer}i" "%{User-Agent}i" "%C"
 
-## Logging directory (relative to $jetty.base)
+## Logging Directory with Relative Path (relative to $jetty.base).
 # jetty.requestlog.dir=logs
 
-## File path
+## Relative File Path (relative to $jetty.base).
 # jetty.requestlog.filePath=${jetty.requestlog.dir}/yyyy_mm_dd.request.log
 
-## Date format for rollovered files (uses SimpleDateFormat syntax)
+## Absolute File Path (will override the relative file path).
+# jetty.requestlog.absoluteFilePath=${jetty.base}/${jetty.requestlog.filePath}
+
+## Date format for rollovered files (uses SimpleDateFormat syntax).
 # jetty.requestlog.filenameDateFormat=yyyy_MM_dd
 
-## How many days to retain old log files
+## The number of days to retain old log files.
 # jetty.requestlog.retainDays=90
 
-## Whether to append to existing file
+## Whether to append to existing file.
 # jetty.requestlog.append=false
 
-## Timezone of the log file rollover
+## Timezone of the log file rollover.
 # jetty.requestlog.timezone=GMT
