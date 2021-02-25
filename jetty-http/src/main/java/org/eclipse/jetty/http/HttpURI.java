@@ -140,7 +140,7 @@ public interface HttpURI
     boolean isAbsolute();
 
     /**
-     * @return True if the URI has either an {@link #hasAmbiguousSegment()} or {@link #hasAmbiguousSeparator()}.
+     * @return True if the URI has either an {@link #hasAmbiguousParameter()}, {@link #hasAmbiguousSegment()} or {@link #hasAmbiguousSeparator()}.
      */
     boolean isAmbiguous();
 

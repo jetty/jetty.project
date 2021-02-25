@@ -15,7 +15,6 @@ package org.eclipse.jetty.http;
 
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -113,12 +112,11 @@ public final class UriCompliance implements ComplianceViolation.Mode
     @Deprecated
     public static final UriCompliance STRICT = new UriCompliance("STRICT", RFC3986.getAllowed());
 
-    private static final List<UriCompliance> KNOWN_MODES = Arrays.asList(DEFAULT, LEGACY, RFC3986, STRICT, SAFE);
     private static final AtomicInteger __custom = new AtomicInteger();
 
     public static UriCompliance valueOf(String name)
     {
-        for (UriCompliance compliance : KNOWN_MODES)
+        for (UriCompliance compliance : Arrays.asList(DEFAULT, LEGACY, RFC3986, STRICT, SAFE))
         {
             if (compliance.getName().equals(name))
                 return compliance;
@@ -132,22 +130,21 @@ public final class UriCompliance implements ComplianceViolation.Mode
      * <p>
      * Format: &lt;BASE&gt;[,[-]&lt;violation&gt;]...
      * </p>
-     * <p>BASE is one of </p>
+     * <p>BASE is one of:</p>
      * <dl>
      * <dt>0</dt><dd>No {@link Violation}s</dd>
      * <dt>*</dt><dd>All {@link Violation}s</dd>
-     * <dt>&lt;name&gt;</dt><dd>The name of a set of allowed violations from {@link UriCompliance#KNOWN_MODES}</dd>
+     * <dt>&lt;name&gt;</dt><dd>The name of a static instance of {@link UriCompliance} (e.g. {@link UriCompliance#RFC3986}).
      * </dl>
-     * </p>
      * <p>
      * The remainder of the list can contain then names of {@link Violation}s to include them in the mode, or prefixed
      * with a '-' to exclude thm from the mode.  Examples are:
+     * </p>
      * <dl>
      * <dt><code>0,AMBIGUOUS_PATH_PARAMETER</code></dt><dd>Only allow {@link Violation#AMBIGUOUS_PATH_PARAMETER}</dd>
      * <dt><code>*,-AMBIGUOUS_PATH_PARAMETER</code></dt><dd>Only all except {@link Violation#AMBIGUOUS_PATH_PARAMETER}</dd>
      * <dt><code>RFC3986,AMBIGUOUS_PATH_PARAMETER</code></dt><dd>Same as RFC3986 plus {@link Violation#AMBIGUOUS_PATH_PARAMETER}</dd>
      * </dl>
-     * </p>
      *
      * @param spec A string in the format of a comma separated list starting with one of the following strings:
      * @return the compliance from the string spec
