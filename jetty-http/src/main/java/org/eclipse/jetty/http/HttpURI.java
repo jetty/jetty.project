@@ -1259,10 +1259,10 @@ public interface HttpURI
             if (!_ambiguous.contains(Ambiguous.SEGMENT))
             {
                 Boolean ambiguous = __ambiguousSegments.get(uri, segment, end - segment);
-            if (ambiguous == Boolean.TRUE)
-                _ambiguous.add(Ambiguous.SEGMENT);
-            else if (param && ambiguous == Boolean.FALSE)
-                _ambiguous.add(Ambiguous.PARAM);
+                if (ambiguous == Boolean.TRUE)
+                    _ambiguous.add(Ambiguous.SEGMENT);
+                else if (param && ambiguous == Boolean.FALSE)
+                    _ambiguous.add(Ambiguous.PARAM);
             }
         }
     }
