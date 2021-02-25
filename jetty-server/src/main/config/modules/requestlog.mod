@@ -16,6 +16,10 @@ etc/jetty-requestlog.xml
 [files]
 logs/
 
+[ini]
+jetty.requestlog.dir?=logs
+jetty.requestlog.filePath?=${jetty.requestlog.dir}/yyyy_mm_dd.request.log
+
 [ini-template]
 ## The CustomRequestLog format string (extended NCSA format by default).
 # jetty.requestlog.formatString=%a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t "%r" %s %B "%{Referer}i" "%{User-Agent}i" "%C"
@@ -24,9 +28,11 @@ logs/
 # jetty.requestlog.dir=logs
 
 ## Relative File Path (relative to $jetty.base).
+## The string 'yyyy_mm_dd' in the filename will be replaced with the date format specified with ${jetty.requestlog.filenameDateFormat}.
 # jetty.requestlog.filePath=${jetty.requestlog.dir}/yyyy_mm_dd.request.log
 
 ## Absolute File Path (will override the relative file path).
+## The string 'yyyy_mm_dd' in the filename will be replaced with the date format specified with ${jetty.requestlog.filenameDateFormat}.
 # jetty.requestlog.absoluteFilePath=${jetty.base}/${jetty.requestlog.filePath}
 
 ## Date format for rollovered files (uses SimpleDateFormat syntax).
