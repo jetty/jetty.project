@@ -48,6 +48,7 @@ jetty-11.0.1 - 19 February 2021
  + 5941 Use jakarta.servlet.jsp.jstl version 2 implementation from Eclipse
    Glassfish
  + 5950 Deadlock due to logging inside classloaders
+ + 5963 Improve QuotedQualityCSV - Resolves CVE-2020-27223
  + 5966 jetty-home should not have a webapps/ directory
  + 5973 Proxy client TLS authentication example
  + 5977 Cache-Control header set by a filter is override by the value from
