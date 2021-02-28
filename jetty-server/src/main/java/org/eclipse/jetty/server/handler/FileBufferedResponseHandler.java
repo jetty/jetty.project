@@ -315,7 +315,7 @@ public class FileBufferedResponseHandler extends HandlerWrapper
             IteratingCallback icb = new IteratingCallback()
             {
                 private final long fileLength = _file.length();
-                private int _pos = 0;
+                private long _pos = 0;
                 private ByteBuffer _buffer;
                 private boolean _last = false;
 
