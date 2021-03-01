@@ -28,7 +28,6 @@ import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.listener.ContainerInitializer;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
@@ -51,6 +50,18 @@ public class JakartaWebSocketServletContainerInitializer implements ServletConta
     public static final String ENABLE_KEY = "org.eclipse.jetty.websocket.jakarta";
     public static final String HTTPCLIENT_ATTRIBUTE = "org.eclipse.jetty.websocket.jakarta.HttpClient";
     private static final Logger LOG = LoggerFactory.getLogger(JakartaWebSocketServletContainerInitializer.class);
+
+    private final Configurator configurator;
+
+    public JakartaWebSocketServletContainerInitializer()
+    {
+        this(null);
+    }
+
+    public JakartaWebSocketServletContainerInitializer(Configurator configurator)
+    {
+        this.configurator = configurator;
+    }
 
     /**
      * Test a ServletContext for {@code init-param} or {@code attribute} at {@code keyName} for
@@ -96,28 +107,7 @@ public class JakartaWebSocketServletContainerInitializer implements ServletConta
     {
         if (!context.isStopped())
             throw new IllegalStateException("configure should be called before starting");
-
-        // In this embedded-jetty usage, allow ServletContext.addListener() to
-        // add other ServletContextListeners (such as the ContextDestroyListener) after
-        // the initialization phase is over. (important for this SCI to function)
-        context.getServletContext().setExtendedListenerTypes(true);
-
-        context.addEventListener(ContainerInitializer.asContextListener(new JakartaWebSocketServletContainerInitializer())
-            .afterStartup((servletContext) ->
-            {
-                JakartaWebSocketServerContainer serverContainer = JakartaWebSocketServerContainer.getContainer(servletContext);
-                if (configurator != null)
-                {
-                    try
-                    {
-                        configurator.accept(servletContext, serverContainer);
-                    }
-                    catch (DeploymentException e)
-                    {
-                        throw new RuntimeException("Failed to deploy WebSocket Endpoint", e);
-                    }
-                }
-            }));
+        context.addServletContainerInitializer(new JakartaWebSocketServletContainerInitializer(configurator));
     }
 
     /**
@@ -268,6 +258,19 @@ public class JakartaWebSocketServletContainerInitializer implements ServletConta
                 {
                     throw new ServletException(e);
                 }
+            }
+        }
+
+        // Call the configurator after startup.
+        if (configurator != null)
+        {
+            try
+            {
+                configurator.accept(context, container);
+            }
+            catch (DeploymentException e)
+            {
+                throw new RuntimeException("Failed to deploy WebSocket Endpoint", e);
             }
         }
     }

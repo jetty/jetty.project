@@ -11,14 +11,27 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.client;
+package org.eclipse.jetty.websocket.jakarta.client.internal;
 
-import org.eclipse.jetty.websocket.jakarta.common.ClientEndpointConfigWrapper;
+import java.util.List;
+import java.util.Map;
 
-public class BasicClientEndpointConfig extends ClientEndpointConfigWrapper
+import jakarta.websocket.ClientEndpointConfig;
+import jakarta.websocket.HandshakeResponse;
+
+public class EmptyConfigurator extends ClientEndpointConfig.Configurator
 {
-    public BasicClientEndpointConfig()
+    public static final EmptyConfigurator INSTANCE = new EmptyConfigurator();
+
+    @Override
+    public void afterResponse(HandshakeResponse hr)
     {
-        init(Builder.create().configurator(EmptyConfigurator.INSTANCE).build());
+        // do nothing
+    }
+
+    @Override
+    public void beforeRequest(Map<String, List<String>> headers)
+    {
+        // do nothing
     }
 }

@@ -19,7 +19,7 @@ import java.util.Map;
 import jakarta.websocket.EndpointConfig;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.jakarta.client.BasicClientEndpointConfig;
+import org.eclipse.jetty.websocket.jakarta.client.internal.BasicClientEndpointConfig;
 import org.eclipse.jetty.websocket.jakarta.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jakarta.common.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;

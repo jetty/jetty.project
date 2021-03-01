@@ -20,7 +20,7 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
-import org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketClientFrameHandlerFactory;
+import org.eclipse.jetty.websocket.jakarta.client.internal.JakartaWebSocketClientFrameHandlerFactory;
 import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketContainer;
 import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketFrameHandlerMetadata;
 

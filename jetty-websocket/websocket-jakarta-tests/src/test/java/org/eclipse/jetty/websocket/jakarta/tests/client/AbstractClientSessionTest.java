@@ -14,8 +14,8 @@
 package org.eclipse.jetty.websocket.jakarta.tests.client;
 
 import org.eclipse.jetty.websocket.core.CoreSession;
-import org.eclipse.jetty.websocket.jakarta.client.BasicClientEndpointConfig;
-import org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketClientContainer;
+import org.eclipse.jetty.websocket.jakarta.client.internal.BasicClientEndpointConfig;
+import org.eclipse.jetty.websocket.jakarta.client.internal.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketContainer;
 import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketSession;

@@ -36,7 +36,7 @@ import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
 import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
-import org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketClientContainer;
+import org.eclipse.jetty.websocket.jakarta.client.internal.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.websocket.jakarta.server.config.ContainerDefaultConfigurator;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.slf4j.Logger;
@@ -296,5 +296,17 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
             }
             deferredEndpointConfigs.clear();
         }
+    }
+
+    @Override
+    protected void doClientStart()
+    {
+        // Do nothing.
+    }
+
+    @Override
+    protected void doClientStop()
+    {
+        // Do nothing.
     }
 }

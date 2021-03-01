@@ -19,6 +19,8 @@ module org.eclipse.jetty.websocket.jakarta.client
     exports org.eclipse.jetty.websocket.jakarta.client;
     exports org.eclipse.jetty.websocket.jakarta.client.internal to org.eclipse.jetty.websocket.jakarta.server;
 
+    requires static jetty.servlet.api;
+    requires org.slf4j;
     requires org.eclipse.jetty.websocket.core.client;
     requires org.eclipse.jetty.websocket.jakarta.common;
     requires transitive org.eclipse.jetty.client;

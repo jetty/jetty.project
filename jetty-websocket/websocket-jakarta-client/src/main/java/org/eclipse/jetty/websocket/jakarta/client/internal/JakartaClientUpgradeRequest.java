@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.client;
+package org.eclipse.jetty.websocket.jakarta.client.internal;
 
 import java.net.URI;
 import java.security.Principal;
