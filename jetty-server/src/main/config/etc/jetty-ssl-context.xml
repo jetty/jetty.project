@@ -8,7 +8,7 @@
         <Set name="KeyStorePath">
           <Property name="jetty.sslContext.keyStoreAbsolutePath">
             <Default>
-              <Property name="jetty.base" default="." />/<Property name="jetty.sslContext.keyStorePath" deprecated="jetty.keystore" default="etc/keystore"/>
+              <Property name="jetty.base" default="." />/<Property name="jetty.sslContext.keyStorePath" deprecated="jetty.keystore" default="etc/keystore.p12"/>
             </Default>
           </Property>
         </Set>
@@ -19,7 +19,11 @@
         <Set name="TrustStorePath">
           <Property name="jetty.sslContext.trustStoreAbsolutePath">
             <Default>
-              <Property name="jetty.base" default="." />/<Property name="jetty.sslContext.trustStorePath" deprecated="jetty.truststore" default="etc/keystore"/>
+              <Property name="jetty.base" default="." />/<Property name="jetty.sslContext.trustStorePath" deprecated="jetty.truststore">
+                <Default>
+                  <Property name="jetty.sslContext.keyStorePath" default="etc/keystore.p12"/>
+                </Default>
+              </Property>
             </Default>
           </Property>
         </Set>
