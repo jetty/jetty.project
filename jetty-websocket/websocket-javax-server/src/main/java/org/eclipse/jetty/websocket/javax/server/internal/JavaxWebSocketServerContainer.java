@@ -296,4 +296,16 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
             deferredEndpointConfigs.clear();
         }
     }
+
+    @Override
+    protected void doClientStart()
+    {
+        // Do nothing.
+    }
+
+    @Override
+    protected void doClientStop()
+    {
+        // Do nothing.
+    }
 }

@@ -18,7 +18,6 @@ import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.listener.ContainerInitializer;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
@@ -32,6 +31,17 @@ import org.slf4j.LoggerFactory;
 public class JettyWebSocketServletContainerInitializer implements ServletContainerInitializer
 {
     private static final Logger LOG = LoggerFactory.getLogger(JettyWebSocketServletContainerInitializer.class);
+    private final Configurator configurator;
+
+    public JettyWebSocketServletContainerInitializer()
+    {
+        this(null);
+    }
+
+    public JettyWebSocketServletContainerInitializer(Configurator configurator)
+    {
+        this.configurator = configurator;
+    }
 
     public interface Configurator
     {
@@ -50,18 +60,7 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
     {
         if (!context.isStopped())
             throw new IllegalStateException("configure should be called before starting");
-
-        context.addEventListener(
-            ContainerInitializer
-                .asContextListener(new JettyWebSocketServletContainerInitializer())
-                .afterStartup((servletContext) ->
-                {
-                    if (configurator != null)
-                    {
-                        JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(servletContext);
-                        configurator.accept(servletContext, container);
-                    }
-                }));
+        context.addServletContainerInitializer(new JettyWebSocketServletContainerInitializer(configurator));
     }
 
     /**
@@ -101,5 +100,10 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
         JettyWebSocketServerContainer container = JettyWebSocketServletContainerInitializer.initialize(contextHandler);
         if (LOG.isDebugEnabled())
             LOG.debug("onStartup {}", container);
+
+        if (configurator != null)
+        {
+            configurator.accept(context, container);
+        }
     }
 }
