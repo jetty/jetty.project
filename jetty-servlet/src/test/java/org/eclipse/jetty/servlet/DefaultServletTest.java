@@ -46,10 +46,8 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
@@ -112,7 +110,6 @@ public class DefaultServletTest
 
         connector = new LocalConnector(server);
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
-        connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.STRICT); // allow ambiguous path segments
 
         File extraJarResources = MavenTestingUtils.getTestResourceFile(ODD_JAR);
         URL[] urls = new URL[]{extraJarResources.toURI().toURL()};
@@ -253,11 +250,8 @@ public class DefaultServletTest
         String resBasePath = docRoot.toAbsolutePath().toString();
         defholder.setInitParameter("resourceBase", resBasePath);
 
-        StringBuffer req1 = new StringBuffer();
-        req1.append("GET /context/one/deep/ HTTP/1.0\n");
-        req1.append("\n");
-
-        String rawResponse = connector.getResponse(req1.toString());
+        String req1 = "GET /context/one/deep/ HTTP/1.0\n\n";
+        String rawResponse = connector.getResponse(req1);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -455,9 +449,16 @@ public class DefaultServletTest
             );
 
             scenarios.addScenario(
+                "GET " + prefix + "/..;/..;/sekret/pass",
+                "GET " + prefix + "/..;/..;/sekret/pass HTTP/1.0\r\n\r\n",
+                prefix.endsWith("?") ? HttpStatus.NOT_FOUND_404 : HttpStatus.BAD_REQUEST_400,
+                (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
+            );
+
+            scenarios.addScenario(
                 "GET " + prefix + "/%2E%2E/%2E%2E/sekret/pass",
-                "GET " + prefix + "/ HTTP/1.0\r\n\r\n",
-                HttpStatus.NOT_FOUND_404,
+                "GET " + prefix + "/%2E%2E/%2E%2E/sekret/pass HTTP/1.0\r\n\r\n",
+                prefix.endsWith("?") ? HttpStatus.NOT_FOUND_404 : HttpStatus.BAD_REQUEST_400,
                 (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
             );
 
@@ -469,12 +470,6 @@ public class DefaultServletTest
                     "GET " + prefix + "/../index.html HTTP/1.0\r\n\r\n",
                     HttpStatus.NOT_FOUND_404
                 );
-
-                scenarios.addScenario(
-                    "GET " + prefix + "/%2E%2E/index.html",
-                    "GET " + prefix + "/%2E%2E/index.html HTTP/1.0\r\n\r\n",
-                    HttpStatus.NOT_FOUND_404
-                );
             }
             else
             {
@@ -484,14 +479,13 @@ public class DefaultServletTest
                     HttpStatus.OK_200,
                     (response) -> assertThat(response.getContent(), containsString("Hello Index"))
                 );
-
-                scenarios.addScenario(
-                    "GET " + prefix + "/%2E%2E/index.html",
-                    "GET " + prefix + "/%2E%2E/index.html HTTP/1.0\r\n\r\n",
-                    HttpStatus.OK_200,
-                    (response) -> assertThat(response.getContent(), containsString("Hello Index"))
-                );
             }
+
+            scenarios.addScenario(
+                "GET " + prefix + "/%2E%2E/index.html",
+                "GET " + prefix + "/%2E%2E/index.html HTTP/1.0\r\n\r\n",
+                prefix.endsWith("?") ? HttpStatus.NOT_FOUND_404 : HttpStatus.BAD_REQUEST_400
+            );
 
             scenarios.addScenario(
                 "GET " + prefix + "/../../",
