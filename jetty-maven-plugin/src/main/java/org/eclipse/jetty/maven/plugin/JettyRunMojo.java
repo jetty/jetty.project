@@ -146,7 +146,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
             scanner.setScanDepth(Scanner.MAX_SCAN_DEPTH); //always fully walk directory hierarchies
             scanner.setReportExistingFilesOnStartup(false);
             configureScanner();
-            getLog().info("Scan interval ms = " + scan);
+            getLog().info("Scan interval sec = " + scan);
             scanner.start();
         }
         else

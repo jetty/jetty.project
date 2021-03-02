@@ -37,8 +37,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -516,7 +516,7 @@ public class Scanner extends AbstractLifeCycle
 
 
         //Create the scheduler and start it
-        _scheduler = new ScheduledExecutorScheduler("Scanner-" + SCANNER_IDS.getAndIncrement(), true, 1);
+        _scheduler = new TimerScheduler("Scanner-" + SCANNER_IDS.getAndIncrement(), true);
         _scheduler.start();
 
         //schedule the scan
