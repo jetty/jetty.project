@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,9 +16,11 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.EventListener;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -74,6 +76,7 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.servlet.ServletContextHandler.ServletContainerInitializerStarter;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Decorator;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -1540,6 +1543,83 @@ public class ServletContextHandlerTest
 
         String response = _connector.getResponse(request.toString());
         assertThat("Response", response, containsString("Test"));
+    }
+    
+    @Test
+    public void testAddServletContainerInitializer() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/");
+        final AtomicBoolean called = new AtomicBoolean();
+        context.addServletContainerInitializer(new ServletContainerInitializer()
+            {
+                @Override
+                public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+                {
+                    called.set(true);
+                }
+            });
+        
+        _server.setHandler(context);
+        _server.start();
+        ServletContainerInitializerStarter starter = context.getBean(ServletContainerInitializerStarter.class);
+        assertNotNull(starter);
+        Collection<ServletContainerInitializerHolder> holders = starter.getContainedBeans(ServletContainerInitializerHolder.class);
+        assertEquals(1, holders.size());
+        assertTrue(called.get());
+    }
+    
+    @Test
+    public void testAddServletContainerInitializerWithArgs() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/");
+        
+        final Set<Class<?>> onStartupClasses = new HashSet<>();
+        context.addServletContainerInitializer(new ServletContainerInitializer()
+            {
+                @Override
+                public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+                {
+                    onStartupClasses.addAll(c);
+                }
+            }, HelloServlet.class, TestServlet.class);
+
+        _server.setHandler(context);
+        _server.start();
+        
+        ServletContainerInitializerStarter starter = context.getBean(ServletContainerInitializerStarter.class);
+        assertNotNull(starter);
+        Collection<ServletContainerInitializerHolder> holders = starter.getContainedBeans(ServletContainerInitializerHolder.class);
+        assertEquals(1, holders.size());
+        assertThat(onStartupClasses, Matchers.containsInAnyOrder(HelloServlet.class, TestServlet.class));
+    }
+
+    @Test
+    public void testAddServletContainerInitializerHolder() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/");
+        
+        final Set<Class<?>> onStartupClasses = new HashSet<>();
+        ServletContainerInitializerHolder holder = new ServletContainerInitializerHolder(Source.EMBEDDED,
+            new ServletContainerInitializer()
+            {
+                @Override
+                public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+                {
+                    onStartupClasses.addAll(c);
+                }
+            }, HelloServlet.class, TestServlet.class);
+        
+        context.addServletContainerInitializer(holder);
+        _server.setHandler(context);
+        _server.start();
+        ServletContainerInitializerStarter starter = context.getBean(ServletContainerInitializerStarter.class);
+        assertNotNull(starter);
+        Collection<ServletContainerInitializerHolder> holders = starter.getContainedBeans(ServletContainerInitializerHolder.class);
+        assertEquals(1, holders.size());
+        assertThat(onStartupClasses, Matchers.containsInAnyOrder(HelloServlet.class, TestServlet.class));
     }
 
     @Test

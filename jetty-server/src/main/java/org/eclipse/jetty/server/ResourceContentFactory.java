@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -85,7 +85,7 @@ public class ResourceContentFactory implements ContentFactory
             Map<CompressedContentFormat, HttpContent> compressedContents = new HashMap<>(_precompressedFormats.length);
             for (CompressedContentFormat format : _precompressedFormats)
             {
-                String compressedPathInContext = pathInContext + format._extension;
+                String compressedPathInContext = pathInContext + format.getExtension();
                 Resource compressedResource = _factory.getResource(compressedPathInContext);
                 if (compressedResource != null && compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
                     compressedResource.length() < resource.length())

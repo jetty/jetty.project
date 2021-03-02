@@ -9,4 +9,3 @@ http
 
 [xml]
 etc/test-jetty.xml
-

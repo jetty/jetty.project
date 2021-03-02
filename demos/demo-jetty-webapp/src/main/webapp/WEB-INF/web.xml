@@ -180,15 +180,6 @@
     <url-pattern>/secureMode/*</url-pattern>
   </servlet-mapping>
   
-  <servlet>
-     <servlet-name>foo.jsp</servlet-name>
-     <jsp-file>/jsp/foo/foo.jsp</jsp-file>
-  </servlet>
-  <servlet-mapping>
-    <servlet-name>foo.jsp</servlet-name>
-    <url-pattern>/jsp/foo/</url-pattern>
-  </servlet-mapping>
-
 
   <servlet>
     <servlet-name>TestServlet</servlet-name>

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -20,6 +21,8 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -32,10 +35,14 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.common.SessionTracker;
 import org.eclipse.jetty.websocket.core.Configuration;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
-import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
+import org.eclipse.jetty.websocket.core.server.Handshaker;
+import org.eclipse.jetty.websocket.core.server.WebSocketCreator;
 import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
+import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.internal.DelegatedServerUpgradeRequest;
 import org.eclipse.jetty.websocket.server.internal.DelegatedServerUpgradeResponse;
@@ -69,7 +76,8 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
 
             // Create the Jetty ServerContainer implementation
             WebSocketMappings mappings = WebSocketMappings.ensureMappings(servletContext);
-            container = new JettyWebSocketServerContainer(contextHandler, mappings, executor);
+            WebSocketComponents components = WebSocketServerComponents.getWebSocketComponents(servletContext);
+            container = new JettyWebSocketServerContainer(contextHandler, mappings, components, executor);
             servletContext.setAttribute(JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE, container);
             contextHandler.addManaged(container);
             contextHandler.addEventListener(container);
@@ -82,7 +90,8 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
 
     private final ServletContextHandler contextHandler;
     private final WebSocketMappings webSocketMappings;
-    private final FrameHandlerFactory frameHandlerFactory;
+    private final WebSocketComponents components;
+    private final JettyServerFrameHandlerFactory frameHandlerFactory;
     private final Executor executor;
     private final Configuration.ConfigurationCustomizer customizer = new Configuration.ConfigurationCustomizer();
 
@@ -95,21 +104,14 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
      * @param webSocketMappings the {@link WebSocketMappings} that this container belongs to
      * @param executor the {@link Executor} to use
      */
-    JettyWebSocketServerContainer(ServletContextHandler contextHandler, WebSocketMappings webSocketMappings, Executor executor)
+    JettyWebSocketServerContainer(ServletContextHandler contextHandler, WebSocketMappings webSocketMappings, WebSocketComponents components, Executor executor)
     {
         this.contextHandler = contextHandler;
         this.webSocketMappings = webSocketMappings;
+        this.components = components;
         this.executor = executor;
-
-        // Ensure there is a FrameHandlerFactory
-        JettyServerFrameHandlerFactory factory = contextHandler.getBean(JettyServerFrameHandlerFactory.class);
-        if (factory == null)
-        {
-            factory = new JettyServerFrameHandlerFactory(this);
-            contextHandler.addManaged(factory);
-            contextHandler.addEventListener(factory);
-        }
-        frameHandlerFactory = factory;
+        this.frameHandlerFactory = new JettyServerFrameHandlerFactory(this);
+        addBean(frameHandlerFactory);
 
         addSessionListener(sessionTracker);
         addBean(sessionTracker);
@@ -122,9 +124,8 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
             throw new WebSocketException("Duplicate WebSocket Mapping for PathSpec");
 
         WebSocketUpgradeFilter.ensureFilter(contextHandler.getServletContext());
-        webSocketMappings.addMapping(ps,
-            (req, resp) -> creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp)),
-            frameHandlerFactory, customizer);
+        WebSocketCreator coreCreator = (req, resp) -> creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp));
+        webSocketMappings.addMapping(ps, coreCreator, frameHandlerFactory, customizer);
     }
 
     public void addMapping(String pathSpec, final Class<?> endpointClass)
@@ -143,6 +144,23 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
                 throw new org.eclipse.jetty.websocket.api.exceptions.WebSocketException("Unable to create instance of " + endpointClass.getName(), e);
             }
         });
+    }
+
+    /**
+     * An immediate programmatic WebSocket upgrade that does not register a mapping or create a {@link WebSocketUpgradeFilter}.
+     * @param creator the WebSocketCreator to use.
+     * @param request the HttpServletRequest.
+     * @param response the HttpServletResponse.
+     * @return true if the connection was successfully upgraded to WebSocket.
+     * @throws IOException if an I/O error occurs.
+     */
+    public boolean upgrade(JettyWebSocketCreator creator, HttpServletRequest request, HttpServletResponse response) throws IOException
+    {
+        WebSocketCreator coreCreator = (req, resp) -> creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp));
+        WebSocketNegotiator negotiator = WebSocketNegotiator.from(coreCreator, frameHandlerFactory, customizer);
+
+        Handshaker handshaker = webSocketMappings.getHandshaker();
+        return handshaker.upgradeRequest(negotiator, request, response, components, null);
     }
 
     @Override

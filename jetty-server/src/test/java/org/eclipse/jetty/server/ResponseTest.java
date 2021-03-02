@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -643,6 +643,7 @@ public class ResponseTest
         assertEquals("foo2/bar2;charset=utf-8", response.getContentType());
 
         response.recycle();
+        response.reopen();
 
         response.setCharacterEncoding("utf16");
         response.setContentType("text/html; charset=utf-8");
@@ -655,6 +656,7 @@ public class ResponseTest
         assertEquals("text/xml;charset=utf-8", response.getContentType());
 
         response.recycle();
+        response.reopen();
         response.setCharacterEncoding("utf-16");
         response.setContentType("foo/bar");
         assertEquals("foo/bar;charset=utf-16", response.getContentType());

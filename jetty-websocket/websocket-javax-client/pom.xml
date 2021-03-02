@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.websocket</groupId>
     <artifactId>websocket-parent</artifactId>
-    <version>10.0.1-SNAPSHOT</version>
+    <version>10.0.2-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -33,6 +33,11 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-servlet-api</artifactId>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

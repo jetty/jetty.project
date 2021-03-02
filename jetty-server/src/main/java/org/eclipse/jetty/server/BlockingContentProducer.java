@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,25 +13,31 @@
 
 package org.eclipse.jetty.server;
 
-import java.util.concurrent.Semaphore;
-
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Blocking implementation of {@link ContentProducer}. Calling {@link #nextContent()} will block when
+ * Blocking implementation of {@link ContentProducer}. Calling {@link ContentProducer#nextContent()} will block when
  * there is no available content but will never return null.
  */
 class BlockingContentProducer implements ContentProducer
 {
     private static final Logger LOG = LoggerFactory.getLogger(BlockingContentProducer.class);
 
-    private final Semaphore _semaphore = new Semaphore(0);
     private final AsyncContentProducer _asyncContentProducer;
+    private final AsyncContentProducer.LockedSemaphore _semaphore;
 
     BlockingContentProducer(AsyncContentProducer delegate)
     {
         _asyncContentProducer = delegate;
+        _semaphore = _asyncContentProducer.newLockedSemaphore();
+    }
+
+    @Override
+    public AutoLock lock()
+    {
+        return _asyncContentProducer.lock();
     }
 
     @Override
@@ -76,7 +82,9 @@ class BlockingContentProducer implements ContentProducer
     @Override
     public boolean consumeAll(Throwable x)
     {
-        return _asyncContentProducer.consumeAll(x);
+        boolean eof = _asyncContentProducer.consumeAll(x);
+        _semaphore.release();
+        return eof;
     }
 
     @Override
@@ -142,6 +150,7 @@ class BlockingContentProducer implements ContentProducer
     @Override
     public boolean onContentProducible()
     {
+        _semaphore.assertLocked();
         // In blocking mode, the dispatched thread normally does not have to be rescheduled as it is normally in state
         // DISPATCHED blocked on the semaphore that just needs to be released for the dispatched thread to resume. This is why
         // this method always returns false.

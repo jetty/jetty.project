@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>tests-parent</artifactId>
-    <version>10.0.1-SNAPSHOT</version>
+    <version>10.0.2-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -88,8 +88,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.tests</groupId>
-      <artifactId>test-simple-webapp</artifactId>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>demo-simple-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>

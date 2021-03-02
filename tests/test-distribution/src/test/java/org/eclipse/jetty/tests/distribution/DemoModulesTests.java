@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -69,7 +69,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                 assertTrue(runStart.awaitConsoleLogsFor("Started Server@", 20, TimeUnit.SECONDS));
 
                 startHttpClient();
-                ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/jsp/dump.jsp");
+                ContentResponse response = client.GET("http://localhost:" + httpPort + "/demo-jsp/dump.jsp");
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("PathInfo"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));

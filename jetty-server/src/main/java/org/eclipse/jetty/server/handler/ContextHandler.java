@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -2214,7 +2214,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
                 if (!StringUtil.isEmpty(contextPath))
                 {
-                    uri.path(URIUtil.addPaths(contextPath,uri.getPath()));
+                    uri.path(URIUtil.addPaths(contextPath, uri.getPath()));
                     pathInfo = uri.getDecodedPath().substring(contextPath.length());
                 }
                 return new Dispatcher(ContextHandler.this, uri, pathInfo);

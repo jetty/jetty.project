@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -407,7 +407,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
             if (data == null) //session doesn't exist
                 return null;
 
-            data.setLastNode(_context.getWorkerName());//we are going to manage the node
+            data.setLastNode(_context.getWorkerName()); //we are going to manage the node
             session = newSession(data);
             return session;
         }
@@ -573,7 +573,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                         //reactivate the session
                         session.didActivate();
                         session.setResident(true);
-                        doPutIfAbsent(id, session);//ensure it is in our map
+                        doPutIfAbsent(id, session); //ensure it is in our map
                         if (LOG.isDebugEnabled())
                             LOG.debug("Session reactivated id={}", id);
                     }

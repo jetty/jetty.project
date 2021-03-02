@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,7 +14,11 @@
 package org.eclipse.jetty.util.thread;
 
 import java.io.Closeable;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -22,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -189,7 +194,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         waitForIdle(tp, 2);
 
         // Doesn't shrink to less than min threads
-        Thread.sleep(3 * tp.getIdleTimeout() / 2);
+        Thread.sleep(3L * tp.getIdleTimeout() / 2);
         assertThat(tp.getThreads(), is(2));
         assertThat(tp.getIdleThreads(), is(2));
 
@@ -291,7 +296,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             waitForIdle(tp, 2);
 
             // Doesn't shrink to less than min threads
-            Thread.sleep(3 * tp.getIdleTimeout() / 2);
+            Thread.sleep(3L * tp.getIdleTimeout() / 2);
             waitForThreads(tp, 2);
             waitForIdle(tp, 2);
 
@@ -847,6 +852,99 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertThat(count(dump, " WAITING"), is(1));
         assertThat(count(dump, " RESERVED"), is(1));
         assertThat(count(dump, "QueuedThreadPoolTest.lambda$testDump$"), is(1));
+    }
+
+    @Test
+    public void testContextClassLoader() throws Exception
+    {
+        QueuedThreadPool tp = new QueuedThreadPool();
+        try (StacklessLogging stackless = new StacklessLogging(QueuedThreadPool.class))
+        {
+            //change the current thread's classloader to something else
+            Thread.currentThread().setContextClassLoader(new URLClassLoader(new URL[] {}));
+            
+            //create a new thread
+            Thread t = tp.newThread(() ->
+            {
+                //the executing thread should be still set to the classloader of the QueuedThreadPool,
+                //not that of the thread that created this thread.
+                assertThat(Thread.currentThread().getContextClassLoader(), Matchers.equalTo(QueuedThreadPool.class.getClassLoader()));
+            });
+            
+            //new thread should be set to the classloader of the QueuedThreadPool
+            assertThat(t.getContextClassLoader(), Matchers.equalTo(QueuedThreadPool.class.getClassLoader()));
+        }
+    }
+
+    @Test
+    public void testThreadCounts() throws Exception
+    {
+        int maxThreads = 100;
+        QueuedThreadPool tp = new QueuedThreadPool(maxThreads, 0);
+        // Long timeout so it does not expire threads during the test.
+        tp.setIdleTimeout(60000);
+        int reservedThreads = 7;
+        tp.setReservedThreads(reservedThreads);
+        tp.start();
+        int leasedThreads = 5;
+        tp.getThreadPoolBudget().leaseTo(new Object(), leasedThreads);
+        List<RunningJob> leasedJobs = new ArrayList<>();
+        for (int i = 0; i < leasedThreads; ++i)
+        {
+            RunningJob job = new RunningJob("JOB" + i);
+            leasedJobs.add(job);
+            tp.execute(job);
+            assertTrue(job._run.await(5, TimeUnit.SECONDS));
+        }
+
+        // Run some job to spawn threads.
+        for (int i = 0; i < 3; ++i)
+        {
+            tp.tryExecute(() -> {});
+        }
+        int spawned = 13;
+        List<RunningJob> jobs = new ArrayList<>();
+        for (int i = 0; i < spawned; ++i)
+        {
+            RunningJob job = new RunningJob("JOB" + i);
+            jobs.add(job);
+            tp.execute(job);
+            assertTrue(job._run.await(5, TimeUnit.SECONDS));
+        }
+        for (RunningJob job : jobs)
+        {
+            job._stopping.countDown();
+        }
+
+        // Wait for the threads to become idle again.
+        Thread.sleep(1000);
+
+        // Submit less jobs to the queue so we have active and idle threads.
+        jobs.clear();
+        int transientJobs = spawned / 2;
+        for (int i = 0; i < transientJobs; ++i)
+        {
+            RunningJob job = new RunningJob("JOB" + i);
+            jobs.add(job);
+            tp.execute(job);
+            assertTrue(job._run.await(5, TimeUnit.SECONDS));
+        }
+
+        try
+        {
+            assertThat(tp.getMaxReservedThreads(), Matchers.equalTo(reservedThreads));
+            assertThat(tp.getLeasedThreads(), Matchers.equalTo(leasedThreads));
+            assertThat(tp.getReadyThreads(), Matchers.equalTo(tp.getIdleThreads() + tp.getAvailableReservedThreads()));
+            assertThat(tp.getUtilizedThreads(), Matchers.equalTo(transientJobs));
+            assertThat(tp.getThreads(), Matchers.equalTo(tp.getReadyThreads() + tp.getLeasedThreads() + tp.getUtilizedThreads()));
+            assertThat(tp.getBusyThreads(), Matchers.equalTo(tp.getUtilizedThreads() + tp.getLeasedThreads()));
+        }
+        finally
+        {
+            jobs.forEach(job -> job._stopping.countDown());
+            leasedJobs.forEach(job -> job._stopping.countDown());
+            tp.stop();
+        }
     }
 
     private int count(String s, String p)

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -20,9 +20,11 @@ module org.eclipse.jetty.websocket.javax.client
     exports org.eclipse.jetty.websocket.javax.client;
     exports org.eclipse.jetty.websocket.javax.client.internal to org.eclipse.jetty.websocket.javax.server;
 
-    requires org.eclipse.jetty.client;
+    requires static jetty.servlet.api;
+    requires org.slf4j;
     requires org.eclipse.jetty.websocket.core.client;
     requires org.eclipse.jetty.websocket.javax.common;
+    requires transitive org.eclipse.jetty.client;
     requires transitive jetty.websocket.api;
 
     provides ContainerProvider with JavaxWebSocketClientContainerProvider;

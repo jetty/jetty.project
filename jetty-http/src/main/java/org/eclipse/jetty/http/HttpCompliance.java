@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -37,6 +37,7 @@ import static java.util.EnumSet.of;
  */
 public final class HttpCompliance implements ComplianceViolation.Mode
 {
+    protected static final Logger LOG = LoggerFactory.getLogger(HttpCompliance.class);
 
     // These are compliance violations, which may optionally be allowed by the compliance mode, which mean that
     // the relevant section of the RFC is not strictly adhered to.
@@ -79,7 +80,6 @@ public final class HttpCompliance implements ComplianceViolation.Mode
         }
     }
 
-    private static final Logger LOG = LoggerFactory.getLogger(HttpParser.class);
     public static final String VIOLATIONS_ATTR = "org.eclipse.jetty.http.compliance.violations";
 
     public static final HttpCompliance RFC7230 = new HttpCompliance("RFC7230", noneOf(Violation.class));
@@ -102,6 +102,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
             if (compliance.getName().equals(name))
                 return compliance;
         }
+        LOG.warn("Unknown HttpCompliance mode {}", name);
         return null;
     }
 
@@ -143,10 +144,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
             default:
             {
                 HttpCompliance mode = HttpCompliance.valueOf(elements[0]);
-                if (mode == null)
-                    sections = noneOf(Violation.class);
-                else
-                    sections = copyOf(mode.getAllowed());
+                sections = (mode == null) ? noneOf(HttpCompliance.Violation.class) : copyOf(mode.getAllowed());
             }
         }
 
@@ -157,11 +155,6 @@ public final class HttpCompliance implements ComplianceViolation.Mode
             if (exclude)
                 element = element.substring(1);
             Violation section = Violation.valueOf(element);
-            if (section == null)
-            {
-                LOG.warn("Unknown section '{}' in HttpCompliance spec: {}", element, spec);
-                continue;
-            }
             if (exclude)
                 sections.remove(section);
             else
@@ -176,7 +169,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
 
     private HttpCompliance(String name, Set<Violation> violations)
     {
-        Objects.nonNull(violations);
+        Objects.requireNonNull(violations);
         _name = name;
         _violations = unmodifiableSet(violations.isEmpty() ? noneOf(Violation.class) : copyOf(violations));
     }
@@ -184,7 +177,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
     @Override
     public boolean allows(ComplianceViolation violation)
     {
-        return _violations.contains(violation);
+        return violation instanceof Violation && _violations.contains(violation);
     }
 
     @Override

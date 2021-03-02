@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -1999,6 +1999,14 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
             return 56;
         else
             return 0;
+    }
+
+    public void validateCerts(X509Certificate[] certs) throws Exception
+    {
+        KeyStore trustStore = loadTrustStore(_trustStoreResource);
+        Collection<? extends CRL> crls = loadCRL(_crlPath);
+        CertificateValidator validator = new CertificateValidator(trustStore, crls);
+        validator.validate(certs);
     }
 
     @Override

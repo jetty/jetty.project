@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -451,6 +451,18 @@ public class ForwardedRequestCustomizerTest
                     .secure(false)
                     .requestURL("http://myhost/")
                     .remoteAddr("10.9.8.7").remotePort(1111)
+            ),
+            Arguments.of(new Request("X-Forwarded-For (IPv6 without port)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "X-Forwarded-For: 2001:db8:cafe::17"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(80)
+                    .secure(false)
+                    .requestURL("http://myhost/")
+                    .remoteAddr("[2001:db8:cafe::17]").remotePort(0)
             ),
             Arguments.of(new Request("X-Forwarded-For (IPv6 with port)")
                     .headers(

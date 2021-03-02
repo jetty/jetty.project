@@ -62,6 +62,9 @@ etc/jetty.xml
 ## HTTP Compliance: RFC7230, RFC7230_LEGACY, RFC2616, RFC2616_LEGACY, LEGACY
 # jetty.httpConfig.compliance=RFC7230
 
+## URI Compliance: SAFE, STRICT
+# jetty.httpConfig.uriCompliance=SAFE
+
 ## Cookie compliance mode for parsing request Cookie headers: RFC2965, RFC6265
 # jetty.httpConfig.requestCookieCompliance=RFC6265
 

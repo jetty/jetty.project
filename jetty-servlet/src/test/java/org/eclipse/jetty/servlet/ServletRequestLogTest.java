@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -599,6 +599,6 @@ public class ServletRequestLogTest
     private void assertRequestLog(final String expectedLogEntry, CaptureLog captureLog)
     {
         assertThat("Request log size", captureLog.captured, not(empty()));
-        assertThat("Request log entry",captureLog.captured.get(0), is(expectedLogEntry));
+        assertThat("Request log entry", captureLog.captured.get(0), is(expectedLogEntry));
     }
 }

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -1685,8 +1685,8 @@ public class HttpParser
                     {
                         _contentChunk = buffer.asReadOnlyBuffer();
 
-                        // limit content by expected size
-                        if (remaining > content)
+                        // limit content by expected size if _contentLength is >= 0 (i.e.: not infinite)
+                        if (_contentLength > -1 && remaining > content)
                         {
                             // We can cast remaining to an int as we know that it is smaller than
                             // or equal to length which is already an int.
@@ -1886,6 +1886,13 @@ public class HttpParser
         _headerBytes = 0;
         _host = false;
         _headerComplete = false;
+    }
+
+    public void servletUpgrade()
+    {
+        setState(State.CONTENT);
+        _endOfContent = EndOfContent.UNKNOWN_CONTENT;
+        _contentLength = -1;
     }
 
     protected void setState(State state)
