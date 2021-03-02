@@ -24,9 +24,9 @@
   <New id="properties" class="java.util.Properties">
     <Call name="load">
       <Arg>
-	  <New class="java.io.FileInputStream">
-              <Arg><Property name="jetty.base" default="."/>/resources/hotrod-client.properties</Arg>
-          </New>
+	      <New class="java.io.FileInputStream">
+          <Arg><Property name="jetty.base"/>/resources/hotrod-client.properties</Arg>
+        </New>
       </Arg>
     </Call>
     <Call name="put">

@@ -19,7 +19,7 @@
            <Arg>my.proto</Arg>
            <Arg>
              <New class="java.io.File">
-                 <Arg><Property name="jetty.base" default="."/>/etc/my.proto</Arg>
+                 <Arg><Property name="jetty.base"/>/etc/my.proto</Arg>
              </New>
            </Arg>
          </Call>

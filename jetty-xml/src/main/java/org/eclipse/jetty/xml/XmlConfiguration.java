@@ -28,6 +28,7 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.AccessController;
@@ -329,6 +330,29 @@ public class XmlConfiguration
      */
     public void initializeDefaults(Object object)
     {
+    }
+
+    /**
+     * Utility method to resolve a provided path against a base directory.
+     *
+     * @param baseDir the base directory
+     * @param destPath the destination path (can be relative or absolute, syntax depends on OS + FileSystem in use)
+     * @return String to resolved and normalized path, or null if baseDir or destPath is empty.
+     */
+    public static String resolvePath(String baseDir, String destPath)
+    {
+        if (StringUtil.isEmpty(baseDir) || StringUtil.isEmpty(destPath))
+            return null;
+
+        Path base = Paths.get(baseDir);
+
+        if (!Files.exists(base))
+        {
+            // Add warning to debug output
+            LOG.debug("Configured baseDir={} does not exist", baseDir);
+        }
+
+        return base.resolve(destPath).normalize().toString();
     }
 
     private static class JettyXmlConfiguration implements ConfigurationProcessor
