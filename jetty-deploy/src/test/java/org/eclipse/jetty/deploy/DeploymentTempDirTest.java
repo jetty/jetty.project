@@ -120,10 +120,11 @@ public class DeploymentTempDirTest
         WaitScannerListener listener = new WaitScannerListener();
         webAppProvider.addScannerListener(listener);
         Path fooWebApp1 = testDir.resolve("webapps/foo-webapp-1.war");
-        long lastMod = fooWebApp1.toFile().lastModified();
+        long lastModBefore = fooWebApp1.toFile().lastModified();
         long now = System.currentTimeMillis();
-        LOG.info("fooWebApp1 lastMod {}, now {}", lastMod, now);
         assertTrue(fooWebApp1.toFile().setLastModified(now));
+        long lastModAfter = fooWebApp1.toFile().lastModified();
+        LOG.debug("fooWebApp1 lastModBefore {}, now {}, lastModAfter {}", lastModBefore, now, lastModAfter);
         webAppProvider.scan();
         webAppProvider.scan();
         listener.future.get(5, TimeUnit.SECONDS);
