@@ -1622,15 +1622,23 @@ public class XmlConfigurationTest
                     "  </Set>" +
                     "</Configure>");
 
-        configuration.setJettyStandardIdsAndProperties(null, Resource.newResource(war));
-        configuration.getProperties().put("jetty.base", "/var/lib/jetty-base");
-        if (configValue != null)
-            configuration.getProperties().put("jetty.sslContext.keyStorePath", configValue);
+        try
+        {
+            configuration.setJettyStandardIdsAndProperties(null, Resource.newResource(war));
+            configuration.getProperties().put("jetty.base", "/var/lib/jetty-base");
+            if (configValue != null)
+                configuration.getProperties().put("jetty.sslContext.keyStorePath", configValue);
 
-        TestConfiguration tc = new TestConfiguration();
-        configuration.configure(tc);
+            TestConfiguration tc = new TestConfiguration();
+            configuration.configure(tc);
 
-        assertThat(tc.getTestString(), is(expectedPath));
+            assertThat(tc.getTestString(), is(expectedPath));
+        }
+        finally
+        {
+            // cleanup after myself
+            configuration.getProperties().remove("jetty.base");
+        }
     }
 
     @Test
@@ -1658,7 +1666,7 @@ public class XmlConfigurationTest
         FS.ensureDeleted(testPath);
         Path baseDir = testPath.resolve("bogus");
         String resolved = XmlConfiguration.resolvePath(baseDir.toString(), "etc/keystore");
-        assertNull(resolved, "Should be null as baseDir does not exist");
+        assertEquals(baseDir.resolve("etc/keystore").toString(), resolved);
     }
 
     private ByteArrayOutputStream captureLoggingBytes(ThrowableAction action) throws Exception
