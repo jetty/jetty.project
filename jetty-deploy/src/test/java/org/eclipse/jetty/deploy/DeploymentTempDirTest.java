@@ -40,6 +40,8 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Scanner;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,6 +55,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 //@Disabled("Does not work on Jenkins")
 public class DeploymentTempDirTest
 {
+    private static final Logger LOG = Log.getLogger(DeploymentTempDirTest.class);
+
     private final WebAppProvider webAppProvider = new WebAppProvider();
     private final ContextHandlerCollection contexts = new ContextHandlerCollection();
     private final Path testDir = MavenTestingUtils.getTargetTestingPath();
@@ -116,7 +120,10 @@ public class DeploymentTempDirTest
         WaitScannerListener listener = new WaitScannerListener();
         webAppProvider.addScannerListener(listener);
         Path fooWebApp1 = testDir.resolve("webapps/foo-webapp-1.war");
-        assertTrue(fooWebApp1.toFile().setLastModified(System.currentTimeMillis()));
+        long lastMod = fooWebApp1.toFile().lastModified();
+        long now = System.currentTimeMillis();
+        LOG.info("fooWebApp1 lastMod {}, now {}", lastMod, now);
+        assertTrue(fooWebApp1.toFile().setLastModified(now));
         webAppProvider.scan();
         webAppProvider.scan();
         listener.future.get(5, TimeUnit.SECONDS);
