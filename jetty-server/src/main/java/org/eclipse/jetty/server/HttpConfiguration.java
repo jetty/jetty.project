@@ -70,7 +70,7 @@ public class HttpConfiguration implements Dumpable
     private long _minRequestDataRate;
     private long _minResponseDataRate;
     private HttpCompliance _httpCompliance = HttpCompliance.RFC7230;
-    private UriCompliance _uriCompliance = UriCompliance.SAFE;
+    private UriCompliance _uriCompliance = UriCompliance.DEFAULT;
     private CookieCompliance _requestCookieCompliance = CookieCompliance.RFC6265;
     private CookieCompliance _responseCookieCompliance = CookieCompliance.RFC6265;
     private boolean _notifyRemoteAsyncErrors = true;
