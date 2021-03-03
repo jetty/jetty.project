@@ -42,7 +42,7 @@ public class Entry
 
     public int getSize()
     {
-        return 32 + StringUtil.getLength(_field.getName()) + StringUtil.getLength(_field.getValue());
+        return getSize(_field);
     }
 
     public void setIndex(int index)
@@ -84,5 +84,10 @@ public class Entry
     public String toString()
     {
         return String.format("{%s,%d,%s,%x}", isStatic() ? "S" : "D", _absoluteIndex, _field, hashCode());
+    }
+
+    public static int getSize(HttpField field)
+    {
+        return 32 + StringUtil.getLength(field.getName()) + StringUtil.getLength(field.getValue());
     }
 }

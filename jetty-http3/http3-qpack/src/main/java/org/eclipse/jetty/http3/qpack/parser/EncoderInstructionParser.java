@@ -100,7 +100,6 @@ public class EncoderInstructionParser
         this(new DecoderHandler(decoder));
     }
 
-
     public EncoderInstructionParser(Handler handler)
     {
         _handler = handler;

@@ -28,6 +28,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http3.qpack.generator.DuplicateInstruction;
 import org.eclipse.jetty.http3.qpack.generator.IndexedNameEntryInstruction;
 import org.eclipse.jetty.http3.qpack.generator.Instruction;
 import org.eclipse.jetty.http3.qpack.generator.LiteralNameEntryInstruction;
@@ -105,6 +106,7 @@ public class QpackEncoder
     private final int _maxBlockedStreams;
     private final Map<Integer, AtomicInteger> _blockedStreams = new HashMap<>();
     private boolean _validateEncoding = true;
+    private int _knownInsertCount;
 
     public QpackEncoder(Handler handler, int maxBlockedStreams)
     {
@@ -117,6 +119,7 @@ public class QpackEncoder
         _bufferPool = bufferPool;
         _context = new QpackContext();
         _maxBlockedStreams = maxBlockedStreams;
+        _knownInsertCount = 0;
     }
 
     private boolean acquireBlockedStream(int streamId)
@@ -151,6 +154,21 @@ public class QpackEncoder
         _handler.onInstruction(new SetCapacityInstruction(capacity));
     }
 
+    public void insertCountIncrement(int increment)
+    {
+        _knownInsertCount += increment;
+    }
+
+    public void sectionAcknowledgement(int streamId)
+    {
+        // TODO: Implement.
+    }
+
+    public void streamCancellation(int streamId)
+    {
+        // TODO: Implement.
+    }
+
     public QpackContext getQpackContext()
     {
         return _context;
@@ -164,6 +182,31 @@ public class QpackEncoder
     public void setValidateEncoding(boolean validateEncoding)
     {
         _validateEncoding = validateEncoding;
+    }
+
+    public boolean referenceEntry(Entry entry, int streamId)
+    {
+        if (entry == null)
+            return false;
+
+        if (entry.isStatic())
+            return true;
+
+        boolean inEvictionZone = !_context.getDynamicTable().canReference(entry);
+        if (inEvictionZone)
+            return false;
+
+        if (_knownInsertCount >= entry.getIndex() + 1)
+        {
+            entry.reference();
+            return true;
+        }
+
+        // We might be able to risk blocking the decoder stream and reference this immediately.
+        boolean riskBlockedStream = acquireBlockedStream(streamId);
+        if (riskBlockedStream)
+            entry.reference();
+        return riskBlockedStream;
     }
 
     public static boolean shouldIndex(HttpField httpField)
@@ -241,45 +284,62 @@ public class QpackEncoder
         // TODO:
         //  1. The field.getHeader() could be null.
         //  3. Handle pre-encoded HttpFields.
-        //  4. Someone still needs to generate the HTTP/3 pseudo headers. (this should be independent of HTTP/3 though?)
+
+        boolean canCreateEntry = shouldIndex(field) && (Entry.getSize(field) <= dynamicTable.getSpace());
 
         Entry entry = _context.get(field);
-        if (entry != null && _context.canReference(entry))
+        if (entry != null && referenceEntry(entry, streamId))
         {
-            // TODO: we may want to duplicate the entry if it is in the eviction zone?
-            //  then we would also need to reference this entry, is that okay?
-            entry.reference();
             return new EncodableEntry(entry);
         }
-
-        Entry nameEntry = _context.get(field.getName());
-        boolean canReferenceName = nameEntry != null && _context.canReference(nameEntry);
-
-        Entry newEntry = new Entry(field);
-        if (shouldIndex(field) && (newEntry.getSize() <= dynamicTable.getSpace()))
+        else
         {
-            dynamicTable.add(newEntry);
-
-            boolean huffman = shouldHuffmanEncode(field);
-            if (canReferenceName)
+            // Should we duplicate this entry.
+            if (entry != null && dynamicTable.canReference(entry) && canCreateEntry)
             {
-                boolean isDynamic = !nameEntry.isStatic();
-                int nameIndex = _context.index(nameEntry);
-                _handler.onInstruction(new IndexedNameEntryInstruction(isDynamic, nameIndex, huffman, field.getValue()));
-            }
-            else
-            {
-                _handler.onInstruction(new LiteralNameEntryInstruction(huffman, field.getName(), huffman, field.getValue()));
-            }
+                Entry newEntry = new Entry(field);
+                dynamicTable.add(newEntry);
+                _handler.onInstruction(new DuplicateInstruction(entry.getIndex()));
 
-            // We might be able to risk blocking the decoder stream and reference this immediately.
-            if (acquireBlockedStream(streamId))
-                return new EncodableEntry(newEntry);
+                // Should we reference this entry and risk blocking.
+                if (referenceEntry(newEntry, streamId))
+                    return new EncodableEntry(newEntry);
+            }
         }
 
-        if (canReferenceName)
+        boolean huffman = shouldHuffmanEncode(field);
+        Entry nameEntry = _context.get(field.getName());
+        if (nameEntry != null && referenceEntry(nameEntry, streamId))
+        {
+            // Should we copy this entry
+            if (canCreateEntry)
+            {
+                Entry newEntry = new Entry(field);
+                dynamicTable.add(newEntry);
+                _handler.onInstruction(new IndexedNameEntryInstruction(!nameEntry.isStatic(), nameEntry.getIndex(), huffman, field.getValue()));
+
+                // Should we reference this entry and risk blocking.
+                if (referenceEntry(newEntry, streamId))
+                    return new EncodableEntry(newEntry);
+            }
+
             return new EncodableEntry(nameEntry, field);
-        return new EncodableEntry(field);
+        }
+        else
+        {
+            if (canCreateEntry)
+            {
+                Entry newEntry = new Entry(field);
+                dynamicTable.add(newEntry);
+                _handler.onInstruction(new LiteralNameEntryInstruction(huffman, field.getName(), huffman, field.getValue()));
+
+                // Should we reference this entry and risk blocking.
+                if (referenceEntry(newEntry, streamId))
+                    return new EncodableEntry(newEntry);
+            }
+
+            return new EncodableEntry(field);
+        }
     }
 
     public static int encodeInsertCount(int reqInsertCount, int maxTableCapacity)
