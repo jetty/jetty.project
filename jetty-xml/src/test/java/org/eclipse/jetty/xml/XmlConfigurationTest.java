@@ -49,6 +49,7 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -1594,21 +1595,57 @@ public class XmlConfigurationTest
 
     public static Stream<Arguments> resolvePathCases()
     {
-        return Stream.of(
+        String resolvePathCasesJettyBase;
+
+        ArrayList<Arguments> cases = new ArrayList<>();
+        if (OS.WINDOWS.isCurrentOs())
+        {
+            resolvePathCasesJettyBase = "C:\\web\\jetty-base";
+
             // Not configured, default (in xml) is used.
-            Arguments.of(null, "/var/lib/jetty-base/etc/keystore.p12"),
+            cases.add(Arguments.of(resolvePathCasesJettyBase, null, "C:\\web\\jetty-base\\etc\\keystore.p12"));
             // Configured using normal relative path
-            Arguments.of("alt/keystore", "/var/lib/jetty-base/alt/keystore"),
+            cases.add(Arguments.of(resolvePathCasesJettyBase, "alt/keystore", "C:\\web\\jetty-base\\alt\\keystore"));
             // Configured using navigated path segments
-            Arguments.of("../corp/etc/keystore", "/var/lib/corp/etc/keystore"),
+            cases.add(Arguments.of(resolvePathCasesJettyBase, "../corp/etc/keystore", "C:\\web\\corp\\etc\\keystore"));
             // Configured using absolute path
-            Arguments.of("/opt/jetty/etc/keystore", "/opt/jetty/etc/keystore")
-        );
+            cases.add(Arguments.of(resolvePathCasesJettyBase, "/included/keystore", "C:\\included\\keystore"));
+            cases.add(Arguments.of(resolvePathCasesJettyBase, "\\included\\keystore", "C:\\included\\keystore"));
+            cases.add(Arguments.of(resolvePathCasesJettyBase, "D:\\main\\config\\keystore", "D:\\main\\config\\keystore"));
+
+            resolvePathCasesJettyBase = "\\\\machine\\share\\apps\\jetty-base";
+
+            // Not configured, default (in xml) is used.
+            cases.add(Arguments.of(resolvePathCasesJettyBase, null, "\\\\machine\\share\\apps\\jetty-base\\etc\\keystore.p12"));
+            // Configured using normal relative path
+            cases.add(Arguments.of(resolvePathCasesJettyBase, "alt/keystore", "\\\\machine\\share\\apps\\jetty-base\\alt\\keystore"));
+            // Configured using navigated path segments
+            cases.add(Arguments.of(resolvePathCasesJettyBase, "../corp/etc/keystore", "\\\\machine\\share\\apps\\corp\\etc\\keystore"));
+            // Configured using absolute path
+            cases.add(Arguments.of(resolvePathCasesJettyBase, "/included/keystore", "\\\\machine\\share\\included\\keystore"));
+            cases.add(Arguments.of(resolvePathCasesJettyBase, "\\included\\keystore", "\\\\machine\\share\\included\\keystore"));
+            cases.add(Arguments.of(resolvePathCasesJettyBase, "D:\\main\\config\\keystore", "D:\\main\\config\\keystore"));
+        }
+        else
+        {
+            resolvePathCasesJettyBase = "/var/lib/jetty-base";
+
+            // Not configured, default (in xml) is used.
+            cases.add(Arguments.of(resolvePathCasesJettyBase, null, "/var/lib/jetty-base/etc/keystore.p12"));
+            // Configured using normal relative path
+            cases.add(Arguments.of(resolvePathCasesJettyBase, "alt/keystore", "/var/lib/jetty-base/alt/keystore"));
+            // Configured using navigated path segments
+            cases.add(Arguments.of(resolvePathCasesJettyBase, "../corp/etc/keystore", "/var/lib/corp/etc/keystore"));
+            // Configured using absolute path
+            cases.add(Arguments.of(resolvePathCasesJettyBase, "/opt/jetty/etc/keystore", "/opt/jetty/etc/keystore"));
+        }
+
+        return cases.stream();
     }
 
     @ParameterizedTest
     @MethodSource("resolvePathCases")
-    public void testCallResolvePath(String configValue, String expectedPath) throws Exception
+    public void testCallResolvePath(String jettyBasePath, String configValue, String expectedPath) throws Exception
     {
         Path war = MavenTestingUtils.getTargetPath("no.war");
         XmlConfiguration configuration =
@@ -1625,7 +1662,7 @@ public class XmlConfigurationTest
         try
         {
             configuration.setJettyStandardIdsAndProperties(null, Resource.newResource(war));
-            configuration.getProperties().put("jetty.base", "/var/lib/jetty-base");
+            configuration.getProperties().put("jetty.base", jettyBasePath);
             if (configValue != null)
                 configuration.getProperties().put("jetty.sslContext.keyStorePath", configValue);
 
