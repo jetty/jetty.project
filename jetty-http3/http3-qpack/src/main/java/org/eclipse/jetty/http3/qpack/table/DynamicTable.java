@@ -57,7 +57,7 @@ public class DynamicTable
 
         // Set the Entries absolute index which will never change.
         entry.setIndex(_absoluteIndex++);
-        _entries.add(0, entry);
+        _entries.add(entry);
         _fieldMap.put(entry.getHttpField(), entry);
         _nameMap.put(entry.getHttpField().getLowerCaseName(), entry);
 

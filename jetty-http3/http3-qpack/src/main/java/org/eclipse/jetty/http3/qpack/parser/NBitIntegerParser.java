@@ -24,6 +24,8 @@ public class NBitIntegerParser
 
     public void setPrefix(int prefix)
     {
+        if (_started)
+            throw new IllegalStateException();
         _prefix = prefix;
     }
 

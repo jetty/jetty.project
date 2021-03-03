@@ -18,8 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http3.qpack.MetaDataBuilder;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http3.qpack.QpackContext;
 import org.eclipse.jetty.http3.qpack.QpackException;
 
@@ -71,17 +70,17 @@ public class EncodedFieldSection
         }
     }
 
-    public MetaData decode(QpackContext context, MetaDataBuilder builder) throws QpackException
+    public HttpFields decode(QpackContext context) throws QpackException
     {
         if (context.getDynamicTable().getInsertCount() < _requiredInsertCount)
             throw new IllegalStateException("Required Insert Count Not Reached");
 
+        HttpFields.Mutable httpFields = HttpFields.build();
         for (EncodedField encodedField : _encodedFields)
         {
-            builder.emit(encodedField.decode(context));
+            httpFields.add(encodedField.decode(context));
         }
-
-        return builder.build();
+        return httpFields;
     }
 
     private EncodedField parseIndexedFieldLine(ByteBuffer buffer) throws QpackException
@@ -200,7 +199,7 @@ public class EncodedFieldSection
         public HttpField decode(QpackContext context) throws QpackException
         {
             if (_dynamicTable)
-                return context.getDynamicTable().getAbsolute(_base + _index + 1).getHttpField();
+                return context.getDynamicTable().getAbsolute(_base + _index).getHttpField();
             else
                 return context.getStaticTable().get(_index).getHttpField();
         }

@@ -27,13 +27,16 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http3.qpack.generator.IndexedNameEntryInstruction;
 import org.eclipse.jetty.http3.qpack.generator.Instruction;
 import org.eclipse.jetty.http3.qpack.generator.LiteralNameEntryInstruction;
+import org.eclipse.jetty.http3.qpack.generator.SetCapacityInstruction;
 import org.eclipse.jetty.http3.qpack.table.DynamicTable;
 import org.eclipse.jetty.http3.qpack.table.Entry;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.NullByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,38 +99,24 @@ public class QpackEncoder
         void onInstruction(Instruction instruction);
     }
 
+    private final ByteBufferPool _bufferPool;
     private final Handler _handler;
     private final QpackContext _context;
     private final int _maxBlockedStreams;
     private final Map<Integer, AtomicInteger> _blockedStreams = new HashMap<>();
     private boolean _validateEncoding = true;
 
-    @Deprecated
-    public QpackEncoder()
+    public QpackEncoder(Handler handler, int maxBlockedStreams)
     {
-        this(null, -1, -1);
+        this(handler, maxBlockedStreams, new NullByteBufferPool());
     }
 
-    @Deprecated
-    public QpackEncoder(int localMaxDynamicTableSize)
-    {
-        this(null, -1, -1);
-    }
-
-    @Deprecated
-    public QpackEncoder(int localMaxDynamicTableSize, int remoteMaxDynamicTableSize)
-    {
-        this(null, -1, -1);
-    }
-
-    public QpackEncoder(Handler handler, int dynamicTableSize, int maxBlockedStreams)
+    public QpackEncoder(Handler handler, int maxBlockedStreams, ByteBufferPool bufferPool)
     {
         _handler = handler;
+        _bufferPool = bufferPool;
         _context = new QpackContext();
         _maxBlockedStreams = maxBlockedStreams;
-
-        // TODO: Fix.
-        _context.getDynamicTable().setCapacity(dynamicTableSize);
     }
 
     private boolean acquireBlockedStream(int streamId)
@@ -156,6 +145,12 @@ public class QpackEncoder
             _blockedStreams.remove(streamId);
     }
 
+    public void setCapacity(int capacity)
+    {
+        _context.getDynamicTable().setCapacity(capacity);
+        _handler.onInstruction(new SetCapacityInstruction(capacity));
+    }
+
     public QpackContext getQpackContext()
     {
         return _context;
@@ -178,13 +173,11 @@ public class QpackEncoder
 
     public static boolean shouldHuffmanEncode(HttpField httpField)
     {
-        return !DO_NOT_HUFFMAN.contains(httpField.getHeader());
+        return false; //!DO_NOT_HUFFMAN.contains(httpField.getHeader());
     }
 
-    public void encode(int streamId, ByteBuffer buffer, MetaData metadata) throws QpackException
+    public ByteBuffer encode(int streamId, HttpFields httpFields) throws QpackException
     {
-        HttpFields httpFields = metadata.getFields();
-
         // Verify that we can encode without errors.
         if (isValidateEncoding() && httpFields != null)
         {
@@ -192,7 +185,7 @@ public class QpackEncoder
             {
                 String name = field.getName();
                 char firstChar = name.charAt(0);
-                if (firstChar <= ' ' || firstChar == ':')
+                if (firstChar <= ' ')
                     throw new QpackException.StreamException("Invalid header name: '%s'", name);
             }
         }
@@ -215,21 +208,27 @@ public class QpackEncoder
 
         DynamicTable dynamicTable = _context.getDynamicTable();
         int base = dynamicTable.getBase();
-        int encodedInsertCount = encodeInsertCount(requiredInsertCount, dynamicTable.getInsertCount());
+        int encodedInsertCount = encodeInsertCount(requiredInsertCount, dynamicTable.getCapacity());
         boolean signBit = base < requiredInsertCount;
         int deltaBase = signBit ? requiredInsertCount - base - 1 : base - requiredInsertCount;
 
+        // TODO: Calculate the size required.
+        ByteBuffer buffer = _bufferPool.acquire(1024, false);
+        int pos = BufferUtil.flipToFill(buffer);
+
         // Encode the Field Section Prefix into the ByteBuffer.
-        buffer.put((byte)0x00);
-        NBitInteger.encode(buffer, encodedInsertCount, 8);
-        buffer.put(signBit ? (byte)0x01 : (byte)0x00);
-        NBitInteger.encode(buffer, deltaBase, 7);
+        NBitInteger.encode(buffer, 8, encodedInsertCount);
+        buffer.put(signBit ? (byte)0x80 : (byte)0x00);
+        NBitInteger.encode(buffer, 7, deltaBase);
 
         // Encode the field lines into the ByteBuffer.
         for (EncodableEntry entry : encodableEntries)
         {
             entry.encode(buffer, base);
         }
+
+        BufferUtil.flipToFlush(buffer, pos);
+        return buffer;
     }
 
     private EncodableEntry encode(int streamId, HttpField field)

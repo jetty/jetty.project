@@ -57,8 +57,8 @@ class EncodableEntry
         {
             byte staticBit = _referencedEntry.isStatic() ? (byte)0x40 : (byte)0x00;
             buffer.put((byte)(0x80 | staticBit));
-            int relativeIndex = base - _referencedEntry.getIndex();
-            NBitInteger.encode(buffer, relativeIndex, 6);
+            int relativeIndex =  _referencedEntry.getIndex() - base;
+            NBitInteger.encode(buffer, 6, relativeIndex);
         }
         else if (_referencedName != null)
         {
@@ -69,20 +69,20 @@ class EncodableEntry
 
             // Encode the prefix.
             buffer.put((byte)(0x40 | allowIntermediary | staticBit));
-            int relativeIndex = base - _referencedName.getIndex();
-            NBitInteger.encode(buffer, relativeIndex, 4);
+            int relativeIndex =  _referencedName.getIndex() - base;
+            NBitInteger.encode(buffer, 4, relativeIndex);
 
             // Encode the value.
             if (huffman)
             {
                 buffer.put((byte)0x80);
-                NBitInteger.encode(buffer, Huffman.octetsNeeded(value), 7);
+                NBitInteger.encode(buffer, 7, Huffman.octetsNeeded(value));
                 Huffman.encode(buffer, value);
             }
             else
             {
                 buffer.put((byte)0x00);
-                NBitInteger.encode(buffer, value.length(), 7);
+                NBitInteger.encode(buffer, 7, value.length());
                 buffer.put(value.getBytes());
             }
         }
@@ -97,20 +97,20 @@ class EncodableEntry
             if (huffman)
             {
                 buffer.put((byte)(0x28 | allowIntermediary));
-                NBitInteger.encode(buffer, Huffman.octetsNeeded(name), 3);
+                NBitInteger.encode(buffer, 3, Huffman.octetsNeeded(name));
                 Huffman.encode(buffer, name);
                 buffer.put((byte)0x80);
-                NBitInteger.encode(buffer, Huffman.octetsNeeded(value), 7);
+                NBitInteger.encode(buffer, 7, Huffman.octetsNeeded(value));
                 Huffman.encode(buffer, value);
             }
             else
             {
                 // TODO: What charset should we be using? (this applies to the instruction generators as well).
                 buffer.put((byte)(0x20 | allowIntermediary));
-                NBitInteger.encode(buffer, name.length(), 3);
+                NBitInteger.encode(buffer, 3, name.length());
                 buffer.put(name.getBytes());
                 buffer.put((byte)0x00);
-                NBitInteger.encode(buffer, value.length(), 7);
+                NBitInteger.encode(buffer, 7, value.length());
                 buffer.put(value.getBytes());
             }
         }
@@ -118,10 +118,10 @@ class EncodableEntry
 
     public int getRequiredInsertCount()
     {
-        if (_referencedEntry != null)
-            return _referencedEntry.getIndex();
-        else if (_referencedName != null)
-            return _referencedName.getIndex();
+        if (_referencedEntry != null && !_referencedEntry.isStatic())
+            return _referencedEntry.getIndex() + 1;
+        else if (_referencedName != null && !_referencedName.isStatic())
+            return _referencedName.getIndex() + 1;
         else
             return 0;
     }

@@ -18,8 +18,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.qpack.generator.DuplicateInstruction;
 import org.eclipse.jetty.http3.qpack.generator.IndexedNameEntryInstruction;
 import org.eclipse.jetty.http3.qpack.generator.InsertCountIncrementInstruction;
@@ -53,12 +53,11 @@ public class QpackDecoder
     private final NBitIntegerParser _integerDecoder = new NBitIntegerParser();
 
     /**
-     * @param localMaxDynamicTableSize The maximum allowed size of the local dynamic header field table.
      * @param maxHeaderSize The maximum allowed size of a headers block, expressed as total of all name and value characters, plus 32 per field
      */
-    public QpackDecoder(Handler handler, int localMaxDynamicTableSize, int maxHeaderSize)
+    public QpackDecoder(Handler handler, int maxHeaderSize)
     {
-        _context = new QpackContext(localMaxDynamicTableSize);
+        _context = new QpackContext();
         _builder = new MetaDataBuilder(maxHeaderSize);
         _handler = handler;
     }
@@ -70,7 +69,8 @@ public class QpackDecoder
 
     public interface Handler
     {
-        void onMetadata(MetaData metaData);
+        // TODO: should this have the streamId?
+        void onHttpFields(HttpFields httpFields);
 
         void onInstruction(Instruction instruction);
     }
@@ -84,10 +84,12 @@ public class QpackDecoder
         if (buffer.remaining() > _builder.getMaxSize())
             throw new QpackException.SessionException("431 Request Header Fields too large");
 
+        _integerDecoder.setPrefix(8);
         int encodedInsertCount = _integerDecoder.decode(buffer);
         if (encodedInsertCount < 0)
             throw new QpackException.CompressionException("Could not parse Required Insert Count");
 
+        _integerDecoder.setPrefix(7);
         boolean signBit = (buffer.get(buffer.position()) & 0x80) != 0;
         int deltaBase = _integerDecoder.decode(buffer);
         if (deltaBase < 0)
@@ -104,10 +106,9 @@ public class QpackDecoder
         EncodedFieldSection encodedFieldSection = new EncodedFieldSection(streamId, requiredInsertCount, base);
         encodedFieldSection.parse(buffer);
 
-        if (encodedFieldSection.getRequiredInsertCount() >= insertCount)
+        if (encodedFieldSection.getRequiredInsertCount() <= insertCount)
         {
-            MetaData metadata = encodedFieldSection.decode(_context, _builder);
-            _handler.onMetadata(metadata);
+            _handler.onHttpFields(encodedFieldSection.decode(_context));
             _handler.onInstruction(new SectionAcknowledgmentInstruction(streamId));
         }
         else
@@ -123,11 +124,50 @@ public class QpackDecoder
         {
             if (encodedFieldSection.getRequiredInsertCount() <= insertCount)
             {
-                MetaData metadata = encodedFieldSection.decode(_context, _builder);
-                _handler.onMetadata(metadata);
+                _handler.onHttpFields(encodedFieldSection.decode(_context));
                 _handler.onInstruction(new SectionAcknowledgmentInstruction(encodedFieldSection.getStreamId()));
             }
         }
+    }
+
+    public void setCapacity(int capacity)
+    {
+        _context.getDynamicTable().setCapacity(capacity);
+    }
+
+    public void insert(int index) throws QpackException
+    {
+        DynamicTable dynamicTable = _context.getDynamicTable();
+        Entry entry = dynamicTable.get(index);
+
+        // Add the new Entry to the DynamicTable.
+        dynamicTable.add(entry);
+        _handler.onInstruction(new InsertCountIncrementInstruction(1));
+        checkEncodedFieldSections();
+    }
+
+    public void insert(int nameIndex, boolean isDynamicTableIndex, String value) throws QpackException
+    {
+        StaticTable staticTable = _context.getStaticTable();
+        DynamicTable dynamicTable = _context.getDynamicTable();
+        Entry referencedEntry = isDynamicTableIndex ? dynamicTable.get(nameIndex) : staticTable.get(nameIndex);
+
+        // Add the new Entry to the DynamicTable.
+        Entry entry = new Entry(new HttpField(referencedEntry.getHttpField().getHeader(), referencedEntry.getHttpField().getName(), value));
+        dynamicTable.add(entry);
+        _handler.onInstruction(new InsertCountIncrementInstruction(1));
+        checkEncodedFieldSections();
+    }
+
+    public void insert(String name, String value) throws QpackException
+    {
+        DynamicTable dynamicTable = _context.getDynamicTable();
+        Entry entry = new Entry(new HttpField(name, value));
+
+        // Add the new Entry to the DynamicTable.
+        dynamicTable.add(entry);
+        _handler.onInstruction(new InsertCountIncrementInstruction(1));
+        checkEncodedFieldSections();
     }
 
     public void onInstruction(Instruction instruction) throws QpackException
