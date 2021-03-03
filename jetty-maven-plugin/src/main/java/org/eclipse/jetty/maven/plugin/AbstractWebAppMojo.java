@@ -72,19 +72,21 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     {
         EMBED,
         FORK,
-        HOME
+        HOME, //alias for EXTERNAL
+        DISTRO, //alias for EXTERNAL
+        EXTERNAL
     }
 
     /**
      * Max number of times to check to see if jetty has started correctly
-     * when running in FORK or HOME mode.
+     * when running in FORK or EXTERNAL mode.
      */
     @Parameter (defaultValue = "10")
     protected int maxChildStartChecks;
 
     /**
      * How long to wait in msec between checks to see if jetty has started
-     * correctly when running in FORK or HOME mode.
+     * correctly when running in FORK or EXTERNAL mode.
      */
     @Parameter (defaultValue = "200")
     protected long maxChildStartCheckMs;
@@ -222,7 +224,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     protected Map<String, String> systemProperties;
 
     /**
-     * Controls how to run jetty. Valid values are EMBED,FORK,HOME.
+     * Controls how to run jetty. Valid values are EMBED,FORK,EXTERNAL.
      */
     @Parameter (property = "jetty.deployMode", defaultValue = "EMBED") 
     protected DeploymentMode deployMode;
@@ -267,7 +269,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     //End of EMBED only
     
 
-    //Start of parameters only valid for FORK/HOME
+    //Start of parameters only valid for FORK/EXTERNAL
     /**
      * Extra environment variables to be passed to the forked process
      */
@@ -296,9 +298,9 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      */
     @Parameter
     protected String stopKey;
-    //End of FORK or HOME parameters
+    //End of FORK or EXTERNAL parameters
 
-    //Start of parameters only valid for HOME
+    //Start of parameters only valid for EXTERNAL
     /**
      * Location of jetty home directory
      */
@@ -317,7 +319,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      */
     @Parameter
     protected String[] modules;
-    //End of HOME only parameters
+    //End of EXTERNAL only parameters
 
     //Start of parameters only valid for FORK
     /**
@@ -438,8 +440,12 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
                 startJettyForked();
                 break;
             }
+            case DISTRO:
             case HOME:
+            case EXTERNAL:
             {
+                if (deployMode != DeploymentMode.EXTERNAL)
+                    getLog().warn(deployMode + " mode is deprecated, use mode EXTERNAL");
                 startJettyHome();
                 break;
             }
