@@ -187,7 +187,6 @@ public class FileBufferedResponseHandler extends HandlerWrapper
     {
         private final Interceptor _next;
         private final HttpChannel _channel;
-        private final int _outputBufferSize;
         private Boolean _aggregating;
         private File _file;
         private OutputStream _bufferedOutputStream;
@@ -196,7 +195,6 @@ public class FileBufferedResponseHandler extends HandlerWrapper
         {
             _next = interceptor;
             _channel = httpChannel;
-            _outputBufferSize = httpChannel.getHttpConfiguration().getOutputBufferSize();
         }
 
         @Override
@@ -325,7 +323,7 @@ public class FileBufferedResponseHandler extends HandlerWrapper
                     if (_last)
                         return Action.SUCCEEDED;
 
-                    long len = Math.min(_outputBufferSize, fileLength - _pos);
+                    long len = Math.min(Integer.MAX_VALUE, fileLength - _pos);
                     _last = (_pos + len == fileLength);
                     _buffer = BufferUtil.toMappedBuffer(_file, _pos, len);
                     getNextInterceptor().write(_buffer, _last, this);
