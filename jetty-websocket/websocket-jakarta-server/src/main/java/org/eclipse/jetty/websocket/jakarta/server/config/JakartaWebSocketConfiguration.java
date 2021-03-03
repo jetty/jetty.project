@@ -35,6 +35,6 @@ public class JakartaWebSocketConfiguration extends AbstractConfiguration
         protectAndExpose("org.eclipse.jetty.websocket.servlet."); // For WebSocketUpgradeFilter
         protectAndExpose("org.eclipse.jetty.websocket.jakarta.server.config.");
         protectAndExpose("org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketClientContainerProvider");
-        hide("org.eclipse.jetty.websocket.jakarta.server.internal");
+        protectAndExpose("org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketShutdownContainer");
     }
 }
