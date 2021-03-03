@@ -344,15 +344,7 @@ public class XmlConfiguration
         if (StringUtil.isEmpty(baseDir) || StringUtil.isEmpty(destPath))
             return null;
 
-        Path base = Paths.get(baseDir);
-
-        if (!Files.exists(base))
-        {
-            // Add warning to debug output
-            LOG.debug("Configured baseDir={} does not exist", baseDir);
-        }
-
-        return base.resolve(destPath).normalize().toString();
+        return Paths.get(baseDir).resolve(destPath).normalize().toString();
     }
 
     private static class JettyXmlConfiguration implements ConfigurationProcessor
