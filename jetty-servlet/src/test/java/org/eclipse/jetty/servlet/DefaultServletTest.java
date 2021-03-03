@@ -458,6 +458,13 @@ public class DefaultServletTest
             );
 
             scenarios.addScenario(
+                "GET " + prefix + "/..;/..;/sekret/pass",
+                "GET " + prefix + "/..;/..;/sekret/pass HTTP/1.0\r\n\r\n",
+                prefix.endsWith("?") ? HttpStatus.NOT_FOUND_404 : HttpStatus.BAD_REQUEST_400,
+                (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
+            );
+
+            scenarios.addScenario(
                 "GET " + prefix + "/%2E%2E/%2E%2E/sekret/pass",
                 "GET " + prefix + "/ HTTP/1.0\r\n\r\n",
                 HttpStatus.NOT_FOUND_404,

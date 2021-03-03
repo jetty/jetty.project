@@ -65,6 +65,8 @@ import javax.servlet.http.Part;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
+import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.HttpComplianceSection;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -77,6 +79,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
@@ -1811,10 +1814,32 @@ public class Request implements HttpServletRequest
      */
     public void setMetaData(org.eclipse.jetty.http.MetaData.Request request)
     {
+        if (_metaData == null && _input != null && _channel != null)
+        {
+            _input.recycle();
+            _channel.getResponse().getHttpOutput().reopen();
+        }
         _metaData = request;
 
         setMethod(request.getMethod());
         HttpURI uri = request.getURI();
+
+        if (uri.isAmbiguous())
+        {
+            // replaced in jetty-10 with URICompliance from the HttpConfiguration
+            Connection connection = _channel == null ? null : _channel.getConnection();
+            HttpCompliance compliance = connection instanceof HttpConnection
+                ? ((HttpConnection)connection).getHttpCompliance()
+                : _channel != null ? _channel.getConnector().getBean(HttpCompliance.class) : null;
+
+            if (uri.hasAmbiguousSegment() && (compliance == null || compliance.sections().contains(HttpComplianceSection.NO_AMBIGUOUS_PATH_SEGMENTS)))
+                throw new BadMessageException("Ambiguous segment in URI");
+            if (uri.hasAmbiguousSeparator() && (compliance == null || compliance.sections().contains(HttpComplianceSection.NO_AMBIGUOUS_PATH_SEPARATORS)))
+                throw new BadMessageException("Ambiguous separator in URI");
+            if (uri.hasAmbiguousParameter() && (compliance == null || compliance.sections().contains(HttpComplianceSection.NO_AMBIGUOUS_PATH_PARAMETERS)))
+                throw new BadMessageException("Ambiguous path parameter in URI");
+        }
+
         _originalURI = uri.isAbsolute() && request.getHttpVersion() != HttpVersion.HTTP_2 ? uri.toString() : uri.getPathQuery();
 
         String encoded = uri.getPath();
@@ -1826,7 +1851,7 @@ public class Request implements HttpServletRequest
         }
         else if (encoded.startsWith("/"))
         {
-            path = (encoded.length() == 1) ? "/" : URIUtil.canonicalPath(uri.getDecodedPath());
+            path = (encoded.length() == 1) ? "/" : uri.getDecodedPath();
         }
         else if ("*".equals(encoded) || HttpMethod.CONNECT.is(getMethod()))
         {
@@ -1879,7 +1904,7 @@ public class Request implements HttpServletRequest
 
         getHttpChannelState().recycle();
         _requestAttributeListeners.clear();
-        _input.recycle();
+        // Defer _input.recycle() until setMetaData on next request, TODO replace with recycle and reopen in 10
         _metaData = null;
         _originalURI = null;
         _contextPath = null;

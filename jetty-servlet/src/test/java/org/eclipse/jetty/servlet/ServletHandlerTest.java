@@ -520,10 +520,10 @@ public class ServletHandlerTest
         mappings = handler.getFilterMappings();
         assertNotNull(mappings);
         assertEquals(4, mappings.length);
-        assertTrue(fm4 == mappings[0]);//isMatchAfter = false;
-        assertTrue(fm5 == mappings[1]);//isMatchAfter = false;
-        assertTrue(fm1 == mappings[2]);//ordinary
-        assertTrue(fm3 == mappings[3]);//isMatchAfter = true;
+        assertTrue(fm4 == mappings[0]); //isMatchAfter = false;
+        assertTrue(fm5 == mappings[1]); //isMatchAfter = false;
+        assertTrue(fm1 == mappings[2]); //ordinary
+        assertTrue(fm3 == mappings[3]); //isMatchAfter = true;
 
         //add a non-programmatic one
         FilterHolder f = new FilterHolder(Source.EMBEDDED);
@@ -573,7 +573,7 @@ public class ServletHandlerTest
         assertEquals(7, mappings.length);
         assertTrue(fm4 == mappings[0]); //isMatchAfter = false;
         assertTrue(fm5 == mappings[1]); //isMatchAfter = false;
-        assertTrue(pfm2 == mappings[2]);//isMatchAfter = false;
+        assertTrue(pfm2 == mappings[2]); //isMatchAfter = false;
         assertTrue(fm1 == mappings[3]); //ordinary
         assertTrue(fm == mappings[4]);  //ordinary
         assertTrue(fm3 == mappings[5]); //isMatchAfter = true;
@@ -623,10 +623,10 @@ public class ServletHandlerTest
         mappings = handler.getFilterMappings();
         assertNotNull(mappings);
         assertEquals(4, mappings.length);
-        assertTrue(fh4 == mappings[0].getFilterHolder());//isMatchAfter = false;
-        assertTrue(fh5 == mappings[1].getFilterHolder());//isMatchAfter = false;
-        assertTrue(fh1 == mappings[2].getFilterHolder());//ordinary
-        assertTrue(fh3 == mappings[3].getFilterHolder());//isMatchAfter = true;
+        assertTrue(fh4 == mappings[0].getFilterHolder()); //isMatchAfter = false;
+        assertTrue(fh5 == mappings[1].getFilterHolder()); //isMatchAfter = false;
+        assertTrue(fh1 == mappings[2].getFilterHolder()); //ordinary
+        assertTrue(fh3 == mappings[3].getFilterHolder()); //isMatchAfter = true;
 
         //add a non-programmatic one
         FilterHolder f = new FilterHolder(Source.EMBEDDED);
@@ -672,7 +672,7 @@ public class ServletHandlerTest
         assertEquals(7, mappings.length);
         assertTrue(fh4 == mappings[0].getFilterHolder()); //isMatchAfter = false;
         assertTrue(fh5 == mappings[1].getFilterHolder()); //isMatchAfter = false;
-        assertTrue(pf2 == mappings[2].getFilterHolder());//isMatchAfter = false;
+        assertTrue(pf2 == mappings[2].getFilterHolder()); //isMatchAfter = false;
         assertTrue(fh1 == mappings[3].getFilterHolder()); //ordinary
         assertTrue(f == mappings[4].getFilterHolder());  //ordinary
         assertTrue(fh3 == mappings[5].getFilterHolder()); //isMatchAfter = true;

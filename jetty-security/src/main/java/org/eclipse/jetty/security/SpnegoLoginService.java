@@ -43,7 +43,7 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
 {
     private static final Logger LOG = Log.getLogger(SpnegoLoginService.class);
 
-    protected IdentityService _identityService;// = new LdapIdentityService();
+    protected IdentityService _identityService;
     protected String _name;
     private String _config;
 

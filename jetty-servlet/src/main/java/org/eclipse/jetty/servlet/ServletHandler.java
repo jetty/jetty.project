@@ -808,7 +808,7 @@ public class ServletHandler extends ScopedHandler
     {
         if (listeners != null)
             initializeHolders(listeners);
-        updateBeans(_listeners,listeners);
+        updateBeans(_listeners, listeners);
         _listeners = listeners;
     }
 
@@ -1483,7 +1483,7 @@ public class ServletHandler extends ScopedHandler
      */
     public void setFilterMappings(FilterMapping[] filterMappings)
     {
-        updateBeans(_filterMappings,filterMappings);
+        updateBeans(_filterMappings, filterMappings);
         _filterMappings = filterMappings;
         if (isRunning())
             updateMappings();
@@ -1494,7 +1494,7 @@ public class ServletHandler extends ScopedHandler
     {
         if (holders != null)
             initializeHolders(holders);
-        updateBeans(_filters,holders);
+        updateBeans(_filters, holders);
         _filters = holders;
         updateNameMappings();
         invalidateChainsCache();
@@ -1505,7 +1505,7 @@ public class ServletHandler extends ScopedHandler
      */
     public void setServletMappings(ServletMapping[] servletMappings)
     {
-        updateBeans(_servletMappings,servletMappings);
+        updateBeans(_servletMappings, servletMappings);
         _servletMappings = servletMappings;
         if (isRunning())
             updateMappings();
@@ -1521,7 +1521,7 @@ public class ServletHandler extends ScopedHandler
     {
         if (holders != null)
             initializeHolders(holders);
-        updateBeans(_servlets,holders);
+        updateBeans(_servlets, holders);
         _servlets = holders;
         updateNameMappings();
         invalidateChainsCache();

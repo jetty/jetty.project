@@ -32,7 +32,6 @@ import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
-import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NCSARequestLog;
@@ -278,7 +277,7 @@ public class Runner
                     _configFiles.add(args[++i]);
                     break;
                 case "--lib":
-                    ++i;//skip
+                    ++i; //skip
 
                     break;
                 case "--jar":
@@ -286,7 +285,7 @@ public class Runner
 
                     break;
                 case "--classes":
-                    ++i;//skip
+                    ++i; //skip
 
                     break;
                 case "--stats":
