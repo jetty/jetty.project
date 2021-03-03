@@ -15,6 +15,8 @@ package org.eclipse.jetty.http3.qpack.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http3.qpack.QpackEncoder;
+
 /**
  * Receives instructions coming from the remote Encoder as a sequence of unframed instructions.
  */
@@ -43,6 +45,39 @@ public class DecoderInstructionParser
         void onStreamCancellation(int streamId);
 
         void onInsertCountIncrement(int increment);
+    }
+
+    public static class EncoderHandler implements Handler
+    {
+        private final QpackEncoder _encoder;
+
+        public EncoderHandler(QpackEncoder encoder)
+        {
+            _encoder = encoder;
+        }
+
+        @Override
+        public void onSectionAcknowledgement(int streamId)
+        {
+            _encoder.sectionAcknowledgement(streamId);
+        }
+
+        @Override
+        public void onStreamCancellation(int streamId)
+        {
+            _encoder.streamCancellation(streamId);
+        }
+
+        @Override
+        public void onInsertCountIncrement(int increment)
+        {
+            _encoder.insertCountIncrement(increment);
+        }
+    }
+
+    public DecoderInstructionParser(QpackEncoder encoder)
+    {
+        this(new EncoderHandler(encoder));
     }
 
     public DecoderInstructionParser(Handler handler)

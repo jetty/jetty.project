@@ -41,7 +41,6 @@ public class NBitIntegerParserTest
         int value = parser.decode(buffer1);
         assertThat(value, is(-1));
 
-        parser.setPrefix(7);
         value = parser.decode(buffer2);
         assertThat(value, is(1337));
     }

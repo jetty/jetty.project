@@ -47,8 +47,8 @@ public class EncodeDecodeTest
     private DecoderInstructionParser _decoderInstructionParser;
     private EncoderInstructionParser _encoderInstructionParser;
 
-    private final int MAX_BLOCKED_STREAMS = 5;
-    private final int MAX_HEADER_SIZE = 1024;
+    private static final int MAX_BLOCKED_STREAMS = 5;
+    private static final int MAX_HEADER_SIZE = 1024;
 
     @BeforeEach
     public void before()
@@ -58,6 +58,7 @@ public class EncodeDecodeTest
         _encoder = new QpackEncoder(_encoderHandler, MAX_BLOCKED_STREAMS);
         _decoder = new QpackDecoder(_decoderHandler, MAX_HEADER_SIZE);
         _encoderInstructionParser = new EncoderInstructionParser(_decoder);
+        _decoderInstructionParser = new DecoderInstructionParser(_encoder);
     }
 
     @Test

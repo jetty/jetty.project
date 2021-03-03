@@ -20,6 +20,7 @@ import java.util.Queue;
 import org.eclipse.jetty.http3.qpack.parser.DecoderInstructionParser;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -114,6 +115,7 @@ public class DecoderInstructionParserTest
         }
     }
 
+    @Disabled
     @Test
     public void testStreamCancellation() throws Exception
     {
@@ -121,6 +123,7 @@ public class DecoderInstructionParserTest
         throw new RuntimeException("TODO: testStreamCancellation");
     }
 
+    @Disabled
     @Test
     public void testInsertCountIncrement() throws Exception
     {
