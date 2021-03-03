@@ -15,7 +15,6 @@ package org.eclipse.jetty.xml;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
@@ -46,7 +45,6 @@ import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
@@ -1684,7 +1682,7 @@ public class XmlConfigurationTest
         Path testPath = MavenTestingUtils.getTargetTestingPath("testResolvePathRelative");
         FS.ensureDirExists(testPath);
         String resolved = XmlConfiguration.resolvePath(testPath.toString(), "etc/keystore");
-        assertEquals(testPath.toString() + File.separator + "etc/keystore", resolved);
+        assertEquals(testPath.resolve("etc/keystore").toString(), resolved);
     }
 
     @Test
@@ -1693,7 +1691,7 @@ public class XmlConfigurationTest
         Path testPath = MavenTestingUtils.getTargetTestingPath("testResolvePathRelative");
         FS.ensureDirExists(testPath);
         String resolved = XmlConfiguration.resolvePath(testPath.toString(), "/tmp/etc/keystore");
-        assertEquals("/tmp/etc/keystore", resolved);
+        assertEquals(testPath.resolve("/tmp/etc/keystore").toString(), resolved);
     }
 
     @Test
