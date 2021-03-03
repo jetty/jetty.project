@@ -52,14 +52,16 @@ import org.eclipse.jetty.webapp.WebAppContext;
 @Execute (phase = LifecyclePhase.TEST_COMPILE)
 public class JettyRunMojo extends AbstractUnassembledWebAppMojo
 {
-    //Start of parameters only valid for runType=inprocess  
+    //Start of parameters only valid for deploymentType=EMBED  
     /**
-     * The interval in seconds to pause before checking if changes
-     * have occurred and re-deploying as necessary. A value 
-     * of 0 indicates no re-deployment will be done. In that case, you
-     * can force redeployment by typing a linefeed character at the command line.
+     * Controls redeployment of the webapp.
+     * <ol>
+     * <li> -1 : means no redeployment will be done </li>
+     * <li>  0 : means redeployment only occurs if you hit the ENTER key </li>
+     * <li>  otherwise, the interval in seconds to pause before checking and redeploying if necessary </li>
+     * </ol>
      */
-    @Parameter(defaultValue = "0", property = "jetty.scan", required = true)
+    @Parameter(defaultValue = "-1", property = "jetty.scan", required = true)
     protected int scan;
 
     /**
@@ -138,6 +140,12 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
     private void startScanner()
         throws Exception
     {
+        if (scan < 0)
+        {
+            getLog().info("Redeployment not enabled");
+            return; //no automatic or manual redeployment
+        }
+        
         // start scanning for changes, or wait for linefeed on stdin
         if (scan > 0)
         {
