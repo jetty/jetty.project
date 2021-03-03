@@ -39,7 +39,7 @@
   
   <New id="cacheMgr" class="org.infinispan.manager.DefaultCacheManager">
     <Arg>
-      <Property name="jetty.base" default="."/>/etc/infinispan.xml
+      <Property name="jetty.base"/>/etc/infinispan.xml
     </Arg>
     <Get id="defaultConfig" name="defaultCacheConfiguration"/>
   </New>

@@ -6,22 +6,20 @@
       <New id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
         <Set name="Provider" property="jetty.sslContext.provider" />
         <Set name="KeyStorePath">
-          <Property name="jetty.sslContext.keyStoreAbsolutePath">
-            <Default>
-              <Property name="jetty.base" default="." />/<Property name="jetty.sslContext.keyStorePath" deprecated="jetty.keystore" default="etc/keystore"/>
-            </Default>
-          </Property>
+          <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
+            <Arg><Property name="jetty.base"/></Arg>
+            <Arg><Property name="jetty.sslContext.keyStorePath" deprecated="jetty.sslContext.keyStoreAbsolutePath,jetty.keystore" default="etc/keystore.p12" /></Arg>
+          </Call>
         </Set>
         <Set name="KeyStorePassword"><Property name="jetty.sslContext.keyStorePassword" /></Set>
         <Set name="KeyStoreType" property="jetty.sslContext.keyStoreType" />
         <Set name="KeyStoreProvider" property="jetty.sslContext.keyStoreProvider" />
         <Set name="KeyManagerPassword"><Property name="jetty.sslContext.keyManagerPassword" /></Set>
         <Set name="TrustStorePath">
-          <Property name="jetty.sslContext.trustStoreAbsolutePath">
-            <Default>
-              <Property name="jetty.base" default="." />/<Property name="jetty.sslContext.trustStorePath" deprecated="jetty.truststore" default="etc/keystore"/>
-            </Default>
-          </Property>
+          <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
+            <Arg><Property name="jetty.base"/></Arg>
+            <Arg><Property name="jetty.sslContext.trustStorePath" deprecated="jetty.sslContext.trustStoreAbsolutePath,jetty.truststore" /></Arg>
+          </Call>
         </Set>
         <Set name="TrustStorePassword" property="jetty.sslContext.trustStorePassword" />
         <Set name="TrustStoreType" property="jetty.sslContext.trustStoreType" />

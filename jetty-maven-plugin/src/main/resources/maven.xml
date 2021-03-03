@@ -7,7 +7,7 @@
     <Arg>
       <Ref refid="wac" />
     </Arg>
-    <Arg><Property name="jetty.base" default="."/>/etc/maven.props</Arg>
+    <Arg><Property name="jetty.base"/>/etc/maven.props</Arg>
     <Arg>
       <Ref refid="Server" />
     </Arg>

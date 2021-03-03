@@ -708,13 +708,20 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
      */
     public void setTrustStorePath(String trustStorePath)
     {
-        try
+        if (StringUtil.isEmpty(trustStorePath))
         {
-            _trustStoreResource = Resource.newResource(trustStorePath);
+            _trustStoreResource = null;
         }
-        catch (Exception e)
+        else
         {
-            throw new IllegalArgumentException(e);
+            try
+            {
+                _trustStoreResource = Resource.newResource(trustStorePath);
+            }
+            catch (Exception e)
+            {
+                throw new IllegalArgumentException(e);
+            }
         }
     }
 
