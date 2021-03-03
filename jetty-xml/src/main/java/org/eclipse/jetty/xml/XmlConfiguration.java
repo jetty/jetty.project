@@ -337,7 +337,7 @@ public class XmlConfiguration
      * @param dir the directory (should be a directory reference, does not have to exist)
      * @param destPath the destination path (can be relative or absolute, syntax depends on OS + FileSystem in use,
      * and does not need to exist)
-     * @return String to resolved and normalized path, or null if baseDir or destPath is empty.
+     * @return String to resolved and normalized path, or null if dir or destPath is empty.
      */
     public static String resolvePath(String dir, String destPath)
     {
