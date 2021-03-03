@@ -1606,10 +1606,15 @@ public class XmlConfigurationTest
             cases.add(Arguments.of(resolvePathCasesJettyBase, "alt/keystore", "C:\\web\\jetty-base\\alt\\keystore"));
             // Configured using navigated path segments
             cases.add(Arguments.of(resolvePathCasesJettyBase, "../corp/etc/keystore", "C:\\web\\corp\\etc\\keystore"));
-            // Configured using absolute path
+            // Configured using relative to drive-root path
             cases.add(Arguments.of(resolvePathCasesJettyBase, "/included/keystore", "C:\\included\\keystore"));
             cases.add(Arguments.of(resolvePathCasesJettyBase, "\\included\\keystore", "C:\\included\\keystore"));
+            // Configured using absolute path
             cases.add(Arguments.of(resolvePathCasesJettyBase, "D:\\main\\config\\keystore", "D:\\main\\config\\keystore"));
+            cases.add(Arguments.of(resolvePathCasesJettyBase, "E:other\\keystore", "E:other\\keystore"));
+            cases.add(Arguments.of(resolvePathCasesJettyBase, "F:\\\\other\\keystore", "F:\\other\\keystore"));
+            cases.add(Arguments.of(resolvePathCasesJettyBase, "G:///another/keystore", "G:\\another\\keystore"));
+            cases.add(Arguments.of(resolvePathCasesJettyBase, "H:///prod/app/keystore", "H:\\prod\\app\\keystore"));
 
             resolvePathCasesJettyBase = "\\\\machine\\share\\apps\\jetty-base";
 
@@ -1619,10 +1624,15 @@ public class XmlConfigurationTest
             cases.add(Arguments.of(resolvePathCasesJettyBase, "alt/keystore", "\\\\machine\\share\\apps\\jetty-base\\alt\\keystore"));
             // Configured using navigated path segments
             cases.add(Arguments.of(resolvePathCasesJettyBase, "../corp/etc/keystore", "\\\\machine\\share\\apps\\corp\\etc\\keystore"));
-            // Configured using absolute path
+            // Configured using relative to drive-root path
             cases.add(Arguments.of(resolvePathCasesJettyBase, "/included/keystore", "\\\\machine\\share\\included\\keystore"));
             cases.add(Arguments.of(resolvePathCasesJettyBase, "\\included\\keystore", "\\\\machine\\share\\included\\keystore"));
+            // Configured using absolute path
             cases.add(Arguments.of(resolvePathCasesJettyBase, "D:\\main\\config\\keystore", "D:\\main\\config\\keystore"));
+            cases.add(Arguments.of(resolvePathCasesJettyBase, "E:other\\keystore", "E:other\\keystore"));
+            cases.add(Arguments.of(resolvePathCasesJettyBase, "F:\\\\other\\keystore", "F:\\other\\keystore"));
+            cases.add(Arguments.of(resolvePathCasesJettyBase, "G:///another/keystore", "G:\\another\\keystore"));
+            cases.add(Arguments.of(resolvePathCasesJettyBase, "H:///prod/app/keystore", "H:\\prod\\app\\keystore"));
         }
         else
         {
