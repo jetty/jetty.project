@@ -15,6 +15,7 @@ package org.eclipse.jetty.http3.qpack.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
 
 /**
@@ -51,14 +52,54 @@ public class EncoderInstructionParser
 
     public interface Handler
     {
-        void onSetDynamicTableCapacity(int capacity);
+        void onSetDynamicTableCapacity(int capacity) throws QpackException;
 
-        void onDuplicate(int index);
+        void onDuplicate(int index) throws QpackException;
 
-        void onInsertNameWithReference(int nameIndex, boolean isDynamicTableIndex, String value);
+        void onInsertNameWithReference(int nameIndex, boolean isDynamicTableIndex, String value) throws QpackException;
 
-        void onInsertWithLiteralName(String name, String value);
+        void onInsertWithLiteralName(String name, String value) throws QpackException;
     }
+
+    public static class DecoderHandler implements Handler
+    {
+        private final QpackDecoder _decoder;
+
+        public DecoderHandler(QpackDecoder decoder)
+        {
+            _decoder = decoder;
+        }
+
+        @Override
+        public void onSetDynamicTableCapacity(int capacity)
+        {
+            _decoder.setCapacity(capacity);
+        }
+
+        @Override
+        public void onDuplicate(int index) throws QpackException
+        {
+            _decoder.insert(index);
+        }
+
+        @Override
+        public void onInsertNameWithReference(int nameIndex, boolean isDynamicTableIndex, String value) throws QpackException
+        {
+            _decoder.insert(nameIndex, isDynamicTableIndex, value);
+        }
+
+        @Override
+        public void onInsertWithLiteralName(String name, String value) throws QpackException
+        {
+            _decoder.insert(name, value);
+        }
+    }
+
+    public EncoderInstructionParser(QpackDecoder decoder)
+    {
+        this(new DecoderHandler(decoder));
+    }
+
 
     public EncoderInstructionParser(Handler handler)
     {
@@ -196,7 +237,7 @@ public class EncoderInstructionParser
         }
     }
 
-    private void parseDuplicate(ByteBuffer buffer)
+    private void parseDuplicate(ByteBuffer buffer) throws QpackException
     {
         int index = _integerParser.decode(buffer);
         if (index >= 0)
@@ -206,7 +247,7 @@ public class EncoderInstructionParser
         }
     }
 
-    private void parseSetDynamicTableCapacity(ByteBuffer buffer)
+    private void parseSetDynamicTableCapacity(ByteBuffer buffer) throws QpackException
     {
         int capacity = _integerParser.decode(buffer);
         if (capacity >= 0)

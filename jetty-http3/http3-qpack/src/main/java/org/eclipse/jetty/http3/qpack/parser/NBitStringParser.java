@@ -46,6 +46,8 @@ public class NBitStringParser
 
     public void setPrefix(int prefix)
     {
+        if (_state != State.PARSING)
+            throw new IllegalStateException();
         _prefix = prefix;
     }
 
