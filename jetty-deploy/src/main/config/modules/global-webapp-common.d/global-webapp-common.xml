@@ -9,7 +9,7 @@
           <Set name="jettyXml">
             <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
               <Arg><Property name="jetty.base"/></Arg>
-              <Arg><Property name="jetty.deploy.webappCommonConfig"/>/etc/webapp-common.xml</Arg>
+              <Arg><Property name="jetty.deploy.webappCommonConfig" default="etc/webapp-common.xml"/></Arg>
             </Call>
           </Set>
         </New>
