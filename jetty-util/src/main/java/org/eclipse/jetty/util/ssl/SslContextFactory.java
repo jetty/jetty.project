@@ -54,6 +54,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.KeyManager;
@@ -63,7 +64,6 @@ import javax.net.ssl.SNIMatcher;
 import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLServerSocket;
@@ -2292,7 +2292,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         }
 
         @Override
-        public String sniSelect(String keyType, Principal[] issuers, SSLSession session, String sniHost, Collection<X509> certificates) throws SSLHandshakeException
+        public String sniSelect(String keyType, Principal[] issuers, SSLSession session, String sniHost, Collection<X509> certificates)
         {
             if (sniHost == null)
             {
@@ -2301,12 +2301,24 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
             }
             else
             {
-                // Match the SNI host, or let the JDK decide unless unmatched SNIs are rejected.
-                return certificates.stream()
+                // Match the SNI host.
+                List<X509> matching = certificates.stream()
                     .filter(x509 -> x509.matches(sniHost))
-                    .findFirst()
+                    .collect(Collectors.toList());
+
+                // No match, let the JDK decide unless unmatched SNIs are rejected.
+                if (matching.isEmpty())
+                    return isSniRequired() ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE;
+
+                String alias = matching.get(0).getAlias();
+                if (matching.size() == 1)
+                    return alias;
+
+                // Prefer strict matches over wildcard matches.
+                return matching.stream()
+                    .min(Comparator.comparingInt(cert -> cert.getWilds().size()))
                     .map(X509::getAlias)
-                    .orElse(_sniRequired ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE);
+                    .orElse(alias);
             }
         }
 
