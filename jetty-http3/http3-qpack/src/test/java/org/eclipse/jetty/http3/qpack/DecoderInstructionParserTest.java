@@ -60,7 +60,7 @@ public class DecoderInstructionParserTest
     }
 
     @Test
-    public void testSectionAcknowledgement()
+    public void testSectionAcknowledgement() throws Exception
     {
         DebugHandler debugHandler = new DebugHandler();
         DecoderInstructionParser incomingEncoderStream = new DecoderInstructionParser(debugHandler);

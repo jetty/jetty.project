@@ -16,6 +16,7 @@ package org.eclipse.jetty.http3.qpack.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
+import org.eclipse.jetty.http3.qpack.QpackException;
 
 /**
  * Receives instructions coming from the remote Encoder as a sequence of unframed instructions.
@@ -40,11 +41,11 @@ public class DecoderInstructionParser
 
     public interface Handler
     {
-        void onSectionAcknowledgement(int streamId);
+        void onSectionAcknowledgement(int streamId) throws QpackException;
 
-        void onStreamCancellation(int streamId);
+        void onStreamCancellation(int streamId) throws QpackException;
 
-        void onInsertCountIncrement(int increment);
+        void onInsertCountIncrement(int increment) throws QpackException;
     }
 
     public static class EncoderHandler implements Handler
@@ -57,19 +58,19 @@ public class DecoderInstructionParser
         }
 
         @Override
-        public void onSectionAcknowledgement(int streamId)
+        public void onSectionAcknowledgement(int streamId) throws QpackException
         {
             _encoder.sectionAcknowledgement(streamId);
         }
 
         @Override
-        public void onStreamCancellation(int streamId)
+        public void onStreamCancellation(int streamId) throws QpackException
         {
             _encoder.streamCancellation(streamId);
         }
 
         @Override
-        public void onInsertCountIncrement(int increment)
+        public void onInsertCountIncrement(int increment) throws QpackException
         {
             _encoder.insertCountIncrement(increment);
         }
@@ -86,7 +87,7 @@ public class DecoderInstructionParser
         _integerParser = new NBitIntegerParser();
     }
 
-    public void parse(ByteBuffer buffer)
+    public void parse(ByteBuffer buffer) throws QpackException
     {
         if (buffer == null || !buffer.hasRemaining())
             return;
@@ -133,7 +134,7 @@ public class DecoderInstructionParser
         }
     }
 
-    private void parseSectionAcknowledgment(ByteBuffer buffer)
+    private void parseSectionAcknowledgment(ByteBuffer buffer) throws QpackException
     {
         int streamId = _integerParser.decode(buffer);
         if (streamId >= 0)
@@ -143,7 +144,7 @@ public class DecoderInstructionParser
         }
     }
 
-    private void parseStreamCancellation(ByteBuffer buffer)
+    private void parseStreamCancellation(ByteBuffer buffer) throws QpackException
     {
         int streamId = _integerParser.decode(buffer);
         if (streamId >= 0)
@@ -153,7 +154,7 @@ public class DecoderInstructionParser
         }
     }
 
-    private void parseInsertCountIncrement(ByteBuffer buffer)
+    private void parseInsertCountIncrement(ByteBuffer buffer) throws QpackException
     {
         int increment = _integerParser.decode(buffer);
         if (increment >= 0)
