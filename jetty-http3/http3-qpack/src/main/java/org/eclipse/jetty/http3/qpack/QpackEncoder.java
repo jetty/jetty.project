@@ -20,7 +20,6 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -104,9 +103,11 @@ public class QpackEncoder
     private final Handler _handler;
     private final QpackContext _context;
     private final int _maxBlockedStreams;
-    private final Map<Integer, AtomicInteger> _blockedStreams = new HashMap<>();
     private boolean _validateEncoding = true;
     private int _knownInsertCount;
+
+    private int _blockedStreams = 0;
+    private final Map<Integer, StreamInfo> _streamInfoMap = new HashMap<>();
 
     public QpackEncoder(Handler handler, int maxBlockedStreams)
     {
@@ -122,32 +123,6 @@ public class QpackEncoder
         _knownInsertCount = 0;
     }
 
-    private boolean acquireBlockedStream(int streamId)
-    {
-        AtomicInteger atomicInteger = _blockedStreams.get(streamId);
-        if (atomicInteger == null && (_blockedStreams.size() > _maxBlockedStreams))
-            return false;
-
-        if (atomicInteger == null)
-        {
-            atomicInteger = new AtomicInteger();
-            _blockedStreams.put(streamId, atomicInteger);
-        }
-
-        atomicInteger.incrementAndGet();
-        return true;
-    }
-
-    private void releaseBlockedStream(int streamId)
-    {
-        AtomicInteger atomicInteger = _blockedStreams.get(streamId);
-        if (atomicInteger == null)
-            throw new IllegalArgumentException("Invalid Stream ID");
-
-        if (atomicInteger.decrementAndGet() == 0)
-            _blockedStreams.remove(streamId);
-    }
-
     public void setCapacity(int capacity)
     {
         _context.getDynamicTable().setCapacity(capacity);
@@ -159,14 +134,26 @@ public class QpackEncoder
         _knownInsertCount += increment;
     }
 
-    public void sectionAcknowledgement(int streamId)
+    public void sectionAcknowledgement(int streamId) throws QpackException
     {
-        // TODO: Implement.
+        StreamInfo streamInfo = _streamInfoMap.get(streamId);
+        if (streamInfo == null)
+            throw new QpackException.StreamException("No StreamInfo for " + streamId);
+
+        // The KnownInsertCount should be updated to the earliest sent RequiredInsertCount on that stream.
+        StreamInfo.SectionInfo sectionInfo = streamInfo.acknowledge();
+        _knownInsertCount = Math.max(_knownInsertCount, sectionInfo.getRequiredInsertCount());
+
+        // If we have no more outstanding section acknowledgments remove the StreamInfo.
+        if (streamInfo.isEmpty())
+            _streamInfoMap.remove(streamId);
     }
 
-    public void streamCancellation(int streamId)
+    public void streamCancellation(int streamId) throws QpackException
     {
-        // TODO: Implement.
+        StreamInfo streamInfo = _streamInfoMap.remove(streamId);
+        if (streamInfo == null)
+            throw new QpackException.StreamException("No StreamInfo for " + streamId);
     }
 
     public QpackContext getQpackContext()
@@ -184,7 +171,7 @@ public class QpackEncoder
         _validateEncoding = validateEncoding;
     }
 
-    public boolean referenceEntry(Entry entry, int streamId)
+    public boolean referenceEntry(Entry entry, StreamInfo streamInfo)
     {
         if (entry == null)
             return false;
@@ -196,17 +183,28 @@ public class QpackEncoder
         if (inEvictionZone)
             return false;
 
+        // If they have already acknowledged this entry we can reference it straight away.
         if (_knownInsertCount >= entry.getIndex() + 1)
         {
             entry.reference();
             return true;
         }
 
-        // We might be able to risk blocking the decoder stream and reference this immediately.
-        boolean riskBlockedStream = acquireBlockedStream(streamId);
-        if (riskBlockedStream)
-            entry.reference();
-        return riskBlockedStream;
+        // We may need to risk blocking the stream in order to reference it.
+        if (streamInfo.isBlocked())
+        {
+            streamInfo.getCurrentSectionInfo().block();
+            return true;
+        }
+
+        if (_blockedStreams < _maxBlockedStreams)
+        {
+            _blockedStreams++;
+            streamInfo.getCurrentSectionInfo().block();
+            return true;
+        }
+
+        return false;
     }
 
     public static boolean shouldIndex(HttpField httpField)
@@ -233,13 +231,22 @@ public class QpackEncoder
             }
         }
 
+        StreamInfo streamInfo = _streamInfoMap.get(streamId);
+        if (streamInfo == null)
+        {
+            streamInfo = new StreamInfo(streamId);
+            _streamInfoMap.put(streamId, streamInfo);
+        }
+        StreamInfo.SectionInfo sectionInfo = new StreamInfo.SectionInfo();
+        streamInfo.add(sectionInfo);
+
         int requiredInsertCount = 0;
         List<EncodableEntry> encodableEntries = new ArrayList<>();
         if (httpFields != null)
         {
             for (HttpField field : httpFields)
             {
-                EncodableEntry entry = encode(streamId, field);
+                EncodableEntry entry = encode(streamInfo, field);
                 encodableEntries.add(entry);
 
                 // Update the required InsertCount.
@@ -274,7 +281,7 @@ public class QpackEncoder
         return buffer;
     }
 
-    private EncodableEntry encode(int streamId, HttpField field)
+    private EncodableEntry encode(StreamInfo streamInfo, HttpField field)
     {
         DynamicTable dynamicTable = _context.getDynamicTable();
 
@@ -288,7 +295,7 @@ public class QpackEncoder
         boolean canCreateEntry = shouldIndex(field) && (Entry.getSize(field) <= dynamicTable.getSpace());
 
         Entry entry = _context.get(field);
-        if (entry != null && referenceEntry(entry, streamId))
+        if (entry != null && referenceEntry(entry, streamInfo))
         {
             return new EncodableEntry(entry);
         }
@@ -302,14 +309,14 @@ public class QpackEncoder
                 _handler.onInstruction(new DuplicateInstruction(entry.getIndex()));
 
                 // Should we reference this entry and risk blocking.
-                if (referenceEntry(newEntry, streamId))
+                if (referenceEntry(newEntry, streamInfo))
                     return new EncodableEntry(newEntry);
             }
         }
 
         boolean huffman = shouldHuffmanEncode(field);
         Entry nameEntry = _context.get(field.getName());
-        if (nameEntry != null && referenceEntry(nameEntry, streamId))
+        if (nameEntry != null && referenceEntry(nameEntry, streamInfo))
         {
             // Should we copy this entry
             if (canCreateEntry)
@@ -319,7 +326,7 @@ public class QpackEncoder
                 _handler.onInstruction(new IndexedNameEntryInstruction(!nameEntry.isStatic(), nameEntry.getIndex(), huffman, field.getValue()));
 
                 // Should we reference this entry and risk blocking.
-                if (referenceEntry(newEntry, streamId))
+                if (referenceEntry(newEntry, streamInfo))
                     return new EncodableEntry(newEntry);
             }
 
@@ -334,7 +341,7 @@ public class QpackEncoder
                 _handler.onInstruction(new LiteralNameEntryInstruction(huffman, field.getName(), huffman, field.getValue()));
 
                 // Should we reference this entry and risk blocking.
-                if (referenceEntry(newEntry, streamId))
+                if (referenceEntry(newEntry, streamInfo))
                     return new EncodableEntry(newEntry);
             }
 
