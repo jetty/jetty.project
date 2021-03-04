@@ -15,6 +15,7 @@ package org.eclipse.jetty.http3.qpack.table;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -22,7 +23,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http3.qpack.QpackContext;
 import org.eclipse.jetty.http3.qpack.QpackException;
 
-public class DynamicTable
+public class DynamicTable implements Iterable<Entry>
 {
     public static final int FIRST_INDEX = StaticTable.STATIC_SIZE + 1;
     private int _capacity;
@@ -187,6 +188,12 @@ public class DynamicTable
     private int getEvictionThreshold()
     {
         return _capacity * 3 / 4;
+    }
+
+    @Override
+    public Iterator<Entry> iterator()
+    {
+        return _entries.iterator();
     }
 
     @Override

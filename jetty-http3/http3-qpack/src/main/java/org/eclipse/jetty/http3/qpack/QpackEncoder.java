@@ -129,8 +129,19 @@ public class QpackEncoder
         _handler.onInstruction(new SetCapacityInstruction(capacity));
     }
 
-    public void insertCountIncrement(int increment)
+    public void insertCountIncrement(int increment) throws QpackException
     {
+        int insertCount = _context.getDynamicTable().getInsertCount();
+        if (_knownInsertCount + increment > insertCount)
+            throw new QpackException.StreamException("KnownInsertCount incremented over InsertCount");
+
+        // TODO: release any references to entries which used to insert new entries.
+        for (Entry entry : _context.getDynamicTable())
+        {
+            if (entry.getIndex() > _knownInsertCount)
+                break;
+        }
+
         _knownInsertCount += increment;
     }
 
@@ -171,7 +182,7 @@ public class QpackEncoder
         _validateEncoding = validateEncoding;
     }
 
-    public boolean referenceEntry(Entry entry, StreamInfo streamInfo)
+    public boolean referenceEntry(Entry entry)
     {
         if (entry == null)
             return false;
@@ -190,6 +201,14 @@ public class QpackEncoder
             return true;
         }
 
+        return false;
+    }
+
+    public boolean referenceEntry(Entry entry, StreamInfo streamInfo)
+    {
+        if (referenceEntry(entry))
+            return true;
+
         // We may need to risk blocking the stream in order to reference it.
         if (streamInfo.isBlocked())
         {
@@ -207,7 +226,7 @@ public class QpackEncoder
         return false;
     }
 
-    public static boolean shouldIndex(HttpField httpField)
+    public boolean shouldIndex(HttpField httpField)
     {
         return !DO_NOT_INDEX.contains(httpField.getHeader());
     }
@@ -347,6 +366,38 @@ public class QpackEncoder
 
             return new EncodableEntry(field);
         }
+    }
+
+    public boolean insert(HttpField field)
+    {
+        DynamicTable dynamicTable = _context.getDynamicTable();
+        if (field.getValue() == null)
+            field = new HttpField(field.getHeader(), field.getName(), "");
+
+        boolean canCreateEntry = shouldIndex(field) && (Entry.getSize(field) <= dynamicTable.getSpace());
+        if (!canCreateEntry)
+            return false;
+
+        Entry newEntry = new Entry(field);
+        dynamicTable.add(newEntry);
+
+        Entry entry = _context.get(field);
+        if (referenceEntry(entry))
+        {
+            _handler.onInstruction(new DuplicateInstruction(entry.getIndex()));
+            return true;
+        }
+
+        boolean huffman = shouldHuffmanEncode(field);
+        Entry nameEntry = _context.get(field.getName());
+        if (referenceEntry(nameEntry))
+        {
+            _handler.onInstruction(new IndexedNameEntryInstruction(!nameEntry.isStatic(), nameEntry.getIndex(), huffman, field.getValue()));
+            return true;
+        }
+
+        _handler.onInstruction(new LiteralNameEntryInstruction(huffman, field.getName(), huffman, field.getValue()));
+        return true;
     }
 
     public static int encodeInsertCount(int reqInsertCount, int maxTableCapacity)
