@@ -307,7 +307,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     {
         for (CompressedContentFormat formats : _resourceService.getPrecompressedFormats())
         {
-            if (CompressedContentFormat.GZIP._encoding.equals(formats._encoding))
+            if (CompressedContentFormat.GZIP.getEncoding().equals(formats.getEncoding()))
                 return true;
         }
         return false;

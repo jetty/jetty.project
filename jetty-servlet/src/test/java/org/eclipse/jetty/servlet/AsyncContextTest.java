@@ -229,7 +229,7 @@ public class AsyncContextTest
     @Test
     public void testDispatchAsyncContextEncodedUrl() throws Exception
     {
-        String request = "GET /ctx/test/hello%2fthere?dispatch=true HTTP/1.1\r\n" +
+        String request = "GET /ctx/test/hello%20there?dispatch=true HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
             "Content-Type: application/x-www-form-urlencoded\r\n" +
             "Connection: close\r\n" +
@@ -253,16 +253,16 @@ public class AsyncContextTest
 
         // async run attributes
         assertThat("async run attr servlet path is original", responseBody, containsString("async:run:attr:servletPath:/test"));
-        assertThat("async run attr path info has correct encoding", responseBody, containsString("async:run:attr:pathInfo:/hello/there"));
+        assertThat("async run attr path info has correct encoding", responseBody, containsString("async:run:attr:pathInfo:/hello there"));
         assertThat("async run attr query string", responseBody, containsString("async:run:attr:queryString:dispatch=true"));
         assertThat("async run context path", responseBody, containsString("async:run:attr:contextPath:/ctx"));
-        assertThat("async run request uri has correct encoding", responseBody, containsString("async:run:attr:requestURI:/ctx/test/hello%2fthere"));
+        assertThat("async run request uri has correct encoding", responseBody, containsString("async:run:attr:requestURI:/ctx/test/hello%20there"));
     }
 
     @Test
     public void testDispatchAsyncContextSelfEncodedUrl() throws Exception
     {
-        String request = "GET /ctx/self/hello%2fthere?dispatch=true HTTP/1.1\r\n" +
+        String request = "GET /ctx/self/hello%20there?dispatch=true HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
             "Content-Type: application/x-www-form-urlencoded\r\n" +
             "Connection: close\r\n" +
@@ -272,8 +272,8 @@ public class AsyncContextTest
 
         String responseBody = response.getContent();
 
-        assertThat("servlet request uri initial", responseBody, containsString("doGet.REQUEST.requestURI:/ctx/self/hello%2fthere"));
-        assertThat("servlet request uri async", responseBody, containsString("doGet.ASYNC.requestURI:/ctx/self/hello%2fthere"));
+        assertThat("servlet request uri initial", responseBody, containsString("doGet.REQUEST.requestURI:/ctx/self/hello%20there"));
+        assertThat("servlet request uri async", responseBody, containsString("doGet.ASYNC.requestURI:/ctx/self/hello%20there"));
     }
 
     @Test

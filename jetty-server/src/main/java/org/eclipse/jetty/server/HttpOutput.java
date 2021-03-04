@@ -29,6 +29,7 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.util.ResourceBundle;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
@@ -69,7 +70,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     enum State
     {
         OPEN,     // Open
-        CLOSE,    // Close needed from onWriteCompletion
+        CLOSE,    // Close needed from onWriteComplete
         CLOSING,  // Close in progress after close API called
         CLOSED    // Closed
     }
@@ -308,7 +309,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             {
                 // Somebody called close or complete while we were writing.
                 // We can now send a (probably empty) last buffer and then when it completes
-                // onWriteCompletion will be called again to actually execute the _completeCallback
+                // onWriteComplete will be called again to actually execute the _completeCallback
                 _state = State.CLOSING;
                 closeContent = BufferUtil.hasContent(_aggregate) ? _aggregate : BufferUtil.EMPTY_BUFFER;
             }
@@ -411,53 +412,87 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         ByteBuffer content = null;
         synchronized (_channelState)
         {
-            switch (_state)
+            // First check the API state for any unrecoverable situations
+            switch (_apiState)
             {
-                case CLOSED:
-                    succeeded = true;
+                case UNREADY: // isReady() has returned false so a call to onWritePossible may happen at any time
+                    error = new CancellationException("Completed whilst write unready");
                     break;
 
-                case CLOSE:
-                case CLOSING:
-                    _closedCallback = Callback.combine(_closedCallback, callback);
+                case PENDING: // an async write is pending and may complete at any time
+                    // If this is not the last write, then we must abort
+                    if (!_channel.getResponse().isContentComplete(_written))
+                        error = new CancellationException("Completed whilst write pending");
                     break;
 
-                case OPEN:
-                    if (_onError != null)
-                    {
-                        error = _onError;
+                case BLOCKED: // another thread is blocked in a write or a close
+                    error = new CancellationException("Completed whilst write blocked");
+                    break;
+
+                default:
+                    break;
+            }
+
+            // If we can't complete due to the API state, then abort
+            if (error != null)
+            {
+                _channel.abort(error);
+                _writeBlocker.fail(error);
+                _state = State.CLOSED;
+            }
+            else
+            {
+                // Otherwise check the output state to determine how to complete
+                switch (_state)
+                {
+                    case CLOSED:
+                        succeeded = true;
                         break;
-                    }
 
-                    _closedCallback = Callback.combine(_closedCallback, callback);
+                    case CLOSE:
+                    case CLOSING:
+                        _closedCallback = Callback.combine(_closedCallback, callback);
+                        break;
 
-                    switch (_apiState)
-                    {
-                        case BLOCKING:
-                            // Output is idle blocking state, but we still do an async close
-                            _apiState = ApiState.BLOCKED;
-                            _state = State.CLOSING;
-                            content = BufferUtil.hasContent(_aggregate) ? _aggregate : BufferUtil.EMPTY_BUFFER;
+                    case OPEN:
+                        if (_onError != null)
+                        {
+                            error = _onError;
                             break;
+                        }
 
-                        case ASYNC:
-                        case READY:
-                            // Output is idle in async state, so we can do an async close
-                            _apiState = ApiState.PENDING;
-                            _state = State.CLOSING;
-                            content = BufferUtil.hasContent(_aggregate) ? _aggregate : BufferUtil.EMPTY_BUFFER;
-                            break;
+                        _closedCallback = Callback.combine(_closedCallback, callback);
 
-                        case BLOCKED:
-                        case UNREADY:
-                        case PENDING:
-                            // An operation is in progress, so we soft close now
-                            _softClose = true;
-                            // then trigger a close from onWriteComplete
-                            _state = State.CLOSE;
-                            break;
-                    }
-                    break;
+                        switch (_apiState)
+                        {
+                            case BLOCKING:
+                                // Output is idle blocking state, but we still do an async close
+                                _apiState = ApiState.BLOCKED;
+                                _state = State.CLOSING;
+                                content = BufferUtil.hasContent(_aggregate) ? _aggregate : BufferUtil.EMPTY_BUFFER;
+                                break;
+
+                            case ASYNC:
+                            case READY:
+                                // Output is idle in async state, so we can do an async close
+                                _apiState = ApiState.PENDING;
+                                _state = State.CLOSING;
+                                content = BufferUtil.hasContent(_aggregate) ? _aggregate : BufferUtil.EMPTY_BUFFER;
+                                break;
+
+                            case UNREADY:
+                            case PENDING:
+                                // An operation is in progress, so we soft close now
+                                _softClose = true;
+                                // then trigger a close from onWriteComplete
+                                _state = State.CLOSE;
+                                break;
+
+                            default:
+                                throw new IllegalStateException();
+                        }
+                        break;
+                }
             }
         }
 
@@ -1399,7 +1434,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             _state = State.OPEN;
             _apiState = ApiState.BLOCKING;
-            _softClose = false;
+            _softClose = true; // Stay closed until next request
             _interceptor = _channel;
             HttpConfiguration config = _channel.getHttpConfiguration();
             _bufferSize = config.getOutputBufferSize();
