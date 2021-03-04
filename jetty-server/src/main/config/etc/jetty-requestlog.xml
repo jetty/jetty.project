@@ -18,7 +18,11 @@
           <Arg>
             <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
               <Arg><Property name="jetty.base"/></Arg>
-              <Arg><Property name="jetty.requestlog.dir" default="logs" />/yyyy_mm_dd.request.log</Arg>
+              <Arg>
+                <Property name="jetty.requestlog.filePath">
+                  <Default><Property name="jetty.requestlog.dir" default="logs"/>/yyyy_mm_dd.request.log</Default>
+                </Property>
+              </Arg>
             </Call>
           </Arg>
 

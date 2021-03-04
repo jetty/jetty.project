@@ -16,6 +16,9 @@ etc/jetty-requestlog.xml
 [files]
 logs/
 
+[ini]
+jetty.requestlog.dir?=logs
+
 [ini-template]
 ## Format string
 # jetty.requestlog.formatString=%a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t "%r" %s %B "%{Referer}i" "%{User-Agent}i" "%C"
