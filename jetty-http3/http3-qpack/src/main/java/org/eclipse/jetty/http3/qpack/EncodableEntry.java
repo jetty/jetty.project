@@ -17,61 +17,92 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http3.qpack.table.Entry;
 
-class EncodableEntry
+abstract class EncodableEntry
 {
-    private final Entry _referencedEntry;
-    private final Entry _referencedName;
-    private final HttpField _field;
-    private final boolean _huffman;
-
-    public EncodableEntry(Entry entry)
+    static EncodableEntry getReferencedEntry(Entry entry)
     {
-        // We want to reference the entry directly.
-        _referencedEntry = entry;
-        _referencedName = null;
-        _field = null;
-        _huffman = false;
+        return new ReferencedEntry(entry);
     }
 
-    public EncodableEntry(Entry nameEntry, HttpField field, boolean huffman)
+    static EncodableEntry getNameReferencedEntry(Entry nameEntry, HttpField field, boolean huffman)
     {
-        // We want to reference the name and use a literal value.
-        _referencedEntry = null;
-        _referencedName = nameEntry;
-        _field = field;
-        _huffman = huffman;
+        return new ReferencedNameEntry(nameEntry, field, huffman);
     }
 
-    public EncodableEntry(HttpField field, boolean huffman)
+    static EncodableEntry getLiteralEntry(HttpField field, boolean huffman)
     {
-        // We want to use a literal name and value.
-        _referencedEntry = null;
-        _referencedName = null;
-        _field = field;
-        _huffman = huffman;
+        return new LiteralEntry(field, huffman);
     }
 
-    public void encode(ByteBuffer buffer, int base)
+    static EncodableEntry getPreEncodedEntry(PreEncodedHttpField httpField)
     {
-        // TODO: When should we ever encode with post-base indexes?
-        //  We are currently always using the base as the start of the current dynamic table entries.
-        if (_referencedEntry != null)
+        return new PreEncodedEntry(httpField);
+    }
+
+    abstract void encode(ByteBuffer buffer, int base);
+
+    abstract int getRequiredSize(int base);
+
+    abstract int getRequiredInsertCount();
+
+    private static class ReferencedEntry extends EncodableEntry
+    {
+        private final Entry _entry;
+
+        public ReferencedEntry(Entry entry)
         {
-            byte staticBit = _referencedEntry.isStatic() ? (byte)0x40 : (byte)0x00;
+            _entry = entry;
+        }
+
+        @Override
+        public void encode(ByteBuffer buffer, int base)
+        {
+            byte staticBit = _entry.isStatic() ? (byte)0x40 : (byte)0x00;
             buffer.put((byte)(0x80 | staticBit));
-            int relativeIndex =  _referencedEntry.getIndex() - base;
+            int relativeIndex =  _entry.getIndex() - base;
             NBitInteger.encode(buffer, 6, relativeIndex);
         }
-        else if (_referencedName != null)
+
+        @Override
+        public int getRequiredSize(int base)
+        {
+            int relativeIndex =  _entry.getIndex() - base;
+            return 1 + NBitInteger.octectsNeeded(6, relativeIndex);
+        }
+
+        @Override
+        public int getRequiredInsertCount()
+        {
+            return _entry.isStatic() ? 0 : _entry.getIndex() + 1;
+        }
+    }
+
+    private static class ReferencedNameEntry extends EncodableEntry
+    {
+        private final Entry _nameEntry;
+        private final HttpField _field;
+        private final boolean _huffman;
+
+        public ReferencedNameEntry(Entry nameEntry, HttpField field, boolean huffman)
+        {
+            _nameEntry = nameEntry;
+            _field = field;
+            _huffman = huffman;
+        }
+
+        @Override
+        public void encode(ByteBuffer buffer, int base)
         {
             byte allowIntermediary = 0x00; // TODO: this is 0x20 bit, when should this be set?
-            byte staticBit = _referencedName.isStatic() ? (byte)0x10 : (byte)0x00;
+            byte staticBit = _nameEntry.isStatic() ? (byte)0x10 : (byte)0x00;
 
             // Encode the prefix.
             buffer.put((byte)(0x40 | allowIntermediary | staticBit));
-            int relativeIndex =  _referencedName.getIndex() - base;
+            int relativeIndex =  _nameEntry.getIndex() - base;
             NBitInteger.encode(buffer, 4, relativeIndex);
 
             // Encode the value.
@@ -89,7 +120,42 @@ class EncodableEntry
                 buffer.put(value.getBytes());
             }
         }
-        else
+
+        @Override
+        public int getRequiredSize(int base)
+        {
+            String value = getValue();
+            int relativeIndex =  _nameEntry.getIndex() - base;
+            int valueLength = _huffman ? Huffman.octetsNeeded(value) : value.length();
+            return 1 + NBitInteger.octectsNeeded(4, relativeIndex) + 1 + NBitInteger.octectsNeeded(7, valueLength) + valueLength;
+        }
+
+        @Override
+        public int getRequiredInsertCount()
+        {
+            return _nameEntry.isStatic() ? 0 : _nameEntry.getIndex() + 1;
+        }
+
+        private String getValue()
+        {
+            String value = Objects.requireNonNull(_field).getValue();
+            return (value == null) ? "" : value;
+        }
+    }
+
+    private static class LiteralEntry extends EncodableEntry
+    {
+        private final HttpField _field;
+        private final boolean _huffman;
+
+        public LiteralEntry(HttpField field, boolean huffman)
+        {
+            _field = field;
+            _huffman = huffman;
+        }
+
+        @Override
+        public void encode(ByteBuffer buffer, int base)
         {
             byte allowIntermediary = 0x00; // TODO: this is 0x10 bit, when should this be set?
             String name = getName();
@@ -116,23 +182,9 @@ class EncodableEntry
                 buffer.put(value.getBytes());
             }
         }
-    }
 
-    public int getRequiredSize(int base)
-    {
-        if (_referencedEntry != null)
-        {
-            int relativeIndex =  _referencedEntry.getIndex() - base;
-            return 1 + NBitInteger.octectsNeeded(6, relativeIndex);
-        }
-        else if (_referencedName != null)
-        {
-            String value = getValue();
-            int relativeIndex =  _referencedName.getIndex() - base;
-            int valueLength = _huffman ? Huffman.octetsNeeded(value) : value.length();
-            return 1 + NBitInteger.octectsNeeded(4, relativeIndex) + 1 + NBitInteger.octectsNeeded(7, valueLength) + valueLength;
-        }
-        else
+        @Override
+        public int getRequiredSize(int base)
         {
             String name = getName();
             String value = getValue();
@@ -140,27 +192,51 @@ class EncodableEntry
             int valueLength = _huffman ? Huffman.octetsNeeded(value) : value.length();
             return 2 + NBitInteger.octectsNeeded(3, nameLength) + nameLength + NBitInteger.octectsNeeded(7, valueLength) + valueLength;
         }
-    }
 
-    private String getName()
-    {
-        String name = Objects.requireNonNull(_field).getName();
-        return (name == null) ? "" : name;
-    }
-
-    private String getValue()
-    {
-        String value = Objects.requireNonNull(_field).getValue();
-        return (value == null) ? "" : value;
-    }
-
-    public int getRequiredInsertCount()
-    {
-        if (_referencedEntry != null && !_referencedEntry.isStatic())
-            return _referencedEntry.getIndex() + 1;
-        else if (_referencedName != null && !_referencedName.isStatic())
-            return _referencedName.getIndex() + 1;
-        else
+        @Override
+        public int getRequiredInsertCount()
+        {
             return 0;
+        }
+
+        private String getName()
+        {
+            String name = Objects.requireNonNull(_field).getName();
+            return (name == null) ? "" : name;
+        }
+
+        private String getValue()
+        {
+            String value = Objects.requireNonNull(_field).getValue();
+            return (value == null) ? "" : value;
+        }
+    }
+
+    private static class PreEncodedEntry extends EncodableEntry
+    {
+        private final PreEncodedHttpField _httpField;
+
+        public PreEncodedEntry(PreEncodedHttpField httpField)
+        {
+            _httpField = httpField;
+        }
+
+        @Override
+        public void encode(ByteBuffer buffer, int base)
+        {
+            _httpField.putTo(buffer, HttpVersion.HTTP_3);
+        }
+
+        @Override
+        public int getRequiredSize(int base)
+        {
+            return _httpField.getEncodedLength(HttpVersion.HTTP_3);
+        }
+
+        @Override
+        public int getRequiredInsertCount()
+        {
+            return 0;
+        }
     }
 }
