@@ -24,6 +24,7 @@ class EncodableEntry
     private final Entry _referencedEntry;
     private final Entry _referencedName;
     private final HttpField _field;
+    private final boolean _huffman;
 
     public EncodableEntry(Entry entry)
     {
@@ -31,22 +32,25 @@ class EncodableEntry
         _referencedEntry = entry;
         _referencedName = null;
         _field = null;
+        _huffman = false;
     }
 
-    public EncodableEntry(Entry nameEntry, HttpField field)
+    public EncodableEntry(Entry nameEntry, HttpField field, boolean huffman)
     {
         // We want to reference the name and use a literal value.
         _referencedEntry = null;
         _referencedName = nameEntry;
         _field = field;
+        _huffman = huffman;
     }
 
-    public EncodableEntry(HttpField field)
+    public EncodableEntry(HttpField field, boolean huffman)
     {
         // We want to use a literal name and value.
         _referencedEntry = null;
         _referencedName = null;
         _field = field;
+        _huffman = huffman;
     }
 
     public void encode(ByteBuffer buffer, int base)
@@ -65,7 +69,6 @@ class EncodableEntry
             byte allowIntermediary = 0x00; // TODO: this is 0x20 bit, when should this be set?
             byte staticBit = _referencedName.isStatic() ? (byte)0x10 : (byte)0x00;
             String value = (Objects.requireNonNull(_field).getValue() == null) ? "" : _field.getValue();
-            boolean huffman = QpackEncoder.shouldHuffmanEncode(_referencedName.getHttpField());
 
             // Encode the prefix.
             buffer.put((byte)(0x40 | allowIntermediary | staticBit));
@@ -73,7 +76,7 @@ class EncodableEntry
             NBitInteger.encode(buffer, 4, relativeIndex);
 
             // Encode the value.
-            if (huffman)
+            if (_huffman)
             {
                 buffer.put((byte)0x80);
                 NBitInteger.encode(buffer, 7, Huffman.octetsNeeded(value));
@@ -89,12 +92,11 @@ class EncodableEntry
         else
         {
             byte allowIntermediary = 0x00; // TODO: this is 0x10 bit, when should this be set?
-            boolean huffman = QpackEncoder.shouldHuffmanEncode(Objects.requireNonNull(_field));
-            String name = _field.getName();
+            String name = Objects.requireNonNull(_field).getName();
             String value = (_field.getValue() == null) ? "" : _field.getValue();
 
             // Encode the prefix code and the name.
-            if (huffman)
+            if (_huffman)
             {
                 buffer.put((byte)(0x28 | allowIntermediary));
                 NBitInteger.encode(buffer, 3, Huffman.octetsNeeded(name));

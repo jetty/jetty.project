@@ -57,7 +57,14 @@ public class EncodeDecodeTest
     {
         _encoderHandler = new TestEncoderHandler();
         _decoderHandler = new TestDecoderHandler();
-        _encoder = new QpackEncoder(_encoderHandler, MAX_BLOCKED_STREAMS);
+        _encoder = new QpackEncoder(_encoderHandler, MAX_BLOCKED_STREAMS)
+        {
+            @Override
+            protected boolean shouldHuffmanEncode(HttpField httpField)
+            {
+                return false;
+            }
+        };
         _decoder = new QpackDecoder(_decoderHandler, MAX_HEADER_SIZE);
         _encoderInstructionParser = new EncoderInstructionParser(_decoder);
         _decoderInstructionParser = new DecoderInstructionParser(_encoder);
