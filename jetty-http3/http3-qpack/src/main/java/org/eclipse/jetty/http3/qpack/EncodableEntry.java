@@ -68,7 +68,6 @@ class EncodableEntry
         {
             byte allowIntermediary = 0x00; // TODO: this is 0x20 bit, when should this be set?
             byte staticBit = _referencedName.isStatic() ? (byte)0x10 : (byte)0x00;
-            String value = (Objects.requireNonNull(_field).getValue() == null) ? "" : _field.getValue();
 
             // Encode the prefix.
             buffer.put((byte)(0x40 | allowIntermediary | staticBit));
@@ -76,6 +75,7 @@ class EncodableEntry
             NBitInteger.encode(buffer, 4, relativeIndex);
 
             // Encode the value.
+            String value = getValue();
             if (_huffman)
             {
                 buffer.put((byte)0x80);
@@ -92,8 +92,8 @@ class EncodableEntry
         else
         {
             byte allowIntermediary = 0x00; // TODO: this is 0x10 bit, when should this be set?
-            String name = Objects.requireNonNull(_field).getName();
-            String value = (_field.getValue() == null) ? "" : _field.getValue();
+            String name = getName();
+            String value = getValue();
 
             // Encode the prefix code and the name.
             if (_huffman)
@@ -116,6 +116,42 @@ class EncodableEntry
                 buffer.put(value.getBytes());
             }
         }
+    }
+
+    public int getRequiredSize(int base)
+    {
+        if (_referencedEntry != null)
+        {
+            int relativeIndex =  _referencedEntry.getIndex() - base;
+            return 1 + NBitInteger.octectsNeeded(6, relativeIndex);
+        }
+        else if (_referencedName != null)
+        {
+            String value = getValue();
+            int relativeIndex =  _referencedName.getIndex() - base;
+            int valueLength = _huffman ? Huffman.octetsNeeded(value) : value.length();
+            return 1 + NBitInteger.octectsNeeded(4, relativeIndex) + 1 + NBitInteger.octectsNeeded(7, valueLength) + valueLength;
+        }
+        else
+        {
+            String name = getName();
+            String value = getValue();
+            int nameLength = _huffman ? Huffman.octetsNeeded(name) : name.length();
+            int valueLength = _huffman ? Huffman.octetsNeeded(value) : value.length();
+            return 2 + NBitInteger.octectsNeeded(3, nameLength) + nameLength + NBitInteger.octectsNeeded(7, valueLength) + valueLength;
+        }
+    }
+
+    private String getName()
+    {
+        String name = Objects.requireNonNull(_field).getName();
+        return (name == null) ? "" : name;
+    }
+
+    private String getValue()
+    {
+        String value = Objects.requireNonNull(_field).getValue();
+        return (value == null) ? "" : value;
     }
 
     public int getRequiredInsertCount()

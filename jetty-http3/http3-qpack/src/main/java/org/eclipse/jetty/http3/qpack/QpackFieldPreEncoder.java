@@ -15,70 +15,61 @@ package org.eclipse.jetty.http3.qpack;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFieldPreEncoder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http3.qpack.table.Entry;
+import org.eclipse.jetty.http3.qpack.table.StaticTable;
 import org.eclipse.jetty.util.BufferUtil;
 
-/**
- *  TODO: implement QpackEncoder with PreEncodedFields.
- */
 public class QpackFieldPreEncoder implements HttpFieldPreEncoder
 {
-
     @Override
     public HttpVersion getHttpVersion()
     {
-        return HttpVersion.HTTP_2;
+        return HttpVersion.HTTP_3;
     }
 
     @Override
     public byte[] getEncodedField(HttpHeader header, String name, String value)
     {
+        StaticTable staticTable = QpackContext.getStaticTable();
+        HttpField httpField = new HttpField(header, name, value);
+
+        EncodableEntry encodableEntry;
         boolean notIndexed = QpackEncoder.DO_NOT_INDEX.contains(header);
-
-        ByteBuffer buffer = BufferUtil.allocate(name.length() + value.length() + 10);
-        BufferUtil.clearToFill(buffer);
-        boolean huffman;
-        int bits;
-
+        boolean huffman = !QpackEncoder.DO_NOT_HUFFMAN.contains(header);
         if (notIndexed)
         {
-            // Non indexed field
-            boolean neverIndex = QpackEncoder.NEVER_INDEX.contains(header);
-            huffman = !QpackEncoder.DO_NOT_HUFFMAN.contains(header);
-            buffer.put(neverIndex ? (byte)0x10 : (byte)0x00);
-            bits = 4;
-        }
-        else if (header == HttpHeader.CONTENT_LENGTH && value.length() > 1)
-        {
-            // Non indexed content length for 2 digits or more
-            buffer.put((byte)0x00);
-            huffman = true;
-            bits = 4;
+            encodableEntry = new EncodableEntry(httpField, huffman);
         }
         else
         {
-            // indexed
-            buffer.put((byte)0x40);
-            huffman = !QpackEncoder.DO_NOT_HUFFMAN.contains(header);
-            bits = 6;
+            Entry entry = staticTable.get(httpField);
+            if (entry != null)
+            {
+                encodableEntry = new EncodableEntry(entry);
+            }
+            else
+            {
+                Entry nameEntry = staticTable.get(name);
+                if (nameEntry != null)
+                {
+                    encodableEntry = new EncodableEntry(nameEntry, httpField, huffman);
+                }
+                else
+                {
+                    encodableEntry = new EncodableEntry(httpField, huffman);
+                }
+            }
         }
 
-        Entry entry = QpackContext.getStaticTable().get(header);
-        if (entry != null)
-            NBitInteger.encode(buffer, bits, entry.getIndex());
-        else
-        {
-            buffer.put((byte)0x80);
-            NBitInteger.encode(buffer, 7, Huffman.octetsNeededLC(name));
-            Huffman.encodeLC(buffer, name);
-        }
-
-        // TODO: I think we can only encode referencing the static table or with literal representations.
-        // QpackEncoder.encodeValue(buffer, huffman, value);
-
+        // Use a base of zero as we only reference the static table.
+        int base = 0;
+        ByteBuffer buffer = BufferUtil.allocate(encodableEntry.getRequiredSize(base));
+        BufferUtil.clearToFill(buffer);
+        encodableEntry.encode(buffer, base);
         BufferUtil.flipToFlush(buffer, 0);
         return BufferUtil.toArray(buffer);
     }
