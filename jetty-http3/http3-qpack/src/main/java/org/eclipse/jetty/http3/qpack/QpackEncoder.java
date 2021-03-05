@@ -258,6 +258,9 @@ public class QpackEncoder
         List<EncodableEntry> encodableEntries = new ArrayList<>();
         synchronized (this)
         {
+            DynamicTable dynamicTable = _context.getDynamicTable();
+            dynamicTable.evict();
+
             StreamInfo streamInfo = _streamInfoMap.get(streamId);
             if (streamInfo == null)
             {
@@ -282,7 +285,6 @@ public class QpackEncoder
                 }
             }
 
-            DynamicTable dynamicTable = _context.getDynamicTable();
             base = dynamicTable.getBase();
             encodedInsertCount = encodeInsertCount(requiredInsertCount, dynamicTable.getCapacity());
             signBit = base < requiredInsertCount;
@@ -378,34 +380,39 @@ public class QpackEncoder
 
     public boolean insert(HttpField field)
     {
-        DynamicTable dynamicTable = _context.getDynamicTable();
-        if (field.getValue() == null)
-            field = new HttpField(field.getHeader(), field.getName(), "");
+        synchronized (this)
+        {
+            DynamicTable dynamicTable = _context.getDynamicTable();
+            dynamicTable.evict();
 
-        boolean canCreateEntry = shouldIndex(field) && (Entry.getSize(field) <= dynamicTable.getSpace());
-        if (!canCreateEntry)
+            if (field.getValue() == null)
+                field = new HttpField(field.getHeader(), field.getName(), "");
+
+            boolean canCreateEntry = shouldIndex(field) && (Entry.getSize(field) <= dynamicTable.getSpace());
+            if (!canCreateEntry)
             return false;
 
-        Entry newEntry = new Entry(field);
-        dynamicTable.add(newEntry);
+            Entry newEntry = new Entry(field);
+            dynamicTable.add(newEntry);
 
-        Entry entry = _context.get(field);
-        if (referenceEntry(entry))
-        {
-            _handler.onInstruction(new DuplicateInstruction(entry.getIndex()));
+            Entry entry = _context.get(field);
+            if (referenceEntry(entry))
+            {
+                _handler.onInstruction(new DuplicateInstruction(entry.getIndex()));
+                return true;
+            }
+
+            boolean huffman = shouldHuffmanEncode(field);
+            Entry nameEntry = _context.get(field.getName());
+            if (referenceEntry(nameEntry))
+            {
+                _handler.onInstruction(new IndexedNameEntryInstruction(!nameEntry.isStatic(), nameEntry.getIndex(), huffman, field.getValue()));
+                return true;
+            }
+
+            _handler.onInstruction(new LiteralNameEntryInstruction(huffman, field.getName(), huffman, field.getValue()));
             return true;
         }
-
-        boolean huffman = shouldHuffmanEncode(field);
-        Entry nameEntry = _context.get(field.getName());
-        if (referenceEntry(nameEntry))
-        {
-            _handler.onInstruction(new IndexedNameEntryInstruction(!nameEntry.isStatic(), nameEntry.getIndex(), huffman, field.getValue()));
-            return true;
-        }
-
-        _handler.onInstruction(new LiteralNameEntryInstruction(huffman, field.getName(), huffman, field.getValue()));
-        return true;
     }
 
     private static int encodeInsertCount(int reqInsertCount, int maxTableCapacity)

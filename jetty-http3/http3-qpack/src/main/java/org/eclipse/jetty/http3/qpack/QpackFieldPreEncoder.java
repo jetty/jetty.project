@@ -18,10 +18,11 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.HttpFieldPreEncoder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http3.qpack.table.Entry;
 import org.eclipse.jetty.util.BufferUtil;
 
 /**
- *
+ *  TODO: implement QpackEncoder with PreEncodedFields.
  */
 public class QpackFieldPreEncoder implements HttpFieldPreEncoder
 {
@@ -65,9 +66,9 @@ public class QpackFieldPreEncoder implements HttpFieldPreEncoder
             bits = 6;
         }
 
-        int nameIdx = QpackContext.staticIndex(header);
-        if (nameIdx > 0)
-            NBitInteger.encode(buffer, bits, nameIdx);
+        Entry entry = QpackContext.getStaticTable().get(header);
+        if (entry != null)
+            NBitInteger.encode(buffer, bits, entry.getIndex());
         else
         {
             buffer.put((byte)0x80);
