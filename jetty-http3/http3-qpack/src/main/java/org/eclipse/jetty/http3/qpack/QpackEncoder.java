@@ -232,9 +232,9 @@ public class QpackEncoder
         return !DO_NOT_INDEX.contains(httpField.getHeader());
     }
 
-    public static boolean shouldHuffmanEncode(HttpField httpField)
+    protected boolean shouldHuffmanEncode(HttpField httpField)
     {
-        return false; //!DO_NOT_HUFFMAN.contains(httpField.getHeader());
+        return !DO_NOT_HUFFMAN.contains(httpField.getHeader());
     }
 
     public ByteBuffer encode(int streamId, HttpFields httpFields) throws QpackException
@@ -357,7 +357,7 @@ public class QpackEncoder
                     return new EncodableEntry(newEntry);
             }
 
-            return new EncodableEntry(nameEntry, field);
+            return new EncodableEntry(nameEntry, field, huffman);
         }
         else
         {
@@ -372,7 +372,7 @@ public class QpackEncoder
                     return new EncodableEntry(newEntry);
             }
 
-            return new EncodableEntry(field);
+            return new EncodableEntry(field, huffman);
         }
     }
 
