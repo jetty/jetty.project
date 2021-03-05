@@ -25,32 +25,17 @@ import org.eclipse.jetty.http3.qpack.QpackException;
 
 public class DynamicTable implements Iterable<Entry>
 {
-    public static final int FIRST_INDEX = StaticTable.STATIC_SIZE + 1;
-    private int _capacity;
-    private int _size;
-    private int _absoluteIndex;
-
     private final Map<HttpField, Entry> _fieldMap = new HashMap<>();
     private final Map<String, Entry> _nameMap = new HashMap<>();
     private final List<Entry> _entries = new ArrayList<>();
 
-    private final Map<Integer, StreamInfo> streamInfoMap = new HashMap<>();
-
-    public static class StreamInfo
-    {
-        private int streamId;
-        private final List<Integer> referencedEntries = new ArrayList<>();
-        private int potentiallyBlockedStreams;
-    }
-
-    public DynamicTable()
-    {
-    }
+    private int _capacity;
+    private int _size;
+    private int _absoluteIndex;
+    private int _drainingIndex;
 
     public void add(Entry entry)
     {
-        evict();
-
         int entrySize = entry.getSize();
         if (entrySize + _size > _capacity)
             throw new IllegalStateException("No available space");
@@ -62,13 +47,12 @@ public class DynamicTable implements Iterable<Entry>
         _fieldMap.put(entry.getHttpField(), entry);
         _nameMap.put(entry.getHttpField().getLowerCaseName(), entry);
 
-        if (QpackContext.LOG.isDebugEnabled())
-            QpackContext.LOG.debug(String.format("HdrTbl[%x] added %s", hashCode(), entry));
+        // Update the draining index.
+        _drainingIndex = getDrainingIndex();
     }
 
     public int index(Entry entry)
     {
-        // TODO: should we improve efficiency of this by storing in the entry itself.
         return _entries.indexOf(entry);
     }
 
@@ -131,63 +115,66 @@ public class DynamicTable implements Iterable<Entry>
         if (QpackContext.LOG.isDebugEnabled())
             QpackContext.LOG.debug(String.format("HdrTbl[%x] resized max=%d->%d", hashCode(), _capacity, capacity));
         _capacity = capacity;
-        evict();
     }
 
     public boolean canReference(Entry entry)
     {
-        int evictionThreshold = getEvictionThreshold();
-        int lowestReferencableIndex = -1;
-        int remainingCapacity = _size;
-        for (int i = 0; i < _entries.size(); i++)
-        {
-            if (remainingCapacity <= evictionThreshold)
-            {
-                lowestReferencableIndex = i;
-                break;
-            }
-
-            remainingCapacity -= _entries.get(i).getSize();
-        }
-
-        return index(entry) >= lowestReferencableIndex;
+        return entry.getIndex() >= _drainingIndex;
     }
 
-    private void evict()
+    public void evict()
     {
-        int evictionThreshold = getEvictionThreshold();
-        for (Entry e : _entries)
+        for (Entry entry : _entries)
         {
-            // We only evict when the table is getting full.
-            if (_size < evictionThreshold)
+            if (entry.getIndex() >= _drainingIndex)
                 return;
 
             // We can only evict if there are no references outstanding to this entry.
-            if (e.getReferenceCount() != 0)
+            if (entry.getReferenceCount() != 0)
                 return;
 
-            // Remove this entry.
-            if (QpackContext.LOG.isDebugEnabled())
-                QpackContext.LOG.debug(String.format("HdrTbl[%x] evict %s", hashCode(), e));
-
-            Entry removedEntry = _entries.remove(0);
-            if (removedEntry != e)
+            // Evict the entry from the DynamicTable.
+            _size -= entry.getSize();
+            if (entry != _entries.remove(0))
                 throw new IllegalStateException("Corruption in DynamicTable");
-            _fieldMap.remove(e.getHttpField());
-            String name = e.getHttpField().getLowerCaseName();
-            if (e == _nameMap.get(name))
+
+            HttpField httpField = entry.getHttpField();
+            if (entry == _fieldMap.get(httpField))
+                _fieldMap.remove(httpField);
+
+            String name = httpField.getLowerCaseName();
+            if (entry == _nameMap.get(name))
                 _nameMap.remove(name);
-
-            _size -= e.getSize();
         }
-
-        if (QpackContext.LOG.isDebugEnabled())
-            QpackContext.LOG.debug(String.format("HdrTbl[%x] entries=%d, size=%d, max=%d", hashCode(), getNumEntries(), _size, _capacity));
     }
 
-    private int getEvictionThreshold()
+    /**
+     * Entries with indexes lower than the draining index should not be referenced.
+     * This allows these entries to eventually be evicted as no more references will be made to them.
+     *
+     * @return the smallest absolute index that is allowed to be referenced.
+     */
+    protected int getDrainingIndex()
     {
-        return _capacity * 3 / 4;
+        int evictionThreshold = _capacity * 3 / 4;
+
+        // We can reference all entries if our current size is below the eviction threshold.
+        if (_size <= evictionThreshold)
+            return 0;
+
+        // Entries which cause us to exceed the evictionThreshold should not be referenced.
+        int remainingCapacity = _size;
+        for (Entry entry : _entries)
+        {
+            remainingCapacity -= entry.getSize();
+
+            // If evicting this and everything under would bring us under the eviction threshold,
+            // then we should not reference this entry or anything below.
+            if (remainingCapacity <= evictionThreshold)
+                return entry.getIndex() + 1;
+        }
+
+        throw new IllegalStateException();
     }
 
     @Override

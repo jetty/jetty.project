@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http3.qpack;
 
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http3.qpack.table.DynamicTable;
 import org.eclipse.jetty.http3.qpack.table.Entry;
 import org.eclipse.jetty.http3.qpack.table.StaticTable;
@@ -43,26 +42,14 @@ public class QpackContext
             LOG.debug(String.format("HdrTbl[%x] created", hashCode()));
     }
 
-    @Deprecated
-    public QpackContext(int maxDynamicTableSize)
-    {
-        this();
-        _dynamicTable.setCapacity(maxDynamicTableSize);
-    }
-
     public DynamicTable getDynamicTable()
     {
         return _dynamicTable;
     }
 
-    public StaticTable getStaticTable()
+    public static StaticTable getStaticTable()
     {
         return __staticTable;
-    }
-
-    public void resize(int newMaxDynamicTableSize)
-    {
-        _dynamicTable.setCapacity(newMaxDynamicTableSize);
     }
 
     public Entry get(HttpField field)
@@ -87,75 +74,5 @@ public class QpackContext
             return __staticTable.get(index);
 
         return _dynamicTable.get(index);
-    }
-
-    public Entry get(HttpHeader header)
-    {
-        Entry e = __staticTable.get(header);
-        if (e == null)
-            return get(header.asString());
-        return e;
-    }
-
-    public Entry add(HttpField field)
-    {
-        Entry entry = new Entry(field);
-        _dynamicTable.add(entry);
-        return entry;
-    }
-
-    public boolean canReference(Entry entry)
-    {
-        if (entry.isStatic())
-            return true;
-
-        return _dynamicTable.canReference(entry);
-    }
-
-    /**
-     * @return Current dynamic table size in entries
-     */
-    public int getNumEntries()
-    {
-        return _dynamicTable.getNumEntries();
-    }
-
-    /**
-     * @return Current Dynamic table size in Octets
-     */
-    public int getDynamicTableSize()
-    {
-        return _dynamicTable.getSize();
-    }
-
-    /**
-     * @return Max Dynamic table size in Octets
-     */
-    public int getMaxDynamicTableSize()
-    {
-        return _dynamicTable.getCapacity();
-    }
-
-    /**
-     * @return index of entry in COMBINED address space (QPACK has separate address spaces for dynamic and static tables).
-     */
-    public int index(Entry entry)
-    {
-        if (entry.isStatic())
-            return entry.getIndex();
-        return _dynamicTable.index(entry);
-    }
-
-    /**
-     * @return index of entry in the static table or 0 if not in the table (I guess the entries start from 1 not 0 unlike QPACK).
-     */
-    public static int staticIndex(HttpHeader header)
-    {
-        if (header == null)
-            return 0;
-        Entry entry = __staticTable.get(header.asString());
-        if (entry == null)
-            return 0;
-        return entry.getIndex();
     }
 }
