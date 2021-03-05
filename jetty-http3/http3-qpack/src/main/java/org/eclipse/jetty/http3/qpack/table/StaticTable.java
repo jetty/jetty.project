@@ -13,8 +13,10 @@
 
 package org.eclipse.jetty.http3.qpack.table;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -25,9 +27,8 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http3.qpack.StaticTableHttpField;
 import org.eclipse.jetty.util.Index;
 
-public class StaticTable
+public class StaticTable implements Iterable<Entry>
 {
-    private static final String EMPTY = "";
     public static final String[][] STATIC_TABLE =
         {
             {":authority", ""},
@@ -229,5 +230,11 @@ public class StaticTable
         if (index >= _staticTableByHeader.length)
             return null;
         return _staticTableByHeader[index];
+    }
+
+    @Override
+    public Iterator<Entry> iterator()
+    {
+        return Arrays.stream(_staticTable).map(e -> (Entry)e).iterator();
     }
 }

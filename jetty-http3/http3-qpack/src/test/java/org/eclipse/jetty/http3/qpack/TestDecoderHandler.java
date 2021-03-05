@@ -25,7 +25,7 @@ public class TestDecoderHandler implements QpackDecoder.Handler
     private final Queue<Instruction> _instructionList = new LinkedList<>();
 
     @Override
-    public void onHttpFields(HttpFields httpFields)
+    public void onHttpFields(int streamId, HttpFields httpFields)
     {
         _httpFieldsList.add(httpFields);
     }

@@ -103,7 +103,6 @@ public class QpackEncoder
     private final Handler _handler;
     private final QpackContext _context;
     private final int _maxBlockedStreams;
-    private boolean _validateEncoding = true;
     private int _knownInsertCount;
 
     private int _blockedStreams = 0;
@@ -123,66 +122,68 @@ public class QpackEncoder
         _knownInsertCount = 0;
     }
 
-    public void setCapacity(int capacity)
-    {
-        _context.getDynamicTable().setCapacity(capacity);
-        _handler.onInstruction(new SetCapacityInstruction(capacity));
-    }
-
-    public void insertCountIncrement(int increment) throws QpackException
-    {
-        int insertCount = _context.getDynamicTable().getInsertCount();
-        if (_knownInsertCount + increment > insertCount)
-            throw new QpackException.StreamException("KnownInsertCount incremented over InsertCount");
-
-        // TODO: release any references to entries which used to insert new entries.
-        for (Entry entry : _context.getDynamicTable())
-        {
-            if (entry.getIndex() > _knownInsertCount)
-                break;
-        }
-
-        _knownInsertCount += increment;
-    }
-
-    public void sectionAcknowledgement(int streamId) throws QpackException
-    {
-        StreamInfo streamInfo = _streamInfoMap.get(streamId);
-        if (streamInfo == null)
-            throw new QpackException.StreamException("No StreamInfo for " + streamId);
-
-        // The KnownInsertCount should be updated to the earliest sent RequiredInsertCount on that stream.
-        StreamInfo.SectionInfo sectionInfo = streamInfo.acknowledge();
-        _knownInsertCount = Math.max(_knownInsertCount, sectionInfo.getRequiredInsertCount());
-
-        // If we have no more outstanding section acknowledgments remove the StreamInfo.
-        if (streamInfo.isEmpty())
-            _streamInfoMap.remove(streamId);
-    }
-
-    public void streamCancellation(int streamId) throws QpackException
-    {
-        StreamInfo streamInfo = _streamInfoMap.remove(streamId);
-        if (streamInfo == null)
-            throw new QpackException.StreamException("No StreamInfo for " + streamId);
-    }
-
     public QpackContext getQpackContext()
     {
         return _context;
     }
 
-    public boolean isValidateEncoding()
+    public void setCapacity(int capacity)
     {
-        return _validateEncoding;
+        synchronized (this)
+        {
+            _context.getDynamicTable().setCapacity(capacity);
+            _handler.onInstruction(new SetCapacityInstruction(capacity));
+        }
     }
 
-    public void setValidateEncoding(boolean validateEncoding)
+    public void insertCountIncrement(int increment) throws QpackException
     {
-        _validateEncoding = validateEncoding;
+        synchronized (this)
+        {
+            int insertCount = _context.getDynamicTable().getInsertCount();
+            if (_knownInsertCount + increment > insertCount)
+                throw new QpackException.StreamException("KnownInsertCount incremented over InsertCount");
+
+            // TODO: release any references to entries which used to insert new entries.
+            for (Entry entry : _context.getDynamicTable())
+            {
+                if (entry.getIndex() > _knownInsertCount)
+                    break;
+            }
+
+            _knownInsertCount += increment;
+        }
     }
 
-    public boolean referenceEntry(Entry entry)
+    public void sectionAcknowledgement(int streamId) throws QpackException
+    {
+        synchronized (this)
+        {
+            StreamInfo streamInfo = _streamInfoMap.get(streamId);
+            if (streamInfo == null)
+                throw new QpackException.StreamException("No StreamInfo for " + streamId);
+
+            // The KnownInsertCount should be updated to the earliest sent RequiredInsertCount on that stream.
+            StreamInfo.SectionInfo sectionInfo = streamInfo.acknowledge();
+            _knownInsertCount = Math.max(_knownInsertCount, sectionInfo.getRequiredInsertCount());
+
+            // If we have no more outstanding section acknowledgments remove the StreamInfo.
+            if (streamInfo.isEmpty())
+                _streamInfoMap.remove(streamId);
+        }
+    }
+
+    public void streamCancellation(int streamId) throws QpackException
+    {
+        synchronized (this)
+        {
+            StreamInfo streamInfo = _streamInfoMap.remove(streamId);
+            if (streamInfo == null)
+                throw new QpackException.StreamException("No StreamInfo for " + streamId);
+        }
+    }
+
+    private boolean referenceEntry(Entry entry)
     {
         if (entry == null)
             return false;
@@ -204,7 +205,7 @@ public class QpackEncoder
         return false;
     }
 
-    public boolean referenceEntry(Entry entry, StreamInfo streamInfo)
+    private boolean referenceEntry(Entry entry, StreamInfo streamInfo)
     {
         if (referenceEntry(entry))
             return true;
@@ -226,7 +227,7 @@ public class QpackEncoder
         return false;
     }
 
-    public boolean shouldIndex(HttpField httpField)
+    protected boolean shouldIndex(HttpField httpField)
     {
         return !DO_NOT_INDEX.contains(httpField.getHeader());
     }
@@ -239,7 +240,7 @@ public class QpackEncoder
     public ByteBuffer encode(int streamId, HttpFields httpFields) throws QpackException
     {
         // Verify that we can encode without errors.
-        if (isValidateEncoding() && httpFields != null)
+        if (httpFields != null)
         {
             for (HttpField field : httpFields)
             {
@@ -250,36 +251,43 @@ public class QpackEncoder
             }
         }
 
-        StreamInfo streamInfo = _streamInfoMap.get(streamId);
-        if (streamInfo == null)
-        {
-            streamInfo = new StreamInfo(streamId);
-            _streamInfoMap.put(streamId, streamInfo);
-        }
-        StreamInfo.SectionInfo sectionInfo = new StreamInfo.SectionInfo();
-        streamInfo.add(sectionInfo);
-
-        int requiredInsertCount = 0;
+        int base;
+        int encodedInsertCount;
+        boolean signBit;
+        int deltaBase;
         List<EncodableEntry> encodableEntries = new ArrayList<>();
-        if (httpFields != null)
+        synchronized (this)
         {
-            for (HttpField field : httpFields)
+            StreamInfo streamInfo = _streamInfoMap.get(streamId);
+            if (streamInfo == null)
             {
-                EncodableEntry entry = encode(streamInfo, field);
-                encodableEntries.add(entry);
-
-                // Update the required InsertCount.
-                int entryRequiredInsertCount = entry.getRequiredInsertCount();
-                if (entryRequiredInsertCount > requiredInsertCount)
-                    requiredInsertCount = entryRequiredInsertCount;
+                streamInfo = new StreamInfo(streamId);
+                _streamInfoMap.put(streamId, streamInfo);
             }
-        }
+            StreamInfo.SectionInfo sectionInfo = new StreamInfo.SectionInfo();
+            streamInfo.add(sectionInfo);
 
-        DynamicTable dynamicTable = _context.getDynamicTable();
-        int base = dynamicTable.getBase();
-        int encodedInsertCount = encodeInsertCount(requiredInsertCount, dynamicTable.getCapacity());
-        boolean signBit = base < requiredInsertCount;
-        int deltaBase = signBit ? requiredInsertCount - base - 1 : base - requiredInsertCount;
+            int requiredInsertCount = 0;
+            if (httpFields != null)
+            {
+                for (HttpField field : httpFields)
+                {
+                    EncodableEntry entry = encode(streamInfo, field);
+                    encodableEntries.add(entry);
+
+                    // Update the required InsertCount.
+                    int entryRequiredInsertCount = entry.getRequiredInsertCount();
+                    if (entryRequiredInsertCount > requiredInsertCount)
+                        requiredInsertCount = entryRequiredInsertCount;
+                }
+            }
+
+            DynamicTable dynamicTable = _context.getDynamicTable();
+            base = dynamicTable.getBase();
+            encodedInsertCount = encodeInsertCount(requiredInsertCount, dynamicTable.getCapacity());
+            signBit = base < requiredInsertCount;
+            deltaBase = signBit ? requiredInsertCount - base - 1 : base - requiredInsertCount;
+        }
 
         // TODO: Calculate the size required.
         ByteBuffer buffer = _bufferPool.acquire(1024, false);
@@ -400,7 +408,7 @@ public class QpackEncoder
         return true;
     }
 
-    public static int encodeInsertCount(int reqInsertCount, int maxTableCapacity)
+    private static int encodeInsertCount(int reqInsertCount, int maxTableCapacity)
     {
         if (reqInsertCount == 0)
             return 0;
