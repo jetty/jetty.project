@@ -112,4 +112,9 @@ public class PreEncodedHttpField extends HttpField
     {
         bufferInFillMode.put(_encodedField[index(version)]);
     }
+
+    public int getEncodedLength(HttpVersion version)
+    {
+        return _encodedField[index(version)].length;
+    }
 }

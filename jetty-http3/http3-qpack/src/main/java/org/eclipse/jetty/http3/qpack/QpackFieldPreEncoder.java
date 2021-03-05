@@ -42,25 +42,25 @@ public class QpackFieldPreEncoder implements HttpFieldPreEncoder
         boolean huffman = !QpackEncoder.DO_NOT_HUFFMAN.contains(header);
         if (notIndexed)
         {
-            encodableEntry = new EncodableEntry(httpField, huffman);
+            encodableEntry = EncodableEntry.getLiteralEntry(httpField, huffman);
         }
         else
         {
             Entry entry = staticTable.get(httpField);
             if (entry != null)
             {
-                encodableEntry = new EncodableEntry(entry);
+                encodableEntry = EncodableEntry.getReferencedEntry(entry);
             }
             else
             {
                 Entry nameEntry = staticTable.get(name);
                 if (nameEntry != null)
                 {
-                    encodableEntry = new EncodableEntry(nameEntry, httpField, huffman);
+                    encodableEntry = EncodableEntry.getNameReferencedEntry(nameEntry, httpField, huffman);
                 }
                 else
                 {
-                    encodableEntry = new EncodableEntry(httpField, huffman);
+                    encodableEntry = EncodableEntry.getLiteralEntry(httpField, huffman);
                 }
             }
         }

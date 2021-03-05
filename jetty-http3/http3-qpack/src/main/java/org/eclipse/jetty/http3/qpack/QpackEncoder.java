@@ -317,16 +317,17 @@ public class QpackEncoder
         if (field.getValue() == null)
             field = new HttpField(field.getHeader(), field.getName(), "");
 
-        // TODO:
-        //  1. The field.getHeader() could be null.
-        //  3. Handle pre-encoded HttpFields.
+        // TODO: The field.getHeader() could be null.
+
+        if (field instanceof PreEncodedHttpField)
+            return EncodableEntry.getPreEncodedEntry((PreEncodedHttpField)field);
 
         boolean canCreateEntry = shouldIndex(field) && (Entry.getSize(field) <= dynamicTable.getSpace());
 
         Entry entry = _context.get(field);
         if (entry != null && referenceEntry(entry, streamInfo))
         {
-            return new EncodableEntry(entry);
+            return EncodableEntry.getReferencedEntry(entry);
         }
         else
         {
@@ -339,7 +340,7 @@ public class QpackEncoder
 
                 // Should we reference this entry and risk blocking.
                 if (referenceEntry(newEntry, streamInfo))
-                    return new EncodableEntry(newEntry);
+                    return EncodableEntry.getReferencedEntry(newEntry);
             }
         }
 
@@ -356,10 +357,10 @@ public class QpackEncoder
 
                 // Should we reference this entry and risk blocking.
                 if (referenceEntry(newEntry, streamInfo))
-                    return new EncodableEntry(newEntry);
+                    return EncodableEntry.getReferencedEntry(newEntry);
             }
 
-            return new EncodableEntry(nameEntry, field, huffman);
+            return EncodableEntry.getNameReferencedEntry(nameEntry, field, huffman);
         }
         else
         {
@@ -371,10 +372,10 @@ public class QpackEncoder
 
                 // Should we reference this entry and risk blocking.
                 if (referenceEntry(newEntry, streamInfo))
-                    return new EncodableEntry(newEntry);
+                    return EncodableEntry.getReferencedEntry(newEntry);
             }
 
-            return new EncodableEntry(field, huffman);
+            return EncodableEntry.getLiteralEntry(field, huffman);
         }
     }
 
@@ -390,7 +391,7 @@ public class QpackEncoder
 
             boolean canCreateEntry = shouldIndex(field) && (Entry.getSize(field) <= dynamicTable.getSpace());
             if (!canCreateEntry)
-            return false;
+                return false;
 
             Entry newEntry = new Entry(field);
             dynamicTable.add(newEntry);
