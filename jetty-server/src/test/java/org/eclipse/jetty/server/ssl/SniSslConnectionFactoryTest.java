@@ -28,6 +28,7 @@ import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLEngine;
@@ -58,6 +59,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SniX509ExtendedKeyManager;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.ssl.X509;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -163,7 +165,27 @@ public class SniSslConnectionFactoryTest
     @Test
     public void testSNIConnect() throws Exception
     {
-        start("src/test/resources/keystore_sni.p12");
+        start(ssl ->
+        {
+            ssl.setKeyStorePath("src/test/resources/keystore_sni.p12");
+            ssl.setSNISelector((keyType, issuers, session, sniHost, certificates) ->
+            {
+                // Make sure the *.domain.com comes before sub.domain.com
+                // to test that we prefer more specific domains.
+                List<X509> sortedCertificates = certificates.stream()
+                    // As sorted() sorts ascending, make *.domain.com the smallest.
+                    .sorted((x509a, x509b) ->
+                    {
+                        if (x509a.matches("domain.com"))
+                            return -1;
+                        if (x509b.matches("domain.com"))
+                            return 1;
+                        return 0;
+                    })
+                    .collect(Collectors.toList());
+                return ssl.sniSelect(keyType, issuers, session, sniHost, sortedCertificates);
+            });
+        });
 
         String response = getResponse("jetty.eclipse.org", "jetty.eclipse.org");
         assertThat(response, Matchers.containsString("X-HOST: jetty.eclipse.org"));
@@ -173,6 +195,9 @@ public class SniSslConnectionFactoryTest
 
         response = getResponse("foo.domain.com", "*.domain.com");
         assertThat(response, Matchers.containsString("X-HOST: foo.domain.com"));
+
+        response = getResponse("sub.domain.com", "sub.domain.com");
+        assertThat(response, Matchers.containsString("X-HOST: sub.domain.com"));
 
         response = getResponse("m.san.com", "san example");
         assertThat(response, Matchers.containsString("X-HOST: m.san.com"));
