@@ -223,6 +223,7 @@ public class EncodedFieldSection
 
     private class IndexedNameField implements EncodedField
     {
+        // TODO: what to do with allow encoding?
         private final boolean _allowEncoding;
         private final boolean _dynamicTable;
         private final int _nameIndex;
@@ -243,7 +244,7 @@ public class EncodedFieldSection
             if (_dynamicTable)
                 field = context.getDynamicTable().getAbsolute(_base + _nameIndex + 1).getHttpField();
             else
-                field = context.getStaticTable().get(_nameIndex).getHttpField();
+                field = QpackContext.getStaticTable().get(_nameIndex).getHttpField();
 
             return new HttpField(field.getHeader(), field.getName(), _value);
         }

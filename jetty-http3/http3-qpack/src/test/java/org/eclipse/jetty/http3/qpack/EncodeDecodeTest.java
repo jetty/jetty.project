@@ -46,8 +46,8 @@ public class EncodeDecodeTest
     private TestDecoderHandler _decoderHandler;
     private TestEncoderHandler _encoderHandler;
 
-    private DecoderInstructionParser _decoderInstructionParser;
     private EncoderInstructionParser _encoderInstructionParser;
+    private DecoderInstructionParser _decoderInstructionParser;
 
     private static final int MAX_BLOCKED_STREAMS = 5;
     private static final int MAX_HEADER_SIZE = 1024;
@@ -66,8 +66,8 @@ public class EncodeDecodeTest
             }
         };
         _decoder = new QpackDecoder(_decoderHandler, MAX_HEADER_SIZE);
-        _encoderInstructionParser = new EncoderInstructionParser(_decoder);
-        _decoderInstructionParser = new DecoderInstructionParser(_encoder);
+        _encoderInstructionParser = new EncoderInstructionParser(_encoder);
+        _decoderInstructionParser = new DecoderInstructionParser(_decoder);
     }
 
     @Test
@@ -88,7 +88,7 @@ public class EncodeDecodeTest
         assertThat(_decoderHandler.getInstruction(), instanceOf(SectionAcknowledgmentInstruction.class));
         assertTrue(_decoderHandler.isEmpty());
 
-        _decoderInstructionParser.parse(toBuffer(new SectionAcknowledgmentInstruction(streamId)));
+        _encoderInstructionParser.parse(toBuffer(new SectionAcknowledgmentInstruction(streamId)));
 
         // B.2. Dynamic Table.
 
@@ -99,7 +99,7 @@ public class EncodeDecodeTest
         assertThat(((SetCapacityInstruction)instruction).getCapacity(), is(220));
         assertThat(toString(instruction), equalsHex("3fbd01"));
 
-        _encoderInstructionParser.parse(toHex("3fbd01"));
+        _decoderInstructionParser.parse(toHex("3fbd01"));
         assertThat(_decoder.getQpackContext().getDynamicTable().getCapacity(), is(220));
 
         // Insert with named referenced to static table. Test we get two instructions generated to add to the dynamic table.
@@ -126,11 +126,11 @@ public class EncodeDecodeTest
         _decoder.decode(streamId, buffer);
         assertNull(_decoderHandler.getHttpFields());
 
-        _encoderInstructionParser.parse(toHex("c00f 7777 772e 6578 616d 706c 652e 636f 6d"));
+        _decoderInstructionParser.parse(toHex("c00f 7777 772e 6578 616d 706c 652e 636f 6d"));
         assertNull(_decoderHandler.getHttpFields());
         assertThat(_decoderHandler.getInstruction(), instanceOf(InsertCountIncrementInstruction.class));
 
-        _encoderInstructionParser.parse(toHex("c10c 2f73 616d 706c 652f 7061 7468"));
+        _decoderInstructionParser.parse(toHex("c10c 2f73 616d 706c 652f 7061 7468"));
         assertThat(_decoderHandler.getHttpFields(), is(httpFields));
         assertThat(_decoderHandler.getInstruction(), instanceOf(InsertCountIncrementInstruction.class));
 
@@ -138,8 +138,8 @@ public class EncodeDecodeTest
         assertTrue(_decoderHandler.isEmpty());
 
         // Parse the decoder instructions on the encoder.
-        _decoderInstructionParser.parse(toBuffer(new InsertCountIncrementInstruction(2)));
-        _decoderInstructionParser.parse(toBuffer(new SectionAcknowledgmentInstruction(streamId)));
+        _encoderInstructionParser.parse(toBuffer(new InsertCountIncrementInstruction(2)));
+        _encoderInstructionParser.parse(toBuffer(new SectionAcknowledgmentInstruction(streamId)));
 
         // B.3. Speculative Insert
         _encoder.insert(new HttpField("custom-key", "custom-value"));

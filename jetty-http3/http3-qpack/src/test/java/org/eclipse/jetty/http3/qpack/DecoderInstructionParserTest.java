@@ -20,114 +20,118 @@ import java.util.Queue;
 import org.eclipse.jetty.http3.qpack.parser.DecoderInstructionParser;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DecoderInstructionParserTest
 {
     public static class DebugHandler implements DecoderInstructionParser.Handler
     {
-        public Queue<Integer> sectionAcknowledgements = new LinkedList<>();
-        public Queue<Integer> streamCancellations = new LinkedList<>();
-        public Queue<Integer> insertCountIncrements = new LinkedList<>();
+        public Queue<Integer> setCapacities = new LinkedList<>();
+        public Queue<Integer> duplicates = new LinkedList<>();
+        public Queue<Entry> literalNameEntries = new LinkedList<>();
+        public Queue<ReferencedEntry> referencedNameEntries = new LinkedList<>();
 
-        @Override
-        public void onSectionAcknowledgement(int streamId)
+        public static class Entry
         {
-            sectionAcknowledgements.add(streamId);
+            public Entry(String name, String value)
+            {
+                this.value = value;
+                this.name = name;
+            }
+
+            String name;
+            String value;
+        }
+
+        public static class ReferencedEntry
+        {
+            public ReferencedEntry(int index, boolean dynamic, String value)
+            {
+                this.index = index;
+                this.dynamic = dynamic;
+                this.value = value;
+            }
+
+            int index;
+            boolean dynamic;
+            String value;
         }
 
         @Override
-        public void onStreamCancellation(int streamId)
+        public void onSetDynamicTableCapacity(int capacity)
         {
-            streamCancellations.add(streamId);
+            setCapacities.add(capacity);
         }
 
         @Override
-        public void onInsertCountIncrement(int increment)
+        public void onDuplicate(int index)
         {
-            insertCountIncrements.add(increment);
+            duplicates.add(index);
+        }
+
+        @Override
+        public void onInsertNameWithReference(int nameIndex, boolean isDynamicTableIndex, String value)
+        {
+            referencedNameEntries.add(new ReferencedEntry(nameIndex, isDynamicTableIndex, value));
+        }
+
+        @Override
+        public void onInsertWithLiteralName(String name, String value)
+        {
+            literalNameEntries.add(new Entry(name, value));
         }
 
         public boolean isEmpty()
         {
-            return sectionAcknowledgements.isEmpty() && streamCancellations.isEmpty() && insertCountIncrements.isEmpty();
+            return setCapacities.isEmpty() && duplicates.isEmpty() && literalNameEntries.isEmpty() && referencedNameEntries.isEmpty();
         }
     }
 
-    @Test
-    public void testSectionAcknowledgement() throws Exception
+    private DecoderInstructionParser _instructionParser;
+    private DebugHandler _handler;
+
+    @BeforeEach
+    public void before()
     {
-        DebugHandler debugHandler = new DebugHandler();
-        DecoderInstructionParser incomingEncoderStream = new DecoderInstructionParser(debugHandler);
-
-        // Example from the spec, section acknowledgement instruction with stream id 4.
-        String encoded = "84";
-        ByteBuffer buffer = BufferUtil.toBuffer(TypeUtil.fromHexString(encoded));
-        incomingEncoderStream.parse(buffer);
-        assertThat(debugHandler.sectionAcknowledgements.poll(), is(4));
-        assertTrue(debugHandler.isEmpty());
-
-        // 1111 1110 == FE is largest value we can do without continuation should be stream ID 126.
-        encoded = "FE";
-        buffer = BufferUtil.toBuffer(TypeUtil.fromHexString(encoded));
-        incomingEncoderStream.parse(buffer);
-        assertThat(debugHandler.sectionAcknowledgements.poll(), is(126));
-        assertTrue(debugHandler.isEmpty());
-
-        // 1111 1111 0000 0000 == FF00 is next value, stream id 127.
-        encoded = "FF00";
-        buffer = BufferUtil.toBuffer(TypeUtil.fromHexString(encoded));
-        incomingEncoderStream.parse(buffer);
-        assertThat(debugHandler.sectionAcknowledgements.poll(), is(127));
-        assertTrue(debugHandler.isEmpty());
-
-        // 1111 1111 0000 0001 == FF01 is next value, stream id 128.
-        encoded = "FF01";
-        buffer = BufferUtil.toBuffer(TypeUtil.fromHexString(encoded));
-        incomingEncoderStream.parse(buffer);
-        assertThat(debugHandler.sectionAcknowledgements.poll(), is(128));
-        assertTrue(debugHandler.isEmpty());
-
-        // FFBA09 contains section ack with stream ID of 1337, this contains an octet with continuation bit.
-        encoded = "FFBA09";
-        buffer = BufferUtil.toBuffer(TypeUtil.fromHexString(encoded));
-        incomingEncoderStream.parse(buffer);
-        assertThat(debugHandler.sectionAcknowledgements.poll(), is(1337));
-        assertTrue(debugHandler.isEmpty());
-
-        // Test with continuation.
-        encoded = "FFBA09";
-        byte[] bytes = TypeUtil.fromHexString(encoded);
-        for (int i = 0; i < 10; i++)
-        {
-            ByteBuffer buffer1 = BufferUtil.toBuffer(bytes, 0, 2);
-            ByteBuffer buffer2 = BufferUtil.toBuffer(bytes, 2, 1);
-            incomingEncoderStream.parse(buffer1);
-            assertTrue(debugHandler.isEmpty());
-            incomingEncoderStream.parse(buffer2);
-            assertThat(debugHandler.sectionAcknowledgements.poll(), is(1337));
-            assertTrue(debugHandler.isEmpty());
-        }
+        _handler = new DebugHandler();
+        _instructionParser = new DecoderInstructionParser(_handler);
     }
 
-    @Disabled
     @Test
-    public void testStreamCancellation() throws Exception
+    public void testAddWithReferencedEntry() throws Exception
     {
-        // TODO: Write this test.
-        throw new RuntimeException("TODO: testStreamCancellation");
+        String insertAuthorityEntry = "c00f7777772e6578616d706c652e636f6d";
+        ByteBuffer buffer = BufferUtil.toBuffer(TypeUtil.fromHexString(insertAuthorityEntry));
+        _instructionParser.parse(buffer);
+        DebugHandler.ReferencedEntry entry = _handler.referencedNameEntries.poll();
+        assertNotNull(entry);
+        assertThat(entry.index, is(0));
+        assertThat(entry.dynamic, is(false));
+        assertThat(entry.value, is("www.example.com"));
+
+        String insertPathEntry = "c10c2f73616d706c652f70617468";
+        buffer = BufferUtil.toBuffer(TypeUtil.fromHexString(insertPathEntry));
+        _instructionParser.parse(buffer);
+        entry = _handler.referencedNameEntries.poll();
+        assertNotNull(entry);
+        assertThat(entry.index, is(1));
+        assertThat(entry.dynamic, is(false));
+        assertThat(entry.value, is("/sample/path"));
     }
 
-    @Disabled
     @Test
-    public void testInsertCountIncrement() throws Exception
+    public void testSetCapacity() throws Exception
     {
-        // TODO: Write this test.
-        throw new RuntimeException("TODO: testInsertCountIncrement");
+        String setCapacityString = "3fbd01";
+        ByteBuffer buffer = BufferUtil.toBuffer(TypeUtil.fromHexString(setCapacityString));
+        _instructionParser.parse(buffer);
+        assertThat(_handler.setCapacities.poll(), is(220));
+        assertTrue(_handler.isEmpty());
     }
 }

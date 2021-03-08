@@ -16,7 +16,7 @@ package org.eclipse.jetty.http3.qpack;
 import java.util.LinkedList;
 import java.util.Queue;
 
-public class StreamInfo
+class StreamInfo
 {
     private final int _streamId;
     private final Queue<SectionInfo> _sectionInfos = new LinkedList<>();

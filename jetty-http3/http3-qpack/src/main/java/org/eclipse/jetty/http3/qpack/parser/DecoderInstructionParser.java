@@ -15,75 +15,95 @@ package org.eclipse.jetty.http3.qpack.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http3.qpack.QpackEncoder;
+import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
 
 /**
- * Receives instructions coming from the remote Encoder as a sequence of unframed instructions.
+ * Parses a stream of unframed instructions for the Decoder. These instructions are sent from the remote Encoder.
  */
 public class DecoderInstructionParser
 {
-    private static final int SECTION_ACKNOWLEDGEMENT_PREFIX = 7;
-    private static final int STREAM_CANCELLATION_PREFIX = 6;
-    private static final int INSERT_COUNT_INCREMENT_PREFIX = 6;
-
     private final Handler _handler;
+    private final NBitStringParser _stringParser;
     private final NBitIntegerParser _integerParser;
-    private State _state = State.IDLE;
+    private State _state = State.PARSING;
+    private Operation _operation = Operation.NONE;
+
+    private boolean _referenceDynamicTable;
+    private int _index;
+    private String _name;
 
     private enum State
     {
-        IDLE,
-        SECTION_ACKNOWLEDGEMENT,
-        STREAM_CANCELLATION,
-        INSERT_COUNT_INCREMENT
+        PARSING,
+        SET_CAPACITY,
+        REFERENCED_NAME,
+        LITERAL_NAME,
+        DUPLICATE
+    }
+
+    private enum Operation
+    {
+        NONE,
+        INDEX,
+        NAME,
+        VALUE,
     }
 
     public interface Handler
     {
-        void onSectionAcknowledgement(int streamId) throws QpackException;
+        void onSetDynamicTableCapacity(int capacity) throws QpackException;
 
-        void onStreamCancellation(int streamId) throws QpackException;
+        void onDuplicate(int index) throws QpackException;
 
-        void onInsertCountIncrement(int increment) throws QpackException;
+        void onInsertNameWithReference(int nameIndex, boolean isDynamicTableIndex, String value) throws QpackException;
+
+        void onInsertWithLiteralName(String name, String value) throws QpackException;
     }
 
-    public static class EncoderHandler implements Handler
+    public static class DecoderAdapter implements Handler
     {
-        private final QpackEncoder _encoder;
+        private final QpackDecoder _decoder;
 
-        public EncoderHandler(QpackEncoder encoder)
+        public DecoderAdapter(QpackDecoder decoder)
         {
-            _encoder = encoder;
+            _decoder = decoder;
         }
 
         @Override
-        public void onSectionAcknowledgement(int streamId) throws QpackException
+        public void onSetDynamicTableCapacity(int capacity)
         {
-            _encoder.sectionAcknowledgement(streamId);
+            _decoder.setCapacity(capacity);
         }
 
         @Override
-        public void onStreamCancellation(int streamId) throws QpackException
+        public void onDuplicate(int index) throws QpackException
         {
-            _encoder.streamCancellation(streamId);
+            _decoder.insert(index);
         }
 
         @Override
-        public void onInsertCountIncrement(int increment) throws QpackException
+        public void onInsertNameWithReference(int nameIndex, boolean isDynamicTableIndex, String value) throws QpackException
         {
-            _encoder.insertCountIncrement(increment);
+            _decoder.insert(nameIndex, isDynamicTableIndex, value);
+        }
+
+        @Override
+        public void onInsertWithLiteralName(String name, String value) throws QpackException
+        {
+            _decoder.insert(name, value);
         }
     }
 
-    public DecoderInstructionParser(QpackEncoder encoder)
+    public DecoderInstructionParser(QpackDecoder decoder)
     {
-        this(new EncoderHandler(encoder));
+        this(new DecoderAdapter(decoder));
     }
 
     public DecoderInstructionParser(Handler handler)
     {
         _handler = handler;
+        _stringParser = new NBitStringParser();
         _integerParser = new NBitIntegerParser();
     }
 
@@ -94,39 +114,46 @@ public class DecoderInstructionParser
 
         switch (_state)
         {
-            case IDLE:
-                // Get first byte without incrementing the buffers position.
+            case PARSING:
                 byte firstByte = buffer.get(buffer.position());
                 if ((firstByte & 0x80) != 0)
                 {
-                    _state = State.SECTION_ACKNOWLEDGEMENT;
-                    _integerParser.setPrefix(SECTION_ACKNOWLEDGEMENT_PREFIX);
-                    parseSectionAcknowledgment(buffer);
+                    _state = State.REFERENCED_NAME;
+                    parseInsertNameWithReference(buffer);
                 }
                 else if ((firstByte & 0x40) != 0)
                 {
-                    _state = State.STREAM_CANCELLATION;
-                    _integerParser.setPrefix(STREAM_CANCELLATION_PREFIX);
-                    parseStreamCancellation(buffer);
+                    _state = State.LITERAL_NAME;
+                    parseInsertWithLiteralName(buffer);
+                }
+                else if ((firstByte & 0x20) != 0)
+                {
+                    _state = State.SET_CAPACITY;
+                    _integerParser.setPrefix(5);
+                    parseSetDynamicTableCapacity(buffer);
                 }
                 else
                 {
-                    _state = State.INSERT_COUNT_INCREMENT;
-                    _integerParser.setPrefix(INSERT_COUNT_INCREMENT_PREFIX);
-                    parseInsertCountIncrement(buffer);
+                    _state = State.DUPLICATE;
+                    _integerParser.setPrefix(5);
+                    parseDuplicate(buffer);
                 }
                 break;
 
-            case SECTION_ACKNOWLEDGEMENT:
-                parseSectionAcknowledgment(buffer);
+            case SET_CAPACITY:
+                parseSetDynamicTableCapacity(buffer);
                 break;
 
-            case STREAM_CANCELLATION:
-                parseStreamCancellation(buffer);
+            case DUPLICATE:
+                parseDuplicate(buffer);
                 break;
 
-            case INSERT_COUNT_INCREMENT:
-                parseInsertCountIncrement(buffer);
+            case LITERAL_NAME:
+                parseInsertWithLiteralName(buffer);
+                break;
+
+            case REFERENCED_NAME:
+                parseInsertNameWithReference(buffer);
                 break;
 
             default:
@@ -134,39 +161,109 @@ public class DecoderInstructionParser
         }
     }
 
-    private void parseSectionAcknowledgment(ByteBuffer buffer) throws QpackException
+    private void parseInsertNameWithReference(ByteBuffer buffer) throws QpackException
     {
-        int streamId = _integerParser.decode(buffer);
-        if (streamId >= 0)
+        while (true)
         {
-            reset();
-            _handler.onSectionAcknowledgement(streamId);
+            switch (_operation)
+            {
+                case NONE:
+                    byte firstByte = buffer.get(buffer.position());
+                    _referenceDynamicTable = (firstByte & 0x40) == 0;
+                    _operation = Operation.INDEX;
+                    _integerParser.setPrefix(6);
+                    continue;
+
+                case INDEX:
+                    _index = _integerParser.decode(buffer);
+                    if (_index < 0)
+                        return;
+
+                    _operation = Operation.VALUE;
+                    _stringParser.setPrefix(8);
+                    continue;
+
+                case VALUE:
+                    String value = _stringParser.decode(buffer);
+                    if (value == null)
+                        return;
+
+                    int index = _index;
+                    boolean dynamic = _referenceDynamicTable;
+                    reset();
+                    _handler.onInsertNameWithReference(index, dynamic, value);
+                    return;
+
+                default:
+                    throw new IllegalStateException(_operation.name());
+            }
         }
     }
 
-    private void parseStreamCancellation(ByteBuffer buffer) throws QpackException
+    private void parseInsertWithLiteralName(ByteBuffer buffer) throws QpackException
     {
-        int streamId = _integerParser.decode(buffer);
-        if (streamId >= 0)
+        while (true)
         {
-            reset();
-            _handler.onStreamCancellation(streamId);
+            switch (_operation)
+            {
+                case NONE:
+                    _operation = Operation.NAME;
+                    _stringParser.setPrefix(6);
+                    continue;
+
+                case NAME:
+                    _name = _stringParser.decode(buffer);
+                    if (_name == null)
+                        return;
+
+                    _operation = Operation.VALUE;
+                    _stringParser.setPrefix(8);
+                    continue;
+
+                case VALUE:
+                    String value = _stringParser.decode(buffer);
+                    if (value == null)
+                        return;
+
+                    String name = _name;
+                    reset();
+                    _handler.onInsertWithLiteralName(name, value);
+                    return;
+
+                default:
+                    throw new IllegalStateException(_operation.name());
+            }
         }
     }
 
-    private void parseInsertCountIncrement(ByteBuffer buffer) throws QpackException
+    private void parseDuplicate(ByteBuffer buffer) throws QpackException
     {
-        int increment = _integerParser.decode(buffer);
-        if (increment >= 0)
+        int index = _integerParser.decode(buffer);
+        if (index >= 0)
         {
             reset();
-            _handler.onInsertCountIncrement(increment);
+            _handler.onDuplicate(index);
+        }
+    }
+
+    private void parseSetDynamicTableCapacity(ByteBuffer buffer) throws QpackException
+    {
+        int capacity = _integerParser.decode(buffer);
+        if (capacity >= 0)
+        {
+            reset();
+            _handler.onSetDynamicTableCapacity(capacity);
         }
     }
 
     public void reset()
     {
-        _state = State.IDLE;
+        _stringParser.reset();
         _integerParser.reset();
+        _state = State.PARSING;
+        _operation = Operation.NONE;
+        _referenceDynamicTable = false;
+        _index = -1;
+        _name = null;
     }
 }
