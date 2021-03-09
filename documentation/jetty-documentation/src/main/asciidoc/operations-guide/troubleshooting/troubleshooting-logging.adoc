@@ -12,7 +12,7 @@
 //
 
 [[og-troubleshooting-logging]]
-==== Troubleshooting: DEBUG Logging
+==== Enabling DEBUG Logging
 
 Enabling DEBUG level logging for the `org.eclipse.jetty` logger name provides the maximum amount of information to troubleshoot Jetty issues.
 

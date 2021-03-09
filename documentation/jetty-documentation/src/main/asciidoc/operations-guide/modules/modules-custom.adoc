@@ -234,3 +234,5 @@ $JETTY_BASE
 ----
 
 Enabling the custom auditing component will create the `$JETTY_BASE/start.d/acme-audit.ini` module configuration file that you can edit to configure auditing properties.
+
+// TODO: it's possible to have an *.ini file without a correspondent *.mod -- it's just a list of command line arguments, so make an example of a custom connector with a custom-connector.ini and XML file, but no module file.
