@@ -25,11 +25,7 @@ import org.eclipse.jetty.http3.qpack.generator.SectionAcknowledgmentInstruction;
 import org.eclipse.jetty.http3.qpack.generator.SetCapacityInstruction;
 import org.eclipse.jetty.http3.qpack.parser.DecoderInstructionParser;
 import org.eclipse.jetty.http3.qpack.parser.EncoderInstructionParser;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.NullByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.TypeUtil;
-import org.hamcrest.Matcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -66,8 +62,6 @@ public class EncodeDecodeTest
             }
         };
         _decoder = new QpackDecoder(_decoderHandler, MAX_HEADER_SIZE);
-        _encoderInstructionParser = new EncoderInstructionParser(_encoder);
-        _decoderInstructionParser = new DecoderInstructionParser(_decoder);
     }
 
     @Test
@@ -79,7 +73,7 @@ public class EncodeDecodeTest
 
         ByteBuffer buffer = _encoder.encode(streamId, httpFields);
         assertNull(_encoderHandler.getInstruction());
-        assertThat(BufferUtil.toHexString(buffer), equalsHex("0000 510b 2f69 6e64 6578 2e68 746d 6c"));
+        assertThat(BufferUtil.toHexString(buffer), QpackTestUtil.equalsHex("0000 510b 2f69 6e64 6578 2e68 746d 6c"));
         assertTrue(_encoderHandler.isEmpty());
 
         _decoder.decode(streamId, buffer);
@@ -88,7 +82,7 @@ public class EncodeDecodeTest
         assertThat(_decoderHandler.getInstruction(), instanceOf(SectionAcknowledgmentInstruction.class));
         assertTrue(_decoderHandler.isEmpty());
 
-        _encoderInstructionParser.parse(toBuffer(new SectionAcknowledgmentInstruction(streamId)));
+        _encoderInstructionParser.parse(QpackTestUtil.toBuffer(new SectionAcknowledgmentInstruction(streamId)));
 
         // B.2. Dynamic Table.
 
@@ -97,9 +91,9 @@ public class EncodeDecodeTest
         Instruction instruction = _encoderHandler.getInstruction();
         assertThat(instruction, instanceOf(SetCapacityInstruction.class));
         assertThat(((SetCapacityInstruction)instruction).getCapacity(), is(220));
-        assertThat(toString(instruction), equalsHex("3fbd01"));
+        assertThat(QpackTestUtil.toHexString(instruction), QpackTestUtil.equalsHex("3fbd01"));
 
-        _decoderInstructionParser.parse(toHex("3fbd01"));
+        _decoderInstructionParser.parse(QpackTestUtil.hexToBuffer("3fbd01"));
         assertThat(_decoder.getQpackContext().getDynamicTable().getCapacity(), is(220));
 
         // Insert with named referenced to static table. Test we get two instructions generated to add to the dynamic table.
@@ -113,24 +107,24 @@ public class EncodeDecodeTest
         assertThat(instruction, instanceOf(IndexedNameEntryInstruction.class));
         assertThat(((IndexedNameEntryInstruction)instruction).getIndex(), is(0));
         assertThat(((IndexedNameEntryInstruction)instruction).getValue(), is("www.example.com"));
-        assertThat(toString(instruction), equalsHex("c00f 7777 772e 6578 616d 706c 652e 636f 6d"));
+        assertThat(QpackTestUtil.toHexString(instruction), QpackTestUtil.equalsHex("c00f 7777 772e 6578 616d 706c 652e 636f 6d"));
 
         instruction = _encoderHandler.getInstruction();
         assertThat(instruction, instanceOf(IndexedNameEntryInstruction.class));
         assertThat(((IndexedNameEntryInstruction)instruction).getIndex(), is(1));
         assertThat(((IndexedNameEntryInstruction)instruction).getValue(), is("/sample/path"));
-        assertThat(toString(instruction), equalsHex("c10c 2f73 616d 706c 652f 7061 7468"));
+        assertThat(QpackTestUtil.toHexString(instruction), QpackTestUtil.equalsHex("c10c 2f73 616d 706c 652f 7061 7468"));
         assertTrue(_encoderHandler.isEmpty());
 
         // We cannot decode the buffer until we parse the two instructions generated above (we reach required insert count).
         _decoder.decode(streamId, buffer);
         assertNull(_decoderHandler.getHttpFields());
 
-        _decoderInstructionParser.parse(toHex("c00f 7777 772e 6578 616d 706c 652e 636f 6d"));
+        _decoderInstructionParser.parse(QpackTestUtil.hexToBuffer("c00f 7777 772e 6578 616d 706c 652e 636f 6d"));
         assertNull(_decoderHandler.getHttpFields());
         assertThat(_decoderHandler.getInstruction(), instanceOf(InsertCountIncrementInstruction.class));
 
-        _decoderInstructionParser.parse(toHex("c10c 2f73 616d 706c 652f 7061 7468"));
+        _decoderInstructionParser.parse(QpackTestUtil.hexToBuffer("c10c 2f73 616d 706c 652f 7061 7468"));
         assertThat(_decoderHandler.getHttpFields(), is(httpFields));
         assertThat(_decoderHandler.getInstruction(), instanceOf(InsertCountIncrementInstruction.class));
 
@@ -138,39 +132,14 @@ public class EncodeDecodeTest
         assertTrue(_decoderHandler.isEmpty());
 
         // Parse the decoder instructions on the encoder.
-        _encoderInstructionParser.parse(toBuffer(new InsertCountIncrementInstruction(2)));
-        _encoderInstructionParser.parse(toBuffer(new SectionAcknowledgmentInstruction(streamId)));
+        _encoderInstructionParser.parse(QpackTestUtil.toBuffer(new InsertCountIncrementInstruction(2)));
+        _encoderInstructionParser.parse(QpackTestUtil.toBuffer(new SectionAcknowledgmentInstruction(streamId)));
 
         // B.3. Speculative Insert
         _encoder.insert(new HttpField("custom-key", "custom-value"));
         instruction = _encoderHandler.getInstruction();
         assertThat(instruction, instanceOf(LiteralNameEntryInstruction.class));
-        assertThat(toString(instruction), equalsHex("4a63 7573 746f 6d2d 6b65 790c 6375 7374 6f6d 2d76 616c 7565"));
+        assertThat(QpackTestUtil.toHexString(instruction), QpackTestUtil.equalsHex("4a63 7573 746f 6d2d 6b65 790c 6375 7374 6f6d 2d76 616c 7565"));
         _encoder.insertCountIncrement(1);
-    }
-
-    public static ByteBuffer toBuffer(Instruction instruction)
-    {
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(new NullByteBufferPool());
-        instruction.encode(lease);
-        assertThat(lease.getSize(), is(1));
-        return lease.getByteBuffers().get(0);
-    }
-
-    public static String toString(Instruction instruction)
-    {
-        return BufferUtil.toHexString(toBuffer(instruction));
-    }
-
-    public static ByteBuffer toHex(String hexString)
-    {
-        hexString = hexString.replaceAll("\\s+", "");
-        return ByteBuffer.wrap(TypeUtil.fromHexString(hexString));
-    }
-
-    public static Matcher<java.lang.String> equalsHex(String expectedString)
-    {
-        expectedString = expectedString.replaceAll("\\s+", "");
-        return org.hamcrest.text.IsEqualIgnoringCase.equalToIgnoringCase(expectedString);
     }
 }

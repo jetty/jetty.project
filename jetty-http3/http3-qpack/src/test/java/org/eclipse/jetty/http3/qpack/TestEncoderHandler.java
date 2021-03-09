@@ -21,11 +21,19 @@ import org.eclipse.jetty.http3.qpack.generator.Instruction;
 public class TestEncoderHandler implements QpackEncoder.Handler
 {
     private final Queue<Instruction> _instructionList = new LinkedList<>();
+    private QpackDecoder _decoder;
+
+    public void setDecoder(QpackDecoder decoder)
+    {
+        _decoder = decoder;
+    }
 
     @Override
-    public void onInstruction(Instruction instruction)
+    public void onInstruction(Instruction instruction) throws QpackException
     {
         _instructionList.add(instruction);
+        if (_decoder != null)
+            _decoder.parseInstruction(QpackTestUtil.toBuffer(instruction));
     }
 
     public Instruction getInstruction()

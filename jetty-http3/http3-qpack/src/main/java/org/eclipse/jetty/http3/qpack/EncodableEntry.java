@@ -61,17 +61,52 @@ abstract class EncodableEntry
         @Override
         public void encode(ByteBuffer buffer, int base)
         {
-            byte staticBit = _entry.isStatic() ? (byte)0x40 : (byte)0x00;
-            buffer.put((byte)(0x80 | staticBit));
-            int relativeIndex =  _entry.getIndex() - base;
-            NBitInteger.encode(buffer, 6, relativeIndex);
+            boolean isStatic = _entry.isStatic();
+            if (isStatic)
+            {
+                // Indexed Field Line with Static Reference.
+                buffer.put((byte)(0x80 | 0x40));
+                int relativeIndex = _entry.getIndex();
+                NBitInteger.encode(buffer, 6, relativeIndex);
+            }
+            else if (_entry.getIndex() < base)
+            {
+                // Indexed Field Line with Dynamic Reference.
+                buffer.put((byte)0x80);
+                int relativeIndex = base - (_entry.getIndex() + 1);
+                NBitInteger.encode(buffer, 6, relativeIndex);
+            }
+            else
+            {
+                // Indexed Field Line with Post-Base Index.
+                buffer.put((byte)0x10);
+                int relativeIndex =  _entry.getIndex() - base;
+                NBitInteger.encode(buffer, 4, relativeIndex);
+            }
         }
 
         @Override
         public int getRequiredSize(int base)
         {
-            int relativeIndex =  _entry.getIndex() - base;
-            return 1 + NBitInteger.octectsNeeded(6, relativeIndex);
+            boolean isStatic = _entry.isStatic();
+            if (isStatic)
+            {
+                // Indexed Field Line with Static Reference.
+                int relativeIndex = _entry.getIndex();
+                return 1 + NBitInteger.octectsNeeded(6, relativeIndex);
+            }
+            else if (_entry.getIndex() < base)
+            {
+                // Indexed Field Line with Dynamic Reference.
+                int relativeIndex =  base - (_entry.getIndex() + 1);
+                return 1 + NBitInteger.octectsNeeded(6, relativeIndex);
+            }
+            else
+            {
+                // Indexed Field Line with Post-Base Index.
+                int relativeIndex = _entry.getIndex() - base;
+                return 1 + NBitInteger.octectsNeeded(4, relativeIndex);
+            }
         }
 
         @Override
@@ -97,13 +132,33 @@ abstract class EncodableEntry
         @Override
         public void encode(ByteBuffer buffer, int base)
         {
-            byte allowIntermediary = 0x00; // TODO: this is 0x20 bit, when should this be set?
-            byte staticBit = _nameEntry.isStatic() ? (byte)0x10 : (byte)0x00;
+            // TODO: when should this be set?
+            // TODO: this is different for the Post-Base index case.
+            byte allowIntermediary = 0x00;
 
             // Encode the prefix.
-            buffer.put((byte)(0x40 | allowIntermediary | staticBit));
-            int relativeIndex =  _nameEntry.getIndex() - base;
-            NBitInteger.encode(buffer, 4, relativeIndex);
+            boolean isStatic = _nameEntry.isStatic();
+            if (isStatic)
+            {
+                // Literal Field Line with Static Name Reference.
+                buffer.put((byte)(0x40 | allowIntermediary | 0x10));
+                int relativeIndex =  _nameEntry.getIndex();
+                NBitInteger.encode(buffer, 4, relativeIndex);
+            }
+            else if (_nameEntry.getIndex() < base)
+            {
+                // Literal Field Line with Dynamic Name Reference.
+                buffer.put((byte)(0x40 | allowIntermediary));
+                int relativeIndex = base - (_nameEntry.getIndex() + 1);
+                NBitInteger.encode(buffer, 4, relativeIndex);
+            }
+            else
+            {
+                // Literal Field Line with Post-Base Name Reference.
+                buffer.put(allowIntermediary);
+                int relativeIndex = _nameEntry.getIndex() - base;
+                NBitInteger.encode(buffer, 3, relativeIndex);
+            }
 
             // Encode the value.
             String value = getValue();

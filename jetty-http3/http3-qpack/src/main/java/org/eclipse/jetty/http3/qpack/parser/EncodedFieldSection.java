@@ -118,7 +118,7 @@ public class EncodedFieldSection
         byte firstByte = buffer.get(buffer.position());
         boolean allowEncoding = (firstByte & 0x10) != 0;
 
-        _stringParser.setPrefix(3);
+        _stringParser.setPrefix(4);
         String name = _stringParser.decode(buffer);
         if (name == null)
             throw new QpackException.CompressionException("Invalid Name");
@@ -136,7 +136,7 @@ public class EncodedFieldSection
         byte firstByte = buffer.get(buffer.position());
         boolean allowEncoding = (firstByte & 0x08) != 0;
 
-        _integerParser.setPrefix(3);
+        _integerParser.setPrefix(4);
         int nameIndex = _integerParser.decode(buffer);
         if (nameIndex < 0)
             throw new QpackException.CompressionException("Invalid Index");
@@ -199,9 +199,9 @@ public class EncodedFieldSection
         public HttpField decode(QpackContext context) throws QpackException
         {
             if (_dynamicTable)
-                return context.getDynamicTable().getAbsolute(_base + _index).getHttpField();
+                return context.getDynamicTable().getAbsolute(_base - (_index + 1)).getHttpField();
             else
-                return context.getStaticTable().get(_index).getHttpField();
+                return QpackContext.getStaticTable().get(_index).getHttpField();
         }
     }
 
@@ -217,7 +217,7 @@ public class EncodedFieldSection
         @Override
         public HttpField decode(QpackContext context) throws QpackException
         {
-            return context.getDynamicTable().getAbsolute(_base - _index).getHttpField();
+            return context.getDynamicTable().getAbsolute(_base + _index).getHttpField();
         }
     }
 
@@ -242,7 +242,7 @@ public class EncodedFieldSection
         {
             HttpField field;
             if (_dynamicTable)
-                field = context.getDynamicTable().getAbsolute(_base + _nameIndex + 1).getHttpField();
+                field = context.getDynamicTable().getAbsolute(_base - (_nameIndex + 1)).getHttpField();
             else
                 field = QpackContext.getStaticTable().get(_nameIndex).getHttpField();
 
@@ -266,7 +266,7 @@ public class EncodedFieldSection
         @Override
         public HttpField decode(QpackContext context) throws QpackException
         {
-            HttpField field = context.getDynamicTable().getAbsolute(_base - _nameIndex).getHttpField();
+            HttpField field = context.getDynamicTable().getAbsolute(_base + _nameIndex).getHttpField();
             return new HttpField(field.getHeader(), field.getName(), _value);
         }
     }

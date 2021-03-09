@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.qpack.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
 
 /**
@@ -46,39 +45,6 @@ public class EncoderInstructionParser
         void onStreamCancellation(int streamId) throws QpackException;
 
         void onInsertCountIncrement(int increment) throws QpackException;
-    }
-
-    public static class EncoderAdapter implements Handler
-    {
-        private final QpackEncoder _encoder;
-
-        public EncoderAdapter(QpackEncoder encoder)
-        {
-            _encoder = encoder;
-        }
-
-        @Override
-        public void onSectionAcknowledgement(int streamId) throws QpackException
-        {
-            _encoder.sectionAcknowledgement(streamId);
-        }
-
-        @Override
-        public void onStreamCancellation(int streamId) throws QpackException
-        {
-            _encoder.streamCancellation(streamId);
-        }
-
-        @Override
-        public void onInsertCountIncrement(int increment) throws QpackException
-        {
-            _encoder.insertCountIncrement(increment);
-        }
-    }
-
-    public EncoderInstructionParser(QpackEncoder encoder)
-    {
-        this(new EncoderAdapter(encoder));
     }
 
     public EncoderInstructionParser(Handler handler)

@@ -65,6 +65,11 @@ public class Entry
         _referenceCount.incrementAndGet();
     }
 
+    public void release()
+    {
+        _referenceCount.decrementAndGet();
+    }
+
     public int getReferenceCount()
     {
         return _referenceCount.get();
@@ -83,7 +88,13 @@ public class Entry
     @Override
     public String toString()
     {
-        return String.format("{%s,%d,%s,%x}", isStatic() ? "S" : "D", _absoluteIndex, _field, hashCode());
+        return String.format("%s@%x{index=%d, refs=%d, field=\"%s\"}", getClass().getSimpleName(),  hashCode(),
+            _absoluteIndex, _referenceCount.get(), _field);
+    }
+
+    public static int getSize(Entry entry)
+    {
+        return getSize(entry.getHttpField());
     }
 
     public static int getSize(HttpField field)

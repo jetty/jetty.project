@@ -13,10 +13,15 @@
 
 package org.eclipse.jetty.http3.qpack;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 
-class StreamInfo
+import org.eclipse.jetty.http3.qpack.table.Entry;
+
+class StreamInfo implements Iterable<StreamInfo.SectionInfo>
 {
     private final int _streamId;
     private final Queue<SectionInfo> _sectionInfos = new LinkedList<>();
@@ -62,8 +67,15 @@ class StreamInfo
         return false;
     }
 
+    @Override
+    public Iterator<SectionInfo> iterator()
+    {
+        return _sectionInfos.iterator();
+    }
+
     public static class SectionInfo
     {
+        private final List<Entry> _entries = new ArrayList<>();
         private int _requiredInsertCount;
         private boolean _block = false;
 
@@ -75,6 +87,21 @@ class StreamInfo
         public boolean isBlocking()
         {
             return _block;
+        }
+
+        public void reference(Entry entry)
+        {
+            entry.reference();
+            _entries.add(entry);
+        }
+
+        public void release()
+        {
+            for (Entry entry : _entries)
+            {
+                entry.release();
+            }
+            _entries.clear();
         }
 
         public void setRequiredInsertCount(int requiredInsertCount)
