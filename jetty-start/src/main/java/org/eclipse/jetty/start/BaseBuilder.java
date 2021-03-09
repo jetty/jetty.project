@@ -187,6 +187,7 @@ public class BaseBuilder
                 DirectoryStream.Filter<Path> filter = new DirectoryStream.Filter<Path>()
                 {
                     PathMatcher iniMatcher = PathMatchers.getMatcher("glob:**/start.d/*.ini");
+
                     @Override
                     public boolean accept(Path entry) throws IOException
                     {
@@ -195,7 +196,9 @@ public class BaseBuilder
                 };
                 List<Path> paths = new ArrayList<>();
                 for (Path path : Files.newDirectoryStream(startd, filter))
+                {
                     paths.add(path);
+                }
                 paths.sort(new NaturalSort.Paths());
 
                 // Read config from start.d
@@ -212,12 +215,16 @@ public class BaseBuilder
                 try (FileWriter out = new FileWriter(startini.toFile(), true))
                 {
                     for (String line : startLines)
+                    {
                         out.append(line).append(System.lineSeparator());
+                    }
                 }
 
                 // delete start.d files
                 for (Path path : paths)
+                {
                     Files.delete(path);
+                }
                 Files.delete(startd);
             }
         }
@@ -264,56 +271,65 @@ public class BaseBuilder
             StartLog.warn("Use of both %s and %s is deprecated", getBaseHome().toShortForm(startd), getBaseHome().toShortForm(startini));
 
         builder.set(useStartD ? new StartDirBuilder(this) : new StartIniBuilder(this));
-        newlyAdded.stream().map(modules::get).forEach(module ->
-        {
-            String ini = null;
-            try
+        newlyAdded.stream()
+            .map(modules::get)
+            .filter(Module::isEnabled)
+            .forEach(module ->
             {
-                if (module.isSkipFilesValidation())
-                {
-                    StartLog.debug("Skipping [files] validation on %s", module.getName());
-                }
-                else
-                {
-                    // if (explicitly added and ini file modified)
-                    if (startArgs.getStartModules().contains(module.getName()))
-                    {
-                        ini = builder.get().addModule(module, startArgs.getProperties());
-                        if (ini != null)
-                            modified.set(true);
-                    }
-                    for (String file : module.getFiles())
-                    {
-                        files.add(new FileArg(module, startArgs.getProperties().expand(file)));
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                throw new RuntimeException(e);
-            }
+                StartLog.debug("%s.isEnabled() = %b", module.getName(), module.isEnabled());
 
-            if (module.isDynamic())
-            {
-                for (String s : module.getEnableSources())
+                String ini = null;
+                try
                 {
-                    StartLog.info("%-15s %s", module.getName(), s);
+                    if (module.isSkipFilesValidation())
+                    {
+                        StartLog.debug("Skipping [files] validation on %s", module.getName());
+                    }
+                    else
+                    {
+                        // if (explicitly added and ini file modified)
+                        if (startArgs.getStartModules().contains(module.getName()))
+                        {
+                            ini = builder.get().addModule(module, startArgs.getProperties());
+                            if (ini != null)
+                                modified.set(true);
+                        }
+                        for (String file : module.getFiles())
+                        {
+                            files.add(new FileArg(module, startArgs.getProperties().expand(file)));
+                        }
+                    }
                 }
-            }
-            else if (module.isTransitive())
-            {
-                if (module.hasIniTemplate())
-                    StartLog.info("%-15s transitively enabled, ini template available with --add-module=%s",
-                        module.getName(),
-                        module.getName());
+                catch (Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+
+                if (module.isDynamic())
+                {
+                    for (String s : module.getEnableSources())
+                    {
+                        StartLog.info("%-15s %s", module.getName(), s);
+                    }
+                }
+                else if (module.isTransitive())
+                {
+                    if (module.hasIniTemplate())
+                    {
+                        StartLog.info("%-15s transitively enabled, ini template available with --add-module=%s",
+                            module.getName(),
+                            module.getName());
+                    }
+                    else
+                    {
+                        StartLog.info("%-15s transitively enabled", module.getName());
+                    }
+                }
                 else
-                    StartLog.info("%-15s transitively enabled", module.getName());
-            }
-            else
-            {
-                StartLog.info("%-15s initialized in %s", module.getName(), ini);
-            }
-        });
+                {
+                    StartLog.info("%-15s initialized in %s", module.getName(), ini);
+                }
+            });
 
         files.addAll(startArgs.getFiles());
         if (!files.isEmpty() && processFileResources(files))
