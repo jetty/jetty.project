@@ -11,13 +11,16 @@
 // ========================================================================
 //
 
-[[og-logging]]
-=== Logging
+[[og-module-console-capture]]
+===== Module `console-capture`
 
-There are two types of logging that can be configured in Jetty:
+The `console-capture` module captures `System.out` and `System.err` output and appends it to a rolling file.
 
-* The logging of Jetty itself, that logs the server activity
-* The HTTP request logging, that logs information about HTTP requests and responses processed by Jetty
+The file is rolled every day at the midnight of the configured timezone.
+Old, rolled files are kept for the number of days specified by the `jetty.console-capture.retainDays` property.
 
-include::logging-server.adoc[]
-include::logging-request.adoc[]
+The module properties are:
+
+----
+include::{JETTY_HOME}/modules/console-capture.mod[tags=documentation]
+----

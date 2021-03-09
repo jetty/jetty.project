@@ -38,3 +38,6 @@ include::protocols-ssl.adoc[]
 include::protocols-proxy.adoc[]
 
 // TODO: old_docs/connectors/*.adoc
+
+// TODO: add documentation for how to add an additional connector e.g. with a name
+//  we have 2 connectors out of the box, but a third would need an additional XML.
