@@ -741,9 +741,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         Set<String> paths = getPathsWithUncoveredHttpMethods();
         if (paths != null && !paths.isEmpty())
         {
-            LOG.warn("{} has paths with uncovered http methods: [{}]",
-                ContextHandler.getCurrentContext(),
-                String.join(", ", paths));
+            LOG.warn("{} has uncovered http methods for the following paths: {}",
+                ContextHandler.getCurrentContext(), paths);
             return true;
         }
         return false;
