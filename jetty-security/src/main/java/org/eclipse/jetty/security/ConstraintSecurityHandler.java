@@ -716,8 +716,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     public void dump(Appendable out, String indent) throws IOException
     {
         dumpObjects(out, indent,
-            DumpableCollection.from("roles", _roles),
-            DumpableCollection.from("constraints", _constraintMappings));
+                    DumpableCollection.from("roles", _roles),
+                    DumpableCollection.from("constraints", _constraintMappings));
     }
 
     @Override
@@ -741,7 +741,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         Set<String> paths = getPathsWithUncoveredHttpMethods();
         if (paths != null && !paths.isEmpty())
         {
-            LOG.warn("{} has uncovered http methods for the following paths: {}",
+            LOG.warn("{} has uncovered HTTP methods for the following paths: {}",
                 ContextHandler.getCurrentContext(), paths);
             return true;
         }
