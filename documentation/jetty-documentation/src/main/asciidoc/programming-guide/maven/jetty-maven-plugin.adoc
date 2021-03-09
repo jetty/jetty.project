@@ -11,8 +11,6 @@
 // ========================================================================
 //
 
-:experimental:
-
 [[jetty-maven-plugin]]
 === Using the Jetty Maven Plugin
 
