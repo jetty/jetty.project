@@ -66,14 +66,14 @@ public class EvictionTest
             _decoder.decode(streamId, encodedFields);
             HttpFields result = _decoderHandler.getHttpFields();
 
-            System.err.println("encoder: ");
-            System.err.println(_encoder.dump());
-            System.err.println();
-            System.err.println("decoder: ");
-            System.err.println(_decoder.dump());
-            System.err.println();
-            System.err.println("====================");
-            System.err.println();
+//            System.err.println("encoder: ");
+//            System.err.println(_encoder.dump());
+//            System.err.println();
+//            System.err.println("decoder: ");
+//            System.err.println(_decoder.dump());
+//            System.err.println();
+//            System.err.println("====================");
+//            System.err.println();
 
             assertThat(result, is(httpFields));
         }
