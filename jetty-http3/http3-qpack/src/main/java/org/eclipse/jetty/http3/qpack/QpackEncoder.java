@@ -300,8 +300,16 @@ public class QpackEncoder implements Dumpable
             deltaBase = signBit ? requiredInsertCount - base - 1 : base - requiredInsertCount;
         }
 
-        // TODO: Calculate the size required.
-        ByteBuffer buffer = _bufferPool.acquire(1024, false);
+        // Calculate the size required. TODO: it may be more efficient to just use a buffer of MAX_HEADER_SIZE?
+        int spaceRequired = 0;
+        spaceRequired += 1 + NBitInteger.octectsNeeded(8, encodedInsertCount);
+        spaceRequired += 1 + NBitInteger.octectsNeeded(7, deltaBase);
+        for (EncodableEntry encodableEntry : encodableEntries)
+        {
+            spaceRequired += encodableEntry.getRequiredSize(base);
+        }
+
+        ByteBuffer buffer = _bufferPool.acquire(spaceRequired, false);
         int pos = BufferUtil.flipToFill(buffer);
 
         // Encode the Field Section Prefix into the ByteBuffer.
