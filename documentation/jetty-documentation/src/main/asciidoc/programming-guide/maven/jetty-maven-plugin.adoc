@@ -11,6 +11,8 @@
 // ========================================================================
 //
 
+:experimental:
+
 [[jetty-maven-plugin]]
 === Using the Jetty Maven Plugin
 
@@ -78,9 +80,9 @@ This starts Jetty and serves up your project on http://localhost:8080/.
 
 Jetty will continue to run until you stop it.
 By default, it will not automatically restart your webapp.
-Set a non-zero `&lt;scan&gt;` value to have jetty scan your webapp for changes and automatically redeploy, or set `&lt;scan&gt;` to `0` to cause manual redeployment by hitting the `Enter` key.
+Set a non-zero `<scan>` value to have jetty scan your webapp for changes and automatically redeploy, or set `<scan>` to `0` to cause manual redeployment by hitting the kbd:[Enter] key.
 
-You can terminate the plugin with a `ctrl-c` in the terminal window where it is running.
+You can terminate the plugin with a kbd:[Ctrl+c] in the terminal window where it is running.
 
 [NOTE]
 ====
@@ -390,7 +392,7 @@ By default this is false.
 scan::
 The pause in seconds between sweeps of the webapp to check for changes and automatically hot redeploy if any are detected.
 *By default this is `-1`, which disables hot redeployment scanning.*
-A value of `0` means no hot redeployment is done, and that you must use the `Enter` key to manually force a redeploy.
+A value of `0` means no hot redeployment is done, and that you must use the kbd:[Enter] key to manually force a redeploy.
 Any positive integer will enable hot redeployment, using the number as the sweep interval in seconds.
 scanTargetPatterns::
 Optional.
@@ -502,7 +504,7 @@ The path to a context xml file that is applied to your webapp AFTER the `webApp`
 scan::
 The pause in seconds between sweeps of the webapp to check for changes and automatically hot redeploy if any are detected.
 *By default this is `-1`, which disables hot redeployment scanning.*
-A value of `0` means no hot redeployment is done, and that you must use the `Enter` key to manually force a redeploy.
+A value of `0` means no hot redeployment is done, and that you must use the kbd:[Enter] key to manually force a redeploy.
 Any positive integer will enable hot redeployment, using the number as the sweep interval in seconds.
 scanTargetPatterns::
 Optional.
