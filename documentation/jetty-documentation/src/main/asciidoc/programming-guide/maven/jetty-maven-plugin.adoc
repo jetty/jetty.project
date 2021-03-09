@@ -204,9 +204,9 @@ See link:#container-classpath[Container Classpath vs WebApp Classpath].
 
 ===== In a jetty distribution
 
-`deployMode` of `DISTRO`.
+`deployMode` of `EXTERNAL`.
 This is similar to the old "jetty:run-distro" goal - your webapp is deployed into a dynamically downloaded, unpacked and configured jetty distribution.
-A separate process is forked to run the distro.
+A separate process is forked to run it.
 These extra configuration parameters are available:
 
 jettyBase::
@@ -234,7 +234,7 @@ These modules are enabled by default: `server,http,webapp,deploy`.
 The following configuration parameters are common to all of the `"run-"` and `"start-"` goals:
 
 deployMode::
-One of `EMBED`, `FORK` or `DISTRO`.
+One of `EMBED`, `FORK` or `EXTERNAL`.
 Default `EMBED`.
 Can also be configured by setting the Maven property `jetty.deployMode`.
 This parameter determines whether the webapp will run in jetty in-process with Maven, forked into a new process, or deployed into a jetty distribution.
@@ -281,7 +281,7 @@ It will make a classpath for the webapp to be deployed comprised of &lt;dependen
 
 If your production environment places specific jars onto the container's classpath, the equivalent way to do this with maven is to define these as &lt;dependencies&gt; for the _plugin_ itself, not the _project_. See http://maven.apache.org/pom.html#Plugins[configuring maven plugins].
 This is suitable if you are using either `EMBED` or `FORK` mode.
-If you are using `DISTRO` mode, then you should configure the `modules` parameter with the names of the jetty modules that place these jars onto the container classpath.
+If you are using `EXTERNAL` mode, then you should configure the `modules` parameter with the names of the jetty modules that place these jars onto the container classpath.
 
 Note that in `EMBED` or `FORK` mode, you could also influence the container classpath by setting the `useProvidedScope` parameter to `true`: this will place any dependencies with &lt;scope&gt;provided&lt;scope&gt; onto the plugin's classpath.
 Use this very cautiously: as the plugin already automatically places most jetty jars onto the classpath, you could wind up with duplicate jars. 
@@ -406,7 +406,7 @@ Include and exclude patterns that can be applied to the testClassesDirectory for
 If a file or directory is excluded by the patterns then a change in that file (or subtree in the case of a directory) is ignored and will not cause the webapp to redeploy.
 Patterns are specified as a relative path using a glob-like syntax as described in the http://docs.oracle.com/javase/8/docs/api/java/nio/file/FileSystem.html#getPathMatcher-java.lang.String-[javadoc] for http://docs.oracle.com/javase/8/docs/api/java/nio/file/FileSystem.html#getPathMatcher-java.lang.String-[FileSystem.getPathMatcher].
 
-See link:#deployment-modes[Deployment Modes] for other configuration parameters available when using the `run` goal in EMBED, FORK or DISTRO modes.
+See link:#deployment-modes[Deployment Modes] for other configuration parameters available when using the `run` goal in EMBED, FORK or EXTERNAL modes.
 
 Here's an example of a pom configuration for the plugin with the `run` goal:
 
@@ -508,7 +508,7 @@ scanTargetPatterns::
 Optional.
 List of directories with ant-style include/excludes patterns to specify other files to periodically scan for changes.
 
-See link:#deployment-modes[Deployment Modes] for other configuration parameters available when using the `run-war` goal in EMBED, FORK or DISTRO modes.
+See link:#deployment-modes[Deployment Modes] for other configuration parameters available when using the `run-war` goal in EMBED, FORK or EXTERNAL modes.
 
 [[jetty-start-goal]]
 ==== jetty:start
@@ -622,7 +622,7 @@ Optional.
 Used in conjunction with stopPort for stopping jetty.
 Useful to use in conjunction with the link:#jetty-stop-goal[stop] and link:#jetty-start-goal[start] goals.
 
-These additional configuration parameters are available when running in `FORK` or `DISTRO` mode:
+These additional configuration parameters are available when running in `FORK` or `EXTERNAL` mode:
 
 maxChildStartChecks::
 Default is `10`.
@@ -688,7 +688,7 @@ Optional.
 Used in conjunction with stopPort for stopping jetty.
 Useful to use in conjunction with the link:#jetty-stop-goal[stop].
 
-These additional configuration parameters are available when running in FORK or DISTRO mode:
+These additional configuration parameters are available when running in FORK or EXTERNAL mode:
 
 maxChildStartChecks::
 Default is `10`.
@@ -701,7 +701,7 @@ This is the time in milliseconds between checks on the startup of the forked jet
 [[jetty-stop-goal]]
 ==== jetty:stop
 
-The stop goal stops a FORK or DISTRO mode running instance of Jetty.
+The stop goal stops a FORK or EXTERNAL mode running instance of Jetty.
 To use it, you need to configure the plugin with a special port number and key.
 That same port number and key will also be used by the other goals that start jetty.
 
