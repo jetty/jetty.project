@@ -155,6 +155,20 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
             scanner.setScanInterval(scan);
             scanner.setScanDepth(Scanner.MAX_SCAN_DEPTH); //always fully walk directory hierarchies
             scanner.setReportExistingFilesOnStartup(false);
+            scanner.addListener(new Scanner.BulkListener()
+            {   
+                public void filesChanged(Set<String> changes)
+                {
+                    try
+                    {
+                        restartWebApp(changes.contains(project.getFile().getCanonicalPath()));
+                    }
+                    catch (Exception e)
+                    {
+                        getLog().error("Error reconfiguring/restarting webapp after change in watched files", e);
+                    }
+                }
+            });
             configureScanner();
             getLog().info("Scan interval sec = " + scan);
             
@@ -199,21 +213,6 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
         {
             throw new MojoExecutionException("Error forming scan list", e);
         }
-        scanner.addListener(new Scanner.BulkListener()
-        {
-            public void filesChanged(Set<String> changes)
-            {
-                try
-                {
-                    boolean reconfigure = changes.contains(project.getFile().getCanonicalPath());
-                    restartWebApp(reconfigure);
-                }
-                catch (Exception e)
-                {
-                    getLog().error("Error reconfiguring/restarting webapp after change in watched files", e);
-                }
-            }
-        });
     }
 
     public void gatherScannables() throws Exception
