@@ -27,6 +27,3 @@ jetty.webapp.addServerClasses+=,${jetty.base.uri}/lib/bouncycastle/
 jetty.sslContext.keyStorePath?=etc/test-keystore.p12
 jetty.sslContext.keyStoreType?=PKCS12
 jetty.sslContext.keyStorePassword?=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
-jetty.sslContext.trustStorePath?=etc/test-keystore.p12
-jetty.sslContext.trustStoreType?=PKCS12
-jetty.sslContext.keyStorePassword?=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4

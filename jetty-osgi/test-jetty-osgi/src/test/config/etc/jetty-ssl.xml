@@ -31,9 +31,9 @@
   <!-- ============================================================= -->
   <New id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
     <Set name="Provider"><SystemProperty name="jetty.sslContext.provider"/></Set>
-    <Set name="KeyStorePath"><Property name="jetty.base" default="."/>/<Property name="jetty.sslContext.keyStorePath" default="etc/keystore.p12"/></Set>
+    <Set name="KeyStorePath"><Property name="jetty.base"/>/<Property name="jetty.sslContext.keyStorePath" default="etc/keystore.p12"/></Set>
     <Set name="KeyStorePassword"><Property name="jetty.sslContext.keyStorePassword" default="OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4"/></Set>
-    <Set name="TrustStorePath"><Property name="jetty.base" default="."/>/<Property name="jetty.sslContext.trustStorePath" default="etc/keystore.p12"/></Set>
+    <Set name="TrustStorePath"><Property name="jetty.base"/>/<Property name="jetty.sslContext.trustStorePath" default="etc/keystore.p12"/></Set>
     <Set name="TrustStorePassword"><Property name="jetty.sslContext.trustStorePassword" default="OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4"/></Set>
     <Set name="NeedClientAuth" property="jetty.sslContext.needClientAuth"/>
     <Set name="WantClientAuth" property="jetty.sslContext.wantClientAuth"/>

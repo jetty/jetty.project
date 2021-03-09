@@ -35,6 +35,7 @@ public class JavaxWebSocketConfiguration extends AbstractConfiguration
         protectAndExpose("org.eclipse.jetty.websocket.servlet."); // For WebSocketUpgradeFilter
         protectAndExpose("org.eclipse.jetty.websocket.javax.server.config.");
         protectAndExpose("org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainerProvider");
+        protectAndExpose("org.eclipse.jetty.websocket.javax.client.JavaxWebSocketShutdownContainer");
         hide("org.eclipse.jetty.websocket.javax.server.internal");
     }
 }

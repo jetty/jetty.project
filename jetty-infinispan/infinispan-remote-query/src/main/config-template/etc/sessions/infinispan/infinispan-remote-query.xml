@@ -20,13 +20,13 @@
       </Call>
     </Call>
   </New>
-  
+
   <New id="properties" class="java.util.Properties">
     <Call name="load">
       <Arg>
-	  <New class="java.io.FileInputStream">
-              <Arg><Property name="jetty.base" default="."/>/resources/hotrod-client.properties</Arg>
-          </New>
+        <New class="java.io.FileInputStream">
+          <Arg><Property name="jetty.base"/>/resources/hotrod-client.properties</Arg>
+        </New>
       </Arg>
     </Call>
     <Call name="put">
@@ -34,7 +34,7 @@
       <Arg><Ref refid="mapping"/></Arg>
     </Call>
   </New>
-  
+
 
   <!-- ===================================================================== -->
   <!-- Convert properties to configuration.                                  -->
@@ -49,7 +49,7 @@
        </Arg>
     </Call>
     <Call id="config" name="build"/>
-  </New>  
+  </New>
 
   <!-- ===================================================================== -->
   <!-- Get a reference to the remote cachemanager.                           -->
@@ -57,7 +57,7 @@
   <New id="remoteCacheManager" class="org.infinispan.client.hotrod.RemoteCacheManager">
     <Arg><Ref refid="config"/></Arg>
   </New>
-  
+
   <!-- ===================================================================== -->
   <!-- Set up custom session serialization.                                  -->
   <!-- ===================================================================== -->
@@ -84,7 +84,7 @@
       </Arg>
     </Call>
   </Call>
-  
+
   <!-- ===================================================================== -->
   <!-- Get a reference to the remote cache.                                  -->
   <!-- ===================================================================== -->
@@ -93,10 +93,10 @@
       <Arg><Property name="jetty.session.infinispan.remoteCacheName" default="sessions"/></Arg>
     </Call>
   </Ref>
-  
+
   <!-- ===================================================================== -->
   <!-- Set queryMgrFactory reference to RemoteQueryManagerFactory            -->
   <!-- ===================================================================== -->
-  <New id="queryMgrFactory" class="org.eclipse.jetty.session.infinispan.RemoteQueryManagerFactory"/>  
-  
-</Configure> 
+  <New id="queryMgrFactory" class="org.eclipse.jetty.session.infinispan.RemoteQueryManagerFactory"/>
+
+</Configure>

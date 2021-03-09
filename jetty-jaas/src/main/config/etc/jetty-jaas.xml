@@ -10,7 +10,12 @@
     <!-- ======================================================== -->
     <Call class="java.lang.System" name="setProperty">
       <Arg>java.security.auth.login.config</Arg>
-      <Arg><Property name="jetty.base" default="." />/<Property name="jetty.jaas.login.conf" default="etc/login.conf"/></Arg>
+      <Arg>
+        <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
+          <Arg><Property name="jetty.base"/></Arg>
+          <Arg><Property name="jetty.jaas.login.conf" default="etc/login.conf" /></Arg>
+        </Call>
+      </Arg>
     </Call>
 
 </Configure>
