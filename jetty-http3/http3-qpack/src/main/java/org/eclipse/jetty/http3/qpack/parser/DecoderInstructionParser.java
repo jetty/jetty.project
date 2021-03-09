@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.qpack.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
 
 /**
@@ -59,45 +58,6 @@ public class DecoderInstructionParser
         void onInsertNameWithReference(int nameIndex, boolean isDynamicTableIndex, String value) throws QpackException;
 
         void onInsertWithLiteralName(String name, String value) throws QpackException;
-    }
-
-    public static class DecoderAdapter implements Handler
-    {
-        private final QpackDecoder _decoder;
-
-        public DecoderAdapter(QpackDecoder decoder)
-        {
-            _decoder = decoder;
-        }
-
-        @Override
-        public void onSetDynamicTableCapacity(int capacity)
-        {
-            _decoder.setCapacity(capacity);
-        }
-
-        @Override
-        public void onDuplicate(int index) throws QpackException
-        {
-            _decoder.insert(index);
-        }
-
-        @Override
-        public void onInsertNameWithReference(int nameIndex, boolean isDynamicTableIndex, String value) throws QpackException
-        {
-            _decoder.insert(nameIndex, isDynamicTableIndex, value);
-        }
-
-        @Override
-        public void onInsertWithLiteralName(String name, String value) throws QpackException
-        {
-            _decoder.insert(name, value);
-        }
-    }
-
-    public DecoderInstructionParser(QpackDecoder decoder)
-    {
-        this(new DecoderAdapter(decoder));
     }
 
     public DecoderInstructionParser(Handler handler)

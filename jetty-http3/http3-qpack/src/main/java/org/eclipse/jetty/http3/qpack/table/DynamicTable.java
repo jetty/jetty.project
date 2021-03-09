@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http3.qpack.table;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -20,10 +21,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http3.qpack.QpackContext;
 import org.eclipse.jetty.http3.qpack.QpackException;
+import org.eclipse.jetty.util.component.Dumpable;
 
-public class DynamicTable implements Iterable<Entry>
+public class DynamicTable implements Iterable<Entry>, Dumpable
 {
     private final Map<HttpField, Entry> _fieldMap = new HashMap<>();
     private final Map<String, Entry> _nameMap = new HashMap<>();
@@ -34,9 +35,38 @@ public class DynamicTable implements Iterable<Entry>
     private int _absoluteIndex;
     private int _drainingIndex;
 
+    /**
+     * Add an entry into the Dynamic Table. This will throw if it is not possible to insert this entry.
+     * Use {@link #canInsert(HttpField)} to check whether it is possible to insert this entry.
+     * @param entry the entry to insert.
+     */
     public void add(Entry entry)
     {
+        // Evict entries until there is space for the new entry.
+        Iterator<Entry> iterator = _entries.iterator();
         int entrySize = entry.getSize();
+        while (getSpace() < entrySize)
+        {
+            if (!iterator.hasNext())
+                throw new IllegalStateException("not enough space in dynamic table to add entry");
+
+            Entry e = iterator.next();
+            if (e.getReferenceCount() != 0)
+                throw new IllegalStateException("cannot evict entry that is still referenced");
+
+            // Evict the entry from the DynamicTable.
+            _size -= e.getSize();
+            iterator.remove();
+
+            HttpField httpField = e.getHttpField();
+            if (e == _fieldMap.get(httpField))
+                _fieldMap.remove(httpField);
+
+            String name = httpField.getLowerCaseName();
+            if (e == _nameMap.get(name))
+                _nameMap.remove(name);
+        }
+
         if (entrySize + _size > _capacity)
             throw new IllegalStateException("No available space");
         _size += entrySize;
@@ -51,16 +81,73 @@ public class DynamicTable implements Iterable<Entry>
         _drainingIndex = getDrainingIndex();
     }
 
-    public int index(Entry entry)
+    /**
+     * Is there enough room to insert a new entry into the Dynamic Table, possibly evicting unreferenced entries.
+     * @param field the HttpField to insert into the table.
+     * @return if an entry with this HttpField can be inserted.
+     */
+    public boolean canInsert(HttpField field)
     {
-        return _entries.indexOf(entry);
+        int availableSpace = getSpace();
+        int requiredSpace = Entry.getSize(field);
+
+        if (availableSpace >= requiredSpace)
+            return true;
+
+        if (requiredSpace > _capacity)
+            return false;
+
+        // Could we potentially evict enough space to insert this new field.
+        for (Entry entry : _entries)
+        {
+            if (entry.getReferenceCount() != 0)
+                return false;
+
+            availableSpace += entry.getSize();
+            if (availableSpace >= requiredSpace)
+                return true;
+        }
+
+        return false;
     }
 
+    /**
+     * Get the relative index of an entry in the Dynamic Table.
+     * @param entry the entry to find the relative index of.
+     * @return the relative index of this entry.
+     */
+    public int index(Entry entry)
+    {
+        if (_entries.isEmpty())
+            throw new IllegalArgumentException("Invalid Index");
+
+        Entry firstEntry = _entries.get(0);
+        int index = entry.getIndex() - firstEntry.getIndex();
+        if (index >= _entries.size())
+            throw new IllegalArgumentException("Invalid Index");
+
+        return index;
+    }
+
+    /**
+     * Get an entry from the Dynamic table given an absolute index.
+     * @param absoluteIndex the absolute index of the entry in the table.
+     * @return the entry with the absolute index.
+     */
     public Entry getAbsolute(int absoluteIndex) throws QpackException
     {
         if (absoluteIndex < 0)
             throw new QpackException.CompressionException("Invalid Index");
-        return _entries.stream().filter(e -> e.getIndex() == absoluteIndex).findFirst().orElse(null);
+
+        if (_entries.isEmpty())
+            throw new IllegalArgumentException("Invalid Index");
+
+        Entry firstEntry = _entries.get(0);
+        int index = absoluteIndex - firstEntry.getIndex();
+        if (index >= _entries.size())
+            throw new IllegalArgumentException("Invalid Index");
+
+        return _entries.get(index);
     }
 
     public Entry get(int index)
@@ -112,31 +199,21 @@ public class DynamicTable implements Iterable<Entry>
 
     public void setCapacity(int capacity)
     {
-        if (QpackContext.LOG.isDebugEnabled())
-            QpackContext.LOG.debug(String.format("HdrTbl[%x] resized max=%d->%d", hashCode(), _capacity, capacity));
         _capacity = capacity;
-    }
 
-    public boolean canReference(Entry entry)
-    {
-        return entry.getIndex() >= _drainingIndex;
-    }
-
-    public void evict()
-    {
-        for (Entry entry : _entries)
+        Iterator<Entry> iterator = _entries.iterator();
+        while (_size > _capacity)
         {
-            if (entry.getIndex() >= _drainingIndex)
-                return;
+            if (!iterator.hasNext())
+                throw new IllegalStateException();
 
-            // We can only evict if there are no references outstanding to this entry.
+            Entry entry = iterator.next();
             if (entry.getReferenceCount() != 0)
                 return;
 
             // Evict the entry from the DynamicTable.
             _size -= entry.getSize();
-            if (entry != _entries.remove(0))
-                throw new IllegalStateException("Corruption in DynamicTable");
+            iterator.remove();
 
             HttpField httpField = entry.getHttpField();
             if (entry == _fieldMap.get(httpField))
@@ -146,6 +223,11 @@ public class DynamicTable implements Iterable<Entry>
             if (entry == _nameMap.get(name))
                 _nameMap.remove(name);
         }
+    }
+
+    public boolean canReference(Entry entry)
+    {
+        return entry.getIndex() >= _drainingIndex;
     }
 
     /**
@@ -181,6 +263,12 @@ public class DynamicTable implements Iterable<Entry>
     public Iterator<Entry> iterator()
     {
         return _entries.iterator();
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        Dumpable.dumpObjects(out, indent, _entries);
     }
 
     @Override

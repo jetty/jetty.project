@@ -23,6 +23,12 @@ public class TestDecoderHandler implements QpackDecoder.Handler
 {
     private final Queue<HttpFields> _httpFieldsList = new LinkedList<>();
     private final Queue<Instruction> _instructionList = new LinkedList<>();
+    private QpackEncoder _encoder;
+
+    public void setEncoder(QpackEncoder encoder)
+    {
+        _encoder = encoder;
+    }
 
     @Override
     public void onHttpFields(int streamId, HttpFields httpFields)
@@ -31,9 +37,11 @@ public class TestDecoderHandler implements QpackDecoder.Handler
     }
 
     @Override
-    public void onInstruction(Instruction instruction)
+    public void onInstruction(Instruction instruction) throws QpackException
     {
         _instructionList.add(instruction);
+        if (_encoder != null)
+            _encoder.parseInstruction(QpackTestUtil.toBuffer(instruction));
     }
 
     public HttpFields getHttpFields()

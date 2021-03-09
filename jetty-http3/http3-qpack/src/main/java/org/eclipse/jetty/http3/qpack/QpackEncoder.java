@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http3.qpack;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -32,15 +33,17 @@ import org.eclipse.jetty.http3.qpack.generator.IndexedNameEntryInstruction;
 import org.eclipse.jetty.http3.qpack.generator.Instruction;
 import org.eclipse.jetty.http3.qpack.generator.LiteralNameEntryInstruction;
 import org.eclipse.jetty.http3.qpack.generator.SetCapacityInstruction;
+import org.eclipse.jetty.http3.qpack.parser.EncoderInstructionParser;
 import org.eclipse.jetty.http3.qpack.table.DynamicTable;
 import org.eclipse.jetty.http3.qpack.table.Entry;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.NullByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class QpackEncoder
+public class QpackEncoder implements Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(QpackEncoder.class);
     private static final HttpField[] STATUSES = new HttpField[599];
@@ -96,17 +99,17 @@ public class QpackEncoder
 
     public interface Handler
     {
-        void onInstruction(Instruction instruction);
+        void onInstruction(Instruction instruction) throws QpackException;
     }
 
     private final ByteBufferPool _bufferPool;
     private final Handler _handler;
     private final QpackContext _context;
     private final int _maxBlockedStreams;
-    private int _knownInsertCount;
-
-    private int _blockedStreams = 0;
     private final Map<Integer, StreamInfo> _streamInfoMap = new HashMap<>();
+    private final EncoderInstructionParser _parser;
+    private int _knownInsertCount;
+    private int _blockedStreams = 0;
 
     public QpackEncoder(Handler handler, int maxBlockedStreams)
     {
@@ -120,6 +123,7 @@ public class QpackEncoder
         _context = new QpackContext();
         _maxBlockedStreams = maxBlockedStreams;
         _knownInsertCount = 0;
+        _parser = new EncoderInstructionParser(new EncoderAdapter());
     }
 
     public QpackContext getQpackContext()
@@ -127,7 +131,12 @@ public class QpackEncoder
         return _context;
     }
 
-    public void setCapacity(int capacity)
+    /**
+     * Set the capacity of the DynamicTable and send a instruction to set the capacity on the remote Decoder.
+     * @param capacity the new capacity.
+     * @throws QpackException
+     */
+    public void setCapacity(int capacity) throws QpackException
     {
         synchronized (this)
         {
@@ -136,26 +145,23 @@ public class QpackEncoder
         }
     }
 
-    public void insertCountIncrement(int increment) throws QpackException
+    public void parseInstruction(ByteBuffer buffer) throws QpackException
+    {
+        _parser.parse(buffer);
+    }
+
+    void insertCountIncrement(int increment) throws QpackException
     {
         synchronized (this)
         {
             int insertCount = _context.getDynamicTable().getInsertCount();
             if (_knownInsertCount + increment > insertCount)
                 throw new QpackException.StreamException("KnownInsertCount incremented over InsertCount");
-
-            // TODO: release any references to entries which used to insert new entries.
-            for (Entry entry : _context.getDynamicTable())
-            {
-                if (entry.getIndex() > _knownInsertCount)
-                    break;
-            }
-
             _knownInsertCount += increment;
         }
     }
 
-    public void sectionAcknowledgement(int streamId) throws QpackException
+    void sectionAcknowledgement(int streamId) throws QpackException
     {
         synchronized (this)
         {
@@ -165,6 +171,7 @@ public class QpackEncoder
 
             // The KnownInsertCount should be updated to the earliest sent RequiredInsertCount on that stream.
             StreamInfo.SectionInfo sectionInfo = streamInfo.acknowledge();
+            sectionInfo.release();
             _knownInsertCount = Math.max(_knownInsertCount, sectionInfo.getRequiredInsertCount());
 
             // If we have no more outstanding section acknowledgments remove the StreamInfo.
@@ -173,17 +180,23 @@ public class QpackEncoder
         }
     }
 
-    public void streamCancellation(int streamId) throws QpackException
+    void streamCancellation(int streamId) throws QpackException
     {
         synchronized (this)
         {
             StreamInfo streamInfo = _streamInfoMap.remove(streamId);
             if (streamInfo == null)
                 throw new QpackException.StreamException("No StreamInfo for " + streamId);
+
+            // Release all referenced entries outstanding on the stream that was cancelled.
+            for (StreamInfo.SectionInfo sectionInfo : streamInfo)
+            {
+                sectionInfo.release();
+            }
         }
     }
 
-    private boolean referenceEntry(Entry entry)
+    private boolean referenceEntry(Entry entry, StreamInfo streamInfo)
     {
         if (entry == null)
             return false;
@@ -195,32 +208,28 @@ public class QpackEncoder
         if (inEvictionZone)
             return false;
 
+        StreamInfo.SectionInfo sectionInfo = streamInfo.getCurrentSectionInfo();
+
         // If they have already acknowledged this entry we can reference it straight away.
         if (_knownInsertCount >= entry.getIndex() + 1)
         {
-            entry.reference();
+            sectionInfo.reference(entry);
             return true;
         }
-
-        return false;
-    }
-
-    private boolean referenceEntry(Entry entry, StreamInfo streamInfo)
-    {
-        if (referenceEntry(entry))
-            return true;
 
         // We may need to risk blocking the stream in order to reference it.
         if (streamInfo.isBlocked())
         {
-            streamInfo.getCurrentSectionInfo().block();
+            sectionInfo.block();
+            sectionInfo.reference(entry);
             return true;
         }
 
         if (_blockedStreams < _maxBlockedStreams)
         {
             _blockedStreams++;
-            streamInfo.getCurrentSectionInfo().block();
+            sectionInfo.block();
+            sectionInfo.reference(entry);
             return true;
         }
 
@@ -259,7 +268,6 @@ public class QpackEncoder
         synchronized (this)
         {
             DynamicTable dynamicTable = _context.getDynamicTable();
-            dynamicTable.evict();
 
             StreamInfo streamInfo = _streamInfoMap.get(streamId);
             if (streamInfo == null)
@@ -285,6 +293,7 @@ public class QpackEncoder
                 }
             }
 
+            sectionInfo.setRequiredInsertCount(requiredInsertCount);
             base = dynamicTable.getBase();
             encodedInsertCount = encodeInsertCount(requiredInsertCount, dynamicTable.getCapacity());
             signBit = base < requiredInsertCount;
@@ -310,7 +319,7 @@ public class QpackEncoder
         return buffer;
     }
 
-    private EncodableEntry encode(StreamInfo streamInfo, HttpField field)
+    private EncodableEntry encode(StreamInfo streamInfo, HttpField field) throws QpackException
     {
         DynamicTable dynamicTable = _context.getDynamicTable();
 
@@ -322,21 +331,22 @@ public class QpackEncoder
         if (field instanceof PreEncodedHttpField)
             return EncodableEntry.getPreEncodedEntry((PreEncodedHttpField)field);
 
-        boolean canCreateEntry = shouldIndex(field) && (Entry.getSize(field) <= dynamicTable.getSpace());
+        boolean canCreateEntry = shouldIndex(field) && dynamicTable.canInsert(field);
 
         Entry entry = _context.get(field);
-        if (entry != null && referenceEntry(entry, streamInfo))
+        if (referenceEntry(entry, streamInfo))
         {
             return EncodableEntry.getReferencedEntry(entry);
         }
         else
         {
             // Should we duplicate this entry.
-            if (entry != null && dynamicTable.canReference(entry) && canCreateEntry)
+            if (entry != null && canCreateEntry)
             {
+                int index = _context.indexOf(entry);
                 Entry newEntry = new Entry(field);
                 dynamicTable.add(newEntry);
-                _handler.onInstruction(new DuplicateInstruction(entry.getIndex()));
+                _handler.onInstruction(new DuplicateInstruction(index));
 
                 // Should we reference this entry and risk blocking.
                 if (referenceEntry(newEntry, streamInfo))
@@ -346,14 +356,15 @@ public class QpackEncoder
 
         boolean huffman = shouldHuffmanEncode(field);
         Entry nameEntry = _context.get(field.getName());
-        if (nameEntry != null && referenceEntry(nameEntry, streamInfo))
+        if (referenceEntry(nameEntry, streamInfo))
         {
             // Should we copy this entry
             if (canCreateEntry)
             {
+                int index = _context.indexOf(nameEntry);
                 Entry newEntry = new Entry(field);
                 dynamicTable.add(newEntry);
-                _handler.onInstruction(new IndexedNameEntryInstruction(!nameEntry.isStatic(), nameEntry.getIndex(), huffman, field.getValue()));
+                _handler.onInstruction(new IndexedNameEntryInstruction(!nameEntry.isStatic(), index, huffman, field.getValue()));
 
                 // Should we reference this entry and risk blocking.
                 if (referenceEntry(newEntry, streamInfo))
@@ -379,38 +390,40 @@ public class QpackEncoder
         }
     }
 
-    public boolean insert(HttpField field)
+    public boolean insert(HttpField field) throws QpackException
     {
         synchronized (this)
         {
             DynamicTable dynamicTable = _context.getDynamicTable();
-            dynamicTable.evict();
 
             if (field.getValue() == null)
                 field = new HttpField(field.getHeader(), field.getName(), "");
 
-            boolean canCreateEntry = shouldIndex(field) && (Entry.getSize(field) <= dynamicTable.getSpace());
+            boolean canCreateEntry = shouldIndex(field) &&  dynamicTable.canInsert(field);
             if (!canCreateEntry)
                 return false;
 
-            Entry newEntry = new Entry(field);
-            dynamicTable.add(newEntry);
-
+            // We can always reference on insertion as it will always arrive before any eviction.
             Entry entry = _context.get(field);
-            if (referenceEntry(entry))
+            if (entry != null)
             {
-                _handler.onInstruction(new DuplicateInstruction(entry.getIndex()));
+                int index = _context.indexOf(entry);
+                dynamicTable.add(new Entry(field));
+                _handler.onInstruction(new DuplicateInstruction(index));
                 return true;
             }
 
             boolean huffman = shouldHuffmanEncode(field);
             Entry nameEntry = _context.get(field.getName());
-            if (referenceEntry(nameEntry))
+            if (nameEntry != null)
             {
-                _handler.onInstruction(new IndexedNameEntryInstruction(!nameEntry.isStatic(), nameEntry.getIndex(), huffman, field.getValue()));
+                int index = _context.indexOf(nameEntry);
+                dynamicTable.add(new Entry(field));
+                _handler.onInstruction(new IndexedNameEntryInstruction(!nameEntry.isStatic(), index, huffman, field.getValue()));
                 return true;
             }
 
+            dynamicTable.add(new Entry(field));
             _handler.onInstruction(new LiteralNameEntryInstruction(huffman, field.getName(), huffman, field.getValue()));
             return true;
         }
@@ -423,5 +436,35 @@ public class QpackEncoder
 
         int maxEntries = maxTableCapacity / 32;
         return (reqInsertCount % (2 * maxEntries)) + 1;
+    }
+
+    public class EncoderAdapter implements EncoderInstructionParser.Handler
+    {
+        @Override
+        public void onSectionAcknowledgement(int streamId) throws QpackException
+        {
+            sectionAcknowledgement(streamId);
+        }
+
+        @Override
+        public void onStreamCancellation(int streamId) throws QpackException
+        {
+            streamCancellation(streamId);
+        }
+
+        @Override
+        public void onInsertCountIncrement(int increment) throws QpackException
+        {
+            insertCountIncrement(increment);
+        }
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        synchronized (this)
+        {
+            Dumpable.dumpObjects(out, indent, _context.getDynamicTable());
+        }
     }
 }

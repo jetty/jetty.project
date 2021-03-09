@@ -75,4 +75,17 @@ public class QpackContext
 
         return _dynamicTable.get(index);
     }
+
+    /**
+     * Get the relative Index of an entry.
+     * @param entry the entry to get the index of.
+     * @return the relative index of the entry.
+     */
+    public int indexOf(Entry entry)
+    {
+        if (entry.isStatic())
+            return entry.getIndex();
+
+        return _dynamicTable.index(entry);
+    }
 }
