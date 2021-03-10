@@ -51,6 +51,7 @@
               <goal>shade</goal>
             </goals>
             <configuration>
+              <minimizeJar>true</minimizeJar>
               <shadedArtifactAttached>true</shadedArtifactAttached>
               <shadedClassifierName>hybrid</shadedClassifierName>
               <artifactSet>

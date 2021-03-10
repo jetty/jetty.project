@@ -38,6 +38,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -178,7 +179,7 @@ public class TypeUtil
     }
 
     private static final MethodHandle[] LOCATION_METHODS;
-    private static final ModuleLocation MODULE_LOCATION;
+    private static final Function<Class<?>, URI> MODULE_LOCATION;
 
     static
     {
@@ -190,17 +191,23 @@ public class TypeUtil
         try
         {
             locationMethods.add(lookup.findStatic(TypeUtil.class, "getCodeSourceLocation", type));
-            ModuleLocation moduleLocation = null;
+            Function<Class<?>, URI> moduleFunc = null;
             try
             {
-                moduleLocation = new ModuleLocation();
-                locationMethods.add(lookup.findStatic(TypeUtil.class, "getModuleLocation", type));
+                Class<?> clazzModuleLocation = Class.forName(TypeUtil.class.getPackage().getName() + ".ModuleLocation");
+                Object obj = clazzModuleLocation.getConstructor().newInstance();
+                if (obj instanceof Function)
+                {
+                    //noinspection unchecked
+                    moduleFunc = (Function<Class<?>, URI>)obj;
+                    locationMethods.add(lookup.findStatic(TypeUtil.class, "getModuleLocation", type));
+                }
             }
-            catch (UnsupportedOperationException e)
+            catch (Throwable t)
             {
-                LOG.debug("JVM Runtime does not support Modules");
+                LOG.debug("This JVM Runtime does not support Modules, disabling Jetty internal support");
             }
-            MODULE_LOCATION = moduleLocation;
+            MODULE_LOCATION = moduleFunc;
             locationMethods.add(lookup.findStatic(TypeUtil.class, "getClassLoaderLocation", type));
             locationMethods.add(lookup.findStatic(TypeUtil.class, "getSystemClassLoaderLocation", type));
             LOCATION_METHODS = locationMethods.toArray(new MethodHandle[0]);
@@ -723,7 +730,7 @@ public class TypeUtil
         // In Jetty 10, this method can be implemented directly, without reflection
         if (MODULE_LOCATION != null)
         {
-            return MODULE_LOCATION.getModuleLocation(clazz);
+            return MODULE_LOCATION.apply(clazz);
         }
         return null;
     }
