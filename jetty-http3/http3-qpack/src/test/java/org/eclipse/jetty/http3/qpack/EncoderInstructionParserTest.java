@@ -14,8 +14,6 @@
 package org.eclipse.jetty.http3.qpack;
 
 import java.nio.ByteBuffer;
-import java.util.LinkedList;
-import java.util.Queue;
 
 import org.eclipse.jetty.http3.qpack.internal.parser.EncoderInstructionParser;
 import org.eclipse.jetty.util.BufferUtil;
@@ -29,40 +27,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class EncoderInstructionParserTest
 {
-    public static class DebugHandler implements EncoderInstructionParser.Handler
-    {
-        public Queue<Integer> sectionAcknowledgements = new LinkedList<>();
-        public Queue<Integer> streamCancellations = new LinkedList<>();
-        public Queue<Integer> insertCountIncrements = new LinkedList<>();
-
-        @Override
-        public void onSectionAcknowledgement(int streamId)
-        {
-            sectionAcknowledgements.add(streamId);
-        }
-
-        @Override
-        public void onStreamCancellation(int streamId)
-        {
-            streamCancellations.add(streamId);
-        }
-
-        @Override
-        public void onInsertCountIncrement(int increment)
-        {
-            insertCountIncrements.add(increment);
-        }
-
-        public boolean isEmpty()
-        {
-            return sectionAcknowledgements.isEmpty() && streamCancellations.isEmpty() && insertCountIncrements.isEmpty();
-        }
-    }
 
     @Test
     public void testSectionAcknowledgement() throws Exception
     {
-        DebugHandler debugHandler = new DebugHandler();
+        EncoderParserDebugHandler debugHandler = new EncoderParserDebugHandler();
         EncoderInstructionParser incomingEncoderStream = new EncoderInstructionParser(debugHandler);
 
         // Example from the spec, section acknowledgement instruction with stream id 4.

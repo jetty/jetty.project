@@ -61,6 +61,9 @@ public class EncodeDecodeTest
             }
         };
         _decoder = new QpackDecoder(_decoderHandler, MAX_HEADER_SIZE);
+
+        _encoderInstructionParser = new EncoderInstructionParser(new EncoderParserDebugHandler(_encoder));
+        _decoderInstructionParser = new DecoderInstructionParser(new DecoderParserDebugHandler(_decoder));
     }
 
     @Test
