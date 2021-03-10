@@ -198,7 +198,7 @@ public abstract class CompressExtension extends AbstractExtension
             while (true)
             {
                 ByteBuffer buffer = accumulator.ensureBuffer(DECOMPRESS_BUF_SIZE);
-                int read = inflater.inflate(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.capacity() - buffer.limit());
+                int read = inflater.inflate(buffer.array(), buffer.arrayOffset() + buffer.limit(), buffer.capacity() - buffer.limit());
                 buffer.limit(buffer.limit() + read);
                 accumulator.addLength(read);
                 if (LOG.isDebugEnabled())
@@ -496,7 +496,7 @@ public abstract class CompressExtension extends AbstractExtension
                     while (true)
                     {
                         ByteBuffer buffer = accumulator.ensureBuffer(8, outputLength);
-                        int compressed = deflater.deflate(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.capacity() - buffer.limit(), Deflater.SYNC_FLUSH);
+                        int compressed = deflater.deflate(buffer.array(), buffer.arrayOffset() + buffer.limit(), buffer.capacity() - buffer.limit(), Deflater.SYNC_FLUSH);
                         buffer.limit(buffer.limit() + compressed);
 
                         if (LOG.isDebugEnabled())
