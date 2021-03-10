@@ -91,3 +91,7 @@ etc/jetty.xml
 # jetty.scheduler.name=
 # jetty.scheduler.deamon=false
 # jetty.scheduler.threads=-1
+
+# Whether to use direct ByteBuffers for reading or writing
+jetty.httpConfig.useInputDirectByteBuffers=true
+jetty.httpConfig.useOutputDirectByteBuffers=true
