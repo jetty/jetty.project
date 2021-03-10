@@ -11,13 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack;
+package org.eclipse.jetty.http3.qpack.internal.util;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.Utf8StringBuilder;
-
-public class Huffman
+public class HuffmanEncoder
 {
 
     // Appendix C: Huffman Codes
@@ -346,77 +344,6 @@ public class Huffman
                 tree[i] = (char)terminal;
             }
         }
-    }
-
-    public static String decode(ByteBuffer buffer) throws QpackException.CompressionException
-    {
-        return decode(buffer, buffer.remaining());
-    }
-
-    public static String decode(ByteBuffer buffer, int length) throws QpackException.CompressionException
-    {
-        Utf8StringBuilder utf8 = new Utf8StringBuilder(length * 2);
-        int node = 0;
-        int current = 0;
-        int bits = 0;
-
-        for (int i = 0; i < length; i++)
-        {
-            int b = buffer.get() & 0xFF;
-            current = (current << 8) | b;
-            bits += 8;
-            while (bits >= 8)
-            {
-                int c = (current >>> (bits - 8)) & 0xFF;
-                node = tree[node * 256 + c];
-                if (rowbits[node] != 0)
-                {
-                    if (rowsym[node] == EOS)
-                        throw new QpackException.CompressionException("EOS in content");
-
-                    // terminal node
-                    utf8.append((byte)(0xFF & rowsym[node]));
-                    bits -= rowbits[node];
-                    node = 0;
-                }
-                else
-                {
-                    // non-terminal node
-                    bits -= 8;
-                }
-            }
-        }
-
-        while (bits > 0)
-        {
-            int c = (current << (8 - bits)) & 0xFF;
-            int lastNode = node;
-            node = tree[node * 256 + c];
-
-            if (rowbits[node] == 0 || rowbits[node] > bits)
-            {
-                int requiredPadding = 0;
-                for (int i = 0; i < bits; i++)
-                {
-                    requiredPadding = (requiredPadding << 1) | 1;
-                }
-
-                if ((c >> (8 - bits)) != requiredPadding)
-                    throw new QpackException.CompressionException("Incorrect padding");
-
-                node = lastNode;
-                break;
-            }
-
-            utf8.append((byte)(0xFF & rowsym[node]));
-            bits -= rowbits[node];
-            node = 0;
-        }
-
-        if (node != 0)
-            throw new QpackException.CompressionException("Bad termination");
-
-        return utf8.toString();
     }
 
     public static int octetsNeeded(String s)

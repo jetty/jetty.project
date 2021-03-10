@@ -21,15 +21,15 @@ import java.util.List;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http3.qpack.generator.InsertCountIncrementInstruction;
-import org.eclipse.jetty.http3.qpack.generator.Instruction;
-import org.eclipse.jetty.http3.qpack.generator.SectionAcknowledgmentInstruction;
-import org.eclipse.jetty.http3.qpack.parser.DecoderInstructionParser;
-import org.eclipse.jetty.http3.qpack.parser.EncodedFieldSection;
-import org.eclipse.jetty.http3.qpack.parser.NBitIntegerParser;
-import org.eclipse.jetty.http3.qpack.table.DynamicTable;
-import org.eclipse.jetty.http3.qpack.table.Entry;
-import org.eclipse.jetty.http3.qpack.table.StaticTable;
+import org.eclipse.jetty.http3.qpack.internal.QpackContext;
+import org.eclipse.jetty.http3.qpack.internal.instruction.InsertCountIncrementInstruction;
+import org.eclipse.jetty.http3.qpack.internal.instruction.SectionAcknowledgmentInstruction;
+import org.eclipse.jetty.http3.qpack.internal.parser.DecoderInstructionParser;
+import org.eclipse.jetty.http3.qpack.internal.parser.EncodedFieldSection;
+import org.eclipse.jetty.http3.qpack.internal.table.DynamicTable;
+import org.eclipse.jetty.http3.qpack.internal.table.Entry;
+import org.eclipse.jetty.http3.qpack.internal.table.StaticTable;
+import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerParser;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +46,6 @@ public class QpackDecoder implements Dumpable
 
     private final Handler _handler;
     private final QpackContext _context;
-    private final MetaDataBuilder _builder;
     private final DecoderInstructionParser _parser;
 
     private final List<EncodedFieldSection> _encodedFieldSections = new ArrayList<>();
@@ -58,12 +57,11 @@ public class QpackDecoder implements Dumpable
     public QpackDecoder(Handler handler, int maxHeaderSize)
     {
         _context = new QpackContext();
-        _builder = new MetaDataBuilder(maxHeaderSize);
         _handler = handler;
         _parser = new DecoderInstructionParser(new DecoderAdapter());
     }
 
-    public QpackContext getQpackContext()
+    QpackContext getQpackContext()
     {
         return _context;
     }
@@ -83,8 +81,8 @@ public class QpackDecoder implements Dumpable
                 LOG.debug(String.format("CtxTbl[%x] decoding %d octets", _context.hashCode(), buffer.remaining()));
 
             // If the buffer is big, don't even think about decoding it
-            if (buffer.remaining() > _builder.getMaxSize())
-                throw new QpackException.SessionException("431 Request Header Fields too large");
+            // if (buffer.remaining() > _builder.getMaxSize())
+                //throw new QpackException.SessionException("431 Request Header Fields too large");
 
             _integerDecoder.setPrefix(8);
             int encodedInsertCount = _integerDecoder.decode(buffer);
@@ -235,6 +233,9 @@ public class QpackDecoder implements Dumpable
         return String.format("QpackDecoder@%x{%s}", hashCode(), _context);
     }
 
+    /**
+     * This delivers notifications from the DecoderInstruction parser directly into the Decoder.
+     */
     class DecoderAdapter implements DecoderInstructionParser.Handler
     {
         @Override

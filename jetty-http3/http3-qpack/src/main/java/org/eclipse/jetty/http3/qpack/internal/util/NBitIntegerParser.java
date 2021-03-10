@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack.parser;
+package org.eclipse.jetty.http3.qpack.internal.util;
 
 import java.nio.ByteBuffer;
 

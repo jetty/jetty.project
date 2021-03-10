@@ -17,7 +17,6 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http3.qpack.generator.Instruction;
 
 public class TestDecoderHandler implements QpackDecoder.Handler
 {

@@ -11,11 +11,10 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack.parser;
+package org.eclipse.jetty.http3.qpack.internal.util;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http3.qpack.HuffmanDecoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
 
 public class NBitStringParser
@@ -69,10 +68,11 @@ public class NBitStringParser
                     if (_length < 0)
                         return null;
                     _state = State.VALUE;
+                    _huffmanBuilder.setLength(_length);
                     continue;
 
                 case VALUE:
-                    String value = _huffman ? _huffmanBuilder.decode(buffer, _length) : asciiStringDecode(buffer);
+                    String value = _huffman ? _huffmanBuilder.decode(buffer) : asciiStringDecode(buffer);
                     if (value != null)
                         reset();
                     return value;

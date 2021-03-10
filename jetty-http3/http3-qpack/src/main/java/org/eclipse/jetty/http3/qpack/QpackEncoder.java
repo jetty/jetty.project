@@ -28,14 +28,17 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.http3.qpack.generator.DuplicateInstruction;
-import org.eclipse.jetty.http3.qpack.generator.IndexedNameEntryInstruction;
-import org.eclipse.jetty.http3.qpack.generator.Instruction;
-import org.eclipse.jetty.http3.qpack.generator.LiteralNameEntryInstruction;
-import org.eclipse.jetty.http3.qpack.generator.SetCapacityInstruction;
-import org.eclipse.jetty.http3.qpack.parser.EncoderInstructionParser;
-import org.eclipse.jetty.http3.qpack.table.DynamicTable;
-import org.eclipse.jetty.http3.qpack.table.Entry;
+import org.eclipse.jetty.http3.qpack.internal.EncodableEntry;
+import org.eclipse.jetty.http3.qpack.internal.QpackContext;
+import org.eclipse.jetty.http3.qpack.internal.StreamInfo;
+import org.eclipse.jetty.http3.qpack.internal.instruction.DuplicateInstruction;
+import org.eclipse.jetty.http3.qpack.internal.instruction.IndexedNameEntryInstruction;
+import org.eclipse.jetty.http3.qpack.internal.instruction.LiteralNameEntryInstruction;
+import org.eclipse.jetty.http3.qpack.internal.instruction.SetCapacityInstruction;
+import org.eclipse.jetty.http3.qpack.internal.parser.EncoderInstructionParser;
+import org.eclipse.jetty.http3.qpack.internal.table.DynamicTable;
+import org.eclipse.jetty.http3.qpack.internal.table.Entry;
+import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.NullByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -126,7 +129,7 @@ public class QpackEncoder implements Dumpable
         _parser = new EncoderInstructionParser(new EncoderAdapter());
     }
 
-    public QpackContext getQpackContext()
+    QpackContext getQpackContext()
     {
         return _context;
     }
@@ -302,8 +305,8 @@ public class QpackEncoder implements Dumpable
 
         // Calculate the size required. TODO: it may be more efficient to just use a buffer of MAX_HEADER_SIZE?
         int spaceRequired = 0;
-        spaceRequired += 1 + NBitInteger.octectsNeeded(8, encodedInsertCount);
-        spaceRequired += 1 + NBitInteger.octectsNeeded(7, deltaBase);
+        spaceRequired += 1 + NBitIntegerEncoder.octectsNeeded(8, encodedInsertCount);
+        spaceRequired += 1 + NBitIntegerEncoder.octectsNeeded(7, deltaBase);
         for (EncodableEntry encodableEntry : encodableEntries)
         {
             spaceRequired += encodableEntry.getRequiredSize(base);
@@ -313,9 +316,9 @@ public class QpackEncoder implements Dumpable
         int pos = BufferUtil.flipToFill(buffer);
 
         // Encode the Field Section Prefix into the ByteBuffer.
-        NBitInteger.encode(buffer, 8, encodedInsertCount);
+        NBitIntegerEncoder.encode(buffer, 8, encodedInsertCount);
         buffer.put(signBit ? (byte)0x80 : (byte)0x00);
-        NBitInteger.encode(buffer, 7, deltaBase);
+        NBitIntegerEncoder.encode(buffer, 7, deltaBase);
 
         // Encode the field lines into the ByteBuffer.
         for (EncodableEntry entry : encodableEntries)

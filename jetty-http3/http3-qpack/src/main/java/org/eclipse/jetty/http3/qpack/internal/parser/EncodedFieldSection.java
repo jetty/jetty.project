@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack.parser;
+package org.eclipse.jetty.http3.qpack.internal.parser;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -19,8 +19,10 @@ import java.util.List;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http3.qpack.QpackContext;
 import org.eclipse.jetty.http3.qpack.QpackException;
+import org.eclipse.jetty.http3.qpack.internal.QpackContext;
+import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerParser;
+import org.eclipse.jetty.http3.qpack.internal.util.NBitStringParser;
 
 public class EncodedFieldSection
 {

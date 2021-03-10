@@ -18,6 +18,8 @@ import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.http3.qpack.internal.util.HuffmanDecoder;
+import org.eclipse.jetty.http3.qpack.internal.util.HuffmanEncoder;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.hamcrest.Matchers;
@@ -51,7 +53,9 @@ public class HuffmanTest
     public void testDecode(String specSection, String hex, String expected) throws Exception
     {
         byte[] encoded = TypeUtil.fromHexString(hex);
-        String decoded = Huffman.decode(ByteBuffer.wrap(encoded));
+        HuffmanDecoder huffmanDecoder = new HuffmanDecoder();
+        huffmanDecoder.setLength(encoded.length);
+        String decoded = huffmanDecoder.decode(ByteBuffer.wrap(encoded));
         assertEquals(expected, decoded, specSection);
     }
 
@@ -61,11 +65,11 @@ public class HuffmanTest
     {
         ByteBuffer buf = BufferUtil.allocate(1024);
         int pos = BufferUtil.flipToFill(buf);
-        Huffman.encode(buf, expected);
+        HuffmanEncoder.encode(buf, expected);
         BufferUtil.flipToFlush(buf, pos);
         String encoded = TypeUtil.toHexString(BufferUtil.toArray(buf)).toLowerCase(Locale.ENGLISH);
         assertEquals(hex, encoded, specSection);
-        assertEquals(hex.length() / 2, Huffman.octetsNeeded(expected));
+        assertEquals(hex.length() / 2, HuffmanEncoder.octetsNeeded(expected));
     }
 
     @ParameterizedTest(name = "[{index}]") // don't include unprintable character in test display-name
@@ -74,9 +78,9 @@ public class HuffmanTest
     {
         String s = "bad '" + bad + "'";
 
-        assertThat(Huffman.octetsNeeded(s), Matchers.is(-1));
+        assertThat(HuffmanEncoder.octetsNeeded(s), Matchers.is(-1));
 
         assertThrows(BufferOverflowException.class,
-            () -> Huffman.encode(BufferUtil.allocate(32), s));
+            () -> HuffmanEncoder.encode(BufferUtil.allocate(32), s));
     }
 }

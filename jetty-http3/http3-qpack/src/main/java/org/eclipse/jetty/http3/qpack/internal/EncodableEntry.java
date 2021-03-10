@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack;
+package org.eclipse.jetty.http3.qpack.internal;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -19,35 +19,37 @@ import java.util.Objects;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.http3.qpack.table.Entry;
+import org.eclipse.jetty.http3.qpack.internal.table.Entry;
+import org.eclipse.jetty.http3.qpack.internal.util.HuffmanEncoder;
+import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
 
-abstract class EncodableEntry
+public abstract class EncodableEntry
 {
-    static EncodableEntry getReferencedEntry(Entry entry)
+    public static EncodableEntry getReferencedEntry(Entry entry)
     {
         return new ReferencedEntry(entry);
     }
 
-    static EncodableEntry getNameReferencedEntry(Entry nameEntry, HttpField field, boolean huffman)
+    public static EncodableEntry getNameReferencedEntry(Entry nameEntry, HttpField field, boolean huffman)
     {
         return new ReferencedNameEntry(nameEntry, field, huffman);
     }
 
-    static EncodableEntry getLiteralEntry(HttpField field, boolean huffman)
+    public static EncodableEntry getLiteralEntry(HttpField field, boolean huffman)
     {
         return new LiteralEntry(field, huffman);
     }
 
-    static EncodableEntry getPreEncodedEntry(PreEncodedHttpField httpField)
+    public static EncodableEntry getPreEncodedEntry(PreEncodedHttpField httpField)
     {
         return new PreEncodedEntry(httpField);
     }
 
-    abstract void encode(ByteBuffer buffer, int base);
+    public abstract void encode(ByteBuffer buffer, int base);
 
-    abstract int getRequiredSize(int base);
+    public abstract int getRequiredSize(int base);
 
-    abstract int getRequiredInsertCount();
+    public abstract int getRequiredInsertCount();
 
     private static class ReferencedEntry extends EncodableEntry
     {
@@ -67,21 +69,21 @@ abstract class EncodableEntry
                 // Indexed Field Line with Static Reference.
                 buffer.put((byte)(0x80 | 0x40));
                 int relativeIndex = _entry.getIndex();
-                NBitInteger.encode(buffer, 6, relativeIndex);
+                NBitIntegerEncoder.encode(buffer, 6, relativeIndex);
             }
             else if (_entry.getIndex() < base)
             {
                 // Indexed Field Line with Dynamic Reference.
                 buffer.put((byte)0x80);
                 int relativeIndex = base - (_entry.getIndex() + 1);
-                NBitInteger.encode(buffer, 6, relativeIndex);
+                NBitIntegerEncoder.encode(buffer, 6, relativeIndex);
             }
             else
             {
                 // Indexed Field Line with Post-Base Index.
                 buffer.put((byte)0x10);
                 int relativeIndex =  _entry.getIndex() - base;
-                NBitInteger.encode(buffer, 4, relativeIndex);
+                NBitIntegerEncoder.encode(buffer, 4, relativeIndex);
             }
         }
 
@@ -93,19 +95,19 @@ abstract class EncodableEntry
             {
                 // Indexed Field Line with Static Reference.
                 int relativeIndex = _entry.getIndex();
-                return 1 + NBitInteger.octectsNeeded(6, relativeIndex);
+                return 1 + NBitIntegerEncoder.octectsNeeded(6, relativeIndex);
             }
             else if (_entry.getIndex() < base)
             {
                 // Indexed Field Line with Dynamic Reference.
                 int relativeIndex =  base - (_entry.getIndex() + 1);
-                return 1 + NBitInteger.octectsNeeded(6, relativeIndex);
+                return 1 + NBitIntegerEncoder.octectsNeeded(6, relativeIndex);
             }
             else
             {
                 // Indexed Field Line with Post-Base Index.
                 int relativeIndex = _entry.getIndex() - base;
-                return 1 + NBitInteger.octectsNeeded(4, relativeIndex);
+                return 1 + NBitIntegerEncoder.octectsNeeded(4, relativeIndex);
             }
         }
 
@@ -143,21 +145,21 @@ abstract class EncodableEntry
                 // Literal Field Line with Static Name Reference.
                 buffer.put((byte)(0x40 | allowIntermediary | 0x10));
                 int relativeIndex =  _nameEntry.getIndex();
-                NBitInteger.encode(buffer, 4, relativeIndex);
+                NBitIntegerEncoder.encode(buffer, 4, relativeIndex);
             }
             else if (_nameEntry.getIndex() < base)
             {
                 // Literal Field Line with Dynamic Name Reference.
                 buffer.put((byte)(0x40 | allowIntermediary));
                 int relativeIndex = base - (_nameEntry.getIndex() + 1);
-                NBitInteger.encode(buffer, 4, relativeIndex);
+                NBitIntegerEncoder.encode(buffer, 4, relativeIndex);
             }
             else
             {
                 // Literal Field Line with Post-Base Name Reference.
                 buffer.put(allowIntermediary);
                 int relativeIndex = _nameEntry.getIndex() - base;
-                NBitInteger.encode(buffer, 3, relativeIndex);
+                NBitIntegerEncoder.encode(buffer, 3, relativeIndex);
             }
 
             // Encode the value.
@@ -165,13 +167,13 @@ abstract class EncodableEntry
             if (_huffman)
             {
                 buffer.put((byte)0x80);
-                NBitInteger.encode(buffer, 7, Huffman.octetsNeeded(value));
-                Huffman.encode(buffer, value);
+                NBitIntegerEncoder.encode(buffer, 7, HuffmanEncoder.octetsNeeded(value));
+                HuffmanEncoder.encode(buffer, value);
             }
             else
             {
                 buffer.put((byte)0x00);
-                NBitInteger.encode(buffer, 7, value.length());
+                NBitIntegerEncoder.encode(buffer, 7, value.length());
                 buffer.put(value.getBytes());
             }
         }
@@ -181,8 +183,8 @@ abstract class EncodableEntry
         {
             String value = getValue();
             int relativeIndex =  _nameEntry.getIndex() - base;
-            int valueLength = _huffman ? Huffman.octetsNeeded(value) : value.length();
-            return 1 + NBitInteger.octectsNeeded(4, relativeIndex) + 1 + NBitInteger.octectsNeeded(7, valueLength) + valueLength;
+            int valueLength = _huffman ? HuffmanEncoder.octetsNeeded(value) : value.length();
+            return 1 + NBitIntegerEncoder.octectsNeeded(4, relativeIndex) + 1 + NBitIntegerEncoder.octectsNeeded(7, valueLength) + valueLength;
         }
 
         @Override
@@ -220,20 +222,20 @@ abstract class EncodableEntry
             if (_huffman)
             {
                 buffer.put((byte)(0x28 | allowIntermediary));
-                NBitInteger.encode(buffer, 3, Huffman.octetsNeeded(name));
-                Huffman.encode(buffer, name);
+                NBitIntegerEncoder.encode(buffer, 3, HuffmanEncoder.octetsNeeded(name));
+                HuffmanEncoder.encode(buffer, name);
                 buffer.put((byte)0x80);
-                NBitInteger.encode(buffer, 7, Huffman.octetsNeeded(value));
-                Huffman.encode(buffer, value);
+                NBitIntegerEncoder.encode(buffer, 7, HuffmanEncoder.octetsNeeded(value));
+                HuffmanEncoder.encode(buffer, value);
             }
             else
             {
                 // TODO: What charset should we be using? (this applies to the instruction generators as well).
                 buffer.put((byte)(0x20 | allowIntermediary));
-                NBitInteger.encode(buffer, 3, name.length());
+                NBitIntegerEncoder.encode(buffer, 3, name.length());
                 buffer.put(name.getBytes());
                 buffer.put((byte)0x00);
-                NBitInteger.encode(buffer, 7, value.length());
+                NBitIntegerEncoder.encode(buffer, 7, value.length());
                 buffer.put(value.getBytes());
             }
         }
@@ -243,9 +245,9 @@ abstract class EncodableEntry
         {
             String name = getName();
             String value = getValue();
-            int nameLength = _huffman ? Huffman.octetsNeeded(name) : name.length();
-            int valueLength = _huffman ? Huffman.octetsNeeded(value) : value.length();
-            return 2 + NBitInteger.octectsNeeded(3, nameLength) + nameLength + NBitInteger.octectsNeeded(7, valueLength) + valueLength;
+            int nameLength = _huffman ? HuffmanEncoder.octetsNeeded(name) : name.length();
+            int valueLength = _huffman ? HuffmanEncoder.octetsNeeded(value) : value.length();
+            return 2 + NBitIntegerEncoder.octectsNeeded(3, nameLength) + nameLength + NBitIntegerEncoder.octectsNeeded(7, valueLength) + valueLength;
         }
 
         @Override
@@ -267,6 +269,7 @@ abstract class EncodableEntry
         }
     }
 
+    // TODO: pass in the HTTP version to avoid hard coding HTTP3?
     private static class PreEncodedEntry extends EncodableEntry
     {
         private final PreEncodedHttpField _httpField;

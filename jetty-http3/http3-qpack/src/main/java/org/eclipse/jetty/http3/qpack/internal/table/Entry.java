@@ -11,11 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack.table;
+package org.eclipse.jetty.http3.qpack.internal.table;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http3.qpack.internal.util.HuffmanEncoder;
+import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
 import org.eclipse.jetty.util.StringUtil;
 
 public class Entry
@@ -88,7 +91,7 @@ public class Entry
     @Override
     public String toString()
     {
-        return String.format("%s@%x{index=%d, refs=%d, field=\"%s\"}", getClass().getSimpleName(),  hashCode(),
+        return String.format("%s@%x{index=%d, refs=%d, field=\"%s\"}", getClass().getSimpleName(), hashCode(),
             _absoluteIndex, _referenceCount.get(), _field);
     }
 
@@ -100,5 +103,54 @@ public class Entry
     public static int getSize(HttpField field)
     {
         return 32 + StringUtil.getLength(field.getName()) + StringUtil.getLength(field.getValue());
+    }
+
+    public static class StaticEntry extends Entry
+    {
+        private final byte[] _huffmanValue;
+        private final byte _encodedField;
+
+        StaticEntry(int index, HttpField field)
+        {
+            super(index, field);
+            String value = field.getValue();
+            if (value != null && value.length() > 0)
+            {
+                int huffmanLen = HuffmanEncoder.octetsNeeded(value);
+                if (huffmanLen < 0)
+                    throw new IllegalStateException("bad value");
+                int lenLen = NBitIntegerEncoder.octectsNeeded(7, huffmanLen);
+                _huffmanValue = new byte[1 + lenLen + huffmanLen];
+                ByteBuffer buffer = ByteBuffer.wrap(_huffmanValue);
+
+                // Indicate Huffman
+                buffer.put((byte)0x80);
+                // Add huffman length
+                NBitIntegerEncoder.encode(buffer, 7, huffmanLen);
+                // Encode value
+                HuffmanEncoder.encode(buffer, value);
+            }
+            else
+                _huffmanValue = null;
+
+            _encodedField = (byte)(0x80 | index);
+        }
+
+        @Override
+        public boolean isStatic()
+        {
+            return true;
+        }
+
+        @Override
+        public byte[] getStaticHuffmanValue()
+        {
+            return _huffmanValue;
+        }
+
+        public byte getEncodedField()
+        {
+            return _encodedField;
+        }
     }
 }

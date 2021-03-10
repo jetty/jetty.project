@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack;
+package org.eclipse.jetty.http3.qpack.internal.unused;
 
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
@@ -21,6 +21,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.http3.qpack.QpackException.SessionException;
 
 public class MetaDataBuilder

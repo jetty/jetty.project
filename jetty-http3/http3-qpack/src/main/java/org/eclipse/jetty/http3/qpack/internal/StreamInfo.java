@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack;
+package org.eclipse.jetty.http3.qpack.internal;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -19,9 +19,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
-import org.eclipse.jetty.http3.qpack.table.Entry;
+import org.eclipse.jetty.http3.qpack.internal.table.Entry;
 
-class StreamInfo implements Iterable<StreamInfo.SectionInfo>
+public class StreamInfo implements Iterable<StreamInfo.SectionInfo>
 {
     private final int _streamId;
     private final Queue<SectionInfo> _sectionInfos = new LinkedList<>();

@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.qpack;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http3.qpack.generator.Instruction;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.NullByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
