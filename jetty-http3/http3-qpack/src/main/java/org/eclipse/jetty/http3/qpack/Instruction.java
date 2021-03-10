@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack.generator;
+package org.eclipse.jetty.http3.qpack;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 

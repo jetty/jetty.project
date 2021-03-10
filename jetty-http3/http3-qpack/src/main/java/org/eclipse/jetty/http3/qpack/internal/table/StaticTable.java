@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack.table;
+package org.eclipse.jetty.http3.qpack.internal.table;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -24,7 +24,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.http3.qpack.StaticTableHttpField;
+import org.eclipse.jetty.http3.qpack.internal.unused.StaticTableHttpField;
 import org.eclipse.jetty.util.Index;
 
 public class StaticTable implements Iterable<Entry>
@@ -135,17 +135,17 @@ public class StaticTable implements Iterable<Entry>
     public static final int STATIC_SIZE = STATIC_TABLE.length - 1;
 
     private final Map<HttpField, Entry> _staticFieldMap = new HashMap<>();
-    private final Index<StaticEntry> _staticNameMap;
-    private final StaticEntry[] _staticTableByHeader = new StaticEntry[HttpHeader.values().length];
-    private final StaticEntry[] _staticTable = new StaticEntry[STATIC_TABLE.length];
+    private final Index<Entry.StaticEntry> _staticNameMap;
+    private final Entry.StaticEntry[] _staticTableByHeader = new Entry.StaticEntry[HttpHeader.values().length];
+    private final Entry.StaticEntry[] _staticTable = new Entry.StaticEntry[STATIC_TABLE.length];
 
     public StaticTable()
     {
-        Index.Builder<StaticEntry> staticNameMapBuilder = new Index.Builder<StaticEntry>().caseSensitive(false);
+        Index.Builder<Entry.StaticEntry> staticNameMapBuilder = new Index.Builder<Entry.StaticEntry>().caseSensitive(false);
         Set<String> added = new HashSet<>();
         for (int i = 0; i < STATIC_TABLE.length; i++)
         {
-            StaticEntry entry = null;
+            Entry.StaticEntry entry = null;
 
             String name = STATIC_TABLE[i][0];
             String value = STATIC_TABLE[i][1];
@@ -159,7 +159,7 @@ public class StaticTable implements Iterable<Entry>
 
                         HttpMethod method = HttpMethod.CACHE.get(value);
                         if (method != null)
-                            entry = new StaticEntry(i, new StaticTableHttpField(header, name, value, method));
+                            entry = new Entry.StaticEntry(i, new StaticTableHttpField(header, name, value, method));
                         break;
                     }
 
@@ -168,13 +168,13 @@ public class StaticTable implements Iterable<Entry>
 
                         HttpScheme scheme = HttpScheme.CACHE.get(value);
                         if (scheme != null)
-                            entry = new StaticEntry(i, new StaticTableHttpField(header, name, value, scheme));
+                            entry = new Entry.StaticEntry(i, new StaticTableHttpField(header, name, value, scheme));
                         break;
                     }
 
                     case C_STATUS:
                     {
-                        entry = new StaticEntry(i, new StaticTableHttpField(header, name, value, value));
+                        entry = new Entry.StaticEntry(i, new StaticTableHttpField(header, name, value, value));
                         break;
                     }
 
@@ -184,7 +184,7 @@ public class StaticTable implements Iterable<Entry>
             }
 
             if (entry == null)
-                entry = new StaticEntry(i, header == null ? new HttpField(STATIC_TABLE[i][0], value) : new HttpField(header, name, value));
+                entry = new Entry.StaticEntry(i, header == null ? new HttpField(STATIC_TABLE[i][0], value) : new HttpField(header, name, value));
 
             _staticTable[i] = entry;
 
@@ -201,7 +201,7 @@ public class StaticTable implements Iterable<Entry>
 
         for (HttpHeader h : HttpHeader.values())
         {
-            StaticEntry entry = _staticNameMap.get(h.asString());
+            Entry.StaticEntry entry = _staticNameMap.get(h.asString());
             if (entry != null)
                 _staticTableByHeader[h.ordinal()] = entry;
         }

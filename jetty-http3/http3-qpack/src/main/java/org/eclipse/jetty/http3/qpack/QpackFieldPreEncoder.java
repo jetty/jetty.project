@@ -19,8 +19,10 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFieldPreEncoder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http3.qpack.table.Entry;
-import org.eclipse.jetty.http3.qpack.table.StaticTable;
+import org.eclipse.jetty.http3.qpack.internal.EncodableEntry;
+import org.eclipse.jetty.http3.qpack.internal.QpackContext;
+import org.eclipse.jetty.http3.qpack.internal.table.Entry;
+import org.eclipse.jetty.http3.qpack.internal.table.StaticTable;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class QpackFieldPreEncoder implements HttpFieldPreEncoder

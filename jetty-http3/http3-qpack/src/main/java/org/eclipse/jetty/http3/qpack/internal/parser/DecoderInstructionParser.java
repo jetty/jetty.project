@@ -11,11 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack.parser;
+package org.eclipse.jetty.http3.qpack.internal.parser;
 
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.qpack.QpackException;
+import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerParser;
+import org.eclipse.jetty.http3.qpack.internal.util.NBitStringParser;
 
 /**
  * Parses a stream of unframed instructions for the Decoder. These instructions are sent from the remote Encoder.

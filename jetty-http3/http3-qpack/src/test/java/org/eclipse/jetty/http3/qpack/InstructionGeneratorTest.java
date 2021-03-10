@@ -13,9 +13,8 @@
 
 package org.eclipse.jetty.http3.qpack;
 
-import org.eclipse.jetty.http3.qpack.generator.IndexedNameEntryInstruction;
-import org.eclipse.jetty.http3.qpack.generator.Instruction;
-import org.eclipse.jetty.http3.qpack.generator.SectionAcknowledgmentInstruction;
+import org.eclipse.jetty.http3.qpack.internal.instruction.IndexedNameEntryInstruction;
+import org.eclipse.jetty.http3.qpack.internal.instruction.SectionAcknowledgmentInstruction;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;

@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack;
+package org.eclipse.jetty.http3.qpack.internal;
 
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http3.qpack.table.DynamicTable;
-import org.eclipse.jetty.http3.qpack.table.Entry;
-import org.eclipse.jetty.http3.qpack.table.StaticTable;
+import org.eclipse.jetty.http3.qpack.internal.table.DynamicTable;
+import org.eclipse.jetty.http3.qpack.internal.table.Entry;
+import org.eclipse.jetty.http3.qpack.internal.table.StaticTable;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

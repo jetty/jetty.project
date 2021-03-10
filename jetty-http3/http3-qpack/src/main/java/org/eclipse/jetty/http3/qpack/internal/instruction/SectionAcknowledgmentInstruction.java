@@ -11,35 +11,31 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack.generator;
+package org.eclipse.jetty.http3.qpack.internal.instruction;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http3.qpack.NBitInteger;
+import org.eclipse.jetty.http3.qpack.Instruction;
+import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
-public class DuplicateInstruction implements Instruction
+public class SectionAcknowledgmentInstruction implements Instruction
 {
-    private final int _index;
+    private final int _streamId;
 
-    public DuplicateInstruction(int index)
+    public SectionAcknowledgmentInstruction(int streamId)
     {
-        _index = index;
-    }
-
-    public int getIndex()
-    {
-        return _index;
+        _streamId = streamId;
     }
 
     @Override
     public void encode(ByteBufferPool.Lease lease)
     {
-        int size = NBitInteger.octectsNeeded(5, _index) + 1;
+        int size = NBitIntegerEncoder.octectsNeeded(7, _streamId) + 1;
         ByteBuffer buffer = lease.acquire(size, false);
-        buffer.put((byte)0x00);
-        NBitInteger.encode(buffer, 5, _index);
+        buffer.put((byte)0x80);
+        NBitIntegerEncoder.encode(buffer, 7, _streamId);
         BufferUtil.flipToFlush(buffer, 0);
         lease.append(buffer, true);
     }

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack.table;
+package org.eclipse.jetty.http3.qpack.internal.table;
 
 import java.io.IOException;
 import java.util.ArrayList;
