@@ -59,6 +59,7 @@ import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.RoleInfo;
@@ -84,6 +85,8 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -689,6 +692,36 @@ public class ServletContextHandlerTest
 
         root.getServletHandler().addListener(initialListener);
         _server.start();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/", ""})
+    public void testGetContextPathRoot(String inputContextPath) throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath(inputContextPath);
+        contextHandler.addServlet(new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                resp.setContentType("text/plain");
+                resp.setCharacterEncoding("utf-8");
+                resp.getWriter().printf("getContextPath()=[%s]", req.getContextPath());
+            }
+        }), "/dump");
+        _server.setHandler(contextHandler);
+        _server.start();
+
+        StringBuilder rawRequest = new StringBuilder();
+        rawRequest.append("GET /dump HTTP/1.1\r\n");
+        rawRequest.append("Host: local\r\n");
+        rawRequest.append("Connection: close\r\n");
+        rawRequest.append("\r\n");
+        String rawResponse = _connector.getResponse(rawRequest.toString());
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertEquals(200, response.getStatus(), "response status");
+        assertEquals("getContextPath()=[]", response.getContent(), "response content");
     }
 
     @Test
