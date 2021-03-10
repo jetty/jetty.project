@@ -36,7 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
  * Utility for scanning a directory for added, removed and changed
  * files and reporting these events via registered Listeners.
  */
-public class Scanner extends AbstractLifeCycle
+public class Scanner extends ContainerLifeCycle
 {
     /**
      * When walking a directory, a depth of 1 ensures that
@@ -69,7 +69,7 @@ public class Scanner extends AbstractLifeCycle
     private boolean _reportExisting = true;
     private boolean _reportDirs = true;
     private Scheduler.Task _task;
-    private Scheduler _scheduler;
+    private final Scheduler _scheduler;
     private int _scanDepth = DEFAULT_SCAN_DEPTH;
 
     private enum Status
@@ -279,9 +279,17 @@ public class Scanner extends AbstractLifeCycle
         {
         }
     }
-
+    
     public Scanner()
     {
+        this(new ScheduledExecutorScheduler("Scanner-" + SCANNER_IDS.getAndIncrement(), true, 1));
+    }
+    
+    public Scanner(Scheduler scheduler)
+    {
+        //Create the scheduler and start it
+        _scheduler = scheduler;
+        addBean(_scheduler);
     }
 
     /**
@@ -514,10 +522,7 @@ public class Scanner extends AbstractLifeCycle
             _prevScan = scanFiles();
         }
 
-
-        //Create the scheduler and start it
-        _scheduler = new ScheduledExecutorScheduler("Scanner-" + SCANNER_IDS.getAndIncrement(), true, 1);
-        _scheduler.start();
+        super.doStart();
 
         //schedule the scan
         schedule();
@@ -539,10 +544,6 @@ public class Scanner extends AbstractLifeCycle
         _task = null;
         if (task != null)
             task.cancel();
-        Scheduler scheduler = _scheduler;
-        _scheduler = null;
-        if (scheduler != null)
-            scheduler.stop();
     }
 
     /**

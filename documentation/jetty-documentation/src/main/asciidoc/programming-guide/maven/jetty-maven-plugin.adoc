@@ -55,7 +55,7 @@ We recommend either the traditional link:{DISTGUIDE}[distribution] deployment ap
 ====
 
 [[get-up-and-running]]
-==== Quick Start: Get Up and Running
+==== Get Up and Running
 
 First, add `jetty-maven-plugin` to your `pom.xml` definition:
 
@@ -77,10 +77,10 @@ mvn jetty:run
 This starts Jetty and serves up your project on http://localhost:8080/.
 
 Jetty will continue to run until you stop it.
-By default, it will not automatically restart your webapp: you can force a redeploy by hitting the `Enter` key.
-Set a non-zero &lt;scan&gt; value to have jetty scan your webapp for changes and automatically redeploy.
+By default, it will not automatically restart your webapp.
+Set a non-zero `<scan>` value to have jetty scan your webapp for changes and automatically redeploy, or set `<scan>` to `0` to cause manual redeployment by hitting the kbd:[Enter] key.
 
-You can terminate the plugin with a `ctrl-c` in the terminal window where it is running.
+You can terminate the plugin with a kbd:[Ctrl+c] in the terminal window where it is running.
 
 [NOTE]
 ====
@@ -300,7 +300,7 @@ For example, by default it looks for:
 * `web.xml` in `${project.basedir}/src/main/webapp/WEB-INF/`
 
 The plugin first runs a maven parallel build to ensure that the classes are built and up-to-date before deployment.
-If you change the source of a class and your IDE automatically compiles it in the background, the plugin picks up the changed class (note you need to configure a non-zero `scan` interval for automatic redeployment, otherwise redeployment only occurs if you hit the `Enter` key).
+If you change the source of a class and your IDE automatically compiles it in the background, the plugin picks up the changed class (note you need to configure a non-zero `scan` interval for automatic redeployment).
 
 If the plugin is invoked in a multi-module build, any dependencies that are also in the maven reactor are used from their compiled classes.
 Prior to jetty-9.4.7 any dependencies needed to be built first.
@@ -389,8 +389,9 @@ If true, the classes from `testClassesDirectory` and dependencies of scope "test
 By default this is false.
 scan::
 The pause in seconds between sweeps of the webapp to check for changes and automatically hot redeploy if any are detected.
-*By default this is 0, which disables hot deployment scanning. Redeployment is by hitting `Enter` key.*
-A number greater than 0 enables it.
+*By default this is `-1`, which disables hot redeployment scanning.*
+A value of `0` means no hot redeployment is done, and that you must use the kbd:[Enter] key to manually force a redeploy.
+Any positive integer will enable hot redeployment, using the number as the sweep interval in seconds.
 scanTargetPatterns::
 Optional.
 List of extra directories with glob-style include/excludes patterns (see http://docs.oracle.com/javase/8/docs/api/java/nio/file/FileSystem.html#getPathMatcher-java.lang.String-[javadoc] for http://docs.oracle.com/javase/8/docs/api/java/nio/file/FileSystem.html#getPathMatcher-java.lang.String-[FileSystem.getPathMatcher]) to specify other files to periodically scan for changes.
@@ -462,7 +463,6 @@ When invoked at the command line this goal first executes a maven build of your 
 By default it then deploys the resultant war to jetty, but you can use this goal instead to deploy _any_ war file by simply setting the `&lt;webApp&gt;&lt;war&gt;` configuration parameter to its location.
 
 If you set a non-zero `scan`, Jetty watches your `pom.xml` and the WAR file; if either changes, it redeploys the war.
-With a zero `scan` interval, redeployment is manual via hitting the `Enter` key.
 
 The maven build is held up until jetty exits, which is achieved by typing `cntrl-c` at the command line.
 
@@ -501,8 +501,9 @@ contextXml:::
 The path to a context xml file that is applied to your webapp AFTER the `webApp` element.
 scan::
 The pause in seconds between sweeps of the webapp to check for changes and automatically hot redeploy if any are detected.
-*By default this is 0, which disables hot deployment scanning. Redeployment is by hitting `Enter` key.*
-A number greater than 0 enables it.
+*By default this is `-1`, which disables hot redeployment scanning.*
+A value of `0` means no hot redeployment is done, and that you must use the kbd:[Enter] key to manually force a redeploy.
+Any positive integer will enable hot redeployment, using the number as the sweep interval in seconds.
 scanTargetPatterns::
 Optional.
 List of directories with ant-style include/excludes patterns to specify other files to periodically scan for changes.
@@ -531,7 +532,6 @@ Here's an example of using the `pre-integration-test` and `post-integration-test
   <artifactId>jetty-maven-plugin</artifactId>
   <version>{VERSION}</version>
   <configuration>
-    <scan>10</scan>
     <stopKey>foo</stopKey>
     <stopPort>9999</stopPort>
   </configuration>
@@ -542,9 +542,6 @@ Here's an example of using the `pre-integration-test` and `post-integration-test
       <goals>
         <goal>start</goal>
       </goals>
-      <configuration>
-        <scan>0</scan>
-      </configuration>
     </execution>
     <execution>
       <id>stop-jetty</id>

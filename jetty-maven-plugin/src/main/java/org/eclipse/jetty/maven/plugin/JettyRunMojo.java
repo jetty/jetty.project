@@ -29,7 +29,9 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.Scanner;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -52,14 +54,16 @@ import org.eclipse.jetty.webapp.WebAppContext;
 @Execute (phase = LifecyclePhase.TEST_COMPILE)
 public class JettyRunMojo extends AbstractUnassembledWebAppMojo
 {
-    //Start of parameters only valid for runType=inprocess  
+    //Start of parameters only valid for deploymentType=EMBED  
     /**
-     * The interval in seconds to pause before checking if changes
-     * have occurred and re-deploying as necessary. A value 
-     * of 0 indicates no re-deployment will be done. In that case, you
-     * can force redeployment by typing a linefeed character at the command line.
+     * Controls redeployment of the webapp.
+     * <ol>
+     * <li> -1 : means no redeployment will be done </li>
+     * <li>  0 : means redeployment only occurs if you hit the ENTER key </li>
+     * <li>  otherwise, the interval in seconds to pause before checking and redeploying if necessary </li>
+     * </ol>
      */
-    @Parameter(defaultValue = "0", property = "jetty.scan", required = true)
+    @Parameter(defaultValue = "-1", property = "jetty.scan", required = true)
     protected int scan;
 
     /**
@@ -138,6 +142,12 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
     private void startScanner()
         throws Exception
     {
+        if (scan < 0)
+        {
+            getLog().info("Redeployment not enabled");
+            return; //no automatic or manual redeployment
+        }
+        
         // start scanning for changes, or wait for linefeed on stdin
         if (scan > 0)
         {
@@ -145,8 +155,27 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
             scanner.setScanInterval(scan);
             scanner.setScanDepth(Scanner.MAX_SCAN_DEPTH); //always fully walk directory hierarchies
             scanner.setReportExistingFilesOnStartup(false);
+            scanner.addListener(new Scanner.BulkListener()
+            {   
+                public void filesChanged(Set<String> changes)
+                {
+                    try
+                    {
+                        restartWebApp(changes.contains(project.getFile().getCanonicalPath()));
+                    }
+                    catch (Exception e)
+                    {
+                        getLog().error("Error reconfiguring/restarting webapp after change in watched files", e);
+                    }
+                }
+            });
             configureScanner();
-            getLog().info("Scan interval ms = " + scan);
+            getLog().info("Scan interval sec = " + scan);
+            
+            //unmanage scheduler so it is not stopped with the scanner
+            Scheduler scheduler = scanner.getBean(Scheduler.class);
+            scanner.unmanage(scheduler);
+            LifeCycle.start(scheduler);
             scanner.start();
         }
         else
@@ -184,21 +213,6 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
         {
             throw new MojoExecutionException("Error forming scan list", e);
         }
-        scanner.addListener(new Scanner.BulkListener()
-        {
-            public void filesChanged(Set<String> changes)
-            {
-                try
-                {
-                    boolean reconfigure = changes.contains(project.getFile().getCanonicalPath());
-                    restartWebApp(reconfigure);
-                }
-                catch (Exception e)
-                {
-                    getLog().error("Error reconfiguring/restarting webapp after change in watched files", e);
-                }
-            }
-        });
     }
 
     public void gatherScannables() throws Exception
