@@ -197,14 +197,15 @@ public abstract class CompressExtension extends AbstractExtension
 
             while (true)
             {
+                // The buffer returned by the accumulator might not be empty, so we must append starting from the limit.
                 ByteBuffer buffer = accumulator.ensureBuffer(DECOMPRESS_BUF_SIZE);
-                int read = inflater.inflate(buffer.array(), buffer.arrayOffset() + buffer.limit(), buffer.capacity() - buffer.limit());
-                buffer.limit(buffer.limit() + read);
-                accumulator.addLength(read);
+                int written = inflater.inflate(buffer.array(), buffer.arrayOffset() + buffer.limit(), buffer.capacity() - buffer.limit());
+                buffer.limit(buffer.limit() + written);
+                accumulator.addLength(written);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Decompressed {} bytes into buffer {} from {}", read, BufferUtil.toDetailString(buffer), toDetail(inflater));
+                    LOG.debug("Decompressed {} bytes into buffer {} from {}", written, BufferUtil.toDetailString(buffer), toDetail(inflater));
 
-                if (read <= 0)
+                if (written <= 0)
                     break;
             }
         }
@@ -495,14 +496,15 @@ public abstract class CompressExtension extends AbstractExtension
                 {
                     while (true)
                     {
+                        // The buffer returned by the accumulator might not be empty, so we must append starting from the limit.
                         ByteBuffer buffer = accumulator.ensureBuffer(8, outputLength);
-                        int compressed = deflater.deflate(buffer.array(), buffer.arrayOffset() + buffer.limit(), buffer.capacity() - buffer.limit(), Deflater.SYNC_FLUSH);
-                        buffer.limit(buffer.limit() + compressed);
+                        int written = deflater.deflate(buffer.array(), buffer.arrayOffset() + buffer.limit(), buffer.capacity() - buffer.limit(), Deflater.SYNC_FLUSH);
+                        buffer.limit(buffer.limit() + written);
 
                         if (LOG.isDebugEnabled())
                             LOG.debug("Wrote {} bytes to output buffer", accumulator);
 
-                        if (compressed <= 0)
+                        if (written <= 0)
                             break;
                     }
 
