@@ -13,7 +13,7 @@ lib/infinispan-common-${jetty.version}.jar
 lib/infinispan/*.jar
 
 [ini]
-infinispan.version?=9.4.8.Final
+infinispan.version?=11.0.9.Final
 
 [license]
 Infinispan is an open source project hosted on Github and released under the Apache 2.0 license.

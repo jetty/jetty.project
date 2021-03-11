@@ -16,6 +16,7 @@ package org.eclipse.jetty.server.session.remote;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.lang.annotation.ElementType;
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 import org.eclipse.jetty.server.session.SessionData;
@@ -29,7 +30,8 @@ import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.client.hotrod.configuration.ClientIntelligence;
 import org.infinispan.client.hotrod.configuration.Configuration;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
-import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
+import org.infinispan.client.hotrod.marshall.MarshallerUtil;
+import org.infinispan.commons.marshall.ProtoStreamMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.SerializationContext;
 import org.slf4j.Logger;
@@ -39,7 +41,6 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * RemoteInfinispanTestSupport
@@ -60,14 +61,13 @@ public class RemoteInfinispanTestSupport
     {
         try
         {
-            //Testcontainers.exposeHostPorts(11222);
             long start = System.currentTimeMillis();
-            String infinispanVersion = System.getProperty("infinispan.docker.image.version", "9.4.8.Final");
+            String infinispanVersion = System.getProperty("infinispan.docker.image.version", "11.0.9.Final");
             infinispan =
-                new GenericContainer(System.getProperty("infinispan.docker.image.name", "jboss/infinispan-server") +
+                new GenericContainer(System.getProperty("infinispan.docker.image.name", "infinispan/server") +
                     ":" + infinispanVersion)
-                    .withEnv("APP_USER", "theuser")
-                    .withEnv("APP_PASS", "foobar")
+                    .withEnv("USER", "theuser")
+                    .withEnv("PASS", "foobar")
                     .withEnv("MGMT_USER", "admin")
                     .withEnv("MGMT_PASS", "admin")
                     .waitingFor(new LogMessageWaitStrategy()
@@ -98,8 +98,6 @@ public class RemoteInfinispanTestSupport
             if (infinispanVersion.startsWith("1"))
             {
                 configurationBuilder.security().authentication()
-                    .realm("default")
-                    .serverName("infinispan")
                     .saslMechanism("DIGEST-MD5")
                     .username("theuser").password("foobar");
             }
@@ -111,7 +109,7 @@ public class RemoteInfinispanTestSupport
             FileDescriptorSource fds = new FileDescriptorSource();
             fds.addProtoFiles("/session.proto");
 
-            SerializationContext serCtx = ProtoStreamMarshaller.getSerializationContext(_manager);
+            SerializationContext serCtx = MarshallerUtil.getSerializationContext(_manager);
             serCtx.registerProtoFiles(fds);
             serCtx.registerMarshaller(new SessionDataMarshaller());
 
@@ -125,7 +123,7 @@ public class RemoteInfinispanTestSupport
                 IO.copy(is, baos);
             }
 
-            String content = baos.toString("UTF-8");
+            String content = baos.toString(StandardCharsets.UTF_8);
             _manager.administration().getOrCreateCache("___protobuf_metadata", (String)null).put("session.proto", content);
         }
         catch (Exception e)
@@ -205,11 +203,11 @@ public class RemoteInfinispanTestSupport
         //same number of attributes
         assertEquals(data.getAllAttributes().size(), saved.getAllAttributes().size());
         //same keys
-        assertTrue(data.getKeys().equals(saved.getKeys()));
+        assertEquals(data.getKeys(), saved.getKeys());
         //same values
         for (String name : data.getKeys())
         {
-            assertTrue(data.getAttribute(name).equals(saved.getAttribute(name)));
+            assertEquals(data.getAttribute(name), saved.getAttribute(name));
         }
 
         return true;

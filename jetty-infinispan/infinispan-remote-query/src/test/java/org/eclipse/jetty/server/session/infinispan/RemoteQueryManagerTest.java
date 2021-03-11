@@ -16,6 +16,7 @@ package org.eclipse.jetty.server.session.infinispan;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.lang.annotation.ElementType;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Random;
@@ -35,7 +36,8 @@ import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.client.hotrod.configuration.ClientIntelligence;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
-import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
+import org.infinispan.client.hotrod.marshall.MarshallerUtil;
+import org.infinispan.commons.marshall.ProtoStreamMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.SerializationContext;
 import org.junit.jupiter.api.AfterEach;
@@ -48,8 +50,6 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Testcontainers(disabledWithoutDocker = true)
@@ -71,10 +71,10 @@ public class RemoteQueryManagerTest
     private int port;
     
     GenericContainer infinispan =
-        new GenericContainer(System.getProperty("infinispan.docker.image.name", "jboss/infinispan-server") +
-            ":" + System.getProperty("infinispan.docker.image.version", "9.4.8.Final"))
-            .withEnv("APP_USER", "theuser")
-            .withEnv("APP_PASS", "foobar")
+        new GenericContainer(System.getProperty("infinispan.docker.image.name", "infinispan/server") +
+            ":" + System.getProperty("infinispan.docker.image.version", "11.0.9.Final"))
+            .withEnv("USER", "theuser")
+            .withEnv("PASS", "foobar")
             .withEnv("MGMT_USER", "admin")
             .withEnv("MGMT_PASS", "admin")
             .waitingFor(new LogMessageWaitStrategy()
@@ -110,9 +110,12 @@ public class RemoteQueryManagerTest
 
         ConfigurationBuilder clientBuilder = new ConfigurationBuilder();
         clientBuilder.withProperties(properties).addServer()
-            .host(this.host).port(this.port)
-            .clientIntelligence(ClientIntelligence.BASIC)
-            .marshaller(new ProtoStreamMarshaller());
+                .host(this.host).port(this.port)
+                .clientIntelligence(ClientIntelligence.BASIC)
+                .marshaller(new ProtoStreamMarshaller())
+                .security()
+                .authentication()
+                .username("theuser").password("foobar");
 
         RemoteCacheManager remoteCacheManager = new RemoteCacheManager(clientBuilder.build());
         remoteCacheManager.administration().getOrCreateCache("remote-session-test", (String)null);
@@ -120,7 +123,7 @@ public class RemoteQueryManagerTest
         FileDescriptorSource fds = new FileDescriptorSource();
         fds.addProtoFiles("/session.proto");
 
-        SerializationContext serCtx = ProtoStreamMarshaller.getSerializationContext(remoteCacheManager);
+        SerializationContext serCtx = MarshallerUtil.getSerializationContext(remoteCacheManager);
         serCtx.registerProtoFiles(fds);
         serCtx.registerMarshaller(new SessionDataMarshaller());
 
@@ -130,7 +133,7 @@ public class RemoteQueryManagerTest
             if (is == null)
                 throw new IllegalStateException("inputstream is null");
             IO.copy(is, baos);
-            String content = baos.toString("UTF-8");
+            String content = baos.toString(StandardCharsets.UTF_8);
             remoteCacheManager.getCache("___protobuf_metadata").put("session.proto", content);
         }
 

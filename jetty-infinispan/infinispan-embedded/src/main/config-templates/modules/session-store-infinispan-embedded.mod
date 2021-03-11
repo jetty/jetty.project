@@ -16,7 +16,7 @@ sessions/infinispan/embedded/infinispan-embedded-libs
 basehome:modules/sessions/infinispan/embedded/infinispan.xml|etc/infinispan.xml
 
 [ini]
-infinispan.version?=9.4.8.Final
+infinispan.version?=11.0.9.Final
 
 [ini-template]
 #jetty.session.infinispan.idleTimeout.seconds=0
