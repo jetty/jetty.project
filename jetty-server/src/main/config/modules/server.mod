@@ -74,6 +74,10 @@ etc/jetty.xml
 ## Relative Redirect Locations allowed
 # jetty.httpConfig.relativeRedirectAllowed=false
 
+## Whether to use direct ByteBuffers for reading or writing
+# jetty.httpConfig.useInputDirectByteBuffers=true
+# jetty.httpConfig.useOutputDirectByteBuffers=true
+
 ### Server configuration
 ## Whether ctrl+c on the console gracefully stops the Jetty server
 # jetty.server.stopAtShutdown=true
@@ -92,6 +96,3 @@ etc/jetty.xml
 # jetty.scheduler.deamon=false
 # jetty.scheduler.threads=-1
 
-# Whether to use direct ByteBuffers for reading or writing
-jetty.httpConfig.useInputDirectByteBuffers=true
-jetty.httpConfig.useOutputDirectByteBuffers=true
