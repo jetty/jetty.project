@@ -11,7 +11,9 @@ import java.nio.channels.WritePendingException;
 
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.FillInterest;
 import org.eclipse.jetty.io.ManagedSelector;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,37 +22,58 @@ public class ServerDatagramEndPoint implements EndPoint
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerDatagramEndPoint.class);
 
+    private final FillInterest fillInterest = new FillInterest() {
+        @Override
+        protected void needsFillInterest() throws IOException
+        {
+
+        }
+    };
+    private final SocketAddress localAddress;
+    private final SocketAddress remoteAddress;
+    private final SelectableChannel channel;
+    private ManagedSelector selector;
+    private SelectionKey selectionKey;
+    private Connection connection;
+    private ByteBuffer data;
+    private boolean open;
+
     public ServerDatagramEndPoint(SocketAddress localAddress, SocketAddress remoteAddress, ByteBuffer buffer, SelectableChannel channel)
     {
-
+        this.localAddress = localAddress;
+        this.remoteAddress = remoteAddress;
+        this.channel = channel;
+        this.data = buffer;
     }
 
     public void init(ManagedSelector selector, SelectionKey selectionKey)
     {
-
+        this.selector = selector;
+        this.selectionKey = selectionKey;
     }
 
     public void onData(ByteBuffer buffer)
     {
-
+        this.data = buffer;
+        fillInterest.fillable();
     }
 
     @Override
     public InetSocketAddress getLocalAddress()
     {
-        throw new UnsupportedOperationException();
+        return (InetSocketAddress)localAddress;
     }
 
     @Override
     public InetSocketAddress getRemoteAddress()
     {
-        throw new UnsupportedOperationException();
+        return (InetSocketAddress)remoteAddress;
     }
 
     @Override
     public boolean isOpen()
     {
-        return false;
+        return open;
     }
 
     @Override
@@ -86,7 +109,21 @@ public class ServerDatagramEndPoint implements EndPoint
     @Override
     public int fill(ByteBuffer buffer) throws IOException
     {
-        throw new UnsupportedOperationException();
+        if (data != null)
+        {
+            int before = data.remaining();
+            LOG.info("fill; bytes remaining: {} byte(s)", before);
+            BufferUtil.flipToFill(buffer);
+            buffer.put(data);
+            buffer.flip();
+            int after = data.remaining();
+            if (after == 0)
+                data = null;
+            int filled = before - after;
+            LOG.info("filled {} byte(s)", filled);
+            return filled;
+        }
+        return 0;
     }
 
     @Override
@@ -98,7 +135,7 @@ public class ServerDatagramEndPoint implements EndPoint
     @Override
     public Object getTransport()
     {
-        throw new UnsupportedOperationException();
+        return this.channel;
     }
 
     @Override
@@ -116,19 +153,24 @@ public class ServerDatagramEndPoint implements EndPoint
     @Override
     public void fillInterested(Callback callback) throws ReadPendingException
     {
-        throw new UnsupportedOperationException();
+        fillInterest.register(callback);
+        if (data != null)
+            fillInterest.fillable();
     }
 
     @Override
     public boolean tryFillInterested(Callback callback)
     {
-        throw new UnsupportedOperationException();
+        boolean registered = fillInterest.tryRegister(callback);
+        if (registered && data != null)
+            fillInterest.fillable();
+        return registered;
     }
 
     @Override
     public boolean isFillInterested()
     {
-        throw new UnsupportedOperationException();
+        return fillInterest.isInterested();
     }
 
     @Override
@@ -143,8 +185,6 @@ public class ServerDatagramEndPoint implements EndPoint
         return connection;
     }
 
-    private Connection connection;
-
     @Override
     public void setConnection(Connection connection)
     {
@@ -154,13 +194,15 @@ public class ServerDatagramEndPoint implements EndPoint
     @Override
     public void onOpen()
     {
+        open = true;
         LOG.info("onOpen");
     }
 
     @Override
     public void onClose(Throwable cause)
     {
-        throw new UnsupportedOperationException();
+        LOG.info("onClose");
+        open = false;
     }
 
     @Override
