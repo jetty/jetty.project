@@ -3,11 +3,14 @@ package org.eclipse.jetty.http3.server;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.util.EventListener;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -17,6 +20,8 @@ import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.server.AbstractNetworkConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.annotation.Name;
@@ -24,9 +29,11 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 public class ServerDatagramConnector extends AbstractNetworkConnector
 {
+    private final ConcurrentMap<SocketAddress, ServerDatagramEndPoint> _acceptedChannels = new ConcurrentHashMap<>();
     private final SelectorManager _manager;
     private volatile DatagramChannel _datagramChannel;
     private volatile int _localPort = -1;
+    private Closeable _acceptor;
 
     public ServerDatagramConnector(
         @Name("server") Server server,
@@ -60,11 +67,13 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
         for (EventListener l : getBeans(SelectorManager.SelectorManagerListener.class))
             _manager.addEventListener(l);
         super.doStart();
+        _acceptor = _manager.datagramReader(_datagramChannel);
     }
 
     @Override
     protected void doStop() throws Exception
     {
+        IO.close(_acceptor);
         super.doStop();
         for (EventListener l : getBeans(EventListener.class))
             _manager.removeEventListener(l);
@@ -145,7 +154,7 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
         throw new UnsupportedOperationException(getClass().getSimpleName() + " has no accept mechanism");
     }
 
-    public class ServerDatagramSelectorManager extends SelectorManager
+    private class ServerDatagramSelectorManager extends SelectorManager
     {
         protected ServerDatagramSelectorManager(Executor executor, Scheduler scheduler, int selectors)
         {
@@ -155,12 +164,40 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
         @Override
         protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException
         {
-            return null;
+            ManagedSelector.PeerAware attachment = (ManagedSelector.PeerAware)selectionKey.attachment();
+            ServerDatagramEndPoint serverDatagramEndPoint = _acceptedChannels.get(attachment.peer());
+            serverDatagramEndPoint.init(selector, selectionKey);
+            return serverDatagramEndPoint;
         }
 
         @Override
         public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException
         {
+            //TODO: return quic connection
+            //return new QuicConnection();
+            return new HttpConnection(new HttpConfiguration(), ServerDatagramConnector.this, endpoint, false);
+        }
+
+        @Override
+        protected SocketAddress doReadDatagram(SelectableChannel channel) throws IOException
+        {
+            ByteBuffer buffer = getByteBufferPool().acquire(1200, true);
+            LOG.info("doReadDatagram {}", channel);
+            DatagramChannel datagramChannel = (DatagramChannel)channel;
+            SocketAddress peer = datagramChannel.receive(buffer);
+            SocketAddress localAddress = datagramChannel.getLocalAddress();
+
+            boolean[] created = new boolean[1];
+            ServerDatagramEndPoint endPoint = _acceptedChannels.computeIfAbsent(peer, remoteAddress ->
+            {
+                ServerDatagramEndPoint endp = new ServerDatagramEndPoint(localAddress, remoteAddress, buffer, datagramChannel);
+                created[0] = true;
+                return endp;
+            });
+
+            if (created[0])
+                return peer;
+            endPoint.onData(buffer);
             return null;
         }
 
