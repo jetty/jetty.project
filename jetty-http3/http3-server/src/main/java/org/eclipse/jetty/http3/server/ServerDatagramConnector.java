@@ -23,6 +23,7 @@ import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -182,9 +183,12 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
         protected SocketAddress doReadDatagram(SelectableChannel channel) throws IOException
         {
             ByteBuffer buffer = getByteBufferPool().acquire(1200, true);
+            BufferUtil.flipToFill(buffer);
             LOG.info("doReadDatagram {}", channel);
             DatagramChannel datagramChannel = (DatagramChannel)channel;
             SocketAddress peer = datagramChannel.receive(buffer);
+            buffer.flip();
+            LOG.info("doReadDatagram received {} byte(s)", buffer.remaining());
             SocketAddress localAddress = datagramChannel.getLocalAddress();
 
             boolean[] created = new boolean[1];
