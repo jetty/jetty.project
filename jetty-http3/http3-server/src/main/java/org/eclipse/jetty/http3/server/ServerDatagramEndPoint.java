@@ -4,21 +4,24 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
 import java.nio.channels.ReadPendingException;
-import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.WritePendingException;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.FillInterest;
+import org.eclipse.jetty.io.IdleTimeout;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ServerDatagramEndPoint implements EndPoint
+public class ServerDatagramEndPoint extends IdleTimeout implements EndPoint
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerDatagramEndPoint.class);
 
@@ -29,17 +32,18 @@ public class ServerDatagramEndPoint implements EndPoint
 
         }
     };
+    private final DatagramChannel channel;
     private final SocketAddress localAddress;
-    private final SocketAddress remoteAddress;
-    private final SelectableChannel channel;
+    private SocketAddress remoteAddress;
     private ManagedSelector selector;
     private SelectionKey selectionKey;
     private Connection connection;
     private ByteBuffer data;
     private boolean open;
 
-    public ServerDatagramEndPoint(SocketAddress localAddress, SocketAddress remoteAddress, ByteBuffer buffer, SelectableChannel channel)
+    public ServerDatagramEndPoint(Scheduler scheduler, SocketAddress localAddress, SocketAddress remoteAddress, ByteBuffer buffer, DatagramChannel channel)
     {
+        super(scheduler);
         this.localAddress = localAddress;
         this.remoteAddress = remoteAddress;
         this.channel = channel;
@@ -52,8 +56,9 @@ public class ServerDatagramEndPoint implements EndPoint
         this.selectionKey = selectionKey;
     }
 
-    public void onData(ByteBuffer buffer)
+    public void onData(ByteBuffer buffer, SocketAddress peer)
     {
+        this.remoteAddress = peer;
         this.data = buffer;
         fillInterest.fillable();
     }
@@ -103,7 +108,7 @@ public class ServerDatagramEndPoint implements EndPoint
     @Override
     public void close(Throwable cause)
     {
-        throw new UnsupportedOperationException();
+        LOG.info("closed endpoint");
     }
 
     @Override
@@ -139,15 +144,9 @@ public class ServerDatagramEndPoint implements EndPoint
     }
 
     @Override
-    public long getIdleTimeout()
+    protected void onIdleExpired(TimeoutException timeout)
     {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setIdleTimeout(long idleTimeout)
-    {
-        throw new UnsupportedOperationException();
+        LOG.info("idle timeout", timeout);
     }
 
     @Override
@@ -176,7 +175,19 @@ public class ServerDatagramEndPoint implements EndPoint
     @Override
     public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
     {
-        throw new UnsupportedOperationException();
+        for (ByteBuffer buffer : buffers)
+        {
+            try
+            {
+                int sent = channel.send(buffer, getRemoteAddress());
+            }
+            catch (IOException e)
+            {
+                callback.failed(e);
+                return;
+            }
+        }
+        callback.succeeded();
     }
 
     @Override

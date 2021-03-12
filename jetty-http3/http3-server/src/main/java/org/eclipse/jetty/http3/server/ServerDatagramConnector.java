@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -176,7 +177,9 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
         {
             //TODO: return quic connection
             //return new QuicConnection();
-            return new HttpConnection(new HttpConfiguration(), ServerDatagramConnector.this, endpoint, false);
+            HttpConfiguration config = new HttpConfiguration();
+            config.setHttpCompliance(HttpCompliance.LEGACY); // enable HTTP/0.9
+            return new HttpConnection(config, ServerDatagramConnector.this, endpoint, false);
         }
 
         @Override
@@ -194,14 +197,14 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
             boolean[] created = new boolean[1];
             ServerDatagramEndPoint endPoint = _acceptedChannels.computeIfAbsent(peer, remoteAddress ->
             {
-                ServerDatagramEndPoint endp = new ServerDatagramEndPoint(localAddress, remoteAddress, buffer, datagramChannel);
+                ServerDatagramEndPoint endp = new ServerDatagramEndPoint(getScheduler(), localAddress, remoteAddress, buffer, datagramChannel);
                 created[0] = true;
                 return endp;
             });
 
             if (created[0])
                 return peer;
-            endPoint.onData(buffer);
+            endPoint.onData(buffer, peer);
             return null;
         }
 
