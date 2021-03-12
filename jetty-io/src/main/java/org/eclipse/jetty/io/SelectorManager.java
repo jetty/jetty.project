@@ -211,6 +211,14 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         return acceptor;
     }
 
+    public Closeable datagramReader(SelectableChannel server)
+    {
+        ManagedSelector selector = chooseSelector();
+        ManagedSelector.DatagramReader acceptor = selector.new DatagramReader(server);
+        selector.submit(acceptor);
+        return acceptor;
+    }
+
     /**
      * Callback method when a channel is accepted from the {@link ServerSocketChannel}
      * passed to {@link #acceptor(SelectableChannel)}.
@@ -349,6 +357,12 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     {
         return ((ServerSocketChannel)server).accept();
     }
+
+    protected SocketAddress doReadDatagram(SelectableChannel channel) throws IOException
+    {
+        return null;
+    }
+
 
     /**
      * <p>Callback method invoked when a non-blocking connect cannot be completed.</p>
