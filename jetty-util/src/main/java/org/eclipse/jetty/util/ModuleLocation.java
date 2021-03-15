@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.Optional;
+import java.util.function.Function;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -53,7 +54,7 @@ import static java.lang.invoke.MethodType.methodType;
  *
  * In Jetty 10, this entire class can be moved to direct calls to java.lang.Module in TypeUtil.getModuleLocation()
  */
-class ModuleLocation
+class ModuleLocation implements Function<Class<?>, URI>
 {
     private static final Logger LOG = Log.getLogger(ModuleLocation.class);
 
@@ -100,7 +101,8 @@ class ModuleLocation
         }
     }
 
-    public URI getModuleLocation(Class<?> clazz)
+    @Override
+    public URI apply(Class<?> clazz)
     {
         try
         {

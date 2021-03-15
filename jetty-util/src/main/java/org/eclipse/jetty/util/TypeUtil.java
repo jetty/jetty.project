@@ -19,9 +19,6 @@
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -38,11 +35,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-
-import static java.lang.invoke.MethodType.methodType;
 
 /**
  * TYPE Utilities.
@@ -177,38 +173,32 @@ public class TypeUtil
         }
     }
 
-    private static final MethodHandle[] LOCATION_METHODS;
-    private static final ModuleLocation MODULE_LOCATION;
+    private static final List<Function<Class<?>, URI>> LOCATION_METHODS = new ArrayList<>();
+    private static final Function<Class<?>, URI> MODULE_LOCATION;
 
     static
     {
-        List<MethodHandle> locationMethods = new ArrayList<>();
-
-        MethodHandles.Lookup lookup = MethodHandles.lookup();
-        MethodType type = methodType(URI.class, Class.class);
-
+        // Lookup order in LOCATION_METHODS is important.
+        LOCATION_METHODS.add(TypeUtil::getCodeSourceLocation);
+        Function<Class<?>, URI> moduleFunc = null;
         try
         {
-            locationMethods.add(lookup.findStatic(TypeUtil.class, "getCodeSourceLocation", type));
-            ModuleLocation moduleLocation = null;
-            try
+            Class<?> clazzModuleLocation = TypeUtil.class.getClassLoader().loadClass(TypeUtil.class.getPackage().getName() + ".ModuleLocation");
+            Object obj = clazzModuleLocation.getConstructor().newInstance();
+            if (obj instanceof Function)
             {
-                moduleLocation = new ModuleLocation();
-                locationMethods.add(lookup.findStatic(TypeUtil.class, "getModuleLocation", type));
+                //noinspection unchecked
+                moduleFunc = (Function<Class<?>, URI>)obj;
+                LOCATION_METHODS.add(moduleFunc);
             }
-            catch (UnsupportedOperationException e)
-            {
-                LOG.debug("JVM Runtime does not support Modules");
-            }
-            MODULE_LOCATION = moduleLocation;
-            locationMethods.add(lookup.findStatic(TypeUtil.class, "getClassLoaderLocation", type));
-            locationMethods.add(lookup.findStatic(TypeUtil.class, "getSystemClassLoaderLocation", type));
-            LOCATION_METHODS = locationMethods.toArray(new MethodHandle[0]);
         }
-        catch (Exception e)
+        catch (Throwable t)
         {
-            throw new RuntimeException("Unable to establish Location Lookup Handles", e);
+            LOG.debug("This JVM Runtime does not support Modules, disabling Jetty internal support");
         }
+        MODULE_LOCATION = moduleFunc;
+        LOCATION_METHODS.add(TypeUtil::getClassLoaderLocation);
+        LOCATION_METHODS.add(TypeUtil::getSystemClassLoaderLocation);
     }
 
     /**
@@ -627,13 +617,11 @@ public class TypeUtil
      */
     public static URI getLocationOfClass(Class<?> clazz)
     {
-        URI location;
-
-        for (MethodHandle locationMethod : LOCATION_METHODS)
+        for (Function<Class<?>, URI> locationFunction : LOCATION_METHODS)
         {
             try
             {
-                location = (URI)locationMethod.invoke(clazz);
+                URI location = locationFunction.apply(clazz);
                 if (location != null)
                 {
                     return location;
@@ -723,7 +711,7 @@ public class TypeUtil
         // In Jetty 10, this method can be implemented directly, without reflection
         if (MODULE_LOCATION != null)
         {
-            return MODULE_LOCATION.getModuleLocation(clazz);
+            return MODULE_LOCATION.apply(clazz);
         }
         return null;
     }
