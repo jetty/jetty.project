@@ -178,12 +178,12 @@ public class TypeUtil
 
     static
     {
-        // Lookup order in LOCATION_METHOD is important.
+        // Lookup order in LOCATION_METHODS is important.
         LOCATION_METHODS.add(TypeUtil::getCodeSourceLocation);
         Function<Class<?>, URI> moduleFunc = null;
         try
         {
-            Class<?> clazzModuleLocation = Class.forName(TypeUtil.class.getPackage().getName() + ".ModuleLocation");
+            Class<?> clazzModuleLocation = TypeUtil.class.getClassLoader().loadClass(TypeUtil.class.getPackage().getName() + ".ModuleLocation");
             Object obj = clazzModuleLocation.getConstructor().newInstance();
             if (obj instanceof Function)
             {
