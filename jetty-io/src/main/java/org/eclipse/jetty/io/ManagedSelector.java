@@ -844,11 +844,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    public interface PeerAware
-    {
-        SocketAddress peer();
-    }
-
     class Accept implements SelectorUpdate, Runnable, Closeable
     {
         private final SelectableChannel channel;
