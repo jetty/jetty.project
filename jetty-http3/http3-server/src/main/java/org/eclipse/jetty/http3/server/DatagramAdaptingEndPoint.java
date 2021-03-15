@@ -75,10 +75,7 @@ public class DatagramAdaptingEndPoint implements EndPoint
         if (filled == 0)
             return 0;
 
-        int headerPosition = buffer.position();
         remoteAddress = ServerDatagramEndPoint.decodeInetSocketAddress(buffer);
-        buffer.position(headerPosition + ServerDatagramEndPoint.ENCODED_ADDRESS_LENGTH);
-
         return filled;
     }
 

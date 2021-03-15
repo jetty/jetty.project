@@ -10,7 +10,6 @@ import java.nio.channels.Selector;
 import java.util.EventListener;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -18,8 +17,6 @@ import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.server.AbstractNetworkConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.annotation.Name;
@@ -170,11 +167,7 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
         @Override
         public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException
         {
-            //TODO: return quic connection
-            //return new QuicConnection();
-            HttpConfiguration config = new HttpConfiguration();
-            config.setHttpCompliance(HttpCompliance.LEGACY); // enable HTTP/0.9
-            return new HttpConnection(config, ServerDatagramConnector.this, new DatagramAdaptingEndPoint((ServerDatagramEndPoint)endpoint), false);
+            return new QuicConnection(getByteBufferPool(), getExecutor(), (ServerDatagramEndPoint)endpoint);
         }
 
         @Override

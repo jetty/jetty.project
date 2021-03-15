@@ -253,6 +253,7 @@ public class ServerDatagramEndPoint extends IdleTimeout implements EndPoint, Man
 
     static InetSocketAddress decodeInetSocketAddress(ByteBuffer buffer) throws IOException
     {
+        int headerPosition = buffer.position();
         byte ipVersion = buffer.get();
         byte[] address;
         if (ipVersion == 4)
@@ -262,11 +263,13 @@ public class ServerDatagramEndPoint extends IdleTimeout implements EndPoint, Man
         else throw new IOException("Unsupported IP version: " + ipVersion);
         buffer.get(address);
         int port = buffer.getChar();
+        buffer.position(headerPosition + ENCODED_ADDRESS_LENGTH);
         return new InetSocketAddress(InetAddress.getByAddress(address), port);
     }
 
     static void encodeInetSocketAddress(ByteBuffer buffer, InetSocketAddress peer) throws IOException
     {
+        int headerPosition = buffer.position();
         byte[] addressBytes = peer.getAddress().getAddress();
         int port = peer.getPort();
         byte ipVersion;
@@ -279,5 +282,6 @@ public class ServerDatagramEndPoint extends IdleTimeout implements EndPoint, Man
         buffer.put(ipVersion);
         buffer.put(addressBytes);
         buffer.putChar((char)port);
+        buffer.position(headerPosition + ENCODED_ADDRESS_LENGTH);
     }
 }
