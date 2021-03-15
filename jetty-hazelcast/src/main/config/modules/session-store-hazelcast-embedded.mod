@@ -13,14 +13,17 @@ session-store
 sessions
 
 [files]
-maven://com.hazelcast/hazelcast/3.12.10|lib/hazelcast/hazelcast-3.12.10.jar
+maven://com.hazelcast/hazelcast/${hazelcast.version}|lib/hazelcast/hazelcast-${hazelcast.version}.jar
 
 [xml]
 etc/sessions/hazelcast/default.xml
 
 [lib]
 lib/jetty-hazelcast-${jetty.version}.jar
-lib/hazelcast/*.jar
+lib/hazelcast/hazelcast-${hazelcast.version}.jar
+
+[ini]
+hazelcast.version?=3.12.10
 
 [license]
 Hazelcast is an open source project hosted on Github and released under the Apache 2.0 license.
