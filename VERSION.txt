@@ -29,7 +29,7 @@ jetty-10.0.1 - 19 February 2021
  + 5855 HttpClient may not send queued requests
  + 5859 Classloader leaks from ShutdownThread and QueuedThreadPool
  + 5866 Support Programmatic WebSocket upgrade in Jetty 10
- + 5868 Cleaning up request attributes after websocket upgrade in Jetty 10 
+ + 5868 Cleaning up request attributes after websocket upgrade in Jetty 10
  + 5870 jetty-maven-plugin fails to run ServletContainerInitializer on Windows
    due to URI case comparison bug
  + 5872 Improve JMX support for Jetty logging
@@ -96,6 +96,14 @@ jetty-10.0.0.beta3 - 21 October 2020
  + 5454 Request error context is not reset
  + 5475 Update to spifly 1.3.2 and asm 9
  + 5480 NPE from WebInfConfiguration.deconfigure during WebAppContext shutdown
+
+jetty-9.4.38.v20210224 - 24 February 2021
+ + 4275 Path Normalization/Traversal - Context Matching
+ + 5977 Cache-Control header set by a filter is override by the value from
+   DefaultServlet configuration
+ + 5994 QueuedThreadPool "free" threads
+ + 5999 HttpURI ArrayIndexOutOfBounds
+ + 6001 Ambiguous URI legacy compliance mode
 
 jetty-9.4.37.v20210219 - 19 February 2021
  + 4275 Path Normalization/Traversal - Context Matching
