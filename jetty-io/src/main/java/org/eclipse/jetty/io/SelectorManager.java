@@ -148,7 +148,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         return _selectors.length;
     }
 
-    private ManagedSelector chooseSelector()
+    protected ManagedSelector chooseSelector()
     {
         return _selectors[_selectorIndex.updateAndGet(_selectorIndexUpdate)];
     }
@@ -207,14 +207,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     {
         ManagedSelector selector = chooseSelector();
         ManagedSelector.Acceptor acceptor = selector.new Acceptor(server);
-        selector.submit(acceptor);
-        return acceptor;
-    }
-
-    public Closeable datagramReader(SelectableChannel server)
-    {
-        ManagedSelector selector = chooseSelector();
-        ManagedSelector.DatagramReader acceptor = selector.new DatagramReader(server);
         selector.submit(acceptor);
         return acceptor;
     }
@@ -356,11 +348,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     protected SelectableChannel doAccept(SelectableChannel server) throws IOException
     {
         return ((ServerSocketChannel)server).accept();
-    }
-
-    protected SocketAddress doReadDatagram(SelectableChannel channel) throws IOException
-    {
-        return null;
     }
 
 

@@ -378,7 +378,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         _selectorManager.endPointClosed(endPoint);
     }
 
-    private void createEndPoint(SelectableChannel channel, SelectionKey selectionKey) throws IOException
+    public void createEndPoint(SelectableChannel channel, SelectionKey selectionKey) throws IOException
     {
         EndPoint endPoint = _selectorManager.newEndPoint(channel, this, selectionKey);
         Object context = selectionKey.attachment();
@@ -847,86 +847,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     public interface PeerAware
     {
         SocketAddress peer();
-    }
-
-    class DatagramReader implements SelectorUpdate, Selectable, Closeable, PeerAware
-    {
-        private final SelectableChannel _channel;
-        private SelectionKey _key;
-        private SocketAddress _peer;
-
-        DatagramReader(SelectableChannel channel)
-        {
-            _channel = channel;
-        }
-
-        @Override
-        public SocketAddress peer()
-        {
-            return _peer;
-        }
-
-        @Override
-        public void update(Selector selector)
-        {
-            try
-            {
-                _key = _channel.register(selector, SelectionKey.OP_READ, this);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} reader={}", this, _channel);
-            }
-            catch (Throwable x)
-            {
-                IO.close(_channel);
-                LOG.warn("Unable to register OP_READ on selector for {}", _channel, x);
-            }
-        }
-
-        @Override
-        public Runnable onSelected()
-        {
-            LOG.info("DatagramReader onSelected");
-            try
-            {
-                _peer = _selectorManager.doReadDatagram(_channel);
-                if (_peer != null)
-                {
-                    try
-                    {
-                        createEndPoint(_channel, _key);
-                        _selectorManager.onAccepted(_channel);
-                    }
-                    catch (Throwable x)
-                    {
-                        LOG.warn("createEndPoint failed for channel {}", _channel, x);
-                    }
-                }
-            }
-            catch (Throwable x)
-            {
-                LOG.warn("Read failed for channel {}", _channel, x);
-            }
-            return null;
-        }
-
-        @Override
-        public void updateKey()
-        {
-        }
-
-        @Override
-        public void replaceKey(SelectionKey newKey)
-        {
-            _key = newKey;
-        }
-
-        @Override
-        public void close() throws IOException
-        {
-            // May be called from any thread.
-            // Implements AbstractConnector.setAccepting(boolean).
-            submit(selector -> _key.cancel());
-        }
     }
 
     class Accept implements SelectorUpdate, Runnable, Closeable
