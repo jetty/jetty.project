@@ -1,0 +1,8 @@
+git clone --recursive https://github.com/cloudflare/quiche
+cd quiche
+git checkout -b tag-0.7.0 tags/0.7.0
+cargo build --features ffi
+ls ./target/debug/libquiche.so
+
+# create universal binary on mac:
+lipo -create -output libquiche-universal.dylib libquiche-x86_64.dylib libquiche-aarch64.dylib

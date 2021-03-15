@@ -13,6 +13,7 @@
   <name>Jetty :: HTTP3</name>
 
   <modules>
+    <module>cloudflare-quiche-jna</module>
     <module>http3-server</module>
   </modules>
 
