@@ -5,7 +5,6 @@ import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.ReadPendingException;
@@ -110,7 +109,7 @@ public class ServerDatagramEndPoint extends IdleTimeout implements EndPoint, Man
     {
         BufferUtil.flipToFill(buffer);
         int headerPosition = buffer.position();
-        buffer.position(buffer.position() + 19);
+        buffer.position(buffer.position() + ENCODED_ADDRESS_LENGTH);
         InetSocketAddress peer = (InetSocketAddress)channel.receive(buffer);
         if (peer == null)
         {
@@ -120,43 +119,19 @@ public class ServerDatagramEndPoint extends IdleTimeout implements EndPoint, Man
         }
         int finalPosition = buffer.position();
 
-        byte[] addressBytes = peer.getAddress().getAddress();
-        int port = peer.getPort();
-        byte ipVersion;
-        if (peer.getAddress() instanceof Inet4Address)
-            ipVersion = 4;
-        else if (peer.getAddress() instanceof Inet6Address)
-            ipVersion = 6;
-        else throw new IOException("Unsupported address type: " + peer.getAddress().getClass());
-
         buffer.position(headerPosition);
-        buffer.put(ipVersion);
-        buffer.put(addressBytes);
-        buffer.putChar((char)port);
+        encodeInetSocketAddress(buffer, peer);
         buffer.position(finalPosition);
 
         buffer.flip();
 
-        return finalPosition - 19;
+        return finalPosition - ENCODED_ADDRESS_LENGTH;
     }
 
     @Override
     public boolean flush(ByteBuffer... buffers) throws IOException
     {
-        ByteBuffer headerBuffer = buffers[0];
-
-        byte ipVersion = headerBuffer.get();
-        byte[] address;
-        if (ipVersion == 4)
-            address = new byte[4];
-        else if (ipVersion == 6)
-            address = new byte[16];
-        else throw new IOException("Unsupported IP version: " + ipVersion);
-        headerBuffer.get(address);
-        int port = headerBuffer.getChar();
-
-        InetSocketAddress peer = new InetSocketAddress(InetAddress.getByAddress(address), port);
-
+        InetSocketAddress peer = decodeInetSocketAddress(buffers[0]);
         for (int i = 1; i < buffers.length; i++)
         {
             ByteBuffer buffer = buffers[i];
@@ -272,5 +247,37 @@ public class ServerDatagramEndPoint extends IdleTimeout implements EndPoint, Man
     public void upgrade(Connection newConnection)
     {
         throw new UnsupportedOperationException();
+    }
+
+    static final int ENCODED_ADDRESS_LENGTH = 19;
+
+    static InetSocketAddress decodeInetSocketAddress(ByteBuffer buffer) throws IOException
+    {
+        byte ipVersion = buffer.get();
+        byte[] address;
+        if (ipVersion == 4)
+            address = new byte[4];
+        else if (ipVersion == 6)
+            address = new byte[16];
+        else throw new IOException("Unsupported IP version: " + ipVersion);
+        buffer.get(address);
+        int port = buffer.getChar();
+        return new InetSocketAddress(InetAddress.getByAddress(address), port);
+    }
+
+    static void encodeInetSocketAddress(ByteBuffer buffer, InetSocketAddress peer) throws IOException
+    {
+        byte[] addressBytes = peer.getAddress().getAddress();
+        int port = peer.getPort();
+        byte ipVersion;
+        if (peer.getAddress() instanceof Inet4Address)
+            ipVersion = 4;
+        else if (peer.getAddress() instanceof Inet6Address)
+            ipVersion = 6;
+        else throw new IOException("Unsupported address type: " + peer.getAddress().getClass());
+
+        buffer.put(ipVersion);
+        buffer.put(addressBytes);
+        buffer.putChar((char)port);
     }
 }
