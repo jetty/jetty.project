@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.util.EventListener;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -31,8 +32,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 public class ServerDatagramConnector extends AbstractNetworkConnector
 {
-    private final ConcurrentMap<SocketAddress, ServerDatagramEndPoint> _acceptedChannels = new ConcurrentHashMap<>();
-    private final SelectorManager _manager;
+    private final ServerDatagramSelectorManager _manager;
     private volatile DatagramChannel _datagramChannel;
     private volatile int _localPort = -1;
     private Closeable _acceptor;
@@ -46,7 +46,7 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
         @Name("factories") ConnectionFactory... factories)
     {
         super(server, executor, scheduler, bufferPool, 0, factories);
-        _manager = newSelectorManager(getExecutor(), getScheduler(), selectors);
+        _manager = new ServerDatagramSelectorManager(getExecutor(), getScheduler(), selectors);
         addBean(_manager, true);
         setAcceptorPriorityDelta(-2);
     }
@@ -56,11 +56,6 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
         @Name("factories") ConnectionFactory... factories)
     {
         this(server, null, null, null, 1, factories);
-    }
-
-    protected SelectorManager newSelectorManager(Executor executor, Scheduler scheduler, int selectors)
-    {
-        return new ServerDatagramSelectorManager(executor, scheduler, selectors);
     }
 
     @Override
@@ -158,9 +153,19 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
 
     private class ServerDatagramSelectorManager extends SelectorManager
     {
+        private final ConcurrentMap<SocketAddress, ServerDatagramEndPoint> _acceptedChannels = new ConcurrentHashMap<>();
+
         protected ServerDatagramSelectorManager(Executor executor, Scheduler scheduler, int selectors)
         {
             super(executor, scheduler, selectors);
+        }
+
+        public Closeable datagramReader(SelectableChannel server)
+        {
+            ManagedSelector selector = chooseSelector();
+            DatagramReader reader = new DatagramReader(server);
+            selector.submit(reader);
+            return reader;
         }
 
         @Override
@@ -182,7 +187,6 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
             return new HttpConnection(config, ServerDatagramConnector.this, endpoint, false);
         }
 
-        @Override
         protected SocketAddress doReadDatagram(SelectableChannel channel) throws IOException
         {
             ByteBuffer buffer = getByteBufferPool().acquire(1200, true);
@@ -212,6 +216,86 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
         public String toString()
         {
             return String.format("DatagramSelectorManager@%s", ServerDatagramConnector.this);
+        }
+
+        class DatagramReader implements ManagedSelector.SelectorUpdate, ManagedSelector.Selectable, Closeable, ManagedSelector.PeerAware
+        {
+            private final SelectableChannel _channel;
+            private SelectionKey _key;
+            private SocketAddress _peer;
+
+            DatagramReader(SelectableChannel channel)
+            {
+                _channel = channel;
+            }
+
+            @Override
+            public SocketAddress peer()
+            {
+                return _peer;
+            }
+
+            @Override
+            public void update(Selector selector)
+            {
+                try
+                {
+                    _key = _channel.register(selector, SelectionKey.OP_READ, this);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} reader={}", this, _channel);
+                }
+                catch (Throwable x)
+                {
+                    IO.close(_channel);
+                    LOG.warn("Unable to register OP_READ on selector for {}", _channel, x);
+                }
+            }
+
+            @Override
+            public Runnable onSelected()
+            {
+                LOG.info("DatagramReader onSelected");
+                try
+                {
+                    _peer = doReadDatagram(_channel);
+                    if (_peer != null)
+                    {
+                        try
+                        {
+                            chooseSelector().createEndPoint(_channel, _key);
+                            onAccepted(_channel);
+                        }
+                        catch (Throwable x)
+                        {
+                            LOG.warn("createEndPoint failed for channel {}", _channel, x);
+                        }
+                    }
+                }
+                catch (Throwable x)
+                {
+                    LOG.warn("Read failed for channel {}", _channel, x);
+                }
+                return null;
+            }
+
+            @Override
+            public void updateKey()
+            {
+            }
+
+            @Override
+            public void replaceKey(SelectionKey newKey)
+            {
+                _key = newKey;
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+                // May be called from any thread.
+                // Implements AbstractConnector.setAccepting(boolean).
+                chooseSelector().submit(selector -> _key.cancel());
+            }
         }
     }
 }
