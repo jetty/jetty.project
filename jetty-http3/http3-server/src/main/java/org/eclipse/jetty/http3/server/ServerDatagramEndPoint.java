@@ -1,6 +1,9 @@
 package org.eclipse.jetty.http3.server;
 
 import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
@@ -9,6 +12,7 @@ import java.nio.channels.ReadPendingException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -21,7 +25,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ServerDatagramEndPoint extends IdleTimeout implements EndPoint
+public class ServerDatagramEndPoint extends IdleTimeout implements EndPoint, ManagedSelector.Selectable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerDatagramEndPoint.class);
 
@@ -33,46 +37,36 @@ public class ServerDatagramEndPoint extends IdleTimeout implements EndPoint
         }
     };
     private final DatagramChannel channel;
-    private final SocketAddress localAddress;
-    private SocketAddress remoteAddress;
-    private ManagedSelector selector;
-    private SelectionKey selectionKey;
+    private final ManagedSelector selector;
+    private final SelectionKey selectionKey;
     private Connection connection;
-    private ByteBuffer data;
     private boolean open;
 
-    public ServerDatagramEndPoint(Scheduler scheduler, SocketAddress localAddress, SocketAddress remoteAddress, ByteBuffer buffer, DatagramChannel channel)
+    public ServerDatagramEndPoint(Scheduler scheduler, DatagramChannel channel, ManagedSelector selector, SelectionKey selectionKey)
     {
         super(scheduler);
-        this.localAddress = localAddress;
-        this.remoteAddress = remoteAddress;
         this.channel = channel;
-        this.data = buffer;
-    }
-
-    public void init(ManagedSelector selector, SelectionKey selectionKey)
-    {
         this.selector = selector;
         this.selectionKey = selectionKey;
-    }
-
-    public void onData(ByteBuffer buffer, SocketAddress peer)
-    {
-        this.remoteAddress = peer;
-        this.data = buffer;
-        fillInterest.fillable();
     }
 
     @Override
     public InetSocketAddress getLocalAddress()
     {
-        return (InetSocketAddress)localAddress;
+        try
+        {
+            return (InetSocketAddress)channel.getLocalAddress();
+        }
+        catch (IOException e)
+        {
+            return null;
+        }
     }
 
     @Override
     public InetSocketAddress getRemoteAddress()
     {
-        return (InetSocketAddress)remoteAddress;
+        return null;
     }
 
     @Override
@@ -114,27 +108,63 @@ public class ServerDatagramEndPoint extends IdleTimeout implements EndPoint
     @Override
     public int fill(ByteBuffer buffer) throws IOException
     {
-        if (data != null)
+        BufferUtil.flipToFill(buffer);
+        int headerPosition = buffer.position();
+        buffer.position(buffer.position() + 19);
+        InetSocketAddress peer = (InetSocketAddress)channel.receive(buffer);
+        if (peer == null)
         {
-            int before = data.remaining();
-            LOG.info("fill; bytes remaining: {} byte(s)", before);
-            BufferUtil.flipToFill(buffer);
-            buffer.put(data);
+            buffer.position(0);
             buffer.flip();
-            int after = data.remaining();
-            if (after == 0)
-                data = null;
-            int filled = before - after;
-            LOG.info("filled {} byte(s)", filled);
-            return filled;
+            return 0;
         }
-        return 0;
+        int finalPosition = buffer.position();
+
+        byte[] addressBytes = peer.getAddress().getAddress();
+        int port = peer.getPort();
+        byte ipVersion;
+        if (peer.getAddress() instanceof Inet4Address)
+            ipVersion = 4;
+        else if (peer.getAddress() instanceof Inet6Address)
+            ipVersion = 6;
+        else throw new IOException("Unsupported address type: " + peer.getAddress().getClass());
+
+        buffer.position(headerPosition);
+        buffer.put(ipVersion);
+        buffer.put(addressBytes);
+        buffer.putChar((char)port);
+        buffer.position(finalPosition);
+
+        buffer.flip();
+
+        return finalPosition - 19;
     }
 
     @Override
-    public boolean flush(ByteBuffer... buffer) throws IOException
+    public boolean flush(ByteBuffer... buffers) throws IOException
     {
-        throw new UnsupportedOperationException();
+        ByteBuffer headerBuffer = buffers[0];
+
+        byte ipVersion = headerBuffer.get();
+        byte[] address;
+        if (ipVersion == 4)
+            address = new byte[4];
+        else if (ipVersion == 6)
+            address = new byte[16];
+        else throw new IOException("Unsupported IP version: " + ipVersion);
+        headerBuffer.get(address);
+        int port = headerBuffer.getChar();
+
+        InetSocketAddress peer = new InetSocketAddress(InetAddress.getByAddress(address), port);
+
+        for (int i = 1; i < buffers.length; i++)
+        {
+            ByteBuffer buffer = buffers[i];
+            int sent = channel.send(buffer, peer);
+            if (sent == 0)
+                return false;
+        }
+        return true;
     }
 
     @Override
@@ -149,11 +179,36 @@ public class ServerDatagramEndPoint extends IdleTimeout implements EndPoint
         LOG.info("idle timeout", timeout);
     }
 
+    //TODO: this is racy
+    private final AtomicBoolean fillable = new AtomicBoolean();
+
+    @Override
+    public Runnable onSelected()
+    {
+        return () ->
+        {
+            if (!fillInterest.fillable())
+                fillable.set(true);
+        };
+    }
+
+    @Override
+    public void updateKey()
+    {
+        // TODO: change interest?
+    }
+
+    @Override
+    public void replaceKey(SelectionKey newKey)
+    {
+        throw new UnsupportedOperationException();
+    }
+
     @Override
     public void fillInterested(Callback callback) throws ReadPendingException
     {
         fillInterest.register(callback);
-        if (data != null)
+        if (fillable.getAndSet(false))
             fillInterest.fillable();
     }
 
@@ -161,7 +216,7 @@ public class ServerDatagramEndPoint extends IdleTimeout implements EndPoint
     public boolean tryFillInterested(Callback callback)
     {
         boolean registered = fillInterest.tryRegister(callback);
-        if (registered && data != null)
+        if (registered && fillable.getAndSet(false))
             fillInterest.fillable();
         return registered;
     }
@@ -175,19 +230,16 @@ public class ServerDatagramEndPoint extends IdleTimeout implements EndPoint
     @Override
     public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
     {
-        for (ByteBuffer buffer : buffers)
+        try
         {
-            try
-            {
-                int sent = channel.send(buffer, getRemoteAddress());
-            }
-            catch (IOException e)
-            {
-                callback.failed(e);
-                return;
-            }
+            boolean done = flush(buffers);
+            if (done)
+                callback.succeeded();
         }
-        callback.succeeded();
+        catch (IOException e)
+        {
+            callback.failed(e);
+        }
     }
 
     @Override

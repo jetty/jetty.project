@@ -3,15 +3,11 @@ package org.eclipse.jetty.http3.server;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.EventListener;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http.HttpCompliance;
@@ -25,7 +21,6 @@ import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -153,8 +148,6 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
 
     private class ServerDatagramSelectorManager extends SelectorManager
     {
-        private final ConcurrentMap<SocketAddress, ServerDatagramEndPoint> _acceptedChannels = new ConcurrentHashMap<>();
-
         protected ServerDatagramSelectorManager(Executor executor, Scheduler scheduler, int selectors)
         {
             super(executor, scheduler, selectors);
@@ -171,10 +164,7 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
         @Override
         protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException
         {
-            ManagedSelector.PeerAware attachment = (ManagedSelector.PeerAware)selectionKey.attachment();
-            ServerDatagramEndPoint serverDatagramEndPoint = _acceptedChannels.get(attachment.peer());
-            serverDatagramEndPoint.init(selector, selectionKey);
-            return serverDatagramEndPoint;
+            return new ServerDatagramEndPoint(getScheduler(), (DatagramChannel)channel, selector, selectionKey);
         }
 
         @Override
@@ -184,32 +174,7 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
             //return new QuicConnection();
             HttpConfiguration config = new HttpConfiguration();
             config.setHttpCompliance(HttpCompliance.LEGACY); // enable HTTP/0.9
-            return new HttpConnection(config, ServerDatagramConnector.this, endpoint, false);
-        }
-
-        protected SocketAddress doReadDatagram(SelectableChannel channel) throws IOException
-        {
-            ByteBuffer buffer = getByteBufferPool().acquire(1200, true);
-            BufferUtil.flipToFill(buffer);
-            LOG.info("doReadDatagram {}", channel);
-            DatagramChannel datagramChannel = (DatagramChannel)channel;
-            SocketAddress peer = datagramChannel.receive(buffer);
-            buffer.flip();
-            LOG.info("doReadDatagram received {} byte(s)", buffer.remaining());
-            SocketAddress localAddress = datagramChannel.getLocalAddress();
-
-            boolean[] created = new boolean[1];
-            ServerDatagramEndPoint endPoint = _acceptedChannels.computeIfAbsent(peer, remoteAddress ->
-            {
-                ServerDatagramEndPoint endp = new ServerDatagramEndPoint(getScheduler(), localAddress, remoteAddress, buffer, datagramChannel);
-                created[0] = true;
-                return endp;
-            });
-
-            if (created[0])
-                return peer;
-            endPoint.onData(buffer, peer);
-            return null;
+            return new HttpConnection(config, ServerDatagramConnector.this, new DatagramAdaptingEndPoint((ServerDatagramEndPoint)endpoint), false);
         }
 
         @Override
@@ -218,21 +183,15 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
             return String.format("DatagramSelectorManager@%s", ServerDatagramConnector.this);
         }
 
-        class DatagramReader implements ManagedSelector.SelectorUpdate, ManagedSelector.Selectable, Closeable, ManagedSelector.PeerAware
+        class DatagramReader implements ManagedSelector.SelectorUpdate, ManagedSelector.Selectable, Closeable
         {
             private final SelectableChannel _channel;
-            private SelectionKey _key;
-            private SocketAddress _peer;
+            private volatile boolean endPointCreated;
+            private volatile SelectionKey _key;
 
             DatagramReader(SelectableChannel channel)
             {
                 _channel = channel;
-            }
-
-            @Override
-            public SocketAddress peer()
-            {
-                return _peer;
             }
 
             @Override
@@ -255,25 +214,23 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
             public Runnable onSelected()
             {
                 LOG.info("DatagramReader onSelected");
-                try
+                if (!endPointCreated)
                 {
-                    _peer = doReadDatagram(_channel);
-                    if (_peer != null)
+                    synchronized (this)
                     {
-                        try
+                        if (!endPointCreated)
                         {
-                            chooseSelector().createEndPoint(_channel, _key);
-                            onAccepted(_channel);
-                        }
-                        catch (Throwable x)
-                        {
-                            LOG.warn("createEndPoint failed for channel {}", _channel, x);
+                            try
+                            {
+                                chooseSelector().createEndPoint(_channel, _key);
+                                endPointCreated = true;
+                            }
+                            catch (Throwable x)
+                            {
+                                LOG.warn("createEndPoint failed for channel {}", _channel, x);
+                            }
                         }
                     }
-                }
-                catch (Throwable x)
-                {
-                    LOG.warn("Read failed for channel {}", _channel, x);
                 }
                 return null;
             }
