@@ -1,9 +1,6 @@
 package org.eclipse.jetty.http3.server;
 
 import java.io.IOException;
-import java.net.Inet4Address;
-import java.net.Inet6Address;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
@@ -79,19 +76,8 @@ public class DatagramAdaptingEndPoint implements EndPoint
             return 0;
 
         int headerPosition = buffer.position();
-
-        byte[] address;
-        byte ipVersion = buffer.get();
-        if (ipVersion == 4)
-            address = new byte[4];
-        else if (ipVersion == 6)
-            address = new byte[6];
-        else throw new IOException("Unsupported IP version: " + ipVersion);
-        buffer.get(address);
-        int port = buffer.getChar();
-        remoteAddress = new InetSocketAddress(InetAddress.getByAddress(address), port);
-
-        buffer.position(headerPosition + 19);
+        remoteAddress = ServerDatagramEndPoint.decodeInetSocketAddress(buffer);
+        buffer.position(headerPosition + ServerDatagramEndPoint.ENCODED_ADDRESS_LENGTH);
 
         return filled;
     }
@@ -108,20 +94,15 @@ public class DatagramAdaptingEndPoint implements EndPoint
         ByteBuffer[] delegateBuffers = new ByteBuffer[buffers.length + 1];
         System.arraycopy(buffers, 0, delegateBuffers, 1, buffers.length);
 
-        delegateBuffers[0] = ByteBuffer.allocate(19);
-
-        byte[] addressBytes = remoteAddress.getAddress().getAddress();
-        byte ipVersion;
-        if (remoteAddress.getAddress() instanceof Inet4Address)
-            ipVersion = 4;
-        else if (remoteAddress.getAddress() instanceof Inet6Address)
-            ipVersion = 6;
-        else throw new IllegalArgumentException("Unsupported address type: " + remoteAddress.getAddress().getClass());
-        int port = remoteAddress.getPort();
-
-        delegateBuffers[0].put(ipVersion);
-        delegateBuffers[0].put(addressBytes);
-        delegateBuffers[0].putChar((char)port);
+        delegateBuffers[0] = ByteBuffer.allocate(ServerDatagramEndPoint.ENCODED_ADDRESS_LENGTH);
+        try
+        {
+            ServerDatagramEndPoint.encodeInetSocketAddress(delegateBuffers[0], remoteAddress);
+        }
+        catch (IOException e)
+        {
+            throw new IllegalArgumentException(e);
+        }
         delegateBuffers[0].position(0);
 
         delegate.write(callback, delegateBuffers);
