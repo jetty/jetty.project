@@ -350,7 +350,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         return ((ServerSocketChannel)server).accept();
     }
 
-
     /**
      * <p>Callback method invoked when a non-blocking connect cannot be completed.</p>
      * <p>By default it just logs with level warning.</p>

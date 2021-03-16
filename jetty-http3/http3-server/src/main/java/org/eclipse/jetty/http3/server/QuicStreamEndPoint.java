@@ -35,7 +35,8 @@ public class QuicStreamEndPoint extends IdleTimeout implements EndPoint
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicStreamEndPoint.class);
 
-    private final FillInterest fillInterest = new FillInterest() {
+    private final FillInterest fillInterest = new FillInterest()
+    {
         @Override
         protected void needsFillInterest() throws IOException
         {
