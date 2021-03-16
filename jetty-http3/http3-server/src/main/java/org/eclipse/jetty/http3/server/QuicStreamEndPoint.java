@@ -35,12 +35,14 @@ public class QuicStreamEndPoint extends IdleTimeout implements EndPoint
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicStreamEndPoint.class);
 
+    private final AtomicBoolean fillable = new AtomicBoolean();
     private final FillInterest fillInterest = new FillInterest()
     {
         @Override
         protected void needsFillInterest() throws IOException
         {
-
+            if (fillable.getAndSet(false))
+                fillInterest.fillable();
         }
     };
     private final long streamId;
@@ -139,14 +141,12 @@ public class QuicStreamEndPoint extends IdleTimeout implements EndPoint
         return quicheConnection;
     }
 
-    //TODO: this is racy
-    private final AtomicBoolean fillable = new AtomicBoolean();
-
     public Runnable onSelected(InetSocketAddress remoteAddress, boolean readable, boolean writable)
     {
         this.remoteAddress = remoteAddress;
         return () ->
         {
+            //TODO: this is racy
             if (!fillInterest.fillable())
                 fillable.set(true);
         };
@@ -156,17 +156,12 @@ public class QuicStreamEndPoint extends IdleTimeout implements EndPoint
     public void fillInterested(Callback callback) throws ReadPendingException
     {
         fillInterest.register(callback);
-        if (fillable.getAndSet(false))
-            fillInterest.fillable();
     }
 
     @Override
     public boolean tryFillInterested(Callback callback)
     {
-        boolean registered = fillInterest.tryRegister(callback);
-        if (registered && fillable.getAndSet(false))
-            fillInterest.fillable();
-        return registered;
+        return fillInterest.tryRegister(callback);
     }
 
     @Override
