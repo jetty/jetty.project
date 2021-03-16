@@ -211,7 +211,7 @@ public class QuicheConnection
             LOG.debug("  < version negotiation");
 
             ssize_t generated = INSTANCE.quiche_negotiate_version(scid, scid_len.getPointee(), dcid, dcid_len.getPointee(), packetToSend, new size_t(packetToSend.remaining()));
-            packetToSend.limit(packetToSend.position() + generated.intValue());
+            packetToSend.position(packetToSend.position() + generated.intValue());
             if (generated.intValue() < 0)
                 throw new IOException("failed to create vneg packet : " + generated);
             return true;
@@ -233,7 +233,7 @@ public class QuicheConnection
                 version.getPointee(),
                 packetToSend, new size_t(packetToSend.remaining())
             );
-            packetToSend.limit(packetToSend.position() + generated.intValue());
+            packetToSend.position(packetToSend.position() + generated.intValue());
             if (generated.intValue() < 0)
                 throw new IOException("failed to create retry packet: " + LibQuiche.quiche_error.errToString(generated.intValue()));
             return true;
