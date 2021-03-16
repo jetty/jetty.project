@@ -26,6 +26,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.FillInterest;
 import org.eclipse.jetty.io.IdleTimeout;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -47,17 +48,19 @@ public class QuicStreamEndPoint extends IdleTimeout implements EndPoint
     };
     private final long streamId;
     private final QuicheConnection quicheConnection;
+    private final QuicConnection quicConnection;
     private final InetSocketAddress localAddress;
 
     private InetSocketAddress remoteAddress;
     private boolean open;
     private Connection connection;
 
-    public QuicStreamEndPoint(Scheduler scheduler, long streamId, QuicheConnection quicheConnection, InetSocketAddress localAddress, InetSocketAddress remoteAddress)
+    public QuicStreamEndPoint(Scheduler scheduler, QuicheConnection quicheConnection, QuicConnection quicConnection, InetSocketAddress localAddress, InetSocketAddress remoteAddress, long streamId)
     {
         super(scheduler);
         this.streamId = streamId;
         this.quicheConnection = quicheConnection;
+        this.quicConnection = quicConnection;
         this.localAddress = localAddress;
         this.remoteAddress = remoteAddress;
     }
@@ -120,7 +123,10 @@ public class QuicStreamEndPoint extends IdleTimeout implements EndPoint
     @Override
     public int fill(ByteBuffer buffer) throws IOException
     {
-        return quicheConnection.drainClearTextForStream(streamId, buffer);
+        BufferUtil.flipToFill(buffer);
+        int drained = quicheConnection.drainClearTextForStream(streamId, buffer);
+        buffer.flip();
+        return drained;
     }
 
     @Override
@@ -129,6 +135,8 @@ public class QuicStreamEndPoint extends IdleTimeout implements EndPoint
         for (ByteBuffer buffer : buffers)
         {
             int fed = quicheConnection.feedClearTextForStream(streamId, buffer);
+            if (fed > 0)
+                quicConnection.flushCipherText(quicheConnection, remoteAddress);
             if (buffer.hasRemaining())
                 return false;
         }

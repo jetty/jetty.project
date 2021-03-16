@@ -42,11 +42,13 @@ public class QuicConnection extends AbstractConnection
     private final ConcurrentMap<QuicheConnectionId, QuicSession> sessions = new ConcurrentHashMap<>();
     private final Connector connector;
     private final QuicheConfig quicheConfig;
+    private final ByteBufferPool byteBufferPool;
 
     public QuicConnection(Connector connector, ServerDatagramEndPoint endp)
     {
         super(endp, connector.getExecutor());
         this.connector = connector;
+        this.byteBufferPool = connector.getByteBufferPool();
 
         File[] files;
         try
@@ -93,7 +95,6 @@ public class QuicConnection extends AbstractConnection
     {
         try
         {
-            ByteBufferPool byteBufferPool = connector.getByteBufferPool();
             ByteBuffer cipherBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN + ServerDatagramEndPoint.ENCODED_ADDRESS_LENGTH, true);
             BufferUtil.flipToFill(cipherBuffer);
             while (true)
@@ -167,16 +168,20 @@ public class QuicConnection extends AbstractConnection
                         for (Long readableStreamId : readableStreamIds)
                         {
                             boolean writable = writableStreamIds.remove(readableStreamId);
-                            QuicStreamEndPoint streamEndPoint = session.getOrCreateStreamEndPoint(connector, connector.getScheduler(), getEndPoint().getLocalAddress(), remoteAddress, readableStreamId);
+                            QuicStreamEndPoint streamEndPoint = session.getOrCreateStreamEndPoint(connector, connector.getScheduler(), this, getEndPoint().getLocalAddress(), remoteAddress, readableStreamId);
                             if (LOG.isDebugEnabled())
                                 LOG.debug("selected endpoint for read{} : {}", (writable ? " and write" : ""), streamEndPoint);
-                            streamEndPoint.onSelected(remoteAddress, true, writable);
+                            Runnable runnable = streamEndPoint.onSelected(remoteAddress, true, writable);
+                            // TODO: run with EWYK
+                            runnable.run();
                         }
                         for (Long writableStreamId : writableStreamIds)
                         {
-                            QuicStreamEndPoint streamEndPoint = session.getOrCreateStreamEndPoint(connector, connector.getScheduler(), getEndPoint().getLocalAddress(), remoteAddress, writableStreamId);
+                            QuicStreamEndPoint streamEndPoint = session.getOrCreateStreamEndPoint(connector, connector.getScheduler(), this, getEndPoint().getLocalAddress(), remoteAddress, writableStreamId);
                             LOG.debug("selected endpoint for write : {}", streamEndPoint);
-                            streamEndPoint.onSelected(remoteAddress, false, true);
+                            Runnable runnable = streamEndPoint.onSelected(remoteAddress, false, true);
+                            // TODO: run with EWYK
+                            runnable.run();
                         }
                     }
                 }
@@ -187,6 +192,20 @@ public class QuicConnection extends AbstractConnection
         {
             close();
         }
+    }
+
+    public void flushCipherText(QuicheConnection quicheConnection, InetSocketAddress remoteAddress) throws IOException
+    {
+        ByteBuffer addressBuffer = createFlushableAddressBuffer(byteBufferPool, remoteAddress);
+        ByteBuffer cipherBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN + ServerDatagramEndPoint.ENCODED_ADDRESS_LENGTH, true);
+        BufferUtil.flipToFill(cipherBuffer);
+        int drained = quicheConnection.drainCipherText(cipherBuffer);
+        cipherBuffer.flip();
+        getEndPoint().write((UnequivocalCallback)x ->
+        {
+            byteBufferPool.release(addressBuffer);
+            byteBufferPool.release(cipherBuffer);
+        }, addressBuffer, cipherBuffer);
     }
 
     private static ByteBuffer createFlushableAddressBuffer(ByteBufferPool byteBufferPool, InetSocketAddress remoteAddress) throws IOException

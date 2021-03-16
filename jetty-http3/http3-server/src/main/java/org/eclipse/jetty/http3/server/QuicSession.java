@@ -42,13 +42,13 @@ public class QuicSession
         return quicheConnection;
     }
 
-    public QuicStreamEndPoint getOrCreateStreamEndPoint(Connector connector, Scheduler scheduler, InetSocketAddress localAddress, InetSocketAddress remoteAddress, long streamId)
+    public QuicStreamEndPoint getOrCreateStreamEndPoint(Connector connector, Scheduler scheduler, QuicConnection quicConnection, InetSocketAddress localAddress, InetSocketAddress remoteAddress, long streamId)
     {
         QuicStreamEndPoint endPoint = endpoints.compute(streamId, (sid, quicStreamEndPoint) ->
         {
             if (quicStreamEndPoint == null)
             {
-                quicStreamEndPoint = createQuicStreamEndPoint(connector, scheduler, localAddress, remoteAddress, streamId);
+                quicStreamEndPoint = createQuicStreamEndPoint(connector, scheduler, quicConnection, localAddress, remoteAddress, streamId);
                 LOG.debug("creating endpoint for stream {}", sid);
             }
             return quicStreamEndPoint;
@@ -57,9 +57,9 @@ public class QuicSession
         return endPoint;
     }
 
-    private QuicStreamEndPoint createQuicStreamEndPoint(Connector connector, Scheduler scheduler, InetSocketAddress localAddress, InetSocketAddress remoteAddress, long streamId)
+    private QuicStreamEndPoint createQuicStreamEndPoint(Connector connector, Scheduler scheduler, QuicConnection quicConnection, InetSocketAddress localAddress, InetSocketAddress remoteAddress, long streamId)
     {
-        QuicStreamEndPoint endPoint = new QuicStreamEndPoint(scheduler, streamId, quicheConnection, localAddress, remoteAddress);
+        QuicStreamEndPoint endPoint = new QuicStreamEndPoint(scheduler, quicheConnection, quicConnection, localAddress, remoteAddress, streamId);
 
 //        String negotiatedProtocol = quicheConnection.getNegotiatedProtocol();
 //        ConnectionFactory connectionFactory = connector.getConnectionFactory(negotiatedProtocol);
