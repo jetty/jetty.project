@@ -21,11 +21,11 @@ import java.nio.channels.WritePendingException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.http3.quiche.QuicheConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.FillInterest;
 import org.eclipse.jetty.io.IdleTimeout;
+import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -36,45 +36,48 @@ public class QuicStreamEndPoint extends IdleTimeout implements EndPoint
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicStreamEndPoint.class);
 
+    private final long createdTimeStamp = System.currentTimeMillis();
     private final AtomicBoolean fillable = new AtomicBoolean();
     private final FillInterest fillInterest = new FillInterest()
     {
         @Override
-        protected void needsFillInterest() throws IOException
+        protected void needsFillInterest()
         {
             if (fillable.getAndSet(false))
                 fillInterest.fillable();
         }
     };
-    private final long streamId;
-    private final QuicheConnection quicheConnection;
-    private final QuicConnection quicConnection;
-    private final InetSocketAddress localAddress;
-
-    private InetSocketAddress remoteAddress;
-    private boolean open;
+    private final WriteFlusher writeFlusher = new WriteFlusher(this)
+    {
+        @Override
+        protected void onIncompleteFlush()
+        {
+            // No need to do anything.
+            // See QuicSession.process().
+        }
+    };
+    private final QuicSession session;
     private Connection connection;
+    private final long streamId;
+    private boolean open;
 
-    public QuicStreamEndPoint(Scheduler scheduler, QuicheConnection quicheConnection, QuicConnection quicConnection, InetSocketAddress localAddress, InetSocketAddress remoteAddress, long streamId)
+    public QuicStreamEndPoint(Scheduler scheduler, QuicSession session, long streamId)
     {
         super(scheduler);
+        this.session = session;
         this.streamId = streamId;
-        this.quicheConnection = quicheConnection;
-        this.quicConnection = quicConnection;
-        this.localAddress = localAddress;
-        this.remoteAddress = remoteAddress;
     }
 
     @Override
     public InetSocketAddress getLocalAddress()
     {
-        return localAddress;
+        return session.getLocalAddress();
     }
 
     @Override
     public InetSocketAddress getRemoteAddress()
     {
-        return remoteAddress;
+        return session.getRemoteAddress();
     }
 
     @Override
@@ -86,7 +89,7 @@ public class QuicStreamEndPoint extends IdleTimeout implements EndPoint
     @Override
     public long getCreatedTimeStamp()
     {
-        return 0;
+        return createdTimeStamp;
     }
 
     @Override
@@ -94,24 +97,25 @@ public class QuicStreamEndPoint extends IdleTimeout implements EndPoint
     {
         try
         {
-            quicheConnection.shutdownStream(streamId, true);
+            session.shutdownOutput(streamId);
         }
-        catch (IOException e)
+        catch (IOException x)
         {
-            LOG.warn("error shutting down output", e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("error shutting down output", x);
         }
     }
 
     @Override
     public boolean isOutputShutdown()
     {
-        return false;
+        return session.isOutputShutdown(streamId);
     }
 
     @Override
     public boolean isInputShutdown()
     {
-        return false;
+        return session.isInputShutdown(streamId);
     }
 
     @Override
@@ -123,9 +127,9 @@ public class QuicStreamEndPoint extends IdleTimeout implements EndPoint
     @Override
     public int fill(ByteBuffer buffer) throws IOException
     {
-        BufferUtil.flipToFill(buffer);
-        int drained = quicheConnection.drainClearTextForStream(streamId, buffer);
-        buffer.flip();
+        int pos = BufferUtil.flipToFill(buffer);
+        int drained = session.fill(streamId, buffer);
+        BufferUtil.flipToFlush(buffer, pos);
         return drained;
     }
 
@@ -134,9 +138,9 @@ public class QuicStreamEndPoint extends IdleTimeout implements EndPoint
     {
         for (ByteBuffer buffer : buffers)
         {
-            int fed = quicheConnection.feedClearTextForStream(streamId, buffer);
-            if (fed > 0)
-                quicConnection.flushCipherText(quicheConnection, remoteAddress);
+            int flushed = session.flush(streamId, buffer);
+            if (LOG.isDebugEnabled())
+                LOG.debug("flushed {} bytes", flushed);
             if (buffer.hasRemaining())
                 return false;
         }
@@ -146,12 +150,16 @@ public class QuicStreamEndPoint extends IdleTimeout implements EndPoint
     @Override
     public Object getTransport()
     {
-        return quicheConnection;
+        return session;
     }
 
-    public Runnable onSelected(InetSocketAddress remoteAddress, boolean readable, boolean writable)
+    public void onWritable()
     {
-        this.remoteAddress = remoteAddress;
+        writeFlusher.completeWrite();
+    }
+
+    public Runnable onReadable()
+    {
         return () ->
         {
             //TODO: this is racy
@@ -181,16 +189,7 @@ public class QuicStreamEndPoint extends IdleTimeout implements EndPoint
     @Override
     public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
     {
-        try
-        {
-            boolean done = flush(buffers);
-            if (done)
-                callback.succeeded();
-        }
-        catch (IOException e)
-        {
-            callback.failed(e);
-        }
+        writeFlusher.write(callback, buffers);
     }
 
     @Override

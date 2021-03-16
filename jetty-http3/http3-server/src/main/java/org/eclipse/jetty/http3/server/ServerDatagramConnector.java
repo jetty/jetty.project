@@ -212,30 +212,30 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
                 catch (Throwable x)
                 {
                     IO.close(_channel);
-                    LOG.warn("Unable to register OP_READ on selector for {}", _channel, x);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Unable to register OP_READ on selector for {}", _channel, x);
                 }
             }
 
             @Override
             public Runnable onSelected()
             {
-                LOG.info("DatagramReader onSelected");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("DatagramReader onSelected");
                 if (!endPointCreated)
                 {
-                    synchronized (this)
+                    try
                     {
-                        if (!endPointCreated)
-                        {
-                            try
-                            {
-                                chooseSelector().createEndPoint(_channel, _key);
-                                endPointCreated = true;
-                            }
-                            catch (Throwable x)
-                            {
-                                LOG.warn("createEndPoint failed for channel {}", _channel, x);
-                            }
-                        }
+                        // TODO needs to be dispatched.
+                        chooseSelector().createEndPoint(_channel, _key);
+                        endPointCreated = true;
+                    }
+                    catch (Throwable x)
+                    {
+                        IO.close(_datagramChannel);
+                        // TODO: is this enough of we need to notify someone?
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("createEndPoint failed for channel {}", _channel, x);
                     }
                 }
                 return null;
