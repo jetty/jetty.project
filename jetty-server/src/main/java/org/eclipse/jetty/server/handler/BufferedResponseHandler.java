@@ -148,7 +148,7 @@ public class BufferedResponseHandler extends HandlerWrapper
         }
 
         // install interceptor and handle
-        out.setInterceptor(new BufferedInterceptor(baseRequest.getHttpChannel(), out.getInterceptor()));
+        out.setInterceptor(createBufferedInterceptor(baseRequest.getHttpChannel(), out.getInterceptor()));
 
         if (_handler != null)
             _handler.handle(target, baseRequest, request, response);
@@ -167,7 +167,16 @@ public class BufferedResponseHandler extends HandlerWrapper
         return _paths.test(requestURI);
     }
 
-    private class BufferedInterceptor implements HttpOutput.Interceptor
+    protected BufferedInterceptor createBufferedInterceptor(HttpChannel httpChannel, Interceptor interceptor)
+    {
+        return new ArrayBufferedInterceptor(httpChannel, interceptor);
+    }
+
+    public interface BufferedInterceptor extends HttpOutput.Interceptor
+    {
+    }
+
+    private class ArrayBufferedInterceptor implements BufferedInterceptor
     {
         final Interceptor _next;
         final HttpChannel _channel;
@@ -175,7 +184,7 @@ public class BufferedResponseHandler extends HandlerWrapper
         Boolean _aggregating;
         ByteBuffer _aggregate;
 
-        public BufferedInterceptor(HttpChannel httpChannel, Interceptor interceptor)
+        public ArrayBufferedInterceptor(HttpChannel httpChannel, Interceptor interceptor)
         {
             _next = interceptor;
             _channel = httpChannel;
@@ -188,8 +197,6 @@ public class BufferedResponseHandler extends HandlerWrapper
             _aggregating = null;
             _aggregate = null;
         }
-
-        ;
 
         @Override
         public void write(ByteBuffer content, boolean last, Callback callback)
@@ -217,7 +224,7 @@ public class BufferedResponseHandler extends HandlerWrapper
             }
 
             // If we are not aggregating, then handle normally 
-            if (!_aggregating.booleanValue())
+            if (!_aggregating)
             {
                 getNextInterceptor().write(content, last, callback);
                 return;
