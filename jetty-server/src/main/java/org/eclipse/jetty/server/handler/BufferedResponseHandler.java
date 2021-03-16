@@ -57,7 +57,7 @@ import org.slf4j.LoggerFactory;
  */
 public class BufferedResponseHandler extends HandlerWrapper
 {
-    static final Logger LOG = LoggerFactory.getLogger(BufferedResponseHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BufferedResponseHandler.class);
 
     private final IncludeExclude<String> _methods = new IncludeExclude<>();
     private final IncludeExclude<String> _paths = new IncludeExclude<>(PathSpecSet.class);
@@ -65,10 +65,7 @@ public class BufferedResponseHandler extends HandlerWrapper
 
     public BufferedResponseHandler()
     {
-        // include only GET requests
-
         _methods.include(HttpMethod.GET.asString());
-        // Exclude images, aduio and video from buffering
         for (String type : MimeTypes.getKnownMimeTypes())
         {
             if (type.startsWith("image/") ||
@@ -76,7 +73,9 @@ public class BufferedResponseHandler extends HandlerWrapper
                 type.startsWith("video/"))
                 _mimeTypes.exclude(type);
         }
-        LOG.debug("{} mime types {}", this, _mimeTypes);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} mime types {}", this, _mimeTypes);
     }
 
     public IncludeExclude<String> getMethodIncludeExclude()
@@ -99,27 +98,30 @@ public class BufferedResponseHandler extends HandlerWrapper
     {
         final ServletContext context = baseRequest.getServletContext();
         final String path = baseRequest.getPathInContext();
-        LOG.debug("{} handle {} in {}", this, baseRequest, context);
 
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} handle {} in {}", this, baseRequest, context);
+
+        // Are we already buffering?
         HttpOutput out = baseRequest.getResponse().getHttpOutput();
-
-        // Are we already being gzipped?
         HttpOutput.Interceptor interceptor = out.getInterceptor();
         while (interceptor != null)
         {
             if (interceptor instanceof BufferedInterceptor)
             {
-                LOG.debug("{} already intercepting {}", this, request);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} already intercepting {}", this, request);
                 _handler.handle(target, baseRequest, request, response);
                 return;
             }
             interceptor = interceptor.getNextInterceptor();
         }
 
-        // If not a supported method - no Vary because no matter what client, this URI is always excluded
+        // If not a supported method this URI is always excluded.
         if (!_methods.test(baseRequest.getMethod()))
         {
-            LOG.debug("{} excluded by method {}", this, request);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} excluded by method {}", this, request);
             _handler.handle(target, baseRequest, request, response);
             return;
         }
@@ -128,28 +130,30 @@ public class BufferedResponseHandler extends HandlerWrapper
         // Use pathInfo because this is be
         if (!isPathBufferable(path))
         {
-            LOG.debug("{} excluded by path {}", this, request);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} excluded by path {}", this, request);
             _handler.handle(target, baseRequest, request, response);
             return;
         }
 
-        // If the mime type is known from the path, then apply mime type filtering 
+        // If the mime type is known from the path then apply mime type filtering.
         String mimeType = context == null ? MimeTypes.getDefaultMimeByExtension(path) : context.getMimeType(path);
         if (mimeType != null)
         {
             mimeType = MimeTypes.getContentTypeWithoutCharset(mimeType);
             if (!isMimeTypeBufferable(mimeType))
             {
-                LOG.debug("{} excluded by path suffix mime type {}", this, request);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} excluded by path suffix mime type {}", this, request);
+
                 // handle normally without setting vary header
                 _handler.handle(target, baseRequest, request, response);
                 return;
             }
         }
 
-        // install interceptor and handle
+        // Install buffered interceptor and handle.
         out.setInterceptor(createBufferedInterceptor(baseRequest.getHttpChannel(), out.getInterceptor()));
-
         if (_handler != null)
             _handler.handle(target, baseRequest, request, response);
     }

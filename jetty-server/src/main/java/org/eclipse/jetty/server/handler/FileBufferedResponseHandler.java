@@ -31,6 +31,8 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -52,6 +54,8 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class FileBufferedResponseHandler extends BufferedResponseHandler
 {
+    private static final Logger LOG = LoggerFactory.getLogger(FileBufferedResponseHandler.class);
+
     private Path tempDir = new File(System.getProperty("java.io.tmpdir")).toPath();
 
     public Path getTempDir()
