@@ -3,8 +3,8 @@ package org.eclipse.jetty.http3.server;
 import java.io.File;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
@@ -16,6 +16,7 @@ import org.eclipse.jetty.http3.quiche.ffi.LibQuiche;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +45,7 @@ public class QuicConnection extends AbstractConnection
             throw new RuntimeException(e);
         }
 
+        // TODO make the QuicheConfig configurable
         quicheConfig = new QuicheConfig();
         quicheConfig.setPrivKeyPemPath(files[0].getPath());
         quicheConfig.setCertChainPemPath(files[1].getPath());
@@ -60,7 +62,8 @@ public class QuicConnection extends AbstractConnection
 
     private Collection<String> getProtocols()
     {
-        return Arrays.asList("http/0.9");
+        // TODO get the protocols from the connector
+        return Collections.singletonList("http/0.9");
     }
 
     @Override
@@ -75,55 +78,72 @@ public class QuicConnection extends AbstractConnection
     {
         try
         {
-            ByteBuffer buffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN + ServerDatagramEndPoint.ENCODED_ADDRESS_LENGTH, true);
-            // Read data
-            int fill = getEndPoint().fill(buffer);
-            if (fill < 0)
+            ByteBuffer cipherBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN + ServerDatagramEndPoint.ENCODED_ADDRESS_LENGTH, true);
+            BufferUtil.flipToFill(cipherBuffer);
+            while (true)
             {
-                byteBufferPool.release(buffer);
-                getEndPoint().shutdownOutput();
-                return;
-            }
-            if (fill == 0)
-            {
-                byteBufferPool.release(buffer);
-                fillInterested();
-                return;
-            }
+                // Read data
+                int fill = getEndPoint().fill(cipherBuffer);
+                // TODO ServerDatagramEndPoint will never return -1 to fill b/c of UDP
+                if (fill < 0)
+                {
+                    byteBufferPool.release(cipherBuffer);
+                    getEndPoint().shutdownOutput();
+                    return;
+                }
+                if (fill == 0)
+                {
+                    byteBufferPool.release(cipherBuffer);
+                    fillInterested();
+                    return;
+                }
 
-            InetSocketAddress remoteAddress = ServerDatagramEndPoint.decodeInetSocketAddress(buffer);
-            QuicheConnectionId quicheConnectionId = QuicheConnectionId.fromPacket(buffer);
-            QuicheConnection quicheConnection = connections.get(quicheConnectionId);
-            if (quicheConnection == null)
-            {
-                quicheConnection = QuicheConnection.tryAccept(quicheConfig, remoteAddress, buffer);
+                InetSocketAddress remoteAddress = ServerDatagramEndPoint.decodeInetSocketAddress(cipherBuffer);
+                QuicheConnectionId quicheConnectionId = QuicheConnectionId.fromPacket(cipherBuffer);
+                QuicheConnection quicheConnection = connections.get(quicheConnectionId);
                 if (quicheConnection == null)
                 {
-                    ByteBuffer address = byteBufferPool.acquire(ServerDatagramEndPoint.ENCODED_ADDRESS_LENGTH, true);
-                    BufferUtil.flipToFill(address);
-                    ServerDatagramEndPoint.encodeInetSocketAddress(address, remoteAddress);
-                    address.flip();
+                    quicheConnection = QuicheConnection.tryAccept(quicheConfig, remoteAddress, cipherBuffer);
+                    if (quicheConnection == null)
+                    {
+                        ByteBuffer addressBuffer = byteBufferPool.acquire(ServerDatagramEndPoint.ENCODED_ADDRESS_LENGTH, true);
+                        BufferUtil.flipToFill(addressBuffer);
+                        ServerDatagramEndPoint.encodeInetSocketAddress(addressBuffer, remoteAddress);
+                        addressBuffer.flip();
 
-                    ByteBuffer buffer2 = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN, true);
-                    BufferUtil.flipToFill(buffer2);
-                    QuicheConnection.negotiate(remoteAddress, buffer, buffer2);
+                        ByteBuffer negotiationBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN, true);
+                        BufferUtil.flipToFill(negotiationBuffer);
+                        QuicheConnection.negotiate(remoteAddress, cipherBuffer, negotiationBuffer);
+                        negotiationBuffer.flip();
 
-                    getEndPoint().flush(address, buffer2);
-                    byteBufferPool.release(address);
-                    byteBufferPool.release(buffer2);
+                        getEndPoint().write(new Callback() {
+                            @Override
+                            public void succeeded()
+                            {
+                                byteBufferPool.release(addressBuffer);
+                                byteBufferPool.release(negotiationBuffer);
+                            }
+
+                            @Override
+                            public void failed(Throwable x)
+                            {
+                                byteBufferPool.release(addressBuffer);
+                                byteBufferPool.release(negotiationBuffer);
+                            }
+                        }, addressBuffer, negotiationBuffer);
+                    }
+                    else
+                    {
+                        LOG.info("Quic connection accepted");
+                        connections.put(quicheConnectionId, quicheConnection);
+                    }
                 }
                 else
                 {
-                    LOG.info("Quic connection accepted");
-                    connections.put(quicheConnectionId, quicheConnection);
+                    quicheConnection.feedCipherText(cipherBuffer);
                 }
+                BufferUtil.clearToFill(cipherBuffer);
             }
-            else
-            {
-                quicheConnection.feedCipherText(buffer);
-            }
-            byteBufferPool.release(buffer);
-            fillInterested();
         }
         catch (Throwable x)
         {
