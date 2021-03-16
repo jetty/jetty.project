@@ -40,12 +40,14 @@ public class ServerDatagramEndPoint extends IdleTimeout implements EndPoint, Man
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerDatagramEndPoint.class);
 
+    private final AtomicBoolean fillable = new AtomicBoolean();
     private final FillInterest fillInterest = new FillInterest()
     {
         @Override
         protected void needsFillInterest() throws IOException
         {
-
+            if (fillable.getAndSet(false))
+                fillInterest.fillable();
         }
     };
     private final DatagramChannel channel;
@@ -166,19 +168,6 @@ public class ServerDatagramEndPoint extends IdleTimeout implements EndPoint, Man
         LOG.info("idle timeout", timeout);
     }
 
-    //TODO: this is racy
-    private final AtomicBoolean fillable = new AtomicBoolean();
-
-    @Override
-    public Runnable onSelected()
-    {
-        return () ->
-        {
-            if (!fillInterest.fillable())
-                fillable.set(true);
-        };
-    }
-
     @Override
     public void updateKey()
     {
@@ -192,20 +181,26 @@ public class ServerDatagramEndPoint extends IdleTimeout implements EndPoint, Man
     }
 
     @Override
+    public Runnable onSelected()
+    {
+        return () ->
+        {
+            //TODO: this is racy
+            if (!fillInterest.fillable())
+                fillable.set(true);
+        };
+    }
+
+    @Override
     public void fillInterested(Callback callback) throws ReadPendingException
     {
         fillInterest.register(callback);
-        if (fillable.getAndSet(false))
-            fillInterest.fillable();
     }
 
     @Override
     public boolean tryFillInterested(Callback callback)
     {
-        boolean registered = fillInterest.tryRegister(callback);
-        if (registered && fillable.getAndSet(false))
-            fillInterest.fillable();
-        return registered;
+        return fillInterest.tryRegister(callback);
     }
 
     @Override
