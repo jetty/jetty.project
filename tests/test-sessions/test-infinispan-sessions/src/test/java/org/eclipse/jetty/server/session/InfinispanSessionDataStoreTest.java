@@ -26,6 +26,7 @@ import org.infinispan.query.dsl.Query;
 import org.infinispan.query.dsl.QueryFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -132,7 +133,8 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
             Thread.currentThread().setContextClassLoader(old);
         }
     }
-    
+
+    @Disabled
     @Test
     public void testQuery() throws Exception
     {

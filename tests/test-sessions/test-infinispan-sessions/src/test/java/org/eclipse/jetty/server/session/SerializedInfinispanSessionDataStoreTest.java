@@ -150,7 +150,7 @@ public class SerializedInfinispanSessionDataStoreTest extends AbstractSessionDat
         {
             long now = System.currentTimeMillis();
             Query q = qf.from(InfinispanSessionData.class).having("expiry").lt(now).build();
-            assertEquals(i, q.list().size());
+            assertEquals(i, q.execute().list().size());
             Thread.sleep(1000);
         }
     }

@@ -45,7 +45,7 @@
     </Call>
     <Call name="marshaller">
       <Arg>
-          <New class="org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller"/>
+          <New class="org.infinispan.commons.marshall.ProtoStreamMarshaller"/>
        </Arg>
     </Call>
     <Call id="config" name="build"/>
@@ -61,7 +61,7 @@
   <!-- ===================================================================== -->
   <!-- Set up custom session serialization.                                  -->
   <!-- ===================================================================== -->
-  <Call id="serial_context" class="org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller" name="getSerializationContext">
+  <Call id="serial_context" class="org.infinispan.commons.marshall.ProtoStreamMarshaller" name="getSerializationContext">
     <Arg>
       <Ref refid="remoteCacheManager"/>
     </Arg>

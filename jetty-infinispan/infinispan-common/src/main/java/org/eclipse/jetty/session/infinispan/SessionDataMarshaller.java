@@ -14,14 +14,8 @@
 package org.eclipse.jetty.session.infinispan;
 
 import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 
-import org.infinispan.commons.marshall.Externalizer;
-import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.MessageMarshaller;
-import org.infinispan.protostream.ProtobufUtil;
-import org.infinispan.protostream.SerializationContext;
 
 /**
  * SessionDataMarshaller
@@ -31,29 +25,12 @@ import org.infinispan.protostream.SerializationContext;
  * control to ensure that session attributes can be deserialized using either
  * the container class loader or the webapp classloader, as appropriate.
  */
-public class SessionDataMarshaller
-        implements MessageMarshaller<InfinispanSessionData>, Externalizer<InfinispanSessionData>
+public class SessionDataMarshaller implements MessageMarshaller<InfinispanSessionData>
 {
     /**
      * The version of the serializer.
      */
     private static final int VERSION = 0;
-
-    private static SerializationContext serializationContext;
-    
-    private static synchronized void initSerializationContext() throws IOException
-    {
-        if (serializationContext != null)
-        {
-            return;
-        }
-        FileDescriptorSource fds = new FileDescriptorSource();
-        fds.addProtoFiles("/session.proto");
-        SerializationContext sCtx = ProtobufUtil.newSerializationContext();
-        sCtx.registerProtoFiles(fds);
-        sCtx.registerMarshaller(new SessionDataMarshaller());
-        serializationContext = sCtx;
-    }
 
     @Override
     public Class<? extends InfinispanSessionData> getJavaClass()
@@ -65,39 +42,6 @@ public class SessionDataMarshaller
     public String getTypeName()
     {
         return "org_eclipse_jetty_session_infinispan.InfinispanSessionData";
-    }
-
-    @Override
-    public InfinispanSessionData readObject(ObjectInput input) throws IOException, ClassNotFoundException
-    {
-        if (serializationContext == null)
-        {
-            initSerializationContext();
-        }
-
-        // invokes readFrom(ProtoStreamReader)
-        InfinispanSessionData data = ProtobufUtil.readFrom(serializationContext, new BoundDelegatingInputStream(input),
-                InfinispanSessionData.class);
-        if (data != null)
-        {
-            data.deserializeAttributes();
-        }
-        return data;
-    }
-
-    @Override
-    public void writeObject(ObjectOutput output, InfinispanSessionData object) throws IOException
-    {
-        if (serializationContext == null)
-        {
-            initSerializationContext();
-        }
-
-     // invokes writeTo(ProtoStreamWriter, InfinispanSessionData)
-        byte[] data = ProtobufUtil.toByteArray(serializationContext, object);
-        int length = data.length;
-        output.writeInt(length);
-        output.write(data);        
     }
 
     @Override
@@ -128,6 +72,14 @@ public class SessionDataMarshaller
         {
             byte[] attributeArray = in.readBytes("attributes");
             sd.setSerializedAttributes(attributeArray);
+            try
+            {
+                sd.deserializeAttributes();
+            }
+            catch (ClassNotFoundException e)
+            {
+                e.printStackTrace();
+            }
             return sd;
         }
         else

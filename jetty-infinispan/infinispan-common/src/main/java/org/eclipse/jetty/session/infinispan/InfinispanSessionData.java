@@ -21,7 +21,6 @@ import java.util.Map;
 
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
-import org.infinispan.commons.marshall.SerializeWith;
 
 /**
  * InfinispanSessionData
@@ -33,7 +32,6 @@ import org.infinispan.commons.marshall.SerializeWith;
  * pool and thus these threads have no knowledge of the correct classloader to
  * use.
  */
-@SerializeWith(SessionDataMarshaller.class)
 public class InfinispanSessionData extends SessionData
 {
     protected byte[] _serializedAttributes;

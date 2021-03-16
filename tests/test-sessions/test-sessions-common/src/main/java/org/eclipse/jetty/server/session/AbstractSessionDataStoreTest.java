@@ -30,6 +30,8 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -146,20 +148,15 @@ public abstract class AbstractSessionDataStoreTest
         //before serialization
         final SessionData finalData = data;
 
-        Runnable r = new Runnable()
+        Runnable r = () ->
         {
-
-            @Override
-            public void run()
+            try
             {
-                try
-                {
-                    store.store("aaa1", finalData);
-                }
-                catch (Exception e)
-                {
-                    fail(e);
-                }
+                store.store("aaa1", finalData);
+            }
+            catch (Exception e)
+            {
+                fail(e);
             }
         };
 
@@ -269,20 +266,15 @@ public abstract class AbstractSessionDataStoreTest
         //before serialization
         final SessionData finalData = data;
 
-        Runnable r = new Runnable()
+        Runnable r = () ->
         {
-
-            @Override
-            public void run()
+            try
             {
-                try
-                {
-                    store.store("aaa3", finalData);
-                }
-                catch (Exception e)
-                {
-                    fail(e);
-                }
+                store.store("aaa3", finalData);
+            }
+            catch (Exception e)
+            {
+                fail(e);
             }
         };
 
@@ -688,7 +680,7 @@ public abstract class AbstractSessionDataStoreTest
         Set<String> expiredIds = store.getExpired(candidates);
         assertThat(expiredIds, containsInAnyOrder("aaa15"));
     }
-    
+
     @Test
     public void testCleanOrphans() throws Exception
     {

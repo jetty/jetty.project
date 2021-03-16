@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 
+import org.eclipse.jetty.session.infinispan.InfinispanSerializationContextInitializer;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.util.IO;
 import org.hibernate.search.cfg.Environment;
@@ -32,7 +33,6 @@ import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * InfinispanTestSupport
@@ -53,7 +53,10 @@ public class InfinispanTestSupport
     {
         try
         {
-            _manager = new DefaultCacheManager(new GlobalConfigurationBuilder().jmx().build());
+            _manager = new DefaultCacheManager(new GlobalConfigurationBuilder().jmx()
+                    .serialization()
+                    .addContextInitializer(new InfinispanSerializationContextInitializer())
+                    .build());
         }
         catch (Exception e)
         {
@@ -175,7 +178,7 @@ public class InfinispanTestSupport
         {
             _cache.evict(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId());
         }
-        
+
         Object obj = _cache.get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId());
         if (obj == null)
             return false;
