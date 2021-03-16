@@ -167,7 +167,7 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
         @Override
         public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException
         {
-            return new QuicConnection(getByteBufferPool(), getExecutor(), (ServerDatagramEndPoint)endpoint);
+            return new QuicConnection(ServerDatagramConnector.this, (ServerDatagramEndPoint)endpoint);
         }
 
         @Override

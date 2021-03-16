@@ -1,13 +1,14 @@
 package org.eclipse.jetty.http3.server;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http3.quiche.QuicheConfig;
 import org.eclipse.jetty.http3.quiche.QuicheConnection;
@@ -15,6 +16,7 @@ import org.eclipse.jetty.http3.quiche.QuicheConnectionId;
 import org.eclipse.jetty.http3.quiche.ffi.LibQuiche;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
@@ -24,14 +26,14 @@ public class QuicConnection extends AbstractConnection
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicConnection.class);
 
-    private final ByteBufferPool byteBufferPool;
-    private final ConcurrentMap<QuicheConnectionId, QuicheConnection> connections = new ConcurrentHashMap<>();
+    private final ConcurrentMap<QuicheConnectionId, QuicSession> sessions = new ConcurrentHashMap<>();
+    private final Connector connector;
     private final QuicheConfig quicheConfig;
 
-    public QuicConnection(ByteBufferPool byteBufferPool, Executor executor, ServerDatagramEndPoint endp)
+    public QuicConnection(Connector connector, ServerDatagramEndPoint endp)
     {
-        super(endp, executor);
-        this.byteBufferPool = byteBufferPool;
+        super(endp, connector.getExecutor());
+        this.connector = connector;
 
         File[] files;
         try
@@ -78,6 +80,7 @@ public class QuicConnection extends AbstractConnection
     {
         try
         {
+            ByteBufferPool byteBufferPool = connector.getByteBufferPool();
             ByteBuffer cipherBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN + ServerDatagramEndPoint.ENCODED_ADDRESS_LENGTH, true);
             BufferUtil.flipToFill(cipherBuffer);
             while (true)
@@ -100,47 +103,69 @@ public class QuicConnection extends AbstractConnection
 
                 InetSocketAddress remoteAddress = ServerDatagramEndPoint.decodeInetSocketAddress(cipherBuffer);
                 QuicheConnectionId quicheConnectionId = QuicheConnectionId.fromPacket(cipherBuffer);
-                QuicheConnection quicheConnection = connections.get(quicheConnectionId);
-                if (quicheConnection == null)
+                if (quicheConnectionId == null)
                 {
-                    quicheConnection = QuicheConnection.tryAccept(quicheConfig, remoteAddress, cipherBuffer);
+                    BufferUtil.clearToFill(cipherBuffer);
+                    continue;
+                }
+
+                QuicSession session = sessions.get(quicheConnectionId);
+                if (session == null)
+                {
+                    QuicheConnection quicheConnection = QuicheConnection.tryAccept(quicheConfig, remoteAddress, cipherBuffer);
                     if (quicheConnection == null)
                     {
-                        ByteBuffer addressBuffer = byteBufferPool.acquire(ServerDatagramEndPoint.ENCODED_ADDRESS_LENGTH, true);
-                        BufferUtil.flipToFill(addressBuffer);
-                        ServerDatagramEndPoint.encodeInetSocketAddress(addressBuffer, remoteAddress);
-                        addressBuffer.flip();
+                        ByteBuffer addressBuffer = createFlushableAddressBuffer(byteBufferPool, remoteAddress);
 
                         ByteBuffer negotiationBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN, true);
                         BufferUtil.flipToFill(negotiationBuffer);
                         QuicheConnection.negotiate(remoteAddress, cipherBuffer, negotiationBuffer);
                         negotiationBuffer.flip();
 
-                        getEndPoint().write(new Callback() {
-                            @Override
-                            public void succeeded()
-                            {
-                                byteBufferPool.release(addressBuffer);
-                                byteBufferPool.release(negotiationBuffer);
-                            }
-
-                            @Override
-                            public void failed(Throwable x)
-                            {
-                                byteBufferPool.release(addressBuffer);
-                                byteBufferPool.release(negotiationBuffer);
-                            }
+                        getEndPoint().write((UnequivocalCallback)x ->
+                        {
+                            byteBufferPool.release(addressBuffer);
+                            byteBufferPool.release(negotiationBuffer);
                         }, addressBuffer, negotiationBuffer);
                     }
                     else
                     {
                         LOG.info("Quic connection accepted");
-                        connections.put(quicheConnectionId, quicheConnection);
+                        sessions.putIfAbsent(quicheConnectionId, new QuicSession(quicheConnection));
                     }
                 }
                 else
                 {
+                    QuicheConnection quicheConnection = session.getQuicheConnection();
                     quicheConnection.feedCipherText(cipherBuffer);
+                    cipherBuffer.clear();
+                    quicheConnection.drainCipherText(cipherBuffer);
+                    cipherBuffer.flip();
+                    ByteBuffer addressBuffer = createFlushableAddressBuffer(byteBufferPool, remoteAddress);
+                    getEndPoint().write((UnequivocalCallback)x -> byteBufferPool.release(addressBuffer), addressBuffer, cipherBuffer);
+
+                    if (quicheConnection.isConnectionEstablished())
+                    {
+                        List<Long> readableStreamIds = quicheConnection.readableStreamIds();
+                        LOG.debug("readable stream ids: {}", readableStreamIds);
+                        List<Long> writableStreamIds = quicheConnection.writableStreamIds();
+                        LOG.debug("writable stream ids: {}", writableStreamIds);
+
+                        for (Long readableStreamId : readableStreamIds)
+                        {
+                            boolean writable = writableStreamIds.remove(readableStreamId);
+                            QuicStreamEndPoint streamEndPoint = session.getOrCreateStreamEndPoint(connector, connector.getScheduler(), getEndPoint().getLocalAddress(), remoteAddress, readableStreamId);
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("selected endpoint for read{} : {}", (writable ? " and write" : ""), streamEndPoint);
+                            streamEndPoint.onSelected(remoteAddress, true, writable);
+                        }
+                        for (Long writableStreamId : writableStreamIds)
+                        {
+                            QuicStreamEndPoint streamEndPoint = session.getOrCreateStreamEndPoint(connector, connector.getScheduler(), getEndPoint().getLocalAddress(), remoteAddress, writableStreamId);
+                            LOG.debug("selected endpoint for write : {}", streamEndPoint);
+                            streamEndPoint.onSelected(remoteAddress, false, true);
+                        }
+                    }
                 }
                 BufferUtil.clearToFill(cipherBuffer);
             }
@@ -150,4 +175,31 @@ public class QuicConnection extends AbstractConnection
             close();
         }
     }
+
+    private static ByteBuffer createFlushableAddressBuffer(ByteBufferPool byteBufferPool, InetSocketAddress remoteAddress) throws IOException
+    {
+        ByteBuffer addressBuffer = byteBufferPool.acquire(ServerDatagramEndPoint.ENCODED_ADDRESS_LENGTH, true);
+        BufferUtil.flipToFill(addressBuffer);
+        ServerDatagramEndPoint.encodeInetSocketAddress(addressBuffer, remoteAddress);
+        addressBuffer.flip();
+        return addressBuffer;
+    }
+
+    private interface UnequivocalCallback extends Callback
+    {
+        @Override
+        default void succeeded()
+        {
+            any(null);
+        }
+
+        @Override
+        default void failed(Throwable x)
+        {
+            any(x);
+        }
+
+        void any(Throwable x);
+    }
+
 }
