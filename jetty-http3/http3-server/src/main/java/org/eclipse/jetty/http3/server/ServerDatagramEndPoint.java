@@ -31,6 +31,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.FillInterest;
 import org.eclipse.jetty.io.IdleTimeout;
 import org.eclipse.jetty.io.ManagedSelector;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -122,6 +123,8 @@ public class ServerDatagramEndPoint extends IdleTimeout implements EndPoint, Man
     @Override
     public int fill(ByteBuffer buffer) throws IOException
     {
+        BufferUtil.flipToFill(buffer);
+
         int headerPosition = buffer.position();
         buffer.position(buffer.position() + ENCODED_ADDRESS_LENGTH);
         InetSocketAddress peer = (InetSocketAddress)channel.receive(buffer);

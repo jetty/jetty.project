@@ -96,7 +96,6 @@ public class QuicConnection extends AbstractConnection
         try
         {
             ByteBuffer cipherBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN + ServerDatagramEndPoint.ENCODED_ADDRESS_LENGTH, true);
-            BufferUtil.flipToFill(cipherBuffer);
             while (true)
             {
                 // Read data
@@ -185,7 +184,7 @@ public class QuicConnection extends AbstractConnection
                         }
                     }
                 }
-                BufferUtil.clearToFill(cipherBuffer);
+                cipherBuffer.clear().flip();
             }
         }
         catch (Throwable x)
