@@ -154,7 +154,8 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
 
             try
             {
-                aggregate(content);
+                if (BufferUtil.hasContent(content))
+                    aggregate(content);
             }
             catch (Throwable t)
             {
@@ -189,6 +190,13 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
 
         protected void commit(Callback callback)
         {
+            if (_bufferedOutputStream == null)
+            {
+                // We have no content to write, signal next interceptor that we are finished.
+                getNextInterceptor().write(BufferUtil.EMPTY_BUFFER, true, callback);
+                return;
+            }
+
             try
             {
                 _bufferedOutputStream.flush();
