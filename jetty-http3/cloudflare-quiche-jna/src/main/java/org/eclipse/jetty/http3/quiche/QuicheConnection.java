@@ -200,11 +200,11 @@ public class QuicheConnection
         if (rc < 0)
             throw new IOException("failed to parse header: " + LibQuiche.quiche_error.errToString(rc));
 
-        LOG.debug("version: " + version);
-        LOG.debug("type: " + type);
-        LOG.debug("scid len: " + scid_len);
-        LOG.debug("dcid len: " + dcid_len);
-        LOG.debug("token len: " + token_len);
+        LOG.debug("version: {}", version);
+        LOG.debug("type: {}", type);
+        LOG.debug("scid len: {}", scid_len);
+        LOG.debug("dcid len: {}", dcid_len);
+        LOG.debug("token len: {}", token_len);
 
         if (!INSTANCE.quiche_version_is_supported(version.getPointee()))
         {
@@ -270,11 +270,11 @@ public class QuicheConnection
         if (rc < 0)
             throw new IOException("failed to parse header: " + LibQuiche.quiche_error.errToString(rc));
 
-        LOG.debug("version: " + version);
-        LOG.debug("type: " + type);
-        LOG.debug("scid len: " + scid_len);
-        LOG.debug("dcid len: " + dcid_len);
-        LOG.debug("token len: " + token_len);
+        LOG.debug("version: {}", version);
+        LOG.debug("type: {}", type);
+        LOG.debug("scid len: {}", scid_len);
+        LOG.debug("dcid len: {}", dcid_len);
+        LOG.debug("token len: {}", token_len);
 
         if (!INSTANCE.quiche_version_is_supported(version.getPointee()))
         {
