@@ -221,12 +221,9 @@ public class QuicSession
                     if (LOG.isDebugEnabled())
                         LOG.debug("quiche timeout callback");
                     quicheConnection.onTimeout();
-                    if (quicheConnection.isConnectionClosed())
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("quiche connection closed after timeout, re-flushing");
-                        iterate();
-                    }
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("re-iterating quiche after timeout");
+                    iterate();
                 }
             };
         }
@@ -256,7 +253,11 @@ public class QuicSession
             if (drained == 0)
             {
                 if (quicheConnection.isConnectionClosed())
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("quiche connection closed");
                     QuicSession.this.close();
+                }
                 return Action.IDLE;
             }
             BufferUtil.flipToFlush(cipherBuffer, pos);
