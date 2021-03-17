@@ -64,21 +64,29 @@ public class QuicSession
         return flushed;
     }
 
-    public boolean isInputShutdown(long streamId)
+    public boolean isFinished(long streamId)
     {
-        // TODO:
-        return false;
+        return quicheConnection.isStreamFinished(streamId);
     }
 
-    public boolean isOutputShutdown(long streamId)
+    public void sendFinished(long streamId) throws IOException
     {
-        // TODO:
-        return false;
+        quicheConnection.feedFinForStream(streamId);
+    }
+
+    public void shutdownInput(long streamId) throws IOException
+    {
+        quicheConnection.shutdownStream(streamId, false);
     }
 
     public void shutdownOutput(long streamId) throws IOException
     {
         quicheConnection.shutdownStream(streamId, true);
+    }
+
+    public void onClose(long streamId)
+    {
+        endpoints.remove(streamId);
     }
 
     InetSocketAddress getLocalAddress()
