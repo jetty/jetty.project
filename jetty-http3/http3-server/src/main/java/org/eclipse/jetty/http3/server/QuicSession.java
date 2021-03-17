@@ -239,8 +239,8 @@ public class QuicSession
         protected Action process() throws IOException
         {
             ByteBufferPool byteBufferPool = connector.getByteBufferPool();
-            addressBuffer = QuicConnection.encodeInetSocketAddress(byteBufferPool, remoteAddress);
-            cipherBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN + ServerDatagramEndPoint.ENCODED_ADDRESS_LENGTH, true);
+            addressBuffer = AddressCodec.encodeInetSocketAddress(byteBufferPool, remoteAddress);
+            cipherBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN + AddressCodec.ENCODED_ADDRESS_LENGTH, true);
             int pos = BufferUtil.flipToFill(cipherBuffer);
             int drained = quicheConnection.drainCipherText(cipherBuffer);
             long nextTimeoutInMs = quicheConnection.nextTimeout();

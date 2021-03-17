@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http3.server;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
@@ -104,7 +103,7 @@ public class QuicConnection extends AbstractConnection
     {
         try
         {
-            ByteBuffer cipherBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN + ServerDatagramEndPoint.ENCODED_ADDRESS_LENGTH, true);
+            ByteBuffer cipherBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN + AddressCodec.ENCODED_ADDRESS_LENGTH, true);
             while (true)
             {
                 int fill = getEndPoint().fill(cipherBuffer);
@@ -118,7 +117,7 @@ public class QuicConnection extends AbstractConnection
                 if (LOG.isDebugEnabled())
                     LOG.debug("received buffer(address+ciphertext) of size {}", cipherBuffer.remaining());
 
-                InetSocketAddress remoteAddress = ServerDatagramEndPoint.decodeInetSocketAddress(cipherBuffer);
+                InetSocketAddress remoteAddress = AddressCodec.decodeInetSocketAddress(cipherBuffer);
                 if (LOG.isDebugEnabled())
                     LOG.debug("decoded peer IP address: {}, ciphertext packet size: {}", remoteAddress, cipherBuffer.remaining());
 
@@ -141,7 +140,7 @@ public class QuicConnection extends AbstractConnection
                     QuicheConnection quicheConnection = QuicheConnection.tryAccept(quicheConfig, remoteAddress, cipherBuffer);
                     if (quicheConnection == null)
                     {
-                        ByteBuffer addressBuffer = encodeInetSocketAddress(byteBufferPool, remoteAddress);
+                        ByteBuffer addressBuffer = AddressCodec.encodeInetSocketAddress(byteBufferPool, remoteAddress);
 
                         ByteBuffer negotiationBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN, true);
                         int pos = BufferUtil.flipToFill(negotiationBuffer);
@@ -189,15 +188,6 @@ public class QuicConnection extends AbstractConnection
     {
         flusher.offer(callback, buffers);
         flusher.iterate();
-    }
-
-    static ByteBuffer encodeInetSocketAddress(ByteBufferPool byteBufferPool, InetSocketAddress remoteAddress) throws IOException
-    {
-        ByteBuffer addressBuffer = byteBufferPool.acquire(ServerDatagramEndPoint.ENCODED_ADDRESS_LENGTH, true);
-        int pos = BufferUtil.flipToFill(addressBuffer);
-        ServerDatagramEndPoint.encodeInetSocketAddress(addressBuffer, remoteAddress);
-        BufferUtil.flipToFlush(addressBuffer, pos);
-        return addressBuffer;
     }
 
     private class Flusher extends IteratingCallback
