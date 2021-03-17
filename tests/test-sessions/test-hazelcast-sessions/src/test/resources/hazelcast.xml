@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hazelcast xsi:schemaLocation="http://www.hazelcast.com/schema/config hazelcast-config-3.11.xsd"
+           xmlns="http://www.hazelcast.com/schema/config"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <user-code-deployment enabled="true">
+    <class-cache-mode>ETERNAL</class-cache-mode>
+    <provider-mode>LOCAL_AND_CACHED_CLASSES</provider-mode>
+  <!--  <blacklist-prefixes>com.foo</blacklist-prefixes>-->
+  <!--  <whitelist-prefixes>com.bar.MyClass</whitelist-prefixes>-->
+  <!--  <provider-filter>HAS_ATTRIBUTE:lite</provider-filter>-->
+  </user-code-deployment>
+</hazelcast>

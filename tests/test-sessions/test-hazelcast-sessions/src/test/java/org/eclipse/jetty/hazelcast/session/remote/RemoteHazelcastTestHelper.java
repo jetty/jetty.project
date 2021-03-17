@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
+import com.hazelcast.client.config.ClientUserCodeDeploymentConfig;
 import com.hazelcast.config.SerializerConfig;
 import com.hazelcast.core.HazelcastInstance;
 import org.eclipse.jetty.hazelcast.session.HazelcastSessionDataStoreFactory;
@@ -32,8 +33,10 @@ import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -55,10 +58,17 @@ public class RemoteHazelcastTestHelper
         try
         {
             long start = System.currentTimeMillis();
-            HAZELCAST =
-                new GenericContainer("hazelcast/hazelcast:" + System.getProperty("hazelcast.version", "3.12.6"));
 
-            HAZELCAST.withLogConsumer(new Slf4jLogConsumer(HAZELCAST_LOG)).start();
+            HAZELCAST =
+                new GenericContainer("hazelcast/hazelcast:" + System.getProperty("hazelcast.version", "3.12.6"))
+                    .withExposedPorts(5701)
+                    .withClasspathResourceMapping("hazelcast.xml",
+                                               "/opt/hazelcast/hazelcast.xml",
+                                                BindMode.READ_ONLY)
+                    .waitingFor(Wait.forListeningPort())
+                    .withLogConsumer(new Slf4jLogConsumer(HAZELCAST_LOG));
+
+            HAZELCAST.start();
             host =  HAZELCAST.getContainerIpAddress();
             port = HAZELCAST.getMappedPort(5701);
             LOG.info("Hazelcast container started for {}:{} - {}ms", host, port,
@@ -74,7 +84,7 @@ public class RemoteHazelcastTestHelper
     public static SessionDataStoreFactory createSessionDataStoreFactory()
     {
         HazelcastSessionDataStoreFactory factory = new HazelcastSessionDataStoreFactory();
-        factory.setOnlyClient(true);
+        factory.setOnlyClient(false);
         factory.setMapName(_name);
         factory.setHazelcastInstance(buildClient());
 
@@ -92,6 +102,14 @@ public class RemoteHazelcastTestHelper
             .setImplementation(new SessionDataSerializer())
             .setTypeClass(SessionData.class);
         clientConfig.getSerializationConfig().addSerializerConfig(sc);
+
+        ClientUserCodeDeploymentConfig clientUserCodeDeploymentConfig = new ClientUserCodeDeploymentConfig();
+        clientUserCodeDeploymentConfig.setEnabled(true);
+        clientUserCodeDeploymentConfig.addClass(org.eclipse.jetty.server.session.Foo.class);
+        clientUserCodeDeploymentConfig.addClass(org.eclipse.jetty.server.session.TestFoo.class);
+        clientConfig.setUserCodeDeploymentConfig(clientUserCodeDeploymentConfig);
+        clientConfig.setClassLoader(org.eclipse.jetty.server.session.TestFoo.class.getClassLoader());
+
         return HazelcastClient.newHazelcastClient(clientConfig);
     }
 
@@ -104,7 +122,8 @@ public class RemoteHazelcastTestHelper
     public static boolean checkSessionExists(SessionData data)
         throws Exception
     {
-        return (buildClient().getMap(_name).get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId()) != null);
+        //return (buildClient().getMap(_name).get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId()) != null);
+        return buildClient().getMap(_name).containsKey(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId());
     }
 
     public static boolean checkSessionPersisted(SessionData data)
