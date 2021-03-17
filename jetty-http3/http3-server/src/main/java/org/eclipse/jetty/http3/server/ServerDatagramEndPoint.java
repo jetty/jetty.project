@@ -200,7 +200,7 @@ public class ServerDatagramEndPoint extends IdleTimeout implements EndPoint, Man
     public Runnable onSelected()
     {
         // TODO: need to handle both read and write events.
-        selectionKey.interestOps(~SelectionKey.OP_READ);
+        //selectionKey.interestOps(~SelectionKey.OP_READ);
 
 
         return () ->
