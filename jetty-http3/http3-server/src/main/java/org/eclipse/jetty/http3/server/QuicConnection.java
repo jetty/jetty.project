@@ -19,7 +19,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -87,8 +87,9 @@ public class QuicConnection extends AbstractConnection
 
     private Collection<String> getProtocols()
     {
-        // TODO get the protocols from the connector
-        return Collections.singletonList("http/0.9");
+        List<String> protocols = connector.getProtocols();
+        protocols.add(0, "http/0.9"); // TODO this is only needed for Quiche example clients
+        return protocols;
     }
 
     @Override
@@ -114,18 +115,29 @@ public class QuicConnection extends AbstractConnection
                     fillInterested();
                     return;
                 }
+                if (LOG.isDebugEnabled())
+                    LOG.debug("received buffer(address+ciphertext) of size {}", cipherBuffer.remaining());
 
                 InetSocketAddress remoteAddress = ServerDatagramEndPoint.decodeInetSocketAddress(cipherBuffer);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("decoded peer IP address: {}, ciphertext packet size: {}", remoteAddress, cipherBuffer.remaining());
+
                 QuicheConnectionId quicheConnectionId = QuicheConnectionId.fromPacket(cipherBuffer);
                 if (quicheConnectionId == null)
                 {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("packet contains undecipherable connection ID, dropping it");
                     BufferUtil.clear(cipherBuffer);
                     continue;
                 }
+                if (LOG.isDebugEnabled())
+                    LOG.debug("packet contains connection ID {}", quicheConnectionId);
 
                 QuicSession session = sessions.get(quicheConnectionId);
                 if (session == null)
                 {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("no existing session with connection ID {}, trying to accept new QUIC connection", quicheConnectionId);
                     QuicheConnection quicheConnection = QuicheConnection.tryAccept(quicheConfig, remoteAddress, cipherBuffer);
                     if (quicheConnection == null)
                     {
@@ -133,7 +145,12 @@ public class QuicConnection extends AbstractConnection
 
                         ByteBuffer negotiationBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN, true);
                         int pos = BufferUtil.flipToFill(negotiationBuffer);
-                        QuicheConnection.negotiate(remoteAddress, cipherBuffer, negotiationBuffer);
+                        if (!QuicheConnection.negotiate(remoteAddress, cipherBuffer, negotiationBuffer))
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("QUIC connection negotiation failed, dropping packet");
+                            continue;
+                        }
                         BufferUtil.flipToFlush(negotiationBuffer, pos);
 
                         getEndPoint().write(Callback.from(() ->
@@ -141,20 +158,24 @@ public class QuicConnection extends AbstractConnection
                             byteBufferPool.release(addressBuffer);
                             byteBufferPool.release(negotiationBuffer);
                         }), addressBuffer, negotiationBuffer);
-
-                        // TODO: is cipherBuffer fully consumed here?
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("QUIC connection negotiation packet sent");
                     }
                     else
                     {
                         session = new QuicSession(connector, quicheConnectionId, quicheConnection, this, remoteAddress);
                         sessions.putIfAbsent(quicheConnectionId, session);
-                        session.flush();
+                        session.flush(); // send the response packet(s) that accept generated.
                         if (LOG.isDebugEnabled())
-                            LOG.debug("created QUIC session {}", session);
+                            LOG.debug("created QUIC session {} with connection ID {}", session, quicheConnectionId);
                     }
+
+                    // Once here, cipherBuffer has been fully consumed.
                     continue;
                 }
 
+                if (LOG.isDebugEnabled())
+                    LOG.debug("packet is for existing session with connection ID {}, processing it ({} byte(s))", quicheConnectionId, cipherBuffer.remaining());
                 session.process(remoteAddress, cipherBuffer);
             }
         }

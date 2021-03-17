@@ -175,6 +175,11 @@ public class QuicheConnection
         return type.getValue();
     }
 
+    /**
+     * Fully consumes the {@code packetRead} buffer.
+     * @return true if a negotiation packet was written to the {@code packetToSend} buffer, false if negotiation failed
+     * and the {@code packetRead} buffer can be dropped.
+     */
     public static boolean negotiate(SocketAddress peer, ByteBuffer packetRead, ByteBuffer packetToSend) throws IOException
     {
         uint8_t_pointer type = new uint8_t_pointer();
@@ -199,6 +204,7 @@ public class QuicheConnection
             token, token_len);
         if (rc < 0)
             throw new IOException("failed to parse header: " + LibQuiche.quiche_error.errToString(rc));
+        packetRead.position(packetRead.limit());
 
         LOG.debug("version: {}", version);
         LOG.debug("type: {}", type);
@@ -243,7 +249,8 @@ public class QuicheConnection
     }
 
     /**
-     * Only consume the {@code packetRead} if the connection was accepted.
+     * Fully consumes the {@code packetRead} buffer if the connection was accepted.
+     * @return an established connection if accept succeeded, null if accept failed and negotiation should be tried.
      */
     public static QuicheConnection tryAccept(QuicheConfig quicheConfig, SocketAddress peer, ByteBuffer packetRead) throws IOException
     {
@@ -306,8 +313,11 @@ public class QuicheConnection
 
         LOG.debug("  < connection created");
         QuicheConnection quicheConnection = new QuicheConnection(quicheConn, libQuicheConfig);
-        quicheConnection.feedCipherText(packetRead);
         LOG.debug("accepted, immediately receiving the same packet - remaining in buffer: {}", packetRead.remaining());
+        while (packetRead.hasRemaining())
+        {
+            quicheConnection.feedCipherText(packetRead);
+        }
         return quicheConnection;
     }
 
