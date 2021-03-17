@@ -24,6 +24,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -155,6 +157,15 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
             {
                 assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
                 assertEquals(0, run1.getExitValue());
+
+
+                Path jettyBase = distribution.getJettyBase();
+                //session-store-hazelcast-remote.ini
+                // we should not need this
+                File startdDirectory = new File(jettyBase.toFile(), "start.d");
+                Files.copy(Paths.get("src/test/resources/session-store-hazelcast-remote.ini"),
+                           new File(startdDirectory, "session-store-hazelcast-remote.ini").toPath(),
+                           StandardCopyOption.REPLACE_EXISTING);
 
                 File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
                 distribution.installWarFile(war, "test");
