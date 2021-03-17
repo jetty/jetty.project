@@ -403,7 +403,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             LOG.debug("Created {}", endPoint);
     }
 
-    void destroyEndPoint(EndPoint endPoint, Throwable cause)
+    public void destroyEndPoint(EndPoint endPoint, Throwable cause)
     {
         // Waking up the selector is necessary to clean the
         // cancelled-key set and tell the TCP stack that the
@@ -420,7 +420,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    static int safeReadyOps(SelectionKey selectionKey)
+    public static int safeReadyOps(SelectionKey selectionKey)
     {
         try
         {
@@ -433,7 +433,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    static int safeInterestOps(SelectionKey selectionKey)
+    public static int safeInterestOps(SelectionKey selectionKey)
     {
         try
         {

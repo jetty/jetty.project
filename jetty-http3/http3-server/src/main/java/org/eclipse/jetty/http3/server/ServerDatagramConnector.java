@@ -174,7 +174,7 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
         @Override
         protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException
         {
-            return new ServerDatagramEndPoint(getScheduler(), (DatagramChannel)channel, selector, selectionKey);
+            return new ServerDatagramEndPoint((DatagramChannel)channel, selector, selectionKey, getScheduler());
         }
 
         @Override
