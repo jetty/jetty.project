@@ -197,14 +197,15 @@ public abstract class CompressExtension extends AbstractExtension
 
             while (true)
             {
+                // The buffer returned by the accumulator might not be empty, so we must append starting from the limit.
                 ByteBuffer buffer = accumulator.ensureBuffer(DECOMPRESS_BUF_SIZE);
-                int read = inflater.inflate(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.capacity() - buffer.limit());
-                buffer.limit(buffer.limit() + read);
-                accumulator.addLength(read);
+                int decompressed = inflater.inflate(buffer.array(), buffer.arrayOffset() + buffer.limit(), buffer.capacity() - buffer.limit());
+                buffer.limit(buffer.limit() + decompressed);
+                accumulator.addLength(decompressed);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Decompressed {} bytes into buffer {} from {}", read, BufferUtil.toDetailString(buffer), toDetail(inflater));
+                    LOG.debug("Decompressed {} bytes into buffer {} from {}", decompressed, BufferUtil.toDetailString(buffer), toDetail(inflater));
 
-                if (read <= 0)
+                if (decompressed <= 0)
                     break;
             }
         }
@@ -495,8 +496,9 @@ public abstract class CompressExtension extends AbstractExtension
                 {
                     while (true)
                     {
+                        // The buffer returned by the accumulator might not be empty, so we must append starting from the limit.
                         ByteBuffer buffer = accumulator.ensureBuffer(8, outputLength);
-                        int compressed = deflater.deflate(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.capacity() - buffer.limit(), Deflater.SYNC_FLUSH);
+                        int compressed = deflater.deflate(buffer.array(), buffer.arrayOffset() + buffer.limit(), buffer.capacity() - buffer.limit(), Deflater.SYNC_FLUSH);
                         buffer.limit(buffer.limit() + compressed);
 
                         if (LOG.isDebugEnabled())
