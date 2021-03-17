@@ -192,12 +192,14 @@ public class QuicSession
     private void close()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Closing QUIC session {}", this);
+            LOG.debug("closing QUIC session {}", this);
         endpoints.values().forEach(AbstractEndPoint::close);
         endpoints.clear();
         flusher.close();
         quicheConnection.dispose();
         connection.onClose(quicheConnectionId);
+        if (LOG.isDebugEnabled())
+            LOG.debug("closed QUIC session {}", this);
     }
 
     @Override
