@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -82,7 +81,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
         private final HttpChannel _channel;
         private Boolean _aggregating;
         private Path _filePath;
-        private OutputStream _bufferedOutputStream;
+        private OutputStream _fileOutputStream;
 
         public FileBufferedInterceptor(HttpChannel httpChannel, Interceptor interceptor)
         {
@@ -105,8 +104,8 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
                 }
             }
 
-            IO.close(_bufferedOutputStream);
-            _bufferedOutputStream = null;
+            IO.close(_fileOutputStream);
+            _fileOutputStream = null;
             _aggregating = null;
             _filePath = null;
         }
@@ -172,14 +171,14 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
 
         protected void aggregate(ByteBuffer content) throws IOException
         {
-            if (_bufferedOutputStream == null)
+            if (_fileOutputStream == null)
             {
                 // Create a new OutputStream to a file.
                 _filePath = Files.createTempFile(tempDir, "BufferedResponse", "");
-                _bufferedOutputStream = new BufferedOutputStream(Files.newOutputStream(_filePath, StandardOpenOption.WRITE));
+                _fileOutputStream = Files.newOutputStream(_filePath, StandardOpenOption.WRITE);
             }
 
-            BufferUtil.writeTo(content, _bufferedOutputStream);
+            BufferUtil.writeTo(content, _fileOutputStream);
         }
 
         @Override
@@ -190,7 +189,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
 
         protected void commit(Callback callback)
         {
-            if (_bufferedOutputStream == null)
+            if (_fileOutputStream == null)
             {
                 // We have no content to write, signal next interceptor that we are finished.
                 getNextInterceptor().write(BufferUtil.EMPTY_BUFFER, true, callback);
@@ -199,9 +198,8 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
 
             try
             {
-                _bufferedOutputStream.flush();
-                _bufferedOutputStream.close();
-                _bufferedOutputStream = null;
+                _fileOutputStream.close();
+                _fileOutputStream = null;
             }
             catch (Throwable t)
             {

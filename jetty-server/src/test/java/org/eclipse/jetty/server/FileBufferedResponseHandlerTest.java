@@ -16,11 +16,16 @@ package org.eclipse.jetty.server;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -28,17 +33,24 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.FileBufferedResponseHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FileBufferedResponseHandlerTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(FileBufferedResponseHandlerTest.class);
+
     private Server _server;
     private LocalConnector _local;
     private Path _testDir;
@@ -76,15 +88,6 @@ public class FileBufferedResponseHandlerTest
         _server.stop();
     }
 
-    public int getNumFiles()
-    {
-        File[] files = _testDir.toFile().listFiles();
-        if (files == null)
-            return 0;
-
-        return files.length;
-    }
-
     @Test
     public void testPathNotIncluded() throws Exception
     {
@@ -115,7 +118,7 @@ public class FileBufferedResponseHandlerTest
     }
 
     @Test
-    public void testIncluded() throws Exception
+    public void testIncludedByPath() throws Exception
     {
         _bufferedHandler.setHandler(new AbstractHandler()
         {
@@ -364,6 +367,97 @@ public class FileBufferedResponseHandlerTest
         assertThat(getNumFiles(), is(0));
     }
 
+    @Test
+    public void testFileLargerThanMaxInteger() throws Exception
+    {
+        long fileSize = Integer.MAX_VALUE + 1234L;
+        byte[] bytes = randomBytes(1024 * 1024);
+
+        _bufferedHandler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                baseRequest.setHandled(true);
+                ServletOutputStream outputStream = response.getOutputStream();
+
+                long written = 0;
+                while (written < fileSize)
+                {
+                    int length = Math.toIntExact(Math.min(bytes.length, fileSize - written));
+                    outputStream.write(bytes, 0, length);
+                    written += length;
+                }
+                outputStream.flush();
+
+                response.setHeader("NumFiles", Integer.toString(getNumFiles()));
+                response.setHeader("FileSize", Long.toString(getFileSize()));
+            }
+        });
+
+        _server.start();
+        LocalConnector.LocalEndPoint endpoint = _local.executeRequest("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+
+        AtomicLong received = new AtomicLong();
+        HttpTester.Response response = new HttpTester.Response()
+        {
+            @Override
+            public boolean content(ByteBuffer ref)
+            {
+                // Verify the content is what was sent.
+                while (ref.hasRemaining())
+                {
+                    byte byteFromBuffer = ref.get();
+                    long totalReceived = received.getAndIncrement();
+                    int bytesIndex = (int)(totalReceived % bytes.length);
+                    byte byteFromArray = bytes[bytesIndex];
+
+                    if (byteFromBuffer != byteFromArray)
+                    {
+                        LOG.warn("Mismatch at index {} received bytes {}, {}!={}", bytesIndex, totalReceived, byteFromBuffer, byteFromArray, new IllegalStateException());
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        };
+
+        HttpParser parser = new HttpParser(response);
+        while (true)
+        {
+            ByteBuffer buffer = endpoint.waitForOutput(5, TimeUnit.SECONDS);
+            if (BufferUtil.isEmpty(buffer) && endpoint.isInputShutdown())
+                break;
+
+            if (parser.parseNext(buffer))
+                break;
+        }
+
+        assertTrue(response.isComplete());
+        assertThat(response.get("NumFiles"), is("1"));
+        assertThat(response.get("FileSize"), is(Long.toString(fileSize)));
+        assertThat(received.get(), is(fileSize));
+        assertThat(getNumFiles(), is(0));
+    }
+
+    private int getNumFiles()
+    {
+        File[] files = _testDir.toFile().listFiles();
+        if (files == null)
+            return 0;
+
+        return files.length;
+    }
+
+    private long getFileSize()
+    {
+        File[] files = _testDir.toFile().listFiles();
+        assertNotNull(files);
+        assertThat(files.length, is(1));
+        return files[0].length();
+    }
+
     private static String generateContent(int size)
     {
         Random random = new Random();
@@ -373,5 +467,13 @@ public class FileBufferedResponseHandlerTest
             stringBuilder.append((char)Math.abs(random.nextInt(0x7F)));
         }
         return stringBuilder.toString();
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private byte[] randomBytes(int size)
+    {
+        byte[] data = new byte[size];
+        new Random().nextBytes(data);
+        return data;
     }
 }

@@ -67,6 +67,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     private final AutoLock _lock = new AutoLock();
     private final Condition _hasOutput = _lock.newCondition();
     private final Queue<ByteBuffer> _inQ = new ArrayDeque<>();
+    private final int _outputSize;
     private ByteBuffer _out;
     private boolean _growOutput;
 
@@ -113,7 +114,8 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         super(timer);
         if (BufferUtil.hasContent(input))
             addInput(input);
-        _out = output == null ? BufferUtil.allocate(1024) : output;
+        _outputSize = (output == null) ? 1024 : output.capacity();
+        _out = output == null ? BufferUtil.allocate(_outputSize) : output;
         setIdleTimeout(idleTimeoutMs);
         onOpen();
     }
@@ -290,7 +292,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         try (AutoLock lock = _lock.lock())
         {
             b = _out;
-            _out = BufferUtil.allocate(b.capacity());
+            _out = BufferUtil.allocate(_outputSize);
         }
         getWriteFlusher().completeWrite();
         return b;
@@ -316,7 +318,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                     return null;
             }
             b = _out;
-            _out = BufferUtil.allocate(b.capacity());
+            _out = BufferUtil.allocate(_outputSize);
         }
         getWriteFlusher().completeWrite();
         return b;
@@ -424,7 +426,9 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                         BufferUtil.compact(_out);
                         if (b.remaining() > BufferUtil.space(_out))
                         {
-                            ByteBuffer n = BufferUtil.allocate(_out.capacity() + b.remaining() * 2);
+                            // Cannot allocate buffers of exactly Integer.MAX_VALUE.
+                            long newBufferCapacity = Math.min((long)(_out.capacity() + b.remaining() * 1.5), Integer.MAX_VALUE - 1024);
+                            ByteBuffer n = BufferUtil.allocate(Math.toIntExact(newBufferCapacity));
                             BufferUtil.append(n, _out);
                             _out = n;
                         }
