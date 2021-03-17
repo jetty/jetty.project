@@ -80,6 +80,11 @@ public class QuicConnection extends AbstractConnection
         quicheConfig.setApplicationProtos(getProtocols().toArray(new String[0]));
     }
 
+    void onClose(QuicheConnectionId quicheConnectionId)
+    {
+        sessions.remove(quicheConnectionId);
+    }
+
     private Collection<String> getProtocols()
     {
         // TODO get the protocols from the connector
@@ -141,7 +146,7 @@ public class QuicConnection extends AbstractConnection
                     }
                     else
                     {
-                        session = new QuicSession(connector, quicheConnection, this, remoteAddress);
+                        session = new QuicSession(connector, quicheConnectionId, quicheConnection, this, remoteAddress);
                         sessions.putIfAbsent(quicheConnectionId, session);
                         session.flush();
                         if (LOG.isDebugEnabled())
