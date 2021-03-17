@@ -143,13 +143,14 @@ public class QuicConnection extends AbstractConnection
                     {
                         session = new QuicSession(connector, quicheConnection, this, remoteAddress);
                         sessions.putIfAbsent(quicheConnectionId, session);
+                        session.flush();
                         if (LOG.isDebugEnabled())
                             LOG.debug("created QUIC session {}", session);
                     }
+                    continue;
                 }
 
-                if (session != null)
-                    session.process(remoteAddress, cipherBuffer);
+                session.process(remoteAddress, cipherBuffer);
             }
         }
         catch (Throwable x)
