@@ -16,50 +16,21 @@ package org.eclipse.jetty.http3.server;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadPendingException;
-import java.nio.channels.WritePendingException;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.FillInterest;
-import org.eclipse.jetty.io.IdleTimeout;
-import org.eclipse.jetty.io.WriteFlusher;
+import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class QuicStreamEndPoint extends IdleTimeout implements EndPoint
+public class QuicStreamEndPoint extends AbstractEndPoint
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicStreamEndPoint.class);
 
-    private final long createdTimeStamp = System.currentTimeMillis();
     private final AtomicBoolean fillable = new AtomicBoolean();
-    private final FillInterest fillInterest = new FillInterest()
-    {
-        @Override
-        protected void needsFillInterest()
-        {
-            if (fillable.getAndSet(false))
-                fillInterest.fillable();
-        }
-    };
-    private final WriteFlusher writeFlusher = new WriteFlusher(this)
-    {
-        @Override
-        protected void onIncompleteFlush()
-        {
-            // No need to do anything.
-            // See QuicSession.process().
-        }
-    };
     private final QuicSession session;
-    private Connection connection;
     private final long streamId;
-    private boolean open;
 
     public QuicStreamEndPoint(Scheduler scheduler, QuicSession session, long streamId)
     {
@@ -81,19 +52,21 @@ public class QuicStreamEndPoint extends IdleTimeout implements EndPoint
     }
 
     @Override
-    public boolean isOpen()
+    protected void doShutdownInput()
     {
-        return open;
+        try
+        {
+            session.shutdownInput(streamId);
+        }
+        catch (IOException x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("error shutting down output", x);
+        }
     }
 
     @Override
-    public long getCreatedTimeStamp()
-    {
-        return createdTimeStamp;
-    }
-
-    @Override
-    public void shutdownOutput()
+    protected void doShutdownOutput()
     {
         try
         {
@@ -107,21 +80,19 @@ public class QuicStreamEndPoint extends IdleTimeout implements EndPoint
     }
 
     @Override
-    public boolean isOutputShutdown()
+    public void onClose(Throwable failure)
     {
-        return session.isOutputShutdown(streamId);
-    }
-
-    @Override
-    public boolean isInputShutdown()
-    {
-        return session.isInputShutdown(streamId);
-    }
-
-    @Override
-    public void close(Throwable cause)
-    {
-        onClose(cause);
+        super.onClose(failure);
+        try
+        {
+            session.sendFinished(streamId);
+        }
+        catch (IOException e)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Error sending FIN on stream {}", streamId, e);
+        }
+        session.onClose(streamId);
     }
 
     @Override
@@ -130,6 +101,8 @@ public class QuicStreamEndPoint extends IdleTimeout implements EndPoint
         int pos = BufferUtil.flipToFill(buffer);
         int drained = session.fill(streamId, buffer);
         BufferUtil.flipToFlush(buffer, pos);
+        if (session.isFinished(streamId))
+            shutdownInput();
         return drained;
     }
 
@@ -155,7 +128,7 @@ public class QuicStreamEndPoint extends IdleTimeout implements EndPoint
 
     public void onWritable()
     {
-        writeFlusher.completeWrite();
+        getWriteFlusher().completeWrite();
     }
 
     public Runnable onReadable()
@@ -163,68 +136,22 @@ public class QuicStreamEndPoint extends IdleTimeout implements EndPoint
         return () ->
         {
             //TODO: this is racy
-            if (!fillInterest.fillable())
+            if (!getFillInterest().fillable())
                 fillable.set(true);
         };
     }
 
     @Override
-    public void fillInterested(Callback callback) throws ReadPendingException
+    protected void onIncompleteFlush()
     {
-        fillInterest.register(callback);
+        // No need to do anything.
+        // See QuicSession.process().
     }
 
     @Override
-    public boolean tryFillInterested(Callback callback)
+    protected void needsFillInterest() throws IOException
     {
-        return fillInterest.tryRegister(callback);
-    }
-
-    @Override
-    public boolean isFillInterested()
-    {
-        return fillInterest.isInterested();
-    }
-
-    @Override
-    public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
-    {
-        writeFlusher.write(callback, buffers);
-    }
-
-    @Override
-    public Connection getConnection()
-    {
-        return connection;
-    }
-
-    @Override
-    public void setConnection(Connection connection)
-    {
-        this.connection = connection;
-    }
-
-    @Override
-    public void onOpen()
-    {
-        open = true;
-    }
-
-    @Override
-    public void onClose(Throwable cause)
-    {
-        open = false;
-    }
-
-    @Override
-    public void upgrade(Connection newConnection)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    protected void onIdleExpired(TimeoutException timeout)
-    {
-
+        if (fillable.getAndSet(false))
+            getFillInterest().fillable();
     }
 }
