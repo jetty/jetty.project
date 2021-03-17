@@ -257,7 +257,7 @@ public class QuicSession
                 if (quicheConnection.isConnectionClosed())
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("quiche connection closed");
+                        LOG.debug("quiche connection is in closed state");
                     QuicSession.this.close();
                 }
                 return Action.IDLE;
