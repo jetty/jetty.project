@@ -142,6 +142,11 @@
       <scope>test</scope>
       <type>war</type>
     </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -153,6 +158,7 @@
           <systemPropertyVariables>
             <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
             <jettyVersion>${project.version}</jettyVersion>
+            <hazelcast.version>${hazelcast.version}</hazelcast.version>
           </systemPropertyVariables>
         </configuration>
       </plugin>
