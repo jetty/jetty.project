@@ -16,7 +16,6 @@ package org.eclipse.jetty.http3.server;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.util.BufferUtil;
@@ -28,7 +27,6 @@ public class QuicStreamEndPoint extends AbstractEndPoint
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicStreamEndPoint.class);
 
-    private final AtomicBoolean fillable = new AtomicBoolean();
     private final QuicSession session;
     private final long streamId;
 
@@ -113,7 +111,7 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         {
             int flushed = session.flush(streamId, buffer);
             if (LOG.isDebugEnabled())
-                LOG.debug("flushed {} bytes", flushed);
+                LOG.debug("flushed {} bytes to stream {}; buffer has remaining? {}", flushed, streamId, buffer.hasRemaining());
             if (buffer.hasRemaining())
                 return false;
         }
@@ -133,12 +131,7 @@ public class QuicStreamEndPoint extends AbstractEndPoint
 
     public Runnable onReadable()
     {
-        return () ->
-        {
-            //TODO: this is racy
-            if (!getFillInterest().fillable())
-                fillable.set(true);
-        };
+        return () -> getFillInterest().fillable();
     }
 
     @Override
@@ -149,9 +142,9 @@ public class QuicStreamEndPoint extends AbstractEndPoint
     }
 
     @Override
-    protected void needsFillInterest() throws IOException
+    protected void needsFillInterest()
     {
-        if (fillable.getAndSet(false))
-            getFillInterest().fillable();
+        // No need to do anything.
+        // See QuicSession.process().
     }
 }
