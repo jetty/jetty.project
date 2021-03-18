@@ -107,15 +107,21 @@ public class QuicConnection extends AbstractConnection
             while (true)
             {
                 int fill = getEndPoint().fill(cipherBuffer);
-                // ServerDatagramEndPoint will never return -1.
+                if (LOG.isDebugEnabled())
+                    LOG.debug("filled cipher buffer with {} byte(s)", fill);
+                // ServerDatagramEndPoint will only return -1 if input is shut down.
+                if (fill < 0)
+                {
+                    byteBufferPool.release(cipherBuffer);
+                    getEndPoint().shutdownOutput();
+                    return;
+                }
                 if (fill == 0)
                 {
                     byteBufferPool.release(cipherBuffer);
                     fillInterested();
                     return;
                 }
-                if (LOG.isDebugEnabled())
-                    LOG.debug("received buffer(address+ciphertext) of size {}", cipherBuffer.remaining());
 
                 InetSocketAddress remoteAddress = AddressCodec.decodeInetSocketAddress(cipherBuffer);
                 if (LOG.isDebugEnabled())
