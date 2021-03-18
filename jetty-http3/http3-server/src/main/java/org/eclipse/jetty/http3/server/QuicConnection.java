@@ -128,6 +128,7 @@ public class QuicConnection extends AbstractConnection
             ByteBuffer cipherBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN + AddressCodec.ENCODED_ADDRESS_LENGTH, true);
             while (true)
             {
+                BufferUtil.clear(cipherBuffer);
                 int fill = getEndPoint().fill(cipherBuffer);
                 if (LOG.isDebugEnabled())
                     LOG.debug("filled cipher buffer with {} byte(s)", fill);
@@ -154,7 +155,6 @@ public class QuicConnection extends AbstractConnection
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("packet contains undecipherable connection ID, dropping it");
-                    BufferUtil.clear(cipherBuffer);
                     continue;
                 }
                 if (LOG.isDebugEnabled())
@@ -169,13 +169,14 @@ public class QuicConnection extends AbstractConnection
                     if (quicheConnection == null)
                     {
                         ByteBuffer addressBuffer = AddressCodec.encodeInetSocketAddress(byteBufferPool, remoteAddress);
-
                         ByteBuffer negotiationBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN, true);
                         int pos = BufferUtil.flipToFill(negotiationBuffer);
                         if (!QuicheConnection.negotiate(remoteAddress, cipherBuffer, negotiationBuffer))
                         {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("QUIC connection negotiation failed, dropping packet");
+                            byteBufferPool.release(addressBuffer);
+                            byteBufferPool.release(negotiationBuffer);
                             continue;
                         }
                         BufferUtil.flipToFlush(negotiationBuffer, pos);
