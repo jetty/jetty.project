@@ -19,9 +19,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.http3.quiche.QuicheConfig;
@@ -34,10 +32,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
-import org.eclipse.jetty.util.thread.ExecutionStrategy;
-import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,16 +45,12 @@ public class QuicConnection extends AbstractConnection
     private final QuicheConfig quicheConfig;
     private final ByteBufferPool byteBufferPool;
     private final Flusher flusher = new Flusher();
-    private final ExecutionStrategy strategy;
-    private final Queue<Runnable> strategyQueue = new ConcurrentLinkedQueue<>();
 
     public QuicConnection(Connector connector, ServerDatagramEndPoint endp)
     {
         super(endp, connector.getExecutor());
         this.connector = connector;
         this.byteBufferPool = connector.getByteBufferPool();
-        this.strategy = new EatWhatYouKill(strategyQueue::poll, connector.getExecutor());
-        LifeCycle.start(strategy);
 
         File[] files;
         try
@@ -86,19 +77,6 @@ public class QuicConnection extends AbstractConnection
         quicheConfig.setInitialMaxStreamsBidi(100L);
         quicheConfig.setCongestionControl(QuicheConfig.CongestionControl.RENO);
         quicheConfig.setApplicationProtos(getProtocols().toArray(new String[0]));
-    }
-
-    public void dispatch(Runnable runnable)
-    {
-        strategyQueue.offer(runnable);
-        strategy.dispatch();
-    }
-
-    @Override
-    public void onClose(Throwable cause)
-    {
-        super.onClose(cause);
-        LifeCycle.stop(strategy);
     }
 
     void onClose(QuicheConnectionId quicheConnectionId)
