@@ -71,14 +71,15 @@ public class QuicSession
         return flushed;
     }
 
+    public void flushFinished(long streamId) throws IOException
+    {
+        quicheConnection.feedFinForStream(streamId);
+        flush();
+    }
+
     public boolean isFinished(long streamId)
     {
         return quicheConnection.isStreamFinished(streamId);
-    }
-
-    public void sendFinished(long streamId) throws IOException
-    {
-        quicheConnection.feedFinForStream(streamId);
     }
 
     public void shutdownInput(long streamId) throws IOException
@@ -192,11 +193,18 @@ public class QuicSession
     {
         if (LOG.isDebugEnabled())
             LOG.debug("closing QUIC session {}", this);
-        endpoints.values().forEach(AbstractEndPoint::close);
-        endpoints.clear();
-        flusher.close();
-        quicheConnection.dispose();
-        connection.onClose(quicheConnectionId);
+        try
+        {
+            endpoints.values().forEach(AbstractEndPoint::close);
+            endpoints.clear();
+            flusher.close();
+            connection.onClose(quicheConnectionId);
+        }
+        finally
+        {
+            // This call frees malloc'ed memory so make sure it always happens.
+            quicheConnection.dispose();
+        }
         if (LOG.isDebugEnabled())
             LOG.debug("closed QUIC session {}", this);
     }
