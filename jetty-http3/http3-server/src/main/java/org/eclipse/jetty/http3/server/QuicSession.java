@@ -16,7 +16,9 @@ package org.eclipse.jetty.http3.server;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -33,11 +35,15 @@ import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class QuicSession // TODO: extends ContainerLifeCycle and move the EWYK strategy in this class
+public class QuicSession
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicSession.class);
 
@@ -47,6 +53,10 @@ public class QuicSession // TODO: extends ContainerLifeCycle and move the EWYK s
     private final QuicheConnection quicheConnection;
     private final QuicConnection connection;
     private final ConcurrentMap<Long, QuicStreamEndPoint> endpoints = new ConcurrentHashMap<>();
+    private final ExecutionStrategy strategy;
+    private final AutoLock strategyQueueLock = new AutoLock();
+    private final Queue<Runnable> strategyQueue = new ArrayDeque<>();
+
     private InetSocketAddress remoteAddress;
 
     QuicSession(Connector connector, QuicheConnectionId quicheConnectionId, QuicheConnection quicheConnection, QuicConnection connection, InetSocketAddress remoteAddress)
@@ -57,6 +67,14 @@ public class QuicSession // TODO: extends ContainerLifeCycle and move the EWYK s
         this.connection = connection;
         this.remoteAddress = remoteAddress;
         this.flusher = new Flusher(connector.getScheduler());
+        this.strategy = new EatWhatYouKill(() ->
+        {
+            try (AutoLock l = strategyQueueLock.lock())
+            {
+                return strategyQueue.poll();
+            }
+        }, connector.getExecutor());
+        LifeCycle.start(strategy);
     }
 
     public int fill(long streamId, ByteBuffer buffer) throws IOException
@@ -124,7 +142,7 @@ public class QuicSession // TODO: extends ContainerLifeCycle and move the EWYK s
                     onWritable(writableStreamId);
                 }
             };
-            connection.dispatch(onWritable);
+            dispatch(onWritable);
 
             List<Long> readableStreamIds = quicheConnection.readableStreamIds();
             if (LOG.isDebugEnabled())
@@ -132,7 +150,7 @@ public class QuicSession // TODO: extends ContainerLifeCycle and move the EWYK s
             for (Long readableStreamId : readableStreamIds)
             {
                 Runnable onReadable = () -> onReadable(readableStreamId);
-                connection.dispatch(onReadable);
+                dispatch(onReadable);
             }
         }
         else
@@ -155,6 +173,15 @@ public class QuicSession // TODO: extends ContainerLifeCycle and move the EWYK s
         if (LOG.isDebugEnabled())
             LOG.debug("selected endpoint for read: {}", streamEndPoint);
         streamEndPoint.onReadable();
+    }
+
+    private void dispatch(Runnable runnable)
+    {
+        try (AutoLock l = strategyQueueLock.lock())
+        {
+            strategyQueue.offer(runnable);
+        }
+        strategy.dispatch();
     }
 
     void flush()
@@ -206,6 +233,7 @@ public class QuicSession // TODO: extends ContainerLifeCycle and move the EWYK s
             endpoints.clear();
             flusher.close();
             connection.onClose(quicheConnectionId);
+            LifeCycle.stop(strategy);
         }
         finally
         {
