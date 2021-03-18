@@ -34,19 +34,31 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicLong;
+import javax.net.SocketFactory;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
+import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
@@ -59,6 +71,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -106,12 +119,13 @@ public class SSLEngineTest
 
     private Server server;
     private ServerConnector connector;
+    private SslContextFactory.Server sslContextFactory;
 
     @BeforeEach
     public void startServer() throws Exception
     {
         String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
-        SslContextFactory sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystore);
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");
@@ -189,6 +203,61 @@ public class SSLEngineTest
         String response = IO.toString(client.getInputStream());
 
         assertThat(response.length(), greaterThan(102400));
+    }
+
+    @Test
+    public void testInvalidLargeTLSFrame() throws Exception
+    {
+        AtomicLong unwraps = new AtomicLong();
+        ConnectionFactory http = connector.getConnectionFactory(HttpConnectionFactory.class);
+        ConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, http.getProtocol())
+        {
+            @Override
+            protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
+            {
+                return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                {
+                    @Override
+                    protected SSLEngineResult unwrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output) throws SSLException
+                    {
+                        unwraps.incrementAndGet();
+                        return super.unwrap(sslEngine, input, output);
+                    }
+                };
+            }
+        };
+        ServerConnector tlsConnector = new ServerConnector(server, 1, 1, ssl, http);
+        server.addConnector(tlsConnector);
+        server.setHandler(new HelloWorldHandler());
+        server.start();
+
+        // Create raw TLS record.
+        byte[] bytes = new byte[20005];
+        Arrays.fill(bytes, (byte)1);
+
+        bytes[0] = 22; // record type
+        bytes[1] = 3;  // major version
+        bytes[2] = 3;  // minor version
+        bytes[3] = 78; // record length 2 bytes / 0x4E20 / decimal 20,000
+        bytes[4] = 32; // record length
+        bytes[5] = 1;  // message type
+        bytes[6] = 0;  // message length 3 bytes / 0x004E17 / decimal 19,991
+        bytes[7] = 78;
+        bytes[8] = 23;
+
+        SocketFactory socketFactory = SocketFactory.getDefault();
+        try (Socket client = socketFactory.createSocket("localhost", tlsConnector.getLocalPort()))
+        {
+            client.getOutputStream().write(bytes);
+
+            // Sleep to see if the server spins.
+            Thread.sleep(1000);
+            assertThat(unwraps.get(), lessThan(128L));
+
+            // Read until -1 or read timeout.
+            client.setSoTimeout(1000);
+            IO.readBytes(client.getInputStream());
+        }
     }
 
     @Test
