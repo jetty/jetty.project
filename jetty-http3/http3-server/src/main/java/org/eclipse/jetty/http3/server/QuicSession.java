@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class QuicSession
+public class QuicSession // TODO: extends ContainerLifeCycle and move the EWYK strategy in this class
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicSession.class);
 
