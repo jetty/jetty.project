@@ -262,10 +262,10 @@ public class QuicSession // TODO: extends ContainerLifeCycle and move the EWYK s
             long nextTimeoutInMs = quicheConnection.nextTimeout();
             if (LOG.isDebugEnabled())
                 LOG.debug("next quiche timeout: {} ms", nextTimeoutInMs);
-            if (nextTimeoutInMs > -1)
-                timeout.schedule(nextTimeoutInMs, TimeUnit.MILLISECONDS);
-            else
+            if (nextTimeoutInMs < 0)
                 timeout.cancel();
+            else
+                timeout.schedule(nextTimeoutInMs, TimeUnit.MILLISECONDS);
             if (drained == 0)
             {
                 if (quicheConnection.isConnectionClosed())
