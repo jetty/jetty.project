@@ -89,9 +89,6 @@ public class QuicStreamEndPoint extends AbstractEndPoint
             if (LOG.isDebugEnabled())
                 LOG.debug("Error sending FIN on stream {}", streamId, e);
         }
-        // TODO: we must wait until writeFlusher is idle before moving on
-//        while (!getWriteFlusher().isIdle())
-//            Thread.onSpinWait();
         super.onClose(failure);
         session.onClose(streamId);
     }
@@ -132,9 +129,9 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         getWriteFlusher().completeWrite();
     }
 
-    public Runnable onReadable()
+    public void onReadable()
     {
-        return () -> getFillInterest().fillable();
+        getFillInterest().fillable();
     }
 
     @Override

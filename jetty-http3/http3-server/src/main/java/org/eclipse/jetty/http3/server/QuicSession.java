@@ -19,7 +19,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
- import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http3.quiche.QuicheConnection;
 import org.eclipse.jetty.http3.quiche.QuicheConnectionId;
@@ -111,25 +111,33 @@ public class QuicSession
     {
         this.remoteAddress = remoteAddress;
         quicheConnection.feedCipherText(cipherBufferIn);
-        flush();
 
         if (quicheConnection.isConnectionEstablished())
         {
             List<Long> writableStreamIds = quicheConnection.writableStreamIds();
             if (LOG.isDebugEnabled())
                 LOG.debug("writable stream ids: {}", writableStreamIds);
-            for (Long writableStreamId : writableStreamIds)
+            Runnable onWritable = () ->
             {
-                onWritable(writableStreamId);
-            }
+                for (Long writableStreamId : writableStreamIds)
+                {
+                    onWritable(writableStreamId);
+                }
+            };
+            connection.dispatch(onWritable);
 
             List<Long> readableStreamIds = quicheConnection.readableStreamIds();
             if (LOG.isDebugEnabled())
                 LOG.debug("readable stream ids: {}", readableStreamIds);
             for (Long readableStreamId : readableStreamIds)
             {
-                onReadable(readableStreamId);
+                Runnable onReadable = () -> onReadable(readableStreamId);
+                connection.dispatch(onReadable);
             }
+        }
+        else
+        {
+            flush();
         }
     }
 
@@ -146,8 +154,7 @@ public class QuicSession
         QuicStreamEndPoint streamEndPoint = getOrCreateStreamEndPoint(readableStreamId);
         if (LOG.isDebugEnabled())
             LOG.debug("selected endpoint for read: {}", streamEndPoint);
-        Runnable runnable = streamEndPoint.onReadable();
-        connection.dispatch(runnable);
+        streamEndPoint.onReadable();
     }
 
     void flush()
@@ -256,7 +263,7 @@ public class QuicSession
             if (LOG.isDebugEnabled())
                 LOG.debug("next quiche timeout: {} ms", nextTimeoutInMs);
             if (nextTimeoutInMs > -1)
-                timeout.schedule(nextTimeoutInMs, TimeUnit.MILLISECONDS); // TODO is this re-scheduling cancelling the previous timeout?
+                timeout.schedule(nextTimeoutInMs, TimeUnit.MILLISECONDS);
             else
                 timeout.cancel();
             if (drained == 0)
