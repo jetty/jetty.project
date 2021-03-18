@@ -80,16 +80,19 @@ public class QuicStreamEndPoint extends AbstractEndPoint
     @Override
     public void onClose(Throwable failure)
     {
-        super.onClose(failure);
         try
         {
-            session.sendFinished(streamId);
+            session.flushFinished(streamId);
         }
         catch (IOException e)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Error sending FIN on stream {}", streamId, e);
         }
+        // TODO: we must wait until writeFlusher is idle before moving on
+//        while (!getWriteFlusher().isIdle())
+//            Thread.onSpinWait();
+        super.onClose(failure);
         session.onClose(streamId);
     }
 
