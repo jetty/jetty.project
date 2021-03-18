@@ -146,8 +146,7 @@ public class QuicSession
         if (LOG.isDebugEnabled())
             LOG.debug("selected endpoint for read: {}", streamEndPoint);
         Runnable runnable = streamEndPoint.onReadable();
-        // TODO: run with EWYK
-        runnable.run();
+        connection.dispatch(runnable);
     }
 
     void flush()
