@@ -245,20 +245,26 @@ public class ServerDatagramEndPoint extends AbstractEndPoint implements ManagedS
     @Override
     public boolean flush(ByteBuffer... buffers) throws IOException
     {
+        boolean flushedAll = true;
         long flushed = 0;
         try
         {
             InetSocketAddress peer = AddressCodec.decodeInetSocketAddress(buffers[0]);
+            if (LOG.isDebugEnabled())
+                LOG.debug("flushing {} buffer(s) to {}", buffers.length - 1, peer);
             for (int i = 1; i < buffers.length; i++)
             {
                 ByteBuffer buffer = buffers[i];
                 int sent = _channel.send(buffer, peer);
                 if (sent == 0)
+                {
+                    flushedAll = false;
                     break;
+                }
                 flushed += sent;
             }
             if (LOG.isDebugEnabled())
-                LOG.debug("flushed {} {}", flushed, this);
+                LOG.debug("flushed {} byte(s), all flushed? {} - {}", flushed, flushedAll, this);
         }
         catch (IOException e)
         {
@@ -268,13 +274,7 @@ public class ServerDatagramEndPoint extends AbstractEndPoint implements ManagedS
         if (flushed > 0)
             notIdle();
 
-        for (ByteBuffer b : buffers)
-        {
-            if (!BufferUtil.isEmpty(b))
-                return false;
-        }
-
-        return true;
+        return flushedAll;
     }
 
     public DatagramChannel getChannel()
