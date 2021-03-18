@@ -22,7 +22,9 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.EventListener;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.http3.quiche.ffi.LibQuiche;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -54,6 +56,12 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
         _manager = new ServerDatagramSelectorManager(getExecutor(), getScheduler(), selectors);
         addBean(_manager, true);
         setAcceptorPriorityDelta(-2);
+
+        // Force loading libquiche here.
+        long before = System.nanoTime();
+        LibQuiche.Logging.enable();
+        if (LOG.isDebugEnabled())
+            LOG.debug("Loading libquiche took {} ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - before));
     }
 
     public ServerDatagramConnector(
