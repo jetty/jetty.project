@@ -42,7 +42,7 @@ public class ServerDatagramEndPoint extends AbstractEndPoint implements ManagedS
     private SelectionKey _key;
     private boolean _updatePending;
     // The current value for interestOps.
-    private int _currentInterestOps;
+    private int _currentInterestOps = SelectionKey.OP_READ; // See DatagramReader.update()
     // The desired value for interestOps.
     private int _desiredInterestOps;
 
