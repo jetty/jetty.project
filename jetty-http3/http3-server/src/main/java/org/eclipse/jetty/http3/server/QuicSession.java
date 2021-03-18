@@ -56,7 +56,6 @@ public class QuicSession
     private final ExecutionStrategy strategy;
     private final AutoLock strategyQueueLock = new AutoLock();
     private final Queue<Runnable> strategyQueue = new ArrayDeque<>();
-
     private InetSocketAddress remoteAddress;
 
     QuicSession(Connector connector, QuicheConnectionId quicheConnectionId, QuicheConnection quicheConnection, QuicConnection connection, InetSocketAddress remoteAddress)
