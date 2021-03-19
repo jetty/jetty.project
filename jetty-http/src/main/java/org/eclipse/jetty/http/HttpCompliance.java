@@ -22,9 +22,6 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-
 /**
  * HTTP compliance modes for Jetty HTTP parsing and handling.
  * A Compliance mode consists of a set of {@link HttpComplianceSection}s which are applied
@@ -56,11 +53,13 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
     LEGACY(sectionsBySpec("0,METHOD_CASE_SENSITIVE")),
 
     /**
-     * The legacy RFC2616 support, which incorrectly excludes
+     * The legacy RFC2616 support, which excludes
      * {@link HttpComplianceSection#METHOD_CASE_SENSITIVE},
      * {@link HttpComplianceSection#FIELD_COLON},
      * {@link HttpComplianceSection#TRANSFER_ENCODING_WITH_CONTENT_LENGTH},
      * {@link HttpComplianceSection#MULTIPLE_CONTENT_LENGTHS},
+     * {@link HttpComplianceSection#NO_AMBIGUOUS_PATH_SEGMENTS} and
+     * {@link HttpComplianceSection#NO_AMBIGUOUS_PATH_SEPARATORS}.
      */
     RFC2616_LEGACY(sectionsBySpec("RFC2616,-FIELD_COLON,-METHOD_CASE_SENSITIVE,-TRANSFER_ENCODING_WITH_CONTENT_LENGTH,-MULTIPLE_CONTENT_LENGTHS")),
 
@@ -70,7 +69,8 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
     RFC2616(sectionsBySpec("RFC2616")),
 
     /**
-     * Jetty's current RFC7230 support, which incorrectly excludes  {@link HttpComplianceSection#METHOD_CASE_SENSITIVE}
+     * Jetty's legacy RFC7230 support, which excludes
+     * {@link HttpComplianceSection#METHOD_CASE_SENSITIVE}.
      */
     RFC7230_LEGACY(sectionsBySpec("RFC7230,-METHOD_CASE_SENSITIVE")),
 
@@ -78,6 +78,11 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
      * The RFC7230 support mode
      */
     RFC7230(sectionsBySpec("RFC7230")),
+
+    /**
+     * The RFC7230 support mode with no ambiguous URIs
+     */
+    RFC7230_NO_AMBIGUOUS_URIS(sectionsBySpec("RFC7230,NO_AMBIGUOUS_PATH_SEGMENTS,NO_AMBIGUOUS_PATH_SEPARATORS")),
 
     /**
      * Custom compliance mode that can be defined with System property <code>org.eclipse.jetty.http.HttpCompliance.CUSTOM0</code>
@@ -102,8 +107,6 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
 
     public static final String VIOLATIONS_ATTR = "org.eclipse.jetty.http.compliance.violations";
 
-    private static final Logger LOG = Log.getLogger(HttpParser.class);
-
     private static EnumSet<HttpComplianceSection> sectionsByProperty(String property)
     {
         String s = System.getProperty(HttpCompliance.class.getName() + property);
@@ -123,21 +126,21 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
                 i++;
                 break;
 
-            case "*":
-                i++;
-                sections = EnumSet.allOf(HttpComplianceSection.class);
-                break;
-
             case "RFC2616":
+                i++;
                 sections = EnumSet.complementOf(EnumSet.of(
                     HttpComplianceSection.NO_FIELD_FOLDING,
-                    HttpComplianceSection.NO_HTTP_0_9));
-                i++;
+                    HttpComplianceSection.NO_HTTP_0_9,
+                    HttpComplianceSection.NO_AMBIGUOUS_PATH_SEGMENTS,
+                    HttpComplianceSection.NO_AMBIGUOUS_PATH_SEPARATORS));
                 break;
 
+            case "*":
             case "RFC7230":
                 i++;
-                sections = EnumSet.allOf(HttpComplianceSection.class);
+                sections = EnumSet.complementOf(EnumSet.of(
+                    HttpComplianceSection.NO_AMBIGUOUS_PATH_SEGMENTS,
+                    HttpComplianceSection.NO_AMBIGUOUS_PATH_SEPARATORS));
                 break;
 
             default:
@@ -152,11 +155,6 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
             if (exclude)
                 element = element.substring(1);
             HttpComplianceSection section = HttpComplianceSection.valueOf(element);
-            if (section == null)
-            {
-                LOG.warn("Unknown section '" + element + "' in HttpCompliance spec: " + spec);
-                continue;
-            }
             if (exclude)
                 sections.remove(section);
             else

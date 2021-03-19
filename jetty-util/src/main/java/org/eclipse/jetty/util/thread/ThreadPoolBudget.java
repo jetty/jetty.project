@@ -24,6 +24,8 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -32,9 +34,10 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * @see ThreadPool.SizedThreadPool#getThreadPoolBudget()
  */
+@ManagedObject
 public class ThreadPoolBudget
 {
-    static final Logger LOG = Log.getLogger(ThreadPoolBudget.class);
+    private static final Logger LOG = Log.getLogger(ThreadPoolBudget.class);
 
     public interface Lease extends Closeable
     {
@@ -115,6 +118,14 @@ public class ThreadPoolBudget
         return pool;
     }
 
+    @ManagedAttribute("the number of threads leased to components")
+    public int getLeasedThreads()
+    {
+        return leases.stream()
+            .mapToInt(Lease::getThreads)
+            .sum();
+    }
+
     public void reset()
     {
         leases.clear();
@@ -146,9 +157,7 @@ public class ThreadPoolBudget
      */
     public boolean check(int maxThreads) throws IllegalStateException
     {
-        int required = leases.stream()
-            .mapToInt(Lease::getThreads)
-            .sum();
+        int required = getLeasedThreads();
         int left = maxThreads - required;
         if (left <= 0)
         {

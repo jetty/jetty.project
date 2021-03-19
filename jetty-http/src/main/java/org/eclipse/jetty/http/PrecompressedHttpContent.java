@@ -71,7 +71,7 @@ public class PrecompressedHttpContent implements HttpContent
     @Override
     public String getETagValue()
     {
-        return _content.getResource().getWeakETag(_format._etag);
+        return _content.getResource().getWeakETag(_format.getEtagSuffix());
     }
 
     @Override
@@ -101,13 +101,13 @@ public class PrecompressedHttpContent implements HttpContent
     @Override
     public HttpField getContentEncoding()
     {
-        return _format._contentEncoding;
+        return _format.getContentEncoding();
     }
 
     @Override
     public String getContentEncodingValue()
     {
-        return _format._contentEncoding.getValue();
+        return _format.getContentEncoding().getValue();
     }
 
     @Override
@@ -167,7 +167,9 @@ public class PrecompressedHttpContent implements HttpContent
     @Override
     public String toString()
     {
-        return String.format("PrecompressedHttpContent@%x{e=%s,r=%s|%s,lm=%s|%s,ct=%s}", hashCode(), _format._encoding,
+        return String.format("%s@%x{e=%s,r=%s|%s,lm=%s|%s,ct=%s}",
+            this.getClass().getSimpleName(), hashCode(),
+            _format,
             _content.getResource(), _precompressedContent.getResource(),
             _content.getResource().lastModified(), _precompressedContent.getResource().lastModified(),
             getContentType());

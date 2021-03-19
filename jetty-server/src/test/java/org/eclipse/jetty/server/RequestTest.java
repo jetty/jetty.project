@@ -49,6 +49,7 @@ import javax.servlet.http.Part;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.HttpComplianceSection;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
@@ -1836,6 +1837,64 @@ public class RequestTest
         assertEquals(0, request.getParameterMap().size());
     }
 
+    @Test
+    public void testAmbiguousParameters() throws Exception
+    {
+        _handler._checker = (request, response) -> true;
+
+        String request = "GET /ambiguous/..;/path HTTP/1.0\r\n" +
+            "Host: whatever\r\n" +
+            "\r\n";
+
+        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC7230);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+
+        HttpCompliance.CUSTOM0.sections().clear();
+        HttpCompliance.CUSTOM0.sections().addAll(HttpCompliance.RFC7230.sections());
+        HttpCompliance.CUSTOM0.sections().remove(HttpComplianceSection.NO_AMBIGUOUS_PATH_PARAMETERS);
+
+        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.CUSTOM0);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+    }
+
+    @Test
+    public void testAmbiguousSegments() throws Exception
+    {
+        _handler._checker = (request, response) -> true;
+
+        String request = "GET /ambiguous/%2e%2e/path HTTP/1.0\r\n" +
+            "Host: whatever\r\n" +
+            "\r\n";
+
+        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC7230_NO_AMBIGUOUS_URIS);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+
+        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC7230);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+
+        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+    }
+
+    @Test
+    public void testAmbiguousSeparators() throws Exception
+    {
+        _handler._checker = (request, response) -> true;
+
+        String request = "GET /ambiguous/%2f/path HTTP/1.0\r\n" +
+            "Host: whatever\r\n" +
+            "\r\n";
+
+        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC7230_NO_AMBIGUOUS_URIS);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+
+        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC7230);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+
+        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+    }
+
     private static long getFileCount(Path path)
     {
         try (Stream<Path> s = Files.list(path))
@@ -1939,7 +1998,6 @@ public class RequestTest
             ((Request)request).setHandled(true);
             try
             {
-
                 MultipartConfigElement mpce = new MultipartConfigElement(tmpDir.getAbsolutePath(), -1, -1, 2);
                 request.setAttribute(Request.MULTIPART_CONFIG_ELEMENT, mpce);
 

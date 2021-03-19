@@ -143,6 +143,7 @@ public class ConfigurationAssert
                 "jetty.base.uri".equals(name) ||
                 "user.dir".equals(name) ||
                 prop.source.equals(Props.ORIGIN_SYSPROP) ||
+                name.startsWith("runtime.feature.") ||
                 name.startsWith("java."))
             {
                 // strip these out from assertion, to make assertions easier.
