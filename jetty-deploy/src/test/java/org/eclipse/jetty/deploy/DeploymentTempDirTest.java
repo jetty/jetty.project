@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -37,6 +36,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Scanner;
@@ -52,14 +52,13 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-//@Disabled("Does not work on Jenkins")
 public class DeploymentTempDirTest
 {
     private static final Logger LOG = Log.getLogger(DeploymentTempDirTest.class);
 
     private final WebAppProvider webAppProvider = new WebAppProvider();
     private final ContextHandlerCollection contexts = new ContextHandlerCollection();
-    private final Path testDir = MavenTestingUtils.getTargetTestingPath();
+    private final Path testDir = MavenTestingUtils.getTargetTestingPath(DeploymentTempDirTest.class.getSimpleName());
     private final Path tmpDir = testDir.resolve("tmpDir");
     private final Path webapps = testDir.resolve("webapps");
     private final Server server = new Server();
@@ -70,12 +69,9 @@ public class DeploymentTempDirTest
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        Files.createDirectory(testDir);
-        Files.createDirectory(tmpDir);
-        Files.createDirectory(webapps);
-
-        Path fooWebApp1 = webapps.resolve("foo-webapp-1.war");
-        Files.copy(MavenTestingUtils.getTestResourcePath("webapps/foo-webapp-1.war"), fooWebApp1);
+        FS.ensureEmpty(testDir);
+        FS.ensureEmpty(tmpDir);
+        FS.ensureEmpty(webapps);
 
         webAppProvider.setMonitoredDirName(webapps.toString());
         DeploymentManager deploymentManager = new DeploymentManager();
@@ -92,46 +88,47 @@ public class DeploymentTempDirTest
     @AfterEach
     public void stop() throws Exception
     {
-        if (testDir != null)
-            IO.delete(testDir.toFile());
         server.stop();
     }
 
     @Test
     public void testTmpDirectory() throws Exception
     {
+        Path warPath = MavenTestingUtils.getTestResourcePath("webapps/foo-webapp-1.war");
         String deploymentXml = "<Configure class=\"org.eclipse.jetty.webapp.WebAppContext\">\n" +
-            "<Set name=\"war\">" + webapps.resolve("foo-webapp-1.war") + "</Set>\n" +
+            "<Set name=\"war\">" + warPath + "</Set>\n" +
             "<Set name=\"tempDirectory\">" + tmpDir + "</Set>\n" +
             "<Set name=\"persistTempDirectory\">false</Set>\n" +
             "</Configure>";
-        createNewFile(webapps, "foo-webapp-1.xml", deploymentXml);
 
         server.start();
+        WaitScannerListener listener = new WaitScannerListener();
+        webAppProvider.addScannerListener(listener);
 
-        WebAppContext webAppContext1 = getWebAppContext();
-        assertThat(webAppContext1.getTempDirectory(), is(tmpDir.toFile()));
+        // Add the webapp xml which will will be detected after scan.
+        listener.reset();
+        createNewFile(webapps, "foo-webapp.xml", deploymentXml);
+        webAppProvider.scan();
+        webAppProvider.scan();
+        listener.future.get(5, TimeUnit.SECONDS);
+        WebAppContext webAppContext = getWebAppContext();
+        assertThat(webAppContext.getTempDirectory(), is(tmpDir.toFile()));
 
         // Add a known file to the temp directory.
         String content = UUID.randomUUID().toString();
-        createNewFile(webAppContext1.getTempDirectory().toPath(), "myFile.txt", content);
+        createNewFile(webAppContext.getTempDirectory().toPath(), "myFile.txt", content);
 
         // Touch the webapp and rescan to reload the WebAppContext.
-        WaitScannerListener listener = new WaitScannerListener();
-        webAppProvider.addScannerListener(listener);
-        Path fooWebApp1 = testDir.resolve("webapps/foo-webapp-1.war");
-        long lastModBefore = fooWebApp1.toFile().lastModified();
-        long now = System.currentTimeMillis();
-        assertTrue(fooWebApp1.toFile().setLastModified(now));
-        long lastModAfter = fooWebApp1.toFile().lastModified();
-        LOG.debug("fooWebApp1 lastModBefore {}, now {}, lastModAfter {}", lastModBefore, now, lastModAfter);
+        listener.reset();
+        long newModifiedTime = System.currentTimeMillis() + 1000;
+        assertTrue(webapps.resolve("foo-webapp.xml").toFile().setLastModified(newModifiedTime));
         webAppProvider.scan();
         webAppProvider.scan();
         listener.future.get(5, TimeUnit.SECONDS);
 
         // The second WebAppContext should be using the same temp directory but the file will have been deleted.
         WebAppContext webAppContext2 = getWebAppContext();
-        assertNotSame(webAppContext1, webAppContext2);
+        assertNotSame(webAppContext, webAppContext2);
         File tmpDir2 = webAppContext2.getTempDirectory();
         assertThat(tmpDir2, is(tmpDir.toFile()));
 
@@ -143,15 +140,23 @@ public class DeploymentTempDirTest
     @Test
     public void testPersistentTmpDirectory() throws Exception
     {
+        Path warPath = MavenTestingUtils.getTestResourcePath("webapps/foo-webapp-1.war");
         String deploymentXml = "<Configure class=\"org.eclipse.jetty.webapp.WebAppContext\">\n" +
-            "<Set name=\"war\">" + webapps.resolve("foo-webapp-1.war") + "</Set>\n" +
+            "<Set name=\"war\">" + warPath + "</Set>\n" +
             "<Set name=\"tempDirectory\">" + tmpDir + "</Set>\n" +
             "<Set name=\"persistTempDirectory\">true</Set>\n" +
             "</Configure>";
-        createNewFile(webapps, "foo-webapp-1.xml", deploymentXml);
 
         server.start();
+        WaitScannerListener listener = new WaitScannerListener();
+        webAppProvider.addScannerListener(listener);
 
+        // Add the webapp xml which will will be detected after scan.
+        listener.reset();
+        createNewFile(webapps, "foo-webapp.xml", deploymentXml);
+        webAppProvider.scan();
+        webAppProvider.scan();
+        listener.future.get(5, TimeUnit.SECONDS);
         WebAppContext webAppContext1 = getWebAppContext();
         assertThat(webAppContext1.getTempDirectory(), is(tmpDir.toFile()));
 
@@ -160,10 +165,8 @@ public class DeploymentTempDirTest
         createNewFile(webAppContext1.getTempDirectory().toPath(), "myFile.txt", content);
 
         // Touch the webapp and rescan to reload the WebAppContext.
-        WaitScannerListener listener = new WaitScannerListener();
-        webAppProvider.addScannerListener(listener);
-        Path fooWebApp1 = testDir.resolve("webapps/foo-webapp-1.war");
-        assertTrue(fooWebApp1.toFile().setLastModified(System.currentTimeMillis()));
+        long newModifiedTime = System.currentTimeMillis() + 1000;
+        assertTrue(webapps.resolve("foo-webapp.xml").toFile().setLastModified(newModifiedTime));
         webAppProvider.scan();
         webAppProvider.scan();
         listener.future.get(5, TimeUnit.SECONDS);
@@ -213,6 +216,11 @@ public class DeploymentTempDirTest
     public static class WaitScannerListener implements Scanner.BulkListener
     {
         CompletableFuture<Void> future = new CompletableFuture<>();
+
+        public void reset()
+        {
+            future = new CompletableFuture<>();
+        }
 
         @Override
         public void filesChanged(List<String> filenames)
