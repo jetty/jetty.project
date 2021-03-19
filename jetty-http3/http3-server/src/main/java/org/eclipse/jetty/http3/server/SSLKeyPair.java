@@ -31,21 +31,22 @@ import java.util.Base64;
 
 public class SSLKeyPair
 {
-    private static final String BEGIN_KEY = "-----BEGIN PRIVATE KEY-----";
-    private static final String END_KEY = "-----END PRIVATE KEY-----";
-    private static final String BEGIN_CERT = "-----BEGIN CERTIFICATE-----";
-    private static final String END_CERT = "-----END CERTIFICATE-----";
-    private static final String LINE_SEPARATOR = System.getProperty("line.separator");
+    private static final byte[] BEGIN_KEY = "-----BEGIN PRIVATE KEY-----".getBytes(StandardCharsets.UTF_8);
+    private static final byte[] END_KEY = "-----END PRIVATE KEY-----".getBytes(StandardCharsets.UTF_8);
+    private static final byte[] BEGIN_CERT = "-----BEGIN CERTIFICATE-----".getBytes(StandardCharsets.UTF_8);
+    private static final byte[] END_CERT = "-----END CERTIFICATE-----".getBytes(StandardCharsets.UTF_8);
+    private static final byte[] LINE_SEPARATOR = System.getProperty("line.separator").getBytes(StandardCharsets.UTF_8);
     private static final int LINE_LENGTH = 64;
 
+    private final Base64.Encoder encoder = Base64.getMimeEncoder(LINE_LENGTH, LINE_SEPARATOR);
     private final Key key;
-    private final Certificate cert;
+    private final Certificate[] certChain;
     private final String alias;
 
-    public SSLKeyPair(Key key, Certificate cert, String alias)
+    public SSLKeyPair(Key key, Certificate[] certChain, String alias)
     {
         this.key = key;
-        this.cert = cert;
+        this.certChain = certChain;
         this.alias = alias;
     }
 
@@ -57,7 +58,7 @@ public class SSLKeyPair
             keyStore.load(fis, storePassword);
             this.alias = alias;
             this.key = keyStore.getKey(alias, keyPassword);
-            this.cert = keyStore.getCertificate(alias);
+            this.certChain = keyStore.getCertificateChain(alias);
         }
     }
 
@@ -76,30 +77,31 @@ public class SSLKeyPair
         }
         try (FileOutputStream fos = new FileOutputStream(files[1]))
         {
-            writeAsPem(fos, cert);
+            for (Certificate cert : certChain)
+                writeAsPem(fos, cert);
         }
         return files;
     }
 
     private void writeAsPem(OutputStream outputStream, Key key) throws IOException
     {
-        Base64.Encoder encoder = Base64.getMimeEncoder(LINE_LENGTH, LINE_SEPARATOR.getBytes());
         byte[] encoded = encoder.encode(key.getEncoded());
-        outputStream.write(BEGIN_KEY.getBytes(StandardCharsets.UTF_8));
-        outputStream.write(LINE_SEPARATOR.getBytes(StandardCharsets.UTF_8));
+        outputStream.write(BEGIN_KEY);
+        outputStream.write(LINE_SEPARATOR);
         outputStream.write(encoded);
-        outputStream.write(LINE_SEPARATOR.getBytes(StandardCharsets.UTF_8));
-        outputStream.write(END_KEY.getBytes(StandardCharsets.UTF_8));
+        outputStream.write(LINE_SEPARATOR);
+        outputStream.write(END_KEY);
+        outputStream.write(LINE_SEPARATOR);
     }
 
-    private static void writeAsPem(OutputStream outputStream, Certificate certificate) throws CertificateEncodingException, IOException
+    private void writeAsPem(OutputStream outputStream, Certificate certificate) throws CertificateEncodingException, IOException
     {
-        Base64.Encoder encoder = Base64.getMimeEncoder(LINE_LENGTH, LINE_SEPARATOR.getBytes());
         byte[] encoded = encoder.encode(certificate.getEncoded());
-        outputStream.write(BEGIN_CERT.getBytes(StandardCharsets.UTF_8));
-        outputStream.write(LINE_SEPARATOR.getBytes(StandardCharsets.UTF_8));
+        outputStream.write(BEGIN_CERT);
+        outputStream.write(LINE_SEPARATOR);
         outputStream.write(encoded);
-        outputStream.write(LINE_SEPARATOR.getBytes(StandardCharsets.UTF_8));
-        outputStream.write(END_CERT.getBytes(StandardCharsets.UTF_8));
+        outputStream.write(LINE_SEPARATOR);
+        outputStream.write(END_CERT);
+        outputStream.write(LINE_SEPARATOR);
     }
 }
