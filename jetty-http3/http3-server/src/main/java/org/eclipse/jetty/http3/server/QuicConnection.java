@@ -188,10 +188,9 @@ public class QuicConnection extends AbstractConnection
         }
     }
 
-    public void write(Callback callback, ByteBuffer... buffers)
+    public void write(Callback callback, InetSocketAddress remoteAddress, ByteBuffer... buffers)
     {
-        InetSocketAddress address = ServerDatagramEndPoint.INET_ADDRESS_ARGUMENT.pop();
-        flusher.offer(callback, address, buffers);
+        flusher.offer(callback, remoteAddress, buffers);
         flusher.iterate();
     }
 
