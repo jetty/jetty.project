@@ -302,8 +302,7 @@ public class QuicSession
                 return Action.IDLE;
             }
             BufferUtil.flipToFlush(cipherBuffer, pos);
-            ServerDatagramEndPoint.INET_ADDRESS_ARGUMENT.push(remoteAddress);
-            connection.write(this, cipherBuffer);
+            connection.write(this, remoteAddress, cipherBuffer);
             return Action.SCHEDULED;
         }
 
