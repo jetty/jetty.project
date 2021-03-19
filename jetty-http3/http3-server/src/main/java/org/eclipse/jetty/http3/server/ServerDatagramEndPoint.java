@@ -21,6 +21,7 @@ import java.nio.channels.CancelledKeyException;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.util.Objects;
 
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.EofException;
@@ -35,6 +36,8 @@ import org.slf4j.LoggerFactory;
 public class ServerDatagramEndPoint extends AbstractEndPoint implements ManagedSelector.Selectable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerDatagramEndPoint.class);
+
+    public static InetAddressArgument INET_ADDRESS_ARGUMENT = new InetAddressArgument();
 
     private final AutoLock _lock = new AutoLock();
     private final DatagramChannel _channel;
@@ -219,24 +222,17 @@ public class ServerDatagramEndPoint extends AbstractEndPoint implements ManagedS
             return -1;
 
         int pos = BufferUtil.flipToFill(buffer);
-
-        buffer.position(pos + AddressCodec.ENCODED_ADDRESS_LENGTH);
         InetSocketAddress peer = (InetSocketAddress)_channel.receive(buffer);
         if (peer == null)
         {
-            buffer.position(pos);
             BufferUtil.flipToFlush(buffer, pos);
             return 0;
         }
+        INET_ADDRESS_ARGUMENT.push(peer);
 
         notIdle();
-        int finalPosition = buffer.position();
-        buffer.position(pos);
-        AddressCodec.encodeInetSocketAddress(buffer, peer);
-        buffer.position(finalPosition);
         BufferUtil.flipToFlush(buffer, pos);
-
-        int filled = finalPosition - AddressCodec.ENCODED_ADDRESS_LENGTH;
+        int filled = buffer.remaining();
         if (LOG.isDebugEnabled())
             LOG.debug("filled {} {}", filled, BufferUtil.toDetailString(buffer));
         return filled;
@@ -249,12 +245,11 @@ public class ServerDatagramEndPoint extends AbstractEndPoint implements ManagedS
         long flushed = 0;
         try
         {
-            InetSocketAddress peer = AddressCodec.decodeInetSocketAddress(buffers[0]);
+            InetSocketAddress peer = INET_ADDRESS_ARGUMENT.pop();
             if (LOG.isDebugEnabled())
                 LOG.debug("flushing {} buffer(s) to {}", buffers.length - 1, peer);
-            for (int i = 1; i < buffers.length; i++)
+            for (ByteBuffer buffer : buffers)
             {
-                ByteBuffer buffer = buffers[i];
                 int sent = _channel.send(buffer, peer);
                 if (sent == 0)
                 {
@@ -421,5 +416,24 @@ public class ServerDatagramEndPoint extends AbstractEndPoint implements ManagedS
             _desiredInterestOps,
             ManagedSelector.safeInterestOps(_key),
             ManagedSelector.safeReadyOps(_key));
+    }
+
+    public final static class InetAddressArgument
+    {
+        private final ThreadLocal<InetSocketAddress> threadLocal = new ThreadLocal<>();
+
+        public void push(InetSocketAddress inetSocketAddress)
+        {
+            Objects.requireNonNull(inetSocketAddress);
+            threadLocal.set(inetSocketAddress);
+        }
+
+        public InetSocketAddress pop()
+        {
+            InetSocketAddress inetSocketAddress = threadLocal.get();
+            Objects.requireNonNull(inetSocketAddress);
+            threadLocal.remove();
+            return inetSocketAddress;
+        }
     }
 }

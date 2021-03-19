@@ -103,7 +103,7 @@ public class QuicConnection extends AbstractConnection
     {
         try
         {
-            ByteBuffer cipherBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN + AddressCodec.ENCODED_ADDRESS_LENGTH, true);
+            ByteBuffer cipherBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN, true);
             while (true)
             {
                 BufferUtil.clear(cipherBuffer);
@@ -124,7 +124,7 @@ public class QuicConnection extends AbstractConnection
                     return;
                 }
 
-                InetSocketAddress remoteAddress = AddressCodec.decodeInetSocketAddress(cipherBuffer);
+                InetSocketAddress remoteAddress = ServerDatagramEndPoint.INET_ADDRESS_ARGUMENT.pop();
                 if (LOG.isDebugEnabled())
                     LOG.debug("decoded peer IP address: {}, ciphertext packet size: {}", remoteAddress, cipherBuffer.remaining());
 
@@ -146,24 +146,19 @@ public class QuicConnection extends AbstractConnection
                     QuicheConnection quicheConnection = QuicheConnection.tryAccept(quicheConfig, remoteAddress, cipherBuffer);
                     if (quicheConnection == null)
                     {
-                        ByteBuffer addressBuffer = AddressCodec.encodeInetSocketAddress(byteBufferPool, remoteAddress);
                         ByteBuffer negotiationBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN, true);
                         int pos = BufferUtil.flipToFill(negotiationBuffer);
                         if (!QuicheConnection.negotiate(remoteAddress, cipherBuffer, negotiationBuffer))
                         {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("QUIC connection negotiation failed, dropping packet");
-                            byteBufferPool.release(addressBuffer);
                             byteBufferPool.release(negotiationBuffer);
                             continue;
                         }
                         BufferUtil.flipToFlush(negotiationBuffer, pos);
 
-                        getEndPoint().write(Callback.from(() ->
-                        {
-                            byteBufferPool.release(addressBuffer);
-                            byteBufferPool.release(negotiationBuffer);
-                        }), addressBuffer, negotiationBuffer);
+                        ServerDatagramEndPoint.INET_ADDRESS_ARGUMENT.push(remoteAddress);
+                        getEndPoint().write(Callback.from(() -> byteBufferPool.release(negotiationBuffer)), negotiationBuffer);
                         if (LOG.isDebugEnabled())
                             LOG.debug("QUIC connection negotiation packet sent");
                     }
@@ -187,13 +182,16 @@ public class QuicConnection extends AbstractConnection
         }
         catch (Throwable x)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("caught exception in onFillable loop", x);
             close();
         }
     }
 
     public void write(Callback callback, ByteBuffer... buffers)
     {
-        flusher.offer(callback, buffers);
+        InetSocketAddress address = ServerDatagramEndPoint.INET_ADDRESS_ARGUMENT.pop();
+        flusher.offer(callback, address, buffers);
         flusher.iterate();
     }
 
@@ -203,11 +201,11 @@ public class QuicConnection extends AbstractConnection
         private final ArrayDeque<Entry> queue = new ArrayDeque<>();
         private Entry entry;
 
-        public void offer(Callback callback, ByteBuffer[] buffers)
+        public void offer(Callback callback, InetSocketAddress address, ByteBuffer[] buffers)
         {
             try (AutoLock l = lock.lock())
             {
-                queue.offer(new Entry(callback, buffers));
+                queue.offer(new Entry(callback, address, buffers));
             }
         }
 
@@ -221,6 +219,7 @@ public class QuicConnection extends AbstractConnection
             if (entry == null)
                 return Action.IDLE;
 
+            ServerDatagramEndPoint.INET_ADDRESS_ARGUMENT.push(entry.address);
             getEndPoint().write(this, entry.buffers);
             return Action.SCHEDULED;
         }
@@ -249,11 +248,13 @@ public class QuicConnection extends AbstractConnection
         private class Entry
         {
             private final Callback callback;
+            private final InetSocketAddress address;
             private final ByteBuffer[] buffers;
 
-            private Entry(Callback callback, ByteBuffer[] buffers)
+            private Entry(Callback callback, InetSocketAddress address, ByteBuffer[] buffers)
             {
                 this.callback = callback;
+                this.address = address;
                 this.buffers = buffers;
             }
         }
