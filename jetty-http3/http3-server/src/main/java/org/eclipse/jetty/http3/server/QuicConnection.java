@@ -84,6 +84,13 @@ public class QuicConnection extends AbstractConnection
         sessions.remove(quicheConnectionId);
     }
 
+    @Override
+    public void close()
+    {
+        sessions.values().forEach(QuicSession::close);
+        super.close();
+    }
+
     private Collection<String> getProtocols()
     {
         List<String> protocols = connector.getProtocols();
@@ -240,8 +247,7 @@ public class QuicConnection extends AbstractConnection
         @Override
         protected void onCompleteFailure(Throwable cause)
         {
-            // TODO: do we need to call Quiche here?
-            getEndPoint().close(cause);
+            QuicConnection.this.close();
         }
 
         private class Entry

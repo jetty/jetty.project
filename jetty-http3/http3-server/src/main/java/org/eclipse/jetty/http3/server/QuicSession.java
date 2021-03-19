@@ -222,7 +222,7 @@ public class QuicSession
         return endPoint;
     }
 
-    private void close()
+    public void close()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("closing QUIC session {}", this);
