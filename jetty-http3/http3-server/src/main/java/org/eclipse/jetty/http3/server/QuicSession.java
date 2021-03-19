@@ -252,7 +252,6 @@ public class QuicSession
     private class Flusher extends IteratingCallback
     {
         private final CyclicTimeout timeout;
-        private ByteBuffer addressBuffer;
         private ByteBuffer cipherBuffer;
 
         public Flusher(Scheduler scheduler)
@@ -282,8 +281,7 @@ public class QuicSession
         protected Action process() throws IOException
         {
             ByteBufferPool byteBufferPool = connector.getByteBufferPool();
-            addressBuffer = AddressCodec.encodeInetSocketAddress(byteBufferPool, remoteAddress);
-            cipherBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN + AddressCodec.ENCODED_ADDRESS_LENGTH, true);
+            cipherBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN, true);
             int pos = BufferUtil.flipToFill(cipherBuffer);
             int drained = quicheConnection.drainCipherText(cipherBuffer);
             long nextTimeoutInMs = quicheConnection.nextTimeout();
@@ -304,7 +302,8 @@ public class QuicSession
                 return Action.IDLE;
             }
             BufferUtil.flipToFlush(cipherBuffer, pos);
-            connection.write(this, addressBuffer, cipherBuffer);
+            ServerDatagramEndPoint.INET_ADDRESS_ARGUMENT.push(remoteAddress);
+            connection.write(this, cipherBuffer);
             return Action.SCHEDULED;
         }
 
@@ -312,7 +311,6 @@ public class QuicSession
         public void succeeded()
         {
             ByteBufferPool byteBufferPool = connector.getByteBufferPool();
-            byteBufferPool.release(addressBuffer);
             byteBufferPool.release(cipherBuffer);
             super.succeeded();
         }
@@ -321,7 +319,6 @@ public class QuicSession
         protected void onCompleteFailure(Throwable cause)
         {
             ByteBufferPool byteBufferPool = connector.getByteBufferPool();
-            byteBufferPool.release(addressBuffer);
             byteBufferPool.release(cipherBuffer);
         }
     }
