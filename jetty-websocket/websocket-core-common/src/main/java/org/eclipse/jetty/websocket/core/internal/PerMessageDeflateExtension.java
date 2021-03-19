@@ -416,10 +416,10 @@ public class PerMessageDeflateExtension extends AbstractExtension
             Inflater inflater = getInflater();
             while (true)
             {
-                int read = inflater.inflate(payload.array(), payload.arrayOffset() + payload.position(), bufferSize - payload.position());
-                payload.limit(payload.limit() + read);
+                int decompressed = inflater.inflate(payload.array(), payload.arrayOffset() + payload.position(), bufferSize - payload.position());
+                payload.limit(payload.limit() + decompressed);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Decompress: read {} {}", read, toDetail(inflater));
+                    LOG.debug("Decompress: read {} {}", decompressed, toDetail(inflater));
 
                 if (payload.limit() == bufferSize)
                 {
@@ -429,7 +429,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
                     break;
                 }
 
-                if (read == 0)
+                if (decompressed == 0)
                 {
                     if (!_tailBytes && _frame.isFin())
                     {
