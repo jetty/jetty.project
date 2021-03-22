@@ -729,13 +729,15 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                     return filled = -1;
 
                                 case BUFFER_UNDERFLOW:
-                                    if (netFilled > 0)
+                                    if (BufferUtil.space(_encryptedInput) == 0)
                                     {
-                                        if (BufferUtil.space(_encryptedInput) > 0)
-                                            continue; // try filling some more
                                         BufferUtil.clear(_encryptedInput);
                                         throw new SSLHandshakeException("Encrypted buffer max length exceeded");
                                     }
+
+                                    if (netFilled > 0)
+                                        continue; // try filling some more
+
                                     _underflown = true;
                                     if (netFilled < 0 && _sslEngine.getUseClientMode())
                                     {
