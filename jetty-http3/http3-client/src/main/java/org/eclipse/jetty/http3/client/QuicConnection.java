@@ -74,9 +74,9 @@ public class QuicConnection extends AbstractConnection
     {
         super.onOpen();
 
-
         InetSocketAddress remoteAddress = (InetSocketAddress)context.get(REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
         QuicheConnection quicheConnection = (QuicheConnection)context.get(QuicheConnection.class.getName());
+        //TODO: create QuicheConnection here?
 
         QuicSession session = new QuicSession(getExecutor(), scheduler, byteBufferPool, context, null, quicheConnection, this, remoteAddress);
         pendingSessions.put(remoteAddress, session);
@@ -137,10 +137,6 @@ public class QuicConnection extends AbstractConnection
                     pending = true;
                     session.setConnectionId(quicheConnectionId);
                 }
-                else
-                {
-                    System.out.println("got packet for established session");
-                }
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("packet is for existing session with connection ID {}, processing it ({} byte(s))", quicheConnectionId, cipherBuffer.remaining());
@@ -152,6 +148,7 @@ public class QuicConnection extends AbstractConnection
                     {
                         pendingSessions.remove(remoteAddress);
                         sessions.put(quicheConnectionId, session);
+                        session.createStream(0);
                     }
                 }
             }

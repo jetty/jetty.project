@@ -142,7 +142,9 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
 
     public boolean isSecure()
     {
-        return HttpClient.isSchemeSecure(getScheme());
+        return false;
+        // TODO: restore this, but ATM this breaks cleartext HTTP over QUIC
+//        return HttpClient.isSchemeSecure(getScheme());
     }
 
     public HttpClient getHttpClient()
