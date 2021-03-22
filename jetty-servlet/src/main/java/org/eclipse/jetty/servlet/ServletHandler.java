@@ -295,6 +295,11 @@ public class ServletHandler extends ScopedHandler
             _servlets.clear();
             _servlets.addAll(servletHolders);
 
+            updateNameMappings();
+            updateAndSet(_servletMappings, _servletMappings.stream().filter(m -> _servletNameMap.containsKey(m.getServletName())).collect(Collectors.toList()));
+            updateAndSet(_filterMappings, _filterMappings.stream().filter(m -> _filterNameMap.containsKey(m.getFilterName())).collect(Collectors.toList()));
+            updateMappings();
+
             if (_contextHandler != null)
                 _contextHandler.contextDestroyed();
 
@@ -318,11 +323,6 @@ public class ServletHandler extends ScopedHandler
             updateBeans(_listeners, listenerHolders);
             _listeners.clear();
             _listeners.addAll(listenerHolders);
-
-            updateNameMappings();
-            updateAndSet(_servletMappings, _servletMappings.stream().filter(m -> _servletNameMap.containsKey(m.getServletName())).collect(Collectors.toList()));
-            updateAndSet(_filterMappings, _filterMappings.stream().filter(m -> _filterNameMap.containsKey(m.getFilterName())).collect(Collectors.toList()));
-            updateMappings();
 
             // Update indexes for prepending filters
             _matchAfterIndex = (_filterMappings.size() == 0 ? -1 : _filterMappings.size() - 1);
