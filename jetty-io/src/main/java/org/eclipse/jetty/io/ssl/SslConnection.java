@@ -712,8 +712,15 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                     return filled = -1;
 
                                 case BUFFER_UNDERFLOW:
+                                    if (BufferUtil.space(_encryptedInput) == 0)
+                                    {
+                                        BufferUtil.clear(_encryptedInput);
+                                        throw new SSLHandshakeException("Encrypted buffer max length exceeded");
+                                    }
+
                                     if (netFilled > 0)
                                         continue; // try filling some more
+
                                     _underflown = true;
                                     if (netFilled < 0 && _sslEngine.getUseClientMode())
                                     {
@@ -722,7 +729,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                         {
                                             Throwable handshakeFailure = new SSLHandshakeException("Abruptly closed by peer");
                                             if (closeFailure != null)
-                                                handshakeFailure.initCause(closeFailure);
+                                                handshakeFailure.addSuppressed(closeFailure);
                                             throw handshakeFailure;
                                         }
                                         return filled = -1;
@@ -1418,9 +1425,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                 return false;
             if (isTLS13())
                 return false;
-            if (_sslEngine.getHandshakeStatus() == HandshakeStatus.NOT_HANDSHAKING)
-                return false;
-            return true;
+            return _sslEngine.getHandshakeStatus() != HandshakeStatus.NOT_HANDSHAKING;
         }
 
         private boolean allowRenegotiate()
@@ -1554,6 +1559,5 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                 return String.format("SSL@%h.DEP.writeCallback", SslConnection.this);
             }
         }
-
     }
 }
