@@ -7,11 +7,11 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>http3-server</artifactId>
-  <name>Jetty :: HTTP3 :: Server</name>
+  <artifactId>http3-client</artifactId>
+  <name>Jetty :: HTTP3 :: Client</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>
   </properties>
 
   <dependencies>
@@ -20,14 +20,21 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty.http3</groupId>
       <artifactId>http3-common</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty.http3</groupId>
+      <artifactId>http3-server</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

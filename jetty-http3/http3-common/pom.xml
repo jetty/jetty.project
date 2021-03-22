@@ -7,11 +7,11 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>http3-server</artifactId>
-  <name>Jetty :: HTTP3 :: Server</name>
+  <artifactId>http3-common</artifactId>
+  <name>Jetty :: HTTP3 :: Common</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.common</bundle-symbolic-name>
   </properties>
 
   <dependencies>
@@ -20,15 +20,17 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty.http3</groupId>
-      <artifactId>http3-common</artifactId>
+      <artifactId>cloudflare-quiche-jna</artifactId>
       <version>${project.version}</version>
     </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-io</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
