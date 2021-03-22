@@ -62,7 +62,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     private final RequestTimeouts requestTimeouts;
     private ConnectionPool connectionPool;
 
-    public HttpDestination(HttpClient client, Origin origin)
+    public HttpDestination(HttpClient client, Origin origin, boolean intrinsicallySecure)
     {
         this.client = client;
         this.origin = origin;
@@ -85,12 +85,12 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         if (proxy != null)
         {
             connectionFactory = proxy.newClientConnectionFactory(connectionFactory);
-            if (proxy.isSecure())
+            if (!intrinsicallySecure && proxy.isSecure())
                 connectionFactory = newSslClientConnectionFactory(proxy.getSslContextFactory(), connectionFactory);
         }
         else
         {
-            if (isSecure())
+            if (!intrinsicallySecure && isSecure())
                 connectionFactory = newSslClientConnectionFactory(null, connectionFactory);
         }
         Object tag = origin.getTag();
@@ -142,9 +142,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
 
     public boolean isSecure()
     {
-        return false;
-        // TODO: restore this, but ATM this breaks cleartext HTTP over QUIC
-//        return HttpClient.isSchemeSecure(getScheme());
+        return HttpClient.isSchemeSecure(getScheme());
     }
 
     public HttpClient getHttpClient()

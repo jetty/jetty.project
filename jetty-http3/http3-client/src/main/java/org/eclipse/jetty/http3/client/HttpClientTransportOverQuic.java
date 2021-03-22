@@ -69,7 +69,7 @@ public class HttpClientTransportOverQuic extends AbstractHttpClientTransport
     @Override
     public HttpDestination newHttpDestination(Origin origin)
     {
-        return new MultiplexHttpDestination(getHttpClient(), origin);
+        return new MultiplexHttpDestination(getHttpClient(), origin, true);
     }
 
     @Override

@@ -28,7 +28,12 @@ public class MultiplexHttpDestination extends HttpDestination implements HttpDes
 {
     public MultiplexHttpDestination(HttpClient client, Origin origin)
     {
-        super(client, origin);
+        this(client, origin, false);
+    }
+
+    public MultiplexHttpDestination(HttpClient client, Origin origin, boolean intrinsicallySecure)
+    {
+        super(client, origin, intrinsicallySecure);
     }
 
     @ManagedAttribute(value = "The maximum number of concurrent requests per connection")
