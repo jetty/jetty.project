@@ -15,11 +15,13 @@ package org.eclipse.jetty.util.component;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EventListener;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -489,12 +491,13 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         if (super.removeEventListener(listener))
         {
             removeBean(listener);
-            if (_listeners.remove(listener))
+            if (listener instanceof Container.Listener && _listeners.remove(listener))
             {
+                Container.Listener cl = (Container.Listener)listener;
                 // remove existing beans
                 for (Bean b : _beans)
                 {
-                    ((Container.Listener)listener).beanRemoved(this, b._bean);
+                    cl.beanRemoved(this, b._bean);
 
                     if (listener instanceof InheritedListener && b.isManaged() && b._bean instanceof Container)
                         ((Container)b._bean).removeBean(listener);
@@ -813,40 +816,28 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
 
     public void updateBeans(Object[] oldBeans, final Object[] newBeans)
     {
+        updateBeans(
+            oldBeans == null ? Collections.emptyList() : Arrays.asList(oldBeans),
+            newBeans == null ? Collections.emptyList() : Arrays.asList(newBeans));
+    }
+
+    public void updateBeans(final Collection<?> oldBeans, final Collection<?> newBeans)
+    {
+        Objects.requireNonNull(oldBeans);
+        Objects.requireNonNull(newBeans);
+
         // remove oldChildren not in newChildren
-        if (oldBeans != null)
+        for (Object o : oldBeans)
         {
-            loop:
-            for (Object o : oldBeans)
-            {
-                if (newBeans != null)
-                {
-                    for (Object n : newBeans)
-                    {
-                        if (o == n)
-                            continue loop;
-                    }
-                }
+            if (!newBeans.contains(o))
                 removeBean(o);
-            }
         }
 
         // add new beans not in old
-        if (newBeans != null)
+        for (Object n : newBeans)
         {
-            loop:
-            for (Object n : newBeans)
-            {
-                if (oldBeans != null)
-                {
-                    for (Object o : oldBeans)
-                    {
-                        if (o == n)
-                            continue loop;
-                    }
-                }
+            if (!oldBeans.contains(n))
                 addBean(n);
-            }
         }
     }
 

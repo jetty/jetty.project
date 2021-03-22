@@ -1448,11 +1448,13 @@ public class DefaultServletTest
         Path image = docRoot.resolve("image.jpg");
         createFile(image, "not an image");
 
+        server.stop();
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "false");
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("welcomeServlets", "false");
         defholder.setInitParameter("gzip", "false");
+        server.start();
 
         String rawResponse;
         HttpTester.Response response;
