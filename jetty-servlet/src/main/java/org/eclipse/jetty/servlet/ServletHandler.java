@@ -265,14 +265,10 @@ public class ServletHandler extends ScopedHandler
                 }
             }
 
-            //Retain only durable filters and mappings
+            //Retain only durable filters
             updateBeans(_filters, filterHolders);
             _filters.clear();
             _filters.addAll(filterHolders);
-
-            // Update indexes for prepending filters
-            _matchAfterIndex = (_filterMappings.size() == 0 ? -1 : _filterMappings.size() - 1);
-            _matchBeforeIndex = -1;
 
             // Stop servlets
             List<ServletHolder> servletHolders = new ArrayList<>();  //will be remaining servlets
@@ -327,6 +323,10 @@ public class ServletHandler extends ScopedHandler
             updateAndSet(_servletMappings, _servletMappings.stream().filter(m -> _servletNameMap.containsKey(m.getServletName())).collect(Collectors.toList()));
             updateAndSet(_filterMappings, _filterMappings.stream().filter(m -> _filterNameMap.containsKey(m.getFilterName())).collect(Collectors.toList()));
             updateMappings();
+
+            // Update indexes for prepending filters
+            _matchAfterIndex = (_filterMappings.size() == 0 ? -1 : _filterMappings.size() - 1);
+            _matchBeforeIndex = -1;
 
             _durable.clear();
             _filterPathMappings = null;
