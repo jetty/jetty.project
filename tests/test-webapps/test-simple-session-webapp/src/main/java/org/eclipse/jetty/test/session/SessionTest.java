@@ -36,14 +36,14 @@ public class SessionTest extends HttpServlet
         if ("CREATE".equals(action))
         {
             HttpSession session = req.getSession(true);
-            session.setAttribute("BEST_CHOCOLATE", "FRENCH");
+            session.setAttribute("CHOCOLATE", new Chocolate());
             resp.getOutputStream().println("SESSION CREATED");
         }
         else
         {
             HttpSession session = req.getSession(false);
-            String yummi = (String)session.getAttribute("BEST_CHOCOLATE");
-            resp.getOutputStream().println("SESSION READ BEST_CHOCOLATE:" + yummi);
+            Chocolate yummi = (Chocolate)session.getAttribute("CHOCOLATE");
+            resp.getOutputStream().println("SESSION READ CHOCOLATE THE BEST:" + yummi.getTheBest());
         }
     }
 }

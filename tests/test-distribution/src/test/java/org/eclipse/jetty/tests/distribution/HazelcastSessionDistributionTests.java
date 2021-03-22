@@ -89,7 +89,7 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
                 assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
                 assertEquals(0, run1.getExitValue());
 
-                File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
+                File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-session-webapp:war:" + jettyVersion);
                 distribution.installWarFile(war, "test");
 
                 int port = distribution.freePort();
@@ -109,7 +109,7 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
 
                     response = client.GET("http://localhost:" + port + "/test/session?action=READ");
                     assertEquals(HttpStatus.OK_200, response.getStatus());
-                    assertThat(response.getContentAsString(), containsString("BEST_CHOCOLATE:FRENCH"));
+                    assertThat(response.getContentAsString(), containsString("SESSION READ CHOCOLATE THE BEST:FRENCH"));
                 }
 
                 try (DistributionTester.Run run2 = distribution.start(argsStart))
@@ -118,7 +118,7 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
 
                     ContentResponse response = client.GET("http://localhost:" + port + "/test/session?action=READ");
                     assertEquals(HttpStatus.OK_200, response.getStatus());
-                    assertThat(response.getContentAsString(), containsString("BEST_CHOCOLATE:FRENCH"));
+                    assertThat(response.getContentAsString(), containsString("SESSION READ CHOCOLATE THE BEST:FRENCH"));
                 }
             }
 
@@ -128,9 +128,13 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
     @Test
     public void testHazelcastRemote() throws Exception
     {
+
+        Map<String, String> env = new HashMap<>();
+        //env.put("JAVA_OPTS", "-Dhazelcast.local.publicAddress=localhost:5701");
         try (GenericContainer hazelcast =
                  new GenericContainer("hazelcast/hazelcast:" + System.getProperty("hazelcast.version", "3.12.6"))
                      .withExposedPorts(5701)
+                     .withEnv(env)
                      .waitingFor(Wait.forListeningPort())
                      .withLogConsumer(new Slf4jLogConsumer(HAZELCAST_LOG)))
         {
@@ -140,7 +144,13 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
 
             LOGGER.info("hazelcast started on {}:{}", hazelcastHost, hazelcastPort);
 
-            Path hazelcastJettyPath = Paths.get("src/test/resources/hazelcast-jetty.xml");
+            Map<String, String> tokenValues = new HashMap<>();
+            tokenValues.put("hazelcast_ip", hazelcastHost);
+            tokenValues.put("hazelcast_port", Integer.toString(hazelcastPort));
+            Path hazelcastJettyPath = Paths.get("target/hazelcast-client.xml");
+            transformFileWithHostAndPort(Paths.get("src/test/resources/hazelcast-jetty.xml"),
+                                         hazelcastJettyPath,
+                                         tokenValues);
 
             String jettyVersion = System.getProperty("jettyVersion");
             DistributionTester distribution = DistributionTester.Builder.newInstance()
@@ -167,7 +177,7 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
                            new File(startdDirectory, "session-store-hazelcast-remote.ini").toPath(),
                            StandardCopyOption.REPLACE_EXISTING);
 
-                File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-webapp:war:" + jettyVersion);
+                File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-session-webapp:war:" + jettyVersion);
                 distribution.installWarFile(war, "test");
 
                 int port = distribution.freePort();
@@ -187,7 +197,7 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
 
                     response = client.GET("http://localhost:" + port + "/test/session?action=READ");
                     assertEquals(HttpStatus.OK_200, response.getStatus());
-                    assertThat(response.getContentAsString(), containsString("BEST_CHOCOLATE:FRENCH"));
+                    assertThat(response.getContentAsString(), containsString("SESSION READ CHOCOLATE THE BEST:FRENCH"));
                 }
 
                 try (DistributionTester.Run run2 = distribution.start(argsStart))
@@ -196,7 +206,7 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
 
                     ContentResponse response = client.GET("http://localhost:" + port + "/test/session?action=READ");
                     assertEquals(HttpStatus.OK_200, response.getStatus());
-                    assertThat(response.getContentAsString(), containsString("BEST_CHOCOLATE:FRENCH"));
+                    assertThat(response.getContentAsString(), containsString("SESSION READ CHOCOLATE THE BEST:FRENCH"));
                 }
             }
 

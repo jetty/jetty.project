@@ -91,6 +91,13 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>test-simple-session-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
       <artifactId>test-weld-cdi-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>

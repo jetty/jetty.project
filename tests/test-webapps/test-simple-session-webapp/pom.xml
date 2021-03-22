@@ -4,13 +4,21 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
-    <version>9.4.44-SNAPSHOT</version>
+    <version>9.4.39-SNAPSHOT</version>
   </parent>
 
-  <artifactId>test-simple-webapp</artifactId>
+  <artifactId>test-simple-session-webapp</artifactId>
 
   <packaging>war</packaging>
 
-  <name>Test :: Jetty Test Simple Webapp</name>
+  <name>Test :: Jetty Test Simple Session Webapp</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
 
 </project>
