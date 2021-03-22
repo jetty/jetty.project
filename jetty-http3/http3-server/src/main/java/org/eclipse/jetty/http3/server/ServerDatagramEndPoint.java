@@ -65,7 +65,7 @@ public class ServerDatagramEndPoint extends AbstractEndPoint implements ManagedS
         }
     }
 
-    private abstract class RunnableCloseable extends ServerDatagramEndPoint.RunnableTask implements Closeable
+    private abstract class RunnableCloseable extends RunnableTask implements Closeable
     {
         protected RunnableCloseable(String op)
         {
@@ -88,7 +88,7 @@ public class ServerDatagramEndPoint extends AbstractEndPoint implements ManagedS
 
     private final ManagedSelector.SelectorUpdate _updateKeyAction = this::updateKeyAction;
 
-    private final Runnable _runFillable = new ServerDatagramEndPoint.RunnableCloseable("runFillable")
+    private final Runnable _runFillable = new RunnableCloseable("runFillable")
     {
         @Override
         public InvocationType getInvocationType()
@@ -103,7 +103,7 @@ public class ServerDatagramEndPoint extends AbstractEndPoint implements ManagedS
         }
     };
 
-    private final Runnable _runCompleteWrite = new ServerDatagramEndPoint.RunnableCloseable("runCompleteWrite")
+    private final Runnable _runCompleteWrite = new RunnableCloseable("runCompleteWrite")
     {
         @Override
         public InvocationType getInvocationType()
@@ -124,7 +124,7 @@ public class ServerDatagramEndPoint extends AbstractEndPoint implements ManagedS
         }
     };
 
-    private final Runnable _runCompleteWriteFillable = new ServerDatagramEndPoint.RunnableCloseable("runCompleteWriteFillable")
+    private final Runnable _runCompleteWriteFillable = new RunnableCloseable("runCompleteWriteFillable")
     {
         @Override
         public InvocationType getInvocationType()

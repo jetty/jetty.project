@@ -61,7 +61,7 @@ public class ClientDatagramEndPoint extends AbstractEndPoint implements ManagedS
         @Override
         public String toString()
         {
-            return String.format("%s:%s:%s", this, _operation, getInvocationType());
+            return String.format("%s:%s:%s", ClientDatagramEndPoint.this, _operation, getInvocationType());
         }
     }
 
@@ -77,11 +77,11 @@ public class ClientDatagramEndPoint extends AbstractEndPoint implements ManagedS
         {
             try
             {
-                this.close();
+                ClientDatagramEndPoint.this.close();
             }
             catch (Throwable x)
             {
-                LOG.warn("Unable to close {}", this, x);
+                LOG.warn("Unable to close {}", ClientDatagramEndPoint.this, x);
             }
         }
     }
@@ -91,7 +91,7 @@ public class ClientDatagramEndPoint extends AbstractEndPoint implements ManagedS
     private final Runnable _runFillable = new RunnableCloseable("runFillable")
     {
         @Override
-        public Invocable.InvocationType getInvocationType()
+        public InvocationType getInvocationType()
         {
             return getFillInterest().getCallbackInvocationType();
         }
@@ -106,7 +106,7 @@ public class ClientDatagramEndPoint extends AbstractEndPoint implements ManagedS
     private final Runnable _runCompleteWrite = new RunnableCloseable("runCompleteWrite")
     {
         @Override
-        public Invocable.InvocationType getInvocationType()
+        public InvocationType getInvocationType()
         {
             return getWriteFlusher().getCallbackInvocationType();
         }
@@ -120,27 +120,27 @@ public class ClientDatagramEndPoint extends AbstractEndPoint implements ManagedS
         @Override
         public String toString()
         {
-            return String.format("%s:%s:%s->%s", this, _operation, getInvocationType(), getWriteFlusher());
+            return String.format("%s:%s:%s->%s", ClientDatagramEndPoint.this, _operation, getInvocationType(), getWriteFlusher());
         }
     };
 
     private final Runnable _runCompleteWriteFillable = new RunnableCloseable("runCompleteWriteFillable")
     {
         @Override
-        public Invocable.InvocationType getInvocationType()
+        public InvocationType getInvocationType()
         {
-            Invocable.InvocationType fillT = getFillInterest().getCallbackInvocationType();
-            Invocable.InvocationType flushT = getWriteFlusher().getCallbackInvocationType();
+            InvocationType fillT = getFillInterest().getCallbackInvocationType();
+            InvocationType flushT = getWriteFlusher().getCallbackInvocationType();
             if (fillT == flushT)
                 return fillT;
 
-            if (fillT == Invocable.InvocationType.EITHER && flushT == Invocable.InvocationType.NON_BLOCKING)
-                return Invocable.InvocationType.EITHER;
+            if (fillT == InvocationType.EITHER && flushT == InvocationType.NON_BLOCKING)
+                return InvocationType.EITHER;
 
-            if (fillT == Invocable.InvocationType.NON_BLOCKING && flushT == Invocable.InvocationType.EITHER)
-                return Invocable.InvocationType.EITHER;
+            if (fillT == InvocationType.NON_BLOCKING && flushT == InvocationType.EITHER)
+                return InvocationType.EITHER;
 
-            return Invocable.InvocationType.BLOCKING;
+            return InvocationType.BLOCKING;
         }
 
         @Override
