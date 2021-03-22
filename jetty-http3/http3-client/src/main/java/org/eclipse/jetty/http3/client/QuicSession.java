@@ -81,6 +81,11 @@ public class QuicSession
         LifeCycle.start(strategy);
     }
 
+    public void createStream(long streamId)
+    {
+        getOrCreateStreamEndPoint(streamId);
+    }
+
     public int fill(long streamId, ByteBuffer buffer) throws IOException
     {
         return quicheConnection.drainClearTextForStream(streamId, buffer);
