@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.HashSet;
 import java.util.Set;
@@ -244,7 +245,9 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         if (isSniRequired() || isSniHostCheck())
         {
             String sniHost = (String)sslSession.getValue(SslContextFactory.Server.SNI_HOST);
-            X509 cert = new X509(null, (X509Certificate)sslSession.getLocalCertificates()[0]);
+            Certificate[] certificates = sslSession.getLocalCertificates();
+            X509 cert = (certificates != null && certificates.length > 0 && certificates[0] instanceof X509Certificate)
+                ? new X509(null, (X509Certificate)certificates[0]) : null;
             String serverName = request.getServerName();
             if (LOG.isDebugEnabled())
                 LOG.debug("Host={}, SNI={}, SNI Certificate={}", serverName, sniHost, cert);
@@ -253,13 +256,13 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             {
                 if (sniHost == null)
                     throw new BadMessageException(400, "Invalid SNI");
-                if (!cert.matches(sniHost))
+                if (cert == null || !cert.matches(sniHost))
                     throw new BadMessageException(400, "Invalid SNI");
             }
 
             if (isSniHostCheck())
             {
-                if (!cert.matches(serverName))
+                if (cert == null || !cert.matches(serverName))
                     throw new BadMessageException(400, "Invalid SNI");
             }
         }
