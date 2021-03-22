@@ -58,6 +58,7 @@ import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.IClientConnector;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
@@ -126,7 +127,7 @@ public class HttpClient extends ContainerLifeCycle
     private final Set<ContentDecoder.Factory> decoderFactories = new ContentDecoderFactorySet();
     private final ProxyConfiguration proxyConfig = new ProxyConfiguration();
     private final HttpClientTransport transport;
-    private final ClientConnector connector;
+    private final IClientConnector connector;
     private AuthenticationStore authenticationStore = new HttpAuthenticationStore();
     private CookieManager cookieManager;
     private CookieStore cookieStore;
@@ -161,7 +162,7 @@ public class HttpClient extends ContainerLifeCycle
     {
         this.transport = Objects.requireNonNull(transport);
         addBean(transport);
-        this.connector = ((AbstractHttpClientTransport)transport).getContainedBeans(ClientConnector.class).stream().findFirst().orElseThrow();
+        this.connector = ((AbstractHttpClientTransport)transport).getContainedBeans(IClientConnector.class).stream().findFirst().orElseThrow();
         addBean(handlers);
         addBean(decoderFactories);
     }
