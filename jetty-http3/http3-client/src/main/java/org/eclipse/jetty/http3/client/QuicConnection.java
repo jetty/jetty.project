@@ -21,7 +21,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.http3.quiche.QuicheConfig;
 import org.eclipse.jetty.http3.quiche.QuicheConnection;
 import org.eclipse.jetty.http3.quiche.QuicheConnectionId;
 import org.eclipse.jetty.http3.quiche.ffi.LibQuiche;
@@ -36,21 +35,23 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.eclipse.jetty.http3.client.QuicClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY;
+
 public class QuicConnection extends AbstractConnection
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicConnection.class);
 
     private final ConcurrentMap<QuicheConnectionId, QuicSession> sessions = new ConcurrentHashMap<>();
-    private final QuicheConfig quicheConfig;
-    private final ByteBufferPool byteBufferPool;
-    private final Flusher flusher = new Flusher();
-    private final Scheduler scheduler;
-    private final Map<String, Object> context;
+    private final Map<InetSocketAddress, QuicSession> pendingSessions = new ConcurrentHashMap<>();
 
-    public QuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endPoint, Map<String, Object> context, QuicheConfig quicheConfig)
+    private final Scheduler scheduler;
+    private final ByteBufferPool byteBufferPool;
+    private final Map<String, Object> context;
+    private final Flusher flusher = new Flusher();
+
+    public QuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endPoint, Map<String, Object> context)
     {
         super(endPoint, executor);
-        this.quicheConfig = quicheConfig;
         this.scheduler = scheduler;
         this.byteBufferPool = byteBufferPool;
         this.context = context;
@@ -72,6 +73,17 @@ public class QuicConnection extends AbstractConnection
     public void onOpen()
     {
         super.onOpen();
+
+
+        InetSocketAddress remoteAddress = (InetSocketAddress)context.get(REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
+        QuicheConnection quicheConnection = (QuicheConnection)context.get(QuicheConnection.class.getName());
+
+        QuicSession session = new QuicSession(getExecutor(), scheduler, byteBufferPool, context, null, quicheConnection, this, remoteAddress);
+        pendingSessions.put(remoteAddress, session);
+        session.flush(); // send the response packet(s) that accept generated.
+        if (LOG.isDebugEnabled())
+            LOG.debug("created connecting QUIC session {}", session);
+
         fillInterested();
     }
 
@@ -115,46 +127,33 @@ public class QuicConnection extends AbstractConnection
                 if (LOG.isDebugEnabled())
                     LOG.debug("packet contains connection ID {}", quicheConnectionId);
 
+                boolean pending = false;
                 QuicSession session = sessions.get(quicheConnectionId);
                 if (session == null)
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("no existing session with connection ID {}, trying to accept new QUIC connection", quicheConnectionId);
-                    QuicheConnection quicheConnection = QuicheConnection.tryAccept(quicheConfig, remoteAddress, cipherBuffer);
-                    if (quicheConnection == null)
-                    {
-                        ByteBuffer negotiationBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN, true);
-                        int pos = BufferUtil.flipToFill(negotiationBuffer);
-                        if (!QuicheConnection.negotiate(remoteAddress, cipherBuffer, negotiationBuffer))
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("QUIC connection negotiation failed, dropping packet");
-                            byteBufferPool.release(negotiationBuffer);
-                            continue;
-                        }
-                        BufferUtil.flipToFlush(negotiationBuffer, pos);
-
-                        ClientDatagramEndPoint.INET_ADDRESS_ARGUMENT.push(remoteAddress);
-                        getEndPoint().write(Callback.from(() -> byteBufferPool.release(negotiationBuffer)), negotiationBuffer);
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("QUIC connection negotiation packet sent");
-                    }
-                    else
-                    {
-                        session = new QuicSession(getExecutor(), scheduler, byteBufferPool, context, quicheConnectionId, quicheConnection, this, remoteAddress);
-                        sessions.putIfAbsent(quicheConnectionId, session);
-                        session.flush(); // send the response packet(s) that accept generated.
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("created QUIC session {} with connection ID {}", session, quicheConnectionId);
-                    }
-
-                    // Once here, cipherBuffer has been fully consumed.
-                    continue;
+                    session = pendingSessions.get(remoteAddress);
+                    if (session == null)
+                        throw new IllegalStateException("cannot find session with ID " + quicheConnectionId);
+                    pending = true;
+                    session.setConnectionId(quicheConnectionId);
+                }
+                else
+                {
+                    System.out.println("got packet for established session");
                 }
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("packet is for existing session with connection ID {}, processing it ({} byte(s))", quicheConnectionId, cipherBuffer.remaining());
                 session.process(remoteAddress, cipherBuffer);
+
+                if (pending)
+                {
+                    if (session.isConnectionEstablished())
+                    {
+                        pendingSessions.remove(remoteAddress);
+                        sessions.put(quicheConnectionId, session);
+                    }
+                }
             }
         }
         catch (Throwable x)

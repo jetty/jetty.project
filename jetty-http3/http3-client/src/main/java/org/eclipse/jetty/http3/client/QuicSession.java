@@ -52,7 +52,7 @@ public class QuicSession
     private final Scheduler scheduler;
     private final ByteBufferPool byteBufferPool;
     private final Map<String, Object> context;
-    private final QuicheConnectionId quicheConnectionId;
+    private volatile QuicheConnectionId quicheConnectionId;
     private final QuicheConnection quicheConnection;
     private final QuicConnection connection;
     private final ConcurrentMap<Long, QuicStreamEndPoint> endpoints = new ConcurrentHashMap<>();
@@ -127,6 +127,16 @@ public class QuicSession
     InetSocketAddress getRemoteAddress()
     {
         return remoteAddress;
+    }
+
+    public boolean isConnectionEstablished()
+    {
+        return quicheConnection.isConnectionEstablished();
+    }
+
+    public void setConnectionId(QuicheConnectionId quicheConnectionId)
+    {
+        this.quicheConnectionId = quicheConnectionId;
     }
 
     void process(InetSocketAddress remoteAddress, ByteBuffer cipherBufferIn) throws IOException

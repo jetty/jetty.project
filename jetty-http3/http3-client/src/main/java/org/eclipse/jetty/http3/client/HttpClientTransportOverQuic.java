@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.client;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.Arrays;
 import java.util.Map;
 
 import org.eclipse.jetty.client.AbstractHttpClientTransport;
@@ -42,14 +41,9 @@ public class HttpClientTransportOverQuic extends AbstractHttpClientTransport
 
     public HttpClientTransportOverQuic()
     {
-        this("http/1.1");
-    }
-
-    public HttpClientTransportOverQuic(String... alpnProtocols)
-    {
-        //TODO the Protocol instance should be passed around instead of the alpn string array
-        connector = new QuicClientConnector(alpnProtocols);
-        protocol = new Origin.Protocol(Arrays.asList(alpnProtocols), false);
+        //TODO the ClientConnectionFactory should be built according to the Protocol instance. See HttpClientTransportDynamic
+        protocol = new Origin.Protocol(HttpClientConnectionFactory.HTTP11.getProtocols(true), false);
+        connector = new QuicClientConnector(protocol);
         addBean(connector);
         setConnectionPoolFactory(destination ->
         {
