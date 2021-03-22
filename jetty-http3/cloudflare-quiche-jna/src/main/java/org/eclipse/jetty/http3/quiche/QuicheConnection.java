@@ -501,15 +501,11 @@ public class QuicheConnection
     public synchronized void dispose()
     {
         if (quicheConn != null)
-        {
             libQuiche().quiche_conn_free(quicheConn);
-            quicheConn = null;
-        }
         if (quicheConfig != null)
-        {
             libQuiche().quiche_config_free(quicheConfig);
-            quicheConfig = null;
-        }
+        quicheConn = null;
+        quicheConfig = null;
     }
 
     public synchronized boolean isDraining()
