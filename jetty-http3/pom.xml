@@ -14,7 +14,9 @@
 
   <modules>
     <module>cloudflare-quiche-jna</module>
+    <module>http3-common</module>
     <module>http3-server</module>
+    <module>http3-client</module>
   </modules>
 
 </project>
