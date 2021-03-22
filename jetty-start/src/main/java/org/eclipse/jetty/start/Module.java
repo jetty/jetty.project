@@ -154,6 +154,11 @@ public class Module implements Comparable<Module>
     private final List<String> _depends = new ArrayList<>();
 
     /**
+     * Dependents from {@code [before]} section
+     */
+    private final List<String> _before = new ArrayList<>();
+
+    /**
      * Optional dependencies from {@code [optional]} section are structural in nature.
      */
     private final Set<String> _optional = new HashSet<>();
@@ -240,6 +245,9 @@ public class Module implements Comparable<Module>
         tmp = _optional.stream().map(expander).collect(Collectors.toList());
         _optional.clear();
         _optional.addAll(tmp);
+        tmp = _before.stream().map(expander).collect(Collectors.toList());
+        _before.clear();
+        _before.addAll(tmp);
     }
 
     public List<String> getDefaultConfig()
@@ -426,7 +434,11 @@ public class Module implements Comparable<Module>
                             case "PROVIDES":
                                 _provides.add(line);
                                 break;
+                            case "BEFORE":
+                                _before.add(line);
+                                break;
                             case "OPTIONAL":
+                            case "AFTER":
                                 _optional.add(line);
                                 break;
                             case "EXEC":
@@ -497,6 +509,11 @@ public class Module implements Comparable<Module>
         if (sep != '{')
             str.append('}');
         return str.toString();
+    }
+
+    public List<String> getBefore()
+    {
+        return new ArrayList<>(_before);
     }
 
     public List<String> getDepends()

@@ -318,6 +318,12 @@ public class Modules implements Iterable<Module>
             };
             module.getDepends().forEach(add);
             module.getOptional().forEach(add);
+            module.getBefore().forEach(name ->
+            {
+                Module before = _names.get(name);
+                if (before != null && before.isEnabled())
+                    sort.addDependency(before, module);
+            });
         }
 
         sort.sort(enabled);
