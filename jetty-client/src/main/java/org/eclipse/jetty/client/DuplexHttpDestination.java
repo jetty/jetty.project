@@ -22,6 +22,6 @@ public class DuplexHttpDestination extends HttpDestination
 {
     public DuplexHttpDestination(HttpClient client, Origin origin)
     {
-        super(client, origin);
+        super(client, origin, false);
     }
 }
