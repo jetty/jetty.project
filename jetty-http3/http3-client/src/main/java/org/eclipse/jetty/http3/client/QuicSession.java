@@ -48,11 +48,11 @@ public class QuicSession
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicSession.class);
 
+    private final Map<String, Object> context;
+
     private final Flusher flusher;
     private final Scheduler scheduler;
     private final ByteBufferPool byteBufferPool;
-    private final Map<String, Object> context;
-    private volatile QuicheConnectionId quicheConnectionId;
     private final QuicheConnection quicheConnection;
     private final QuicConnection connection;
     private final ConcurrentMap<Long, QuicStreamEndPoint> endpoints = new ConcurrentHashMap<>();
@@ -60,12 +60,12 @@ public class QuicSession
     private final AutoLock strategyQueueLock = new AutoLock();
     private final Queue<Runnable> strategyQueue = new ArrayDeque<>();
     private InetSocketAddress remoteAddress;
+    private QuicheConnectionId quicheConnectionId;
 
-    QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, Map<String, Object> context, QuicheConnectionId quicheConnectionId, QuicheConnection quicheConnection, QuicConnection connection, InetSocketAddress remoteAddress)
+    QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicheConnectionId quicheConnectionId, QuicheConnection quicheConnection, QuicConnection connection, InetSocketAddress remoteAddress, Map<String, Object> context)
     {
         this.scheduler = scheduler;
         this.byteBufferPool = byteBufferPool;
-        this.context = context;
         this.quicheConnectionId = quicheConnectionId;
         this.quicheConnection = quicheConnection;
         this.connection = connection;
@@ -79,6 +79,8 @@ public class QuicSession
             }
         }, executor);
         LifeCycle.start(strategy);
+
+        this.context = context;
     }
 
     public void createStream(long streamId)
@@ -229,18 +231,19 @@ public class QuicSession
     {
         ClientConnectionFactory connectionFactory = (ClientConnectionFactory)context.get(ClientDatagramConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY);
         QuicStreamEndPoint endPoint = new QuicStreamEndPoint(scheduler, this, streamId);
+        Connection connection;
         try
         {
-            Connection connection = connectionFactory.newConnection(endPoint, context);
-            endPoint.setConnection(connection);
-            endPoint.onOpen();
-            connection.onOpen();
-            return endPoint;
+            connection = connectionFactory.newConnection(endPoint, context);
         }
         catch (IOException e)
         {
             throw new RuntimeIOException("Error creating new connection", e);
         }
+        endPoint.setConnection(connection);
+        endPoint.onOpen();
+        connection.onOpen();
+        return endPoint;
     }
 
     public void close()
