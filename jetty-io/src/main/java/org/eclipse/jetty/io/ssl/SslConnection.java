@@ -654,7 +654,6 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             else
                             {
                                 appIn = _decryptedInput;
-                                BufferUtil.compact(_encryptedInput);
                             }
 
                             // Let's try reading some encrypted data... even if we have some already.
@@ -712,12 +711,18 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                     return filled = -1;
 
                                 case BUFFER_UNDERFLOW:
+                                    // Continue if we can compact?
+                                    if (BufferUtil.compact(_encryptedInput))
+                                        continue;
+
+                                    // Are we out of space?
                                     if (BufferUtil.space(_encryptedInput) == 0)
                                     {
                                         BufferUtil.clear(_encryptedInput);
                                         throw new SSLHandshakeException("Encrypted buffer max length exceeded");
                                     }
 
+                                    // if we just filled some
                                     if (netFilled > 0)
                                         continue; // try filling some more
 
