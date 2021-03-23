@@ -25,6 +25,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.http3.common.QuicDatagramEndPoint;
 import org.eclipse.jetty.http3.quiche.ffi.LibQuiche;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -180,13 +181,13 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
         @Override
         protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException
         {
-            return new ServerDatagramEndPoint((DatagramChannel)channel, selector, selectionKey, getScheduler());
+            return new QuicDatagramEndPoint((DatagramChannel)channel, selector, selectionKey, getScheduler());
         }
 
         @Override
         public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException
         {
-            return new QuicConnection(ServerDatagramConnector.this, (ServerDatagramEndPoint)endpoint);
+            return new QuicConnection(ServerDatagramConnector.this, (QuicDatagramEndPoint)endpoint);
         }
 
         @Override

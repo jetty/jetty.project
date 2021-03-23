@@ -15,6 +15,7 @@ module org.eclipse.jetty.http3.server
 {
     exports org.eclipse.jetty.http3.server;
 
+    requires org.eclipse.jetty.http3.common;
     requires org.eclipse.jetty.http3.quiche;
     requires org.eclipse.jetty.io;
     requires org.eclipse.jetty.server;

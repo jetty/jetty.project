@@ -11,11 +11,14 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.http3.common
+module org.eclipse.jetty.http3.client
 {
-    exports org.eclipse.jetty.http3.common;
+    exports org.eclipse.jetty.http3.client;
 
-    requires transitive org.eclipse.jetty.http3.quiche;
-    requires transitive org.eclipse.jetty.io;
+    requires org.eclipse.jetty.http3.common;
+    requires org.eclipse.jetty.http3.quiche;
+    requires org.eclipse.jetty.client;
+    requires org.eclipse.jetty.io;
+    requires org.eclipse.jetty.util;
     requires org.slf4j;
 }

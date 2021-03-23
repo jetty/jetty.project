@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.eclipse.jetty.http3.common.QuicDatagramEndPoint;
 import org.eclipse.jetty.http3.quiche.QuicheConfig;
 import org.eclipse.jetty.http3.quiche.QuicheConnection;
 import org.eclipse.jetty.http3.quiche.QuicheConnectionId;
@@ -46,7 +47,7 @@ public class QuicConnection extends AbstractConnection
     private final ByteBufferPool byteBufferPool;
     private final Flusher flusher = new Flusher();
 
-    public QuicConnection(Connector connector, ServerDatagramEndPoint endp)
+    public QuicConnection(Connector connector, QuicDatagramEndPoint endp)
     {
         super(endp, connector.getExecutor());
         this.connector = connector;
@@ -131,7 +132,7 @@ public class QuicConnection extends AbstractConnection
                     return;
                 }
 
-                InetSocketAddress remoteAddress = ServerDatagramEndPoint.INET_ADDRESS_ARGUMENT.pop();
+                InetSocketAddress remoteAddress = QuicDatagramEndPoint.INET_ADDRESS_ARGUMENT.pop();
                 if (LOG.isDebugEnabled())
                     LOG.debug("decoded peer IP address: {}, ciphertext packet size: {}", remoteAddress, cipherBuffer.remaining());
 
@@ -164,7 +165,7 @@ public class QuicConnection extends AbstractConnection
                         }
                         BufferUtil.flipToFlush(negotiationBuffer, pos);
 
-                        ServerDatagramEndPoint.INET_ADDRESS_ARGUMENT.push(remoteAddress);
+                        QuicDatagramEndPoint.INET_ADDRESS_ARGUMENT.push(remoteAddress);
                         getEndPoint().write(Callback.from(() -> byteBufferPool.release(negotiationBuffer)), negotiationBuffer);
                         if (LOG.isDebugEnabled())
                             LOG.debug("QUIC connection negotiation packet sent");
@@ -225,7 +226,7 @@ public class QuicConnection extends AbstractConnection
             if (entry == null)
                 return Action.IDLE;
 
-            ServerDatagramEndPoint.INET_ADDRESS_ARGUMENT.push(entry.address);
+            QuicDatagramEndPoint.INET_ADDRESS_ARGUMENT.push(entry.address);
             getEndPoint().write(this, entry.buffers);
             return Action.SCHEDULED;
         }
