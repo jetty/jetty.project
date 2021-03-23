@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http3.client;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
@@ -21,12 +22,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.http3.quiche.QuicheConfig;
 import org.eclipse.jetty.http3.quiche.QuicheConnection;
 import org.eclipse.jetty.http3.quiche.QuicheConnectionId;
 import org.eclipse.jetty.http3.quiche.ffi.LibQuiche;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
@@ -47,14 +50,16 @@ public class QuicConnection extends AbstractConnection
     private final Scheduler scheduler;
     private final ByteBufferPool byteBufferPool;
     private final Map<String, Object> context;
+    private final QuicheConfig quicheConfig;
     private final Flusher flusher = new Flusher();
 
-    public QuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endPoint, Map<String, Object> context)
+    public QuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endPoint, Map<String, Object> context, QuicheConfig quicheConfig)
     {
         super(endPoint, executor);
         this.scheduler = scheduler;
         this.byteBufferPool = byteBufferPool;
         this.context = context;
+        this.quicheConfig = quicheConfig;
     }
 
     void onClose(QuicheConnectionId quicheConnectionId)
@@ -74,15 +79,20 @@ public class QuicConnection extends AbstractConnection
     {
         super.onOpen();
 
-        InetSocketAddress remoteAddress = (InetSocketAddress)context.get(REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
-        QuicheConnection quicheConnection = (QuicheConnection)context.get(QuicheConnection.class.getName());
-        //TODO: create QuicheConnection here?
-
-        QuicSession session = new QuicSession(getExecutor(), scheduler, byteBufferPool, context, null, quicheConnection, this, remoteAddress);
-        pendingSessions.put(remoteAddress, session);
-        session.flush(); // send the response packet(s) that accept generated.
-        if (LOG.isDebugEnabled())
-            LOG.debug("created connecting QUIC session {}", session);
+        try
+        {
+            InetSocketAddress remoteAddress = (InetSocketAddress)context.get(REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
+            QuicheConnection quicheConnection = QuicheConnection.connect(quicheConfig, remoteAddress);
+            QuicSession session = new QuicSession(getExecutor(), scheduler, this.byteBufferPool, context, null, quicheConnection, this, remoteAddress);
+            pendingSessions.put(remoteAddress, session);
+            session.flush(); // send the response packet(s) that accept generated.
+            if (LOG.isDebugEnabled())
+                LOG.debug("created connecting QUIC session {}", session);
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeIOException("Error trying to open connection", e);
+        }
 
         fillInterested();
     }
