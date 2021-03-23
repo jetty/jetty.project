@@ -146,7 +146,6 @@ public abstract class QuicConnection extends AbstractConnection
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("caught exception in onFillable loop", x);
-            close();
         }
     }
 
