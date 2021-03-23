@@ -57,12 +57,12 @@ public class ServerQuicConnection extends QuicConnection
     protected QuicSession createSession(InetSocketAddress remoteAddress, ByteBuffer cipherBuffer) throws IOException
     {
         ByteBufferPool byteBufferPool = getByteBufferPool();
-        QuicheConnection quicheConnection = QuicheConnection.tryAccept(getQuicheConfig(), remoteAddress, cipherBuffer);
+        QuicheConnection quicheConnection = QuicheConnection.tryAccept(getQuicheConfig(), new SimpleTokenValidator(remoteAddress), cipherBuffer);
         if (quicheConnection == null)
         {
             ByteBuffer negotiationBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN, true);
             int pos = BufferUtil.flipToFill(negotiationBuffer);
-            if (!QuicheConnection.negotiate(remoteAddress, cipherBuffer, negotiationBuffer))
+            if (!QuicheConnection.negotiate(new SimpleTokenMinter(remoteAddress), cipherBuffer, negotiationBuffer))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("QUIC connection negotiation failed, dropping packet");

@@ -281,7 +281,7 @@ public interface LibQuiche extends Library
         }
     }
 
-        // Extracts version, type, source / destination connection ID and address
+    // Extracts version, type, source / destination connection ID and address
     // verification token from the packet in |buf|.
     int quiche_header_info(ByteBuffer buf, size_t buf_len, size_t dcil,
                            uint32_t_pointer version, uint8_t_pointer type,

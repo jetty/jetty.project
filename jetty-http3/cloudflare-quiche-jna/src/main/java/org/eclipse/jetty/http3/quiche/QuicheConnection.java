@@ -15,12 +15,10 @@ package org.eclipse.jetty.http3.quiche;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import com.sun.jna.ptr.PointerByReference;
@@ -180,7 +178,7 @@ public class QuicheConnection
      * @return true if a negotiation packet was written to the {@code packetToSend} buffer, false if negotiation failed
      * and the {@code packetRead} buffer can be dropped.
      */
-    public static boolean negotiate(SocketAddress peer, ByteBuffer packetRead, ByteBuffer packetToSend) throws IOException
+    public static boolean negotiate(TokenMinter tokenMinter, ByteBuffer packetRead, ByteBuffer packetToSend) throws IOException
     {
         uint8_t_pointer type = new uint8_t_pointer();
         uint32_t_pointer version = new uint32_t_pointer();
@@ -227,7 +225,7 @@ public class QuicheConnection
         {
             LOG.debug("  < stateless retry");
 
-            token = mintToken(dcid, (int)dcid_len.getValue(), peer);
+            token = tokenMinter.mint(dcid, (int)dcid_len.getValue());
 
             byte[] newCid = new byte[QUICHE_MAX_CONN_ID_LEN];
             SECURE_RANDOM.nextBytes(newCid);
@@ -252,7 +250,7 @@ public class QuicheConnection
      * Fully consumes the {@code packetRead} buffer if the connection was accepted.
      * @return an established connection if accept succeeded, null if accept failed and negotiation should be tried.
      */
-    public static QuicheConnection tryAccept(QuicheConfig quicheConfig, SocketAddress peer, ByteBuffer packetRead) throws IOException
+    public static QuicheConnection tryAccept(QuicheConfig quicheConfig, TokenValidator tokenValidator, ByteBuffer packetRead) throws IOException
     {
         uint8_t_pointer type = new uint8_t_pointer();
         uint32_t_pointer version = new uint32_t_pointer();
@@ -297,7 +295,7 @@ public class QuicheConnection
 
         LOG.debug("  token validation...");
         // Original Destination Connection ID
-        byte[] odcid = validateToken(token, (int)token_len.getValue(), peer);
+        byte[] odcid = tokenValidator.validate(token, (int)token_len.getValue());
         if (odcid == null)
             throw new IOException("invalid address validation token");
         LOG.debug("  validated token");
@@ -319,61 +317,6 @@ public class QuicheConnection
             quicheConnection.feedCipherText(packetRead);
         }
         return quicheConnection;
-    }
-
-    private static byte[] validateToken(byte[] token, int tokenLength, SocketAddress peer)
-    {
-        InetSocketAddress inetSocketAddress = (InetSocketAddress)peer;
-        ByteBuffer byteBuffer = ByteBuffer.wrap(token).limit(tokenLength);
-
-        byte[] marker = "quiche".getBytes(StandardCharsets.US_ASCII);
-        if (byteBuffer.remaining() < marker.length)
-            return null;
-
-        byte[] subTokenMarker = new byte[marker.length];
-        byteBuffer.get(subTokenMarker);
-        if (!Arrays.equals(subTokenMarker, marker))
-            return null;
-
-        byte[] address = inetSocketAddress.getAddress().getAddress();
-        if (byteBuffer.remaining() < address.length)
-            return null;
-
-        byte[] subTokenAddress = new byte[address.length];
-        byteBuffer.get(subTokenAddress);
-        if (!Arrays.equals(subTokenAddress, address))
-            return null;
-
-        byte[] port = ByteBuffer.allocate(Short.BYTES).putShort((short)inetSocketAddress.getPort()).array();
-        if (byteBuffer.remaining() < port.length)
-            return null;
-
-        byte[] subTokenPort = new byte[port.length];
-        byteBuffer.get(subTokenPort);
-        if (!Arrays.equals(port, subTokenPort))
-            return null;
-
-        byte[] odcid = new byte[byteBuffer.remaining()];
-        byteBuffer.get(odcid);
-
-        return odcid;
-    }
-
-    private static byte[] mintToken(byte[] dcid, int dcidLength, SocketAddress addr) {
-        byte[] quicheBytes = "quiche".getBytes(StandardCharsets.US_ASCII);
-
-        ByteBuffer token = ByteBuffer.allocate(quicheBytes.length + 6 + dcidLength);
-
-        InetSocketAddress inetSocketAddress = (InetSocketAddress)addr;
-        byte[] address = inetSocketAddress.getAddress().getAddress();
-        int port = inetSocketAddress.getPort();
-
-        token.put(quicheBytes);
-        token.put(address);
-        token.putShort((short)port);
-        token.put(dcid, 0, dcidLength);
-
-        return token.array();
     }
 
     public synchronized List<Long> readableStreamIds()
@@ -572,5 +515,15 @@ public class QuicheConnection
         if (quicheConn == null)
             throw new IllegalStateException("Quiche connection was released");
         return INSTANCE;
+    }
+
+    public interface TokenMinter
+    {
+        byte[] mint(byte[] dcid, int len);
+    }
+
+    public interface TokenValidator
+    {
+        byte[] validate(byte[] token, int len);
     }
 }
