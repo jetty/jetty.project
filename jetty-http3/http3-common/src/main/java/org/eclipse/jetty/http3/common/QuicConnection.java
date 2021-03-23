@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http3.common;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
@@ -119,19 +120,25 @@ public abstract class QuicConnection extends AbstractConnection
                 if (LOG.isDebugEnabled())
                     LOG.debug("packet contains connection ID {}", quicheConnectionId);
 
+                boolean created = false;
                 QuicSession session = sessions.get(quicheConnectionId);
                 if (session == null)
                 {
-                    session = findPendingSession(remoteAddress);
+                    session = createSession(remoteAddress, cipherBuffer);
                     if (session == null)
                         continue;
+                    created = true;
                 }
 
-                if (LOG.isDebugEnabled())
-                    LOG.debug("packet is for existing session with connection ID {}, processing it ({} byte(s))", quicheConnectionId, cipherBuffer.remaining());
-                session.process(remoteAddress, cipherBuffer);
+                // createSession() may have consumed the cipherBuffer
+                if (cipherBuffer.hasRemaining())
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("packet is for existing session with connection ID {}, processing it ({} byte(s))", quicheConnectionId, cipherBuffer.remaining());
+                    session.process(remoteAddress, cipherBuffer);
+                }
 
-                if (promoteSession(quicheConnectionId, remoteAddress))
+                if (created && promoteSession(quicheConnectionId, session))
                     sessions.put(quicheConnectionId, session);
             }
         }
@@ -143,9 +150,9 @@ public abstract class QuicConnection extends AbstractConnection
         }
     }
 
-    protected abstract QuicSession findPendingSession(InetSocketAddress remoteAddress);
+    protected abstract QuicSession createSession(InetSocketAddress remoteAddress, ByteBuffer cipherBuffer) throws IOException;
 
-    protected abstract boolean promoteSession(QuicheConnectionId quicheConnectionId, InetSocketAddress remoteAddress);
+    protected abstract boolean promoteSession(QuicheConnectionId quicheConnectionId, QuicSession session);
 
     public void write(Callback callback, InetSocketAddress remoteAddress, ByteBuffer... buffers)
     {

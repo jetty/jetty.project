@@ -80,6 +80,11 @@ public abstract class QuicSession
         return scheduler;
     }
 
+    public String getNegotiatedProtocol()
+    {
+        return quicheConnection.getNegotiatedProtocol();
+    }
+
     public void createStream(long streamId)
     {
         getOrCreateStreamEndPoint(streamId);
@@ -128,7 +133,7 @@ public abstract class QuicSession
         return connection.getEndPoint().getLocalAddress();
     }
 
-    InetSocketAddress getRemoteAddress()
+    public InetSocketAddress getRemoteAddress()
     {
         return remoteAddress;
     }
