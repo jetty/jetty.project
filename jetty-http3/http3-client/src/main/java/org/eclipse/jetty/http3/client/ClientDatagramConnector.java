@@ -49,7 +49,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class QuicClientConnector extends ContainerLifeCycle implements IClientConnector
+public class ClientDatagramConnector extends ContainerLifeCycle implements IClientConnector
 {
     public static final String CLIENT_CONNECTOR_CONTEXT_KEY = "org.eclipse.jetty.client.connector";
     public static final String REMOTE_SOCKET_ADDRESS_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".remoteSocketAddress";
@@ -69,7 +69,7 @@ public class QuicClientConnector extends ContainerLifeCycle implements IClientCo
     private SocketAddress bindAddress;
     private boolean reuseAddress = true;
 
-    public QuicClientConnector(Origin.Protocol... protocols)
+    public ClientDatagramConnector(Origin.Protocol... protocols)
     {
         String[] applicationProtos = Arrays.stream(protocols)
             .flatMap(protocol -> protocol.getProtocols().stream())
@@ -342,7 +342,7 @@ public class QuicClientConnector extends ContainerLifeCycle implements IClientCo
         @Override
         protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey)
         {
-            EndPoint endPoint = QuicClientConnector.this.newEndPoint((DatagramChannel)channel, selector, selectionKey);
+            EndPoint endPoint = ClientDatagramConnector.this.newEndPoint((DatagramChannel)channel, selector, selectionKey);
             endPoint.setIdleTimeout(getIdleTimeout().toMillis());
             return endPoint;
         }
