@@ -1,4 +1,4 @@
-//
+package org.eclipse.jetty.http3.common;//
 // ========================================================================
 // Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
@@ -10,8 +10,6 @@
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
 //
-
-package org.eclipse.jetty.http3.server;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -33,9 +31,9 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ServerDatagramEndPoint extends AbstractEndPoint implements ManagedSelector.Selectable
+public class QuicDatagramEndPoint extends AbstractEndPoint implements ManagedSelector.Selectable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ServerDatagramEndPoint.class);
+    private static final Logger LOG = LoggerFactory.getLogger(QuicDatagramEndPoint.class);
 
     public static InetAddressArgument INET_ADDRESS_ARGUMENT = new InetAddressArgument();
 
@@ -61,7 +59,7 @@ public class ServerDatagramEndPoint extends AbstractEndPoint implements ManagedS
         @Override
         public String toString()
         {
-            return String.format("%s:%s:%s", ServerDatagramEndPoint.this, _operation, getInvocationType());
+            return String.format("%s:%s:%s", QuicDatagramEndPoint.this, _operation, getInvocationType());
         }
     }
 
@@ -77,11 +75,11 @@ public class ServerDatagramEndPoint extends AbstractEndPoint implements ManagedS
         {
             try
             {
-                ServerDatagramEndPoint.this.close();
+                QuicDatagramEndPoint.this.close();
             }
             catch (Throwable x)
             {
-                LOG.warn("Unable to close {}", ServerDatagramEndPoint.this, x);
+                LOG.warn("Unable to close {}", QuicDatagramEndPoint.this, x);
             }
         }
     }
@@ -120,7 +118,7 @@ public class ServerDatagramEndPoint extends AbstractEndPoint implements ManagedS
         @Override
         public String toString()
         {
-            return String.format("%s:%s:%s->%s", ServerDatagramEndPoint.this, _operation, getInvocationType(), getWriteFlusher());
+            return String.format("%s:%s:%s->%s", QuicDatagramEndPoint.this, _operation, getInvocationType(), getWriteFlusher());
         }
     };
 
@@ -151,7 +149,7 @@ public class ServerDatagramEndPoint extends AbstractEndPoint implements ManagedS
         }
     };
 
-    public ServerDatagramEndPoint(DatagramChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
+    public QuicDatagramEndPoint(DatagramChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
     {
         super(scheduler);
         _channel = channel;

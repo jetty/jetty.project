@@ -30,6 +30,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.Origin;
+import org.eclipse.jetty.http3.common.QuicDatagramEndPoint;
 import org.eclipse.jetty.http3.quiche.QuicheConfig;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
@@ -311,7 +312,7 @@ public class ClientDatagramConnector extends ContainerLifeCycle implements IClie
 
     protected EndPoint newEndPoint(DatagramChannel channel, ManagedSelector selector, SelectionKey selectionKey)
     {
-        return new ClientDatagramEndPoint(channel, selector, selectionKey, getScheduler());
+        return new QuicDatagramEndPoint(channel, selector, selectionKey, getScheduler());
     }
 
     protected void connectFailed(Throwable failure, Map<String, Object> context)
