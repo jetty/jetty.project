@@ -57,9 +57,15 @@ public class QuicheConnectionId
         return new String(hexChars, StandardCharsets.UTF_8);
     }
 
+    public static QuicheConnectionId fromCid(byte[] cid)
+    {
+        byte[] sizedDcid = resizeIfNeeded(cid, cid.length);
+        return new QuicheConnectionId(sizedDcid);
+    }
+
     static QuicheConnectionId fromCid(byte[] dcid, size_t_pointer dcid_len)
     {
-        byte[] sizedDcid = resizeIfNeeded(dcid, dcid_len);
+        byte[] sizedDcid = resizeIfNeeded(dcid, (int)dcid_len.getValue());
         return new QuicheConnectionId(sizedDcid);
     }
 
@@ -92,16 +98,16 @@ public class QuicheConnectionId
         return fromCid(dcid, dcid_len);
     }
 
-    private static byte[] resizeIfNeeded(byte[] buffer, size_t_pointer length)
+    private static byte[] resizeIfNeeded(byte[] buffer, int length)
     {
         byte[] sizedBuffer;
-        if (length.getValue() == buffer.length)
+        if (length == buffer.length)
         {
             sizedBuffer = buffer;
         }
         else
         {
-            sizedBuffer = new byte[(int)length.getValue()];
+            sizedBuffer = new byte[length];
             System.arraycopy(buffer, 0, sizedBuffer, 0, sizedBuffer.length);
         }
         return sizedBuffer;
