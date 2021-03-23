@@ -22,7 +22,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpCompliance;
-import org.eclipse.jetty.http3.server.ServerDatagramConnector;
+import org.eclipse.jetty.http3.server.ServerQuicConnector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
@@ -48,9 +48,9 @@ public class End2EndClientTest
         config.setHttpCompliance(HttpCompliance.LEGACY); // enable HTTP/0.9
         HttpConnectionFactory connectionFactory = new HttpConnectionFactory(config);
 
-        ServerDatagramConnector serverDatagramConnector = new ServerDatagramConnector(server, connectionFactory);
-        serverDatagramConnector.setPort(8443);
-        server.addConnector(serverDatagramConnector);
+        ServerQuicConnector connector = new ServerQuicConnector(server, connectionFactory);
+        connector.setPort(8443);
+        server.addConnector(connector);
 
         server.setHandler(new AbstractHandler()
         {

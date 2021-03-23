@@ -36,14 +36,14 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 public class HttpClientTransportOverQuic extends AbstractHttpClientTransport
 {
     private final ClientConnectionFactory connectionFactory = new HttpClientConnectionFactory();
-    private final ClientDatagramConnector connector;
+    private final ClientQuicConnector connector;
     private final Origin.Protocol protocol;
 
     public HttpClientTransportOverQuic()
     {
         //TODO the ClientConnectionFactory should be built according to the Protocol instance. See HttpClientTransportDynamic
         protocol = new Origin.Protocol(HttpClientConnectionFactory.HTTP11.getProtocols(true), false);
-        connector = new ClientDatagramConnector(protocol);
+        connector = new ClientQuicConnector(protocol);
         addBean(connector);
         setConnectionPoolFactory(destination ->
         {
