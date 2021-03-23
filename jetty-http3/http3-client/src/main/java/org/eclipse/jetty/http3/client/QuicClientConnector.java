@@ -15,11 +15,9 @@ package org.eclipse.jetty.http3.client;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.StandardSocketOptions;
-import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
@@ -33,8 +31,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.http3.quiche.QuicheConfig;
-import org.eclipse.jetty.http3.quiche.QuicheConnection;
-import org.eclipse.jetty.http3.quiche.ffi.LibQuiche;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
@@ -42,9 +38,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.IClientConnector;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.SelectorManager;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -340,7 +334,9 @@ public class QuicClientConnector extends ContainerLifeCycle implements IClientCo
         public void connect(SelectableChannel channel, Object attachment)
         {
             ManagedSelector managedSelector = chooseSelector();
-            managedSelector.submit(new Connect(channel, attachment));
+            @SuppressWarnings("unchecked")
+            Map<String, Object> context = (Map<String, Object>)attachment;
+            managedSelector.submit(new Connect(channel, context));
         }
 
         @Override
@@ -352,19 +348,19 @@ public class QuicClientConnector extends ContainerLifeCycle implements IClientCo
         }
 
         @Override
-        public Connection newConnection(SelectableChannel channel, EndPoint endPoint, Object attachment) throws IOException
+        public Connection newConnection(SelectableChannel channel, EndPoint endPoint, Object attachment)
         {
-            DatagramReader reader = (DatagramReader)attachment;
-            Map<String, Object> contextMap = reader.getContext();
-            return new QuicConnection(executor, scheduler, byteBufferPool, endPoint, contextMap);
+            Connect connect = (Connect)attachment;
+            Map<String, Object> contextMap = connect.getContext();
+            return new QuicConnection(executor, scheduler, byteBufferPool, endPoint, contextMap, quicheConfig);
         }
 
         @Override
         public void connectionOpened(Connection connection, Object attachment)
         {
             super.connectionOpened(connection, attachment);
-            DatagramReader reader = (DatagramReader)attachment;
-            Map<String, Object> contextMap = reader.getContext();
+            Connect connect = (Connect)attachment;
+            Map<String, Object> contextMap = connect.getContext();
             @SuppressWarnings("unchecked")
             Promise<Connection> promise = (Promise<Connection>)contextMap.get(CONNECTION_PROMISE_CONTEXT_KEY);
             if (promise != null)
@@ -374,102 +370,21 @@ public class QuicClientConnector extends ContainerLifeCycle implements IClientCo
         @Override
         protected void connectionFailed(SelectableChannel channel, Throwable failure, Object attachment)
         {
-            DatagramReader reader = (DatagramReader)attachment;
-            Map<String, Object> contextMap = reader.getContext();
+            Connect connect = (Connect)attachment;
+            Map<String, Object> contextMap = connect.getContext();
             connectFailed(failure, contextMap);
         }
 
-        class Connect implements ManagedSelector.SelectorUpdate, ManagedSelector.Selectable, Runnable
+        class Connect implements ManagedSelector.SelectorUpdate, ManagedSelector.Selectable, Runnable, Closeable
         {
             private final AtomicBoolean failed = new AtomicBoolean();
             private final SelectableChannel channel;
-            private final Object attachment;
+            private final Map<String, Object> context;
+            private volatile SelectionKey key;
 
-            Connect(SelectableChannel channel, Object attachment)
+            Connect(SelectableChannel channel, Map<String, Object> context)
             {
                 this.channel = channel;
-                this.attachment = attachment;
-            }
-
-            @Override
-            public void update(Selector selector)
-            {
-                try
-                {
-                    channel.register(selector, SelectionKey.OP_WRITE, this);
-                }
-                catch (Throwable x)
-                {
-                    failed(x);
-                }
-            }
-
-            @Override
-            public Runnable onSelected()
-            {
-                return this;
-            }
-
-            @Override
-            public void run()
-            {
-                Map<String, Object> context = (Map<String, Object>)attachment;
-                InetSocketAddress remoteSocketAddress = (InetSocketAddress)context.get(REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
-                try
-                {
-                    QuicheConnection quicheConnection = QuicheConnection.connect(quicheConfig, remoteSocketAddress);
-
-                    ByteBufferPool bufferPool = getByteBufferPool();
-                    ByteBuffer cipherText = bufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN, true);
-                    int pos = BufferUtil.flipToFill(cipherText);
-                    quicheConnection.drainCipherText(cipherText);
-                    //connection.nextTimeout(); // TODO quiche timeout handling is missing for pending connections
-                    BufferUtil.flipToFlush(cipherText, pos);
-                    int sent = ((DatagramChannel)channel).send(cipherText, remoteSocketAddress);// TODO channel send could fail
-
-                    context.put(quicheConnection.getClass().getName(), quicheConnection);
-
-                    DatagramReader reader = new DatagramReader(channel, context);
-                    chooseSelector().submit(reader);
-                }
-                catch (IOException e)
-                {
-                    throw new RuntimeIOException(e);
-                }
-            }
-
-            @Override
-            public void updateKey()
-            {
-                //throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public void replaceKey(SelectionKey newKey)
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            public void failed(Throwable failure)
-            {
-                if (failed.compareAndSet(false, true))
-                {
-                    IO.close(channel);
-                    selectorManager.connectionFailed(channel, failure, attachment);
-                }
-            }
-        }
-
-        class DatagramReader implements ManagedSelector.SelectorUpdate, ManagedSelector.Selectable, Closeable
-        {
-            private final SelectableChannel _channel;
-            private final Map<String, Object> context;
-            private volatile boolean endPointCreated;
-            private volatile SelectionKey _key;
-
-            DatagramReader(SelectableChannel channel, Map<String, Object> context)
-            {
-                _channel = channel;
                 this.context = context;
             }
 
@@ -483,40 +398,32 @@ public class QuicClientConnector extends ContainerLifeCycle implements IClientCo
             {
                 try
                 {
-                    _key = _channel.register(selector, SelectionKey.OP_READ, this);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} reader={}", this, _channel);
+                    key = channel.register(selector, SelectionKey.OP_WRITE, this);
                 }
                 catch (Throwable x)
                 {
-                    IO.close(_channel);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Unable to register OP_READ on selector for {}", _channel, x);
+                    failed(x);
                 }
             }
 
             @Override
             public Runnable onSelected()
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("DatagramReader onSelected");
-                if (!endPointCreated)
+                key.interestOps(0);
+                return this;
+            }
+
+            @Override
+            public void run()
+            {
+                try
                 {
-                    try
-                    {
-                        // TODO needs to be dispatched.
-                        chooseSelector().createEndPoint(_channel, _key);
-                        endPointCreated = true;
-                    }
-                    catch (Throwable x)
-                    {
-                        IO.close(_channel);
-                        // TODO: is this enough of we need to notify someone?
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("createEndPoint failed for channel {}", _channel, x);
-                    }
+                    chooseSelector().createEndPoint(channel, key);
                 }
-                return null;
+                catch (Throwable x)
+                {
+                    failed(x);
+                }
             }
 
             @Override
@@ -527,7 +434,7 @@ public class QuicClientConnector extends ContainerLifeCycle implements IClientCo
             @Override
             public void replaceKey(SelectionKey newKey)
             {
-                _key = newKey;
+                key = newKey;
             }
 
             @Override
@@ -535,9 +442,17 @@ public class QuicClientConnector extends ContainerLifeCycle implements IClientCo
             {
                 // May be called from any thread.
                 // Implements AbstractConnector.setAccepting(boolean).
-                chooseSelector().submit(selector -> _key.cancel());
+                chooseSelector().submit(selector -> key.cancel());
+            }
+
+            private void failed(Throwable failure)
+            {
+                if (failed.compareAndSet(false, true))
+                {
+                    IO.close(channel);
+                    selectorManager.connectionFailed(channel, failure, context);
+                }
             }
         }
-
     }
 }
