@@ -45,22 +45,23 @@ public class QuicConnection extends AbstractConnection
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicConnection.class);
 
-    private final ConcurrentMap<QuicheConnectionId, QuicSession> sessions = new ConcurrentHashMap<>();
     private final Map<InetSocketAddress, QuicSession> pendingSessions = new ConcurrentHashMap<>();
+    private final Map<String, Object> context;
 
+    private final ConcurrentMap<QuicheConnectionId, QuicSession> sessions = new ConcurrentHashMap<>();
     private final Scheduler scheduler;
     private final ByteBufferPool byteBufferPool;
     private final QuicheConfig quicheConfig;
     private final Flusher flusher = new Flusher();
-    private final Map<String, Object> context;
 
-    public QuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endPoint, Map<String, Object> context, QuicheConfig quicheConfig)
+    public QuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endp, QuicheConfig quicheConfig, Map<String, Object> context)
     {
-        super(endPoint, executor);
+        super(endp, executor);
         this.scheduler = scheduler;
         this.byteBufferPool = byteBufferPool;
-        this.context = context;
         this.quicheConfig = quicheConfig;
+
+        this.context = context;
     }
 
     void onClose(QuicheConnectionId quicheConnectionId)

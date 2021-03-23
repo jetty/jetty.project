@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http3.quiche.QuicheConnection;
@@ -49,6 +50,7 @@ public class QuicSession
 
     private final Flusher flusher;
     private final Connector connector;
+    private final ByteBufferPool byteBufferPool;
     private final QuicheConnectionId quicheConnectionId;
     private final QuicheConnection quicheConnection;
     private final QuicConnection connection;
@@ -58,21 +60,22 @@ public class QuicSession
     private final Queue<Runnable> strategyQueue = new ArrayDeque<>();
     private InetSocketAddress remoteAddress;
 
-    QuicSession(Connector connector, QuicheConnectionId quicheConnectionId, QuicheConnection quicheConnection, QuicConnection connection, InetSocketAddress remoteAddress)
+    QuicSession(Connector connector, Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicheConnectionId quicheConnectionId, QuicheConnection quicheConnection, QuicConnection connection, InetSocketAddress remoteAddress)
     {
         this.connector = connector;
+        this.byteBufferPool = byteBufferPool;
         this.quicheConnectionId = quicheConnectionId;
         this.quicheConnection = quicheConnection;
         this.connection = connection;
         this.remoteAddress = remoteAddress;
-        this.flusher = new Flusher(connector.getScheduler());
+        this.flusher = new Flusher(scheduler);
         this.strategy = new EatWhatYouKill(() ->
         {
             try (AutoLock l = strategyQueueLock.lock())
             {
                 return strategyQueue.poll();
             }
-        }, connector.getExecutor());
+        }, executor);
         LifeCycle.start(strategy);
     }
 
@@ -280,7 +283,6 @@ public class QuicSession
         @Override
         protected Action process() throws IOException
         {
-            ByteBufferPool byteBufferPool = connector.getByteBufferPool();
             cipherBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN, true);
             int pos = BufferUtil.flipToFill(cipherBuffer);
             int drained = quicheConnection.drainCipherText(cipherBuffer);
@@ -309,7 +311,6 @@ public class QuicSession
         @Override
         public void succeeded()
         {
-            ByteBufferPool byteBufferPool = connector.getByteBufferPool();
             byteBufferPool.release(cipherBuffer);
             super.succeeded();
         }
@@ -317,7 +318,6 @@ public class QuicSession
         @Override
         protected void onCompleteFailure(Throwable cause)
         {
-            ByteBufferPool byteBufferPool = connector.getByteBufferPool();
             byteBufferPool.release(cipherBuffer);
         }
     }
