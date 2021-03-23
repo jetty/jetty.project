@@ -30,7 +30,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.api.Test;
 
-public class ServerDatagramConnectorTest
+public class ServerQuicConnectorTest
 {
     @Test
     public void testSmall() throws Exception
@@ -41,9 +41,9 @@ public class ServerDatagramConnectorTest
         config.setHttpCompliance(HttpCompliance.LEGACY); // enable HTTP/0.9
         HttpConnectionFactory connectionFactory = new HttpConnectionFactory(config);
 
-        ServerDatagramConnector serverDatagramConnector = new ServerDatagramConnector(server, connectionFactory);
-        serverDatagramConnector.setPort(8443);
-        server.addConnector(serverDatagramConnector);
+        ServerQuicConnector connector = new ServerQuicConnector(server, connectionFactory);
+        connector.setPort(8443);
+        server.addConnector(connector);
 
         server.setHandler(new AbstractHandler()
         {
@@ -77,9 +77,9 @@ public class ServerDatagramConnectorTest
         config.setHttpCompliance(HttpCompliance.LEGACY); // enable HTTP/0.9
         HttpConnectionFactory connectionFactory = new HttpConnectionFactory(config);
 
-        ServerDatagramConnector serverDatagramConnector = new ServerDatagramConnector(server, connectionFactory);
-        serverDatagramConnector.setPort(8443);
-        server.addConnector(serverDatagramConnector);
+        ServerQuicConnector connector = new ServerQuicConnector(server, connectionFactory);
+        connector.setPort(8443);
+        server.addConnector(connector);
 
         server.setHandler(new AbstractHandler()
         {

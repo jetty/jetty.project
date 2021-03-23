@@ -40,14 +40,14 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.thread.Scheduler;
 
-public class ServerDatagramConnector extends AbstractNetworkConnector
+public class ServerQuicConnector extends AbstractNetworkConnector
 {
     private final ServerDatagramSelectorManager _manager;
     private final QuicheConfig _quicheConfig;
     private volatile DatagramChannel _datagramChannel;
     private volatile int _localPort = -1;
 
-    public ServerDatagramConnector(
+    public ServerQuicConnector(
         @Name("server") Server server,
         @Name("executor") Executor executor,
         @Name("scheduler") Scheduler scheduler,
@@ -89,7 +89,7 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
         _quicheConfig.setApplicationProtos(protocols.toArray(new String[0]));
     }
 
-    public ServerDatagramConnector(
+    public ServerQuicConnector(
         @Name("server") Server server,
         @Name("factories") ConnectionFactory... factories)
     {
@@ -211,13 +211,13 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
         @Override
         public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException
         {
-            return new ServerQuicConnection(getExecutor(), getScheduler(), getByteBufferPool(), endpoint, _quicheConfig, ServerDatagramConnector.this);
+            return new ServerQuicConnection(getExecutor(), getScheduler(), getByteBufferPool(), endpoint, _quicheConfig, ServerQuicConnector.this);
         }
 
         @Override
         public String toString()
         {
-            return String.format("DatagramSelectorManager@%s", ServerDatagramConnector.this);
+            return String.format("DatagramSelectorManager@%s", ServerQuicConnector.this);
         }
 
         class Accept implements ManagedSelector.SelectorUpdate, ManagedSelector.Selectable, Runnable, Closeable

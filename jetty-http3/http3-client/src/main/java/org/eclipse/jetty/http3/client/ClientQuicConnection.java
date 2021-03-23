@@ -52,7 +52,7 @@ public class ClientQuicConnection extends QuicConnection
 
         try
         {
-            InetSocketAddress remoteAddress = (InetSocketAddress)context.get(ClientDatagramConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
+            InetSocketAddress remoteAddress = (InetSocketAddress)context.get(ClientQuicConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
             QuicheConnection quicheConnection = QuicheConnection.connect(getQuicheConfig(), remoteAddress);
             QuicSession session = new ClientQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), quicheConnection, this, remoteAddress, context);
             pendingSessions.put(remoteAddress, session);
