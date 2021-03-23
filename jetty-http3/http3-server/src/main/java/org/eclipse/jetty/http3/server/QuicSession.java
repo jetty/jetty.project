@@ -48,10 +48,11 @@ public class QuicSession
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicSession.class);
 
-    private final Flusher flusher;
     private final Connector connector;
+
+    private final Flusher flusher;
+    private final Scheduler scheduler;
     private final ByteBufferPool byteBufferPool;
-    private final QuicheConnectionId quicheConnectionId;
     private final QuicheConnection quicheConnection;
     private final QuicConnection connection;
     private final ConcurrentMap<Long, QuicStreamEndPoint> endpoints = new ConcurrentHashMap<>();
@@ -59,10 +60,11 @@ public class QuicSession
     private final AutoLock strategyQueueLock = new AutoLock();
     private final Queue<Runnable> strategyQueue = new ArrayDeque<>();
     private InetSocketAddress remoteAddress;
+    private QuicheConnectionId quicheConnectionId;
 
-    QuicSession(Connector connector, Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicheConnectionId quicheConnectionId, QuicheConnection quicheConnection, QuicConnection connection, InetSocketAddress remoteAddress)
+    QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicheConnectionId quicheConnectionId, QuicheConnection quicheConnection, QuicConnection connection, InetSocketAddress remoteAddress, Connector connector)
     {
-        this.connector = connector;
+        this.scheduler = scheduler;
         this.byteBufferPool = byteBufferPool;
         this.quicheConnectionId = quicheConnectionId;
         this.quicheConnection = quicheConnection;
@@ -77,6 +79,13 @@ public class QuicSession
             }
         }, executor);
         LifeCycle.start(strategy);
+
+        this.connector = connector;
+    }
+
+    public void createStream(long streamId)
+    {
+        getOrCreateStreamEndPoint(streamId);
     }
 
     public int fill(long streamId, ByteBuffer buffer) throws IOException
@@ -125,6 +134,16 @@ public class QuicSession
     InetSocketAddress getRemoteAddress()
     {
         return remoteAddress;
+    }
+
+    public boolean isConnectionEstablished()
+    {
+        return quicheConnection.isConnectionEstablished();
+    }
+
+    public void setConnectionId(QuicheConnectionId quicheConnectionId)
+    {
+        this.quicheConnectionId = quicheConnectionId;
     }
 
     void process(InetSocketAddress remoteAddress, ByteBuffer cipherBufferIn) throws IOException
@@ -197,7 +216,7 @@ public class QuicSession
         {
             if (quicStreamEndPoint == null)
             {
-                quicStreamEndPoint = createQuicStreamEndPoint(connector, connector.getScheduler(), streamId);
+                quicStreamEndPoint = createQuicStreamEndPoint(streamId);
                 if (LOG.isDebugEnabled())
                     LOG.debug("creating endpoint for stream {}", sid);
             }
@@ -208,7 +227,7 @@ public class QuicSession
         return endPoint;
     }
 
-    private QuicStreamEndPoint createQuicStreamEndPoint(Connector connector, Scheduler scheduler, long streamId)
+    private QuicStreamEndPoint createQuicStreamEndPoint(long streamId)
     {
         String negotiatedProtocol = quicheConnection.getNegotiatedProtocol();
         ConnectionFactory connectionFactory = connector.getConnectionFactory(negotiatedProtocol);

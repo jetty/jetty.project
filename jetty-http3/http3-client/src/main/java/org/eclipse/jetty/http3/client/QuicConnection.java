@@ -85,7 +85,7 @@ public class QuicConnection extends AbstractConnection
         {
             InetSocketAddress remoteAddress = (InetSocketAddress)context.get(REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
             QuicheConnection quicheConnection = QuicheConnection.connect(quicheConfig, remoteAddress);
-            QuicSession session = new QuicSession(getExecutor(), scheduler, this.byteBufferPool, context, null, quicheConnection, this, remoteAddress);
+            QuicSession session = new QuicSession(getExecutor(), scheduler, this.byteBufferPool, null, quicheConnection, this, remoteAddress, context);
             pendingSessions.put(remoteAddress, session);
             session.flush(); // send the response packet(s) that accept generated.
             if (LOG.isDebugEnabled())

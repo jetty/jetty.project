@@ -144,7 +144,7 @@ public class QuicConnection extends AbstractConnection
                     }
                     else
                     {
-                        session = new QuicSession(connector, getExecutor(), scheduler, byteBufferPool, quicheConnectionId, quicheConnection, this, remoteAddress);
+                        session = new QuicSession(getExecutor(), scheduler, byteBufferPool, quicheConnectionId, quicheConnection, this, remoteAddress, connector);
                         sessions.putIfAbsent(quicheConnectionId, session);
                         session.flush(); // send the response packet(s) that accept generated.
                         if (LOG.isDebugEnabled())
