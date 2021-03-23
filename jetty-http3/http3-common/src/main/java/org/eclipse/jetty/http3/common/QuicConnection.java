@@ -68,9 +68,10 @@ public abstract class QuicConnection extends AbstractConnection
         return quicheConfig;
     }
 
-    void onClose(QuicheConnectionId quicheConnectionId)
+    protected void onClose(QuicheConnectionId quicheConnectionId)
     {
-        sessions.remove(quicheConnectionId);
+        if (quicheConnectionId != null)
+            sessions.remove(quicheConnectionId);
     }
 
     @Override
