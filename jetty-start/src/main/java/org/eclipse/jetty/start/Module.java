@@ -154,16 +154,16 @@ public class Module implements Comparable<Module>
     private final List<String> _depends = new ArrayList<>();
 
     /**
-     * Dependents from {@code [before]} section
+     * Module names from {@code [before]} section
      */
-    private final List<String> _before = new ArrayList<>();
+    private final Set<String> _before = new HashSet<>();
 
     /**
-     * Optional dependencies from {@code [optional]} section are structural in nature.
+     * Module names from {@code [after]} section
      */
-    private final Set<String> _optional = new HashSet<>();
+    private final Set<String> _after = new HashSet<>();
 
-    public Module(BaseHome basehome, Path path) throws FileNotFoundException, IOException
+    public Module(BaseHome basehome, Path path) throws IOException
     {
         super();
         _path = path;
@@ -242,9 +242,9 @@ public class Module implements Comparable<Module>
         List<String> tmp = _depends.stream().map(expander).collect(Collectors.toList());
         _depends.clear();
         _depends.addAll(tmp);
-        tmp = _optional.stream().map(expander).collect(Collectors.toList());
-        _optional.clear();
-        _optional.addAll(tmp);
+        tmp = _after.stream().map(expander).collect(Collectors.toList());
+        _after.clear();
+        _after.addAll(tmp);
         tmp = _before.stream().map(expander).collect(Collectors.toList());
         _before.clear();
         _before.addAll(tmp);
@@ -439,7 +439,7 @@ public class Module implements Comparable<Module>
                                 break;
                             case "OPTIONAL":
                             case "AFTER":
-                                _optional.add(line);
+                                _after.add(line);
                                 break;
                             case "EXEC":
                                 _jvmArgs.add(line);
@@ -511,11 +511,6 @@ public class Module implements Comparable<Module>
         return str.toString();
     }
 
-    public List<String> getBefore()
-    {
-        return new ArrayList<>(_before);
-    }
-
     public List<String> getDepends()
     {
         return new ArrayList<>(_depends);
@@ -526,9 +521,24 @@ public class Module implements Comparable<Module>
         return new HashSet<>(_provides);
     }
 
+    public Set<String> getBefore()
+    {
+        return Set.copyOf(_before);
+    }
+
+    public Set<String> getAfter()
+    {
+        return Set.copyOf(_after);
+    }
+
+    /**
+     * @return the module names in the [after] section
+     * @deprecated use {@link #getAfter()} instead
+     */
+    @Deprecated
     public Set<String> getOptional()
     {
-        return new HashSet<>(_optional);
+        return getAfter();
     }
 
     public List<String> getDescription()

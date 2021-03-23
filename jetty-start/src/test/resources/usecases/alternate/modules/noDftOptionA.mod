@@ -1,7 +1,7 @@
 [provides]
 noDft
 
-[optional]
+[after]
 default
 
 [ini]
