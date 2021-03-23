@@ -15,6 +15,7 @@ package org.eclipse.jetty.http3.client;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -68,16 +69,16 @@ public class ClientQuicConnection extends QuicConnection
     }
 
     @Override
-    protected QuicSession findPendingSession(InetSocketAddress remoteAddress)
+    protected QuicSession createSession(InetSocketAddress remoteAddress, ByteBuffer cipherBuffer)
     {
         return pendingSessions.get(remoteAddress);
     }
 
     @Override
-    protected boolean promoteSession(QuicheConnectionId quicheConnectionId, InetSocketAddress remoteAddress)
+    protected boolean promoteSession(QuicheConnectionId quicheConnectionId, QuicSession session)
     {
-        QuicSession session = pendingSessions.get(remoteAddress);
-        if (session != null && session.isConnectionEstablished())
+        InetSocketAddress remoteAddress = session.getRemoteAddress();
+        if (pendingSessions.containsKey(remoteAddress) && session.isConnectionEstablished())
         {
             pendingSessions.remove(remoteAddress);
             session.setConnectionId(quicheConnectionId);
