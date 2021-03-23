@@ -33,9 +33,9 @@ public class ClientQuicSession extends QuicSession
 {
     private final Map<String, Object> context;
 
-    protected ClientQuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicheConnectionId quicheConnectionId, QuicheConnection quicheConnection, QuicConnection connection, InetSocketAddress remoteAddress, Map<String, Object> context)
+    protected ClientQuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicheConnection quicheConnection, QuicConnection connection, InetSocketAddress remoteAddress, Map<String, Object> context)
     {
-        super(executor, scheduler, byteBufferPool, quicheConnectionId, quicheConnection, connection, remoteAddress);
+        super(executor, scheduler, byteBufferPool, quicheConnection, connection, remoteAddress);
         this.context = context;
     }
 

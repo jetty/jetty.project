@@ -79,7 +79,7 @@ public class ServerQuicConnection extends QuicConnection
         }
         else
         {
-            QuicSession session = new ServerQuicSession(getExecutor(), getScheduler(), byteBufferPool, null, quicheConnection, this, remoteAddress, connector);
+            QuicSession session = new ServerQuicSession(getExecutor(), getScheduler(), byteBufferPool, quicheConnection, this, remoteAddress, connector);
             session.flush(); // send the response packet(s) that tryAccept generated.
             return session;
         }

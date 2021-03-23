@@ -56,11 +56,10 @@ public abstract class QuicSession
     private InetSocketAddress remoteAddress;
     private QuicheConnectionId quicheConnectionId;
 
-    protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicheConnectionId quicheConnectionId, QuicheConnection quicheConnection, QuicConnection connection, InetSocketAddress remoteAddress)
+    protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicheConnection quicheConnection, QuicConnection connection, InetSocketAddress remoteAddress)
     {
         this.scheduler = scheduler;
         this.byteBufferPool = byteBufferPool;
-        this.quicheConnectionId = quicheConnectionId;
         this.quicheConnection = quicheConnection;
         this.connection = connection;
         this.remoteAddress = remoteAddress;

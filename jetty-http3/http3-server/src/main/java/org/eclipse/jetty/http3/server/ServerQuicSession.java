@@ -32,9 +32,9 @@ public class ServerQuicSession extends QuicSession
 {
     private final Connector connector;
 
-    protected ServerQuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicheConnectionId quicheConnectionId, QuicheConnection quicheConnection, QuicConnection connection, InetSocketAddress remoteAddress, Connector connector)
+    protected ServerQuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicheConnection quicheConnection, QuicConnection connection, InetSocketAddress remoteAddress, Connector connector)
     {
-        super(executor, scheduler, byteBufferPool, quicheConnectionId, quicheConnection, connection, remoteAddress);
+        super(executor, scheduler, byteBufferPool, quicheConnection, connection, remoteAddress);
         this.connector = connector;
     }
 
