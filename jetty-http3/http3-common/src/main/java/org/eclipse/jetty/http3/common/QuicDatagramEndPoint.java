@@ -1,4 +1,4 @@
-package org.eclipse.jetty.http3.common;//
+//
 // ========================================================================
 // Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
@@ -10,6 +10,8 @@ package org.eclipse.jetty.http3.common;//
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
 //
+
+package org.eclipse.jetty.http3.common;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -416,7 +418,7 @@ public class QuicDatagramEndPoint extends AbstractEndPoint implements ManagedSel
             ManagedSelector.safeReadyOps(_key));
     }
 
-    public final static class InetAddressArgument
+    public static final class InetAddressArgument
     {
         private final ThreadLocal<InetSocketAddress> threadLocal = new ThreadLocal<>();
 
