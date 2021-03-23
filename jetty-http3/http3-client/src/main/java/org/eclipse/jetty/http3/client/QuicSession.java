@@ -227,7 +227,7 @@ public class QuicSession
 
     private QuicStreamEndPoint createQuicStreamEndPoint(long streamId)
     {
-        ClientConnectionFactory connectionFactory = (ClientConnectionFactory)context.get(QuicClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY);
+        ClientConnectionFactory connectionFactory = (ClientConnectionFactory)context.get(ClientDatagramConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY);
         QuicStreamEndPoint endPoint = new QuicStreamEndPoint(scheduler, this, streamId);
         try
         {

@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.http3.client.QuicClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY;
+import static org.eclipse.jetty.http3.client.ClientDatagramConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY;
 
 public class QuicConnection extends AbstractConnection
 {
