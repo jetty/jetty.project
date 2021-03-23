@@ -711,12 +711,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                     return filled = -1;
 
                                 case BUFFER_UNDERFLOW:
-                                    // Can we compact?
-                                    if (_encryptedInput.position() != 0)
-                                    {
-                                        BufferUtil.compact(_encryptedInput);
+                                    // Continue if we can compact?
+                                    if (BufferUtil.compact(_encryptedInput))
                                         continue;
-                                    }
 
                                     // Are we out of space?
                                     if (BufferUtil.space(_encryptedInput) == 0)
