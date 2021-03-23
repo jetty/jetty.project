@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.client;
+package org.eclipse.jetty.http3.common;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
