@@ -11,14 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.client;
+package org.eclipse.jetty.http3.common;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -30,10 +29,7 @@ import org.eclipse.jetty.http3.quiche.QuicheConnectionId;
 import org.eclipse.jetty.http3.quiche.ffi.LibQuiche;
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.ClientConnectionFactory;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.CyclicTimeout;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -44,11 +40,9 @@ import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class QuicSession
+public abstract class QuicSession
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicSession.class);
-
-    private final Map<String, Object> context;
 
     private final Flusher flusher;
     private final Scheduler scheduler;
@@ -62,7 +56,7 @@ public class QuicSession
     private InetSocketAddress remoteAddress;
     private QuicheConnectionId quicheConnectionId;
 
-    QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicheConnectionId quicheConnectionId, QuicheConnection quicheConnection, QuicConnection connection, InetSocketAddress remoteAddress, Map<String, Object> context)
+    protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicheConnectionId quicheConnectionId, QuicheConnection quicheConnection, QuicConnection connection, InetSocketAddress remoteAddress)
     {
         this.scheduler = scheduler;
         this.byteBufferPool = byteBufferPool;
@@ -79,8 +73,11 @@ public class QuicSession
             }
         }, executor);
         LifeCycle.start(strategy);
+    }
 
-        this.context = context;
+    public Scheduler getScheduler()
+    {
+        return scheduler;
     }
 
     public void createStream(long streamId)
@@ -205,7 +202,7 @@ public class QuicSession
         strategy.dispatch();
     }
 
-    void flush()
+    public void flush()
     {
         flusher.iterate();
     }
@@ -227,24 +224,7 @@ public class QuicSession
         return endPoint;
     }
 
-    private QuicStreamEndPoint createQuicStreamEndPoint(long streamId)
-    {
-        ClientConnectionFactory connectionFactory = (ClientConnectionFactory)context.get(ClientDatagramConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY);
-        QuicStreamEndPoint endPoint = new QuicStreamEndPoint(scheduler, this, streamId);
-        Connection connection;
-        try
-        {
-            connection = connectionFactory.newConnection(endPoint, context);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeIOException("Error creating new connection", e);
-        }
-        endPoint.setConnection(connection);
-        endPoint.onOpen();
-        connection.onOpen();
-        return endPoint;
-    }
+    protected abstract QuicStreamEndPoint createQuicStreamEndPoint(long streamId);
 
     public void close()
     {

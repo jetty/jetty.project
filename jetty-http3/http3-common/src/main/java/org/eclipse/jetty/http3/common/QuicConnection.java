@@ -11,26 +11,21 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.client;
+package org.eclipse.jetty.http3.common;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.http3.common.QuicDatagramEndPoint;
 import org.eclipse.jetty.http3.quiche.QuicheConfig;
-import org.eclipse.jetty.http3.quiche.QuicheConnection;
 import org.eclipse.jetty.http3.quiche.QuicheConnectionId;
 import org.eclipse.jetty.http3.quiche.ffi.LibQuiche;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
@@ -39,14 +34,9 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.http3.client.ClientDatagramConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY;
-
-public class QuicConnection extends AbstractConnection
+public abstract class QuicConnection extends AbstractConnection
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicConnection.class);
-
-    private final Map<InetSocketAddress, QuicSession> pendingSessions = new ConcurrentHashMap<>();
-    private final Map<String, Object> context;
 
     private final ConcurrentMap<QuicheConnectionId, QuicSession> sessions = new ConcurrentHashMap<>();
     private final Scheduler scheduler;
@@ -54,14 +44,27 @@ public class QuicConnection extends AbstractConnection
     private final QuicheConfig quicheConfig;
     private final Flusher flusher = new Flusher();
 
-    public QuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endp, QuicheConfig quicheConfig, Map<String, Object> context)
+    protected QuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endp, QuicheConfig quicheConfig)
     {
         super(endp, executor);
         this.scheduler = scheduler;
         this.byteBufferPool = byteBufferPool;
         this.quicheConfig = quicheConfig;
+    }
 
-        this.context = context;
+    public Scheduler getScheduler()
+    {
+        return scheduler;
+    }
+
+    public ByteBufferPool getByteBufferPool()
+    {
+        return byteBufferPool;
+    }
+
+    public QuicheConfig getQuicheConfig()
+    {
+        return quicheConfig;
     }
 
     void onClose(QuicheConnectionId quicheConnectionId)
@@ -74,29 +77,6 @@ public class QuicConnection extends AbstractConnection
     {
         sessions.values().forEach(QuicSession::close);
         super.close();
-    }
-
-    @Override
-    public void onOpen()
-    {
-        super.onOpen();
-
-        try
-        {
-            InetSocketAddress remoteAddress = (InetSocketAddress)context.get(REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
-            QuicheConnection quicheConnection = QuicheConnection.connect(quicheConfig, remoteAddress);
-            QuicSession session = new QuicSession(getExecutor(), scheduler, this.byteBufferPool, null, quicheConnection, this, remoteAddress, context);
-            pendingSessions.put(remoteAddress, session);
-            session.flush(); // send the response packet(s) that accept generated.
-            if (LOG.isDebugEnabled())
-                LOG.debug("created connecting QUIC session {}", session);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeIOException("Error trying to open connection", e);
-        }
-
-        fillInterested();
     }
 
     @Override
@@ -139,30 +119,20 @@ public class QuicConnection extends AbstractConnection
                 if (LOG.isDebugEnabled())
                     LOG.debug("packet contains connection ID {}", quicheConnectionId);
 
-                boolean pending = false;
                 QuicSession session = sessions.get(quicheConnectionId);
                 if (session == null)
                 {
-                    session = pendingSessions.get(remoteAddress);
+                    session = findPendingSession(remoteAddress);
                     if (session == null)
-                        throw new IllegalStateException("cannot find session with ID " + quicheConnectionId);
-                    pending = true;
-                    session.setConnectionId(quicheConnectionId);
+                        continue;
                 }
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("packet is for existing session with connection ID {}, processing it ({} byte(s))", quicheConnectionId, cipherBuffer.remaining());
                 session.process(remoteAddress, cipherBuffer);
 
-                if (pending)
-                {
-                    if (session.isConnectionEstablished())
-                    {
-                        pendingSessions.remove(remoteAddress);
-                        sessions.put(quicheConnectionId, session);
-                        session.createStream(0);
-                    }
-                }
+                if (promoteSession(quicheConnectionId, remoteAddress))
+                    sessions.put(quicheConnectionId, session);
             }
         }
         catch (Throwable x)
@@ -172,6 +142,10 @@ public class QuicConnection extends AbstractConnection
             close();
         }
     }
+
+    protected abstract QuicSession findPendingSession(InetSocketAddress remoteAddress);
+
+    protected abstract boolean promoteSession(QuicheConnectionId quicheConnectionId, InetSocketAddress remoteAddress);
 
     public void write(Callback callback, InetSocketAddress remoteAddress, ByteBuffer... buffers)
     {
