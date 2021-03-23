@@ -264,7 +264,8 @@ public abstract class QuicSession
 
         public Flusher(Scheduler scheduler)
         {
-            timeout = new CyclicTimeout(scheduler) {
+            timeout = new CyclicTimeout(scheduler)
+            {
                 @Override
                 public void onTimeoutExpired()
                 {
