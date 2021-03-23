@@ -64,7 +64,6 @@ public class ClientDatagramConnector extends ContainerLifeCycle implements IClie
     private ByteBufferPool byteBufferPool;
     private SslContextFactory.Client sslContextFactory;
     private ClientDatagramSelectorManager selectorManager;
-    private int selectors = 1;
     private Duration connectTimeout = Duration.ofSeconds(5);
     private Duration idleTimeout = Duration.ofSeconds(30);
     private SocketAddress bindAddress;
@@ -139,18 +138,6 @@ public class ClientDatagramConnector extends ContainerLifeCycle implements IClie
             throw new IllegalStateException();
         updateBean(this.sslContextFactory, sslContextFactory);
         this.sslContextFactory = sslContextFactory;
-    }
-
-    public int getSelectors()
-    {
-        return selectors;
-    }
-
-    public void setSelectors(int selectors)
-    {
-        if (isStarted())
-            throw new IllegalStateException();
-        this.selectors = selectors;
     }
 
     public boolean isConnectBlocking()
@@ -241,7 +228,7 @@ public class ClientDatagramConnector extends ContainerLifeCycle implements IClie
 
     protected ClientDatagramSelectorManager newSelectorManager()
     {
-        return new ClientDatagramSelectorManager(getExecutor(), getScheduler(), getSelectors());
+        return new ClientDatagramSelectorManager(getExecutor(), getScheduler(), 1);
     }
 
     public void connect(SocketAddress address, Map<String, Object> context)
