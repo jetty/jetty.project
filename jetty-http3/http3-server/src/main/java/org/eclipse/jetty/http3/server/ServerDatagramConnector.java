@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http3.server;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.DatagramChannel;
@@ -21,12 +22,12 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.EventListener;
+import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.http3.common.QuicDatagramEndPoint;
-import org.eclipse.jetty.http3.quiche.ffi.LibQuiche;
+import org.eclipse.jetty.http3.quiche.QuicheConfig;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -42,6 +43,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public class ServerDatagramConnector extends AbstractNetworkConnector
 {
     private final ServerDatagramSelectorManager _manager;
+    private final QuicheConfig _quicheConfig;
     private volatile DatagramChannel _datagramChannel;
     private volatile int _localPort = -1;
 
@@ -58,11 +60,33 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
         addBean(_manager, true);
         setAcceptorPriorityDelta(-2);
 
-        // Force loading libquiche here.
-        long before = System.nanoTime();
-        LibQuiche.Logging.enable();
-        if (LOG.isDebugEnabled())
-            LOG.debug("Loading libquiche took {} ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - before));
+        File[] files;
+        try
+        {
+            SSLKeyPair keyPair;
+            keyPair = new SSLKeyPair(new File("src/test/resources/keystore.p12"), "PKCS12", "storepwd".toCharArray(), "mykey", "storepwd".toCharArray());
+            files = keyPair.export(new File(System.getProperty("java.io.tmpdir")));
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+
+        // TODO make the QuicheConfig configurable
+        _quicheConfig = new QuicheConfig();
+        _quicheConfig.setPrivKeyPemPath(files[0].getPath());
+        _quicheConfig.setCertChainPemPath(files[1].getPath());
+        _quicheConfig.setVerifyPeer(false);
+        _quicheConfig.setMaxIdleTimeout(5000L);
+        _quicheConfig.setInitialMaxData(10000000L);
+        _quicheConfig.setInitialMaxStreamDataBidiLocal(10000000L);
+        _quicheConfig.setInitialMaxStreamDataBidiRemote(10000000L);
+        _quicheConfig.setInitialMaxStreamDataUni(10000000L);
+        _quicheConfig.setInitialMaxStreamsBidi(100L);
+        _quicheConfig.setCongestionControl(QuicheConfig.CongestionControl.RENO);
+        List<String> protocols = getProtocols();
+        protocols.add(0, "http/0.9"); // TODO this is only needed for Quiche example clients
+        _quicheConfig.setApplicationProtos(protocols.toArray(new String[0]));
     }
 
     public ServerDatagramConnector(
@@ -187,7 +211,7 @@ public class ServerDatagramConnector extends AbstractNetworkConnector
         @Override
         public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException
         {
-            return new QuicConnection(ServerDatagramConnector.this, (QuicDatagramEndPoint)endpoint);
+            return new QuicConnection(getExecutor(), getScheduler(), getByteBufferPool(), (QuicDatagramEndPoint)endpoint, _quicheConfig, ServerDatagramConnector.this);
         }
 
         @Override

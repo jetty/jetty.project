@@ -354,7 +354,7 @@ public class ClientDatagramConnector extends ContainerLifeCycle implements IClie
         {
             Connect connect = (Connect)attachment;
             Map<String, Object> contextMap = connect.getContext();
-            return new QuicConnection(executor, scheduler, byteBufferPool, endPoint, contextMap, quicheConfig);
+            return new QuicConnection(executor, scheduler, byteBufferPool, endPoint, quicheConfig, contextMap);
         }
 
         @Override
