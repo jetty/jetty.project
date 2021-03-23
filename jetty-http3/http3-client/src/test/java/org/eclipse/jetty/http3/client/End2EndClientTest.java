@@ -77,7 +77,7 @@ public class End2EndClientTest
     }
 
     @Test
-    public void name() throws Exception
+    public void simple() throws Exception
     {
         HttpClientTransportOverQuic transport = new HttpClientTransportOverQuic();
         HttpClient client = new HttpClient(transport);

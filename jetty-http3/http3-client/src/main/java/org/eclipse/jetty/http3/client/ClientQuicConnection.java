@@ -54,7 +54,7 @@ public class ClientQuicConnection extends QuicConnection
         {
             InetSocketAddress remoteAddress = (InetSocketAddress)context.get(ClientDatagramConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
             QuicheConnection quicheConnection = QuicheConnection.connect(getQuicheConfig(), remoteAddress);
-            QuicSession session = new ClientQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), null, quicheConnection, this, remoteAddress, context);
+            QuicSession session = new ClientQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), quicheConnection, this, remoteAddress, context);
             pendingSessions.put(remoteAddress, session);
             session.flush(); // send the response packet(s) that connect generated.
             if (LOG.isDebugEnabled())
