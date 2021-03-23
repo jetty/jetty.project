@@ -76,6 +76,7 @@ public class ClientDatagramConnector extends ContainerLifeCycle implements IClie
             .flatMap(protocol -> protocol.getProtocols().stream())
             .toArray(String[]::new);
 
+        // TODO make the QuicheConfig configurable
         quicheConfig = new QuicheConfig();
         quicheConfig.setApplicationProtos(applicationProtos);
         quicheConfig.setMaxIdleTimeout(5000L);
