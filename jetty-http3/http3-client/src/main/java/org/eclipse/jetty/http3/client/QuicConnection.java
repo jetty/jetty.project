@@ -50,9 +50,9 @@ public class QuicConnection extends AbstractConnection
 
     private final Scheduler scheduler;
     private final ByteBufferPool byteBufferPool;
-    private final Map<String, Object> context;
     private final QuicheConfig quicheConfig;
     private final Flusher flusher = new Flusher();
+    private final Map<String, Object> context;
 
     public QuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endPoint, Map<String, Object> context, QuicheConfig quicheConfig)
     {
