@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -145,5 +146,21 @@ public class PathResourceTest
 
         File file = resource.getFile();
         assertThat("File for default FileSystem", file, is(exampleJar.toFile()));
+    }
+
+    @Test
+    public void testSame() throws Exception
+    {
+        Path rpath = MavenTestingUtils.getTestResourcePathFile("resource.txt");
+        Path epath = MavenTestingUtils.getTestResourcePathFile("example.jar");
+        PathResource rPathResource = new PathResource(rpath);
+        FileResource rFileResource = new FileResource(rpath.toFile());
+        PathResource ePathResource = new PathResource(epath);
+        FileResource eFileResource = new FileResource(epath.toFile());
+
+        assertThat(rPathResource.isSame(rPathResource), Matchers.is(true));
+        assertThat(rPathResource.isSame(rFileResource), Matchers.is(true));
+        assertThat(rPathResource.isSame(ePathResource), Matchers.is(false));
+        assertThat(rPathResource.isSame(eFileResource), Matchers.is(false));
     }
 }
