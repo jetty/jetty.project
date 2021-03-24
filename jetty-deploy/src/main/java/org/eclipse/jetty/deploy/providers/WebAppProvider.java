@@ -15,7 +15,6 @@ package org.eclipse.jetty.deploy.providers;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.io.IOException;
 import java.util.Locale;
 
 import org.eclipse.jetty.deploy.App;
@@ -26,8 +25,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
@@ -75,62 +72,44 @@ public class WebAppProvider extends ScanningAppProvider
         @Override
         public boolean accept(File dir, String name)
         {
-            if (dir == null)
+            if (dir == null || !dir.canRead())
                 return false;
 
-            try
-            {
-                //Always work on canonical files because we need to
-                //check if the file passed in is one of the
-                //monitored resources
-                if (!dir.getCanonicalFile().exists())
-                    return false;
-                
-                String lowerName = name.toLowerCase(Locale.ENGLISH);
+            String lowerName = name.toLowerCase(Locale.ENGLISH);
 
-                File canonical = new File(dir, name).getCanonicalFile();
-                Resource r = Resource.newResource(canonical);
-                if (getCanonicalMonitoredResources().contains(r) && r.isDirectory())
-                    return false;
-
-                // ignore hidden files
-                if (lowerName.startsWith("."))
-                    return false;
-
-                // Ignore some directories
-                if (canonical.isDirectory())
-                {
-                    // is it a nominated config directory
-                    if (lowerName.endsWith(".d"))
-                        return false;
-
-                    // is it an unpacked directory for an existing war file?
-                    if (exists(name + ".war") || exists(name + ".WAR"))
-                        return false;
-
-                    // is it a directory for an existing xml file?
-                    if (exists(name + ".xml") || exists(name + ".XML"))
-                        return false;
-
-                    //is it a sccs dir?
-                    return !"cvs".equals(lowerName) && !"cvsroot".equals(lowerName); // OK to deploy it then
-                }
-
-                // else is it a war file
-                if (lowerName.endsWith(".war"))
-                {
-                    //defer deployment decision to fileChanged()
-                    return true;
-                }
-
-                // else is it a context XML file 
-                return lowerName.endsWith(".xml");
-            }
-            catch (IOException e)
-            {
-                LOG.warn("Cannot accept", e);
+            Resource resource = Resource.newResource(new File(dir, name));
+            if (getMonitoredResources().stream().anyMatch(resource::isSame))
                 return false;
+
+            // ignore hidden files
+            if (lowerName.startsWith("."))
+                return false;
+
+            // Ignore some directories
+            if (resource.isDirectory())
+            {
+                // is it a nominated config directory
+                if (lowerName.endsWith(".d"))
+                    return false;
+
+                // is it an unpacked directory for an existing war file?
+                if (exists(name + ".war") || exists(name + ".WAR"))
+                    return false;
+
+                // is it a directory for an existing xml file?
+                if (exists(name + ".xml") || exists(name + ".XML"))
+                    return false;
+
+                //is it a sccs dir?
+                return !"cvs".equals(lowerName) && !"cvsroot".equals(lowerName); // OK to deploy it then
             }
+
+            // else is it a war file
+            if (lowerName.endsWith(".war"))
+                return true;
+
+            // else is it a context XML file
+            return lowerName.endsWith(".xml");
         }
     }
 

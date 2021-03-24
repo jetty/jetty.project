@@ -15,7 +15,6 @@ package org.eclipse.jetty.deploy.providers;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -43,10 +42,10 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
     private static final Logger LOG = LoggerFactory.getLogger(ScanningAppProvider.class);
 
     private final Map<String, App> _appMap = new HashMap<>();
+
     private DeploymentManager _deploymentManager;
     private FilenameFilter _filenameFilter;
     private final List<Resource> _monitored = new CopyOnWriteArrayList<>();
-    private final List<Resource> _canonicalMonitored = new CopyOnWriteArrayList<>();
     private int _scanInterval = 10;
     private Scanner _scanner;
 
@@ -238,34 +237,11 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
     {
         _monitored.clear();
         _monitored.addAll(resources);
-        _canonicalMonitored.clear();
-        for (Resource r : resources)
-        {
-            Resource canonical = r; //assume original is canonical
-            try
-            {
-                File f = r.getFile(); //if it has a file, ensure it is canonical
-                if (f != null)
-                    canonical = Resource.newResource(f.getCanonicalFile());
-            }
-            catch (IOException e)
-            {
-                //use the original resource
-                if (LOG.isDebugEnabled())
-                    LOG.debug("ignored", e);
-            }
-            _canonicalMonitored.add(canonical);   
-        }
     }
 
     public List<Resource> getMonitoredResources()
     {
         return Collections.unmodifiableList(_monitored);
-    }
-    
-    List<Resource> getCanonicalMonitoredResources()
-    {
-        return Collections.unmodifiableList(_canonicalMonitored);
     }
 
     public void setMonitoredDirResource(Resource resource)
