@@ -133,7 +133,7 @@ public class PathResourceTest
             Path epath2 = Files.createSymbolicLink(MavenTestingUtils.getTargetPath().resolve("testSame-symlink"), epath.getParent()).resolve("example.jar");
             ePathResource2 = new PathResource(epath2);
         }
-        catch(Throwable th)
+        catch (Throwable th)
         {
             // Assume symbolic links are not supported
         }
