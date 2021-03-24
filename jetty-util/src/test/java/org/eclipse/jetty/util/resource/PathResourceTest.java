@@ -148,7 +148,6 @@ public class PathResourceTest
         assertThat("File for default FileSystem", file, is(exampleJar.toFile()));
     }
 
-
     @Test
     public void testSame() throws Exception
     {
