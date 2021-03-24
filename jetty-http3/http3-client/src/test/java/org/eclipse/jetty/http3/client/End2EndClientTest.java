@@ -15,7 +15,11 @@ package org.eclipse.jetty.http3.client;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import javax.servlet.ServletException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -38,6 +42,7 @@ import static org.hamcrest.core.Is.is;
 public class End2EndClientTest
 {
     private Server server;
+    private HttpClient client;
 
     @BeforeEach
     public void setUp() throws Exception
@@ -55,7 +60,7 @@ public class End2EndClientTest
         server.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 PrintWriter writer = response.getWriter();
@@ -68,21 +73,28 @@ public class End2EndClientTest
         });
 
         server.start();
+
+        HttpClientTransportOverQuic transport = new HttpClientTransportOverQuic();
+        client = new HttpClient(transport);
+        client.start();
     }
 
     @AfterEach
     public void tearDown() throws Exception
     {
-        server.stop();
+        try
+        {
+            server.stop();
+        }
+        finally
+        {
+            client.stop();
+        }
     }
 
     @Test
     public void simple() throws Exception
     {
-        HttpClientTransportOverQuic transport = new HttpClientTransportOverQuic();
-        HttpClient client = new HttpClient(transport);
-        client.start();
-
         ContentResponse response = client.GET("https://localhost:8443/");
         int status = response.getStatus();
         String contentAsString = response.getContentAsString();
@@ -91,13 +103,70 @@ public class End2EndClientTest
         System.out.println(contentAsString);
         System.out.println("==========");
 
-        client.stop();
-
         assertThat(status, is(200));
         assertThat(contentAsString, is("<html>\n" +
             "\t<body>\n" +
             "\t\tRequest served\n" +
             "\t</body>\n" +
             "</html>\n"));
+    }
+
+    @Test
+    public void multiple() throws Exception
+    {
+        for (int i = 0; i < 1000; i++)
+        {
+            ContentResponse response = client.GET("https://localhost:8443/");
+            int status = response.getStatus();
+            String contentAsString = response.getContentAsString();
+            assertThat(status, is(200));
+            assertThat(contentAsString, is("<html>\n" +
+                "\t<body>\n" +
+                "\t\tRequest served\n" +
+                "\t</body>\n" +
+                "</html>\n"));
+        }
+    }
+
+    @Test
+    public void multiThreaded() throws Exception
+    {
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try
+        {
+            List<Future<?>> futures = new ArrayList<>();
+
+            for (int i = 0; i < 1000; i++)
+            {
+                futures.add(executor.submit(() ->
+                {
+                    try
+                    {
+                        ContentResponse response = client.GET("https://localhost:8443/");
+                        int status = response.getStatus();
+                        String contentAsString = response.getContentAsString();
+                        assertThat(status, is(200));
+                        assertThat(contentAsString, is("<html>\n" +
+                            "\t<body>\n" +
+                            "\t\tRequest served\n" +
+                            "\t</body>\n" +
+                            "</html>\n"));
+                    }
+                    catch (Exception e)
+                    {
+                        throw new RuntimeException(e);
+                    }
+                }));
+            }
+
+            for (Future<?> future : futures)
+            {
+                future.get();
+            }
+        }
+        finally
+        {
+            executor.shutdownNow();
+        }
     }
 }
