@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -112,5 +113,17 @@ public class PathResourceTest
 
         File file = resource.getFile();
         assertThat("File for default FileSystem", file, is(exampleJar.toFile()));
+    }
+
+    @Test
+    public void testSame() throws Exception
+    {
+        Path rpath = MavenTestingUtils.getTestResourcePathFile("resource.txt");
+        Path epath = MavenTestingUtils.getTestResourcePathFile("example.jar");
+        PathResource rPathResource = new PathResource(rpath);
+        PathResource ePathResource = new PathResource(epath);
+
+        assertThat(rPathResource.isSame(rPathResource), Matchers.is(true));
+        assertThat(rPathResource.isSame(ePathResource), Matchers.is(false));
     }
 }
