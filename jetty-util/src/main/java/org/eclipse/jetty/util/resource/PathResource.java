@@ -346,7 +346,7 @@ public class PathResource extends Resource
             Path path = ((PathResource)resource).getPath();
             return Files.isSameFile(getPath(), path);
         }
-        catch(IOException e)
+        catch (IOException e)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("ignored", e);
