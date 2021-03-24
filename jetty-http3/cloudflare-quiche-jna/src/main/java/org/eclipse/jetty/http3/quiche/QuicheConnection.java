@@ -297,7 +297,7 @@ public class QuicheConnection
         // Original Destination Connection ID
         byte[] odcid = tokenValidator.validate(token, (int)token_len.getValue());
         if (odcid == null)
-            throw new IOException("invalid address validation token");
+            throw new TokenValidationException("invalid address validation token");
         LOG.debug("  validated token");
 
         LOG.debug("  connection creation...");
@@ -525,5 +525,13 @@ public class QuicheConnection
     public interface TokenValidator
     {
         byte[] validate(byte[] token, int len);
+    }
+
+    public static class TokenValidationException extends IOException
+    {
+        public TokenValidationException(String msg)
+        {
+            super(msg);
+        }
     }
 }
