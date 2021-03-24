@@ -26,7 +26,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -35,6 +38,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -130,24 +134,32 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
     {
 
         Map<String, String> env = new HashMap<>();
-        //env.put("JAVA_OPTS", "-Dhazelcast.local.publicAddress=localhost:5701");
+        //
+        env.put("JAVA_OPTS", "-Dhazelcast.local.publicAddress=127.0.0.1:5701 -Dhazelcast.config=/opt/hazelcast/config_ext/hazelcast.xml");
         try (GenericContainer hazelcast =
                  new GenericContainer("hazelcast/hazelcast:" + System.getProperty("hazelcast.version", "3.12.6"))
-                     .withExposedPorts(5701)
+                     .withExposedPorts(5701, 55125, 55126) //, 54327)
                      .withEnv(env)
-                     .waitingFor(Wait.forListeningPort())
+                     .waitingFor(Wait.forLogMessage(".*is STARTED.*", 1))
+                     //.withNetworkMode("host")
+                     //.waitingFor(Wait.forListeningPort())
+                     .withClasspathResourceMapping("hazelcast-server.xml",
+                                                   "/opt/hazelcast/config_ext/hazelcast.xml",
+                                                   BindMode.READ_ONLY)
                      .withLogConsumer(new Slf4jLogConsumer(HAZELCAST_LOG)))
         {
             hazelcast.start();
             String hazelcastHost = hazelcast.getContainerIpAddress();
             int hazelcastPort = hazelcast.getMappedPort(5701);
+//            int hazelcastMultiCastPort = hazelcast.getMappedPort(54327);
 
             LOGGER.info("hazelcast started on {}:{}", hazelcastHost, hazelcastPort);
 
             Map<String, String> tokenValues = new HashMap<>();
             tokenValues.put("hazelcast_ip", hazelcastHost);
             tokenValues.put("hazelcast_port", Integer.toString(hazelcastPort));
-            Path hazelcastJettyPath = Paths.get("target/hazelcast-client.xml");
+//            tokenValues.put("hazelcast_multicast_port", Integer.toString(hazelcastMultiCastPort));
+            Path hazelcastJettyPath = Paths.get("target/hazelcast-jetty.xml");
             transformFileWithHostAndPort(Paths.get("src/test/resources/hazelcast-jetty.xml"),
                                          hazelcastJettyPath,
                                          tokenValues);
@@ -165,7 +177,7 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
             };
             try (DistributionTester.Run run1 = distribution.start(args1))
             {
-                assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+                assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
                 assertEquals(0, run1.getExitValue());
 
 
@@ -181,14 +193,15 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
                 distribution.installWarFile(war, "test");
 
                 int port = distribution.freePort();
-                String[] argsStart = {
+                List<String> argsStart = Arrays.asList(
                     "jetty.http.port=" + port,
                     "jetty.session.hazelcast.onlyClient=false",
                     "jetty.session.hazelcast.configurationLocation=" + hazelcastJettyPath.toAbsolutePath()
-                };
+                );
+
                 try (DistributionTester.Run run2 = distribution.start(argsStart))
                 {
-                    assertTrue(run2.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
+                    assertTrue(run2.awaitConsoleLogsFor("Started @", 60, TimeUnit.SECONDS));
 
                     startHttpClient();
                     ContentResponse response = client.GET("http://localhost:" + port + "/test/session?action=CREATE");
@@ -200,9 +213,11 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
                     assertThat(response.getContentAsString(), containsString("SESSION READ CHOCOLATE THE BEST:FRENCH"));
                 }
 
+                LOGGER.info("restarting Jetty");
+
                 try (DistributionTester.Run run2 = distribution.start(argsStart))
                 {
-                    assertTrue(run2.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
+                    assertTrue(run2.awaitConsoleLogsFor("Started @", 15, TimeUnit.SECONDS));
 
                     ContentResponse response = client.GET("http://localhost:" + port + "/test/session?action=READ");
                     assertEquals(HttpStatus.OK_200, response.getStatus());

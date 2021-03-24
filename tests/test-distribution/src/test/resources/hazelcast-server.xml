@@ -28,31 +28,15 @@
 <!--  </group>-->
 
   <network>
-    <port port-count="20">hazelcast_port</port>
+    <reuse-address>true</reuse-address>
+<!--    <outbound-ports>-->
+<!--      <ports>55125,55126</ports>-->
+<!--    </outbound-ports>-->
+    <port port-count="20">5701</port>
     <join>
-      <multicast enabled="false">
-<!--        <multicast-port>hazelcast_multicast_port</multicast-port>-->
-<!--        <multicast-group></multicast-group>-->
-      </multicast>
       <tcp-ip enabled="true">
-        <member-list>
-<!--          <member>hazelcast_ip:hazelcast_port</member>-->
-<!--          <member>hazelcast_ip</member>-->
-          <member>127.0.0.1:hazelcast_port</member>
-          <member>127.0.0.1</member>
-<!--          <member>172.17.0.1:hazelcast_port</member>-->
-<!--          <member>172.17.0.2:hazelcast_port</member>-->
-<!--          <member>172.17.0.3:hazelcast_port</member>-->
-        </member-list>
       </tcp-ip>
-      <discovery-strategies>
-        <discovery-strategy class="com.hazelcast.spi.discovery.multicast.MulticastDiscoveryStrategy" enabled="false">
-          <properties>
-            <property name="group">hazelcast_ip</property>
-            <property name="port">hazelcast_port</property>
-          </properties>
-        </discovery-strategy>
-      </discovery-strategies>
+      <multicast enabled="false"/>
       <aws enabled="false"/>
     </join>
   </network>
@@ -63,11 +47,11 @@
     <property name="hazelcast.rest.enabled">true</property>
   </properties>
 
-  <serialization>
-    <serializers>
-      <serializer type-class="org.eclipse.jetty.server.session.SessionData"
-                  class-name="org.eclipse.jetty.hazelcast.session.SessionDataSerializer" />
-    </serializers>
-  </serialization>
+<!--  <serialization>-->
+<!--    <serializers>-->
+<!--      <serializer type-class="org.eclipse.jetty.server.session.SessionData"-->
+<!--                  class-name="org.eclipse.jetty.hazelcast.session.SessionDataSerializer" />-->
+<!--    </serializers>-->
+<!--  </serialization>-->
 
 </hazelcast>

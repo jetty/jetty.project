@@ -11,6 +11,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.tests.distribution</bundle-symbolic-name>
+    <distribution.debug.port>-1</distribution.debug.port>
   </properties>
 
   <dependencies>
@@ -166,6 +167,7 @@
             <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
             <jettyVersion>${project.version}</jettyVersion>
             <hazelcast.version>${hazelcast.version}</hazelcast.version>
+            <distribution.debug.port>$(distribution.debug.port}</distribution.debug.port>
           </systemPropertyVariables>
         </configuration>
       </plugin>
