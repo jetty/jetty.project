@@ -303,6 +303,18 @@ public abstract class Resource implements ResourceFactory, Closeable
     public abstract boolean isContainedIn(Resource r) throws MalformedURLException;
 
     /**
+     * Return true if the passed Resource represents the same resource as the Resource.
+     * For many resource types, this is equivalent to {@link #equals(Object)}, however
+     * for resources types that support aliasing, this maybe some other check (e.g. {@link java.nio.file.Files#isSameFile(Path, Path)}).
+     * @param resource The resource to check
+     * @return true if the passed resource represents the same resource.
+     */
+    public boolean isSame(Resource resource)
+    {
+        return equals(resource);
+    }
+
+    /**
      * Release any temporary resources held by the resource.
      */
     @Override

@@ -42,6 +42,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
     private static final Logger LOG = LoggerFactory.getLogger(ScanningAppProvider.class);
 
     private final Map<String, App> _appMap = new HashMap<>();
+
     private DeploymentManager _deploymentManager;
     private FilenameFilter _filenameFilter;
     private final List<Resource> _monitored = new CopyOnWriteArrayList<>();

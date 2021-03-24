@@ -21,11 +21,13 @@ import java.net.URISyntaxException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -112,5 +114,33 @@ public class PathResourceTest
 
         File file = resource.getFile();
         assertThat("File for default FileSystem", file, is(exampleJar.toFile()));
+    }
+
+    @Test
+    public void testSame()
+    {
+        Path rpath = MavenTestingUtils.getTestResourcePathFile("resource.txt");
+        Path epath = MavenTestingUtils.getTestResourcePathFile("example.jar");
+        PathResource rPathResource = new PathResource(rpath);
+        PathResource ePathResource = new PathResource(epath);
+
+        assertThat(rPathResource.isSame(rPathResource), Matchers.is(true));
+        assertThat(rPathResource.isSame(ePathResource), Matchers.is(false));
+
+        PathResource ePathResource2 = null;
+        try
+        {
+            Path epath2 = Files.createSymbolicLink(MavenTestingUtils.getTargetPath().resolve("testSame-symlink"), epath.getParent()).resolve("example.jar");
+            ePathResource2 = new PathResource(epath2);
+        }
+        catch (Throwable th)
+        {
+            // Assume symbolic links are not supported
+        }
+        if (ePathResource2 != null)
+        {
+            assertThat(ePathResource.isSame(ePathResource2), Matchers.is(true));
+            assertThat(ePathResource.equals(ePathResource2), Matchers.is(false));
+        }
     }
 }

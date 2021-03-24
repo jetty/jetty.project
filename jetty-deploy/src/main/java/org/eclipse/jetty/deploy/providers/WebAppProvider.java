@@ -28,6 +28,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
+import org.slf4j.LoggerFactory;
 
 /**
  * The webapps directory scanning provider.
@@ -57,6 +58,8 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 @ManagedObject("Provider for start-up deployement of webapps based on presence in directory")
 public class WebAppProvider extends ScanningAppProvider
 {
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(WebAppProvider.class);
+
     private boolean _extractWars = false;
     private boolean _parentLoaderPriority = false;
     private ConfigurationManager _configurationManager;
@@ -69,28 +72,24 @@ public class WebAppProvider extends ScanningAppProvider
         @Override
         public boolean accept(File dir, String name)
         {
-            if (!dir.exists())
-            {
+            if (dir == null || !dir.canRead())
                 return false;
-            }
-            String lowername = name.toLowerCase(Locale.ENGLISH);
 
-            File file = new File(dir, name);
-            Resource r = Resource.newResource(file);
-            if (getMonitoredResources().contains(r) && r.isDirectory())
-            {
+            String lowerName = name.toLowerCase(Locale.ENGLISH);
+
+            Resource resource = Resource.newResource(new File(dir, name));
+            if (getMonitoredResources().stream().anyMatch(resource::isSame))
                 return false;
-            }
 
             // ignore hidden files
-            if (lowername.startsWith("."))
+            if (lowerName.startsWith("."))
                 return false;
 
             // Ignore some directories
-            if (file.isDirectory())
+            if (resource.isDirectory())
             {
                 // is it a nominated config directory
-                if (lowername.endsWith(".d"))
+                if (lowerName.endsWith(".d"))
                     return false;
 
                 // is it an unpacked directory for an existing war file?
@@ -102,25 +101,15 @@ public class WebAppProvider extends ScanningAppProvider
                     return false;
 
                 //is it a sccs dir?
-                if ("cvs".equals(lowername) || "cvsroot".equals(lowername))
-                    return false;
-
-                // OK to deploy it then
-                return true;
+                return !"cvs".equals(lowerName) && !"cvsroot".equals(lowerName); // OK to deploy it then
             }
 
             // else is it a war file
-            if (lowername.endsWith(".war"))
-            {
-                //defer deployment decision to fileChanged()
-                return true;
-            }
-
-            // else is it a context XML file 
-            if (lowername.endsWith(".xml"))
+            if (lowerName.endsWith(".war"))
                 return true;
 
-            return false;
+            // else is it a context XML file
+            return lowerName.endsWith(".xml");
         }
     }
 
