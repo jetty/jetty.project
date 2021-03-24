@@ -27,7 +27,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
 import org.eclipse.jetty.server.Handler;
@@ -74,6 +73,7 @@ public class DeploymentTempDirTest
         FS.ensureEmpty(webapps);
 
         webAppProvider.setMonitoredDirName(webapps.toString());
+        webAppProvider.setScanInterval(0);
         DeploymentManager deploymentManager = new DeploymentManager();
         deploymentManager.addAppProvider(webAppProvider);
         server.addBean(deploymentManager);
@@ -102,29 +102,23 @@ public class DeploymentTempDirTest
             "</Configure>";
 
         server.start();
-        WaitScannerListener listener = new WaitScannerListener();
-        webAppProvider.addScannerListener(listener);
 
         // Add the webapp xml which will will be detected after scan.
-        listener.reset();
         createNewFile(webapps, "foo-webapp.xml", deploymentXml);
         webAppProvider.scan();
         webAppProvider.scan();
-        listener.future.get(5, TimeUnit.SECONDS);
         WebAppContext webAppContext = getWebAppContext();
         assertThat(webAppContext.getTempDirectory(), is(tmpDir.toFile()));
 
-        // Add a known file to the temp directory.
+        // Add a known file to the temp directory, this file will be deleted when stopping as persistTempDirectory is false.
         String content = UUID.randomUUID().toString();
         createNewFile(webAppContext.getTempDirectory().toPath(), "myFile.txt", content);
 
         // Touch the webapp and rescan to reload the WebAppContext.
-        listener.reset();
         long newModifiedTime = System.currentTimeMillis() + 1000;
         assertTrue(webapps.resolve("foo-webapp.xml").toFile().setLastModified(newModifiedTime));
         webAppProvider.scan();
         webAppProvider.scan();
-        listener.future.get(5, TimeUnit.SECONDS);
 
         // The second WebAppContext should be using the same temp directory but the file will have been deleted.
         WebAppContext webAppContext2 = getWebAppContext();
@@ -148,19 +142,15 @@ public class DeploymentTempDirTest
             "</Configure>";
 
         server.start();
-        WaitScannerListener listener = new WaitScannerListener();
-        webAppProvider.addScannerListener(listener);
 
         // Add the webapp xml which will will be detected after scan.
-        listener.reset();
         createNewFile(webapps, "foo-webapp.xml", deploymentXml);
         webAppProvider.scan();
         webAppProvider.scan();
-        listener.future.get(5, TimeUnit.SECONDS);
         WebAppContext webAppContext1 = getWebAppContext();
         assertThat(webAppContext1.getTempDirectory(), is(tmpDir.toFile()));
 
-        // Add a known file to the temp directory.
+        // Add a known file to the temp directory, this file will be preserved after stop as persistTempDirectory is true.
         String content = UUID.randomUUID().toString();
         createNewFile(webAppContext1.getTempDirectory().toPath(), "myFile.txt", content);
 
@@ -169,7 +159,6 @@ public class DeploymentTempDirTest
         assertTrue(webapps.resolve("foo-webapp.xml").toFile().setLastModified(newModifiedTime));
         webAppProvider.scan();
         webAppProvider.scan();
-        listener.future.get(5, TimeUnit.SECONDS);
 
         // The second WebAppContext should be using the same temp directory and file will not have been deleted.
         WebAppContext webAppContext2 = getWebAppContext();

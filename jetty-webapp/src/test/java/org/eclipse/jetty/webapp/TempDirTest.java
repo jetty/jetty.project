@@ -68,7 +68,7 @@ public class TempDirTest
 
     /**
      * ServletContext.TEMPDIR has <code>null</code> value
-     * but webappContent#tempDirectory is created under <code>java.io.tmpdir</code>
+     * so webappContent#tempDirectory is created under <code>java.io.tmpdir</code>
      */
     @Test
     public void attributeWithNullValue() throws Exception

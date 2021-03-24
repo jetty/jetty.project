@@ -472,8 +472,9 @@ public class WebInfConfiguration extends AbstractConfiguration
      * Given an Object, return File reference for object.
      * Typically used to convert anonymous Object from getAttribute() calls to a File object.
      *
-     * @param fileattr the file attribute to analyze and return from (supports type File and type String, all others return null
-     * @return the File object, null if null, or null if not a File or String
+     * @param fileattr the file attribute to analyze and return from (supports type File, Path, and String).
+     * @return the File object or null if fileattr null.
+     * @throws IllegalStateException if argument is not a File, Path or String.
      */
     private File asFile(Object fileattr)
     {
