@@ -1670,7 +1670,7 @@ public class SessionHandler extends ScopedHandler
                         //retrieve the session, which increments the reference count
                         HttpSession s = getHttpSession(id);
                         //associate it with the request so its reference count
-                        //will be decremented as the request exits
+                        //will be decremented as the request completes
                         if (s != null && isValid(s))
                             baseRequest.enterSession(s);
 
