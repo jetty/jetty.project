@@ -323,7 +323,7 @@ public interface LibQuiche extends Library
     ssize_t quiche_conn_recv(quiche_conn conn, ByteBuffer buf, size_t buf_len);
 
     // Returns the negotiated ALPN protocol.
-    void quiche_conn_application_proto(quiche_conn conn, PointerByReference out, size_t_pointer out_len);
+    void quiche_conn_application_proto(quiche_conn conn, char_pointer out, size_t_pointer out_len);
 
     // Returns true if the connection handshake is complete.
     boolean quiche_conn_is_established(quiche_conn conn);
