@@ -1824,7 +1824,8 @@ public class Request implements HttpServletRequest
         setMethod(request.getMethod());
         HttpURI uri = request.getURI();
 
-        if (uri.isAmbiguous())
+        boolean ambiguous = uri.isAmbiguous();
+        if (ambiguous)
         {
             // replaced in jetty-10 with URICompliance from the HttpConfiguration
             Connection connection = _channel == null ? null : _channel.getConnection();
@@ -1852,6 +1853,13 @@ public class Request implements HttpServletRequest
         else if (encoded.startsWith("/"))
         {
             path = (encoded.length() == 1) ? "/" : uri.getDecodedPath();
+
+            // Strictly speaking if a URI is legal and encodes ambiguous segments, then they should be
+            // reflected in the decoded string version.  However, previous behaviour was to always normalize
+            // so we will continue to do so.  If an application wishes to see ambiguous URIs, then they can look
+            // at the encoded form of the URI
+            if (ambiguous)
+                path = URIUtil.canonicalPath(path);
         }
         else if ("*".equals(encoded) || HttpMethod.CONNECT.is(getMethod()))
         {
