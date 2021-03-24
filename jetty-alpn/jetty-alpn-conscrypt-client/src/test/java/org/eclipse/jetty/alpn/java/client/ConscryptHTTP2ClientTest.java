@@ -39,9 +39,12 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.condition.OS.LINUX;
 
+@EnabledOnOs({LINUX}) // TODO review if should be enabled on other OS
 public class ConscryptHTTP2ClientTest
 {
     @Tag("external")
