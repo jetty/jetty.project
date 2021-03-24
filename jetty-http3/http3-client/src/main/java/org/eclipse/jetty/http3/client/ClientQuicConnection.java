@@ -28,6 +28,7 @@ import org.eclipse.jetty.http3.quiche.QuicheConnectionId;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +67,20 @@ public class ClientQuicConnection extends QuicConnection
         }
 
         fillInterested();
+    }
+
+    @Override
+    protected void onClose(QuicheConnectionId quicheConnectionId, QuicSession session)
+    {
+        super.onClose(quicheConnectionId, session);
+
+        InetSocketAddress remoteAddress = session.getRemoteAddress();
+        if (pendingSessions.remove(remoteAddress) != null)
+        {
+            Promise<?> promise = (Promise<?>)context.get(ClientQuicConnector.CONNECTION_PROMISE_CONTEXT_KEY);
+            if (promise != null)
+                promise.failed(new IOException("QUIC connection refused"));
+        }
     }
 
     @Override

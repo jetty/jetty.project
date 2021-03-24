@@ -239,7 +239,7 @@ public abstract class QuicSession
             endpoints.values().forEach(AbstractEndPoint::close);
             endpoints.clear();
             flusher.close();
-            connection.onClose(quicheConnectionId);
+            connection.onClose(quicheConnectionId, this);
             LifeCycle.stop(strategy);
         }
         finally
