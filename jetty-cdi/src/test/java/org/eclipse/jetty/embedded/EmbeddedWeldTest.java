@@ -167,7 +167,7 @@ public class EmbeddedWeldTest
     @Test
     public void testWebappContext() throws Exception
     {
-        Server server = new Server(8080);
+        Server server = new Server(0);
         server.addConnector(new LocalConnector(server));
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
@@ -199,7 +199,7 @@ public class EmbeddedWeldTest
     @Test
     public void testWebappContextDiscovered() throws Exception
     {
-        Server server = new Server(8080);
+        Server server = new Server(0);
         server.addConnector(new LocalConnector(server));
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
