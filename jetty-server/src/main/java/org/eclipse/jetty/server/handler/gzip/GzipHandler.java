@@ -891,6 +891,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     @Deprecated
     public void setDeflaterPoolCapacity(int capacity)
     {
+        LOG.warn("DeflaterPool capacity not changed. DeflaterPool should be configured externally and set as a bean on the Server.");
         if (isStarted())
             throw new IllegalStateException(getState());
     }
@@ -914,6 +915,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     @Deprecated
     public void setInflaterPoolCapacity(int capacity)
     {
+        LOG.warn("InflaterPool capacity not changed. InflaterPool should be configured externally and set as a bean on the Server.");
         if (isStarted())
             throw new IllegalStateException(getState());
     }
