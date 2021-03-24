@@ -65,7 +65,7 @@ public class DuplicateCookieTest
         try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
         {
             //create a valid session
-            createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
+            Session s4422 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
                 contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
                 "4422");
 
@@ -79,6 +79,7 @@ public class DuplicateCookieTest
             ContentResponse response = request.send();
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             assertEquals("4422", response.getContentAsString());
+            assertEquals(0, s4422.getRequests());
         }
         finally
         {
@@ -108,7 +109,7 @@ public class DuplicateCookieTest
         try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
         {
             //create a valid session
-            createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
+            Session s1122 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
                 contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
                 "1122");
             //create an invalid session
@@ -126,6 +127,7 @@ public class DuplicateCookieTest
             ContentResponse response = request.send();
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             assertEquals("1122", response.getContentAsString());
+            assertEquals(0, s1122.getRequests());
         }
         finally
         {
@@ -155,18 +157,23 @@ public class DuplicateCookieTest
         try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
         {
             //create some of unexpired sessions
-            createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
+            Session s1234 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
                 contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
                 "1234");
-            createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
+            Session s5678 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
                 contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
                 "5678");
-            createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
+            Session s9111 = createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
                 contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
                 "9111");
 
             client = new HttpClient();
             client.start();
+
+            //check that the request count is 0
+            assertEquals(0, s1234.getRequests());
+            assertEquals(0, s5678.getRequests());
+            assertEquals(0, s9111.getRequests());
 
             //make a request with multiple valid session ids
             Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=check");
@@ -174,6 +181,11 @@ public class DuplicateCookieTest
             request.header("Cookie", "JSESSIONID=5678");
             ContentResponse response = request.send();
             assertEquals(HttpServletResponse.SC_BAD_REQUEST, response.getStatus());
+
+            //check that all valid sessions have their request counts decremented correctly after the request, back to 0
+            assertEquals(0, s1234.getRequests());
+            assertEquals(0, s5678.getRequests());
+            assertEquals(0, s9111.getRequests());
         }
         finally
         {
@@ -189,6 +201,7 @@ public class DuplicateCookieTest
         data.setExpiry(now + TimeUnit.DAYS.toMillis(1));
         Session s = cache.newSession(data);
         cache.add(id, s);
+        s.complete(); //pretend a request that created the session is finished
         return s;
     }
 

@@ -1667,7 +1667,12 @@ public class SessionHandler extends ScopedHandler
                         if (LOG.isDebugEnabled())
                             LOG.debug("Got Session ID {} from cookie {}", id, sessionCookie);
 
+                        //retrieve the session, which increments the reference count
                         HttpSession s = getHttpSession(id);
+                        //associate it with the request so its reference count
+                        //will be decremented as the request completes
+                        if (s != null && isValid(s))
+                            baseRequest.enterSession(s);
 
                         if (requestedSessionId == null)
                         {
@@ -1693,6 +1698,10 @@ public class SessionHandler extends ScopedHandler
                         }
                     }
                 }
+
+                //if we wound up with a single valid session
+                if (session != null && isValid(session))
+                    baseRequest.setSession(session);  //associate the session with the request
             }
         }
 
@@ -1718,24 +1727,22 @@ public class SessionHandler extends ScopedHandler
 
                     requestedSessionId = uri.substring(s, i);
                     requestedSessionIdFromCookie = false;
+
                     if (LOG.isDebugEnabled())
                         LOG.debug("Got Session ID {} from URL", requestedSessionId);
+
                     session = getHttpSession(requestedSessionId);
+                    if (session != null && isValid(session))
+                    {
+                        baseRequest.enterSession(session); //request enters this session for first time
+                        baseRequest.setSession(session);  //associate the session with the request
+                    }
                 }
             }
         }
 
         baseRequest.setRequestedSessionId(requestedSessionId);
         baseRequest.setRequestedSessionIdFromCookie(requestedSessionId != null && requestedSessionIdFromCookie);
-
-        if (requestedSessionId != null)
-        {
-            if (session != null && isValid(session))
-            {
-                baseRequest.enterSession(session); //request enters this session for first time
-                baseRequest.setSession(session);  //associate the session with the request
-            }
-        }
     }
 
     /**
