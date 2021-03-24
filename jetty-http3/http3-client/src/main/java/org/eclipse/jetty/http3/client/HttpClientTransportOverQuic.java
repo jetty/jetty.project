@@ -15,7 +15,10 @@ package org.eclipse.jetty.http3.client;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.AbstractHttpClientTransport;
 import org.eclipse.jetty.client.HttpClient;
@@ -41,8 +44,13 @@ public class HttpClientTransportOverQuic extends AbstractHttpClientTransport
 
     public HttpClientTransportOverQuic()
     {
-        //TODO the ClientConnectionFactory should be built according to the Protocol instance. See HttpClientTransportDynamic
-        protocol = new Origin.Protocol(HttpClientConnectionFactory.HTTP11.getProtocols(true), false);
+        this(HttpClientConnectionFactory.HTTP11);
+    }
+
+    public HttpClientTransportOverQuic(ClientConnectionFactory.Info... factoryInfos)
+    {
+        List<String> protocolNames = Arrays.stream(factoryInfos).flatMap(info -> info.getProtocols(true).stream()).collect(Collectors.toList());
+        protocol = new Origin.Protocol(protocolNames, false);
         connector = new ClientQuicConnector(protocol);
         addBean(connector);
         setConnectionPoolFactory(destination ->
