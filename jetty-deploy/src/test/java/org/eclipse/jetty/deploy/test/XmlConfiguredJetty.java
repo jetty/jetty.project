@@ -219,7 +219,7 @@ public class XmlConfiguredJetty
         URL url = destUri.toURL();
 
         URLConnection conn = url.openConnection();
-
+        conn.addRequestProperty("Connection", "close");
         InputStream in = null;
         try
         {
