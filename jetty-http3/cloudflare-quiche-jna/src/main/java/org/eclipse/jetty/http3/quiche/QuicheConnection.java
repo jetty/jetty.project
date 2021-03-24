@@ -21,9 +21,9 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.sun.jna.ptr.PointerByReference;
 import org.eclipse.jetty.http3.quiche.ffi.LibQuiche;
 import org.eclipse.jetty.http3.quiche.ffi.bool_pointer;
+import org.eclipse.jetty.http3.quiche.ffi.char_pointer;
 import org.eclipse.jetty.http3.quiche.ffi.size_t;
 import org.eclipse.jetty.http3.quiche.ffi.size_t_pointer;
 import org.eclipse.jetty.http3.quiche.ffi.ssize_t;
@@ -412,10 +412,10 @@ public class QuicheConnection
 
     public synchronized String getNegotiatedProtocol()
     {
-        PointerByReference out = new PointerByReference();
+        char_pointer out = new char_pointer();
         size_t_pointer outLen = new size_t_pointer();
         libQuiche().quiche_conn_application_proto(quicheConn, out, outLen);
-        return new String(out.getValue().getByteArray(0, (int)outLen.getValue()), StandardCharsets.UTF_8);
+        return out.getValueAsString((int)outLen.getValue(), StandardCharsets.UTF_8);
     }
 
     public synchronized String statistics()
