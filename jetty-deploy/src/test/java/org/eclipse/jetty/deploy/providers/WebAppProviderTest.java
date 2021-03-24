@@ -41,12 +41,15 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.jupiter.api.condition.OS.LINUX;
+import static org.junit.jupiter.api.condition.OS.MAC;
 
 @ExtendWith(WorkDirExtension.class)
 public class WebAppProviderTest
@@ -133,6 +136,7 @@ public class WebAppProviderTest
     }
     
     @Test
+    @EnabledOnOs({LINUX})
     public void testWebappSymlinkDir() throws Exception
     {
         jetty.stop(); //reconfigure jetty
@@ -172,6 +176,7 @@ public class WebAppProviderTest
     }
     
     @Test
+    @EnabledOnOs({LINUX})
     public void testBaseDirSymlink() throws Exception
     {
         jetty.stop(); //reconfigure jetty
