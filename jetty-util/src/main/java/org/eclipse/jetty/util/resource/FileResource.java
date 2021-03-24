@@ -29,7 +29,9 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.security.Permission;
 
@@ -182,6 +184,30 @@ public class FileResource extends Resource
 
         _uri = uri;
         _alias = checkFileAlias(_uri, _file);
+    }
+
+    @Override
+    public boolean isSame(Resource resource)
+    {
+        try
+        {
+            if (resource instanceof PathResource)
+            {
+                Path path = ((PathResource)resource).getPath();
+                return Files.isSameFile(getFile().toPath(), path);
+            }
+            if (resource instanceof FileResource)
+            {
+                Path path = ((FileResource)resource).getFile().toPath();
+                return Files.isSameFile(getFile().toPath(), path);
+            }
+        }
+        catch (IOException e)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("ignored", e);
+        }
+        return false;
     }
 
     private static URI normalizeURI(File file, URI uri) throws URISyntaxException
