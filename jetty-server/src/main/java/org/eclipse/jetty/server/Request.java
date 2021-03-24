@@ -1692,7 +1692,8 @@ public class Request implements HttpServletRequest
         _httpFields = request.getFields();
         final HttpURI uri = request.getURI();
 
-        if (uri.isAmbiguous())
+        boolean ambiguous = uri.isAmbiguous();
+        if (ambiguous)
         {
             UriCompliance compliance = _channel == null || _channel.getHttpConfiguration() == null ? null : _channel.getHttpConfiguration().getUriCompliance();
             if (uri.hasAmbiguousSegment() && (compliance == null || !compliance.allows(UriCompliance.Violation.AMBIGUOUS_PATH_SEGMENT)))
@@ -1741,7 +1742,15 @@ public class Request implements HttpServletRequest
             // TODO this is not really right for CONNECT
             path = _uri.isAbsolute() ? "/" : null;
         else if (encoded.startsWith("/"))
+        {
             path = (encoded.length() == 1) ? "/" : _uri.getDecodedPath();
+            // Strictly speaking if a URI is legal and encodes ambiguous segments, then they should be
+            // reflected in the decoded string version.  However, it can be ambiguous to provide a decoded path as
+            // a string, so we normalize again.  If an application wishes to see ambiguous URIs, then they can look
+            // at the encoded form of the URI
+            if (ambiguous)
+                path = URIUtil.canonicalPath(path);
+        }
         else if ("*".equals(encoded) || HttpMethod.CONNECT.is(getMethod()))
             path = encoded;
         else
