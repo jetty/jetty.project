@@ -137,6 +137,78 @@ public class TempDirTest
     }
 
     /**
+     * WebAppContext.BASETEMPDIR has <code>null</code> value
+     * so webappContent#tempDirectory is created under <code>java.io.tmpdir</code>
+     */
+    @Test
+    public void baseTempDirAttributeWithNullValue() throws Exception
+    {
+        WebInfConfiguration webInfConfiguration = new WebInfConfiguration();
+        WebAppContext webAppContext = new WebAppContext();
+        webAppContext.setAttribute(WebAppContext.BASETEMPDIR, null);
+        webInfConfiguration.resolveTempDirectory(webAppContext);
+        assertThat(webAppContext.getTempDirectory().getParent(), is(System.getProperty("java.io.tmpdir")));
+    }
+
+    /**
+     * WebAppContext.BASETEMPDIR has <code>""</code> value
+     * IllegalStateException
+     */
+    @Test
+    public void baseTempDirAttributeWithEmptyStringValue() throws Exception
+    {
+        WebInfConfiguration webInfConfiguration = new WebInfConfiguration();
+        WebAppContext webAppContext = new WebAppContext();
+        webAppContext.setAttribute(WebAppContext.BASETEMPDIR, "");
+        assertThrows(IllegalStateException.class, () -> webInfConfiguration.resolveTempDirectory(webAppContext));
+    }
+
+    /**
+     * WebAppContext.BASETEMPDIR has value which is not a known type.
+     * IllegalStateException
+     */
+    @Test
+    public void baseTempDirAttributeWithInvalidValue() throws Exception
+    {
+        WebInfConfiguration webInfConfiguration = new WebInfConfiguration();
+        WebAppContext webAppContext = new WebAppContext();
+        webAppContext.setAttribute(WebAppContext.BASETEMPDIR, new Object());
+        assertThrows(IllegalStateException.class, () -> webInfConfiguration.resolveTempDirectory(webAppContext));
+    }
+
+    /**
+     * Test WebAppContext.BASETEMPDIR as valid directory with types File, String and Path.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"File", "String", "Path"})
+    public void attributeWithValidBaseDirectory(String type) throws Exception
+    {
+        WebAppContext webAppContext = new WebAppContext();
+        Path tmpDir = Files.createTempDirectory("jetty_test");
+        switch (type)
+        {
+            case "File":
+                webAppContext.setAttribute(WebAppContext.BASETEMPDIR, tmpDir.toFile());
+                break;
+            case "String":
+                webAppContext.setAttribute(WebAppContext.BASETEMPDIR, tmpDir.toString());
+                break;
+            case "Path":
+                webAppContext.setAttribute(WebAppContext.BASETEMPDIR, tmpDir);
+                break;
+            default:
+                throw new IllegalStateException();
+        }
+
+        // Test we have correct value as the webapp temp directory.
+        WebInfConfiguration webInfConfiguration = new WebInfConfiguration();
+        webInfConfiguration.resolveTempDirectory(webAppContext);
+        File tempDirectory = webAppContext.getTempDirectory();
+        assertTrue(tempDirectory.exists());
+        assertThat(tempDirectory.getParentFile().toPath(), is(tmpDir));
+    }
+
+    /**
      * ServletContext.TEMPDIR as File to a non existent directory.
      */
     @ParameterizedTest

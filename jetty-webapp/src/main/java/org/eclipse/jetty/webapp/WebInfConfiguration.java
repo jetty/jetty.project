@@ -443,8 +443,11 @@ public class WebInfConfiguration extends AbstractConfiguration
         //We need to make a temp dir. Check if the user has set a directory to use instead
         //of java.io.tmpdir as the parent of the dir
         File baseTemp = asFile(context.getAttribute(WebAppContext.BASETEMPDIR));
-        if (baseTemp != null && baseTemp.isDirectory() && baseTemp.canWrite())
+        if (baseTemp != null)
         {
+            if (!baseTemp.isDirectory() || !baseTemp.canWrite())
+                throw new IllegalStateException("BASETEMPDIR is not a writable directory");
+
             //Make a temp directory as a child of the given base dir
             makeTempDirectory(baseTemp, context);
             return;
