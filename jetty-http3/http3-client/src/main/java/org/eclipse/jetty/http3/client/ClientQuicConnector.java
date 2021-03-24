@@ -69,19 +69,9 @@ public class ClientQuicConnector extends ContainerLifeCycle implements IClientCo
     private SocketAddress bindAddress;
     private boolean reuseAddress = true;
 
-    public ClientQuicConnector(Origin.Protocol protocol)
+    public ClientQuicConnector(QuicheConfig quicheConfig)
     {
-        // TODO make the QuicheConfig configurable
-        quicheConfig = new QuicheConfig();
-        quicheConfig.setApplicationProtos(protocol.getProtocols().toArray(new String[0]));
-        quicheConfig.setMaxIdleTimeout(5000L);
-        quicheConfig.setInitialMaxData(10000000L);
-        quicheConfig.setInitialMaxStreamDataBidiLocal(10000000L);
-        quicheConfig.setInitialMaxStreamDataUni(10000000L);
-        quicheConfig.setInitialMaxStreamsBidi(100L);
-        quicheConfig.setInitialMaxStreamsUni(100L);
-        quicheConfig.setDisableActiveMigration(true);
-        quicheConfig.setVerifyPeer(false);
+      this.quicheConfig = quicheConfig;
     }
 
     public Executor getExecutor()

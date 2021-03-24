@@ -28,6 +28,7 @@ import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.MultiplexHttpDestination;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
+import org.eclipse.jetty.http3.quiche.QuicheConfig;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
@@ -50,8 +51,21 @@ public class HttpClientTransportOverQuic extends AbstractHttpClientTransport
     public HttpClientTransportOverQuic(ClientConnectionFactory.Info... factoryInfos)
     {
         List<String> protocolNames = Arrays.stream(factoryInfos).flatMap(info -> info.getProtocols(true).stream()).collect(Collectors.toList());
+
+        // TODO make the QuicheConfig configurable
+        QuicheConfig quicheConfig = new QuicheConfig();
+        quicheConfig.setApplicationProtos(protocolNames.toArray(new String[0]));
+        quicheConfig.setMaxIdleTimeout(5000L);
+        quicheConfig.setInitialMaxData(10000000L);
+        quicheConfig.setInitialMaxStreamDataBidiLocal(10000000L);
+        quicheConfig.setInitialMaxStreamDataUni(10000000L);
+        quicheConfig.setInitialMaxStreamsBidi(100L);
+        quicheConfig.setInitialMaxStreamsUni(100L);
+        quicheConfig.setDisableActiveMigration(true);
+        quicheConfig.setVerifyPeer(false);
+
         protocol = new Origin.Protocol(protocolNames, false);
-        connector = new ClientQuicConnector(protocol);
+        connector = new ClientQuicConnector(quicheConfig);
         addBean(connector);
         setConnectionPoolFactory(destination ->
         {
