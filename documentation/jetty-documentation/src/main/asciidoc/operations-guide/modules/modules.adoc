@@ -204,7 +204,7 @@ The order of the enabled modules is used to determine the processing of the conf
 This directive indicates that this module is ordered after the listed module names, if they are enabled.
 
 For example, module `https` is `[after]` module `http2`.
-Enabling the `https` modules _does not_ enable the `http2` module.
+Enabling the `https` module _does not_ enable the `http2` module.
 
 However, if the `http2` module is enabled (explicitly or transitively), then the `https` module is xref:og-modules-directive-depends[sorted] _after_ the `http2` module.
 In this way, you are guaranteed that the `https` module is processed after the `http2` module.
@@ -214,7 +214,8 @@ In this way, you are guaranteed that the `https` module is processed after the `
 
 This directive indicates that this module is ordered before the listed module names, if they are enabled.
 
-For example, in order to create a custom `org.eclipse.jetty.server.Server` subclass instance, to which the standard configuration is applied, without modifying existing module files or XML files, you can create a `custom-server` xref:og-modules-custom[Jetty custom module]:
+One use of this directive is to create a prerequisite module without the need to modify the `depends` directive of an existing module.
+For example, to create a custom `org.eclipse.jetty.server.Server` subclass instance to be used by the standard `server` module, without modifying the existing `server.mod` file nor the `jetty.xml` file that it uses. This can be achieved by creating the `custom-server` xref:og-modules-custom[Jetty custom module]:
 
 .custom-server.mod
 ----
@@ -228,7 +229,7 @@ server
 etc/custom-server.xml
 ----
 
-The `custom-server.xml` is the following:
+The `custom-server.xml` file is the following:
 
 .custom-server.xml
 [source,xml]
