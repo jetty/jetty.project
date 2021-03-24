@@ -337,6 +337,24 @@ public class PathResource extends Resource
     }
 
     @Override
+    public boolean isSame(Resource resource)
+    {
+        try
+        {
+            if (!(resource instanceof PathResource))
+                return false;
+            Path path = ((PathResource)resource).getPath();
+            return Files.isSameFile(getPath(), path);
+        }
+        catch(IOException e)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("ignored", e);
+            return false;
+        }
+    }
+
+    @Override
     public Resource addPath(final String subpath) throws IOException
     {
         String cpath = URIUtil.canonicalPath(subpath);
