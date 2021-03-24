@@ -25,8 +25,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
@@ -74,15 +72,14 @@ public class WebAppProvider extends ScanningAppProvider
         @Override
         public boolean accept(File dir, String name)
         {
-            if (dir == null || !dir.exists())
+            if (dir == null || !dir.canRead())
                 return false;
 
             String lowerName = name.toLowerCase(Locale.ENGLISH);
 
             Resource resource = Resource.newResource(new File(dir, name));
-            for (Resource m : getMonitoredResources())
-                if (resource.isSame(m))
-                    return false;
+            if (getMonitoredResources().stream().anyMatch(resource::isSame))
+                return false;
 
             // ignore hidden files
             if (lowerName.startsWith("."))

@@ -21,6 +21,7 @@ import java.net.URISyntaxException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -116,7 +117,7 @@ public class PathResourceTest
     }
 
     @Test
-    public void testSame() throws Exception
+    public void testSame()
     {
         Path rpath = MavenTestingUtils.getTestResourcePathFile("resource.txt");
         Path epath = MavenTestingUtils.getTestResourcePathFile("example.jar");
@@ -125,5 +126,21 @@ public class PathResourceTest
 
         assertThat(rPathResource.isSame(rPathResource), Matchers.is(true));
         assertThat(rPathResource.isSame(ePathResource), Matchers.is(false));
+
+        PathResource ePathResource2 = null;
+        try
+        {
+            Path epath2 = Files.createSymbolicLink(MavenTestingUtils.getTargetPath().resolve("testSame-symlink"), epath.getParent()).resolve("example.jar");
+            ePathResource2 = new PathResource(epath2);
+        }
+        catch(Throwable th)
+        {
+            // Assume symbolic links are not supported
+        }
+        if (ePathResource2 != null)
+        {
+            assertThat(ePathResource.isSame(ePathResource2), Matchers.is(true));
+            assertThat(ePathResource.equals(ePathResource2), Matchers.is(false));
+        }
     }
 }
