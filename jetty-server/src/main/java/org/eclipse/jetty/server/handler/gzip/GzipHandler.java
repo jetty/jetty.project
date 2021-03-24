@@ -42,6 +42,7 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.AsciiLowerCaseSet;
 import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.compression.CompressionPool;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.slf4j.Logger;
@@ -875,42 +876,46 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      * Gets the maximum number of Deflaters that the DeflaterPool can hold.
      *
      * @return the Deflater pool capacity
+     * @deprecated DeflaterPool should be configured externally and set as a bean on the server.
      */
+    @Deprecated
     public int getDeflaterPoolCapacity()
     {
-        return _deflaterPool.getCapacity();
+        return (_deflaterPool == null) ? CompressionPool.DEFAULT_CAPACITY : _deflaterPool.getCapacity();
     }
 
     /**
      * Sets the maximum number of Deflaters that the DeflaterPool can hold.
+     * @deprecated DeflaterPool should be configured externally and set as a bean on the server.
      */
+    @Deprecated
     public void setDeflaterPoolCapacity(int capacity)
     {
         if (isStarted())
             throw new IllegalStateException(getState());
-
-        _deflaterPool.setCapacity(capacity);
     }
 
     /**
-     * Gets the maximum number of Inflators that the DeflaterPool can hold.
+     * Gets the maximum number of Inflators that the InflaterPool can hold.
      *
      * @return the Deflater pool capacity
+     * @deprecated InflaterPool should be configured externally and set as a bean on the server.
      */
+    @Deprecated
     public int getInflaterPoolCapacity()
     {
-        return _inflaterPool.getCapacity();
+        return (_inflaterPool == null) ? CompressionPool.DEFAULT_CAPACITY : _inflaterPool.getCapacity();
     }
 
     /**
-     * Sets the maximum number of Inflators that the DeflaterPool can hold.
+     * Sets the maximum number of Inflators that the InflaterPool can hold.
+     * @deprecated InflaterPool should be configured externally and set as a bean on the server.
      */
+    @Deprecated
     public void setInflaterPoolCapacity(int capacity)
     {
         if (isStarted())
             throw new IllegalStateException(getState());
-
-        _inflaterPool.setCapacity(capacity);
     }
 
     @Override
