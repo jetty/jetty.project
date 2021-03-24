@@ -1,4 +1,4 @@
-[optional]
+[after]
 optional
 
 [lib]

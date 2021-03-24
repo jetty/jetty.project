@@ -6,7 +6,7 @@ Example of a module
 [depend]
 base
 
-[optional]
+[after]
 optional
 
 [lib]

@@ -1,7 +1,7 @@
 [xml]
 etc/t.xml
 
-[optional]
+[after]
 main
 
 [ini]

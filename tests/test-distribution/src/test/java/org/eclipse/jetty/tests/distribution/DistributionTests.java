@@ -768,4 +768,95 @@ public class DistributionTests extends AbstractJettyHomeTest
             }
         }
     }
+
+    @Test
+    public void testBeforeDirectiveInModule() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        String[] args1 = {
+            "--add-modules=https,test-keystore"
+        };
+
+        try (JettyHomeTester.Run run1 = distribution.start(args1))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            Path jettyBase = run1.getConfig().getJettyBase();
+
+            Path jettyBaseEtc = jettyBase.resolve("etc");
+            Files.createDirectories(jettyBaseEtc);
+            Path sslPatchXML = jettyBaseEtc.resolve("ssl-patch.xml");
+            String nextProtocol = "fcgi/1.0";
+            String xml = "" +
+                "<?xml version=\"1.0\"?>" +
+                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://www.eclipse.org/jetty/configure_10_0.dtd\">" +
+                "<Configure id=\"sslConnector\" class=\"org.eclipse.jetty.server.ServerConnector\">" +
+                "  <Call name=\"addIfAbsentConnectionFactory\">" +
+                "    <Arg>" +
+                "      <New class=\"org.eclipse.jetty.server.SslConnectionFactory\">" +
+                "        <Arg name=\"next\">" + nextProtocol + "</Arg>" +
+                "        <Arg name=\"sslContextFactory\"><Ref refid=\"sslContextFactory\"/></Arg>" +
+                "      </New>" +
+                "    </Arg>" +
+                "  </Call>" +
+                "  <Call name=\"addConnectionFactory\">" +
+                "    <Arg>" +
+                "      <New class=\"org.eclipse.jetty.fcgi.server.ServerFCGIConnectionFactory\">" +
+                "        <Arg><Ref refid=\"sslHttpConfig\" /></Arg>" +
+                "      </New>" +
+                "    </Arg>" +
+                "  </Call>" +
+                "</Configure>";
+            Files.write(sslPatchXML, List.of(xml), StandardOpenOption.CREATE);
+
+            Path jettyBaseModules = jettyBase.resolve("modules");
+            Files.createDirectories(jettyBaseModules);
+            Path sslPatchModule = jettyBaseModules.resolve("ssl-patch.mod");
+            String module = "" +
+                "[depends]\n" +
+                "fcgi\n" +
+                "\n" +
+                "[before]\n" +
+                "https\n" +
+                "http2\n" + // http2 is not explicitly enabled.
+                "\n" +
+                "[after]\n" +
+                "ssl\n" +
+                "\n" +
+                "[xml]\n" +
+                "etc/ssl-patch.xml\n";
+            Files.write(sslPatchModule, List.of(module), StandardOpenOption.CREATE);
+
+            String[] args2 = {
+                "--add-modules=ssl-patch"
+            };
+
+            try (JettyHomeTester.Run run2 = distribution.start(args2))
+            {
+                assertTrue(run2.awaitFor(10, TimeUnit.SECONDS));
+                assertEquals(0, run2.getExitValue());
+
+                int port = distribution.freePort();
+                try (JettyHomeTester.Run run3 = distribution.start("jetty.http.port=" + port))
+                {
+                    assertTrue(run3.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+
+                    // Check for the protocol order: fcgi must be after ssl and before http.
+                    assertTrue(run3.getLogs().stream()
+                        .anyMatch(log -> log.contains("(ssl, fcgi/1.0, http/1.1)")));
+
+                    // Protocol "h2" must not be enabled because the
+                    // http2 Jetty module was not explicitly enabled.
+                    assertFalse(run3.getLogs().stream()
+                        .anyMatch(log -> log.contains("h2")));
+                }
+            }
+        }
+    }
 }

@@ -198,16 +198,51 @@ Circular dependencies are not allowed.
 
 The order of the enabled modules is used to determine the processing of the configuration, for example the order of processing of the xref:og-modules-directive-files[+[files]+] section, the order of processing of XML files defined in the xref:og-modules-directive-xml[+[xml]+] section, etc.
 
-[[og-modules-directive-optional]]
-===== [optional]
+[[og-modules-directive-after]]
+===== [after]
 
-A list of module names that this module depends on, if they are explicitly enabled.
+This directive indicates that this module is ordered after the listed module names, if they are enabled.
 
-For example, the module `https` has an optional dependency on `http2`.
-Enabling the `https` modules _does not_ enable the `http2` module.
+For example, module `https` is `[after]` module `http2`.
+Enabling the `https` module _does not_ enable the `http2` module.
 
-However, if the `http2` module is explicitly enabled, then the `https` module depends on it, and therefore the `http2` module is xref:og-modules-directive-depends[sorted] _before_ the `https` module.
-In this way, you are guaranteed that the `http2` module is processed before the `https` module.
+However, if the `http2` module is enabled (explicitly or transitively), then the `https` module is xref:og-modules-directive-depends[sorted] _after_ the `http2` module.
+In this way, you are guaranteed that the `https` module is processed after the `http2` module.
+
+[[og-modules-directive-before]]
+===== [before]
+
+This directive indicates that this module is ordered before the listed module names, if they are enabled.
+
+One use of this directive is to create a prerequisite module without the need to modify the `depends` directive of an existing module.
+For example, to create a custom `org.eclipse.jetty.server.Server` subclass instance to be used by the standard `server` module, without modifying the existing `server.mod` file nor the `jetty.xml` file that it uses. This can be achieved by creating the `custom-server` xref:og-modules-custom[Jetty custom module]:
+
+.custom-server.mod
+----
+[description]
+This module creates a custom Server subclass instance.
+
+[before]
+server
+
+[xml]
+etc/custom-server.xml
+----
+
+The `custom-server.xml` file is the following:
+
+.custom-server.xml
+[source,xml]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<Configure id="Server" class="com.acme.server.CustomJettyServer">
+</Configure>
+----
+
+The presence of the `[before]` directive in `custom-server.mod` causes the processing of the `custom-server.xml` file to happen before the processing of the standard `jetty.xml` file referenced by the standard `server.mod` Jetty module.
+
+Thus, the instance assigned to the `Server` identifier is your custom `com.acme.server.CustomJettyServer` instance from the  `custom-server.xml` file; this instance is then used while processing the `jetty.xml` file.
 
 [[og-modules-directive-files]]
 ===== [files]

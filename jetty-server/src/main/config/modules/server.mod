@@ -3,7 +3,7 @@ Enables and configures the Jetty server.
 This module does not enable any network protocol support.
 To enable a specific network protocol such as HTTP/1.1, you must enable the correspondent Jetty module.
 
-[optional]
+[after]
 jvm
 ext
 resources
