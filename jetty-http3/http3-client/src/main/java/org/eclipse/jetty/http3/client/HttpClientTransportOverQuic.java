@@ -71,7 +71,7 @@ public class HttpClientTransportOverQuic extends AbstractHttpClientTransport
         {
             HttpClient httpClient = getHttpClient();
             int maxConnections = httpClient.getMaxConnectionsPerDestination();
-            return new MultiplexConnectionPool(destination, maxConnections, destination, httpClient.getMaxRequestsQueuedPerDestination());
+            return new MultiplexConnectionPool(destination, maxConnections, destination, 1);
         });
     }
 
