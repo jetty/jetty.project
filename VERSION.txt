@@ -213,7 +213,7 @@ jetty-11.0.0.beta1 - 10 July 2020
    SETTINGS Frame.
  + 4903 Give better errors for non public Websocket Endpoints
  + 4904 WebsocketClient creates more connections than needed
- + 4907 
+ + 4907
    org.eclipse.jetty.websocket.tests.SuspendResumeTest#testSuspendAfterClose
  + 4920 Restore ability to delete sessions on stop
  + 4921 Quickstart run improperly runs dynamically added context initializers
@@ -235,6 +235,41 @@ jetty-11.0.0.beta1 - 10 July 2020
  + 5018 WebSocketClient upgrade request timeout not configurable
 
 jetty-11.0.0-alpha0 - 30 May 2020
+
+jetty-10.0.2 - 25 March 2021
+ + 4275 Path Normalization/Traversal - Context Matching
+ + 5828 Allow to create a WebSocketContainer passing HttpClient
+ + 5832 Ctrl-C after jetty:run produces NoClassDefFoundError
+ + 5835 Review Durable Filters, Servlets and Listeners
+ + 5977 Cache-Control header set by a filter is override by the value from
+   DefaultServlet configuration
+ + 5994 QueuedThreadPool "free" threads
+ + 5996 ERROR : No module found to provide logback-impl for
+   logback-access{enabled}
+ + 5999 HttpURI ArrayIndexOutOfBounds
+ + 6001 Ambiguous URI legacy compliance mode
+ + 6008 Allow absolute paths to be provided in start.ini for request log
+   directory.
+ + 6011 OSGi Cannot start Jetty with osgi.boot - Configurations add wrong
+   method taken
+ + 6020 Review Jetty Maven Plugin scanning defaults
+ + 6021 Standardize Path resolution in XmlConfiguration
+ + 6024 Error starting jetty-10: Provider
+   org.eclipse.jetty.websocket.javax.client.JavaxWebSocketShutdownContainer not
+   found
+ + 6026 the jvm DEBUG flag is not working org.eclipse.jetty.LEVEL=DEBUG
+ + 6034 SslContextFactory may select a wildcard certificate during SNI
+   selection when a more specific SSL certificate is present
+ + 6037 Review logging modules for j.u.l.
+ + 6050 Websocket: NotUtf8Exception after upgrade 9.4.35 -> 9.4.36 or newer
+ + 6063 Allow override of hazelcast version when using module
+ + 6072 jetty server high CPU when client send data length > 17408
+ + 6076 Embedded Jetty throws null pointer exception
+ + 6082 SslConnection compacting
+ + 6085 Jetty keeps Sessions in use after "Duplicate valid session cookies"
+   Message
+ + 6101 Normalise ambiguous URIs
+ + 6102 Exclude webapps directory from deployment scan
 
 jetty-10.0.1 - 19 February 2021
  + 1673 jetty-demo/etc/keystore should not be distributed
