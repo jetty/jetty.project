@@ -1,4 +1,13 @@
-jetty-9.4.39-SNAPSHOT
+jetty-9.4.39.v20210325 - 25 March 2021
+ + 6034 SslContextFactory may select a wildcard certificate during SNI
+   selection when a more specific SSL certificate is present
+ + 6050 Websocket: NotUtf8Exception after upgrade 9.4.35 -> 9.4.36 or newer
+ + 6052 Cleanup TypeUtil and ModuleLocation to allow jetty-client/hybrid to
+   work on Android
+ + 6063 Allow override of hazelcast version when using module
+ + 6072 jetty server high CPU when client send data length > 17408
+ + 6085 Jetty keeps Sessions in use after "Duplicate valid session cookies"
+   Message
 
 jetty-9.4.38.v20210224 - 24 February 2021
  + 4275 Path Normalization/Traversal - Context Matching
