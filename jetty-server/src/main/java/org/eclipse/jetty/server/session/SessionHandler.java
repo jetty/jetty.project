@@ -1674,8 +1674,7 @@ public class SessionHandler extends ScopedHandler
                             if (s != null && isValid(s))
                             {
                                 //associate it with the request so its reference count is decremented as the
-                                //session exits
-                                //try this session id
+                                //request exits
                                 requestedSessionId = id;
                                 session = s;
                                 baseRequest.enterSession(session);
@@ -1713,8 +1712,11 @@ public class SessionHandler extends ScopedHandler
                                     throw new BadMessageException("Duplicate valid session cookies: " + requestedSessionId + " ," + id);
                                 }
                             }
-                            else if (LOG.isDebugEnabled())
-                                LOG.debug("Duplicate valid session cookie id: {}", id);
+                            else
+                            {
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("Duplicate valid session cookie id: {}", id);
+                            }
                         }
                     }
                 }
