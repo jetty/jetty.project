@@ -1,4 +1,14 @@
-jetty-9.4.39-SNAPSHOT
+jetty-9.4.39.v20210325 - 25 March 2021
+ + 6034 SslContextFactory may select a wildcard certificate during SNI
+   selection when a more specific SSL certificate is present
+ + 6050 Websocket: NotUtf8Exception after upgrade 9.4.35 -> 9.4.36 or newer
+ + 6052 Cleanup TypeUtil and ModuleLocation to allow jetty-client/hybrid to
+   work on Android
+ + 6063 Allow override of hazelcast version when using module
+ + 6072 jetty server high CPU when client send data length > 17408
+ + 6085 Jetty keeps Sessions in use after "Duplicate valid session cookies"
+   Message
+ + 6063 Allow override of hazelcast version when using module
 
 jetty-9.4.38.v20210224 - 24 February 2021
  + 4275 Path Normalization/Traversal - Context Matching
@@ -174,7 +184,8 @@ jetty-9.4.30.v20200611 - 11 June 2020
  + 4923 SecureRequestCustomizer.SslAttributes does not cache cert chain like
    before
  + 4929 HttpClient: HttpCookieStore.Empty prevents sending cookies
- + 4936 Response header overflow leads to buffer corruptions - Resolves CVE-2019-17638
+ + 4936 Response header overflow leads to buffer corruptions - Resolves
+   CVE-2019-17638
 
 jetty-9.4.29.v20200521 - 21 May 2020
  + 2188 Lock contention creating HTTP/2 streams
@@ -401,7 +412,8 @@ jetty-9.4.22.v20191022 - 22 October 2019
    inclusion of sessionid
 
 jetty-9.4.21.v20190926 - 26 September 2019
- + Includes fixes for CVE-2019-9511, CVE-2019-9512, CVE-2019-9514, CVE-2019-9515, CVE-2019-9516, and CVE-2019-9518
+ + Includes fixes for CVE-2019-9511, CVE-2019-9512, CVE-2019-9514,
+   CVE-2019-9515, CVE-2019-9516, and CVE-2019-9518
  + 97 Permanent UnavailableException thrown during servlet request handling
    should cause servlet destroy
  + 137 Support OAuth
@@ -547,8 +559,10 @@ jetty-9.4.18.v20190429 - 29 April 2019
 jetty-9.4.17.v20190418 - 18 April 2019
  + 2140 Infinispan and hazelcast changes to scavenge zombie expired sessions
  + 3464 Split SslContextFactory into Client and Server
- + 3549 Directory Listing on Windows reveals Resource Base path - Resolves CVE-2019-10246
- + 3555 DefaultHandler Reveals Base Resource Path of each Context - Resolves CVE-2019-10247
+ + 3549 Directory Listing on Windows reveals Resource Base path - Resolves
+   CVE-2019-10246
+ + 3555 DefaultHandler Reveals Base Resource Path of each Context - Resolves
+   CVE-2019-10247
 
 jetty-9.4.16.v20190411 - 11 April 2019
  + 1861 Limit total bytes pooled by ByteBufferPools
@@ -556,7 +570,8 @@ jetty-9.4.16.v20190411 - 11 April 2019
  + 3159 WebSocket permessage-deflate RSV1 validity check
  + 3274 OSGi versions of java.base classes in
    org.apache.felix:org.osgi.foundation:jar conflicts with new rules on Java 9+
- + 3319 Modernize Directory Listing: HTML5 and Sorting - Resolves CVE-2019-10241
+ + 3319 Modernize Directory Listing: HTML5 and Sorting - Resolves
+   CVE-2019-10241
  + 3361 HandlerCollection.addHandler is lacking synchronization
  + 3373 OutOfMemoryError: Java heap space in GZIPContentDecoder
  + 3389 Websockets jsr356 willDecode not invoked during decoding
@@ -629,8 +644,10 @@ jetty-9.3.28.v20191105 - 05 November 2019
  + 4217 SslConnection.DecryptedEnpoint.flush eternal busy loop
 
 jetty-9.3.27.v20190418 - 18 April 2019
- + 3549 Directory Listing on Windows reveals Resource Base path - Resolves CVE-2019-10246
- + 3555 DefaultHandler Reveals Base Resource Path of each Context - Resolves CVE-2019-10247
+ + 3549 Directory Listing on Windows reveals Resource Base path - Resolves
+   CVE-2019-10246
+ + 3555 DefaultHandler Reveals Base Resource Path of each Context - Resolves
+   CVE-2019-10247
 
 jetty-9.3.26.v20190403 - 03 April 2019
  + 2954 Improve cause reporting for HttpClient failures
@@ -644,11 +661,14 @@ jetty-9.2.29.v20191105 - 05 November 2019
  + 4217 SslConnection.DecryptedEnpoint.flush eternal busy loop
 
 jetty-9.2.28.v20190418 - 18 April 2019
- + 3549 Directory Listing on Windows reveals Resource Base path - Resolves CVE-2019-10246
- + 3555 DefaultHandler Reveals Base Resource Path of each Context - Resolves CVE-2019-10247
+ + 3549 Directory Listing on Windows reveals Resource Base path - Resolves
+   CVE-2019-10246
+ + 3555 DefaultHandler Reveals Base Resource Path of each Context - Resolves
+   CVE-2019-10247
 
 jetty-9.2.27.v20190403 - 03 April 2019
- + 3319 Refactored Directory Listing to modernize and avoid XSS - Resolves CVE-2019-10241
+ + 3319 Refactored Directory Listing to modernize and avoid XSS - Resolves
+   CVE-2019-10241
 
 jetty-9.4.14.v20181114 - 14 November 2018
  + 3097 Duplicated programmatic Servlet Listeners causing duplicate calls
@@ -11358,31 +11378,24 @@ jetty-1.1
 jetty-1.0.1
  + Bug fixes
 
-jetty-1.0 - Jan 1998
+jetty-1.0 - 01 January 1998
  + MBServlerV5 renamed to Jetty
  + First release in com.mortbay package structure
- + Included Util, JDBC, HTML, HTTP, Jetty
-
-MBServler-V4.5Beta
-  + Using It JSDK1.0Beta API
-  + Improved HTML package.
-  + Filter mechanism inspired by JigSaw
-
-MBServler-V4
+ + Included Util, JDBC, HTML, HTTP, Jetty MBServler-V4.5Beta + Using It
+   JSDK1.0Beta API + Improved HTML package. + Filter mechanism inspired by
+   JigSaw MBServler-V4
  + JeevesA1.2 servlet API
  + Better configuration and setup for embedding in other Java applications.
- + Util classes from Intelligent Switched Systems.
-
-MBServler-V1 / IssueTracker 3.1
- + The IssueTracker HTTP server has been separated from the Issue Tracker application and updated to the java.servlet interface. It is now called MBServler
- + JDBC module
-
-IssueTracker-2.0
+ + Util classes from Intelligent Switched Systems. MBServler-V1 / IssueTracker
+   3.1
+ + The IssueTracker HTTP server has been separated from the Issue Tracker
+   application and updated to the java.servlet interface. It is now called
+   MBServler
+ + JDBC module IssueTracker-2.0
  + Faster HTTP server
  + Basic authentication
- + User management
-
-IssueTracker-1.0 - Jan 1995
+ + User management IssueTracker-1.0 - Jan 1995
  + Won the Australian Java Programming Contest!
  + HTTP Server
  + Issue tracking application
+
