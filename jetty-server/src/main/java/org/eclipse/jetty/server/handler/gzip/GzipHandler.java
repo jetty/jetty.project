@@ -203,9 +203,30 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     protected void doStart() throws Exception
     {
         Server server = getServer();
-        _inflaterPool = InflaterPool.ensurePool(server);
-        _deflaterPool = DeflaterPool.ensurePool(server);
+        if (_inflaterPool == null)
+        {
+            _inflaterPool = InflaterPool.ensurePool(server);
+            addBean(_inflaterPool);
+        }
+        if (_deflaterPool == null)
+        {
+            _deflaterPool = DeflaterPool.ensurePool(server);
+            addBean(_deflaterPool);
+        }
+
         super.doStart();
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+
+        removeBean(_inflaterPool);
+        _inflaterPool = null;
+
+        removeBean(_deflaterPool);
+        _deflaterPool = null;
     }
 
     /**
@@ -873,10 +894,58 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     }
 
     /**
+     * Get the DeflaterPool being used. The default value of this is null before starting, but after starting if it is null
+     * it will be set to the default DeflaterPool which is stored as a bean on the server.
+     * @return the DeflaterPool being used.
+     */
+    public DeflaterPool getDeflaterPool()
+    {
+        return _deflaterPool;
+    }
+
+    /**
+     * Get the InflaterPool being used. The default value of this is null before starting, but after starting if it is null
+     * it will be set to the default InflaterPool which is stored as a bean on the server.
+     * @return the DeflaterPool being used.
+     */
+    public InflaterPool getInflaterPool()
+    {
+        return _inflaterPool;
+    }
+
+    /**
+     * Set the DeflaterPool to be used. This should be called before starting.
+     * If this value is null when starting the default pool will be used from the server.
+     * @param deflaterPool the DeflaterPool to use.
+     */
+    public void setDeflaterPool(DeflaterPool deflaterPool)
+    {
+        if (isStarted())
+            throw new IllegalStateException(getState());
+
+        updateBean(_deflaterPool, deflaterPool);
+        _deflaterPool = deflaterPool;
+    }
+
+    /**
+     * Set the InflaterPool to be used. This should be called before starting.
+     * If this value is null when starting the default pool will be used from the server.
+     * @param inflaterPool the InflaterPool to use.
+     */
+    public void setInflaterPool(InflaterPool inflaterPool)
+    {
+        if (isStarted())
+            throw new IllegalStateException(getState());
+
+        updateBean(_inflaterPool, inflaterPool);
+        _inflaterPool = inflaterPool;
+    }
+
+    /**
      * Gets the maximum number of Deflaters that the DeflaterPool can hold.
      *
      * @return the Deflater pool capacity
-     * @deprecated DeflaterPool should be configured externally and set as a bean on the server.
+     * @deprecated for custom DeflaterPool settings use {@link #setDeflaterPool(DeflaterPool)}.
      */
     @Deprecated
     public int getDeflaterPoolCapacity()
@@ -886,21 +955,20 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
     /**
      * Sets the maximum number of Deflaters that the DeflaterPool can hold.
-     * @deprecated DeflaterPool should be configured externally and set as a bean on the server.
+     * @deprecated for custom DeflaterPool settings use {@link #setDeflaterPool(DeflaterPool)}.
      */
     @Deprecated
     public void setDeflaterPoolCapacity(int capacity)
     {
-        LOG.warn("DeflaterPool capacity not changed. DeflaterPool should be configured externally and set as a bean on the Server.");
-        if (isStarted())
-            throw new IllegalStateException(getState());
+        if (_deflaterPool != null)
+            _deflaterPool.setCapacity(capacity);
     }
 
     /**
-     * Gets the maximum number of Inflators that the InflaterPool can hold.
+     * Gets the maximum number of Inflaters that the InflaterPool can hold.
      *
-     * @return the Deflater pool capacity
-     * @deprecated InflaterPool should be configured externally and set as a bean on the server.
+     * @return the Inflater pool capacity
+     * @deprecated for custom InflaterPool settings use {@link #setInflaterPool(InflaterPool)}.
      */
     @Deprecated
     public int getInflaterPoolCapacity()
@@ -909,15 +977,14 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     }
 
     /**
-     * Sets the maximum number of Inflators that the InflaterPool can hold.
-     * @deprecated InflaterPool should be configured externally and set as a bean on the server.
+     * Sets the maximum number of Inflaters that the InflaterPool can hold.
+     * @deprecated for custom InflaterPool settings use {@link #setInflaterPool(InflaterPool)}.
      */
     @Deprecated
     public void setInflaterPoolCapacity(int capacity)
     {
-        LOG.warn("InflaterPool capacity not changed. InflaterPool should be configured externally and set as a bean on the Server.");
-        if (isStarted())
-            throw new IllegalStateException(getState());
+        if (_inflaterPool != null)
+            _inflaterPool.setCapacity(capacity);
     }
 
     @Override
