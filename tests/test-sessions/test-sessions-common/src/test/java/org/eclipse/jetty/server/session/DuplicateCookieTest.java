@@ -324,7 +324,7 @@ public class DuplicateCookieTest
     }
 
     @Test
-    public void testMulitpleIdenticalSessionCookies() throws Exception
+    public void testMultipleIdenticalSessionCookies() throws Exception
     {
         String contextPath = "";
         String servletMapping = "/server";
@@ -363,6 +363,11 @@ public class DuplicateCookieTest
 
             //check that all valid sessions have their request counts decremented correctly after the request, back to 0
             assertEquals(0, s1234.getRequests());
+        }
+        finally
+        {
+            server1.stop();
+            client.stop();
         }
     }
 
