@@ -34,6 +34,7 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 @ManagedObject("The QUIC client transport")
@@ -42,6 +43,10 @@ public class HttpClientTransportOverQuic extends AbstractHttpClientTransport
     private final ClientConnectionFactory connectionFactory = new HttpClientConnectionFactory();
     private final ClientQuicConnector connector;
     private final Origin.Protocol protocol;
+    private final QuicheConfig quicheConfig;
+    private int initialSessionRecvWindow = 16 * 1024 * 1024;
+    private int initialStreamRecvWindow = 8 * 1024 * 1024;
+    private int maxConcurrentPushedStreams = 32;
 
     public HttpClientTransportOverQuic()
     {
@@ -51,18 +56,8 @@ public class HttpClientTransportOverQuic extends AbstractHttpClientTransport
     public HttpClientTransportOverQuic(ClientConnectionFactory.Info... factoryInfos)
     {
         List<String> protocolNames = Arrays.stream(factoryInfos).flatMap(info -> info.getProtocols(true).stream()).collect(Collectors.toList());
-
-        // TODO make the QuicheConfig configurable
-        QuicheConfig quicheConfig = new QuicheConfig();
+        quicheConfig = new QuicheConfig();
         quicheConfig.setApplicationProtos(protocolNames.toArray(new String[0]));
-        quicheConfig.setMaxIdleTimeout(5000L);
-        quicheConfig.setInitialMaxData(10000000L);
-        quicheConfig.setInitialMaxStreamDataBidiLocal(10000000L);
-        quicheConfig.setInitialMaxStreamDataUni(10000000L);
-        quicheConfig.setInitialMaxStreamsBidi(100L);
-        quicheConfig.setInitialMaxStreamsUni(100L);
-        quicheConfig.setDisableActiveMigration(true);
-        quicheConfig.setVerifyPeer(false);
 
         protocol = new Origin.Protocol(protocolNames, false);
         connector = new ClientQuicConnector(quicheConfig);
@@ -73,6 +68,57 @@ public class HttpClientTransportOverQuic extends AbstractHttpClientTransport
             int maxConnections = httpClient.getMaxConnectionsPerDestination();
             return new MultiplexConnectionPool(destination, maxConnections, destination, 1);
         });
+    }
+
+    @ManagedAttribute("The initial size of session's flow control receive window")
+    public int getInitialSessionRecvWindow()
+    {
+        return initialSessionRecvWindow;
+    }
+
+    public void setInitialSessionRecvWindow(int initialSessionRecvWindow)
+    {
+        this.initialSessionRecvWindow = initialSessionRecvWindow;
+    }
+
+    @ManagedAttribute("The initial size of stream's flow control receive window")
+    public int getInitialStreamRecvWindow()
+    {
+        return initialStreamRecvWindow;
+    }
+
+    public void setInitialStreamRecvWindow(int initialStreamRecvWindow)
+    {
+        this.initialStreamRecvWindow = initialStreamRecvWindow;
+    }
+
+    @ManagedAttribute("The max number of concurrent pushed streams")
+    public int getMaxConcurrentPushedStreams()
+    {
+        return maxConcurrentPushedStreams;
+    }
+
+    public void setMaxConcurrentPushedStreams(int maxConcurrentPushedStreams)
+    {
+        this.maxConcurrentPushedStreams = maxConcurrentPushedStreams;
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        // TODO make these QuicheConfig settings configurable
+        quicheConfig.setDisableActiveMigration(true);
+        quicheConfig.setVerifyPeer(false);
+
+        // TODO review the meaning of those QuicheConfig settings and see if they match their HTTP2 equivalents
+        quicheConfig.setMaxIdleTimeout(getHttpClient().getIdleTimeout());
+        quicheConfig.setInitialMaxData((long)getInitialSessionRecvWindow());
+        quicheConfig.setInitialMaxStreamDataBidiLocal((long)getInitialStreamRecvWindow());
+        quicheConfig.setInitialMaxStreamDataUni((long)getInitialStreamRecvWindow());
+        quicheConfig.setInitialMaxStreamsBidi((long)getMaxConcurrentPushedStreams());
+        quicheConfig.setInitialMaxStreamsUni((long)getMaxConcurrentPushedStreams());
+
+        super.doStart();
     }
 
     @Override
