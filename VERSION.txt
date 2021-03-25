@@ -1,3 +1,5 @@
+jetty-9.4.40-SNAPSHOT
+
 jetty-9.4.39.v20210325 - 25 March 2021
  + 6034 SslContextFactory may select a wildcard certificate during SNI
    selection when a more specific SSL certificate is present
