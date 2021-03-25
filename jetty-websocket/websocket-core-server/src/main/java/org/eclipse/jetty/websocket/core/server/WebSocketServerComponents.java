@@ -14,10 +14,13 @@
 package org.eclipse.jetty.websocket.core.server;
 
 import javax.servlet.ServletContext;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
@@ -42,6 +45,22 @@ public class WebSocketServerComponents extends WebSocketComponents
         super(null, null, bufferPool, inflaterPool, deflaterPool);
     }
 
+    /**
+     * <p>
+     * This ensures a {@link WebSocketComponents} is available at the {@link ServletContext} attribute {@link #WEBSOCKET_COMPONENTS_ATTRIBUTE}.
+     * </p>
+     * <p>
+     * This should be called when the server is starting, usually by a {@link javax.servlet.ServletContainerInitializer}.
+     * </p>
+     * <p>
+     * Servlet context attributes can be set with {@link #WEBSOCKET_BUFFER_POOL_ATTRIBUTE}, {@link #WEBSOCKET_INFLATER_POOL_ATTRIBUTE}
+     * and {@link #WEBSOCKET_DEFLATER_POOL_ATTRIBUTE} to override the {@link ByteBufferPool}, {@link DeflaterPool} or
+     * {@link InflaterPool} used by the components, otherwise this will try to use the pools shared on the {@link Server}.
+     * </p>
+     * @param server the server.
+     * @param servletContext the ServletContext.
+     * @return the WebSocketComponents that was created or found on the ServletContext.
+     */
     public static WebSocketComponents ensureWebSocketComponents(Server server, ServletContext servletContext)
     {
         WebSocketComponents components = (WebSocketComponents)servletContext.getAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE);
@@ -60,9 +79,29 @@ public class WebSocketServerComponents extends WebSocketComponents
         if (bufferPool == null)
             bufferPool = server.getBean(ByteBufferPool.class);
 
-        components = new WebSocketServerComponents(inflaterPool, deflaterPool, bufferPool);
-        servletContext.setAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE, components);
-        return components;
+        WebSocketComponents serverComponents = new WebSocketServerComponents(inflaterPool, deflaterPool, bufferPool);
+
+        // These components may be managed by the server but not yet started.
+        // In this case we don't want them to be managed by the components as well.
+        if (server.isManaged(inflaterPool))
+            serverComponents.unmanage(inflaterPool);
+        if (server.isManaged(deflaterPool))
+            serverComponents.unmanage(deflaterPool);
+        if (server.isManaged(bufferPool))
+            serverComponents.unmanage(bufferPool);
+
+        servletContext.setAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE, serverComponents);
+        LifeCycle.start(serverComponents);
+        servletContext.addListener(new ServletContextListener()
+        {
+            @Override
+            public void contextDestroyed(ServletContextEvent sce)
+            {
+                LifeCycle.stop(serverComponents);
+            }
+        });
+
+        return serverComponents;
     }
 
     public static WebSocketComponents getWebSocketComponents(ServletContext servletContext)
