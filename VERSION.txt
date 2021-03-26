@@ -1,3 +1,5 @@
+jetty-10.0.3-SNAPSHOT
+
 jetty-10.0.2 - 26 March 2021
  + 4275 Path Normalization/Traversal - Context Matching
  + 5828 Allow to create a WebSocketContainer passing HttpClient
