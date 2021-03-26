@@ -73,16 +73,16 @@ public class ClientQuicConnection extends QuicConnection
     }
 
     @Override
-    protected void onClose(QuicheConnectionId quicheConnectionId, QuicSession session)
+    protected void closeSession(QuicheConnectionId quicheConnectionId, QuicSession session, Throwable x)
     {
-        super.onClose(quicheConnectionId, session);
+        super.closeSession(quicheConnectionId, session, x);
 
         InetSocketAddress remoteAddress = session.getRemoteAddress();
         if (pendingSessions.remove(remoteAddress) != null)
         {
             Promise<?> promise = (Promise<?>)context.get(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY);
             if (promise != null)
-                promise.failed(new IOException("QUIC connection refused"));
+                promise.failed(x);
         }
     }
 

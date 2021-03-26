@@ -232,6 +232,14 @@ public abstract class QuicSession
 
     public void close()
     {
+        if (quicheConnectionId == null)
+            close(new IOException("Quic connection refused"));
+        else
+            close(new IOException("Quic connection closed"));
+    }
+
+    public void close(Throwable x)
+    {
         if (LOG.isDebugEnabled())
             LOG.debug("closing QUIC session {}", this);
         try
@@ -239,7 +247,7 @@ public abstract class QuicSession
             endpoints.values().forEach(AbstractEndPoint::close);
             endpoints.clear();
             flusher.close();
-            connection.onClose(quicheConnectionId, this);
+            connection.closeSession(quicheConnectionId, this, x);
             LifeCycle.stop(strategy);
         }
         finally
@@ -300,15 +308,7 @@ public abstract class QuicSession
             else
                 timeout.schedule(nextTimeoutInMs, TimeUnit.MILLISECONDS);
             if (drained == 0)
-            {
-                if (quicheConnection.isConnectionClosed())
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("quiche connection is in closed state");
-                    QuicSession.this.close();
-                }
-                return Action.IDLE;
-            }
+                return quicheConnection.isConnectionClosed() ? Action.SUCCEEDED : Action.IDLE;
             BufferUtil.flipToFlush(cipherBuffer, pos);
             connection.write(this, remoteAddress, cipherBuffer);
             return Action.SCHEDULED;
@@ -322,9 +322,18 @@ public abstract class QuicSession
         }
 
         @Override
+        protected void onCompleteSuccess()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("quiche connection is in closed state");
+            QuicSession.this.close();
+        }
+
+        @Override
         protected void onCompleteFailure(Throwable cause)
         {
             byteBufferPool.release(cipherBuffer);
+            QuicSession.this.close(cause);
         }
     }
 }

@@ -59,8 +59,6 @@ public class ClientQuicConnector extends ClientConnector
     @Override
     protected void doStart() throws Exception
     {
-        //TODO: when the ALPN protos aren't set, the client freezes. Investigate & fix.
-
         //TODO: what is the best place to create the quiche config?
 
         // TODO detect the ALPN protos
