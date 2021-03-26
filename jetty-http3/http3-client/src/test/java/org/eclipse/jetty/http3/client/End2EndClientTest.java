@@ -26,13 +26,12 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http3.server.ServerQuicConnector;
-import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,10 +49,7 @@ public class End2EndClientTest
     {
         server = new Server();
 
-        HttpConfiguration config = new HttpConfiguration();
-        config.setHttpCompliance(HttpCompliance.LEGACY); // enable HTTP/0.9
-        HttpConnectionFactory connectionFactory = new HttpConnectionFactory(config);
-
+        HttpConnectionFactory connectionFactory = new HttpConnectionFactory();
         ServerQuicConnector connector = new ServerQuicConnector(server, connectionFactory);
         connector.setPort(8443);
         server.addConnector(connector);
@@ -81,16 +77,10 @@ public class End2EndClientTest
     }
 
     @AfterEach
-    public void tearDown() throws Exception
+    public void tearDown()
     {
-        try
-        {
-            server.stop();
-        }
-        finally
-        {
-            client.stop();
-        }
+        LifeCycle.stop(server);
+        LifeCycle.stop(client);
     }
 
     @Test
