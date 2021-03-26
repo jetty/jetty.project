@@ -42,13 +42,11 @@ public class ClientQuicConnection extends QuicConnection
     private static final Logger LOG = LoggerFactory.getLogger(ClientQuicConnection.class);
 
     private final Map<InetSocketAddress, QuicSession> pendingSessions = new ConcurrentHashMap<>();
-    private final QuicheConfig quicheConfig;
     private final Map<String, Object> context;
 
-    public ClientQuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endp, QuicheConfig quicheConfig, Map<String, Object> context)
+    public ClientQuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endp, Map<String, Object> context)
     {
         super(executor, scheduler, byteBufferPool, endp);
-        this.quicheConfig = quicheConfig;
         this.context = context;
     }
 
@@ -61,10 +59,19 @@ public class ClientQuicConnection extends QuicConnection
         {
             InetSocketAddress remoteAddress = (InetSocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
             HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
-            List<String> protocols = destination.getOrigin().getProtocol().getProtocols();
 
-            // TODO: create quiche config here, pulling the config from somewhere else TBD (context?)
+            // TODO: pull the config settings from somewhere else TBD (context?)
+            QuicheConfig quicheConfig = new QuicheConfig();
+            List<String> protocols = destination.getOrigin().getProtocol().getProtocols();
             quicheConfig.setApplicationProtos(protocols.toArray(new String[0]));
+            quicheConfig.setDisableActiveMigration(true);
+            quicheConfig.setVerifyPeer(false);
+            quicheConfig.setMaxIdleTimeout(5000L);
+            quicheConfig.setInitialMaxData(10_000_000L);
+            quicheConfig.setInitialMaxStreamDataBidiLocal(10_000_000L);
+            quicheConfig.setInitialMaxStreamDataUni(10_000_000L);
+            quicheConfig.setInitialMaxStreamsBidi(100L);
+            quicheConfig.setInitialMaxStreamsUni(100L);
 
             QuicheConnection quicheConnection = QuicheConnection.connect(quicheConfig, remoteAddress);
             QuicSession session = new ClientQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), quicheConnection, this, remoteAddress, context);

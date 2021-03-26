@@ -27,7 +27,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.http3.common.QuicDatagramEndPoint;
-import org.eclipse.jetty.http3.quiche.QuicheConfig;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -39,11 +38,9 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ClientQuicConnector extends ClientConnector
+public class QuicClientConnector extends ClientConnector
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ClientQuicConnector.class);
-
-    private final QuicheConfig quicheConfig = new QuicheConfig();
+    private static final Logger LOG = LoggerFactory.getLogger(QuicClientConnector.class);
 
     @Override
     public boolean isConnectBlocking()
@@ -60,24 +57,6 @@ public class ClientQuicConnector extends ClientConnector
     public boolean isIntrinsicallySecure()
     {
         return true;
-    }
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        // TODO: move the creation of quiche config to ClientQuicConnection.onOpen()
-
-        // TODO make these QuicheConfig settings configurable
-        quicheConfig.setDisableActiveMigration(true);
-        quicheConfig.setVerifyPeer(false);
-        quicheConfig.setMaxIdleTimeout(5000L);
-        quicheConfig.setInitialMaxData(10_000_000L);
-        quicheConfig.setInitialMaxStreamDataBidiLocal(10_000_000L);
-        quicheConfig.setInitialMaxStreamDataUni(10_000_000L);
-        quicheConfig.setInitialMaxStreamsBidi(100L);
-        quicheConfig.setInitialMaxStreamsUni(100L);
-
-        super.doStart();
     }
 
     @Override
@@ -165,7 +144,7 @@ public class ClientQuicConnector extends ClientConnector
         @Override
         protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey)
         {
-            EndPoint endPoint = ClientQuicConnector.this.newEndPoint(channel, selector, selectionKey);
+            EndPoint endPoint = QuicClientConnector.this.newEndPoint(channel, selector, selectionKey);
             endPoint.setIdleTimeout(getIdleTimeout().toMillis());
             return endPoint;
         }
@@ -175,7 +154,7 @@ public class ClientQuicConnector extends ClientConnector
         {
             Connect connect = (Connect)attachment;
             Map<String, Object> contextMap = connect.getContext();
-            return new ClientQuicConnection(getExecutor(), getScheduler(), getByteBufferPool(), endPoint, quicheConfig, contextMap);
+            return new ClientQuicConnection(getExecutor(), getScheduler(), getByteBufferPool(), endPoint, contextMap);
         }
 
         @Override

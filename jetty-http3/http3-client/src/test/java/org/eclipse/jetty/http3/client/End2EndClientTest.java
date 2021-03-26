@@ -75,7 +75,7 @@ public class End2EndClientTest
 
         server.start();
 
-        HttpClientTransportOverHTTP transport = new HttpClientTransportOverHTTP(new ClientQuicConnector());
+        HttpClientTransportOverHTTP transport = new HttpClientTransportOverHTTP(new QuicClientConnector());
         client = new HttpClient(transport);
         client.start();
     }
