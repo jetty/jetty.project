@@ -60,7 +60,7 @@ public abstract class QuicConnection extends AbstractConnection
         return byteBufferPool;
     }
 
-    protected void onClose(QuicheConnectionId quicheConnectionId, QuicSession session)
+    protected void closeSession(QuicheConnectionId quicheConnectionId, QuicSession session, Throwable x)
     {
         if (quicheConnectionId != null)
             sessions.remove(quicheConnectionId);
