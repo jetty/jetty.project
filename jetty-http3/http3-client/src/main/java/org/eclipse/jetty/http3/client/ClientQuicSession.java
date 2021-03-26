@@ -24,6 +24,7 @@ import org.eclipse.jetty.http3.common.QuicStreamEndPoint;
 import org.eclipse.jetty.http3.quiche.QuicheConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -41,7 +42,7 @@ public class ClientQuicSession extends QuicSession
     @Override
     protected QuicStreamEndPoint createQuicStreamEndPoint(long streamId)
     {
-        ClientConnectionFactory connectionFactory = (ClientConnectionFactory)context.get(ClientQuicConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY);
+        ClientConnectionFactory connectionFactory = (ClientConnectionFactory)context.get(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY);
         QuicStreamEndPoint endPoint = new QuicStreamEndPoint(getScheduler(), this, streamId);
         Connection connection;
         try
