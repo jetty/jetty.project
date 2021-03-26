@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.client.HTTP2Client;
@@ -48,6 +49,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -904,6 +906,39 @@ public class DistributionTests extends AbstractJettyHomeTest
             assertTrue(Files.exists(jettyBase.resolve("resources/logback.xml")));
             // The jetty-logging.properties should be absent.
             assertFalse(Files.exists(jettyBase.resolve("resources/jetty-logging.properties")));
+        }
+    }
+
+    @Test
+    @EnabledForJreRange(min = JRE.JAVA_16)
+    public void testUnixDomain() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=unixdomain"))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            int maxUnixDomainPathLength = 108;
+            Path path = Files.createTempFile("unix", ".sock");
+            if (path.normalize().toAbsolutePath().toString().length() > maxUnixDomainPathLength)
+                path = Files.createTempFile(Path.of("/tmp"), "unix", ".sock");
+            assertTrue(Files.deleteIfExists(path));
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.unixdomain.path=" + path))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+
+                ClientConnector connector = new ClientConnector(ClientConnector.SocketChannelWithAddress.Factory.forUnixDomain(path));
+                client = new HttpClient(new HttpClientTransportDynamic(connector));
+                client.start();
+                ContentResponse response = client.GET("http://localhost/path");
+                assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+            }
         }
     }
 }

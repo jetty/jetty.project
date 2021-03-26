@@ -41,6 +41,8 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A {@link HttpClientTransport} that can dynamically switch among different application protocols.</p>
@@ -79,6 +81,8 @@ import org.eclipse.jetty.io.EndPoint;
  */
 public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTransport
 {
+    private static final Logger LOG = LoggerFactory.getLogger(HttpClientTransportDynamic.class);
+
     private final List<ClientConnectionFactory.Info> factoryInfos;
     private final List<String> protocols;
 

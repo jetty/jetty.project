@@ -159,7 +159,7 @@ public class HttpClient extends ContainerLifeCycle
     {
         this.transport = Objects.requireNonNull(transport);
         addBean(transport);
-        this.connector = ((AbstractHttpClientTransport)transport).getBean(ClientConnector.class);
+        this.connector = ((AbstractHttpClientTransport)transport).getContainedBeans(ClientConnector.class).stream().findFirst().orElseThrow();
         addBean(handlers);
         addBean(decoderFactories);
     }
@@ -549,24 +549,25 @@ public class HttpClient extends ContainerLifeCycle
         return new ArrayList<>(destinations.values());
     }
 
-    protected void send(final HttpRequest request, List<Response.ResponseListener> listeners)
+    protected void send(HttpRequest request, List<Response.ResponseListener> listeners)
     {
         HttpDestination destination = (HttpDestination)resolveDestination(request);
         destination.send(request, listeners);
     }
 
-    protected void newConnection(final HttpDestination destination, final Promise<Connection> promise)
+    protected void newConnection(HttpDestination destination, Promise<Connection> promise)
     {
+        // Multiple threads may access the map, especially with DEBUG logging enabled.
+        Map<String, Object> context = new ConcurrentHashMap<>();
+        context.put(ClientConnectionFactory.CLIENT_CONTEXT_KEY, HttpClient.this);
+        context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, destination);
+
         Origin.Address address = destination.getConnectAddress();
         resolver.resolve(address.getHost(), address.getPort(), new Promise<>()
         {
             @Override
             public void succeeded(List<InetSocketAddress> socketAddresses)
             {
-                // Multiple threads may access the map, especially with DEBUG logging enabled.
-                Map<String, Object> context = new ConcurrentHashMap<>();
-                context.put(ClientConnectionFactory.CLIENT_CONTEXT_KEY, HttpClient.this);
-                context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, destination);
                 connect(socketAddresses, 0, context);
             }
 
@@ -1225,7 +1226,7 @@ public class HttpClient extends ContainerLifeCycle
         @Override
         public Iterator<ContentDecoder.Factory> iterator()
         {
-            final Iterator<ContentDecoder.Factory> iterator = set.iterator();
+            Iterator<ContentDecoder.Factory> iterator = set.iterator();
             return new Iterator<>()
             {
                 @Override
