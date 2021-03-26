@@ -474,9 +474,9 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                     if (listener instanceof InheritedListener && b.isManaged() && b._bean instanceof Container)
                     {
                         if (b._bean instanceof ContainerLifeCycle)
-                            ((ContainerLifeCycle)b._bean).addBean(listener, false);
+                            Container.addBean(b._bean, listener, false);
                         else
-                            ((Container)b._bean).addBean(listener);
+                            Container.addBean(b._bean, listener);
                     }
                 }
             }
@@ -499,8 +499,8 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                 {
                     cl.beanRemoved(this, b._bean);
 
-                    if (listener instanceof InheritedListener && b.isManaged() && b._bean instanceof Container)
-                        ((Container)b._bean).removeBean(listener);
+                    if (listener instanceof InheritedListener && b.isManaged())
+                        Container.removeBean(b._bean, listener);
                 }
             }
             return true;
@@ -541,9 +541,9 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                     if (l instanceof InheritedListener)
                     {
                         if (bean._bean instanceof ContainerLifeCycle)
-                            ((ContainerLifeCycle)bean._bean).addBean(l, false);
+                            Container.addBean(bean._bean, l, false);
                         else
-                            ((Container)bean._bean).addBean(l);
+                            Container.addBean(bean._bean, l);
                     }
                 }
             }
@@ -579,7 +579,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                 for (Container.Listener l : _listeners)
                 {
                     if (l instanceof InheritedListener)
-                        ((Container)bean._bean).removeBean(l);
+                        Container.removeBean(bean._bean, l);
                 }
             }
             bean._managed = Managed.UNMANAGED;

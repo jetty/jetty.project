@@ -59,7 +59,7 @@ public class JakartaWebSocketClientContainerProvider extends ContainerProvider
      * @param httpClient a pre-configured {@link HttpClient} to be used by the implementation.
      * @see #getContainer()
      */
-    public WebSocketContainer getContainer(HttpClient httpClient)
+    public static WebSocketContainer getContainer(HttpClient httpClient)
     {
         JakartaWebSocketClientContainer clientContainer = new JakartaWebSocketClientContainer(httpClient);
         // See: https://github.com/eclipse-ee4j/websocket-api/issues/212

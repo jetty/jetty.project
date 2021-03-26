@@ -13,6 +13,7 @@
 
 package examples;
 
+import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
@@ -21,9 +22,11 @@ import jakarta.websocket.WebSocketContainer;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.jmx.MBeanContainer;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.websocket.jakarta.client.internal.JakartaWebSocketClientContainer;
+import org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketClientContainerProvider;
 
 public class SecureClientContainerExample
 {
@@ -76,9 +79,12 @@ public class SecureClientContainerExample
         clientConnector.setSslContextFactory(ssl);
 
         HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
-        JakartaWebSocketClientContainer clientContainer = new JakartaWebSocketClientContainer(httpClient);
-        clientContainer.addManaged(httpClient); // allow clientContainer to own httpClient (for start/stop lifecycle)
-        clientContainer.start();
+        WebSocketContainer clientContainer = JakartaWebSocketClientContainerProvider.getContainer(httpClient);
+
+        // Components can be added as a bean to the WebSocketContainer with the Container static method.
+        MBeanContainer mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        Container.addBean(clientContainer, mbeanContainer);
+
         return clientContainer;
     }
 }
