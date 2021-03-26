@@ -68,7 +68,7 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
     @Override
     public HttpDestination newHttpDestination(Origin origin)
     {
-        return new DuplexHttpDestination(getHttpClient(), origin);
+        return new DuplexHttpDestination(getHttpClient(), origin, getClientConnector().isIntrinsicallySecure());
     }
 
     @Override
