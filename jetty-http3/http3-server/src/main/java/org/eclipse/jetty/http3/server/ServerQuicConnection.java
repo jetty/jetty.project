@@ -38,11 +38,13 @@ public class ServerQuicConnection extends QuicConnection
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerQuicConnection.class);
 
+    private final QuicheConfig quicheConfig;
     private final Connector connector;
 
     protected ServerQuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endp, QuicheConfig quicheConfig, Connector connector)
     {
-        super(executor, scheduler, byteBufferPool, endp, quicheConfig);
+        super(executor, scheduler, byteBufferPool, endp);
+        this.quicheConfig = quicheConfig;
         this.connector = connector;
     }
 
@@ -57,7 +59,7 @@ public class ServerQuicConnection extends QuicConnection
     protected QuicSession createSession(InetSocketAddress remoteAddress, ByteBuffer cipherBuffer) throws IOException
     {
         ByteBufferPool byteBufferPool = getByteBufferPool();
-        QuicheConnection quicheConnection = QuicheConnection.tryAccept(getQuicheConfig(), new SimpleTokenValidator(remoteAddress), cipherBuffer);
+        QuicheConnection quicheConnection = QuicheConnection.tryAccept(quicheConfig, new SimpleTokenValidator(remoteAddress), cipherBuffer);
         if (quicheConnection == null)
         {
             ByteBuffer negotiationBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN, true);

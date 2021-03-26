@@ -21,7 +21,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.http3.quiche.QuicheConfig;
 import org.eclipse.jetty.http3.quiche.QuicheConnectionId;
 import org.eclipse.jetty.http3.quiche.ffi.LibQuiche;
 import org.eclipse.jetty.io.AbstractConnection;
@@ -42,15 +41,13 @@ public abstract class QuicConnection extends AbstractConnection
     private final ConcurrentMap<QuicheConnectionId, QuicSession> sessions = new ConcurrentHashMap<>();
     private final Scheduler scheduler;
     private final ByteBufferPool byteBufferPool;
-    private final QuicheConfig quicheConfig;
     private final Flusher flusher = new Flusher();
 
-    protected QuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endp, QuicheConfig quicheConfig)
+    protected QuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endp)
     {
         super(endp, executor);
         this.scheduler = scheduler;
         this.byteBufferPool = byteBufferPool;
-        this.quicheConfig = quicheConfig;
     }
 
     public Scheduler getScheduler()
@@ -61,11 +58,6 @@ public abstract class QuicConnection extends AbstractConnection
     public ByteBufferPool getByteBufferPool()
     {
         return byteBufferPool;
-    }
-
-    public QuicheConfig getQuicheConfig()
-    {
-        return quicheConfig;
     }
 
     protected void onClose(QuicheConnectionId quicheConnectionId, QuicSession session)

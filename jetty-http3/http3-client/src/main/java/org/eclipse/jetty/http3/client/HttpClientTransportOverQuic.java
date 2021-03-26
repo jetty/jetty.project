@@ -37,6 +37,7 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
+//TODO: get rid of this class, it should not be needed
 @ManagedObject("The QUIC client transport")
 public class HttpClientTransportOverQuic extends AbstractHttpClientTransport
 {
@@ -60,7 +61,7 @@ public class HttpClientTransportOverQuic extends AbstractHttpClientTransport
         quicheConfig.setApplicationProtos(protocolNames.toArray(new String[0]));
 
         protocol = new Origin.Protocol(protocolNames, false);
-        connector = new ClientQuicConnector(quicheConfig);
+        connector = new ClientQuicConnector();
         addBean(connector);
         setConnectionPoolFactory(destination ->
         {

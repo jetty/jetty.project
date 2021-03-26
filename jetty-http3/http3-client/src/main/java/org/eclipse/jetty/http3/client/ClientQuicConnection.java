@@ -26,6 +26,7 @@ import org.eclipse.jetty.http3.quiche.QuicheConfig;
 import org.eclipse.jetty.http3.quiche.QuicheConnection;
 import org.eclipse.jetty.http3.quiche.QuicheConnectionId;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.Promise;
@@ -38,11 +39,13 @@ public class ClientQuicConnection extends QuicConnection
     private static final Logger LOG = LoggerFactory.getLogger(ClientQuicConnection.class);
 
     private final Map<InetSocketAddress, QuicSession> pendingSessions = new ConcurrentHashMap<>();
+    private final QuicheConfig quicheConfig;
     private final Map<String, Object> context;
 
     public ClientQuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endp, QuicheConfig quicheConfig, Map<String, Object> context)
     {
-        super(executor, scheduler, byteBufferPool, endp, quicheConfig);
+        super(executor, scheduler, byteBufferPool, endp);
+        this.quicheConfig = quicheConfig;
         this.context = context;
     }
 
@@ -53,8 +56,8 @@ public class ClientQuicConnection extends QuicConnection
 
         try
         {
-            InetSocketAddress remoteAddress = (InetSocketAddress)context.get(ClientQuicConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
-            QuicheConnection quicheConnection = QuicheConnection.connect(getQuicheConfig(), remoteAddress);
+            InetSocketAddress remoteAddress = (InetSocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
+            QuicheConnection quicheConnection = QuicheConnection.connect(quicheConfig, remoteAddress);
             QuicSession session = new ClientQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), quicheConnection, this, remoteAddress, context);
             pendingSessions.put(remoteAddress, session);
             session.flush(); // send the response packet(s) that connect generated.
@@ -77,7 +80,7 @@ public class ClientQuicConnection extends QuicConnection
         InetSocketAddress remoteAddress = session.getRemoteAddress();
         if (pendingSessions.remove(remoteAddress) != null)
         {
-            Promise<?> promise = (Promise<?>)context.get(ClientQuicConnector.CONNECTION_PROMISE_CONTEXT_KEY);
+            Promise<?> promise = (Promise<?>)context.get(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY);
             if (promise != null)
                 promise.failed(new IOException("QUIC connection refused"));
         }
