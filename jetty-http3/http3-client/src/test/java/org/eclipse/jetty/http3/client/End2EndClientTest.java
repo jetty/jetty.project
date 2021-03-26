@@ -25,6 +25,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http3.server.ServerQuicConnector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -74,7 +75,7 @@ public class End2EndClientTest
 
         server.start();
 
-        HttpClientTransportOverQuic transport = new HttpClientTransportOverQuic();
+        HttpClientTransportOverHTTP transport = new HttpClientTransportOverHTTP(new ClientQuicConnector());
         client = new HttpClient(transport);
         client.start();
     }

@@ -57,13 +57,15 @@ public class ClientQuicConnector extends ClientConnector
     }
 
     @Override
+    public boolean isIntrinsicallySecure()
+    {
+        return true;
+    }
+
+    @Override
     protected void doStart() throws Exception
     {
-        //TODO: what is the best place to create the quiche config?
-
-        // TODO detect the ALPN protos
-        quicheConfig.setApplicationProtos("http/1.1");
-//        quicheConfig.setApplicationProtos(protocolNames.toArray(new String[0]));
+        // TODO: move the creation of quiche config to ClientQuicConnection.onOpen()
 
         // TODO make these QuicheConfig settings configurable
         quicheConfig.setDisableActiveMigration(true);

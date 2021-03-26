@@ -16,10 +16,13 @@ package org.eclipse.jetty.http3.client;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.client.HttpClientTransport;
+import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.http3.common.QuicConnection;
 import org.eclipse.jetty.http3.common.QuicSession;
 import org.eclipse.jetty.http3.quiche.QuicheConfig;
@@ -57,6 +60,12 @@ public class ClientQuicConnection extends QuicConnection
         try
         {
             InetSocketAddress remoteAddress = (InetSocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
+            HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+            List<String> protocols = destination.getOrigin().getProtocol().getProtocols();
+
+            // TODO: create quiche config here, pulling the config from somewhere else TBD (context?)
+            quicheConfig.setApplicationProtos(protocols.toArray(new String[0]));
+
             QuicheConnection quicheConnection = QuicheConnection.connect(quicheConfig, remoteAddress);
             QuicSession session = new ClientQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), quicheConnection, this, remoteAddress, context);
             pendingSessions.put(remoteAddress, session);

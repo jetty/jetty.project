@@ -22,6 +22,11 @@ public class DuplexHttpDestination extends HttpDestination
 {
     public DuplexHttpDestination(HttpClient client, Origin origin)
     {
-        super(client, origin, false);
+        this(client, origin, false);
+    }
+
+    public DuplexHttpDestination(HttpClient client, Origin origin, boolean intrinsicallySecure)
+    {
+        super(client, origin, intrinsicallySecure);
     }
 }
