@@ -37,6 +37,16 @@ public class QuicDatagramEndPoint extends AbstractEndPoint implements ManagedSel
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicDatagramEndPoint.class);
 
+    /**
+     * {@link #fill(ByteBuffer)} needs to pass the {@link InetSocketAddress} together with the buffer
+     * and {@link #flush(ByteBuffer...)} needs the {@link InetSocketAddress} passed together with the buffer.
+     * Since we cannot change the {@link org.eclipse.jetty.io.EndPoint} API, the {@link InetSocketAddress}
+     * argument must be passed on the side with this thread-local.
+     *
+     * Note: a first implementation was encoding the InetSocketAddress in the buffer(s) but this was as complex
+     * and required a mildly expensive encode-decode cycle each time one of those two methods was called.
+     * This mechanism is as complex and brittle but virtually as cheap as standard argument passing.
+     */
     public static InetAddressArgument INET_ADDRESS_ARGUMENT = new InetAddressArgument();
 
     private final AutoLock _lock = new AutoLock();
@@ -270,11 +280,6 @@ public class QuicDatagramEndPoint extends AbstractEndPoint implements ManagedSel
             notIdle();
 
         return flushedAll;
-    }
-
-    public DatagramChannel getChannel()
-    {
-        return _channel;
     }
 
     @Override
