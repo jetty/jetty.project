@@ -428,12 +428,16 @@ public class FileBufferedResponseHandlerTest
         {
             ByteBuffer buffer = endpoint.waitForOutput(5, TimeUnit.SECONDS);
             if (BufferUtil.isEmpty(buffer) && endpoint.isInputShutdown())
+            {
+                LOG.warn("Input Shutdown");
                 break;
+            }
 
             if (parser.parseNext(buffer))
                 break;
         }
 
+        LOG.info("Parser: " + parser);
         assertTrue(response.isComplete());
         assertThat(response.get("NumFiles"), is("1"));
         assertThat(response.get("FileSize"), is(Long.toString(fileSize)));
