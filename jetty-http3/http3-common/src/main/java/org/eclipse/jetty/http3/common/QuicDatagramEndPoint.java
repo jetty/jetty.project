@@ -47,7 +47,7 @@ public class QuicDatagramEndPoint extends AbstractEndPoint implements ManagedSel
      * and required a mildly expensive encode-decode cycle each time one of those two methods was called.
      * This mechanism is as complex and brittle but virtually as cheap as standard argument passing.
      */
-    public static InetAddressArgument INET_ADDRESS_ARGUMENT = new InetAddressArgument();
+    public static final InetAddressArgument INET_ADDRESS_ARGUMENT = new InetAddressArgument();
 
     private final AutoLock _lock = new AutoLock();
     private final DatagramChannel _channel;
