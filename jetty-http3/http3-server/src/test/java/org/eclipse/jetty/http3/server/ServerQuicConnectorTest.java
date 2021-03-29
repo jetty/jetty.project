@@ -70,6 +70,7 @@ public class ServerQuicConnectorTest
         server.stop();
     }
 
+    @Disabled
     @Test
     public void testBig() throws Exception
     {
