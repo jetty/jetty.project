@@ -39,16 +39,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Buffered Response Handler
  * <p>
  * A Handler that can apply a {@link org.eclipse.jetty.server.HttpOutput.Interceptor}
  * mechanism to buffer the entire response content until the output is closed.
  * This allows the commit to be delayed until the response is complete and thus
  * headers and response status can be changed while writing the body.
+ * </p>
  * <p>
  * Note that the decision to buffer is influenced by the headers and status at the
  * first write, and thus subsequent changes to those headers will not influence the
  * decision to buffer or not.
+ * </p>
  * <p>
  * Note also that there are no memory limits to the size of the buffer, thus
  * this handler can represent an unbounded memory commitment if the content
@@ -153,7 +154,7 @@ public class BufferedResponseHandler extends HandlerWrapper
         }
 
         // Install buffered interceptor and handle.
-        out.setInterceptor(createBufferedInterceptor(baseRequest.getHttpChannel(), out.getInterceptor()));
+        out.setInterceptor(newBufferedInterceptor(baseRequest.getHttpChannel(), out.getInterceptor()));
         if (_handler != null)
             _handler.handle(target, baseRequest, request, response);
     }
@@ -171,12 +172,16 @@ public class BufferedResponseHandler extends HandlerWrapper
         return _paths.test(requestURI);
     }
 
-    protected BufferedInterceptor createBufferedInterceptor(HttpChannel httpChannel, Interceptor interceptor)
+    protected BufferedInterceptor newBufferedInterceptor(HttpChannel httpChannel, Interceptor interceptor)
     {
         return new ArrayBufferedInterceptor(httpChannel, interceptor);
     }
 
-    public interface BufferedInterceptor extends HttpOutput.Interceptor
+    /**
+     * An {@link HttpOutput.Interceptor} which is created by {@link #newBufferedInterceptor(HttpChannel, Interceptor)}
+     * and is used by the implementation to buffer outgoing content.
+     */
+    protected interface BufferedInterceptor extends HttpOutput.Interceptor
     {
     }
 

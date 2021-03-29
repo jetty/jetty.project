@@ -20,6 +20,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Objects;
 
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.HttpChannel;
@@ -64,11 +65,11 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
 
     public void setTempDir(Path tempDir)
     {
-        this.tempDir = tempDir;
+        this.tempDir = Objects.requireNonNull(tempDir);
     }
 
     @Override
-    protected BufferedInterceptor createBufferedInterceptor(HttpChannel httpChannel, Interceptor interceptor)
+    protected BufferedInterceptor newBufferedInterceptor(HttpChannel httpChannel, Interceptor interceptor)
     {
         return new FileBufferedInterceptor(httpChannel, interceptor);
     }
