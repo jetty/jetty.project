@@ -78,6 +78,7 @@ public abstract class QuicConnection extends AbstractConnection
     {
         try
         {
+            // TODO make the buffer size configurable
             ByteBuffer cipherBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN, true);
             while (true)
             {

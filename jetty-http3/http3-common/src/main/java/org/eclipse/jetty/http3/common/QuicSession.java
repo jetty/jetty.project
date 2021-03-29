@@ -297,6 +297,7 @@ public abstract class QuicSession
         @Override
         protected Action process() throws IOException
         {
+            // TODO make the buffer size configurable
             cipherBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN, true);
             int pos = BufferUtil.flipToFill(cipherBuffer);
             int drained = quicheConnection.drainCipherText(cipherBuffer);

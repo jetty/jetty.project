@@ -59,11 +59,14 @@ public class ServerQuicConnection extends QuicConnection
     protected QuicSession createSession(InetSocketAddress remoteAddress, ByteBuffer cipherBuffer) throws IOException
     {
         ByteBufferPool byteBufferPool = getByteBufferPool();
+        // TODO make the token validator configurable
         QuicheConnection quicheConnection = QuicheConnection.tryAccept(quicheConfig, new SimpleTokenValidator(remoteAddress), cipherBuffer);
         if (quicheConnection == null)
         {
+            // TODO make the buffer size configurable
             ByteBuffer negotiationBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN, true);
             int pos = BufferUtil.flipToFill(negotiationBuffer);
+            // TODO make the token minter configurable
             if (!QuicheConnection.negotiate(new SimpleTokenMinter(remoteAddress), cipherBuffer, negotiationBuffer))
             {
                 if (LOG.isDebugEnabled())
