@@ -116,7 +116,7 @@ public class ClientQuicConnection extends QuicConnection
         {
             pendingSessions.remove(remoteAddress);
             session.setConnectionId(quicheConnectionId);
-            session.createStream(0);
+            session.createStream(0); // TODO perform proper stream ID generation
             return true;
         }
         return false;
