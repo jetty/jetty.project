@@ -17,7 +17,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -275,7 +274,6 @@ public class InclusiveByteRangeTest
     }
 
     @Test
-    @Disabled
     public void testBadRangeSetPartiallyBad()
     {
         assertBadRangeList(500, "bytes=1-50,1-b,a-50");
@@ -294,23 +292,9 @@ public class InclusiveByteRangeTest
     }
 
     @Test
-    @Disabled
-    public void testBadRangeZeroPrefixed()
-    {
-        assertBadRangeList(500, "bytes=01-050");
-    }
-
-    @Test
     public void testBadRangeHex()
     {
         assertBadRangeList(500, "bytes=0F-FF");
-    }
-
-    @Test
-    @Disabled
-    public void testBadRangeTabWhitespace()
-    {
-        assertBadRangeList(500, "bytes=\t1\t-\t50");
     }
 
     @Test
