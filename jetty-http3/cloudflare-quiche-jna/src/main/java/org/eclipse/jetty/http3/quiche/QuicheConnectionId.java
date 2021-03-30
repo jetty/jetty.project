@@ -44,7 +44,7 @@ public class QuicheConnectionId
     {
         this.dcid = Objects.requireNonNull(dcid);
         this.hashCode = Arrays.hashCode(dcid);
-        this.string = getClass().getSimpleName() + " dcid=" + bytesToHex(dcid);
+        this.string = bytesToHex(dcid);
     }
 
     private static String bytesToHex(byte[] bytes) {
