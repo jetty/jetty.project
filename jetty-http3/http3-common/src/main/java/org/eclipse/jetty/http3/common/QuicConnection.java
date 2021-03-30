@@ -150,7 +150,6 @@ public abstract class QuicConnection extends AbstractConnection
     public void write(Callback callback, InetSocketAddress remoteAddress, ByteBuffer... buffers)
     {
         flusher.offer(callback, remoteAddress, buffers);
-        flusher.iterate();
     }
 
     private class Flusher extends IteratingCallback
@@ -165,6 +164,7 @@ public abstract class QuicConnection extends AbstractConnection
             {
                 queue.offer(new Entry(callback, address, buffers));
             }
+            flusher.iterate();
         }
 
         @Override
