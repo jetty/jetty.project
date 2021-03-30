@@ -124,8 +124,8 @@ public class WebSocketServerComponentsTest
         // Use a custom InflaterPool and DeflaterPool that are not started or managed.
         InflaterPool inflaterPool = new InflaterPool(333, false);
         DeflaterPool deflaterPool = new DeflaterPool(333, Deflater.BEST_SPEED, false);
-        server.addManaged(inflaterPool);
-        server.addManaged(deflaterPool);
+        server.addBean(inflaterPool);
+        server.addBean(deflaterPool);
 
         // ensureWebSocketComponents can only be called when the server is starting.
         contextHandler.addServletContainerInitializer(new ServletContainerInitializerHolder((c, ctx) ->

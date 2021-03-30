@@ -83,11 +83,11 @@ public class WebSocketServerComponents extends WebSocketComponents
 
         // These components may be managed by the server but not yet started.
         // In this case we don't want them to be managed by the components as well.
-        if (server.isManaged(inflaterPool))
+        if (server.contains(inflaterPool))
             serverComponents.unmanage(inflaterPool);
-        if (server.isManaged(deflaterPool))
+        if (server.contains(deflaterPool))
             serverComponents.unmanage(deflaterPool);
-        if (server.isManaged(bufferPool))
+        if (server.contains(bufferPool))
             serverComponents.unmanage(bufferPool);
 
         servletContext.setAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE, serverComponents);
