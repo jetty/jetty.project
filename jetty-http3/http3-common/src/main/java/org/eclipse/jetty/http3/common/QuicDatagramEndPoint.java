@@ -257,7 +257,7 @@ public class QuicDatagramEndPoint extends AbstractEndPoint implements ManagedSel
         {
             InetSocketAddress peer = INET_ADDRESS_ARGUMENT.pop();
             if (LOG.isDebugEnabled())
-                LOG.debug("flushing {} buffer(s) to {}", buffers.length - 1, peer);
+                LOG.debug("flushing {} buffer(s) to {}", buffers.length, peer);
             for (ByteBuffer buffer : buffers)
             {
                 int sent = _channel.send(buffer, peer);
