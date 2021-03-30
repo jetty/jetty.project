@@ -78,7 +78,9 @@ public class Runner
             org.eclipse.jetty.plus.webapp.EnvConfiguration.class.getCanonicalName(),
             org.eclipse.jetty.plus.webapp.PlusConfiguration.class.getCanonicalName(),
             org.eclipse.jetty.annotations.AnnotationConfiguration.class.getCanonicalName(),
-            org.eclipse.jetty.webapp.JettyWebXmlConfiguration.class.getCanonicalName()
+            org.eclipse.jetty.webapp.JettyWebXmlConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.webapp.WebAppConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.webapp.JspConfiguration.class.getCanonicalName()
         };
     public static final String CONTAINER_INCLUDE_JAR_PATTERN = ".*/jetty-runner-[^/]*\\.jar$";
     public static final String DEFAULT_CONTEXT_PATH = "/";
