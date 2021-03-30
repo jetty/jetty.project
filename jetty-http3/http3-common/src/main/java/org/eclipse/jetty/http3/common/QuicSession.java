@@ -157,14 +157,17 @@ public abstract class QuicSession
             List<Long> writableStreamIds = quicheConnection.writableStreamIds();
             if (LOG.isDebugEnabled())
                 LOG.debug("writable stream ids: {}", writableStreamIds);
-            Runnable onWritable = () ->
+            if (!writableStreamIds.isEmpty())
             {
-                for (Long writableStreamId : writableStreamIds)
+                Runnable onWritable = () ->
                 {
-                    onWritable(writableStreamId);
-                }
-            };
-            dispatch(onWritable);
+                    for (Long writableStreamId : writableStreamIds)
+                    {
+                        onWritable(writableStreamId);
+                    }
+                };
+                dispatch(onWritable);
+            }
 
             List<Long> readableStreamIds = quicheConnection.readableStreamIds();
             if (LOG.isDebugEnabled())
@@ -281,8 +284,9 @@ public abstract class QuicSession
                         LOG.debug("quiche timeout callback");
                     quicheConnection.onTimeout();
                     if (LOG.isDebugEnabled())
-                        LOG.debug("re-iterating quiche after timeout");
-                    iterate();
+                        LOG.debug("re-iterating quiche after timeout cid={}", quicheConnectionId);
+                    // do not use the timer thread to iterate
+                    dispatch(() -> iterate());
                 }
             };
         }
