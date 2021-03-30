@@ -102,7 +102,7 @@ public abstract class QuicConnection extends AbstractConnection
 
                 InetSocketAddress remoteAddress = QuicDatagramEndPoint.INET_ADDRESS_ARGUMENT.pop();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("decoded peer IP address: {}, ciphertext packet size: {}", remoteAddress, cipherBuffer.remaining());
+                    LOG.debug("peer IP address: {}, ciphertext packet size: {}", remoteAddress, cipherBuffer.remaining());
 
                 QuicheConnectionId quicheConnectionId = QuicheConnectionId.fromPacket(cipherBuffer);
                 if (quicheConnectionId == null)
