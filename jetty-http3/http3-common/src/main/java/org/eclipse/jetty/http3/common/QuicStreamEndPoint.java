@@ -107,14 +107,22 @@ public class QuicStreamEndPoint extends AbstractEndPoint
     @Override
     public boolean flush(ByteBuffer... buffers) throws IOException
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("flushing {} buffer(s) stream {}", buffers.length, streamId);
         for (ByteBuffer buffer : buffers)
         {
             int flushed = session.flush(streamId, buffer);
             if (LOG.isDebugEnabled())
-                LOG.debug("flushed {} bytes to stream {}; buffer has remaining? {}", flushed, streamId, buffer.hasRemaining());
+                LOG.debug("flushed {} bytes to stream {}", flushed, streamId);
             if (buffer.hasRemaining())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("incomplete flushing of stream {}", streamId);
                 return false;
+            }
         }
+        if (LOG.isDebugEnabled())
+            LOG.debug("fully flushed stream {}", streamId);
         return true;
     }
 

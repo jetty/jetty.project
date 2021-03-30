@@ -211,6 +211,8 @@ public abstract class QuicSession
 
     public void flush()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("flushing session cid={}", quicheConnectionId);
         flusher.iterate();
     }
 
@@ -244,7 +246,7 @@ public abstract class QuicSession
     public void close(Throwable x)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("closing QUIC session {}", this);
+            LOG.debug("closing Quic session cid={}", quicheConnectionId);
         try
         {
             endpoints.values().forEach(AbstractEndPoint::close);
@@ -259,7 +261,7 @@ public abstract class QuicSession
             quicheConnection.dispose();
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("closed QUIC session {}", this);
+            LOG.debug("closed Quic session cid={}", quicheConnectionId);
     }
 
     @Override
@@ -281,7 +283,7 @@ public abstract class QuicSession
                 public void onTimeoutExpired()
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("quiche timeout callback");
+                        LOG.debug("quiche timeout callback called cid={}", quicheConnectionId);
                     quicheConnection.onTimeout();
                     if (LOG.isDebugEnabled())
                         LOG.debug("re-iterating quiche after timeout cid={}", quicheConnectionId);
@@ -305,6 +307,8 @@ public abstract class QuicSession
             cipherBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN, true);
             int pos = BufferUtil.flipToFill(cipherBuffer);
             int drained = quicheConnection.drainCipherText(cipherBuffer);
+            if (LOG.isDebugEnabled())
+                LOG.debug("drained {} byte(s) of cipher text from quiche", drained);
             long nextTimeoutInMs = quicheConnection.nextTimeout();
             if (LOG.isDebugEnabled())
                 LOG.debug("next quiche timeout: {} ms", nextTimeoutInMs);
@@ -313,15 +317,25 @@ public abstract class QuicSession
             else
                 timeout.schedule(nextTimeoutInMs, TimeUnit.MILLISECONDS);
             if (drained == 0)
-                return quicheConnection.isConnectionClosed() ? Action.SUCCEEDED : Action.IDLE;
+            {
+                boolean connectionClosed = quicheConnection.isConnectionClosed();
+                Action action = connectionClosed ? Action.SUCCEEDED : Action.IDLE;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("connection is closed? {} -> action = {}", connectionClosed, action);
+                return action;
+            }
             BufferUtil.flipToFlush(cipherBuffer, pos);
             connection.write(this, remoteAddress, cipherBuffer);
+            if (LOG.isDebugEnabled())
+                LOG.debug("wrote cipher text for {}", remoteAddress);
             return Action.SCHEDULED;
         }
 
         @Override
         public void succeeded()
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("cipher text writing succeeded");
             byteBufferPool.release(cipherBuffer);
             super.succeeded();
         }
@@ -337,6 +351,8 @@ public abstract class QuicSession
         @Override
         protected void onCompleteFailure(Throwable cause)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("cipher text writing failed, closing session", cause);
             byteBufferPool.release(cipherBuffer);
             QuicSession.this.close(cause);
         }

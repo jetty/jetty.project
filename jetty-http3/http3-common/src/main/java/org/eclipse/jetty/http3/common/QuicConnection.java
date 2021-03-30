@@ -62,6 +62,7 @@ public abstract class QuicConnection extends AbstractConnection
 
     protected void closeSession(QuicheConnectionId quicheConnectionId, QuicSession session, Throwable x)
     {
+        LOG.debug("closing session of type {} cid={}", getClass().getSimpleName(), quicheConnectionId);
         if (quicheConnectionId != null)
             sessions.remove(quicheConnectionId);
     }
@@ -69,8 +70,11 @@ public abstract class QuicConnection extends AbstractConnection
     @Override
     public void close()
     {
+        LOG.debug("closing connection of type {}", getClass().getSimpleName());
         sessions.values().forEach(QuicSession::close);
+        sessions.clear();
         super.close();
+        LOG.debug("closed connection of type {}", getClass().getSimpleName());
     }
 
     @Override
