@@ -16,10 +16,8 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.hazelcast.session.client;
+package org.eclipse.jetty.hazelcast.session;
 
-import org.eclipse.jetty.hazelcast.session.HazelcastSessionDataStore;
-import org.eclipse.jetty.hazelcast.session.HazelcastTestHelper;
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreTest;
 import org.eclipse.jetty.server.session.SessionContext;
@@ -37,7 +35,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 /**
  * HazelcastSessionDataStoreTest
  */
-public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
+public class HazelcastSessionReplicatedDataStoreTest
+    extends AbstractSessionDataStoreTest
 {
 
     HazelcastTestHelper _testHelper;
@@ -45,7 +44,7 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return _testHelper.createSessionDataStoreFactory(true, false);
+        return _testHelper.createSessionDataStoreFactory(false, true);
     }
 
     @BeforeEach
@@ -113,17 +112,6 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
         //to find zombie sessions.
     }
 
-    @Override
-    public void testStoreObjectAttributes() throws Exception
-    {
-        //This test will not work for hazelcast because we can't enable
-        //HazelcastSessionDataStore.setScavengeZombieSessions, as it's
-        //too difficult to get the required classes onto the embedded
-        //hazelcast instance: these classes are required  to handle
-        //the serialization/deserialization that hazelcast performs when querying
-        //to find zombie sessions.
-    }
-
     /**
      * This test deliberately sets the sessionDataMap to null for the
      * HazelcastSessionDataStore to provoke an exception in the load() method.
@@ -166,6 +154,15 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public boolean checkSessionPersisted(SessionData data) throws Exception
     {
-        return _testHelper.checkSessionPersisted(data);
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(_contextClassLoader);
+        try
+        {
+            return _testHelper.checkSessionPersisted(data);
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old);
+        }
     }
 }

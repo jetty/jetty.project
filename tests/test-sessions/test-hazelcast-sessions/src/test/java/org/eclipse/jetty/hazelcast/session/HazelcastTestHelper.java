@@ -67,11 +67,12 @@ public class HazelcastTestHelper
         // noop
     }
 
-    public SessionDataStoreFactory createSessionDataStoreFactory(boolean onlyClient)
+    public SessionDataStoreFactory createSessionDataStoreFactory(boolean onlyClient, boolean useReplicatedMap)
     {
         HazelcastSessionDataStoreFactory factory = new HazelcastSessionDataStoreFactory();
         factory.setOnlyClient(onlyClient);
         factory.setMapName(_name);
+        factory.setUseReplicatedMap(useReplicatedMap);
         if (onlyClient)
         {
             ClientNetworkConfig clientNetworkConfig = new ClientNetworkConfig()

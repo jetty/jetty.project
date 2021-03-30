@@ -18,18 +18,14 @@
 
 package org.eclipse.jetty.hazelcast.session;
 
-import org.eclipse.jetty.server.session.AbstractClusteredSessionScavengingTest;
+import org.eclipse.jetty.server.session.AbstractClusteredInvalidationSessionTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
-/**
- * ClusteredSessionScavengingTest
- */
-public class ClusteredSessionScavengingTest
-    extends AbstractClusteredSessionScavengingTest
+public class HazelcastClusteredInvalidationSessionReplicatedTest
+    extends AbstractClusteredInvalidationSessionTest
 {
-
     HazelcastSessionDataStoreFactory factory;
 
     HazelcastTestHelper _testHelper;
@@ -46,12 +42,9 @@ public class ClusteredSessionScavengingTest
         _testHelper.tearDown();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
-     */
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return _testHelper.createSessionDataStoreFactory(false, false);
+        return _testHelper.createSessionDataStoreFactory(false, true);
     }
 }

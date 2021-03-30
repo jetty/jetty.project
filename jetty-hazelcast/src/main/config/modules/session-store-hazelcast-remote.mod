@@ -38,6 +38,7 @@ jetty.session.hazelcast.mapName=jetty-distributed-session-map
 jetty.session.hazelcast.hazelcastInstanceName=JETTY_DISTRIBUTED_SESSION_INSTANCE
 jetty.session.hazelcast.onlyClient=true
 jetty.session.hazelcast.scavengeZombies=false
+jetty.session.hazelcast.useReplicatedMap=false
 jetty.session.gracePeriod.seconds=3600
 jetty.session.savePeriod.seconds=0
 #jetty.session.hazelcast.configurationLocation

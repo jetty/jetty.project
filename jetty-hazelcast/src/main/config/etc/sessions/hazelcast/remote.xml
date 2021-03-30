@@ -17,6 +17,7 @@
         <Set name="onlyClient"><Property name="jetty.session.hazelcast.onlyClient" default="true" /></Set>
         <Set name="addresses"><Property name="jetty.session.hazelcast.addresses" default="" /></Set>
         <Set name="configurationLocation"><Property name="jetty.session.hazelcast.configurationLocation" default="" /></Set>
+        <Set name="useReplicatedMap"><Property name="jetty.session.hazelcast.useReplicatedMap" default="false"/></Set>
       </New>
     </Arg>
   </Call>

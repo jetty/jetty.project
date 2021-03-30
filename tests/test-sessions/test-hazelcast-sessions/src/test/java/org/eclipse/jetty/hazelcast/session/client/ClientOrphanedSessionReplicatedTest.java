@@ -16,23 +16,25 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.hazelcast.session;
+package org.eclipse.jetty.hazelcast.session.client;
 
-import org.eclipse.jetty.server.session.AbstractClusteredSessionScavengingTest;
+import org.eclipse.jetty.hazelcast.session.HazelcastTestHelper;
+import org.eclipse.jetty.server.session.AbstractClusteredOrphanedSessionTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
-/**
- * ClusteredSessionScavengingTest
- */
-public class ClusteredSessionScavengingTest
-    extends AbstractClusteredSessionScavengingTest
+public class ClientOrphanedSessionReplicatedTest
+    extends AbstractClusteredOrphanedSessionTest
 {
 
-    HazelcastSessionDataStoreFactory factory;
-
     HazelcastTestHelper _testHelper;
+
+    @Override
+    public SessionDataStoreFactory createSessionDataStoreFactory()
+    {
+        return _testHelper.createSessionDataStoreFactory(true, true);
+    }
 
     @BeforeEach
     public void setUp()
@@ -44,14 +46,5 @@ public class ClusteredSessionScavengingTest
     public void shutdown()
     {
         _testHelper.tearDown();
-    }
-
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
-     */
-    @Override
-    public SessionDataStoreFactory createSessionDataStoreFactory()
-    {
-        return _testHelper.createSessionDataStoreFactory(false, false);
     }
 }

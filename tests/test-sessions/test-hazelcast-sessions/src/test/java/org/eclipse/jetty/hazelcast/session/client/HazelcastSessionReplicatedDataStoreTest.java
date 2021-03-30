@@ -37,7 +37,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 /**
  * HazelcastSessionDataStoreTest
  */
-public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
+public class HazelcastSessionReplicatedDataStoreTest
+    extends AbstractSessionDataStoreTest
 {
 
     HazelcastTestHelper _testHelper;
@@ -45,7 +46,7 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return _testHelper.createSessionDataStoreFactory(true, false);
+        return _testHelper.createSessionDataStoreFactory(true, true);
     }
 
     @BeforeEach

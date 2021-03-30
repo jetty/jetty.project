@@ -16,6 +16,7 @@
         <Set name="gracePeriodSec"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
         <Set name="savePeriodSec"><Property name="jetty.session.savePeriod.seconds" default="0" /></Set>
         <Set name="configurationLocation"><Property name="jetty.session.hazelcast.configurationLocation" default="" /></Set>
+        <Set name="useReplicatedMap"><Property name="jetty.session.hazelcast.useReplicatedMap" default="false"/></Set>
       </New>
     </Arg>
   </Call>

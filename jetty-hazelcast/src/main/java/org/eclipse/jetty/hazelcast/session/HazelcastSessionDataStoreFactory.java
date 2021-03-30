@@ -61,6 +61,8 @@ public class HazelcastSessionDataStoreFactory
 
     private String addresses;
 
+    private boolean useReplicatedMap = false;
+
     public boolean isScavengeZombies()
     {
         return scavengeZombies;
@@ -74,7 +76,6 @@ public class HazelcastSessionDataStoreFactory
     @Override
     public SessionDataStore getSessionDataStore(SessionHandler handler)
     {
-        HazelcastSessionDataStore hazelcastSessionDataStore = new HazelcastSessionDataStore();
 
         if (hazelcastInstance == null)
         {
@@ -141,6 +142,16 @@ public class HazelcastSessionDataStoreFactory
             }
         }
         // initialize the map
+        if (useReplicatedMap)
+        {
+            HazelcastReplicatedMapSessionDataStore hazelcastSessionDataStore = new HazelcastReplicatedMapSessionDataStore();
+            hazelcastSessionDataStore.setSessionDataMap(hazelcastInstance.getReplicatedMap(mapName));
+            hazelcastSessionDataStore.setGracePeriodSec(getGracePeriodSec());
+            hazelcastSessionDataStore.setSavePeriodSec(getSavePeriodSec());
+            hazelcastSessionDataStore.setScavengeZombieSessions(scavengeZombies);
+        }
+
+        HazelcastSessionDataStore hazelcastSessionDataStore = new HazelcastSessionDataStore();
         hazelcastSessionDataStore.setSessionDataMap(hazelcastInstance.getMap(mapName));
         hazelcastSessionDataStore.setGracePeriodSec(getGracePeriodSec());
         hazelcastSessionDataStore.setSavePeriodSec(getSavePeriodSec());
@@ -221,4 +232,19 @@ public class HazelcastSessionDataStoreFactory
     {
         this.addresses = addresses;
     }
+
+    public boolean isUseReplicatedMap()
+    {
+        return useReplicatedMap;
+    }
+
+    /**
+     * @param useReplicatedMap if <code>true</code> the session manager will {@link com.hazelcast.core.ReplicatedMap}
+     * rather than the standard {@link com.hazelcast.core.IMap}
+     */
+    public void setUseReplicatedMap(boolean useReplicatedMap)
+    {
+        this.useReplicatedMap = useReplicatedMap;
+    }
+
 }

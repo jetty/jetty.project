@@ -52,6 +52,6 @@ public class ClusteredOrphanedSessionTest
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return _testHelper.createSessionDataStoreFactory(false);
+        return _testHelper.createSessionDataStoreFactory(false, false);
     }
 }

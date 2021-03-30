@@ -18,17 +18,13 @@
 
 package org.eclipse.jetty.hazelcast.session;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import com.hazelcast.core.IMap;
-import com.hazelcast.query.EntryObject;
-import com.hazelcast.query.Predicate;
-import com.hazelcast.query.PredicateBuilder;
+import com.hazelcast.core.ReplicatedMap;
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
 import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
@@ -42,18 +38,18 @@ import org.eclipse.jetty.util.log.Logger;
  * Session data stored in Hazelcast
  */
 @ManagedObject
-public class HazelcastSessionDataStore
+public class HazelcastReplicatedMapSessionDataStore
     extends AbstractSessionDataStore
     implements SessionDataStore
 {
 
     private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
-    private IMap<String, SessionData> sessionDataMap;
+    private ReplicatedMap<String, SessionData> sessionDataMap;
 
     private boolean _scavengeZombies;
 
-    public HazelcastSessionDataStore()
+    public HazelcastReplicatedMapSessionDataStore()
     {
     }
 
@@ -109,17 +105,17 @@ public class HazelcastSessionDataStore
             return false;
 
         //use delete which does not deserialize the SessionData object being removed
-        sessionDataMap.delete(getCacheKey(id));
+        //sessionDataMap.delete(getCacheKey(id));
+        sessionDataMap.remove(getCacheKey(id));
         return true;
     }
 
-    // FIXME we should simply return Map here
-    public IMap<String, SessionData> getSessionDataMap()
+    public Map<String, SessionData> getSessionDataMap()
     {
         return sessionDataMap;
     }
 
-    public void setSessionDataMap(IMap<String, SessionData> sessionDataMap)
+    public void setSessionDataMap(ReplicatedMap<String, SessionData> sessionDataMap)
     {
         this.sessionDataMap = sessionDataMap;
     }
@@ -129,15 +125,15 @@ public class HazelcastSessionDataStore
         throws Exception
     {
         super.initialize(context);
-        if (isScavengeZombies())
-            sessionDataMap.addIndex("expiry", true);
+//        if (isScavengeZombies())
+//            sessionDataMap.addIndex("expiry", true);
     }
 
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime)
         throws Exception
     {
-        this.sessionDataMap.set(getCacheKey(id), data);
+        this.sessionDataMap.put(getCacheKey(id), data);
     }
 
     @Override
@@ -226,16 +222,10 @@ public class HazelcastSessionDataStore
                 try
                 {
                     Set<String> ids = new HashSet<>();
-                    EntryObject eo = new PredicateBuilder().getEntryObject();
-                    Predicate<?, ?> predicate = eo.get("expiry").greaterThan(0).and(eo.get("expiry").lessEqual(now));
-                    Collection<SessionData> results = sessionDataMap.values(predicate);
-                    if (results != null)
-                    {
-                        for (SessionData sd : results)
-                        {
-                            ids.add(sd.getId());
-                        }
-                    }
+                    sessionDataMap.values()
+                        .stream()
+                        .filter(sessionData -> sessionData.getExpiry() > 0  && sessionData.getExpiry() <= now)
+                        .forEach(sessionData -> ids.add(sessionData.getId()));
                     reference.set(ids);
                 }
                 catch (Exception e)

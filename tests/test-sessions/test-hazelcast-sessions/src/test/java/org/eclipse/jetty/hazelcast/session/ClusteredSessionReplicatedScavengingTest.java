@@ -26,7 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 /**
  * ClusteredSessionScavengingTest
  */
-public class ClusteredSessionScavengingTest
+public class ClusteredSessionReplicatedScavengingTest
     extends AbstractClusteredSessionScavengingTest
 {
 
@@ -52,6 +52,6 @@ public class ClusteredSessionScavengingTest
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return _testHelper.createSessionDataStoreFactory(false, false);
+        return _testHelper.createSessionDataStoreFactory(false, true);
     }
 }
