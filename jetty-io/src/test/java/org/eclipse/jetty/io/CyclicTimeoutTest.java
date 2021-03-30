@@ -13,14 +13,11 @@
 
 package org.eclipse.jetty.io;
 
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -135,27 +132,13 @@ public class CyclicTimeoutTest
     }
 
     @Test
-    @Disabled
     public void testBusy() throws Exception
     {
-        QueuedThreadPool pool = new QueuedThreadPool(200);
-        pool.start();
-
-        long testUntil = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(1500);
-
-        assertTrue(_timeout.schedule(100, TimeUnit.MILLISECONDS));
+        long testUntil = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(2000);
+        assertTrue(_timeout.schedule(500, TimeUnit.MILLISECONDS));
         while (System.nanoTime() < testUntil)
-        {
-            CountDownLatch latch = new CountDownLatch(1);
-            pool.execute(() ->
-            {
-                _timeout.schedule(100, TimeUnit.MILLISECONDS);
-                latch.countDown();
-            });
-            latch.await();
-        }
-
+            _timeout.schedule(500, TimeUnit.MILLISECONDS);
+        _timeout.cancel();
         assertFalse(_expired);
-        pool.stop();
     }
 }
