@@ -19,7 +19,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http3.common.QuicConnection;
-import org.eclipse.jetty.http3.common.QuicDatagramEndPoint;
 import org.eclipse.jetty.http3.common.QuicSession;
 import org.eclipse.jetty.http3.quiche.QuicheConfig;
 import org.eclipse.jetty.http3.quiche.QuicheConnection;
@@ -76,8 +75,7 @@ public class ServerQuicConnection extends QuicConnection
             }
             BufferUtil.flipToFlush(negotiationBuffer, pos);
 
-            QuicDatagramEndPoint.INET_ADDRESS_ARGUMENT.push(remoteAddress);
-            getEndPoint().write(Callback.from(() -> byteBufferPool.release(negotiationBuffer)), negotiationBuffer);
+            write(Callback.from(() -> byteBufferPool.release(negotiationBuffer)), remoteAddress, negotiationBuffer);
             if (LOG.isDebugEnabled())
                 LOG.debug("QUIC connection negotiation packet sent");
             return null;
