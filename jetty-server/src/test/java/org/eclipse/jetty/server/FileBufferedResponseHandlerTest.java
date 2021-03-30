@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -68,6 +69,7 @@ public class FileBufferedResponseHandlerTest
         config.setOutputAggregationSize(256);
         _local = new LocalConnector(_server, new HttpConnectionFactory(config));
         _server.addConnector(_local);
+        _local.setIdleTimeout(Duration.ofMinutes(1).toMillis());
 
         _bufferedHandler = new FileBufferedResponseHandler();
         _bufferedHandler.setTempDir(_testDir);
@@ -426,7 +428,7 @@ public class FileBufferedResponseHandlerTest
         HttpParser parser = new HttpParser(response);
         while (true)
         {
-            ByteBuffer buffer = endpoint.waitForOutput(5, TimeUnit.SECONDS);
+            ByteBuffer buffer = endpoint.waitForOutput(15, TimeUnit.SECONDS);
             if (BufferUtil.isEmpty(buffer) && endpoint.isInputShutdown())
             {
                 LOG.warn("Input Shutdown");

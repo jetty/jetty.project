@@ -56,16 +56,16 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
 {
     private static final Logger LOG = LoggerFactory.getLogger(FileBufferedResponseHandler.class);
 
-    private Path tempDir = new File(System.getProperty("java.io.tmpdir")).toPath();
+    private Path _tempDir = new File(System.getProperty("java.io.tmpdir")).toPath();
 
     public Path getTempDir()
     {
-        return tempDir;
+        return _tempDir;
     }
 
     public void setTempDir(Path tempDir)
     {
-        this.tempDir = Objects.requireNonNull(tempDir);
+        _tempDir = Objects.requireNonNull(tempDir);
     }
 
     @Override
@@ -175,7 +175,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
             if (_fileOutputStream == null)
             {
                 // Create a new OutputStream to a file.
-                _filePath = Files.createTempFile(tempDir, "BufferedResponse", "");
+                _filePath = Files.createTempFile(_tempDir, "BufferedResponse", "");
                 _fileOutputStream = Files.newOutputStream(_filePath, StandardOpenOption.WRITE);
             }
 

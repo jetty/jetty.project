@@ -42,6 +42,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     static final Logger LOG = LoggerFactory.getLogger(ByteArrayEndPoint.class);
     static final InetAddress NOIP;
     static final InetSocketAddress NOIPPORT;
+    private static final int MAX_BUFFER_SIZE = Integer.MAX_VALUE / 2;
 
     static
     {
@@ -426,11 +427,14 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                         BufferUtil.compact(_out);
                         if (b.remaining() > BufferUtil.space(_out))
                         {
-                            // Cannot allocate buffers of exactly Integer.MAX_VALUE.
-                            long newBufferCapacity = Math.min((long)(_out.capacity() + b.remaining() * 1.5), Integer.MAX_VALUE - 1024);
-                            ByteBuffer n = BufferUtil.allocate(Math.toIntExact(newBufferCapacity));
-                            BufferUtil.append(n, _out);
-                            _out = n;
+                            // Don't grow larger than MAX_BUFFER_SIZE to avoid memory issues.
+                            if (_out.capacity() < MAX_BUFFER_SIZE)
+                            {
+                                long newBufferCapacity = Math.min((long)(_out.capacity() + b.remaining() * 1.5), MAX_BUFFER_SIZE);
+                                ByteBuffer n = BufferUtil.allocate(Math.toIntExact(newBufferCapacity));
+                                BufferUtil.append(n, _out);
+                                _out = n;
+                            }
                         }
                     }
 
