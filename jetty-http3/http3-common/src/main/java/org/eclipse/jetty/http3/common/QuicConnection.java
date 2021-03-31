@@ -118,26 +118,18 @@ public abstract class QuicConnection extends AbstractConnection
                 if (LOG.isDebugEnabled())
                     LOG.debug("packet contains connection ID {}", quicheConnectionId);
 
-                boolean created = false;
                 QuicSession session = sessions.get(quicheConnectionId);
                 if (session == null)
                 {
                     session = createSession(remoteAddress, cipherBuffer);
-                    if (session == null)
-                        continue;
-                    created = true;
+                    if (session != null && promoteSession(quicheConnectionId, session))
+                        sessions.put(quicheConnectionId, session);
+                    continue;
                 }
 
-                // createSession() may have consumed the cipherBuffer
-                if (cipherBuffer.hasRemaining())
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("packet is for existing session with connection ID {}, processing it ({} byte(s))", quicheConnectionId, cipherBuffer.remaining());
-                    session.process(remoteAddress, cipherBuffer);
-                }
-
-                if (created && promoteSession(quicheConnectionId, session))
-                    sessions.put(quicheConnectionId, session);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("packet is for existing session with connection ID {}, processing it ({} byte(s))", quicheConnectionId, cipherBuffer.remaining());
+                session.process(remoteAddress, cipherBuffer);
             }
         }
         catch (Throwable x)

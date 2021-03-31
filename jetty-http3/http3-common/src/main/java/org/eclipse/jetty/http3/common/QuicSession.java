@@ -147,7 +147,7 @@ public abstract class QuicSession
         this.quicheConnectionId = quicheConnectionId;
     }
 
-    void process(InetSocketAddress remoteAddress, ByteBuffer cipherBufferIn) throws IOException
+    public void process(InetSocketAddress remoteAddress, ByteBuffer cipherBufferIn) throws IOException
     {
         this.remoteAddress = remoteAddress;
         quicheConnection.feedCipherText(cipherBufferIn);
