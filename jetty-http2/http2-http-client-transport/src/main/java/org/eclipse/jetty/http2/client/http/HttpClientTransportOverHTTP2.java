@@ -117,7 +117,8 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
     @Override
     public HttpDestination newHttpDestination(Origin origin)
     {
-        return new MultiplexHttpDestination(getHttpClient(), origin);
+        SocketAddress address = origin.getAddress().getSocketAddress();
+        return new MultiplexHttpDestination(getHttpClient(), origin, getHTTP2Client().getClientConnector().isIntrinsicallySecure(address));
     }
 
     @Override
