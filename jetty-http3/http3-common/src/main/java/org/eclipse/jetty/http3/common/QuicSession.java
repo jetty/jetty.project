@@ -249,7 +249,7 @@ public abstract class QuicSession
             LOG.debug("closing Quic session cid={}", quicheConnectionId);
         try
         {
-            endpoints.values().forEach(AbstractEndPoint::close);
+            endpoints.values().forEach(QuicStreamEndPoint::close);
             endpoints.clear();
             flusher.close();
             connection.closeSession(quicheConnectionId, this, x);
