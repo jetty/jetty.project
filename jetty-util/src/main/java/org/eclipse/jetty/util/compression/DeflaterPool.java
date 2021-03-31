@@ -71,7 +71,7 @@ public class DeflaterPool extends CompressionPool<Deflater>
             capacity = threadPool.getMaxThreads();
 
         pool = new DeflaterPool(capacity, Deflater.DEFAULT_COMPRESSION, true);
-        container.addBean(pool);
+        container.addBean(pool, true);
         return pool;
     }
 }
