@@ -54,12 +54,14 @@ public class QuicStreamEndPoint extends AbstractEndPoint
     {
         try
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("shutting down input of stream {}", streamId);
             session.shutdownInput(streamId);
         }
         catch (IOException x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("error shutting down output", x);
+                LOG.debug("error shutting down output of stream {}", streamId, x);
         }
     }
 
@@ -68,18 +70,22 @@ public class QuicStreamEndPoint extends AbstractEndPoint
     {
         try
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("shutting down output of stream {}", streamId);
             session.shutdownOutput(streamId);
         }
         catch (IOException x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("error shutting down output", x);
+                LOG.debug("error shutting down output of stream {}", streamId, x);
         }
     }
 
     @Override
     public void onClose(Throwable failure)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("closing stream {}", streamId);
         try
         {
             session.flushFinished(streamId);
@@ -96,6 +102,8 @@ public class QuicStreamEndPoint extends AbstractEndPoint
     @Override
     public int fill(ByteBuffer buffer) throws IOException
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("filling buffer from stream {}", streamId);
         int pos = BufferUtil.flipToFill(buffer);
         int drained = session.fill(streamId, buffer);
         BufferUtil.flipToFlush(buffer, pos);
@@ -108,7 +116,7 @@ public class QuicStreamEndPoint extends AbstractEndPoint
     public boolean flush(ByteBuffer... buffers) throws IOException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("flushing {} buffer(s) stream {}", buffers.length, streamId);
+            LOG.debug("flushing {} buffer(s) to stream {}", buffers.length, streamId);
         for (ByteBuffer buffer : buffers)
         {
             int flushed = session.flush(streamId, buffer);
@@ -122,7 +130,7 @@ public class QuicStreamEndPoint extends AbstractEndPoint
             }
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("fully flushed stream {}", streamId);
+            LOG.debug("flushed stream {}", streamId);
         return true;
     }
 
