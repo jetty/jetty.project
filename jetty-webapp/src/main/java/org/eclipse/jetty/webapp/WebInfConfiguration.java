@@ -476,8 +476,7 @@ public class WebInfConfiguration extends AbstractConfiguration
      * Typically used to convert anonymous Object from getAttribute() calls to a File object.
      *
      * @param fileattr the file attribute to analyze and return from (supports type File, Path, and String).
-     * @return the File object or null if fileattr null.
-     * @throws IllegalStateException if argument is not a File, Path or String.
+     * @return the File object if it can be converted otherwise null.
      */
     private File asFile(Object fileattr)
     {
@@ -490,7 +489,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         if (fileattr instanceof Path)
             return ((Path)fileattr).toFile();
 
-        throw new IllegalStateException("Could not convert attribute to file " + fileattr);
+        return null;
     }
 
     public void makeTempDirectory(File parent, WebAppContext context)
