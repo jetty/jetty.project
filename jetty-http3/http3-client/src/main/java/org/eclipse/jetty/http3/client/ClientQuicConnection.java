@@ -103,9 +103,12 @@ public class ClientQuicConnection extends QuicConnection
     }
 
     @Override
-    protected QuicSession createSession(InetSocketAddress remoteAddress, ByteBuffer cipherBuffer)
+    protected QuicSession createSession(InetSocketAddress remoteAddress, ByteBuffer cipherBuffer) throws IOException
     {
-        return pendingSessions.get(remoteAddress);
+        QuicSession session = pendingSessions.get(remoteAddress);
+        if (session != null)
+            session.process(remoteAddress, cipherBuffer);
+        return session;
     }
 
     @Override
