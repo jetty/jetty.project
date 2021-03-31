@@ -14,6 +14,7 @@
 package org.eclipse.jetty.client.dynamic;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -179,7 +180,8 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
     @Override
     public HttpDestination newHttpDestination(Origin origin)
     {
-        return new MultiplexHttpDestination(getHttpClient(), origin);
+        SocketAddress address = origin.getAddress().getSocketAddress();
+        return new MultiplexHttpDestination(getHttpClient(), origin, getClientConnector().isIntrinsicallySecure(address));
     }
 
     @Override
@@ -195,7 +197,9 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         }
         else
         {
-            if (destination.isSecure() && protocol.isNegotiate())
+            SocketAddress address = destination.getOrigin().getAddress().getSocketAddress();
+            boolean intrinsicallySecure = getClientConnector().isIntrinsicallySecure(address);
+            if (!intrinsicallySecure && destination.isSecure() && protocol.isNegotiate())
             {
                 factory = new ALPNClientConnectionFactory(getClientConnector().getExecutor(), this::newNegotiatedConnection, protocol.getProtocols());
             }

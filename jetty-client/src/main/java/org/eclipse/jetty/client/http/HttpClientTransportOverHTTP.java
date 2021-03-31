@@ -14,6 +14,7 @@
 package org.eclipse.jetty.client.http;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.util.List;
 import java.util.Map;
 
@@ -68,7 +69,8 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
     @Override
     public HttpDestination newHttpDestination(Origin origin)
     {
-        return new DuplexHttpDestination(getHttpClient(), origin, getClientConnector().isIntrinsicallySecure());
+        SocketAddress address = origin.getAddress().getSocketAddress();
+        return new DuplexHttpDestination(getHttpClient(), origin, getClientConnector().isIntrinsicallySecure(address));
     }
 
     @Override

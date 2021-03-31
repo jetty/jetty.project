@@ -1,0 +1,242 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+package org.eclipse.jetty.quic.common;
+
+import java.io.IOException;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
+
+import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.DatagramChannelEndPoint;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.quic.quiche.QuicheConnectionId;
+import org.eclipse.jetty.quic.quiche.ffi.LibQuiche;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * <p>A {@link Connection} implementation that receives and sends datagram packets via its associated datagram {@link EndPoint}.</p>
+ * <p>The received bytes are peeked to obtain the QUIC connection ID; each QUIC connection ID has an associated
+ * {@link QuicSession}, and the received bytes are then passed to the {@link QuicSession} for processing.</p>
+ * <p>On the receive side, a QuicConnection <em>fans-out</em> to multiple {@link QuicSession}s.</p>
+ * <p>On the send side, many {@link QuicSession}s <em>fan-in</em> to a QuicConnection.</p>
+ */
+public abstract class QuicConnection extends AbstractConnection
+{
+    private static final Logger LOG = LoggerFactory.getLogger(QuicConnection.class);
+
+    private final ConcurrentMap<QuicheConnectionId, QuicSession> sessions = new ConcurrentHashMap<>();
+    private final Scheduler scheduler;
+    private final ByteBufferPool byteBufferPool;
+    private final Flusher flusher = new Flusher();
+
+    protected QuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endPoint)
+    {
+        super(endPoint, executor);
+        this.scheduler = scheduler;
+        this.byteBufferPool = byteBufferPool;
+    }
+
+    public Scheduler getScheduler()
+    {
+        return scheduler;
+    }
+
+    public ByteBufferPool getByteBufferPool()
+    {
+        return byteBufferPool;
+    }
+
+    protected void closeSession(QuicheConnectionId quicheConnectionId, QuicSession session, Throwable x)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("closing session of type {} cid={}", getClass().getSimpleName(), quicheConnectionId);
+        if (quicheConnectionId != null)
+            sessions.remove(quicheConnectionId);
+    }
+
+    @Override
+    public void close()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("closing connection of type {}", getClass().getSimpleName());
+        sessions.values().forEach(QuicSession::close);
+        sessions.clear();
+        super.close();
+        if (LOG.isDebugEnabled())
+            LOG.debug("closed connection of type {}", getClass().getSimpleName());
+    }
+
+    @Override
+    public void onFillable()
+    {
+        try
+        {
+            // TODO make the buffer size configurable
+            ByteBuffer cipherBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN, true);
+            while (true)
+            {
+                BufferUtil.clear(cipherBuffer);
+                SocketAddress remoteAddress = getEndPoint().receive(cipherBuffer);
+                int fill = remoteAddress == DatagramChannelEndPoint.EOF ? -1 : cipherBuffer.remaining();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("filled cipher buffer with {} byte(s)", fill);
+                // ServerDatagramEndPoint will only return -1 if input is shut down.
+                if (fill < 0)
+                {
+                    byteBufferPool.release(cipherBuffer);
+                    getEndPoint().shutdownOutput();
+                    return;
+                }
+                if (fill == 0)
+                {
+                    byteBufferPool.release(cipherBuffer);
+                    fillInterested();
+                    return;
+                }
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("peer IP address: {}, ciphertext packet size: {}", remoteAddress, cipherBuffer.remaining());
+
+                QuicheConnectionId quicheConnectionId = QuicheConnectionId.fromPacket(cipherBuffer);
+                if (quicheConnectionId == null)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("packet contains undecipherable connection ID, dropping it");
+                    continue;
+                }
+                if (LOG.isDebugEnabled())
+                    LOG.debug("packet contains connection ID {}", quicheConnectionId);
+
+                QuicSession session = sessions.get(quicheConnectionId);
+                if (session == null)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("packet is for unknown session, trying to create a new one");
+                    session = createSession(remoteAddress, cipherBuffer);
+                    if (session != null)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("session created");
+                        session.setConnectionId(quicheConnectionId);
+                        sessions.put(quicheConnectionId, session);
+                    }
+                    else
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("session not created");
+                    }
+                    continue;
+                }
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("packet is for existing session with connection ID {}, processing it ({} byte(s))", quicheConnectionId, cipherBuffer.remaining());
+                session.process(remoteAddress, cipherBuffer);
+            }
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("caught exception in onFillable loop", x);
+        }
+    }
+
+    protected abstract QuicSession createSession(SocketAddress remoteAddress, ByteBuffer cipherBuffer) throws IOException;
+
+    public void write(Callback callback, SocketAddress remoteAddress, ByteBuffer... buffers)
+    {
+        flusher.offer(callback, remoteAddress, buffers);
+    }
+
+    private class Flusher extends IteratingCallback
+    {
+        private final AutoLock lock = new AutoLock();
+        private final ArrayDeque<Entry> queue = new ArrayDeque<>();
+        private Entry entry;
+
+        public void offer(Callback callback, SocketAddress address, ByteBuffer[] buffers)
+        {
+            try (AutoLock l = lock.lock())
+            {
+                queue.offer(new Entry(callback, address, buffers));
+            }
+            flusher.iterate();
+        }
+
+        @Override
+        protected Action process()
+        {
+            try (AutoLock l = lock.lock())
+            {
+                entry = queue.poll();
+            }
+            if (entry == null)
+                return Action.IDLE;
+
+            getEndPoint().write(this, entry.address, entry.buffers);
+            return Action.SCHEDULED;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            entry.callback.succeeded();
+            super.succeeded();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            entry.callback.failed(x);
+            super.failed(x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return entry.callback.getInvocationType();
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable cause)
+        {
+            QuicConnection.this.close();
+        }
+
+        private class Entry
+        {
+            private final Callback callback;
+            private final SocketAddress address;
+            private final ByteBuffer[] buffers;
+
+            private Entry(Callback callback, SocketAddress address, ByteBuffer[] buffers)
+            {
+                this.callback = callback;
+                this.address = address;
+                this.buffers = buffers;
+            }
+        }
+    }
+}

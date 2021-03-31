@@ -1,0 +1,409 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+package org.eclipse.jetty.quic.common;
+
+import java.io.IOException;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.CyclicTimeout;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.quic.quiche.QuicheConnection;
+import org.eclipse.jetty.quic.quiche.QuicheConnectionId;
+import org.eclipse.jetty.quic.quiche.ffi.LibQuiche;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.ExecutionStrategy;
+import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * <p>Represents a logical connection with a remote peer, identified by a QUIC connection ID.</p>
+ * <p>Each QuicSession maintains a number of QUIC streams, identified by their QUIC stream ID;
+ * Each QUIC stream is wrapped in an {@link EndPoint}, namely {@link QuicStreamEndPoint}.</p>
+ * <p>Bytes received from a {@link QuicConnection} in {@link #process(SocketAddress, ByteBuffer)}
+ * are passed to Quiche for processing; in turn, Quiche produces a list of QUIC stream IDs that
+ * have pending I/O events, either read-ready or write-ready.</p>
+ * <p>On the receive side, a QuicSession <em>fans-out</em> to multiple {@link QuicStreamEndPoint}s.</p>
+ * <p>On the send side, many {@link QuicStreamEndPoint}s <em>fan-in</em> to a QuicSession.</p>
+ */
+public abstract class QuicSession
+{
+    private static final Logger LOG = LoggerFactory.getLogger(QuicSession.class);
+
+    private final Flusher flusher;
+    private final Scheduler scheduler;
+    private final ByteBufferPool byteBufferPool;
+    private final QuicheConnection quicheConnection;
+    private final QuicConnection connection;
+    private final ConcurrentMap<Long, QuicStreamEndPoint> endpoints = new ConcurrentHashMap<>();
+    private final ExecutionStrategy strategy;
+    private final AutoLock strategyQueueLock = new AutoLock();
+    private final Queue<Runnable> strategyQueue = new ArrayDeque<>();
+    private SocketAddress remoteAddress;
+    private QuicheConnectionId quicheConnectionId;
+
+    protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicheConnection quicheConnection, QuicConnection connection, SocketAddress remoteAddress)
+    {
+        this.scheduler = scheduler;
+        this.byteBufferPool = byteBufferPool;
+        this.quicheConnection = quicheConnection;
+        this.connection = connection;
+        this.remoteAddress = remoteAddress;
+        this.flusher = new Flusher(scheduler);
+        this.strategy = new AdaptiveExecutionStrategy(new Producer(), executor);
+        LifeCycle.start(strategy);
+    }
+
+    public Scheduler getScheduler()
+    {
+        return scheduler;
+    }
+
+    public String getNegotiatedProtocol()
+    {
+        return quicheConnection.getNegotiatedProtocol();
+    }
+
+    public void onOpen()
+    {
+        getOrCreateStreamEndPoint(0);
+    }
+
+    public int fill(long streamId, ByteBuffer buffer) throws IOException
+    {
+        return quicheConnection.drainClearTextForStream(streamId, buffer);
+    }
+
+    public int flush(long streamId, ByteBuffer buffer) throws IOException
+    {
+        int flushed = quicheConnection.feedClearTextForStream(streamId, buffer);
+        flush();
+        return flushed;
+    }
+
+    public void flushFinished(long streamId) throws IOException
+    {
+        quicheConnection.feedFinForStream(streamId);
+        flush();
+    }
+
+    public boolean isFinished(long streamId)
+    {
+        return quicheConnection.isStreamFinished(streamId);
+    }
+
+    public void shutdownInput(long streamId) throws IOException
+    {
+        quicheConnection.shutdownStream(streamId, false);
+    }
+
+    public void shutdownOutput(long streamId) throws IOException
+    {
+        quicheConnection.shutdownStream(streamId, true);
+    }
+
+    public void onClose(long streamId)
+    {
+        endpoints.remove(streamId);
+    }
+
+    public SocketAddress getLocalAddress()
+    {
+        return connection.getEndPoint().getLocalSocketAddress();
+    }
+
+    public SocketAddress getRemoteAddress()
+    {
+        return remoteAddress;
+    }
+
+    public boolean isConnectionEstablished()
+    {
+        return quicheConnection.isConnectionEstablished();
+    }
+
+    public void setConnectionId(QuicheConnectionId quicheConnectionId)
+    {
+        this.quicheConnectionId = quicheConnectionId;
+    }
+
+    public void process(SocketAddress remoteAddress, ByteBuffer cipherBufferIn) throws IOException
+    {
+        this.remoteAddress = remoteAddress;
+        quicheConnection.feedCipherText(cipherBufferIn);
+
+        if (quicheConnection.isConnectionEstablished())
+        {
+            List<Long> writableStreamIds = quicheConnection.writableStreamIds();
+            if (LOG.isDebugEnabled())
+                LOG.debug("writable stream ids: {}", writableStreamIds);
+            if (!writableStreamIds.isEmpty())
+            {
+                dispatch(new WritableStreamsTask(writableStreamIds));
+            }
+
+            List<Long> readableStreamIds = quicheConnection.readableStreamIds();
+            if (LOG.isDebugEnabled())
+                LOG.debug("readable stream ids: {}", readableStreamIds);
+            for (Long readableStreamId : readableStreamIds)
+            {
+                dispatch(new ReadableStreamTask(readableStreamId));
+            }
+        }
+        else
+        {
+            flush();
+        }
+    }
+
+    private void onWritable(long writableStreamId)
+    {
+        QuicStreamEndPoint streamEndPoint = getOrCreateStreamEndPoint(writableStreamId);
+        if (LOG.isDebugEnabled())
+            LOG.debug("selected endpoint for write: {}", streamEndPoint);
+        streamEndPoint.onWritable();
+    }
+
+    private void onReadable(long readableStreamId)
+    {
+        QuicStreamEndPoint streamEndPoint = getOrCreateStreamEndPoint(readableStreamId);
+        if (LOG.isDebugEnabled())
+            LOG.debug("selected endpoint for read: {}", streamEndPoint);
+        streamEndPoint.onReadable();
+    }
+
+    private void dispatch(Runnable runnable)
+    {
+        try (AutoLock l = strategyQueueLock.lock())
+        {
+            strategyQueue.offer(runnable);
+        }
+        strategy.dispatch();
+    }
+
+    public void flush()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("flushing session cid={}", quicheConnectionId);
+        flusher.iterate();
+    }
+
+    private QuicStreamEndPoint getOrCreateStreamEndPoint(long streamId)
+    {
+        QuicStreamEndPoint endPoint = endpoints.compute(streamId, (sid, quicStreamEndPoint) ->
+        {
+            if (quicStreamEndPoint == null)
+            {
+                quicStreamEndPoint = createQuicStreamEndPoint(streamId);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("creating endpoint for stream {}", sid);
+            }
+            return quicStreamEndPoint;
+        });
+        if (LOG.isDebugEnabled())
+            LOG.debug("returning endpoint for stream {}", streamId);
+        return endPoint;
+    }
+
+    protected abstract QuicStreamEndPoint createQuicStreamEndPoint(long streamId);
+
+    public void close()
+    {
+        if (quicheConnectionId == null)
+            close(new IOException("Quic connection refused"));
+        else
+            close(new IOException("Quic connection closed"));
+    }
+
+    private void close(Throwable x)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("closing Quic session cid={}", quicheConnectionId);
+        try
+        {
+            endpoints.values().forEach(QuicStreamEndPoint::close);
+            endpoints.clear();
+            flusher.close();
+            connection.closeSession(quicheConnectionId, this, x);
+            LifeCycle.stop(strategy);
+        }
+        finally
+        {
+            // This call frees malloc'ed memory so make sure it always happens.
+            quicheConnection.dispose();
+        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("closed Quic session cid={}", quicheConnectionId);
+    }
+
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName() + " id=" + quicheConnectionId;
+    }
+
+    private class Flusher extends IteratingCallback
+    {
+        private final CyclicTimeout timeout;
+        private ByteBuffer cipherBuffer;
+
+        public Flusher(Scheduler scheduler)
+        {
+            timeout = new CyclicTimeout(scheduler)
+            {
+                @Override
+                public void onTimeoutExpired()
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("quiche timeout callback called cid={}", quicheConnectionId);
+                    quicheConnection.onTimeout();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("re-iterating quiche after timeout cid={}", quicheConnectionId);
+                    // Do not use the timer thread to iterate.
+                    dispatch(() -> iterate());
+                }
+            };
+        }
+
+        @Override
+        public void close()
+        {
+            super.close();
+            timeout.destroy();
+        }
+
+        @Override
+        protected Action process() throws IOException
+        {
+            // TODO make the buffer size configurable
+            cipherBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN, true);
+            int pos = BufferUtil.flipToFill(cipherBuffer);
+            int drained = quicheConnection.drainCipherText(cipherBuffer);
+            if (LOG.isDebugEnabled())
+                LOG.debug("drained {} byte(s) of cipher text from quiche", drained);
+            long nextTimeoutInMs = quicheConnection.nextTimeout();
+            if (LOG.isDebugEnabled())
+                LOG.debug("next quiche timeout: {} ms", nextTimeoutInMs);
+            if (nextTimeoutInMs < 0)
+                timeout.cancel();
+            else
+                timeout.schedule(nextTimeoutInMs, TimeUnit.MILLISECONDS);
+            if (drained == 0)
+            {
+                boolean connectionClosed = quicheConnection.isConnectionClosed();
+                Action action = connectionClosed ? Action.SUCCEEDED : Action.IDLE;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("connection is closed? {} -> action = {}", connectionClosed, action);
+                return action;
+            }
+            BufferUtil.flipToFlush(cipherBuffer, pos);
+            connection.write(this, remoteAddress, cipherBuffer);
+            if (LOG.isDebugEnabled())
+                LOG.debug("wrote cipher text for {}", remoteAddress);
+            return Action.SCHEDULED;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("cipher text writing succeeded");
+            byteBufferPool.release(cipherBuffer);
+            super.succeeded();
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
+
+        @Override
+        protected void onCompleteSuccess()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("quiche connection is in closed state");
+            QuicSession.this.close();
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable cause)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("cipher text writing failed, closing session", cause);
+            byteBufferPool.release(cipherBuffer);
+            QuicSession.this.close(cause);
+        }
+    }
+
+    private class Producer implements ExecutionStrategy.Producer
+    {
+        @Override
+        public Runnable produce()
+        {
+            try (AutoLock l = strategyQueueLock.lock())
+            {
+                return strategyQueue.poll();
+            }
+        }
+    }
+
+    private class WritableStreamsTask implements Runnable
+    {
+        private final List<Long> streamIds;
+
+        private WritableStreamsTask(List<Long> streamIds)
+        {
+            this.streamIds = streamIds;
+        }
+
+        @Override
+        public void run()
+        {
+            for (long streamId : streamIds)
+            {
+                onWritable(streamId);
+            }
+        }
+    }
+
+    private class ReadableStreamTask implements Runnable
+    {
+        private final long streamId;
+
+        private ReadableStreamTask(long streamId)
+        {
+            this.streamId = streamId;
+        }
+
+        @Override
+        public void run()
+        {
+            onReadable(streamId);
+        }
+    }
+}
