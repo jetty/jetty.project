@@ -42,7 +42,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     static final Logger LOG = LoggerFactory.getLogger(ByteArrayEndPoint.class);
     static final InetAddress NOIP;
     static final InetSocketAddress NOIPPORT;
-    private static final int MAX_BUFFER_SIZE = Integer.MAX_VALUE / 2;
+    private static final int MAX_BUFFER_SIZE = Integer.MAX_VALUE - 1024;
 
     static
     {

@@ -15,18 +15,19 @@ package org.eclipse.jetty.server;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -34,7 +35,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.FileBufferedResponseHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,7 +53,8 @@ public class FileBufferedResponseHandlerTest
     private static final Logger LOG = LoggerFactory.getLogger(FileBufferedResponseHandlerTest.class);
 
     private Server _server;
-    private LocalConnector _local;
+    private LocalConnector _localConnector;
+    private ServerConnector _serverConnector;
     private Path _testDir;
     private FileBufferedResponseHandler _bufferedHandler;
 
@@ -67,9 +68,12 @@ public class FileBufferedResponseHandlerTest
         HttpConfiguration config = new HttpConfiguration();
         config.setOutputBufferSize(1024);
         config.setOutputAggregationSize(256);
-        _local = new LocalConnector(_server, new HttpConnectionFactory(config));
-        _server.addConnector(_local);
-        _local.setIdleTimeout(Duration.ofMinutes(1).toMillis());
+
+        _localConnector = new LocalConnector(_server, new HttpConnectionFactory(config));
+        _localConnector.setIdleTimeout(Duration.ofMinutes(1).toMillis());
+        _server.addConnector(_localConnector);
+        _serverConnector = new ServerConnector(_server, new HttpConnectionFactory(config));
+        _server.addConnector(_serverConnector);
 
         _bufferedHandler = new FileBufferedResponseHandler();
         _bufferedHandler.setTempDir(_testDir);
@@ -108,7 +112,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         _server.start();
-        String rawResponse = _local.getResponse("GET /ctx/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = _localConnector.getResponse("GET /ctx/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -137,7 +141,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         _server.start();
-        String rawResponse = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = _localConnector.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -166,7 +170,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         _server.start();
-        String rawResponse = _local.getResponse("GET /ctx/include/path.exclude HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = _localConnector.getResponse("GET /ctx/include/path.exclude HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -197,7 +201,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         _server.start();
-        String rawResponse = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = _localConnector.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -228,7 +232,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         _server.start();
-        String rawResponse = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = _localConnector.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -259,7 +263,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         _server.start();
-        String rawResponse = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = _localConnector.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -290,7 +294,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         _server.start();
-        String rawResponse = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = _localConnector.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -320,7 +324,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         _server.start();
-        String rawResponse = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = _localConnector.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -356,7 +360,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         _server.start();
-        String rawResponse = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = _localConnector.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -398,7 +402,6 @@ public class FileBufferedResponseHandlerTest
         });
 
         _server.start();
-        LocalConnector.LocalEndPoint endpoint = _local.executeRequest("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
 
         AtomicLong received = new AtomicLong();
         HttpTester.Response response = new HttpTester.Response()
@@ -425,21 +428,17 @@ public class FileBufferedResponseHandlerTest
             }
         };
 
-        HttpParser parser = new HttpParser(response);
-        while (true)
+        try (Socket socket = new Socket("localhost", _serverConnector.getLocalPort()))
         {
-            ByteBuffer buffer = endpoint.waitForOutput(15, TimeUnit.SECONDS);
-            if (BufferUtil.isEmpty(buffer) && endpoint.isInputShutdown())
-            {
-                LOG.warn("Input Shutdown");
-                break;
-            }
+            OutputStream output = socket.getOutputStream();
+            String request = "GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n";
+            output.write(request.getBytes(StandardCharsets.UTF_8));
+            output.flush();
 
-            if (parser.parseNext(buffer))
-                break;
+            HttpTester.Input input = HttpTester.from(socket.getInputStream());
+            HttpTester.parseResponse(input, response);
         }
 
-        LOG.info("Parser: " + parser);
         assertTrue(response.isComplete());
         assertThat(response.get("NumFiles"), is("1"));
         assertThat(response.get("FileSize"), is(Long.toString(fileSize)));
