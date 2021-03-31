@@ -243,7 +243,7 @@ public abstract class QuicSession
             close(new IOException("Quic connection closed"));
     }
 
-    public void close(Throwable x)
+    private void close(Throwable x)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("closing Quic session cid={}", quicheConnectionId);
