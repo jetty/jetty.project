@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
 import org.eclipse.jetty.client.AbstractHttpClientTransport;
@@ -47,8 +48,8 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
 
     public HttpClientTransportOverHTTP2(HTTP2Client client)
     {
-        this.client = client;
-        addBean(client.getClientConnector(), false);
+        this.client = Objects.requireNonNull(client);
+        addBean(client);
         setConnectionPoolFactory(destination ->
         {
             HttpClient httpClient = getHttpClient();
@@ -93,15 +94,7 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
             client.setUseInputDirectByteBuffers(httpClient.isUseInputDirectByteBuffers());
             client.setUseOutputDirectByteBuffers(httpClient.isUseOutputDirectByteBuffers());
         }
-        addBean(client);
         super.doStart();
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        super.doStop();
-        removeBean(client);
     }
 
     @Override

@@ -159,7 +159,9 @@ public class HttpClient extends ContainerLifeCycle
     {
         this.transport = Objects.requireNonNull(transport);
         addBean(transport);
-        this.connector = ((AbstractHttpClientTransport)transport).getBean(ClientConnector.class);
+        this.connector = ((AbstractHttpClientTransport)transport).getContainedBeans(ClientConnector.class).stream()
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException(ClientConnector.class.getName() + " not found in transport " + transport));
         addBean(handlers);
         addBean(decoderFactories);
     }

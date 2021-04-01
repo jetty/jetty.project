@@ -14,21 +14,22 @@
 package org.eclipse.jetty.client;
 
 import java.net.InetSocketAddress;
-import java.time.Duration;
 import java.util.Map;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Connectable;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.Container;
 
 @ManagedObject
 public abstract class AbstractConnectorHttpClientTransport extends AbstractHttpClientTransport
 {
-    private final ClientConnector connector;
+    private final Connectable connector;
 
-    protected AbstractConnectorHttpClientTransport(ClientConnector connector)
+    protected AbstractConnectorHttpClientTransport(Connectable connector)
     {
         this.connector = connector;
         addBean(connector);
@@ -36,28 +37,20 @@ public abstract class AbstractConnectorHttpClientTransport extends AbstractHttpC
 
     public ClientConnector getClientConnector()
     {
-        return connector;
+        ClientConnector result = null;
+        if (connector instanceof ClientConnector)
+            result = (ClientConnector)connector;
+        else if (connector instanceof Container)
+            result = ((Container)connector).getContainedBeans(ClientConnector.class).stream().findFirst().orElse(null);
+        if (result == null)
+            throw new IllegalArgumentException(ClientConnector.class.getName() + " not found in transport " + this);
+        return result;
     }
 
     @ManagedAttribute(value = "The number of selectors", readonly = true)
     public int getSelectors()
     {
-        return connector.getSelectors();
-    }
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        HttpClient httpClient = getHttpClient();
-        connector.setBindAddress(httpClient.getBindAddress());
-        connector.setByteBufferPool(httpClient.getByteBufferPool());
-        connector.setConnectBlocking(httpClient.isConnectBlocking());
-        connector.setConnectTimeout(Duration.ofMillis(httpClient.getConnectTimeout()));
-        connector.setExecutor(httpClient.getExecutor());
-        connector.setIdleTimeout(Duration.ofMillis(httpClient.getIdleTimeout()));
-        connector.setScheduler(httpClient.getScheduler());
-        connector.setSslContextFactory(httpClient.getSslContextFactory());
-        super.doStart();
+        return getClientConnector().getSelectors();
     }
 
     @Override

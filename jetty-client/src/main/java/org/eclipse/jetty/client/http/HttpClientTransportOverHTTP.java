@@ -25,8 +25,8 @@ import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Connectable;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
@@ -41,19 +41,25 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
 
     public HttpClientTransportOverHTTP()
     {
-        this(Math.max(1, ProcessorUtils.availableProcessors() / 2));
+        this(1);
     }
 
     public HttpClientTransportOverHTTP(int selectors)
     {
-        this(new ClientConnector());
-        getClientConnector().setSelectors(selectors);
+        this(newClientConnector(selectors));
     }
 
-    public HttpClientTransportOverHTTP(ClientConnector connector)
+    public HttpClientTransportOverHTTP(Connectable connector)
     {
         super(connector);
         setConnectionPoolFactory(destination -> new DuplexConnectionPool(destination, getHttpClient().getMaxConnectionsPerDestination(), destination));
+    }
+
+    private static Connectable newClientConnector(int selectors)
+    {
+        ClientConnector connector = new ClientConnector();
+        connector.setSelectors(selectors);
+        return connector;
     }
 
     @Override

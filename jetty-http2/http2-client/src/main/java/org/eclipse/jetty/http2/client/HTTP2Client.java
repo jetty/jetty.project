@@ -31,10 +31,12 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Connectable;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -101,7 +103,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 @ManagedObject
 public class HTTP2Client extends ContainerLifeCycle
 {
-    private final ClientConnector connector;
+    private final Connectable connector;
     private int inputBufferSize = 8192;
     private List<String> protocols = List.of("h2");
     private int initialSessionRecvWindow = 16 * 1024 * 1024;
@@ -121,7 +123,7 @@ public class HTTP2Client extends ContainerLifeCycle
         this(new ClientConnector());
     }
 
-    public HTTP2Client(ClientConnector connector)
+    public HTTP2Client(Connectable connector)
     {
         this.connector = connector;
         addBean(connector);
@@ -129,37 +131,44 @@ public class HTTP2Client extends ContainerLifeCycle
 
     public ClientConnector getClientConnector()
     {
-        return connector;
+        ClientConnector result = null;
+        if (connector instanceof ClientConnector)
+            result = (ClientConnector)connector;
+        else if (connector instanceof Container)
+            result = ((Container)connector).getContainedBeans(ClientConnector.class).stream().findAny().orElse(null);
+        if (result == null)
+            throw new IllegalArgumentException(ClientConnector.class.getName() + " not found in " + this);
+        return result;
     }
 
     public Executor getExecutor()
     {
-        return connector.getExecutor();
+        return getClientConnector().getExecutor();
     }
 
     public void setExecutor(Executor executor)
     {
-        connector.setExecutor(executor);
+        getClientConnector().setExecutor(executor);
     }
 
     public Scheduler getScheduler()
     {
-        return connector.getScheduler();
+        return getClientConnector().getScheduler();
     }
 
     public void setScheduler(Scheduler scheduler)
     {
-        connector.setScheduler(scheduler);
+        getClientConnector().setScheduler(scheduler);
     }
 
     public ByteBufferPool getByteBufferPool()
     {
-        return connector.getByteBufferPool();
+        return getClientConnector().getByteBufferPool();
     }
 
     public void setByteBufferPool(ByteBufferPool bufferPool)
     {
-        connector.setByteBufferPool(bufferPool);
+        getClientConnector().setByteBufferPool(bufferPool);
     }
 
     public FlowControlStrategy.Factory getFlowControlStrategyFactory()
@@ -175,23 +184,23 @@ public class HTTP2Client extends ContainerLifeCycle
     @ManagedAttribute("The number of selectors")
     public int getSelectors()
     {
-        return connector.getSelectors();
+        return getClientConnector().getSelectors();
     }
 
     public void setSelectors(int selectors)
     {
-        connector.setSelectors(selectors);
+        getClientConnector().setSelectors(selectors);
     }
 
     @ManagedAttribute("The idle timeout in milliseconds")
     public long getIdleTimeout()
     {
-        return connector.getIdleTimeout().toMillis();
+        return getClientConnector().getIdleTimeout().toMillis();
     }
 
     public void setIdleTimeout(long idleTimeout)
     {
-        connector.setIdleTimeout(Duration.ofMillis(idleTimeout));
+        getClientConnector().setIdleTimeout(Duration.ofMillis(idleTimeout));
     }
 
     @ManagedAttribute("The stream idle timeout in milliseconds")
@@ -208,33 +217,33 @@ public class HTTP2Client extends ContainerLifeCycle
     @ManagedAttribute("The connect timeout in milliseconds")
     public long getConnectTimeout()
     {
-        return connector.getConnectTimeout().toMillis();
+        return getClientConnector().getConnectTimeout().toMillis();
     }
 
     public void setConnectTimeout(long connectTimeout)
     {
-        connector.setConnectTimeout(Duration.ofMillis(connectTimeout));
+        getClientConnector().setConnectTimeout(Duration.ofMillis(connectTimeout));
     }
 
     @ManagedAttribute("Whether the connect() operation is blocking")
     public boolean isConnectBlocking()
     {
-        return connector.isConnectBlocking();
+        return getClientConnector().isConnectBlocking();
     }
 
     public void setConnectBlocking(boolean connectBlocking)
     {
-        connector.setConnectBlocking(connectBlocking);
+        getClientConnector().setConnectBlocking(connectBlocking);
     }
 
     public SocketAddress getBindAddress()
     {
-        return connector.getBindAddress();
+        return getClientConnector().getBindAddress();
     }
 
     public void setBindAddress(SocketAddress bindAddress)
     {
-        connector.setBindAddress(bindAddress);
+        getClientConnector().setBindAddress(bindAddress);
     }
 
     @ManagedAttribute("The size of the buffer used to read from the network")
@@ -404,7 +413,7 @@ public class HTTP2Client extends ContainerLifeCycle
     {
         Map<String, Object> context = contextFrom(factory, listener, promise, null);
         context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, promise::failed));
-        connector.accept(channel, context);
+        getClientConnector().accept(channel, context);
     }
 
     private Map<String, Object> contextFrom(ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)

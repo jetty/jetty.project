@@ -38,6 +38,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Connectable;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 
@@ -95,7 +96,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
      * @param connector the ClientConnector used by this transport
      * @param factoryInfos the <em>application protocols</em> that this transport can speak
      */
-    public HttpClientTransportDynamic(ClientConnector connector, ClientConnectionFactory.Info... factoryInfos)
+    public HttpClientTransportDynamic(Connectable connector, ClientConnectionFactory.Info... factoryInfos)
     {
         super(connector);
         addBean(connector);
@@ -179,7 +180,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         {
             if (destination.isSecure() && protocol.isNegotiate())
             {
-                factory = new ALPNClientConnectionFactory(getClientConnector().getExecutor(), this::newNegotiatedConnection, protocol.getProtocols());
+                factory = new ALPNClientConnectionFactory(getHttpClient().getExecutor(), this::newNegotiatedConnection, protocol.getProtocols());
             }
             else
             {

@@ -35,12 +35,10 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ClientConnector extends ContainerLifeCycle
+public class ClientConnector extends ContainerLifeCycle implements Connectable
 {
-    public static final String CLIENT_CONNECTOR_CONTEXT_KEY = "org.eclipse.jetty.client.connector";
     public static final String REMOTE_SOCKET_ADDRESS_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".remoteSocketAddress";
     public static final String CLIENT_CONNECTION_FACTORY_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".clientConnectionFactory";
-    public static final String CONNECTION_PROMISE_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".connectionPromise";
     private static final Logger LOG = LoggerFactory.getLogger(ClientConnector.class);
 
     private Executor executor;
@@ -211,6 +209,7 @@ public class ClientConnector extends ContainerLifeCycle
         return new ClientSelectorManager(getExecutor(), getScheduler(), getSelectors());
     }
 
+    @Override
     public void connect(SocketAddress address, Map<String, Object> context)
     {
         SocketChannel channel = null;

@@ -29,6 +29,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Connectable;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.Promise;
@@ -47,11 +48,10 @@ public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTran
 
     public HttpClientTransportOverFCGI(int selectors, String scriptRoot)
     {
-        this(new ClientConnector(), scriptRoot);
-        getClientConnector().setSelectors(selectors);
+        this(newClientConnector(selectors), scriptRoot);
     }
 
-    public HttpClientTransportOverFCGI(ClientConnector connector, String scriptRoot)
+    public HttpClientTransportOverFCGI(Connectable connector, String scriptRoot)
     {
         super(connector);
         this.scriptRoot = scriptRoot;
@@ -61,6 +61,13 @@ public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTran
             int maxConnections = httpClient.getMaxConnectionsPerDestination();
             return new DuplexConnectionPool(destination, maxConnections, destination);
         });
+    }
+
+    private static ClientConnector newClientConnector(int selectors)
+    {
+        ClientConnector connector = new ClientConnector();
+        connector.setSelectors(selectors);
+        return connector;
     }
 
     @ManagedAttribute(value = "The scripts root directory", readonly = true)
