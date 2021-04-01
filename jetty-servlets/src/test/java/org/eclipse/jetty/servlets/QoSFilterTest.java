@@ -41,7 +41,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,7 +105,6 @@ public class QoSFilterTest
             assertThat(TestServlet.__maxSleepers, Matchers.lessThanOrEqualTo(numConnections));
     }
 
-    @Disabled("Issue #2627")
     @Test
     public void testBlockingQosFilter() throws Exception
     {
@@ -255,7 +253,7 @@ public class QoSFilterTest
                         __maxSleepers = __sleepers;
                 }
 
-                Thread.sleep(50);
+                Thread.sleep(500);
 
                 synchronized (TestServlet.class)
                 {
