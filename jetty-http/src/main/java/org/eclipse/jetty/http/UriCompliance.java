@@ -25,7 +25,9 @@ import org.slf4j.LoggerFactory;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.EnumSet.allOf;
+import static java.util.EnumSet.complementOf;
 import static java.util.EnumSet.noneOf;
+import static java.util.EnumSet.of;
 
 /**
  * URI compliance modes for Jetty request handling.
@@ -53,7 +55,11 @@ public final class UriCompliance implements ComplianceViolation.Mode
         /**
          * Ambiguous path parameters within a URI segment e.g. <code>/foo/..;/bar</code>
          */
-        AMBIGUOUS_PATH_PARAMETER("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path parameter");
+        AMBIGUOUS_PATH_PARAMETER("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path parameter"),
+        /**
+         * Non normal ambiguous paths. eg <code>/foo/x@2f/%2e%2e%/bar</code> provided to applications as <code>/foo/x/../bar</code>
+         */
+        NON_NORMAL_AMBIGUOUS_PATHS("https://tools.ietf.org/html/rfc3986#section-3.3", "Non normal ambiguous paths");
 
         private final String _url;
         private final String _description;
@@ -84,19 +90,29 @@ public final class UriCompliance implements ComplianceViolation.Mode
     }
 
     /**
-     * The default compliance mode that extends RFC3986 compliance with additional violations to avoid ambiguous URIs
+     * The default compliance mode that extends RFC3986 compliance with additional violations to avoid most ambiguous URIs.
+     * This mode does allow {@link Violation#AMBIGUOUS_PATH_SEPARATOR}, but disallows
+     * {@link Violation#AMBIGUOUS_PATH_PARAMETER} and {@link Violation#AMBIGUOUS_PATH_SEGMENT}.
+     * Ambiguous paths are not allowed by {@link Violation#NON_NORMAL_AMBIGUOUS_PATHS}.
      */
-    public static final UriCompliance DEFAULT = new UriCompliance("DEFAULT", noneOf(Violation.class));
+    public static final UriCompliance DEFAULT = new UriCompliance("DEFAULT", of(Violation.AMBIGUOUS_PATH_SEPARATOR));
 
     /**
      * LEGACY compliance mode that disallows only ambiguous path parameters as per Jetty-9.4
      */
-    public static final UriCompliance LEGACY = new UriCompliance("LEGACY", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT, Violation.AMBIGUOUS_PATH_SEPARATOR));
+    public static final UriCompliance LEGACY = new UriCompliance("LEGACY", of(Violation.AMBIGUOUS_PATH_SEGMENT, Violation.AMBIGUOUS_PATH_SEPARATOR));
 
     /**
-     * Compliance mode that exactly follows RFC3986, including allowing all additional ambiguous URI Violations
+     * Compliance mode that exactly follows RFC3986, including allowing all additional ambiguous URI Violations. However ambiguous paths are
+     * normalised.
      */
-    public static final UriCompliance RFC3986 = new UriCompliance("RFC3986", allOf(Violation.class));
+    public static final UriCompliance RFC3986 = new UriCompliance("RFC3986", complementOf(of(Violation.NON_NORMAL_AMBIGUOUS_PATHS)));
+
+    /**
+     * Compliance mode that exactly follows RFC3986, including allowing all additional ambiguous URI Violations, which may be passed
+     * to the application in non-normal form.
+     */
+    public static final UriCompliance UNSAFE = new UriCompliance("UNSAFE", allOf(Violation.class));
 
     /**
      * @deprecated equivalent to DEFAULT
@@ -126,6 +142,17 @@ public final class UriCompliance implements ComplianceViolation.Mode
     }
 
     /**
+     * Create compliance set from a set of allowed Violations.
+     *
+     * @param violations A string of violations to allow:
+     * @return the compliance from the string spec
+     */
+    public static UriCompliance from(Set<Violation> violations)
+    {
+        return new UriCompliance("CUSTOM" + __custom.getAndIncrement(), violations);
+    }
+
+    /**
      * Create compliance set from string.
      * <p>
      * Format: &lt;BASE&gt;[,[-]&lt;violation&gt;]...
@@ -151,22 +178,22 @@ public final class UriCompliance implements ComplianceViolation.Mode
      */
     public static UriCompliance from(String spec)
     {
-        Set<Violation> sections;
+        Set<Violation> violations;
         String[] elements = spec.split("\\s*,\\s*");
         switch (elements[0])
         {
             case "0":
-                sections = noneOf(Violation.class);
+                violations = noneOf(Violation.class);
                 break;
 
             case "*":
-                sections = allOf(Violation.class);
+                violations = allOf(Violation.class);
                 break;
 
             default:
             {
                 UriCompliance mode = UriCompliance.valueOf(elements[0]);
-                sections = (mode == null) ? noneOf(Violation.class) : copyOf(mode.getAllowed());
+                violations = (mode == null) ? noneOf(Violation.class) : copyOf(mode.getAllowed());
             }
         }
 
@@ -178,12 +205,12 @@ public final class UriCompliance implements ComplianceViolation.Mode
                 element = element.substring(1);
             Violation section = Violation.valueOf(element);
             if (exclude)
-                sections.remove(section);
+                violations.remove(section);
             else
-                sections.add(section);
+                violations.add(section);
         }
 
-        UriCompliance compliance = new UriCompliance("CUSTOM" + __custom.getAndIncrement(), sections);
+        UriCompliance compliance = new UriCompliance("CUSTOM" + __custom.getAndIncrement(), violations);
         if (LOG.isDebugEnabled())
             LOG.debug("UriCompliance from {}->{}", spec, compliance);
         return compliance;
