@@ -83,6 +83,7 @@ public class JspcMojo extends AbstractMojo
     {
 
         private boolean scanAll;
+        private boolean scanManifest;
 
         public void setClassLoader(ClassLoader loader)
         {
@@ -99,6 +100,16 @@ public class JspcMojo extends AbstractMojo
             return this.scanAll;
         }
 
+        public void setScanManifest(boolean scanManifest)
+        {
+            this.scanManifest = scanManifest;
+        }
+
+        public boolean getScanManifest()
+        {
+            return this.scanManifest;
+        }
+
         @Override
         protected TldScanner newTldScanner(JspCServletContext context, boolean namespaceAware, boolean validate, boolean blockExternal)
         {
@@ -106,6 +117,7 @@ public class JspcMojo extends AbstractMojo
             {
                 StandardJarScanner jarScanner = new StandardJarScanner();
                 jarScanner.setScanAllDirectories(getScanAllDirectories());
+                jarScanner.setScanManifest(getScanManifest());
                 context.setAttribute(JarScanner.class.getName(), jarScanner);
             }
 
@@ -243,6 +255,13 @@ public class JspcMojo extends AbstractMojo
     @Parameter(defaultValue = "true")
     private boolean scanAllDirectories;
 
+    /**
+     * Determines if the manifest of JAR files found on the classpath should be scanned.
+     * True by default.
+     */
+    @Parameter(defaultValue = "true")
+    private boolean scanManifest;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException
     {
@@ -319,6 +338,7 @@ public class JspcMojo extends AbstractMojo
         jspc.setOutputDir(generatedClasses);
         jspc.setClassLoader(fakeWebAppClassLoader);
         jspc.setScanAllDirectories(scanAllDirectories);
+        jspc.setScanManifest(scanManifest);
         jspc.setCompile(true);
         if (sourceVersion != null)
             jspc.setCompilerSourceVM(sourceVersion);
