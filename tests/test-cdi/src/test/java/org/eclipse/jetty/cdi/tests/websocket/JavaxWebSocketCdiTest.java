@@ -24,6 +24,8 @@ import javax.inject.Inject;
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.CloseReason;
+import javax.websocket.Decoder;
+import javax.websocket.Encoder;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.HandshakeResponse;
@@ -139,6 +141,21 @@ public class JavaxWebSocketCdiTest
         Session session = _client.connectToServer(clientEndpoint, clientEndpointConfig, uri);
         session.getBasicRemote().sendText("hello world");
         assertThat(clientEndpoint._textMessages.poll(5, TimeUnit.SECONDS), is("hello world"));
+        session.close();
+        assertTrue(clientEndpoint._closeLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testEncoderDecoder() throws Exception
+    {
+        start((servletContext, wsContainer) -> wsContainer.addEndpoint(AnnotatedCdiEchoSocket.class));
+
+        // If we can get an echo from the websocket endpoint we know that CDI injection of the logger worked as there was no NPE.
+        AnnotatedEncoderDecoderClientSocket clientEndpoint = new AnnotatedEncoderDecoderClientSocket();
+        URI uri = URI.create("ws://localhost:" + _connector.getLocalPort() + "/echo");
+        Session session = _client.connectToServer(clientEndpoint, uri);
+        session.getBasicRemote().sendObject("hello world");
+        assertThat(clientEndpoint._textMessages.poll(5, TimeUnit.SECONDS), is("decoded(encoded(hello world))"));
         session.close();
         assertTrue(clientEndpoint._closeLatch.await(5, TimeUnit.SECONDS));
     }
@@ -295,5 +312,62 @@ public class JavaxWebSocketCdiTest
         {
             thr.printStackTrace();
         }
+    }
+
+    public static class CustomEncoder implements Encoder.Text<String>
+    {
+        @Inject
+        public Logger logger;
+
+        @Override
+        public String encode(String s)
+        {
+            return "encoded(" + s + ")";
+        }
+
+        @Override
+        public void init(EndpointConfig config)
+        {
+            logger.info("init: " + config);
+        }
+
+        @Override
+        public void destroy()
+        {
+        }
+    }
+
+    public static class CustomDecoder implements Decoder.Text<String>
+    {
+        @Inject
+        public Logger logger;
+
+        @Override
+        public String decode(String s)
+        {
+            return "decoded(" + s + ")";
+        }
+
+        @Override
+        public void init(EndpointConfig config)
+        {
+            logger.info("init: " + config);
+        }
+
+        @Override
+        public void destroy()
+        {
+        }
+
+        @Override
+        public boolean willDecode(String s)
+        {
+            return true;
+        }
+    }
+
+    @ClientEndpoint(encoders = {CustomEncoder.class}, decoders = {CustomDecoder.class})
+    public static class AnnotatedEncoderDecoderClientSocket extends AnnotatedCdiClientSocket
+    {
     }
 }
