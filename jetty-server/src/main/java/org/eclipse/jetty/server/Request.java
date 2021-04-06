@@ -1747,7 +1747,7 @@ public class Request implements HttpServletRequest
             // Strictly speaking if a URI is legal and encodes ambiguous segments, then they should be
             // reflected in the decoded string version.  However, it can be ambiguous to provide a decoded path as
             // a string, so we normalize again.  If an application wishes to see ambiguous URIs, then they must
-            // set the NON_NORMAL_AMBIGUOUS_PATHS compliance.
+            // set the {@link UriCompliance.Violation#NON_CANONICAL_AMBIGUOUS_PATHS} compliance.
             if (ambiguous && (compliance == null || !compliance.allows(UriCompliance.Violation.NON_CANONICAL_AMBIGUOUS_PATHS)))
                 path = URIUtil.canonicalPath(path);
         }

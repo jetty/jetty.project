@@ -100,19 +100,18 @@ public final class UriCompliance implements ComplianceViolation.Mode
     public static final UriCompliance DEFAULT = new UriCompliance("DEFAULT", of(Violation.AMBIGUOUS_PATH_SEPARATOR));
 
     /**
-     * LEGACY compliance mode that disallows only ambiguous path parameters as per Jetty-9.4
+     * LEGACY compliance mode that models Jetty-9.4 behavior by allowing {@link Violation#AMBIGUOUS_PATH_SEGMENT} and {@link Violation#AMBIGUOUS_PATH_SEPARATOR}
      */
     public static final UriCompliance LEGACY = new UriCompliance("LEGACY", of(Violation.AMBIGUOUS_PATH_SEGMENT, Violation.AMBIGUOUS_PATH_SEPARATOR));
 
     /**
-     * Compliance mode that exactly follows RFC3986, including allowing all additional ambiguous URI Violations. However ambiguous paths are
-     * canonicalized for safety.
+     * Compliance mode that exactly follows RFC3986, including allowing all additional ambiguous URI Violations,
+     * except {@link Violation#NON_CANONICAL_AMBIGUOUS_PATHS}, thus ambiguous paths are canonicalized for safety.
      */
     public static final UriCompliance RFC3986 = new UriCompliance("RFC3986", complementOf(of(Violation.NON_CANONICAL_AMBIGUOUS_PATHS)));
 
     /**
-     * Compliance mode that exactly follows RFC3986, including allowing all additional ambiguous URI Violations, which may be passed
-     * to the application in non-normal form.
+     * Compliance mode that allows all URI Violations, including allowing ambiguous paths in non canonicalized form.
      */
     public static final UriCompliance UNSAFE = new UriCompliance("UNSAFE", allOf(Violation.class));
 
@@ -222,7 +221,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
     private final String _name;
     private final Set<Violation> _allowed;
 
-    private UriCompliance(String name, Set<Violation> violations)
+    public UriCompliance(String name, Set<Violation> violations)
     {
         Objects.requireNonNull(violations);
         _name = name;
