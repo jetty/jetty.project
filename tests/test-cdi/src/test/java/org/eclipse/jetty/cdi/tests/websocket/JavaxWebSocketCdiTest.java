@@ -15,19 +15,28 @@ package org.eclipse.jetty.cdi.tests.websocket;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import javax.inject.Inject;
 import javax.websocket.ClientEndpoint;
+import javax.websocket.ClientEndpointConfig;
 import javax.websocket.CloseReason;
+import javax.websocket.Endpoint;
+import javax.websocket.EndpointConfig;
+import javax.websocket.HandshakeResponse;
+import javax.websocket.MessageHandler;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
+import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpoint;
+import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.cdi.CdiDecoratingListener;
 import org.eclipse.jetty.cdi.CdiServletContainerInitializer;
@@ -35,8 +44,13 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainerProvider;
+import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer.Configurator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,15 +64,16 @@ public class JavaxWebSocketCdiTest
     private Server _server;
     private WebSocketContainer _client;
     private ServerConnector _connector;
+    private ServletContextHandler context;
 
     @BeforeEach
-    public void before() throws Exception
+    public void before()
     {
         _server = new Server();
         _connector = new ServerConnector(_server);
         _server.addConnector(_connector);
 
-        ServletContextHandler context = new ServletContextHandler();
+        context = new ServletContextHandler();
         context.setContextPath("/");
 
         // Enable Weld + CDI
@@ -66,17 +81,22 @@ public class JavaxWebSocketCdiTest
         context.addServletContainerInitializer(new CdiServletContainerInitializer());
         context.addServletContainerInitializer(new org.jboss.weld.environment.servlet.EnhancedListener());
 
-        // Add WebSocket endpoints
-        JavaxWebSocketServletContainerInitializer.configure(context, (servletContext, wsContainer) ->
-            wsContainer.addEndpoint(CdiEchoSocket.class));
-
         // Add to Server
         _server.setHandler(context);
+    }
+
+    public void start(Configurator configurator) throws Exception
+    {
+        // Add WebSocket endpoints
+        JavaxWebSocketServletContainerInitializer.configure(context, configurator);
 
         // Start Server
         _server.start();
 
-        _client = JavaxWebSocketClientContainerProvider.getContainer(null);
+        // Configure the Client with the same DecoratedObjectFactory from the server.
+        WebSocketComponents components = WebSocketServerComponents.getWebSocketComponents(context.getServletContext());
+        _client = new JavaxWebSocketClientContainer(components);
+        LifeCycle.start(_client);
     }
 
     @AfterEach
@@ -86,16 +106,92 @@ public class JavaxWebSocketCdiTest
         _server.stop();
     }
 
-    @ClientEndpoint
-    public static class TestClientEndpoint
+    @Test
+    public void testAnnotatedEndpoint() throws Exception
     {
+        start((servletContext, wsContainer) -> wsContainer.addEndpoint(AnnotatedCdiEchoSocket.class));
+
+        // If we can get an echo from the websocket endpoint we know that CDI injection of the logger worked as there was no NPE.
+        AnnotatedCdiClientSocket clientEndpoint = new AnnotatedCdiClientSocket();
+        URI uri = URI.create("ws://localhost:" + _connector.getLocalPort() + "/echo");
+        Session session = _client.connectToServer(clientEndpoint, uri);
+        session.getBasicRemote().sendText("hello world");
+        assertThat(clientEndpoint._textMessages.poll(5, TimeUnit.SECONDS), is("hello world"));
+        session.close();
+        assertTrue(clientEndpoint._closeLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testConfiguredEndpoint() throws Exception
+    {
+        ServerEndpointConfig serverEndpointConfig = ServerEndpointConfig.Builder.create(ConfiguredCdiEchoSocket.class, "/echo")
+            .configurator(new ServerConfigurator())
+            .build();
+        start((servletContext, wsContainer) -> wsContainer.addEndpoint(serverEndpointConfig));
+
+        // If we can get an echo from the websocket endpoint we know that CDI injection of the logger worked as there was no NPE.
+        ConfiguredCdiClientSocket clientEndpoint = new ConfiguredCdiClientSocket();
+        ClientEndpointConfig clientEndpointConfig = ClientEndpointConfig.Builder.create()
+            .configurator(new ClientConfigurator())
+            .build();
+
+        URI uri = URI.create("ws://localhost:" + _connector.getLocalPort() + "/echo");
+        Session session = _client.connectToServer(clientEndpoint, clientEndpointConfig, uri);
+        session.getBasicRemote().sendText("hello world");
+        assertThat(clientEndpoint._textMessages.poll(5, TimeUnit.SECONDS), is("hello world"));
+        session.close();
+        assertTrue(clientEndpoint._closeLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    public static class ClientConfigurator extends ClientEndpointConfig.Configurator
+    {
+        @Inject
+        public Logger logger;
+
+        @Override
+        public void beforeRequest(Map<String, List<String>> headers)
+        {
+            logger.info("beforeRequest");
+        }
+    }
+
+    public static class ServerConfigurator extends ServerEndpointConfig.Configurator
+    {
+        @Inject
+        public Logger logger;
+
+        @Override
+        public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
+        {
+            logger.info("modifyHandshake");
+        }
+    }
+
+    @ClientEndpoint(configurator = ClientConfigurator.class)
+    public static class AnnotatedCdiClientSocket
+    {
+        @Inject
+        public Logger logger;
+
         BlockingArrayQueue<String> _textMessages = new BlockingArrayQueue<>();
         CountDownLatch _closeLatch = new CountDownLatch(1);
+
+        @OnOpen
+        public void onOpen(Session session)
+        {
+            logger.info("onOpen: " + session);
+        }
 
         @OnMessage
         public void onMessage(String message)
         {
             _textMessages.add(message);
+        }
+
+        @OnError
+        public void onError(Throwable t)
+        {
+            t.printStackTrace();
         }
 
         @OnClose
@@ -105,21 +201,8 @@ public class JavaxWebSocketCdiTest
         }
     }
 
-    @Test
-    public void testBasicEcho() throws Exception
-    {
-        // If we can get an echo from the websocket endpoint we know that CDI injection of the logger worked as there was no NPE.
-        TestClientEndpoint clientEndpoint = new TestClientEndpoint();
-        URI uri = URI.create("ws://localhost:" + _connector.getLocalPort() + "/echo");
-        Session session = _client.connectToServer(clientEndpoint, uri);
-        session.getBasicRemote().sendText("hello world");
-        assertThat(clientEndpoint._textMessages.poll(5, TimeUnit.SECONDS), is("hello world"));
-        session.close();
-        assertTrue(clientEndpoint._closeLatch.await(5, TimeUnit.SECONDS));
-    }
-
-    @ServerEndpoint("/echo")
-    public static class CdiEchoSocket
+    @ServerEndpoint(value = "/echo", configurator = ServerConfigurator.class)
+    public static class AnnotatedCdiEchoSocket
     {
         @Inject
         public Logger logger;
@@ -144,12 +227,73 @@ public class JavaxWebSocketCdiTest
         {
             t.printStackTrace();
         }
+    }
 
-        @OnClose
-        public void onClose(CloseReason close)
+    public static class ConfiguredCdiClientSocket extends Endpoint implements MessageHandler.Whole<String>
+    {
+        @Inject
+        public Logger logger;
+
+        BlockingArrayQueue<String> _textMessages = new BlockingArrayQueue<>();
+        CountDownLatch _closeLatch = new CountDownLatch(1);
+
+        @Override
+        public void onMessage(String message)
         {
-            logger.info("onClose() close:" + close);
-            this.session = null;
+            _textMessages.add(message);
+        }
+
+        @Override
+        public void onOpen(Session session, EndpointConfig config)
+        {
+            logger.info("onOpen: " + session);
+            session.addMessageHandler(this);
+        }
+
+        @Override
+        public void onError(Session session, Throwable thr)
+        {
+            thr.printStackTrace();
+        }
+
+        @Override
+        public void onClose(Session session, CloseReason closeReason)
+        {
+            _closeLatch.countDown();
+        }
+    }
+
+    public static class ConfiguredCdiEchoSocket extends Endpoint implements MessageHandler.Whole<String>
+    {
+        @Inject
+        public Logger logger;
+        private Session session;
+
+        @Override
+        public void onMessage(String message)
+        {
+            try
+            {
+                session.getBasicRemote().sendText(message);
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public void onOpen(Session session, EndpointConfig config)
+        {
+            logger.info("onOpen() session:" + session);
+            this.session = session;
+            session.addMessageHandler(this);
+        }
+
+        @Override
+        public void onError(Session session, Throwable thr)
+        {
+            thr.printStackTrace();
         }
     }
 }

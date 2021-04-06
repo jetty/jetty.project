@@ -232,6 +232,9 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
 
         if (isStarted() || isStarting())
         {
+            // Decorate the provided Configurator.
+            components.getObjectFactory().decorate(providedConfig.getConfigurator());
+
             // If we have annotations merge the annotated ServerEndpointConfig with the provided one.
             Class<?> endpointClass = providedConfig.getEndpointClass();
             ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
