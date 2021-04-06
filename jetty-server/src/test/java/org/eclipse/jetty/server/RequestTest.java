@@ -1752,7 +1752,7 @@ public class RequestTest
             response.getOutputStream().println("pathInfo=" + request.getPathInfo());
             return true;
         };
-        String request = "GET /unnormal/.././path/amiguous%2f%2e%2e/%2e;/info HTTP/1.0\r\n" +
+        String request = "GET /unnormal/.././path/ambiguous%2f%2e%2e/%2e;/info HTTP/1.0\r\n" +
             "Host: whatever\r\n" +
             "\r\n";
 
@@ -1768,10 +1768,10 @@ public class RequestTest
             UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR,
             UriCompliance.Violation.AMBIGUOUS_PATH_SEGMENT,
             UriCompliance.Violation.AMBIGUOUS_PATH_PARAMETER,
-            UriCompliance.Violation.NON_NORMAL_AMBIGUOUS_PATHS)));
+            UriCompliance.Violation.NON_CANONICAL_AMBIGUOUS_PATHS)));
         assertThat(_connector.getResponse(request), Matchers.allOf(
             startsWith("HTTP/1.1 200"),
-            containsString("pathInfo=/path/amiguous/.././info")));
+            containsString("pathInfo=/path/ambiguous/.././info")));
     }
     
     @Test

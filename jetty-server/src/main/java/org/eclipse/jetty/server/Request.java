@@ -1748,7 +1748,7 @@ public class Request implements HttpServletRequest
             // reflected in the decoded string version.  However, it can be ambiguous to provide a decoded path as
             // a string, so we normalize again.  If an application wishes to see ambiguous URIs, then they must
             // set the NON_NORMAL_AMBIGUOUS_PATHS compliance.
-            if (ambiguous && (compliance == null || !compliance.allows(UriCompliance.Violation.NON_NORMAL_AMBIGUOUS_PATHS)))
+            if (ambiguous && (compliance == null || !compliance.allows(UriCompliance.Violation.NON_CANONICAL_AMBIGUOUS_PATHS)))
                 path = URIUtil.canonicalPath(path);
         }
         else if ("*".equals(encoded) || HttpMethod.CONNECT.is(getMethod()))

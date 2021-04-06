@@ -39,27 +39,29 @@ public final class UriCompliance implements ComplianceViolation.Mode
     protected static final Logger LOG = LoggerFactory.getLogger(UriCompliance.class);
 
     /**
-     * These are URI compliance violations, which may be allowed by the compliance mode. Currently all these
-     * violations are for additional criteria in excess of the strict requirements of rfc3986.
+     * These are URI compliance "violations", which may be allowed by the compliance mode. These are actual
+     * violations of the RFC, as they represent additional requirements in excess of the strict compliance of rfc3986.
+     * A compliance mode that contains one or more of these Violations, allows request to violate the corresponding
+     * additional requirement.
      */
     public enum Violation implements ComplianceViolation
     {
         /**
-         * Ambiguous path segments e.g. <code>/foo/%2e%2e/bar</code>
+         * Allow ambiguous path segments e.g. <code>/foo/%2e%2e/bar</code>
          */
         AMBIGUOUS_PATH_SEGMENT("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path segment"),
         /**
-         * Ambiguous path separator within a URI segment e.g. <code>/foo/b%2fr</code>
+         * Allow ambiguous path separator within a URI segment e.g. <code>/foo/b%2fr</code>
          */
         AMBIGUOUS_PATH_SEPARATOR("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path separator"),
         /**
-         * Ambiguous path parameters within a URI segment e.g. <code>/foo/..;/bar</code>
+         * Allow ambiguous path parameters within a URI segment e.g. <code>/foo/..;/bar</code>
          */
         AMBIGUOUS_PATH_PARAMETER("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path parameter"),
         /**
-         * Non normal ambiguous paths. eg <code>/foo/x@2f/%2e%2e%/bar</code> provided to applications as <code>/foo/x/../bar</code>
+         * Allow Non canonical ambiguous paths. eg <code>/foo/x@2f/%2e%2e%/bar</code> provided to applications as <code>/foo/x/../bar</code>
          */
-        NON_NORMAL_AMBIGUOUS_PATHS("https://tools.ietf.org/html/rfc3986#section-3.3", "Non normal ambiguous paths");
+        NON_CANONICAL_AMBIGUOUS_PATHS("https://tools.ietf.org/html/rfc3986#section-3.3", "Non canonical ambiguous paths");
 
         private final String _url;
         private final String _description;
@@ -93,7 +95,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
      * The default compliance mode that extends RFC3986 compliance with additional violations to avoid most ambiguous URIs.
      * This mode does allow {@link Violation#AMBIGUOUS_PATH_SEPARATOR}, but disallows
      * {@link Violation#AMBIGUOUS_PATH_PARAMETER} and {@link Violation#AMBIGUOUS_PATH_SEGMENT}.
-     * Ambiguous paths are not allowed by {@link Violation#NON_NORMAL_AMBIGUOUS_PATHS}.
+     * Ambiguous paths are not allowed by {@link Violation#NON_CANONICAL_AMBIGUOUS_PATHS}.
      */
     public static final UriCompliance DEFAULT = new UriCompliance("DEFAULT", of(Violation.AMBIGUOUS_PATH_SEPARATOR));
 
@@ -106,7 +108,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
      * Compliance mode that exactly follows RFC3986, including allowing all additional ambiguous URI Violations. However ambiguous paths are
      * normalised.
      */
-    public static final UriCompliance RFC3986 = new UriCompliance("RFC3986", complementOf(of(Violation.NON_NORMAL_AMBIGUOUS_PATHS)));
+    public static final UriCompliance RFC3986 = new UriCompliance("RFC3986", complementOf(of(Violation.NON_CANONICAL_AMBIGUOUS_PATHS)));
 
     /**
      * Compliance mode that exactly follows RFC3986, including allowing all additional ambiguous URI Violations, which may be passed
@@ -194,6 +196,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
             {
                 UriCompliance mode = UriCompliance.valueOf(elements[0]);
                 violations = (mode == null) ? noneOf(Violation.class) : copyOf(mode.getAllowed());
+                break;
             }
         }
 
