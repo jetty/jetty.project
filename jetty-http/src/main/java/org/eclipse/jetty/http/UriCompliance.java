@@ -59,7 +59,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
          */
         AMBIGUOUS_PATH_PARAMETER("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path parameter"),
         /**
-         * Allow Non canonical ambiguous paths. eg <code>/foo/x@2f/%2e%2e%/bar</code> provided to applications as <code>/foo/x/../bar</code>
+         * Allow Non canonical ambiguous paths. eg <code>/foo/x%2f%2e%2e%/bar</code> provided to applications as <code>/foo/x/../bar</code>
          */
         NON_CANONICAL_AMBIGUOUS_PATHS("https://tools.ietf.org/html/rfc3986#section-3.3", "Non canonical ambiguous paths");
 
@@ -106,7 +106,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
 
     /**
      * Compliance mode that exactly follows RFC3986, including allowing all additional ambiguous URI Violations. However ambiguous paths are
-     * normalised.
+     * canonicalized for safety.
      */
     public static final UriCompliance RFC3986 = new UriCompliance("RFC3986", complementOf(of(Violation.NON_CANONICAL_AMBIGUOUS_PATHS)));
 
