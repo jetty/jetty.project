@@ -1,19 +1,14 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
-//
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.deploy;
@@ -24,9 +19,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
 import org.eclipse.jetty.server.Handler;
@@ -38,7 +31,6 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -200,21 +192,5 @@ public class DeploymentTempDirTest
     public String getContent(Path filePath) throws IOException
     {
         return IO.toString(new FileReader(filePath.toFile()));
-    }
-
-    public static class WaitScannerListener implements Scanner.BulkListener
-    {
-        CompletableFuture<Void> future = new CompletableFuture<>();
-
-        public void reset()
-        {
-            future = new CompletableFuture<>();
-        }
-
-        @Override
-        public void filesChanged(List<String> filenames)
-        {
-            future.complete(null);
-        }
     }
 }
