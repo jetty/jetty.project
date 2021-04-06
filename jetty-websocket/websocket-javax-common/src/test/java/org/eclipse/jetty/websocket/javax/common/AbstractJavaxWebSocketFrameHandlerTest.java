@@ -46,14 +46,22 @@ public abstract class AbstractJavaxWebSocketFrameHandlerTest
     protected AvailableDecoders decoders;
     protected Map<String, String> uriParams;
     protected EndpointConfig endpointConfig;
-    protected CoreSession coreSession = new CoreSession.Empty();
-    private WebSocketComponents components = new WebSocketComponents();
+    protected CoreSession coreSession = new CoreSession.Empty()
+    {
+        private final WebSocketComponents components = new WebSocketComponents();
+
+        @Override
+        public WebSocketComponents getWebSocketComponents()
+        {
+            return components;
+        }
+    };
 
     public AbstractJavaxWebSocketFrameHandlerTest()
     {
         endpointConfig = ClientEndpointConfig.Builder.create().build();
-        encoders = new AvailableEncoders(endpointConfig, components);
-        decoders = new AvailableDecoders(endpointConfig, components);
+        encoders = new AvailableEncoders(endpointConfig, coreSession.getWebSocketComponents());
+        decoders = new AvailableDecoders(endpointConfig, coreSession.getWebSocketComponents());
         uriParams = new HashMap<>();
     }
 
