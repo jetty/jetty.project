@@ -166,6 +166,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public static final ClassMatcher __dftSystemClasses = new ClassMatcher(
         "java.",                            // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
         "javax.",                           // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
+        "jakarta.",                         // Jakarta classes (per servlet spec v5.0 / Section 15.2.1)
         "org.xml.",                         // javax.xml
         "org.w3c."                          // javax.xml
     );
