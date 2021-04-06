@@ -43,7 +43,7 @@ public class JavaxWebSocketServerFrameHandlerFactory extends JavaxWebSocketClien
             return super.getMetadata(endpointClass, endpointConfig);
 
         UriTemplatePathSpec templatePathSpec = new UriTemplatePathSpec(anno.value());
-        JavaxWebSocketFrameHandlerMetadata metadata = new JavaxWebSocketFrameHandlerMetadata(endpointConfig);
+        JavaxWebSocketFrameHandlerMetadata metadata = new JavaxWebSocketFrameHandlerMetadata(endpointConfig, components);
         metadata.setUriTemplatePathSpec(templatePathSpec);
         return discoverJavaxFrameHandlerMetadata(endpointClass, metadata);
     }

@@ -28,6 +28,7 @@ import javax.websocket.Decoder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextStreamMessageSink;
 import org.eclipse.jetty.websocket.javax.tests.FunctionMethod;
@@ -43,6 +44,8 @@ import static org.hamcrest.Matchers.notNullValue;
  */
 public class DecoderTextStreamTest extends AbstractClientSessionTest
 {
+    private final WebSocketComponents _components = new WebSocketComponents();
+
     @Test
     public void testQuotesDecoderDirect() throws Exception
     {
@@ -119,6 +122,6 @@ public class DecoderTextStreamTest extends AbstractClientSessionTest
         else
             throw new IllegalStateException();
 
-        return List.of(new RegisteredDecoder(clazz, interfaceType, objectType, ClientEndpointConfig.Builder.create().build()));
+        return List.of(new RegisteredDecoder(clazz, interfaceType, objectType, ClientEndpointConfig.Builder.create().build(), _components));
     }
 }

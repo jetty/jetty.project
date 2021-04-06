@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
@@ -33,9 +34,12 @@ public class AvailableDecoders implements Iterable<RegisteredDecoder>
 {
     private final List<RegisteredDecoder> registeredDecoders = new ArrayList<>();
     private final EndpointConfig config;
+    private final WebSocketComponents components;
 
-    public AvailableDecoders(EndpointConfig config)
+    public AvailableDecoders(EndpointConfig config, WebSocketComponents components)
     {
+        this.components = Objects.requireNonNull(components);
+
         // Register the Config Based Decoders.
         this.config = Objects.requireNonNull(config);
         registerAll(config.getDecoders());
@@ -72,7 +76,7 @@ public class AvailableDecoders implements Iterable<RegisteredDecoder>
 
     private void registerPrimitive(Class<? extends Decoder> decoderClass, Class<? extends Decoder> interfaceType, Class<?> type)
     {
-        registeredDecoders.add(new RegisteredDecoder(decoderClass, interfaceType, type, config, true));
+        registeredDecoders.add(new RegisteredDecoder(decoderClass, interfaceType, type, config, components, true));
     }
 
     private void register(Class<? extends Decoder> decoder)
@@ -151,7 +155,7 @@ public class AvailableDecoders implements Iterable<RegisteredDecoder>
                 return;
         }
 
-        registeredDecoders.add(new RegisteredDecoder(decoder, interfaceClass, objectType, config));
+        registeredDecoders.add(new RegisteredDecoder(decoder, interfaceClass, objectType, config, components));
     }
 
     public RegisteredDecoder getFirstRegisteredDecoder(Class<?> type)

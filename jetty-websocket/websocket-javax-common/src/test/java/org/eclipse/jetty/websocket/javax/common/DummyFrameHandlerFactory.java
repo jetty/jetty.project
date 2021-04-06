@@ -45,7 +45,7 @@ public class DummyFrameHandlerFactory extends JavaxWebSocketFrameHandlerFactory
             return null;
         }
 
-        JavaxWebSocketFrameHandlerMetadata metadata = new JavaxWebSocketFrameHandlerMetadata(endpointConfig);
+        JavaxWebSocketFrameHandlerMetadata metadata = new JavaxWebSocketFrameHandlerMetadata(endpointConfig, components);
         return discoverJavaxFrameHandlerMetadata(endpointClass, metadata);
     }
 }
