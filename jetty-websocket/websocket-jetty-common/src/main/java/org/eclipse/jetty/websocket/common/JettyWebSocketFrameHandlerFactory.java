@@ -46,6 +46,7 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.core.CoreSession;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.internal.messages.ByteArrayMessageSink;
@@ -78,11 +79,18 @@ import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
 public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
 {
     private final WebSocketContainer container;
-    private Map<Class<?>, JettyWebSocketFrameHandlerMetadata> metadataMap = new ConcurrentHashMap<>();
+    private final WebSocketComponents components;
+    private final Map<Class<?>, JettyWebSocketFrameHandlerMetadata> metadataMap = new ConcurrentHashMap<>();
 
-    public JettyWebSocketFrameHandlerFactory(WebSocketContainer container)
+    public JettyWebSocketFrameHandlerFactory(WebSocketContainer container, WebSocketComponents components)
     {
         this.container = container;
+        this.components = components;
+    }
+
+    public WebSocketComponents getWebSocketComponents()
+    {
+        return components;
     }
 
     public JettyWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass)
@@ -129,6 +137,9 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         final MethodHandle pingHandle = InvokerUtils.bindTo(metadata.getPingHandle(), endpointInstance);
         final MethodHandle pongHandle = InvokerUtils.bindTo(metadata.getPongHandle(), endpointInstance);
         BatchMode batchMode = metadata.getBatchMode();
+
+        // Decorate the endpointInstance while we are still upgrading for access to things like HttpSession.
+        components.getObjectFactory().decorate(endpointInstance);
 
         return new JettyWebSocketFrameHandler(
             container,

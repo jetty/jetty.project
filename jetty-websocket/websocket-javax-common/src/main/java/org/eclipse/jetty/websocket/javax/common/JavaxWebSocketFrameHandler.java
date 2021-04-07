@@ -168,9 +168,6 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
                 binaryMetadata = actualBinaryMetadata;
             }
 
-            // Decorate the endpointInstance directly before calling the onOpen method.
-            coreSession.getWebSocketComponents().getObjectFactory().decorate(endpointInstance);
-
             if (openHandle != null)
                 openHandle.invoke();
 

@@ -59,11 +59,10 @@ public class JettyWebSocketFrameHandlerTest
         container.stop();
     }
 
-    private final JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(container);
+    private final WebSocketComponents components = new WebSocketComponents();
+    private final JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(container, components);
     private final CoreSession coreSession = new CoreSession.Empty()
     {
-        private final WebSocketComponents components = new WebSocketComponents();
-
         @Override
         public Behavior getBehavior()
         {

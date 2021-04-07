@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -160,6 +161,22 @@ public class JavaxWebSocketCdiTest
         assertTrue(clientEndpoint._closeLatch.await(5, TimeUnit.SECONDS));
     }
 
+    @Test
+    public void testHttpSessionInjection() throws Exception
+    {
+        start((servletContext, wsContainer) -> wsContainer.addEndpoint(CdiHttpSessionSocket.class));
+
+        // If we can get an echo from the websocket endpoint we know that CDI injection of the logger worked as there was no NPE.
+        AnnotatedCdiClientSocket clientEndpoint = new AnnotatedCdiClientSocket();
+        URI uri = URI.create("ws://localhost:" + _connector.getLocalPort() + "/echo");
+        Session session = _client.connectToServer(clientEndpoint, uri);
+        session.getBasicRemote().sendObject("hello world");
+        String rcvMessage = clientEndpoint._textMessages.poll(5, TimeUnit.SECONDS);
+        assertThat(rcvMessage, is("hello world"));
+        session.close();
+        assertTrue(clientEndpoint._closeLatch.await(5, TimeUnit.SECONDS));
+    }
+
     public static class ClientConfigurator extends ClientEndpointConfig.Configurator
     {
         @Inject
@@ -222,9 +239,8 @@ public class JavaxWebSocketCdiTest
     public static class AnnotatedCdiEchoSocket
     {
         @Inject
-        public Logger logger;
-
-        private Session session;
+        protected Logger logger;
+        protected Session session;
 
         @OnOpen
         public void onOpen(Session session)
@@ -369,5 +385,19 @@ public class JavaxWebSocketCdiTest
     @ClientEndpoint(encoders = {CustomEncoder.class}, decoders = {CustomDecoder.class})
     public static class AnnotatedEncoderDecoderClientSocket extends AnnotatedCdiClientSocket
     {
+    }
+
+    @ServerEndpoint("/echo")
+    public static class CdiHttpSessionSocket extends AnnotatedCdiEchoSocket
+    {
+        @Inject
+        private javax.servlet.http.HttpSession httpSession;
+
+        @Override
+        public void onMessage(String message) throws IOException
+        {
+            Objects.requireNonNull(httpSession);
+            session.getBasicRemote().sendText(message + " " + httpSession.getClass());
+        }
     }
 }

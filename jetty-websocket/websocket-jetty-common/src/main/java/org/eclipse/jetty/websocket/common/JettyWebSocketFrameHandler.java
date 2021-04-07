@@ -169,9 +169,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             if (binaryHandle != null)
                 binarySink = JettyWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, executor, session);
 
-            // Decorate the endpointInstance directly before calling the onOpen method.
-            coreSession.getWebSocketComponents().getObjectFactory().decorate(endpointInstance);
-
             if (openHandle != null)
                 openHandle.invoke();
 

@@ -168,6 +168,9 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         errorHandle = InvokerUtils.bindTo(errorHandle, endpoint);
         pongHandle = InvokerUtils.bindTo(pongHandle, endpoint);
 
+        // Decorate the endpointInstance while we are still upgrading for access to things like HttpSession.
+        components.getObjectFactory().decorate(endpoint);
+
         return new JavaxWebSocketFrameHandler(
             container,
             upgradeRequest,
