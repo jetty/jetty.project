@@ -125,10 +125,6 @@ public class TextStreamTest
         }
     }
 
-    // TODO These tests incorrectly assumes no frame fragmentation.
-    // When message fragmentation is implemented in PartialStringMessageSink then update
-    // this test to check on the server side for no buffers larger than the maxTextMessageBufferSize.
-
     @Test
     public void testAtMaxDefaultMessageBufferSize() throws Exception
     {
