@@ -22,15 +22,12 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
-import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpOutput.Interceptor;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,6 +88,12 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
         }
 
         @Override
+        public Interceptor getNextInterceptor()
+        {
+            return _next;
+        }
+
+        @Override
         public void resetBuffer()
         {
             if (_filePath != null)
@@ -119,28 +122,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
 
             // If we are not committed, must decide if we should aggregate or not.
             if (_aggregating == null)
-            {
-                if (last)
-                    _aggregating = Boolean.FALSE;
-                else
-                {
-                    Response response = _channel.getResponse();
-                    int sc = response.getStatus();
-                    if (sc > 0 && (sc < 200 || sc == 204 || sc == 205 || sc >= 300))
-                        _aggregating = Boolean.FALSE;  // No body
-                    else
-                    {
-                        String ct = response.getContentType();
-                        if (ct == null)
-                            _aggregating = Boolean.TRUE;
-                        else
-                        {
-                            ct = MimeTypes.getContentTypeWithoutCharset(ct);
-                            _aggregating = isMimeTypeBufferable(StringUtil.asciiToLowerCase(ct));
-                        }
-                    }
-                }
-            }
+                _aggregating = shouldBuffer(_channel, last);
 
             // If we are not aggregating, then handle normally.
             if (!_aggregating)
@@ -170,7 +152,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
                 callback.succeeded();
         }
 
-        protected void aggregate(ByteBuffer content) throws IOException
+        private void aggregate(ByteBuffer content) throws IOException
         {
             if (_fileOutputStream == null)
             {
@@ -182,13 +164,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
             BufferUtil.writeTo(content, _fileOutputStream);
         }
 
-        @Override
-        public Interceptor getNextInterceptor()
-        {
-            return _next;
-        }
-
-        protected void commit(Callback callback)
+        private void commit(Callback callback)
         {
             if (_fileOutputStream == null)
             {

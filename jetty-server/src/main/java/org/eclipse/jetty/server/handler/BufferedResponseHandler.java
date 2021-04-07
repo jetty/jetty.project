@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.server.HttpChannel;
@@ -94,6 +95,48 @@ public class BufferedResponseHandler extends HandlerWrapper
         return _mimeTypes;
     }
 
+    protected boolean isMimeTypeBufferable(String mimetype)
+    {
+        return _mimeTypes.test(mimetype);
+    }
+
+    protected boolean isPathBufferable(String requestURI)
+    {
+        if (requestURI == null)
+            return true;
+
+        return _paths.test(requestURI);
+    }
+
+    protected boolean shouldBuffer(HttpChannel channel, boolean last)
+    {
+        if (last)
+        {
+            return false;
+        }
+        else
+        {
+            Response response = channel.getResponse();
+            if (HttpStatus.hasNoBody(response.getStatus()))
+            {
+                return false;
+            }
+            else
+            {
+                String ct = response.getContentType();
+                if (ct == null)
+                {
+                    return true;
+                }
+                else
+                {
+                    ct = MimeTypes.getContentTypeWithoutCharset(ct);
+                    return isMimeTypeBufferable(StringUtil.asciiToLowerCase(ct));
+                }
+            }
+        }
+    }
+
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
@@ -127,8 +170,7 @@ public class BufferedResponseHandler extends HandlerWrapper
             return;
         }
 
-        // If not a supported URI- no Vary because no matter what client, this URI is always excluded
-        // Use pathInfo because this is be
+        // If not a supported path this URI is always excluded.
         if (!isPathBufferable(path))
         {
             if (LOG.isDebugEnabled())
@@ -159,19 +201,6 @@ public class BufferedResponseHandler extends HandlerWrapper
             _handler.handle(target, baseRequest, request, response);
     }
 
-    protected boolean isMimeTypeBufferable(String mimetype)
-    {
-        return _mimeTypes.test(mimetype);
-    }
-
-    protected boolean isPathBufferable(String requestURI)
-    {
-        if (requestURI == null)
-            return true;
-
-        return _paths.test(requestURI);
-    }
-
     protected BufferedInterceptor newBufferedInterceptor(HttpChannel httpChannel, Interceptor interceptor)
     {
         return new ArrayBufferedInterceptor(httpChannel, interceptor);
@@ -187,16 +216,22 @@ public class BufferedResponseHandler extends HandlerWrapper
 
     private class ArrayBufferedInterceptor implements BufferedInterceptor
     {
-        final Interceptor _next;
-        final HttpChannel _channel;
-        final Queue<ByteBuffer> _buffers = new ConcurrentLinkedQueue<>();
-        Boolean _aggregating;
-        ByteBuffer _aggregate;
+        private final Interceptor _next;
+        private final HttpChannel _channel;
+        private final Queue<ByteBuffer> _buffers = new ConcurrentLinkedQueue<>();
+        private Boolean _aggregating;
+        private ByteBuffer _aggregate;
 
         public ArrayBufferedInterceptor(HttpChannel httpChannel, Interceptor interceptor)
         {
             _next = interceptor;
             _channel = httpChannel;
+        }
+
+        @Override
+        public Interceptor getNextInterceptor()
+        {
+            return _next;
         }
 
         @Override
@@ -212,57 +247,41 @@ public class BufferedResponseHandler extends HandlerWrapper
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} write last={} {}", this, last, BufferUtil.toDetailString(content));
-            // if we are not committed, have to decide if we should aggregate or not
-            if (_aggregating == null)
-            {
-                Response response = _channel.getResponse();
-                int sc = response.getStatus();
-                if (sc > 0 && (sc < 200 || sc == 204 || sc == 205 || sc >= 300))
-                    _aggregating = Boolean.FALSE;  // No body
-                else
-                {
-                    String ct = response.getContentType();
-                    if (ct == null)
-                        _aggregating = Boolean.TRUE;
-                    else
-                    {
-                        ct = MimeTypes.getContentTypeWithoutCharset(ct);
-                        _aggregating = isMimeTypeBufferable(StringUtil.asciiToLowerCase(ct));
-                    }
-                }
-            }
 
-            // If we are not aggregating, then handle normally 
+            // If we are not committed, have to decide if we should aggregate or not.
+            if (_aggregating == null)
+                _aggregating = shouldBuffer(_channel, last);
+
+            // If we are not aggregating, then handle normally.
             if (!_aggregating)
             {
                 getNextInterceptor().write(content, last, callback);
                 return;
             }
 
-            // If last
             if (last)
             {
-                // Add the current content to the buffer list without a copy
+                // Add the current content to the buffer list without a copy.
                 if (BufferUtil.length(content) > 0)
                     _buffers.add(content);
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} committing {}", this, _buffers.size());
-                commit(_buffers, callback);
+                commit(callback);
             }
             else
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} aggregating", this);
 
-                // Aggregate the content into buffer chain
+                // Aggregate the content into buffer chain.
                 while (BufferUtil.hasContent(content))
                 {
-                    // Do we need a new aggregate buffer
+                    // Do we need a new aggregate buffer.
                     if (BufferUtil.space(_aggregate) == 0)
                     {
                         int size = Math.max(_channel.getHttpConfiguration().getOutputBufferSize(), BufferUtil.length(content));
-                        _aggregate = BufferUtil.allocate(size); // TODO use a buffer pool
+                        _aggregate = BufferUtil.allocate(size); // TODO use a buffer pool.
                         _buffers.add(_aggregate);
                     }
 
@@ -272,27 +291,23 @@ public class BufferedResponseHandler extends HandlerWrapper
             }
         }
 
-        @Override
-        public Interceptor getNextInterceptor()
+        private void commit(Callback callback)
         {
-            return _next;
-        }
-
-        protected void commit(Queue<ByteBuffer> buffers, Callback callback)
-        {
-            // If only 1 buffer
             if (_buffers.size() == 0)
+            {
                 getNextInterceptor().write(BufferUtil.EMPTY_BUFFER, true, callback);
+            }
             else if (_buffers.size() == 1)
-                // just flush it with the last callback
-                getNextInterceptor().write(_buffers.remove(), true, callback);
+            {
+                getNextInterceptor().write(_buffers.poll(), true, callback);
+            }
             else
             {
-                // Create an iterating callback to do the writing
+                // Create an iterating callback to do the writing.
                 IteratingCallback icb = new IteratingCallback()
                 {
                     @Override
-                    protected Action process() throws Exception
+                    protected Action process()
                     {
                         ByteBuffer buffer = _buffers.poll();
                         if (buffer == null)
@@ -305,14 +320,14 @@ public class BufferedResponseHandler extends HandlerWrapper
                     @Override
                     protected void onCompleteSuccess()
                     {
-                        // Signal last callback
+                        // Signal last callback.
                         callback.succeeded();
                     }
 
                     @Override
                     protected void onCompleteFailure(Throwable cause)
                     {
-                        // Signal last callback
+                        // Signal last callback.
                         callback.failed(cause);
                     }
                 };
