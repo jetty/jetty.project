@@ -39,7 +39,7 @@ import org.eclipse.jetty.start.fileinits.TestFileInitializer;
 import org.eclipse.jetty.start.fileinits.UriFileInitializer;
 
 /**
- * Build a start configuration in <code>${jetty.base}</code>, including
+ * Build a start configuration in {@code ${jetty.base}}, including
  * ini files, directories, and libs. Also handles License management.
  */
 public class BaseBuilder
@@ -47,7 +47,7 @@ public class BaseBuilder
     public static interface Config
     {
         /**
-         * Add a module to the start environment in <code>${jetty.base}</code>
+         * Add a module to the start environment in {@code ${jetty.base}}
          *
          * @param module the module to add
          * @param props The properties to substitute into a template
@@ -163,7 +163,7 @@ public class BaseBuilder
         }
 
         // generate the files
-        List<FileArg> files = new ArrayList<FileArg>();
+        List<FileArg> files = new ArrayList<>();
         AtomicReference<BaseBuilder.Config> builder = new AtomicReference<>();
         AtomicBoolean modified = new AtomicBoolean();
 
@@ -184,12 +184,12 @@ public class BaseBuilder
             if (Files.exists(startd))
             {
                 // Copy start.d files into start.ini
-                DirectoryStream.Filter<Path> filter = new DirectoryStream.Filter<Path>()
+                DirectoryStream.Filter<Path> filter = new DirectoryStream.Filter<>()
                 {
-                    PathMatcher iniMatcher = PathMatchers.getMatcher("glob:**/start.d/*.ini");
+                    private final PathMatcher iniMatcher = PathMatchers.getMatcher("glob:**/start.d/*.ini");
 
                     @Override
-                    public boolean accept(Path entry) throws IOException
+                    public boolean accept(Path entry)
                     {
                         return iniMatcher.matches(entry);
                     }
@@ -271,6 +271,9 @@ public class BaseBuilder
             StartLog.warn("Use of both %s and %s is deprecated", getBaseHome().toShortForm(startd), getBaseHome().toShortForm(startini));
 
         builder.set(useStartD ? new StartDirBuilder(this) : new StartIniBuilder(this));
+
+        // Collect the filesystem operations to perform,
+        // only for those modules that are enabled.
         newlyAdded.stream()
             .map(modules::get)
             .filter(Module::isEnabled)
@@ -386,7 +389,7 @@ public class BaseBuilder
      * @param files the list of {@link FileArg}s to process
      * @return true if base directory modified, false if left untouched
      */
-    private boolean processFileResources(List<FileArg> files) throws IOException
+    private boolean processFileResources(List<FileArg> files)
     {
         if ((files == null) || (files.isEmpty()))
         {
