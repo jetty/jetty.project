@@ -21,9 +21,7 @@ package org.eclipse.jetty.start;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -69,8 +67,8 @@ public class StartArgs
     static
     {
         // Use command line versions
-        String ver = System.getProperty("jetty.version", null);
-        String tag = System.getProperty("jetty.tag.version", "master");
+        String ver = System.getProperty("jetty.version");
+        String tag = System.getProperty("jetty.tag.version");
 
         // Use META-INF/MANIFEST.MF versions
         if (ver == null)
@@ -82,41 +80,21 @@ public class StartArgs
                 .orElse(null);
         }
 
-        // Use jetty-version.properties values
-        if (ver == null)
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        // use old jetty-version.properties (as seen within various linux distro repackaging of Jetty)
+        Props jettyVerProps = Props.load(classLoader.getResource("jetty-version.properties"));
+        // use build-time properties (included in start.jar) to pull version and buildNumber
+        Props buildProps = Props.load(classLoader.getResource("/org/eclipse/jetty/version/build.properties"));
+
+        if (Utils.isBlank(ver))
         {
-            URL url = Thread.currentThread().getContextClassLoader().getResource("jetty-version.properties");
-            if (url != null)
-            {
-                try (InputStream in = url.openStream())
-                {
-                    Properties props = new Properties();
-                    props.load(in);
-                    ver = props.getProperty("jetty.version");
-                }
-                catch (IOException x)
-                {
-                    StartLog.debug(x);
-                }
-            }
+            ver = jettyVerProps.getString("version", buildProps.getString("version", "0.0"));
         }
 
-        // Default values
-        if (ver == null)
+        if (Utils.isBlank(tag))
         {
-            ver = "0.0";
-            if (tag == null)
-                tag = "master";
+            tag = jettyVerProps.getString("buildNumber", buildProps.getString("buildNumber", "jetty-" + ver));
         }
-        else
-        {
-            if (tag == null)
-                tag = "jetty-" + ver;
-        }
-
-        // Set Tag Defaults
-        if (tag.contains("-SNAPSHOT"))
-            tag = "master";
 
         VERSION = ver;
         System.setProperty("jetty.version", VERSION);
