@@ -263,9 +263,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             {
                 // Fill the request buffer (if needed).
                 int filled = fillRequestBuffer();
-                if (filled > 0)
-                    bytesIn.add(filled);
-                else if (filled == -1 && getEndPoint().isOutputShutdown())
+                if (filled < 0 && getEndPoint().isOutputShutdown())
                     close();
 
                 // Parse the request buffer.
@@ -352,8 +350,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 if (filled == 0) // Do a retry on fill 0 (optimization for SSL connections)
                     filled = getEndPoint().fill(_requestBuffer);
 
-                // tell parser
-                if (filled < 0)
+                if (filled > 0)
+                    bytesIn.add(filled);
+                else if (filled < 0)
                     _parser.atEOF();
 
                 if (LOG.isDebugEnabled())
