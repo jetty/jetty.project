@@ -368,11 +368,18 @@ public final class Props implements Iterable<Prop>
         return props.toString();
     }
 
+    public static Props load(ClassLoader classLoader, String resourceName)
+    {
+        StartLog.debug("Looking for classloader resource: %s", resourceName);
+        return load(classLoader.getResource(resourceName));
+    }
+
     public static Props load(URL url)
     {
         Props props = new Props();
         if (url != null)
         {
+            StartLog.debug("Loading Props: %s", url.toExternalForm());
             try (InputStream in = url.openStream())
             {
                 Properties properties = new Properties();
