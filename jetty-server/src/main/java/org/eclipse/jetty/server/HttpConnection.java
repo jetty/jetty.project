@@ -324,10 +324,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private int fillRequestBuffer()
     {
         if (_contentBufferReferences.get() > 0)
-        {
-            LOG.warn("{} fill with unconsumed content!", this);
-            return 0;
-        }
+            throw new IllegalStateException("fill with unconsumed content on " + this);
 
         if (BufferUtil.isEmpty(_requestBuffer))
         {
@@ -354,11 +351,14 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             }
             catch (IOException e)
             {
-                LOG.debug(e);
+                if (LOG.isDebugEnabled())
+                    LOG.debug(e);
                 _parser.atEOF();
                 return -1;
             }
         }
+
+        // TODO: must return _requestBuffer.remaining()!
         return 0;
     }
 
