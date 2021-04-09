@@ -96,6 +96,16 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
         @Override
         public void resetBuffer()
         {
+            dispose();
+            BufferedInterceptor.super.resetBuffer();
+        }
+
+        private void dispose()
+        {
+            IO.close(_fileOutputStream);
+            _fileOutputStream = null;
+            _aggregating = null;
+
             if (_filePath != null)
             {
                 try
@@ -104,14 +114,10 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
                 }
                 catch (Throwable t)
                 {
-                    LOG.warn("Could Not Delete File {}", _filePath, t);
+                    LOG.warn("Could not delete file {}", _filePath, t);
                 }
+                _filePath = null;
             }
-
-            IO.close(_fileOutputStream);
-            _fileOutputStream = null;
-            _aggregating = null;
-            _filePath = null;
         }
 
         @Override
@@ -141,7 +147,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
             }
             catch (Throwable t)
             {
-                resetBuffer();
+                dispose();
                 callback.failed(t);
                 return;
             }
@@ -180,7 +186,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
             }
             catch (Throwable t)
             {
-                resetBuffer();
+                dispose();
                 callback.failed(t);
                 return;
             }
@@ -209,29 +215,14 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
                 @Override
                 protected void onCompleteSuccess()
                 {
-                    try
-                    {
-                        Files.delete(_filePath);
-                        callback.succeeded();
-                    }
-                    catch (Throwable t)
-                    {
-                        callback.failed(t);
-                    }
+                    dispose();
+                    callback.succeeded();
                 }
 
                 @Override
                 protected void onCompleteFailure(Throwable cause)
                 {
-                    try
-                    {
-                        Files.delete(_filePath);
-                    }
-                    catch (Throwable t)
-                    {
-                        cause.addSuppressed(t);
-                    }
-
+                    dispose();
                     callback.failed(cause);
                 }
             };

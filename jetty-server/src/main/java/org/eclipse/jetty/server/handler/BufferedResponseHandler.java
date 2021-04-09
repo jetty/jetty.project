@@ -15,8 +15,8 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -111,30 +111,19 @@ public class BufferedResponseHandler extends HandlerWrapper
     protected boolean shouldBuffer(HttpChannel channel, boolean last)
     {
         if (last)
-        {
             return false;
-        }
-        else
-        {
-            Response response = channel.getResponse();
-            if (HttpStatus.hasNoBody(response.getStatus()))
-            {
-                return false;
-            }
-            else
-            {
-                String ct = response.getContentType();
-                if (ct == null)
-                {
-                    return true;
-                }
-                else
-                {
-                    ct = MimeTypes.getContentTypeWithoutCharset(ct);
-                    return isMimeTypeBufferable(StringUtil.asciiToLowerCase(ct));
-                }
-            }
-        }
+
+        Response response = channel.getResponse();
+        int status = response.getStatus();
+        if (HttpStatus.hasNoBody(status) || HttpStatus.isRedirection(status))
+            return false;
+
+        String ct = response.getContentType();
+        if (ct == null)
+            return true;
+
+        ct = MimeTypes.getContentTypeWithoutCharset(ct);
+        return isMimeTypeBufferable(StringUtil.asciiToLowerCase(ct));
     }
 
     @Override
@@ -218,7 +207,7 @@ public class BufferedResponseHandler extends HandlerWrapper
     {
         private final Interceptor _next;
         private final HttpChannel _channel;
-        private final Queue<ByteBuffer> _buffers = new ConcurrentLinkedQueue<>();
+        private final Queue<ByteBuffer> _buffers = new ArrayDeque<>();
         private Boolean _aggregating;
         private ByteBuffer _aggregate;
 
@@ -240,6 +229,7 @@ public class BufferedResponseHandler extends HandlerWrapper
             _buffers.clear();
             _aggregating = null;
             _aggregate = null;
+            BufferedInterceptor.super.resetBuffer();
         }
 
         @Override
@@ -263,7 +253,7 @@ public class BufferedResponseHandler extends HandlerWrapper
             {
                 // Add the current content to the buffer list without a copy.
                 if (BufferUtil.length(content) > 0)
-                    _buffers.add(content);
+                    _buffers.offer(content);
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} committing {}", this, _buffers.size());
@@ -280,9 +270,10 @@ public class BufferedResponseHandler extends HandlerWrapper
                     // Do we need a new aggregate buffer.
                     if (BufferUtil.space(_aggregate) == 0)
                     {
+                        // TODO: use a buffer pool always allocating with outputBufferSize to avoid polluting the ByteBufferPool.
                         int size = Math.max(_channel.getHttpConfiguration().getOutputBufferSize(), BufferUtil.length(content));
-                        _aggregate = BufferUtil.allocate(size); // TODO use a buffer pool.
-                        _buffers.add(_aggregate);
+                        _aggregate = BufferUtil.allocate(size);
+                        _buffers.offer(_aggregate);
                     }
 
                     BufferUtil.append(_aggregate, content);
