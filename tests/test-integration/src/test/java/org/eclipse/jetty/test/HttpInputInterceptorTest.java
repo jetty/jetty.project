@@ -64,6 +64,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpInputInterceptorTest
@@ -283,12 +284,21 @@ public class HttpInputInterceptorTest
             InputStream input = socket.getInputStream();
 
             HttpTester.Response response = HttpTester.parseResponse(input);
-            System.err.println("response = " + response);
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            while (true)
+            try
             {
-                if (input.read() < 0)
-                    break;
+                while (true)
+                {
+                    if (input.read() < 0)
+                        break;
+                }
+            }
+            catch (IOException ignored)
+            {
+                // Java 8 may throw IOException: Connection reset by peer
+                // but that's ok (the server closed the connection).
             }
         }
     }
