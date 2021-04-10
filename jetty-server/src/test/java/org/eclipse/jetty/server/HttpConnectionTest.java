@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import jakarta.servlet.ServletException;
@@ -40,6 +42,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -47,6 +50,7 @@ import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,9 +63,11 @@ import org.slf4j.LoggerFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpConnectionTest
@@ -1351,6 +1357,68 @@ public class HttpConnectionTest
                 System.err.println(response);
             throw e;
         }
+    }
+
+    @Test
+    public void testBytesIn() throws Exception
+    {
+        String chunk1 = "0123456789ABCDEF";
+        String chunk2 = IntStream.range(0, 64).mapToObj(i -> chunk1).collect(Collectors.joining());
+        long dataLength = chunk1.length() + chunk2.length();
+        server.stop();
+        server.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                jettyRequest.setHandled(true);
+                IO.copy(request.getInputStream(), IO.getNullStream());
+
+                HttpConnection connection = HttpConnection.getCurrentConnection();
+                long bytesIn = connection.getBytesIn();
+                assertThat(bytesIn, greaterThan(dataLength));
+            }
+        });
+        server.start();
+
+        LocalEndPoint localEndPoint = connector.executeRequest("" +
+            "POST / HTTP/1.1\r\n" +
+            "Host: localhost\r\n" +
+            "Content-Length: " + dataLength + "\r\n" +
+            "\r\n" +
+            chunk1);
+
+        // Wait for the server to block on the read().
+        Thread.sleep(500);
+
+        // Send more content.
+        localEndPoint.addInput(chunk2);
+
+        HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse());
+        assertEquals(response.getStatus(), HttpStatus.OK_200);
+        localEndPoint.close();
+
+        localEndPoint = connector.executeRequest("" +
+            "POST / HTTP/1.1\r\n" +
+            "Host: localhost\r\n" +
+            "Transfer-Encoding: chunked\r\n" +
+            "\r\n" +
+            Integer.toHexString(chunk1.length()) + "\r\n" +
+            chunk1 + "\r\n");
+
+        // Wait for the server to block on the read().
+        Thread.sleep(500);
+
+        // Send more content.
+        localEndPoint.addInput("" +
+            Integer.toHexString(chunk2.length()) + "\r\n" +
+            chunk2 + "\r\n" +
+            "0\r\n" +
+            "\r\n");
+
+        response = HttpTester.parseResponse(localEndPoint.getResponse());
+        assertEquals(response.getStatus(), HttpStatus.OK_200);
+        localEndPoint.close();
     }
 
     private int checkContains(String s, int offset, String c)
