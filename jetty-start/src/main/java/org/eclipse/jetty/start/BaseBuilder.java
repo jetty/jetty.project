@@ -279,8 +279,6 @@ public class BaseBuilder
             .filter(Module::isEnabled)
             .forEach(module ->
             {
-                StartLog.debug("%s.isEnabled() = %b", module.getName(), module.isEnabled());
-
                 String ini = null;
                 try
                 {
