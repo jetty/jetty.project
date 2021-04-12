@@ -235,7 +235,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 {
                     produceContent();
                 }
-                catch (IOException e)
+                catch (Throwable e)
                 {
                     woken = failed(e);
                 }
@@ -390,7 +390,7 @@ public class HttpInput extends ServletInputStream implements Runnable
      *
      * @return Content or null
      */
-    protected Content nextNonSentinelContent()
+    protected Content nextNonSentinelContent() throws IOException
     {
         while (true)
         {
@@ -416,7 +416,7 @@ public class HttpInput extends ServletInputStream implements Runnable
      * @return the content or EOF or null if none available.
      * @throws IOException if retrieving the content fails
      */
-    protected Content produceNextContext() throws IOException
+    protected Content produceNextContent() throws IOException
     {
         Content content = nextInterceptedContent();
         if (content == null && !isFinished())
@@ -433,7 +433,7 @@ public class HttpInput extends ServletInputStream implements Runnable
      *
      * @return Content with remaining, a {@link SentinelContent},  or null
      */
-    protected Content nextInterceptedContent()
+    protected Content nextInterceptedContent() throws IOException
     {
         // If we have a chunk produced by interception
         if (_intercepted != null)
@@ -493,7 +493,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         return null;
     }
 
-    private Content intercept(Content content)
+    private Content intercept(Content content) throws IOException
     {
         try
         {
@@ -501,7 +501,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
         catch (Throwable x)
         {
-            BadMessageException failure = new BadMessageException("Bad content", x);
+            IOException failure = new IOException("Bad content", x);
             content.failed(failure);
             HttpChannel channel = _channelState.getHttpChannel();
             Response response = channel.getResponse();
@@ -546,21 +546,6 @@ public class HttpInput extends ServletInputStream implements Runnable
         int l = content.get(buffer, offset, length);
         _contentConsumed += l;
         return l;
-    }
-
-    /**
-     * Consumes the given content. Calls the content succeeded if all content consumed.
-     *
-     * @param content the content to consume
-     * @param length the number of bytes to consume
-     */
-    protected void skip(Content content, int length)
-    {
-        int l = content.skip(length);
-
-        _contentConsumed += l;
-        if (l > 0 && content.isEmpty())
-            nextNonSentinelContent(); // hungry succeed
     }
 
     /**
@@ -639,10 +624,19 @@ public class HttpInput extends ServletInputStream implements Runnable
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} addContent {}", this, content);
 
-                if (nextInterceptedContent() != null)
+                try
+                {
+                    if (nextInterceptedContent() != null)
+                        return wakeup();
+                    else
+                        return false;
+                }
+                catch (Throwable x)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("", x);
                     return wakeup();
-                else
-                    return false;
+                }
             }
         }
     }
@@ -794,16 +788,17 @@ public class HttpInput extends ServletInputStream implements Runnable
                     return true;
                 if (_waitingForContent)
                     return false;
-                if (produceNextContext() != null)
+                if (produceNextContent() != null)
                     return true;
                 _channelState.onReadUnready();
                 _waitingForContent = true;
             }
             return false;
         }
-        catch (IOException e)
+        catch (Throwable e)
         {
-            LOG.ignore(e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("", e);
             return true;
         }
     }
@@ -827,7 +822,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 }
                 else
                 {
-                    Content content = produceNextContext();
+                    Content content = produceNextContent();
                     if (content != null)
                     {
                         _state = ASYNC;
@@ -847,7 +842,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 }
             }
         }
-        catch (IOException e)
+        catch (Throwable e)
         {
             throw new RuntimeIOException(e);
         }
@@ -914,49 +909,49 @@ public class HttpInput extends ServletInputStream implements Runnable
     @Override
     public void run()
     {
-        final ReadListener listener;
-        Throwable error;
+        ReadListener listener = null;
+        Throwable error = null;
         boolean aeof = false;
-
-        synchronized (_inputQ)
-        {
-            listener = _listener;
-
-            if (_state == EOF)
-                return;
-
-            if (_state == AEOF)
-            {
-                _state = EOF;
-                aeof = true;
-            }
-
-            error = _state.getError();
-
-            if (!aeof && error == null)
-            {
-                Content content = nextInterceptedContent();
-                if (content == null)
-                    return;
-
-                // Consume a directly received EOF without first calling onDataAvailable
-                // So -1 will never be read and only onAddDataRread or onError will be called
-                if (content instanceof EofContent)
-                {
-                    consume(content);
-                    if (_state == EARLY_EOF)
-                        error = _state.getError();
-                    else if (_state == AEOF)
-                    {
-                        aeof = true;
-                        _state = EOF;
-                    }
-                }
-            }
-        }
 
         try
         {
+            synchronized (_inputQ)
+            {
+                listener = _listener;
+
+                if (_state == EOF)
+                    return;
+
+                if (_state == AEOF)
+                {
+                    _state = EOF;
+                    aeof = true;
+                }
+
+                error = _state.getError();
+
+                if (!aeof && error == null)
+                {
+                    Content content = nextInterceptedContent();
+                    if (content == null)
+                        return;
+
+                    // Consume a directly received EOF without first calling onDataAvailable
+                    // So -1 will never be read and only onAddDataRread or onError will be called
+                    if (content instanceof EofContent)
+                    {
+                        consume(content);
+                        if (_state == EARLY_EOF)
+                            error = _state.getError();
+                        else if (_state == AEOF)
+                        {
+                            aeof = true;
+                            _state = EOF;
+                        }
+                    }
+                }
+            }
+
             if (error != null)
             {
                 // TODO is this necessary to add here?
@@ -977,7 +972,8 @@ public class HttpInput extends ServletInputStream implements Runnable
         catch (Throwable e)
         {
             LOG.warn(e.toString());
-            LOG.debug(e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("", e);
             try
             {
                 if (aeof || error == null)
@@ -1174,7 +1170,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     protected static final State ASYNC = new State()
     {
         @Override
-        public int noContent() throws IOException
+        public int noContent()
         {
             return 0;
         }
