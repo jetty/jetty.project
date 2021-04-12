@@ -28,7 +28,6 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
-import org.slf4j.LoggerFactory;
 
 /**
  * The webapps directory scanning provider.
@@ -55,11 +54,9 @@ import org.slf4j.LoggerFactory;
  * <p>For XML configured contexts, the ID map will contain a reference to the {@link Server} instance called "Server" and
  * properties for the webapp file as "jetty.webapp" and directory as "jetty.webapps".
  */
-@ManagedObject("Provider for start-up deployement of webapps based on presence in directory")
+@ManagedObject("Provider for start-up deployment of webapps based on presence in directory")
 public class WebAppProvider extends ScanningAppProvider
 {
-    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(WebAppProvider.class);
-
     private boolean _extractWars = false;
     private boolean _parentLoaderPriority = false;
     private ConfigurationManager _configurationManager;
@@ -375,7 +372,7 @@ public class WebAppProvider extends ScanningAppProvider
             {
                 //if a .xml file exists for it, then redeploy that instead
                 File xml = new File(parent, xmlname);
-                super.fileChanged(xml.getCanonicalPath());
+                super.fileChanged(xml.getAbsolutePath());
                 return;
             }
 
@@ -384,7 +381,7 @@ public class WebAppProvider extends ScanningAppProvider
             {
                 //if a .XML file exists for it, then redeploy that instead
                 File xml = new File(parent, xmlname);
-                super.fileChanged(xml.getCanonicalPath());
+                super.fileChanged(xml.getAbsolutePath());
                 return;
             }
 

@@ -170,7 +170,7 @@ public class Scanner extends ContainerLifeCycle
             File f = dir.toFile();
 
             //if we want to report directories and we haven't already seen it
-            if (_reportDirs && !scanInfoMap.containsKey(f.getCanonicalPath()))
+            if (_reportDirs && !scanInfoMap.containsKey(f.getAbsolutePath()))
             {
                 boolean accepted = false;
                 if (rootIncludesExcludes != null && !rootIncludesExcludes.isEmpty())
@@ -216,7 +216,7 @@ public class Scanner extends ContainerLifeCycle
 
             if (accepted)
             {
-                scanInfoMap.put(f.getCanonicalPath(), new MetaData(f.lastModified(), f.isDirectory() ? 0 : f.length()));
+                scanInfoMap.put(f.getAbsolutePath(), new MetaData(f.lastModified(), f.isDirectory() ? 0 : f.length()));
                 if (LOG.isDebugEnabled()) LOG.debug("scan accepted {} mod={}", f, f.lastModified());
             }
 
