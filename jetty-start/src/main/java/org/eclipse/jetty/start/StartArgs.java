@@ -52,14 +52,8 @@ import org.eclipse.jetty.util.ManifestUtils;
 public class StartArgs
 {
     public static final String VERSION;
-    public static final Set<String> ALL_PARTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-        "java",
-        "opts",
-        "path",
-        "main",
-        "args")));
-    public static final Set<String> ARG_PARTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-        "args")));
+    public static final Set<String> ALL_PARTS = Set.of("java", "opts", "path", "main", "args");
+    public static final Set<String> ARG_PARTS = Set.of("args");
 
     static
     {
@@ -126,12 +120,12 @@ public class StartArgs
     /**
      * List of enabled modules
      */
-    private List<String> modules = new ArrayList<>();
+    private final List<String> modules = new ArrayList<>();
 
     /**
      * List of modules to skip [files] section validation
      */
-    private Set<String> skipFileValidationModules = new HashSet<>();
+    private final Set<String> skipFileValidationModules = new HashSet<>();
 
     /**
      * Map of enabled modules to the source of where that activation occurred
@@ -141,56 +135,56 @@ public class StartArgs
     /**
      * List of all active [files] sections from enabled modules
      */
-    private List<FileArg> files = new ArrayList<>();
+    private final List<FileArg> files = new ArrayList<>();
 
     /**
      * List of all active [lib] sections from enabled modules
      */
-    private Classpath classpath;
+    private final Classpath classpath;
 
     /**
      * List of all active [xml] sections from enabled modules
      */
-    private List<Path> xmls = new ArrayList<>();
+    private final List<Path> xmls = new ArrayList<>();
 
     /**
      * List of all active [jpms] sections for enabled modules
      */
-    private Set<String> jmodAdds = new LinkedHashSet<>();
-    private Map<String, Set<String>> jmodPatch = new LinkedHashMap<>();
-    private Map<String, Set<String>> jmodOpens = new LinkedHashMap<>();
-    private Map<String, Set<String>> jmodExports = new LinkedHashMap<>();
-    private Map<String, Set<String>> jmodReads = new LinkedHashMap<>();
+    private final Set<String> jmodAdds = new LinkedHashSet<>();
+    private final Map<String, Set<String>> jmodPatch = new LinkedHashMap<>();
+    private final Map<String, Set<String>> jmodOpens = new LinkedHashMap<>();
+    private final Map<String, Set<String>> jmodExports = new LinkedHashMap<>();
+    private final Map<String, Set<String>> jmodReads = new LinkedHashMap<>();
 
     /**
      * JVM arguments, found via command line and in all active [exec] sections from enabled modules
      */
-    private List<String> jvmArgs = new ArrayList<>();
+    private final List<String> jvmArgs = new ArrayList<>();
 
     /**
      * List of all xml references found directly on command line or start.ini
      */
-    private List<String> xmlRefs = new ArrayList<>();
+    private final List<String> xmlRefs = new ArrayList<>();
 
     /**
      * List of all property references found directly on command line or start.ini
      */
-    private List<String> propertyFileRefs = new ArrayList<>();
+    private final List<String> propertyFileRefs = new ArrayList<>();
 
     /**
      * List of all property files
      */
-    private List<Path> propertyFiles = new ArrayList<>();
+    private final List<Path> propertyFiles = new ArrayList<>();
 
-    private Props properties = new Props();
-    private Map<String, String> systemPropertySource = new HashMap<>();
-    private List<String> rawLibs = new ArrayList<>();
+    private final Props properties = new Props();
+    private final Map<String, String> systemPropertySource = new HashMap<>();
+    private final List<String> rawLibs = new ArrayList<>();
 
     // jetty.base - build out commands
     /**
      * --add-module=[module,[module]]
      */
-    private List<String> startModules = new ArrayList<>();
+    private final List<String> startModules = new ArrayList<>();
 
     // module inspection commands
     /**
