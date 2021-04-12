@@ -167,12 +167,6 @@ public class JettyHomeForker extends AbstractForker
     {
         List<String> cmd = new ArrayList<>();
         cmd.add("java");
-        cmd.add("-jar");
-        cmd.add(new File(jettyHome, "start.jar").getAbsolutePath());
-
-        cmd.add("-DSTOP.PORT=" + stopPort);
-        if (stopKey != null)
-            cmd.add("-DSTOP.KEY=" + stopKey);
 
         //add any args to the jvm
         if (jvmArgs != null)
@@ -192,6 +186,13 @@ public class JettyHomeForker extends AbstractForker
                 cmd.add("-D" + e.getKey() + "=" + e.getValue());
             }
         }
+
+        cmd.add("-jar");
+        cmd.add(new File(jettyHome, "start.jar").getAbsolutePath());
+
+        cmd.add("-DSTOP.PORT=" + stopPort);
+        if (stopKey != null)
+            cmd.add("-DSTOP.KEY=" + stopKey);
 
         //set up enabled jetty modules
         StringBuilder tmp = new StringBuilder();
