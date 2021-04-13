@@ -1,4 +1,8 @@
-jetty-9.4.40-SNAPSHOT
+jetty-9.4.40.v20210413 - 13 April 2021
+ + 6082 SslConnection compacting
+ + 6105 HttpConnection.getBytesIn() incorrect for requests with chunked content
+ + 6148 Jetty start.jar always reports jetty.tag.version as `master`
+ + 6168 Improve handling of unconsumed content
 
 jetty-9.4.39.v20210325 - 25 March 2021
  + 6034 SslContextFactory may select a wildcard certificate during SNI
@@ -7,11 +11,13 @@ jetty-9.4.39.v20210325 - 25 March 2021
  + 6052 Cleanup TypeUtil and ModuleLocation to allow jetty-client/hybrid to
    work on Android
  + 6063 Allow override of hazelcast version when using module
- + 6072 jetty server high CPU when client send data length > 17408 - Resolves CVE-2021-28165
+ + 6072 jetty server high CPU when client send data length > 17408 - Resolves
+   CVE-2021-28165
  + 6085 Jetty keeps Sessions in use after "Duplicate valid session cookies"
    Message
  + 6101 Normalise ambiguous URIs - Resolves CVE-2021-28164
- + 6102 Exclude webapps directory from deployment scan - Resolves CVE-2021-28163
+ + 6102 Exclude webapps directory from deployment scan - Resolves
+   CVE-2021-28163
 
 jetty-9.4.38.v20210224 - 24 February 2021
  + 4275 Path Normalization/Traversal - Context Matching
@@ -39,8 +45,8 @@ jetty-9.4.37.v20210219 - 19 February 2021
  + 5979 Configurable gzip Etag extension
 
 jetty-9.4.36.v20210114 - 14 January 2021
- + 5310 Jetty Http2 client discards the response frames when there is GOAWAY and
-   sends RST_STREAM
+ + 5310 Jetty Http2 client discards the response frames when there is GOAWAY
+   and sends RST_STREAM
  + 5499 Improve temporary buffer usage for WebSocket PerMessageDeflate
  + 5633 Allow to configure HttpClient request authority
  + 5689 Jetty ssl keystorePath doesn't work with absolute path
