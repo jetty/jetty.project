@@ -20,10 +20,14 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -31,10 +35,11 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.FileBufferedResponseHandler;
+import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +48,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -80,10 +86,7 @@ public class FileBufferedResponseHandlerTest
         _bufferedHandler.getPathIncludeExclude().include("/include/*");
         _bufferedHandler.getPathIncludeExclude().exclude("*.exclude");
         _bufferedHandler.getMimeIncludeExclude().exclude("text/excluded");
-
-        ContextHandler contextHandler = new ContextHandler("/ctx");
-        contextHandler.setHandler(_bufferedHandler);
-        _server.setHandler(contextHandler);
+        _server.setHandler(_bufferedHandler);
 
         FS.ensureEmpty(_testDir);
     }
@@ -112,7 +115,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         _server.start();
-        String rawResponse = _localConnector.getResponse("GET /ctx/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = _localConnector.getResponse("GET /path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -141,7 +144,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         _server.start();
-        String rawResponse = _localConnector.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = _localConnector.getResponse("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -170,7 +173,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         _server.start();
-        String rawResponse = _localConnector.getResponse("GET /ctx/include/path.exclude HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = _localConnector.getResponse("GET /include/path.exclude HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -201,7 +204,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         _server.start();
-        String rawResponse = _localConnector.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = _localConnector.getResponse("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -232,7 +235,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         _server.start();
-        String rawResponse = _localConnector.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = _localConnector.getResponse("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -263,7 +266,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         _server.start();
-        String rawResponse = _localConnector.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = _localConnector.getResponse("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -294,7 +297,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         _server.start();
-        String rawResponse = _localConnector.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = _localConnector.getResponse("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -324,7 +327,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         _server.start();
-        String rawResponse = _localConnector.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = _localConnector.getResponse("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -360,7 +363,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         _server.start();
-        String rawResponse = _localConnector.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = _localConnector.getResponse("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -431,7 +434,7 @@ public class FileBufferedResponseHandlerTest
         try (Socket socket = new Socket("localhost", _serverConnector.getLocalPort()))
         {
             OutputStream output = socket.getOutputStream();
-            String request = "GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n";
+            String request = "GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
@@ -443,6 +446,128 @@ public class FileBufferedResponseHandlerTest
         assertThat(response.get("NumFiles"), is("1"));
         assertThat(response.get("FileSize"), is(Long.toString(fileSize)));
         assertThat(received.get(), is(fileSize));
+        assertThat(getNumFiles(), is(0));
+    }
+
+    @Test
+    public void testNextInterceptorFailed() throws Exception
+    {
+        AbstractHandler failingInterceptorHandler = new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                HttpOutput httpOutput = baseRequest.getResponse().getHttpOutput();
+                HttpOutput.Interceptor nextInterceptor = httpOutput.getInterceptor();
+                httpOutput.setInterceptor(new HttpOutput.Interceptor()
+                {
+                    @Override
+                    public void write(ByteBuffer content, boolean last, Callback callback)
+                    {
+                        callback.failed(new Throwable("intentionally throwing from interceptor"));
+                    }
+
+                    @Override
+                    public HttpOutput.Interceptor getNextInterceptor()
+                    {
+                        return nextInterceptor;
+                    }
+                });
+            }
+        };
+
+        _server.setHandler(new HandlerCollection(failingInterceptorHandler, _server.getHandler()));
+        CompletableFuture<Throwable> errorFuture = new CompletableFuture<>();
+        _bufferedHandler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                baseRequest.setHandled(true);
+                byte[] chunk1 = "this content will ".getBytes();
+                byte[] chunk2 = "be buffered in a file".getBytes();
+                response.setContentLength(chunk1.length + chunk2.length);
+                ServletOutputStream outputStream = response.getOutputStream();
+
+                // Write chunk1 and then flush so it is written to the file.
+                outputStream.write(chunk1);
+                outputStream.flush();
+                assertThat(getNumFiles(), is(1));
+
+                try
+                {
+                    // ContentLength is set so it knows this is the last write.
+                    // This will cause the file to be written to the next interceptor which will fail.
+                    outputStream.write(chunk2);
+                }
+                catch (Throwable t)
+                {
+                    errorFuture.complete(t);
+                    throw t;
+                }
+            }
+        });
+
+        _server.start();
+        String rawResponse = _localConnector.getResponse("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        // Response was aborted.
+        assertThat(response.getStatus(), is(0));
+
+        // We failed because of the next interceptor.
+        Throwable error = errorFuture.get(5, TimeUnit.SECONDS);
+        assertThat(error.getMessage(), containsString("intentionally throwing from interceptor"));
+
+        // All files were deleted.
+        assertThat(getNumFiles(), is(0));
+    }
+
+    @Test
+    public void testFileWriteFailed() throws Exception
+    {
+        // Set the temp directory to an empty directory so that the file cannot be created.
+        File tempDir = MavenTestingUtils.getTargetTestingDir(getClass().getSimpleName());
+        FS.ensureDeleted(tempDir);
+        _bufferedHandler.setTempDir(tempDir.toPath());
+
+        CompletableFuture<Throwable> errorFuture = new CompletableFuture<>();
+        _bufferedHandler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                baseRequest.setHandled(true);
+                ServletOutputStream outputStream = response.getOutputStream();
+                byte[] content = "this content will be buffered in a file".getBytes();
+
+                try
+                {
+                    // Write the content and flush it to the file.
+                    // This should throw as it cannot create the file to aggregate into.
+                    outputStream.write(content);
+                    outputStream.flush();
+                }
+                catch (Throwable t)
+                {
+                    errorFuture.complete(t);
+                    throw t;
+                }
+            }
+        });
+
+        _server.start();
+        String rawResponse = _localConnector.getResponse("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        // Response was aborted.
+        assertThat(response.getStatus(), is(0));
+
+        // We failed because cannot create the file.
+        Throwable error = errorFuture.get(5, TimeUnit.SECONDS);
+        assertThat(error, instanceOf(NoSuchFileException.class));
+
+        // No files were created.
         assertThat(getNumFiles(), is(0));
     }
 
