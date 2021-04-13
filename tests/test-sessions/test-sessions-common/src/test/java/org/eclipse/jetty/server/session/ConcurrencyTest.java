@@ -42,14 +42,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * SameNodeLoadTest
+ * ConcurrencyTest
  *
- * This test performs multiple concurrent requests for the same session on the same node.
+ * This test performs multiple concurrent requests from different clients
+ * for the same session on the same node.
  */
-public class SameNodeLoadTest
+public class ConcurrencyTest
 {
     @Test
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testLoad() throws Exception
     {
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
@@ -73,17 +73,18 @@ public class SameNodeLoadTest
             {
                 String url = "http://localhost:" + port1 + contextPath + servletMapping;
 
-                //create session via first server
+                //create session upfront so the session id is established and
+                //can be shared to all clients
                 ContentResponse response1 = client.GET(url + "?action=init");
                 assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
                 String sessionCookie = response1.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
 
-                //simulate 10 clients making 100 requests each
+                //simulate 10 clients making 10 requests each for the same session
                 ExecutorService executor = Executors.newCachedThreadPool();
                 int clientsCount = 10;
                 CyclicBarrier barrier = new CyclicBarrier(clientsCount + 1);
-                int requestsCount = 100;
+                int requestsCount = 10;
                 Worker[] workers = new Worker[clientsCount];
                 for (int i = 0; i < clientsCount; ++i)
                 {
@@ -101,7 +102,9 @@ public class SameNodeLoadTest
                 System.err.println("Elapsed ms:" + elapsed);
                 executor.shutdownNow();
 
-                // Perform one request to get the result
+                // Perform one request to get the result - the session
+                // should have counted all the requests by incrementing
+                // a counter in an attribute.
                 Request request = client.newRequest(url + "?action=result");
                 ContentResponse response2 = request.send();
                 assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
