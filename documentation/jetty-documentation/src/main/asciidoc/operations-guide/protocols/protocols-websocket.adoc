@@ -34,7 +34,7 @@ Allows a single stream of an HTTP/2 connection to be upgraded to WebSocket.
 This allows one TCP connection to be shared by both protocols and extends HTTP/2's more efficient use of the network to WebSockets.
 
 [[og-protocols-websocket-configure]]
-==== Configuring WebSocket
+===== Configuring WebSocket
 
 Jetty provides two WebSocket implementations: one based on the Java WebSocket APIs defined by JSR 356, provided by module `websocket-javax`, and one based on Jetty specific WebSocket APIs, provided by module `websocket-jetty`.
 The Jetty `websocket` module enables both implementations, but each implementation can be enabled independently.
@@ -69,7 +69,7 @@ $ java -jar $JETTY_HOME/start.jar --add-modules=http,https,http2c,http2,websocke
 ----
 
 [[og-protocols-websocket-disable]]
-==== Selectively Disabling WebSocket
+===== Selectively Disabling WebSocket
 
 Enabling the WebSocket Jetty modules comes with a startup cost because Jetty must perform two steps:
 
@@ -104,7 +104,7 @@ For a specific web application, you can disable step 2 for Java WebSocket suppor
 Furthermore, for a specific web application, you can disable step 1 (and therefore also step 2) as described in the xref:og-annotations[annotations processing section].
 
 [[og-protocols-websocket-webapp-client]]
-==== Using WebSocket Client in WebApps
+===== Using WebSocket Client in WebApps
 
 Web applications may need to use a WebSocket client to communicate with third party WebSocket services.
 
