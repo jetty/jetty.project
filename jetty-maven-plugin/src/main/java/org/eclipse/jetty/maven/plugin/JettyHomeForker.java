@@ -29,6 +29,7 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -74,6 +75,11 @@ public class JettyHomeForker extends AbstractForker
      */
     protected String[] modules;
 
+    /*
+     * Optional jetty commands
+     */
+    protected String jettyOptions;
+
     protected List<File> libExtJarFiles;
     protected Path modulesPath;
     protected Path etcPath;
@@ -81,6 +87,16 @@ public class JettyHomeForker extends AbstractForker
     protected Path webappPath;
     protected Path mavenLibPath;
     protected String version;
+
+    public void setJettyOptions(String jettyOptions)
+    {
+        this.jettyOptions = jettyOptions;
+    }
+
+    public String getJettyOptions()
+    {
+        return jettyOptions;
+    }
 
     public List<File> getLibExtJarFiles()
     {
@@ -169,15 +185,13 @@ public class JettyHomeForker extends AbstractForker
         cmd.add("java");
 
         //add any args to the jvm
-        if (jvmArgs != null)
+        if (!StringUtil.isBlank(jvmArgs))
         {
-            String[] args = jvmArgs.split(" ");
-            for (String a : args)
-            {
-                if (!StringUtil.isBlank(a))
-                    cmd.add(a.trim());
-            }
+            Arrays.stream(jvmArgs.split(" ")).forEach((a) -> cmd.add(a.trim()));
         }
+
+        cmd.add("-jar");
+        cmd.add(new File(jettyHome, "start.jar").getAbsolutePath());
 
         if (systemProperties != null)
         {
@@ -186,9 +200,6 @@ public class JettyHomeForker extends AbstractForker
                 cmd.add("-D" + e.getKey() + "=" + e.getValue());
             }
         }
-
-        cmd.add("-jar");
-        cmd.add(new File(jettyHome, "start.jar").getAbsolutePath());
 
         cmd.add("-DSTOP.PORT=" + stopPort);
         if (stopKey != null)
@@ -211,6 +222,12 @@ public class JettyHomeForker extends AbstractForker
             tmp.append(",ext");
         tmp.append(",maven");
         cmd.add(tmp.toString());
+ 
+        //put any other jetty options onto the command line
+        if (!StringUtil.isBlank(jettyOptions))
+        {
+            Arrays.stream(jettyOptions.split(" ")).forEach((a) -> cmd.add(a.trim()));
+        }
 
         //put any jetty properties onto the command line
         if (jettyProperties != null)
