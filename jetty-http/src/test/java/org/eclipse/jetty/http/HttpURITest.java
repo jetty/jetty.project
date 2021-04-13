@@ -14,8 +14,10 @@
 package org.eclipse.jetty.http;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.http.HttpURI.Ambiguous;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -25,13 +27,14 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class HttpURITest
 {
     @Test
-    public void testBuilder() throws Exception
+    public void testBuilder()
     {
         HttpURI uri = HttpURI.build()
             .scheme("http")
@@ -76,7 +79,7 @@ public class HttpURITest
     }
 
     @Test
-    public void testExample() throws Exception
+    public void testExample()
     {
         HttpURI uri = HttpURI.from("http://user:password@host:8888/ignored/../p%61th;ignored/info;param?query=value#fragment");
 
@@ -93,7 +96,7 @@ public class HttpURITest
     }
 
     @Test
-    public void testInvalidAddress() throws Exception
+    public void testInvalidAddress()
     {
         assertInvalidURI("http://[ffff::1:8080/", "Invalid URL; no closing ']' -- should throw exception");
         assertInvalidURI("**", "only '*', not '**'");
@@ -163,19 +166,19 @@ public class HttpURITest
     }
 
     @Test
-    public void testAt() throws Exception
+    public void testAt()
     {
         HttpURI uri = HttpURI.from("/@foo/bar");
         assertEquals("/@foo/bar", uri.getPath());
     }
 
     @Test
-    public void testParams() throws Exception
+    public void testParams()
     {
         HttpURI uri = HttpURI.from("/foo/bar");
         assertEquals("/foo/bar", uri.getPath());
         assertEquals("/foo/bar", uri.getDecodedPath());
-        assertEquals(null, uri.getParam());
+        assertNull(uri.getParam());
 
         uri = HttpURI.from("/foo/bar;jsessionid=12345");
         assertEquals("/foo/bar;jsessionid=12345", uri.getPath());
@@ -227,7 +230,7 @@ public class HttpURITest
         assertEquals("/f%30%30;p0/bar;p1;p2", uri.getPath());
         assertEquals("/f00/bar", uri.getDecodedPath());
         assertEquals("p2", uri.getParam());
-        assertEquals(null, uri.getQuery());
+        assertNull(uri.getQuery());
 
         uri = builder.pathQuery("/f%30%30;p0/bar;p1;p2?name=value").asImmutable();
         assertEquals("http://host:8888/f%30%30;p0/bar;p1;p2?name=value", uri.toString());
@@ -241,7 +244,7 @@ public class HttpURITest
         assertEquals("/f%30%30;p0/bar;p1;p2", uri.getPath());
         assertEquals("/f00/bar", uri.getDecodedPath());
         assertEquals("p2", uri.getParam());
-        assertEquals(null, uri.getQuery());
+        assertNull(uri.getQuery());
 
         uri = builder.query("other=123456").asImmutable();
         assertEquals("http://host:8888/f%30%30;p0/bar;p1;p2?other=123456", uri.toString());
@@ -252,7 +255,7 @@ public class HttpURITest
     }
 
     @Test
-    public void testSchemeAndOrAuthority() throws Exception
+    public void testSchemeAndOrAuthority()
     {
         HttpURI.Mutable builder = HttpURI.build("/path/info");
         HttpURI uri = builder.asImmutable();
@@ -272,7 +275,7 @@ public class HttpURITest
     }
 
     @Test
-    public void testBasicAuthCredentials() throws Exception
+    public void testBasicAuthCredentials()
     {
         HttpURI uri = HttpURI.from("http://user:password@example.com:8888/blah");
         assertEquals("http://user:password@example.com:8888/blah", uri.toString());
@@ -281,7 +284,7 @@ public class HttpURITest
     }
 
     @Test
-    public void testCanonicalDecoded() throws Exception
+    public void testCanonicalDecoded()
     {
         HttpURI uri = HttpURI.from("/path/.info");
         assertEquals("/path/.info", uri.getDecodedPath());
@@ -319,69 +322,85 @@ public class HttpURITest
         return Arrays.stream(new Object[][]
             {
                 // Simple path example
-                {"http://host/path/info", "/path/info", false},
-                {"//host/path/info", "/path/info", false},
-                {"/path/info", "/path/info", false},
+                {"http://host/path/info", "/path/info", EnumSet.noneOf(Ambiguous.class)},
+                {"//host/path/info", "/path/info", EnumSet.noneOf(Ambiguous.class)},
+                {"/path/info", "/path/info", EnumSet.noneOf(Ambiguous.class)},
 
                 // legal non ambiguous relative paths
-                {"http://host/../path/info", null, false},
-                {"http://host/path/../info", "/info", false},
-                {"http://host/path/./info", "/path/info", false},
-                {"//host/path/../info", "/info", false},
-                {"//host/path/./info", "/path/info", false},
-                {"/path/../info", "/info", false},
-                {"/path/./info", "/path/info", false},
-                {"path/../info", "info", false},
-                {"path/./info", "path/info", false},
+                {"http://host/../path/info", null, EnumSet.noneOf(Ambiguous.class)},
+                {"http://host/path/../info", "/info", EnumSet.noneOf(Ambiguous.class)},
+                {"http://host/path/./info", "/path/info", EnumSet.noneOf(Ambiguous.class)},
+                {"//host/path/../info", "/info", EnumSet.noneOf(Ambiguous.class)},
+                {"//host/path/./info", "/path/info", EnumSet.noneOf(Ambiguous.class)},
+                {"/path/../info", "/info", EnumSet.noneOf(Ambiguous.class)},
+                {"/path/./info", "/path/info", EnumSet.noneOf(Ambiguous.class)},
+                {"path/../info", "info", EnumSet.noneOf(Ambiguous.class)},
+                {"path/./info", "path/info", EnumSet.noneOf(Ambiguous.class)},
 
                 // illegal paths
-                {"//host/../path/info", null, false},
-                {"/../path/info", null, false},
-                {"../path/info", null, false},
-                {"/path/%XX/info", null, false},
-                {"/path/%2/F/info", null, false},
+                {"//host/../path/info", null, EnumSet.noneOf(Ambiguous.class)},
+                {"/../path/info", null, EnumSet.noneOf(Ambiguous.class)},
+                {"../path/info", null, EnumSet.noneOf(Ambiguous.class)},
+                {"/path/%XX/info", null, EnumSet.noneOf(Ambiguous.class)},
+                {"/path/%2/F/info", null, EnumSet.noneOf(Ambiguous.class)},
 
-                // ambiguous dot encodings or parameter inclusions
-                {"scheme://host/path/%2e/info", "/path/./info", true},
-                {"scheme:/path/%2e/info", "/path/./info", true},
-                {"/path/%2e/info", "/path/./info", true},
-                {"path/%2e/info/", "path/./info/", true},
-                {"/path/%2e%2e/info", "/path/../info", true},
-                {"/path/%2e%2e;/info", "/path/../info", true},
-                {"/path/%2e%2e;param/info", "/path/../info", true},
-                {"/path/%2e%2e;param;other/info;other", "/path/../info", true},
-                {"/path/.;/info", "/path/./info", true},
-                {"/path/.;param/info", "/path/./info", true},
-                {"/path/..;/info", "/path/../info", true},
-                {"/path/..;param/info", "/path/../info", true},
-                {"%2e/info", "./info", true},
-                {"%2e%2e/info", "../info", true},
-                {"%2e%2e;/info", "../info", true},
-                {".;/info", "./info", true},
-                {".;param/info", "./info", true},
-                {"..;/info", "../info", true},
-                {"..;param/info", "../info", true},
-                {"%2e", ".", true},
-                {"%2e.", "..", true},
-                {".%2e", "..", true},
-                {"%2e%2e", "..", true},
+                // ambiguous dot encodings
+                {"scheme://host/path/%2e/info", "/path/./info", EnumSet.of(Ambiguous.SEGMENT)},
+                {"scheme:/path/%2e/info", "/path/./info", EnumSet.of(Ambiguous.SEGMENT)},
+                {"/path/%2e/info", "/path/./info", EnumSet.of(Ambiguous.SEGMENT)},
+                {"path/%2e/info/", "path/./info/", EnumSet.of(Ambiguous.SEGMENT)},
+                {"/path/%2e%2e/info", "/path/../info", EnumSet.of(Ambiguous.SEGMENT)},
+                {"/path/%2e%2e;/info", "/path/../info", EnumSet.of(Ambiguous.SEGMENT)},
+                {"/path/%2e%2e;param/info", "/path/../info", EnumSet.of(Ambiguous.SEGMENT)},
+                {"/path/%2e%2e;param;other/info;other", "/path/../info", EnumSet.of(Ambiguous.SEGMENT)},
+                {"%2e/info", "./info", EnumSet.of(Ambiguous.SEGMENT)},
+                {"%2e%2e/info", "../info", EnumSet.of(Ambiguous.SEGMENT)},
+                {"%2e%2e;/info", "../info", EnumSet.of(Ambiguous.SEGMENT)},
+                {"%2e", ".", EnumSet.of(Ambiguous.SEGMENT)},
+                {"%2e.", "..", EnumSet.of(Ambiguous.SEGMENT)},
+                {".%2e", "..", EnumSet.of(Ambiguous.SEGMENT)},
+                {"%2e%2e", "..", EnumSet.of(Ambiguous.SEGMENT)},
+
+                // ambiguous parameter inclusions
+                {"/path/.;/info", "/path/./info", EnumSet.of(Ambiguous.PARAM)},
+                {"/path/.;param/info", "/path/./info", EnumSet.of(Ambiguous.PARAM)},
+                {"/path/..;/info", "/path/../info", EnumSet.of(Ambiguous.PARAM)},
+                {"/path/..;param/info", "/path/../info", EnumSet.of(Ambiguous.PARAM)},
+                {".;/info", "./info", EnumSet.of(Ambiguous.PARAM)},
+                {".;param/info", "./info", EnumSet.of(Ambiguous.PARAM)},
+                {"..;/info", "../info", EnumSet.of(Ambiguous.PARAM)},
+                {"..;param/info", "../info", EnumSet.of(Ambiguous.PARAM)},
 
                 // ambiguous segment separators
-                {"/path/%2f/info", "/path///info", true},
-                {"%2f/info", "//info", true},
-                {"%2F/info", "//info", true},
+                {"/path/%2f/info", "/path///info", EnumSet.of(Ambiguous.SEPARATOR)},
+                {"%2f/info", "//info", EnumSet.of(Ambiguous.SEPARATOR)},
+                {"%2F/info", "//info", EnumSet.of(Ambiguous.SEPARATOR)},
+                {"/path/%2f../info", "/path//../info", EnumSet.of(Ambiguous.SEPARATOR)},
+
+                // combinations
+                {"/path/%2f/..;/info", "/path///../info", EnumSet.of(Ambiguous.SEPARATOR, Ambiguous.PARAM)},
+                {"/path/%2f/..;/%2e/info", "/path///.././info", EnumSet.of(Ambiguous.SEPARATOR, Ambiguous.PARAM, Ambiguous.SEGMENT)},
+
+                // Non ascii characters
+                // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
+                {"http://localhost:9000/x\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", "/x\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", EnumSet.noneOf(Ambiguous.class)},
+                {"http://localhost:9000/\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", "/\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", EnumSet.noneOf(Ambiguous.class)},
+                // @checkstyle-enable-check : AvoidEscapedUnicodeCharactersCheck
             }).map(Arguments::of);
     }
 
     @ParameterizedTest
     @MethodSource("decodePathTests")
-    public void testDecodedPath(String input, String decodedPath, boolean ambiguous)
+    public void testDecodedPath(String input, String decodedPath, EnumSet<Ambiguous> expected)
     {
         try
         {
             HttpURI uri = HttpURI.from(input);
             assertThat(uri.getDecodedPath(), is(decodedPath));
-            assertThat(uri.hasAmbiguousSegment(), is(ambiguous));
+            assertThat(uri.isAmbiguous(), is(!expected.isEmpty()));
+            assertThat(uri.hasAmbiguousSegment(), is(expected.contains(Ambiguous.SEGMENT)));
+            assertThat(uri.hasAmbiguousSeparator(), is(expected.contains(Ambiguous.SEPARATOR)));
+            assertThat(uri.hasAmbiguousParameter(), is(expected.contains(Ambiguous.PARAM)));
         }
         catch (Exception e)
         {

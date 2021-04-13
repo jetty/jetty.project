@@ -185,7 +185,7 @@ Modern TLS clients (e.g. browsers) always send the SNI extension; however, older
 
 Being able to handle the SNI is important when you have xref:og-deploy-virtual-hosts[virtual hosts] and a KeyStore with multiple certificates, one for each domain.
 
-For example, you have deployed over a secure connector two web applications, both at context path `/`, one at virtual host `one.com` and one at virtual host `two.net`.
+For example, you may have deployed over a secure connector two web applications, both at context path `/`, one at virtual host `one.com` and one at virtual host `two.net`.
 The KeyStore contains two certificates, one for `one.com` and one for `two.net`.
 
 There are three `ssl` module properties that control the SNI behavior on the server: one that works at the TLS level, and two that works at the HTTP level.
@@ -194,13 +194,11 @@ The property that works at the TLS level is:
 
 `jetty.sslContext.sniRequired`::
 Whether SNI is required at the TLS level, defaults to `false`.
-
 Its behavior is explained by the following table:
-
++
 .Behavior of the `jetty.sslContext.sniRequired` property
 [cols="3*a"]
 |===
-
 |
 | `sniRequired=false`
 | `sniRequired=true`
@@ -216,9 +214,8 @@ Its behavior is explained by the following table:
 | SNI = `one.com`
 | client receives `one.com` certificate
 | client receives `one.com` certificate
-
 |===
-
++
 [WARNING]
 ====
 The _default certificate_ is the certificate returned by the TLS implementation in case there is no SNI match, and you should not rely on this certificate to be the same across Java vendors and versions, or Jetty versions, or TLS provider vendors and versions.
@@ -233,13 +230,11 @@ For this reason, other two properties are defined at the HTTP level, so that cli
 
 `jetty.ssl.sniRequired`::
 Whether SNI is required at the HTTP level, defaults to `false`.
-
 Its behavior is similar to the `jetty.sslContext.sniRequired` property above, and is explained by the following table:
-
++
 .Behavior of the `jetty.ssl.sniRequired` property
 [cols=3*a]
 |===
-
 |
 | `sniRequired=false`
 | `sniRequired=true`
@@ -255,7 +250,6 @@ Its behavior is similar to the `jetty.sslContext.sniRequired` property above, an
 | SNI = `one.com`
 | Accept
 | Accept
-
 |===
 
 When `jetty.ssl.sniRequired=true`, the SNI is matched against the certificate sent to the client, and only if there is a match the request is accepted.
@@ -264,13 +258,11 @@ When the request is accepted, there could be an additional check controlled by t
 
 `jetty.ssl.sniHostCheck`::
 Whether the certificate sent to the client matches the `Host` header, defaults to `true`.
-
 Its behavior is explained by the following table:
-
++
 .Behavior of the `jetty.ssl.sniHostCheck` property
 [cols="3*a"]
 |===
-
 |
 | `sniHostCheck=false`
 | `sniHostCheck=true`
@@ -284,7 +276,6 @@ Its behavior is explained by the following table:
 `Host: one.com`
 | Accept
 | Accept
-
 |===
 
 In the normal case with the default server configuration, for a TLS clients that sends SNI, and then sends an HTTP request with the correct `Host` header, Jetty will pick the correct certificate from the KeyStore based on the SNI received from the client, and accept the request.

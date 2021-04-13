@@ -10,7 +10,7 @@
     <Call name="load">
       <Arg>
           <New class="java.io.FileInputStream">
-              <Arg><Property name="jetty.base" default="."/>/resources/hotrod-client.properties</Arg>
+              <Arg><Property name="jetty.base"/>/resources/hotrod-client.properties</Arg>
           </New>
       </Arg>
     </Call>

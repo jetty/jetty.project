@@ -28,8 +28,11 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -282,6 +285,43 @@ public class WebAppContextTest
         assertTrue(context.isProtectedTarget("/web-inf/lib/foo.jar"));
         assertTrue(context.isProtectedTarget("/meta-inf/readme.txt"));
         assertFalse(context.isProtectedTarget("/something-else/web-inf"));
+    }
+
+    @Test
+    public void testProtectedTarget() throws Exception
+    {
+        Server server = newServer();
+
+        HandlerList handlers = new HandlerList();
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        WebAppContext context = new WebAppContext();
+        Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
+        context.setBaseResource(new PathResource(testWebapp));
+        context.setContextPath("/");
+        server.setHandler(handlers);
+        handlers.addHandler(contexts);
+        contexts.addHandler(context);
+
+        LocalConnector connector = new LocalConnector(server);
+        server.addConnector(connector);
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
+
+        server.start();
+
+        assertThat(HttpTester.parseResponse(connector.getResponse("GET /test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.OK_200));
+        assertThat(HttpTester.parseResponse(connector.getResponse("GET /%2e/%2e/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.OK_200));
+        assertThat(HttpTester.parseResponse(connector.getResponse("GET /foo/%2e%2e/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.OK_200));
+
+        assertThat(HttpTester.parseResponse(connector.getResponse("GET /WEB-INF HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
+        assertThat(HttpTester.parseResponse(connector.getResponse("GET /WEB-INF/ HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
+        assertThat(HttpTester.parseResponse(connector.getResponse("GET /WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
+        assertThat(HttpTester.parseResponse(connector.getResponse("GET /web-inf/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
+        assertThat(HttpTester.parseResponse(connector.getResponse("GET /%2e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
+        assertThat(HttpTester.parseResponse(connector.getResponse("GET /%2e/%2e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
+        assertThat(HttpTester.parseResponse(connector.getResponse("GET /foo/%2e%2e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
+        assertThat(HttpTester.parseResponse(connector.getResponse("GET /%2E/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
+        assertThat(HttpTester.parseResponse(connector.getResponse("GET //WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
+        assertThat(HttpTester.parseResponse(connector.getResponse("GET /WEB-INF%2ftest.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
     }
 
     @Test

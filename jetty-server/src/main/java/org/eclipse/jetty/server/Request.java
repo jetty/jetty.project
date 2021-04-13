@@ -67,7 +67,6 @@ import javax.servlet.http.WebConnection;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HostPortHttpField;
-import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookie.SetCookieHttpField;
 import org.eclipse.jetty.http.HttpField;
@@ -81,6 +80,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -1690,10 +1690,20 @@ public class Request implements HttpServletRequest
         _method = request.getMethod();
         _httpFields = request.getFields();
         final HttpURI uri = request.getURI();
-        
-        if (uri.hasAmbiguousSegment() && !_channel.getHttpConfiguration().getHttpCompliance().allows(HttpCompliance.Violation.AMBIGUOUS_PATH_SEGMENTS))
-            throw new BadMessageException("Ambiguous segment in URI");
-        
+
+        UriCompliance compliance = null;
+        boolean ambiguous = uri.isAmbiguous();
+        if (ambiguous)
+        {
+            compliance = _channel == null || _channel.getHttpConfiguration() == null ? null : _channel.getHttpConfiguration().getUriCompliance();
+            if (uri.hasAmbiguousSegment() && (compliance == null || !compliance.allows(UriCompliance.Violation.AMBIGUOUS_PATH_SEGMENT)))
+                throw new BadMessageException("Ambiguous segment in URI");
+            if (uri.hasAmbiguousSeparator() && (compliance == null || !compliance.allows(UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR)))
+                throw new BadMessageException("Ambiguous segment in URI");
+            if (uri.hasAmbiguousParameter() && (compliance == null || !compliance.allows(UriCompliance.Violation.AMBIGUOUS_PATH_PARAMETER)))
+                throw new BadMessageException("Ambiguous path parameter in URI");
+        }
+
         if (uri.isAbsolute() && uri.hasAuthority() && uri.getPath() != null)
         {
             _uri = uri;
@@ -1732,7 +1742,15 @@ public class Request implements HttpServletRequest
             // TODO this is not really right for CONNECT
             path = _uri.isAbsolute() ? "/" : null;
         else if (encoded.startsWith("/"))
+        {
             path = (encoded.length() == 1) ? "/" : _uri.getDecodedPath();
+            // Strictly speaking if a URI is legal and encodes ambiguous segments, then they should be
+            // reflected in the decoded string version.  However, it can be ambiguous to provide a decoded path as
+            // a string, so we normalize again.  If an application wishes to see ambiguous URIs, then they must
+            // set the {@link UriCompliance.Violation#NON_CANONICAL_AMBIGUOUS_PATHS} compliance.
+            if (ambiguous && (compliance == null || !compliance.allows(UriCompliance.Violation.NON_CANONICAL_AMBIGUOUS_PATHS)))
+                path = URIUtil.canonicalPath(path);
+        }
         else if ("*".equals(encoded) || HttpMethod.CONNECT.is(getMethod()))
             path = encoded;
         else

@@ -17,7 +17,7 @@ etc/hawtio.xml
 [files]
 etc/hawtio/
 lib/hawtio/
-https://oss.sonatype.org/content/repositories/public/io/hawt/hawtio-default/1.4.16/hawtio-default-1.4.16.war|lib/hawtio/hawtio.war
+maven://io.hawt/hawtio-default/1.4.16|lib/hawtio/hawtio.war
 basehome:modules/hawtio/hawtio.xml|etc/hawtio.xml
 
 [license]

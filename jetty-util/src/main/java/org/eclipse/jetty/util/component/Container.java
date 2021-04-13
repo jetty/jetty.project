@@ -153,6 +153,46 @@ public interface Container
     }
 
     /**
+     * A utility method to add a bean to a container.
+     * @param parent the parent container.
+     * @param child the child bean.
+     * @return true if the child was added as a bean, false if parent was not instance of {@link Container} or bean was already present.
+     */
+    static boolean addBean(Object parent, Object child)
+    {
+        if (parent instanceof Container)
+            return ((Container)parent).addBean(child);
+        return false;
+    }
+
+    /**
+     * A utility method to add a bean to a container.
+     * @param parent the parent container.
+     * @param child the child bean.
+     * @param managed whether to managed the lifecycle of the bean.
+     * @return true if the child was added as a bean, false if parent was not instance of {@link Container} or bean was already present.
+     */
+    static boolean addBean(Object parent, Object child, boolean managed)
+    {
+        if (parent instanceof Container)
+            return ((Container)parent).addBean(child, managed);
+        return false;
+    }
+
+    /**
+     * A utility method to remove a bean from a container.
+     * @param parent the parent container.
+     * @param child the child bean.
+     * @return true if parent was an instance of {@link Container} and the bean was removed.
+     */
+    static boolean removeBean(Object parent, Object child)
+    {
+        if (parent instanceof Container)
+            return ((Container)parent).removeBean(child);
+        return false;
+    }
+
+    /**
      * A listener for Container events.
      * If an added bean implements this interface it will receive the events
      * for this container.

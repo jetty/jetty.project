@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.http.HttpServletRequest;
@@ -39,6 +40,7 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -776,6 +778,71 @@ public class ContextHandlerTest
 
         String classpath = handler.getClassPath();
         assertThat("classpath", classpath, containsString(jar.toString()));
+    }
+
+    @Test
+    public void testNonDurableContextListener() throws Exception
+    {
+        Server server = new Server();
+        ContextHandler context = new ContextHandler();
+        server.setHandler(context);
+        AtomicInteger initialized = new AtomicInteger();
+        AtomicInteger destroyed = new AtomicInteger();
+
+        context.addEventListener(new ServletContextListener()
+        {
+            @Override
+            public void contextInitialized(ServletContextEvent sce)
+            {
+                initialized.incrementAndGet();
+                context.addEventListener(new ServletContextListener()
+                {
+                    @Override
+                    public void contextInitialized(ServletContextEvent sce)
+                    {
+                        initialized.incrementAndGet();
+                    }
+
+                    @Override
+                    public void contextDestroyed(ServletContextEvent sce)
+                    {
+                        destroyed.incrementAndGet();
+                    }
+                });
+            }
+
+            @Override
+            public void contextDestroyed(ServletContextEvent sce)
+            {
+                destroyed.incrementAndGet();
+            }
+        });
+
+        LoggerFactory.getLogger(ContextHandler.class).info("Expect WARN ContextListener ... add whilst starting ...");
+        server.start();
+        assertThat(initialized.get(), is(2));
+
+        LoggerFactory.getLogger(ContextHandler.class).info("Expect WARN ContextListener ... add after starting ...");
+        context.addEventListener(new ServletContextListener()
+        {
+            @Override
+            public void contextInitialized(ServletContextEvent sce)
+            {
+                // This should not get called because added after started
+                initialized.incrementAndGet();
+            }
+
+            @Override
+            public void contextDestroyed(ServletContextEvent sce)
+            {
+                destroyed.incrementAndGet();
+            }
+        });
+
+        assertThat(initialized.get(), is(2));
+
+        server.stop();
+        assertThat(destroyed.get(), is(3));
     }
 
     private void checkResourcePathsForExampleWebApp(String root) throws IOException

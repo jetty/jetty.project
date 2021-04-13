@@ -3,7 +3,7 @@ Enables and configures the Jetty server.
 This module does not enable any network protocol support.
 To enable a specific network protocol such as HTTP/1.1, you must enable the correspondent Jetty module.
 
-[optional]
+[after]
 jvm
 ext
 resources
@@ -62,6 +62,9 @@ etc/jetty.xml
 ## HTTP Compliance: RFC7230, RFC7230_LEGACY, RFC2616, RFC2616_LEGACY, LEGACY
 # jetty.httpConfig.compliance=RFC7230
 
+## URI Compliance: SAFE, STRICT
+# jetty.httpConfig.uriCompliance=SAFE
+
 ## Cookie compliance mode for parsing request Cookie headers: RFC2965, RFC6265
 # jetty.httpConfig.requestCookieCompliance=RFC6265
 
@@ -70,6 +73,10 @@ etc/jetty.xml
 
 ## Relative Redirect Locations allowed
 # jetty.httpConfig.relativeRedirectAllowed=false
+
+## Whether to use direct ByteBuffers for reading or writing
+# jetty.httpConfig.useInputDirectByteBuffers=true
+# jetty.httpConfig.useOutputDirectByteBuffers=true
 
 ### Server configuration
 ## Whether ctrl+c on the console gracefully stops the Jetty server
@@ -88,3 +95,4 @@ etc/jetty.xml
 # jetty.scheduler.name=
 # jetty.scheduler.deamon=false
 # jetty.scheduler.threads=-1
+

@@ -245,9 +245,13 @@ public class ModuleGraphWriter
                 depends = Module.normalizeModuleName(depends);
                 out.printf("    \"%s\" -> \"%s\";%n", module.getName(), depends);
             }
-            for (String optional : module.getOptional())
+            for (String before : module.getBefore())
             {
-                out.printf("    \"%s\" => \"%s\";%n", module.getName(), optional);
+                out.printf("    \"%s\" << \"%s\";%n", module.getName(), before);
+            }
+            for (String after : module.getAfter())
+            {
+                out.printf("    \"%s\" >> \"%s\";%n", module.getName(), after);
             }
         }
     }

@@ -1614,29 +1614,56 @@ public class SessionHandler extends ScopedHandler
                         if (LOG.isDebugEnabled())
                             LOG.debug("Got Session ID {} from cookie {}", id, sessionCookie);
 
-                        HttpSession s = getHttpSession(id);
+                        if (session == null)
+                        {
+                            //we currently do not have a session selected, use this one if it is valid
+                            HttpSession s = getHttpSession(id);
+                            if (s != null && isValid(s))
+                            {
+                                //associate it with the request so its reference count is decremented as the
+                                //request exits
+                                requestedSessionId = id;
+                                session = s;
+                                baseRequest.enterSession(session);
+                                baseRequest.setSession(session);
 
-                        if (requestedSessionId == null)
-                        {
-                            //no previous id, always accept this one
-                            requestedSessionId = id;
-                            session = s;
-                        }
-                        else if (requestedSessionId.equals(id))
-                        {
-                            //really a bad request, but will forgive the duplication
-                        }
-                        else if (session == null || !isValid(session))
-                        {
-                            //no previous session or invalid, accept this one
-                            requestedSessionId = id;
-                            session = s;
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("Selected session {}", session);
+                            }
+                            else
+                            {
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("No session found for session cookie id {}", id);
+
+                                //if we don't have a valid session id yet, just choose the current id
+                                if (requestedSessionId == null)
+                                    requestedSessionId = id;
+                            }
                         }
                         else
                         {
-                            //previous session is valid, use it unless both valid
-                            if (s != null && isValid(s))
-                                throw new BadMessageException("Duplicate valid session cookies: " + requestedSessionId + "," + id);
+                            //we currently have a valid session selected. We will throw an error
+                            //if there is a _different_ valid session id cookie. Duplicate ids, or
+                            //invalid session ids are ignored
+                            if (!session.getId().equals(getSessionIdManager().getId(id)))
+                            {
+                                //load the session to see if it is valid or not
+                                HttpSession s = getHttpSession(id);
+                                if (s != null && isValid(s))
+                                {
+                                    //associate it with the request so its reference count is decremented as the
+                                    //request exits
+                                    baseRequest.enterSession(s);
+                                    if (LOG.isDebugEnabled())
+                                        LOG.debug("Multiple different valid session ids: {}, {}", requestedSessionId, id);
+                                    throw new BadMessageException("Duplicate valid session cookies: " + requestedSessionId + " ," + id);
+                                }
+                            }
+                            else
+                            {
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("Duplicate valid session cookie id: {}", id);
+                            }
                         }
                     }
                 }
@@ -1665,24 +1692,22 @@ public class SessionHandler extends ScopedHandler
 
                     requestedSessionId = uri.substring(s, i);
                     requestedSessionIdFromCookie = false;
+
                     if (LOG.isDebugEnabled())
                         LOG.debug("Got Session ID {} from URL", requestedSessionId);
+
                     session = getHttpSession(requestedSessionId);
+                    if (session != null && isValid(session))
+                    {
+                        baseRequest.enterSession(session); //request enters this session for first time
+                        baseRequest.setSession(session);  //associate the session with the request
+                    }
                 }
             }
         }
 
         baseRequest.setRequestedSessionId(requestedSessionId);
         baseRequest.setRequestedSessionIdFromCookie(requestedSessionId != null && requestedSessionIdFromCookie);
-
-        if (requestedSessionId != null)
-        {
-            if (session != null && isValid(session))
-            {
-                baseRequest.enterSession(session); //request enters this session for first time
-                baseRequest.setSession(session);  //associate the session with the request
-            }
-        }
     }
 
     @Override

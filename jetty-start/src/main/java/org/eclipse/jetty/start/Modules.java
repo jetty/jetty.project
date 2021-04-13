@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -121,12 +120,22 @@ public class Modules implements Iterable<Module>
                 }
                 System.out.println();
             }
-            if (!module.getOptional().isEmpty())
+            if (!module.getBefore().isEmpty())
             {
-                label = "   Optional: %s";
-                for (String parent : module.getOptional())
+                label = "     Before: %s";
+                for (String before : module.getBefore())
                 {
-                    System.out.printf(label, parent);
+                    System.out.printf(label, before);
+                    label = ", %s";
+                }
+                System.out.println();
+            }
+            if (!module.getAfter().isEmpty())
+            {
+                label = "      After: %s";
+                for (String after : module.getAfter())
+                {
+                    System.out.printf(label, after);
                     label = ", %s";
                 }
                 System.out.println();
@@ -310,14 +319,22 @@ public class Modules implements Iterable<Module>
 
                 Set<Module> provided = _provided.get(name);
                 if (provided != null)
+                {
                     for (Module p : provided)
                     {
                         if (p.isEnabled())
                             sort.addDependency(module, p);
                     }
+                }
             };
             module.getDepends().forEach(add);
-            module.getOptional().forEach(add);
+            module.getAfter().forEach(add);
+            module.getBefore().forEach(name ->
+            {
+                Module before = _names.get(name);
+                if (before != null && before.isEnabled())
+                    sort.addDependency(before, module);
+            });
         }
 
         sort.sort(enabled);
@@ -339,13 +356,21 @@ public class Modules implements Iterable<Module>
 
                 Set<Module> provided = _provided.get(name);
                 if (provided != null)
+                {
                     for (Module p : provided)
                     {
                         sort.addDependency(module, p);
                     }
+                }
             };
             module.getDepends().forEach(add);
-            module.getOptional().forEach(add);
+            module.getAfter().forEach(add);
+            module.getBefore().forEach(name ->
+            {
+                Module before = _names.get(name);
+                if (before != null)
+                    sort.addDependency(before, module);
+            });
         }
 
         sort.sort(all);
@@ -526,7 +551,7 @@ public class Modules implements Iterable<Module>
         Set<Module> providers = _provided.get(name);
         StartLog.debug("Providers of [%s] are %s", name, providers);
         if (providers == null || providers.isEmpty())
-            return Collections.emptySet();
+            return Set.of();
 
         providers = new HashSet<>(providers);
 

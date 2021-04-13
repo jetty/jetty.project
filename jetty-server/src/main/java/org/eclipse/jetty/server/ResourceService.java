@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
@@ -178,7 +179,13 @@ public class ResourceService
 
     public void setCacheControl(HttpField cacheControl)
     {
-        _cacheControl = cacheControl;
+        if (cacheControl == null)
+            _cacheControl = null;
+        if (cacheControl.getHeader() != HttpHeader.CACHE_CONTROL)
+            throw new IllegalArgumentException("!Cache-Control");
+        _cacheControl = cacheControl instanceof PreEncodedHttpField
+            ? cacheControl
+            : new PreEncodedHttpField(cacheControl.getHeader(), cacheControl.getValue());
     }
 
     public List<String> getGzipEquivalentFileExtensions()
@@ -626,7 +633,7 @@ public class ResourceService
             return;
         }
 
-        data = dir.getBytes("utf-8");
+        data = dir.getBytes(StandardCharsets.UTF_8);
         response.setContentType("text/html;charset=utf-8");
         response.setContentLength(data.length);
         response.getOutputStream().write(data);
@@ -849,20 +856,19 @@ public class ResourceService
         {
             Response r = (Response)response;
             r.putHeaders(content, contentLength, _etags);
-            HttpFields.Mutable f = r.getHttpFields();
-            if (_acceptRanges && !response.containsHeader(HttpHeader.ACCEPT_RANGES.asString()))
-                f.put(ACCEPT_RANGES);
-
-            if (_cacheControl != null && !response.containsHeader(HttpHeader.CACHE_CONTROL.asString()))
-                f.put(_cacheControl);
+            HttpFields.Mutable fields = r.getHttpFields();
+            if (_acceptRanges && !fields.contains(HttpHeader.ACCEPT_RANGES))
+                fields.add(ACCEPT_RANGES);
+            if (_cacheControl != null && !fields.contains(HttpHeader.CACHE_CONTROL))
+                fields.add(_cacheControl);
         }
         else
         {
             Response.putHeaders(response, content, contentLength, _etags);
-            if (_acceptRanges && !response.containsHeader(HttpHeader.ACCEPT_RANGES.name()))
+            if (_acceptRanges && !response.containsHeader(HttpHeader.ACCEPT_RANGES.asString()))
                 response.setHeader(ACCEPT_RANGES.getName(), ACCEPT_RANGES.getValue());
 
-            if (_cacheControl != null && !response.containsHeader(HttpHeader.CACHE_CONTROL.name()))
+            if (_cacheControl != null && !response.containsHeader(HttpHeader.CACHE_CONTROL.asString()))
                 response.setHeader(_cacheControl.getName(), _cacheControl.getValue());
         }
     }

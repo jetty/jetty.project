@@ -18,7 +18,6 @@ import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
 
 /**
@@ -61,18 +60,11 @@ public class JavaxWebSocketClientContainerProvider extends ContainerProvider
      * @param httpClient a pre-configured {@link HttpClient} to be used by the implementation.
      * @see #getContainer()
      */
-    public WebSocketContainer getContainer(HttpClient httpClient)
+    public static WebSocketContainer getContainer(HttpClient httpClient)
     {
         JavaxWebSocketClientContainer clientContainer = new JavaxWebSocketClientContainer(httpClient);
-        registerShutdown(clientContainer);
+        // See: https://github.com/eclipse-ee4j/websocket-api/issues/212
+        LifeCycle.start(clientContainer);
         return clientContainer;
-    }
-
-    // See: https://github.com/eclipse-ee4j/websocket-api/issues/212
-    private void registerShutdown(JavaxWebSocketClientContainer container)
-    {
-        // Register as JVM runtime shutdown hook.
-        ShutdownThread.register(container);
-        LifeCycle.start(container);
     }
 }

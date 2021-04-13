@@ -39,6 +39,11 @@ public class DumpableCollection implements Dumpable
         return new DumpableCollection(name, items == null ? Collections.emptyList() : Arrays.asList(items));
     }
 
+    public static DumpableCollection from(String name, Collection<?> collection)
+    {
+        return new DumpableCollection(name, collection);
+    }
+
     @Override
     public String dump()
     {

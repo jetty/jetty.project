@@ -22,6 +22,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -53,6 +55,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -533,6 +536,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
     /**
      * This reproduces some classloading issue with MethodHandles in JDK14-110, This has been fixed in JDK16.
+     *
      * @throws Exception if there is an error during the test.
      * @see <a href="https://bugs.openjdk.java.net/browse/JDK-8244090">JDK-8244090</a>
      */
@@ -657,6 +661,252 @@ public class DistributionTests extends AbstractJettyHomeTest
                 run2.stop();
                 assertTrue(run2.awaitFor(10, TimeUnit.SECONDS));
             }
+        }
+    }
+
+    @Test
+    public void testJavaUtilLogging() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        String[] args = {
+            "--approve-all-licenses",
+            "--add-modules=http,logging-jul"
+        };
+
+        try (JettyHomeTester.Run run1 = distribution.start(args))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            Path julConfig = run1.getConfig().getJettyBase().resolve("resources/java-util-logging.properties");
+            assertTrue(Files.exists(julConfig));
+            Files.write(julConfig, Arrays.asList(System.lineSeparator(), "org.eclipse.jetty.level=FINE"), StandardOpenOption.APPEND);
+
+            int port = distribution.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+                assertThat(run2.getLogs().stream()
+                    // Check that the level formatting is that of the j.u.l. configuration file.
+                    .filter(log -> log.contains("[FINE]"))
+                    .count(), greaterThan(0L));
+
+                startHttpClient();
+                ContentResponse response = client.GET("http://localhost:" + port);
+                assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+            }
+        }
+    }
+
+    @Test
+    public void testJavaUtilLoggingBridge() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        String[] args = {
+            "--approve-all-licenses",
+            "--add-modules=http,logging-jul-capture"
+        };
+
+        try (JettyHomeTester.Run run1 = distribution.start(args))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            Path jettyBase = run1.getConfig().getJettyBase();
+
+            Path julConfig = jettyBase.resolve("resources/java-util-logging.properties");
+            assertTrue(Files.exists(julConfig));
+
+            Path etc = jettyBase.resolve("etc");
+            Files.createDirectories(etc);
+            Path julXML = etc.resolve("jul.xml");
+            String loggerName = getClass().getName();
+            String message = "test-log-line";
+            String xml = "" +
+                "<?xml version=\"1.0\"?>" +
+                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://www.eclipse.org/jetty/configure_10_0.dtd\">" +
+                "<Configure>" +
+                "  <Call name=\"getLogger\" class=\"java.util.logging.Logger\">" +
+                "    <Arg>" + loggerName + "</Arg>" +
+                "    <Call name=\"log\">" +
+                "      <Arg><Get class=\"java.util.logging.Level\" name=\"FINE\" /></Arg>" +
+                "      <Arg>" + message + "</Arg>" +
+                "    </Call>" +
+                "  </Call>" +
+                "</Configure>";
+            Files.write(julXML, List.of(xml), StandardOpenOption.CREATE);
+
+            Path julIni = jettyBase.resolve("start.d/logging-jul-capture.ini");
+            assertTrue(Files.exists(julIni));
+            Files.write(julIni, List.of("etc/jul.xml"), StandardOpenOption.APPEND);
+
+            Path jettyLogConfig = jettyBase.resolve("resources/jetty-logging.properties");
+            Files.write(jettyLogConfig, List.of(loggerName + ".LEVEL=DEBUG"), StandardOpenOption.TRUNCATE_EXISTING);
+
+            int port = distribution.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+                assertEquals(1, run2.getLogs().stream()
+                    // Check that the level formatting is that of the j.u.l. configuration file.
+                    .filter(log -> log.contains(message))
+                    .count());
+
+                startHttpClient();
+                ContentResponse response = client.GET("http://localhost:" + port);
+                assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+            }
+        }
+    }
+
+    @Test
+    public void testBeforeDirectiveInModule() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        String[] args1 = {
+            "--add-modules=https,test-keystore"
+        };
+
+        try (JettyHomeTester.Run run1 = distribution.start(args1))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            Path jettyBase = run1.getConfig().getJettyBase();
+
+            Path jettyBaseEtc = jettyBase.resolve("etc");
+            Files.createDirectories(jettyBaseEtc);
+            Path sslPatchXML = jettyBaseEtc.resolve("ssl-patch.xml");
+            String nextProtocol = "fcgi/1.0";
+            String xml = "" +
+                "<?xml version=\"1.0\"?>" +
+                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://www.eclipse.org/jetty/configure_10_0.dtd\">" +
+                "<Configure id=\"sslConnector\" class=\"org.eclipse.jetty.server.ServerConnector\">" +
+                "  <Call name=\"addIfAbsentConnectionFactory\">" +
+                "    <Arg>" +
+                "      <New class=\"org.eclipse.jetty.server.SslConnectionFactory\">" +
+                "        <Arg name=\"next\">" + nextProtocol + "</Arg>" +
+                "        <Arg name=\"sslContextFactory\"><Ref refid=\"sslContextFactory\"/></Arg>" +
+                "      </New>" +
+                "    </Arg>" +
+                "  </Call>" +
+                "  <Call name=\"addConnectionFactory\">" +
+                "    <Arg>" +
+                "      <New class=\"org.eclipse.jetty.fcgi.server.ServerFCGIConnectionFactory\">" +
+                "        <Arg><Ref refid=\"sslHttpConfig\" /></Arg>" +
+                "      </New>" +
+                "    </Arg>" +
+                "  </Call>" +
+                "</Configure>";
+            Files.write(sslPatchXML, List.of(xml), StandardOpenOption.CREATE);
+
+            Path jettyBaseModules = jettyBase.resolve("modules");
+            Files.createDirectories(jettyBaseModules);
+            Path sslPatchModule = jettyBaseModules.resolve("ssl-patch.mod");
+            String module = "" +
+                "[depends]\n" +
+                "fcgi\n" +
+                "\n" +
+                "[before]\n" +
+                "https\n" +
+                "http2\n" + // http2 is not explicitly enabled.
+                "\n" +
+                "[after]\n" +
+                "ssl\n" +
+                "\n" +
+                "[xml]\n" +
+                "etc/ssl-patch.xml\n";
+            Files.write(sslPatchModule, List.of(module), StandardOpenOption.CREATE);
+
+            String[] args2 = {
+                "--add-modules=ssl-patch"
+            };
+
+            try (JettyHomeTester.Run run2 = distribution.start(args2))
+            {
+                assertTrue(run2.awaitFor(10, TimeUnit.SECONDS));
+                assertEquals(0, run2.getExitValue());
+
+                int port = distribution.freePort();
+                try (JettyHomeTester.Run run3 = distribution.start("jetty.http.port=" + port))
+                {
+                    assertTrue(run3.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+
+                    // Check for the protocol order: fcgi must be after ssl and before http.
+                    assertTrue(run3.getLogs().stream()
+                        .anyMatch(log -> log.contains("(ssl, fcgi/1.0, http/1.1)")));
+
+                    // Protocol "h2" must not be enabled because the
+                    // http2 Jetty module was not explicitly enabled.
+                    assertFalse(run3.getLogs().stream()
+                        .anyMatch(log -> log.contains("h2")));
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testDefaultLoggingProviderNotActiveWhenExplicitProviderIsPresent() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution1 = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        String[] args1 = {
+            "--approve-all-licenses",
+            "--add-modules=logging-logback,http"
+        };
+
+        try (JettyHomeTester.Run run1 = distribution1.start(args1))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            Path jettyBase = run1.getConfig().getJettyBase();
+
+            assertTrue(Files.exists(jettyBase.resolve("resources/logback.xml")));
+            // The jetty-logging.properties should be absent.
+            assertFalse(Files.exists(jettyBase.resolve("resources/jetty-logging.properties")));
+        }
+
+        JettyHomeTester distribution2 = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        // Try the modules in reverse order, since it may execute a different code path.
+        String[] args2 = {
+            "--approve-all-licenses",
+            "--add-modules=http,logging-logback"
+        };
+
+        try (JettyHomeTester.Run run2 = distribution2.start(args2))
+        {
+            assertTrue(run2.awaitFor(1000, TimeUnit.SECONDS));
+            assertEquals(0, run2.getExitValue());
+
+            Path jettyBase = run2.getConfig().getJettyBase();
+
+            assertTrue(Files.exists(jettyBase.resolve("resources/logback.xml")));
+            // The jetty-logging.properties should be absent.
+            assertFalse(Files.exists(jettyBase.resolve("resources/jetty-logging.properties")));
         }
     }
 }

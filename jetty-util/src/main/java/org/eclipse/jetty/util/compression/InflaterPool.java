@@ -68,7 +68,7 @@ public class InflaterPool extends CompressionPool<Inflater>
             capacity = threadPool.getMaxThreads();
 
         pool = new InflaterPool(capacity, true);
-        container.addBean(pool);
+        container.addBean(pool, true);
         return pool;
     }
 }

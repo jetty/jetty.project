@@ -12,7 +12,7 @@
 //
 
 [[og-troubleshooting]]
-=== Eclipse Jetty Troubleshooting
+=== Troubleshooting
 
 To troubleshoot Jetty when used as a production server, there are two main tools: the Jetty Server Dump and enabling DEBUG level logging.
 

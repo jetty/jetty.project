@@ -20,6 +20,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.EnumSet.allOf;
@@ -34,6 +37,7 @@ import static java.util.EnumSet.of;
  */
 public final class HttpCompliance implements ComplianceViolation.Mode
 {
+    protected static final Logger LOG = LoggerFactory.getLogger(HttpCompliance.class);
 
     // These are compliance violations, which may optionally be allowed by the compliance mode, which mean that
     // the relevant section of the RFC is not strictly adhered to.
@@ -46,8 +50,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
         MULTIPLE_CONTENT_LENGTHS("https://tools.ietf.org/html/rfc7230#section-3.3.1", "Multiple Content-Lengths"),
         TRANSFER_ENCODING_WITH_CONTENT_LENGTH("https://tools.ietf.org/html/rfc7230#section-3.3.1", "Transfer-Encoding and Content-Length"),
         WHITESPACE_AFTER_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2.4", "Whitespace not allowed after field name"),
-        NO_COLON_AFTER_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2", "Fields must have a Colon"),
-        AMBIGUOUS_PATH_SEGMENTS("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path segments");
+        NO_COLON_AFTER_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2", "Fields must have a Colon");
 
         private final String url;
         private final String description;
@@ -81,14 +84,13 @@ public final class HttpCompliance implements ComplianceViolation.Mode
 
     public static final HttpCompliance RFC7230 = new HttpCompliance("RFC7230", noneOf(Violation.class));
     public static final HttpCompliance RFC2616 = new HttpCompliance("RFC2616", of(Violation.HTTP_0_9, Violation.MULTILINE_FIELD_VALUE));
-    public static final HttpCompliance LEGACY = new HttpCompliance("LEGACY", complementOf(of(Violation.CASE_INSENSITIVE_METHOD, Violation.AMBIGUOUS_PATH_SEGMENTS)));
+    public static final HttpCompliance LEGACY = new HttpCompliance("LEGACY", complementOf(of(Violation.CASE_INSENSITIVE_METHOD)));
     public static final HttpCompliance RFC2616_LEGACY = RFC2616.with("RFC2616_LEGACY",
         Violation.CASE_INSENSITIVE_METHOD,
         Violation.NO_COLON_AFTER_FIELD_NAME,
         Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH,
-        Violation.MULTIPLE_CONTENT_LENGTHS,
-        Violation.AMBIGUOUS_PATH_SEGMENTS);
-    public static final HttpCompliance RFC7230_LEGACY = RFC7230.with("RFC7230_LEGACY", Violation.CASE_INSENSITIVE_METHOD, Violation.AMBIGUOUS_PATH_SEGMENTS);
+        Violation.MULTIPLE_CONTENT_LENGTHS);
+    public static final HttpCompliance RFC7230_LEGACY = RFC7230.with("RFC7230_LEGACY", Violation.CASE_INSENSITIVE_METHOD);
 
     private static final List<HttpCompliance> KNOWN_MODES = Arrays.asList(RFC7230, RFC2616, LEGACY, RFC2616_LEGACY, RFC7230_LEGACY);
     private static final AtomicInteger __custom = new AtomicInteger();
@@ -100,6 +102,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
             if (compliance.getName().equals(name))
                 return compliance;
         }
+        LOG.warn("Unknown HttpCompliance mode {}", name);
         return null;
     }
 
@@ -141,10 +144,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
             default:
             {
                 HttpCompliance mode = HttpCompliance.valueOf(elements[0]);
-                if (mode == null)
-                    sections = noneOf(Violation.class);
-                else
-                    sections = copyOf(mode.getAllowed());
+                sections = (mode == null) ? noneOf(HttpCompliance.Violation.class) : copyOf(mode.getAllowed());
             }
         }
 

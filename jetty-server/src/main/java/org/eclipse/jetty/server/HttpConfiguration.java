@@ -22,6 +22,7 @@ import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -69,6 +70,7 @@ public class HttpConfiguration implements Dumpable
     private long _minRequestDataRate;
     private long _minResponseDataRate;
     private HttpCompliance _httpCompliance = HttpCompliance.RFC7230;
+    private UriCompliance _uriCompliance = UriCompliance.DEFAULT;
     private CookieCompliance _requestCookieCompliance = CookieCompliance.RFC6265;
     private CookieCompliance _responseCookieCompliance = CookieCompliance.RFC6265;
     private boolean _notifyRemoteAsyncErrors = true;
@@ -570,6 +572,16 @@ public class HttpConfiguration implements Dumpable
         _httpCompliance = httpCompliance;
     }
 
+    public UriCompliance getUriCompliance()
+    {
+        return _uriCompliance;
+    }
+
+    public void setUriCompliance(UriCompliance uriCompliance)
+    {
+        _uriCompliance = uriCompliance;
+    }
+
     /**
      * @return The CookieCompliance used for parsing request {@code Cookie} headers.
      * @see #getResponseCookieCompliance()
@@ -580,20 +592,20 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
+     * @param cookieCompliance The CookieCompliance to use for parsing request {@code Cookie} headers.
+     */
+    public void setRequestCookieCompliance(CookieCompliance cookieCompliance)
+    {
+        _requestCookieCompliance = cookieCompliance == null ? CookieCompliance.RFC6265 : cookieCompliance;
+    }
+
+    /**
      * @return The CookieCompliance used for generating response {@code Set-Cookie} headers
      * @see #getRequestCookieCompliance()
      */
     public CookieCompliance getResponseCookieCompliance()
     {
         return _responseCookieCompliance;
-    }
-
-    /**
-     * @param cookieCompliance The CookieCompliance to use for parsing request {@code Cookie} headers.
-     */
-    public void setRequestCookieCompliance(CookieCompliance cookieCompliance)
-    {
-        _requestCookieCompliance = cookieCompliance == null ? CookieCompliance.RFC6265 : cookieCompliance;
     }
 
     /**

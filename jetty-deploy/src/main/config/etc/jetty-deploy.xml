@@ -40,12 +40,10 @@
           <Arg>
             <New id="webappprovider" class="org.eclipse.jetty.deploy.providers.WebAppProvider">
               <Set name="monitoredDirName">
-                <Property>
-                  <Name>jetty.deploy.monitoredPath</Name>
-                  <Default>
-                    <Property name="jetty.base" default="." />/<Property name="jetty.deploy.monitoredDir" default="webapps"/>
-                  </Default>
-                </Property>
+                <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
+                  <Arg><Property name="jetty.base"/></Arg>
+                  <Arg><Property name="jetty.deploy.monitoredDir" default="webapps" /></Arg>
+                </Call>
               </Set>
               <Set name="defaultsDescriptor">
                 <Property>

@@ -14,26 +14,39 @@
 package org.eclipse.jetty.deploy.providers;
 
 import java.io.File;
+import java.net.URL;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.jupiter.api.condition.OS.LINUX;
+import static org.junit.jupiter.api.condition.OS.MAC;
 
-@Disabled("See issue #1200")
 @ExtendWith(WorkDirExtension.class)
 public class WebAppProviderTest
 {
@@ -44,7 +57,8 @@ public class WebAppProviderTest
     @BeforeEach
     public void setupEnvironment() throws Exception
     {
-        jetty = new XmlConfiguredJetty(testdir.getEmptyPathDir());
+        Path p = testdir.getEmptyPathDir();
+        jetty = new XmlConfiguredJetty(p);
         jetty.addConfiguration("jetty.xml");
         jetty.addConfiguration("jetty-http.xml");
         jetty.addConfiguration("jetty-deploy-wars.xml");
@@ -81,6 +95,7 @@ public class WebAppProviderTest
         jetty.stop();
     }
 
+    @Disabled("See issue #1200")
     @Test
     public void testStartupContext()
     {
@@ -96,7 +111,8 @@ public class WebAppProviderTest
         // Test for correct behaviour
         assertTrue(hasJettyGeneratedPath(workDir, "foo.war"), "Should have generated directory in work directory: " + workDir);
     }
-
+    
+    @Disabled("See issue #1200")
     @Test
     public void testStartupSymlinkContext()
     {
@@ -114,7 +130,105 @@ public class WebAppProviderTest
         File workDir = jetty.getJettyDir("workish");
         assertTrue(hasJettyGeneratedPath(workDir, "bar.war"), "Should have generated directory in work directory: " + workDir);
     }
+    
+    @Test
+    @EnabledOnOs({LINUX})
+    public void testWebappSymlinkDir() throws Exception
+    {
+        jetty.stop(); //reconfigure jetty
+        
+        testdir.ensureEmpty();
 
+        jetty = new XmlConfiguredJetty(testdir.getEmptyPathDir());
+        jetty.addConfiguration("jetty.xml");
+        jetty.addConfiguration("jetty-http.xml");
+        jetty.addConfiguration("jetty-deploy-wars.xml");
+
+        assumeTrue(symlinkSupported);
+
+        //delete the existing webapps directory
+        File webapps = jetty.getJettyDir("webapps");
+        assertTrue(IO.delete(webapps));
+
+        //make a different directory to contain webapps
+        File x = jetty.getJettyDir("x");
+        Files.createDirectory(x.toPath());
+
+        //Put a webapp into it
+        File srcDir = MavenTestingUtils.getTestResourceDir("webapps");
+        File fooWar = new File(x, "foo.war");
+        IO.copy(new File(srcDir, "foo-webapp-1.war"), fooWar);
+        assertTrue(Files.exists(fooWar.toPath()));
+
+        //make a link from x to webapps
+        Files.createSymbolicLink(jetty.getJettyDir("webapps").toPath(), x.toPath());
+        assertTrue(Files.exists(jetty.getJettyDir("webapps").toPath()));
+
+        jetty.load();
+        jetty.start();
+
+        //only webapp in x should be deployed, not x itself
+        jetty.assertWebAppContextsExists("/foo");
+    }
+    
+    @Test
+    @EnabledOnOs({LINUX})
+    public void testBaseDirSymlink() throws Exception
+    {
+        jetty.stop(); //reconfigure jetty
+        
+        testdir.ensureEmpty();
+
+        Path realBase = testdir.getEmptyPathDir();
+        
+        //set jetty up on the real base 
+        jetty = new XmlConfiguredJetty(realBase);
+        jetty.addConfiguration("jetty.xml");
+        jetty.addConfiguration("jetty-http.xml");
+        jetty.addConfiguration("jetty-deploy-wars.xml");
+        
+        //Put a webapp into the base
+        jetty.copyWebapp("foo-webapp-1.war", "foo.war");
+
+        //create the jetty structure
+        jetty.load();
+        jetty.start();
+        Path jettyHome = jetty.getJettyHome().toPath();
+        
+        jetty.stop();
+        
+        //Make a symbolic link to the real base
+        File testsDir = MavenTestingUtils.getTargetTestingDir();
+        Path symlinkBase = Files.createSymbolicLink(testsDir.toPath().resolve("basedirsymlink-" + System.currentTimeMillis()), jettyHome);
+        Map<String, String> properties = new HashMap<>();
+        properties.put("jetty.home", jettyHome.toString());
+        //Start jetty, but this time running from the symlinked base 
+        System.setProperty("jetty.home", properties.get("jetty.home"));
+        
+        List<Resource> configurations = jetty.getConfigurations();
+        Server server = XmlConfiguredJetty.loadConfigurations(configurations, properties);
+
+        try
+        {
+            server.start();
+            HandlerCollection handlers = (HandlerCollection)server.getHandler();
+            Handler[] children = server.getChildHandlersByClass(WebAppContext.class);
+            assertEquals(1, children.length);
+            assertEquals("/foo", ((WebAppContext)children[0]).getContextPath());
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
+    
+    private Map<String, String> setupJettyProperties(Path jettyHome)
+    {
+        Map<String, String> properties = new HashMap<>();
+        properties.put("jetty.home", jettyHome.toFile().getAbsolutePath());
+        return properties;
+    }
+    
     private static boolean hasJettyGeneratedPath(File basedir, String expectedWarFilename)
     {
         File[] paths = basedir.listFiles();
