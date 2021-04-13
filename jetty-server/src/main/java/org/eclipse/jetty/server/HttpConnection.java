@@ -366,7 +366,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             }
         }
 
-        // TODO: must return _requestBuffer.remaining()!
         return 0;
     }
 
