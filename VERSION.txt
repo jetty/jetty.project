@@ -1,3 +1,5 @@
+jetty-9.4.41-SNAPSHOT
+
 jetty-9.4.40.v20210413 - 13 April 2021
  + 6082 SslConnection compacting
  + 6105 HttpConnection.getBytesIn() incorrect for requests with chunked content
