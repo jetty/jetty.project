@@ -168,7 +168,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         if (baseTemp != null)
         {
             if (!baseTemp.isDirectory() || !baseTemp.canWrite())
-                throw new IllegalStateException("BASETEMPDIR is not a writable directory");
+                throw new IllegalStateException(WebAppContext.BASETEMPDIR + " is not a writable directory");
 
             //Make a temp directory as a child of the given base dir
             makeTempDirectory(baseTemp, context);
