@@ -65,6 +65,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -396,11 +397,12 @@ public class HttpInputInterceptorTest
     @Test
     public void testSetReadListenerReadInterceptorThrows() throws Exception
     {
+        RuntimeException failure = new RuntimeException();
         CountDownLatch interceptorLatch = new CountDownLatch(1);
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 jettyRequest.setHandled(true);
 
@@ -408,42 +410,43 @@ public class HttpInputInterceptorTest
                 jettyRequest.getHttpInput().addInterceptor(content ->
                 {
                     interceptorLatch.countDown();
-                    throw new RuntimeException();
+                    failure.addSuppressed(new Throwable());
+                    throw failure;
                 });
 
-                assertThrows(RuntimeException.class, () ->
+                AsyncContext asyncContext = request.startAsync();
+                ServletInputStream input = request.getInputStream();
+                input.setReadListener(new ReadListener()
                 {
-                    // setReadListener tries to figure out whether to call
-                    // onDataAvailable() by reading content, which may throw.
-                    request.getInputStream().setReadListener(new ReadListener()
+                    @Override
+                    public void onDataAvailable()
                     {
-                        @Override
-                        public void onDataAvailable()
-                        {
-                        }
+                    }
 
-                        @Override
-                        public void onAllDataRead()
-                        {
-                        }
+                    @Override
+                    public void onAllDataRead()
+                    {
+                    }
 
-                        @Override
-                        public void onError(Throwable error)
-                        {
-                            error.printStackTrace();
-                        }
-                    });
+                    @Override
+                    public void onError(Throwable error)
+                    {
+                        assertSame(failure, error.getCause());
+                        response.setStatus(HttpStatus.NO_CONTENT_204);
+                        asyncContext.complete();
+                    }
                 });
             }
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .method(HttpMethod.POST)
+            .content(new BytesContentProvider(new byte[1]))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
         assertTrue(interceptorLatch.await(5, TimeUnit.SECONDS));
-        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
     }
 
     private static void sleep(long time)

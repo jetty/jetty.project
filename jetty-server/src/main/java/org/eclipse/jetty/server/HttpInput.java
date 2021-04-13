@@ -635,7 +635,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("", x);
-                    return wakeup();
+                    return failed(x);
                 }
             }
         }
@@ -699,6 +699,7 @@ public class HttpInput extends ServletInputStream implements Runnable
      * Consume all available content without blocking.
      * Raw content is counted in the {@link #getContentReceived()} statistics, but
      * is not intercepted nor counted in the {@link #getContentConsumed()} statistics
+     *
      * @return True if EOF was reached, false otherwise.
      */
     public boolean consumeAll()
@@ -778,9 +779,9 @@ public class HttpInput extends ServletInputStream implements Runnable
     @Override
     public boolean isReady()
     {
-        try
+        synchronized (_inputQ)
         {
-            synchronized (_inputQ)
+            try
             {
                 if (_listener == null)
                     return true;
@@ -792,14 +793,15 @@ public class HttpInput extends ServletInputStream implements Runnable
                     return true;
                 _channelState.onReadUnready();
                 _waitingForContent = true;
+                return false;
             }
-            return false;
-        }
-        catch (Throwable e)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("", e);
-            return true;
+            catch (Throwable e)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("", e);
+                failed(e);
+                return true;
+            }
         }
     }
 
@@ -807,12 +809,14 @@ public class HttpInput extends ServletInputStream implements Runnable
     public void setReadListener(ReadListener readListener)
     {
         boolean woken = false;
-        try
+        synchronized (_inputQ)
         {
-            synchronized (_inputQ)
+            try
             {
                 if (_listener != null)
                     throw new IllegalStateException("ReadListener already set");
+                if (!_channelState.isAsync())
+                    throw new IllegalStateException("Async not started");
 
                 _listener = Objects.requireNonNull(readListener);
 
@@ -841,10 +845,13 @@ public class HttpInput extends ServletInputStream implements Runnable
                     }
                 }
             }
-        }
-        catch (Throwable e)
-        {
-            throw new RuntimeIOException(e);
+            catch (Throwable e)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("", e);
+                failed(e);
+                woken = _channelState.onReadReady();
+            }
         }
 
         if (woken)
