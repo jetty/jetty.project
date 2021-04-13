@@ -815,8 +815,6 @@ public class HttpInput extends ServletInputStream implements Runnable
             {
                 if (_listener != null)
                     throw new IllegalStateException("ReadListener already set");
-                if (!_channelState.isAsync())
-                    throw new IllegalStateException("Async not started");
 
                 _listener = Objects.requireNonNull(readListener);
 
