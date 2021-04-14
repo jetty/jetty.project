@@ -53,7 +53,7 @@ public class LocalEndpointMetadataTest
     }
 
     private final WebSocketComponents components = new WebSocketComponents();
-    private final JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(container,components);
+    private final JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(container, components);
 
     private JettyWebSocketFrameHandlerMetadata createMetadata(Class<?> endpointClass)
     {

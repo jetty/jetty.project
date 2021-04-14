@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -56,9 +55,11 @@ import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletCont
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer.Configurator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -162,6 +163,7 @@ public class JavaxWebSocketCdiTest
     }
 
     @Test
+    @Disabled("See issue https://github.com/eclipse/jetty.project/issues/6174")
     public void testHttpSessionInjection() throws Exception
     {
         start((servletContext, wsContainer) -> wsContainer.addEndpoint(CdiHttpSessionSocket.class));
@@ -172,7 +174,7 @@ public class JavaxWebSocketCdiTest
         Session session = _client.connectToServer(clientEndpoint, uri);
         session.getBasicRemote().sendObject("hello world");
         String rcvMessage = clientEndpoint._textMessages.poll(5, TimeUnit.SECONDS);
-        assertThat(rcvMessage, is("hello world"));
+        assertThat(rcvMessage, containsString("hello world, SessionID:"));
         session.close();
         assertTrue(clientEndpoint._closeLatch.await(5, TimeUnit.SECONDS));
     }
@@ -396,8 +398,7 @@ public class JavaxWebSocketCdiTest
         @Override
         public void onMessage(String message) throws IOException
         {
-            Objects.requireNonNull(httpSession);
-            session.getBasicRemote().sendText(message + " " + httpSession.getClass());
+            session.getBasicRemote().sendText(message + ", SessionID:" + httpSession.getId());
         }
     }
 }
