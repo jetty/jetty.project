@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
@@ -534,7 +535,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
             }
         }
 
-        public boolean failContent(Throwable failure)
+        public boolean failContent(Supplier<Throwable> failure)
         {
             while (true)
             {
@@ -547,7 +548,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
                     return c.isEof();
                 if (_content.compareAndSet(c, null))
                 {
-                    c.failed(failure);
+                    c.failed(failure.get());
                     if (LOG.isDebugEnabled())
                         LOG.debug("replacing current content with null succeeded");
                     return false;
@@ -583,7 +584,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
     }
 
     @Override
-    public boolean failAllContent(Throwable failure)
+    public boolean failAllContent(Supplier<Throwable> failure)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("failing all content with {} {}", failure, this);

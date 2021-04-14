@@ -18,7 +18,7 @@ import org.eclipse.jetty.util.thread.AutoLock;
 /**
  * ContentProducer is the bridge between {@link HttpInput} and {@link HttpChannel}.
  * It wraps a {@link HttpChannel} and uses the {@link HttpChannel#needContent()},
- * {@link HttpChannel#produceContent()} and {@link HttpChannel#failAllContent(Throwable)}
+ * {@link HttpChannel#produceContent()} and {@link HttpChannel#failAllContent(java.util.function.Supplier)}
  * methods, tracks the current state of the channel's input by updating the
  * {@link HttpChannelState} and provides the necessary mechanism to unblock
  * the reader thread when using a blocking implementation or to know if the reader thread
@@ -46,7 +46,7 @@ public interface ContentProducer
      * Doesn't change state.
      * @return true if EOF was reached.
      */
-    boolean consumeAll(Throwable x);
+    boolean consumeAll();
 
     /**
      * Check if the current data rate consumption is above the minimal rate.

@@ -14,6 +14,7 @@
 package org.eclipse.jetty.security.authentication;
 
 import java.io.IOException;
+import java.util.function.Supplier;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -83,7 +84,7 @@ public class SpnegoAuthenticatorTest
             }
 
             @Override
-            public boolean failAllContent(Throwable failure)
+            public boolean failAllContent(Supplier<Throwable> failure)
             {
                 return false;
             }
@@ -148,7 +149,7 @@ public class SpnegoAuthenticatorTest
             }
 
             @Override
-            public boolean failAllContent(Throwable failure)
+            public boolean failAllContent(Supplier<Throwable> failure)
             {
                 return false;
             }

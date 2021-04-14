@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -232,7 +233,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     }
 
     @Override
-    public boolean failAllData(Throwable x)
+    public boolean failAllData(Supplier<Throwable> failure)
     {
         List<DataEntry> copy;
         try (AutoLock l = lock.lock())
@@ -241,7 +242,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             copy = new ArrayList<>(dataQueue);
             dataQueue.clear();
         }
-        copy.forEach(dataEntry -> dataEntry.callback.failed(x));
+        copy.forEach(dataEntry -> dataEntry.callback.failed(failure.get()));
         DataEntry lastDataEntry = copy.isEmpty() ? null : copy.get(copy.size() - 1);
         if (lastDataEntry == null)
             return isRemotelyClosed();

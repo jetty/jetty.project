@@ -150,10 +150,9 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         try (AutoLock lock = _contentProducer.lock())
         {
-            IOException failure = new IOException("Unconsumed content");
             if (LOG.isDebugEnabled())
-                LOG.debug("consumeAll {}", this, failure);
-            boolean atEof = _contentProducer.consumeAll(failure);
+                LOG.debug("consumeAll {}", this);
+            boolean atEof = _contentProducer.consumeAll();
             if (atEof)
                 _consumedEof = true;
 

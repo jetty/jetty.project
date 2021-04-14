@@ -20,6 +20,7 @@ import java.util.Locale;
 import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -107,7 +108,7 @@ public class HttpChannelOverFCGI extends HttpChannel
     }
 
     @Override
-    public boolean failAllContent(Throwable failure)
+    public boolean failAllContent(Supplier<Throwable> failure)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("failing all content with {} {}", failure, this);
@@ -117,7 +118,7 @@ public class HttpChannelOverFCGI extends HttpChannel
             copy = new ArrayList<>(_contentQueue);
             _contentQueue.clear();
         }
-        copy.forEach(c -> c.failed(failure));
+        copy.forEach(c -> c.failed(failure.get()));
         boolean atEof;
         try (AutoLock l = _lock.lock())
         {

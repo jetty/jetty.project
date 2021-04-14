@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.servlet.DispatcherType;
@@ -151,7 +152,7 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
      * @param failure the failure to fail the content with.
      * @return true if EOF was reached while failing all content, false otherwise.
      */
-    public abstract boolean failAllContent(Throwable failure);
+    public abstract boolean failAllContent(Supplier<Throwable> failure);
 
     /**
      * Fail the channel's input.

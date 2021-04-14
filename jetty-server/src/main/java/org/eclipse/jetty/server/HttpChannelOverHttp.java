@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
@@ -122,7 +123,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     }
 
     @Override
-    public boolean failAllContent(Throwable failure)
+    public boolean failAllContent(Supplier<Throwable> failure)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("failing all content with {} {}", failure, this);
@@ -130,7 +131,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         {
             if (_content.isSpecial())
                 return _content.isEof();
-            _content.failed(failure);
+            _content.failed(failure.get());
             _content = _content.isEof() ? EOF : null;
             if (_content == EOF)
                 return true;
@@ -153,7 +154,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
                 return atEof;
             }
             c.skip(c.remaining());
-            c.failed(failure);
+            c.failed(failure.get());
             if (c.isEof())
             {
                 _content = EOF;

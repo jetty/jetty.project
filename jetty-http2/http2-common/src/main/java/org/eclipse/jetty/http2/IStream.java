@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -117,10 +118,10 @@ public interface IStream extends Stream, Attachable, Closeable
     /**
      * Fail all data queued in the stream and reset
      * demand to 0.
-     * @param x the exception to fail the data with.
+     * @param failure the exception to fail the data with.
      * @return true if the end of the stream was reached, false otherwise.
      */
-    boolean failAllData(Throwable x);
+    boolean failAllData(Supplier<Throwable> failure);
 
     /**
      * @return whether this stream has been reset (locally or remotely) or has been failed

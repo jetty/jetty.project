@@ -32,6 +32,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
@@ -185,7 +186,7 @@ public class ResponseTest
             }
 
             @Override
-            public boolean failAllContent(Throwable failure)
+            public boolean failAllContent(Supplier<Throwable> failure)
             {
                 return false;
             }

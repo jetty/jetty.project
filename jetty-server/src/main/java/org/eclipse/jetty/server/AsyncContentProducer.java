@@ -13,8 +13,11 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
@@ -29,6 +32,7 @@ import org.slf4j.LoggerFactory;
 class AsyncContentProducer implements ContentProducer
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncContentProducer.class);
+    private final static HttpInput.Content EOF = new HttpInput.EofContent();
 
     private final AutoLock _lock = new AutoLock();
     private final HttpChannel _httpChannel;
@@ -133,7 +137,7 @@ class AsyncContentProducer implements ContentProducer
                             LOG.debug("checkMinDataRate aborting channel {}", this);
                         _httpChannel.abort(bad);
                     }
-                    failCurrentContent(bad);
+                    failCurrentContent(() -> bad);
                     throw bad;
                 }
             }
@@ -150,12 +154,20 @@ class AsyncContentProducer implements ContentProducer
     }
 
     @Override
-    public boolean consumeAll(Throwable x)
+    public boolean consumeAll()
     {
         assertLocked();
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        Supplier<Throwable> uncomsumed = () ->
+        {
+            if (failure.get() == null)
+                failure.set(new IOException("uncomsumed"));
+            return failure.get();
+        };
+        failCurrentContent(uncomsumed);
         if (LOG.isDebugEnabled())
-            LOG.debug("consumeAll [e={}] {}", x, this);
-        failCurrentContent(x);
+            LOG.debug("consumeAll [e={}] {}", uncomsumed.get(), this);
+        failCurrentContent(uncomsumed);
         // A specific HttpChannel mechanism must be used as the following code
         // does not guarantee that the channel will synchronously deliver all
         // content it already contains:
@@ -167,38 +179,41 @@ class AsyncContentProducer implements ContentProducer
         // as the HttpChannel's produceContent() contract makes no such promise;
         // for instance the H2 implementation calls Stream.demand() that may
         // deliver the content asynchronously. Tests in StreamResetTest cover this.
-        boolean atEof = _httpChannel.failAllContent(x);
+        boolean atEof = _httpChannel.failAllContent(uncomsumed);
         if (LOG.isDebugEnabled())
             LOG.debug("failed all content of http channel EOF={} {}", atEof, this);
         return atEof;
     }
 
-    private void failCurrentContent(Throwable x)
+    private void failCurrentContent(Supplier<Throwable> failure)
     {
+        Throwable t = null;
         if (_transformedContent != null && !_transformedContent.isSpecial())
         {
             if (_transformedContent != _rawContent)
             {
+                t = failure.get();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("failing currently held transformed content {} {}", x, this);
+                    LOG.debug("failing currently held transformed content {} {}", t, this);
                 _transformedContent.skip(_transformedContent.remaining());
-                _transformedContent.failed(x);
+                _transformedContent.failed(t);
             }
             _transformedContent = null;
         }
 
         if (_rawContent != null && !_rawContent.isSpecial())
         {
+            t = failure.get();
             if (LOG.isDebugEnabled())
-                LOG.debug("failing currently held raw content {} {}", x, this);
+                LOG.debug("failing currently held raw content {} {}", t, this);
             _rawContent.skip(_rawContent.remaining());
-            _rawContent.failed(x);
+            _rawContent.failed(t);
             _rawContent = null;
         }
 
-        HttpInput.ErrorContent errorContent = new HttpInput.ErrorContent(x);
-        _transformedContent = errorContent;
-        _rawContent = errorContent;
+        HttpInput.Content consumed = t == null ? EOF : new HttpInput.ErrorContent(t);
+        _transformedContent = consumed;
+        _rawContent = consumed;
     }
 
     @Override

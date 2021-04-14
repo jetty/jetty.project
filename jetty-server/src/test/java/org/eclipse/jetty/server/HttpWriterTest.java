@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -56,7 +57,7 @@ public class HttpWriterTest
             }
 
             @Override
-            public boolean failAllContent(Throwable failure)
+            public boolean failAllContent(Supplier<Throwable> failure)
             {
                 return false;
             }

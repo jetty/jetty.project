@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
@@ -328,7 +329,7 @@ public class BlockingContentProducerTest
         }
 
         @Override
-        public boolean failAllContent(Throwable failure)
+        public boolean failAllContent(Supplier<Throwable> failure)
         {
             nextContent = null;
             counter = byteBuffers.length;
