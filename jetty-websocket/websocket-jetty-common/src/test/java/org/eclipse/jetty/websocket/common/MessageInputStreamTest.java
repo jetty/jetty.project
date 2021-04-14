@@ -70,6 +70,36 @@ public class MessageInputStreamTest
     }
 
     @Test
+    public void testMultipleReadsIntoSingleByteArray() throws IOException
+    {
+        try (MessageInputStream stream = new MessageInputStream())
+        {
+            // Append a single message (simple, short)
+            Frame frame = new Frame(OpCode.TEXT);
+            frame.setPayload("Hello World");
+            frame.setFin(true);
+            stream.accept(frame, Callback.NOOP);
+
+            // Read entire message it from the stream.
+            byte[] bytes = new byte[100];
+
+            int read = stream.read(bytes, 0, 6);
+            assertThat(read, is(6));
+
+            read = stream.read(bytes, 6, 10);
+            assertThat(read, is(5));
+
+            read = stream.read(bytes, 11, 10);
+            assertThat(read, is(-1));
+
+            String message = new String(bytes, 0, 11, StandardCharsets.UTF_8);
+
+            // Test it
+            assertThat("Message", message, is("Hello World"));
+        }
+    }
+
+    @Test
     public void testBlockOnRead() throws Exception
     {
         assertTimeout(Duration.ofMillis(5000), () ->
