@@ -73,7 +73,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
 
     private class FileBufferedInterceptor implements BufferedResponseHandler.BufferedInterceptor
     {
-        private static final int MAPPED_BUFFER_SIZE = Integer.MAX_VALUE / 2;
+        private static final int MAX_MAPPED_BUFFER_SIZE = Integer.MAX_VALUE / 2;
 
         private final Interceptor _next;
         private final HttpChannel _channel;
@@ -204,7 +204,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
                     if (_last)
                         return Action.SUCCEEDED;
 
-                    long len = Math.min(MAPPED_BUFFER_SIZE, fileLength - _pos);
+                    long len = Math.min(MAX_MAPPED_BUFFER_SIZE, fileLength - _pos);
                     _last = (_pos + len == fileLength);
                     ByteBuffer buffer = BufferUtil.toMappedBuffer(_filePath, _pos, len);
                     getNextInterceptor().write(buffer, _last, this);
