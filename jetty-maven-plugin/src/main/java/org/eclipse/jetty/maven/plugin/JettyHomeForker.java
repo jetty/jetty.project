@@ -25,7 +25,6 @@ import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
@@ -185,9 +184,9 @@ public class JettyHomeForker extends AbstractForker
         cmd.add("java");
 
         //add any args to the jvm
-        if (!StringUtil.isBlank(jvmArgs))
+        if (StringUtil.isNotBlank(jvmArgs))
         {
-            Arrays.stream(jvmArgs.split(" ")).forEach((a) -> cmd.add(a.trim()));
+            Arrays.stream(jvmArgs.split(" ")).filter(a -> StringUtil.isNotBlank(a)).forEach((a) -> cmd.add(a.trim()));
         }
 
         cmd.add("-jar");
@@ -224,9 +223,9 @@ public class JettyHomeForker extends AbstractForker
         cmd.add(tmp.toString());
  
         //put any other jetty options onto the command line
-        if (!StringUtil.isBlank(jettyOptions))
+        if (StringUtil.isNotBlank(jettyOptions))
         {
-            Arrays.stream(jettyOptions.split(" ")).forEach((a) -> cmd.add(a.trim()));
+            Arrays.stream(jettyOptions.split(" ")).filter(a -> StringUtil.isNotBlank(a)).forEach((a) -> cmd.add(a.trim()));
         }
 
         //put any jetty properties onto the command line

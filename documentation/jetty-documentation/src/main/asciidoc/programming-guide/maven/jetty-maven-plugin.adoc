@@ -189,7 +189,7 @@ Optional.
 Map of key/value pairs to pass as environment to the forked JVM.
 jvmArgs::
 Optional.
-A string representing arbitrary arguments to pass to the forked JVM.
+A space separated string representing arbitrary arguments to pass to the forked JVM.
 forkWebXml::
 Optional.
 Defaults to `target/fork-web.xml`.
@@ -218,9 +218,13 @@ jettyHome::
 Optional.
 The location of an existing unpacked jetty distribution.
 If one does not exist, a fresh jetty distribution will be downloaded from maven and installed to the `target` directory.
+jettyOptions::
+Optional.
+A space separated string representing extra arguments to the synthesized jetty command line.
+Values for these arguments can be found in the section titled "Options" in the output of `java -jar $jetty.home/start.jar --help`.
 jvmArgs::
 Optional.
-A string representing arguments that should be passed to the jvm of the child process running the distro.
+A space separated string representing arguments that should be passed to the jvm of the child process running the distro.
 modules::
 Optional.
 An array of names of additional jetty modules that the jetty child process will activate.
