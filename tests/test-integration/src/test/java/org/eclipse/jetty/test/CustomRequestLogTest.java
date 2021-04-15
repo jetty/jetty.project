@@ -27,7 +27,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.ServletException;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -140,6 +140,22 @@ public class CustomRequestLogTest
     public void after() throws Exception
     {
         _server.stop();
+    }
+
+    @Test
+    public void testRequestFilter() throws Exception
+    {
+        AtomicReference<Boolean> logRequest = new AtomicReference<>();
+        testHandlerServerStart("RequestPath: %U");
+        _log.setFilter((request, response) -> logRequest.get());
+
+        logRequest.set(true);
+        _connector.getResponse("GET /path HTTP/1.0\n\n");
+        assertThat(_entries.poll(5, TimeUnit.SECONDS), is("RequestPath: /path"));
+
+        logRequest.set(false);
+        _connector.getResponse("GET /path HTTP/1.0\n\n");
+        assertNull(_entries.poll(1, TimeUnit.SECONDS));
     }
 
     @Test
