@@ -768,8 +768,7 @@
               <require>asciidoctor-diagram</require>
             </requires>
             <attributes>
-              <JDURL>http://www.eclipse.org/jetty/javadoc/${project.version}</JDURL>
-              <JXURL>http://download.eclipse.org/jetty/stable-9/xref</JXURL>
+              <JDURL>https://www.eclipse.org/jetty/javadoc/jetty-10</JDURL>
               <SRCDIR>${basedir}/..</SRCDIR>
               <GITBROWSEURL>https://github.com/eclipse/jetty.project/tree/jetty-9.4.x</GITBROWSEURL>
               <GITDOCURL>https://github.com/eclipse/jetty.project/tree/jetty-10.0.x-doc-refactor/jetty-documentation/src/main/asciidoc</GITDOCURL>
