@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 class AsyncContentProducer implements ContentProducer
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncContentProducer.class);
-    private final static HttpInput.Content EOF = new HttpInput.EofContent();
+    private static final  HttpInput.Content EOF = new HttpInput.EofContent();
 
     private final AutoLock _lock = new AutoLock();
     private final HttpChannel _httpChannel;
