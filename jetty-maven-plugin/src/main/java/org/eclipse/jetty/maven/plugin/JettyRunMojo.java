@@ -144,7 +144,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
     {
         if (scan < 0)
         {
-            getLog().info("Redeployment Disabled; Default Scan Interval = -1 ; Change Value to <scan>0<scan> for Manual or <scan>${Seconds}<scan> for automatic  ");
+            getLog().info("default deploy mode scan=-1:redeploy disabled; scan=0:redeploy manual on ENTER; scan > 0:redeploy automatic");
             return; //no automatic or manual redeployment
         }
         
