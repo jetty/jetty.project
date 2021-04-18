@@ -23,27 +23,22 @@
 <hazelcast xsi:schemaLocation="http://www.hazelcast.com/schema/config hazelcast-config-3.8.xsd"
            xmlns="http://www.hazelcast.com/schema/config"
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-<!--  <group>-->
-<!--    <name>uat</name>-->
-<!--  </group>-->
 
   <network>
     <reuse-address>true</reuse-address>
-<!--    <outbound-ports>-->
-<!--      <ports>55125,55126</ports>-->
-<!--    </outbound-ports>-->
     <port port-count="20">5701</port>
     <join>
       <tcp-ip enabled="true">
+<!--        <member-list>-->
+<!--          <member>host.docker.internal:5705</member>-->
+<!--        </member-list>-->
       </tcp-ip>
       <multicast enabled="false"/>
       <aws enabled="false"/>
     </join>
   </network>
 
-<!--  <replicatedmap name="JETTY_DISTRIBUTED_SESSION_INSTANCE"></replicatedmap>-->
   <properties>
-<!--    <property name="hazelcast.http.healthcheck.enabled">true</property>-->
     <property name="hazelcast.rest.enabled">true</property>
   </properties>
 

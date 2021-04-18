@@ -20,6 +20,7 @@ package org.eclipse.jetty.tests.distribution;
 
 import java.io.File;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -134,11 +135,11 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
     {
 
         Map<String, String> env = new HashMap<>();
-        //
-        env.put("JAVA_OPTS", "-Dhazelcast.local.publicAddress=127.0.0.1:5701 -Dhazelcast.config=/opt/hazelcast/config_ext/hazelcast.xml");
+        // -Dhazelcast.local.publicAddress=127.0.0.1:5701
+        env.put("JAVA_OPTS", "-Dhazelcast.config=/opt/hazelcast/config_ext/hazelcast.xml");
         try (GenericContainer hazelcast =
                  new GenericContainer("hazelcast/hazelcast:" + System.getProperty("hazelcast.version", "3.12.6"))
-                     .withExposedPorts(5701, 55125, 55126) //, 54327)
+                     .withExposedPorts(5701, 5705)
                      .withEnv(env)
                      .waitingFor(Wait.forLogMessage(".*is STARTED.*", 1))
                      //.withNetworkMode("host")
@@ -149,7 +150,7 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
                      .withLogConsumer(new Slf4jLogConsumer(HAZELCAST_LOG)))
         {
             hazelcast.start();
-            String hazelcastHost = hazelcast.getContainerIpAddress();
+            String hazelcastHost = InetAddress.getByName(hazelcast.getContainerIpAddress()).getHostAddress(); // hazelcast.getContainerIpAddress();
             int hazelcastPort = hazelcast.getMappedPort(5701);
 //            int hazelcastMultiCastPort = hazelcast.getMappedPort(54327);
 
