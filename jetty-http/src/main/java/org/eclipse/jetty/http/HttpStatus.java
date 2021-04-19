@@ -314,8 +314,9 @@ public class HttpStatus
         switch (status)
         {
             case NO_CONTENT_204:
-            case NOT_MODIFIED_304:
+            case RESET_CONTENT_205:
             case PARTIAL_CONTENT_206:
+            case NOT_MODIFIED_304:
                 return true;
 
             default:
