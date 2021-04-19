@@ -642,6 +642,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 catch (Throwable t)
                 {
                     onWriteComplete(true, t);
+                    throw t;
                 }
             }
         }
