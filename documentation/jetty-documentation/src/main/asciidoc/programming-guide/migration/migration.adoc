@@ -80,3 +80,51 @@ Migrating from Jetty 9.4.x to Jetty 10.0.x requires changes in the coordinates o
 | `org.eclipse.jetty.websocket.**servlet.WebSocketServletFactory**`
 | `org.eclipse.jetty.websocket.**server.JettyWebSocketServletFactory**`
 |===
+
+==== Example Code
+
+[cols="1a,1a", options="header"]
+|===
+| Jetty 9.4.x
+| Jetty 10.0.x
+
+|
+[source,java]
+----
+public class ExampleWebSocketServlet extends WebSocketServlet
+{
+    @Override
+    public void configure(WebSocketServletFactory factory)
+    {
+        factory.setCreator(new WebSocketCreator()
+        {
+            @Override
+            public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
+            {
+                return new ExampleEndpoint();
+            }
+        });
+    }
+}
+----
+
+|
+[source,java]
+----
+public class ExampleWebSocketServlet extends JettyWebSocketServlet
+{
+    @Override
+    public void configure(JettyWebSocketServletFactory factory)
+    {
+        factory.setCreator(new JettyWebSocketCreator()
+        {
+            @Override
+            public Object createWebSocket(JettyServerUpgradeRequest req, JettyServerUpgradeResponse resp)
+            {
+                return new ExampleEndpoint();
+            }
+        });
+    }
+}
+----
+|===
