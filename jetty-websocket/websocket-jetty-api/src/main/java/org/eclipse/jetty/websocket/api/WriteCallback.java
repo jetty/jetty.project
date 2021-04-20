@@ -29,16 +29,20 @@ public interface WriteCallback
      *
      * @param x the reason for the write failure
      */
-    void writeFailed(Throwable x);
+    default void writeFailed(Throwable x)
+    {
+    }
 
     /**
      * <p>
-     * Callback invoked when the write completes.
+     * Callback invoked when the write succeeds.
      * </p>
      *
      * @see #writeFailed(Throwable)
      */
-    void writeSuccess();
+    default void writeSuccess()
+    {
+    }
 
     class Adaptor implements WriteCallback
     {
