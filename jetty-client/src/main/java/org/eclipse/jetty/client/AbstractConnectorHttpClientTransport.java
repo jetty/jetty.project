@@ -16,6 +16,7 @@ package org.eclipse.jetty.client;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Objects;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.io.ClientConnector;
@@ -30,7 +31,7 @@ public abstract class AbstractConnectorHttpClientTransport extends AbstractHttpC
 
     protected AbstractConnectorHttpClientTransport(ClientConnector connector)
     {
-        this.connector = connector;
+        this.connector = Objects.requireNonNull(connector);
         addBean(connector);
     }
 
