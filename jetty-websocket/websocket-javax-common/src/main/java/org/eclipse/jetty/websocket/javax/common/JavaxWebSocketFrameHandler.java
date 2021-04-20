@@ -266,6 +266,10 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     {
         notifyOnClose(closeStatus, callback);
         container.notifySessionListeners((listener) -> listener.onJavaxWebSocketSessionClosed(session));
+
+        // Close AvailableEncoders and AvailableDecoders to call destroy() on any instances of Encoder/Encoder created.
+        session.getDecoders().close();
+        session.getEncoders().close();
     }
 
     private void notifyOnClose(CloseStatus closeStatus, Callback callback)

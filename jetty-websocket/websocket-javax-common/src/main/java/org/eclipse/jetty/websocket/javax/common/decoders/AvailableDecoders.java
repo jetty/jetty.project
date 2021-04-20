@@ -207,4 +207,9 @@ public class AvailableDecoders implements Iterable<RegisteredDecoder>
     {
         return registeredDecoders.stream();
     }
+
+    public void close()
+    {
+        registeredDecoders.forEach(RegisteredDecoder::destroyInstance);
+    }
 }

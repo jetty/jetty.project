@@ -51,7 +51,7 @@ import org.testcontainers.utility.MountableFile;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled
+@Disabled("Disable this test so it doesn't run locally as it takes 1h+ to run.")
 @Testcontainers
 public class AutobahnTests
 {

@@ -37,7 +37,6 @@ import org.eclipse.jetty.websocket.javax.common.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.javax.tests.EchoSocket;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
@@ -147,8 +146,6 @@ public class EncoderLifeCycleTest
         }
     }
 
-    // TODO: Encoder.destroy() is never called in Jetty 10.
-    @Disabled()
     @ParameterizedTest
     @ValueSource(classes = {StringHolder.class, StringHolderSubtype.class})
     public void testEncoderLifeCycle(Class<? extends StringHolder> clazz) throws Exception
