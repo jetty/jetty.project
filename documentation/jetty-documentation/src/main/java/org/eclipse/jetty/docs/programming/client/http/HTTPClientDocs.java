@@ -66,6 +66,7 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HttpCookieStore;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import static java.lang.System.Logger.Level.INFO;
@@ -95,6 +96,17 @@ public class HTTPClientDocs
         // Stop HttpClient.
         httpClient.stop();
         // end::stop[]
+    }
+
+    public void stopFromOtherThread() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+        // tag::stopFromOtherThread[]
+        // Stop HttpClient from a new thread.
+        // Use LifeCycle.stop(...) to rethrow checked exceptions as unchecked.
+        new Thread(() -> LifeCycle.stop(httpClient)).start();
+        // end::stopFromOtherThread[]
     }
 
     public void tlsExplicit() throws Exception
