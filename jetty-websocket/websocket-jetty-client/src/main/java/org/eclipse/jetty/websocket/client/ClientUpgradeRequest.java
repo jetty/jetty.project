@@ -153,7 +153,7 @@ public final class ClientUpgradeRequest implements UpgradeRequest
     @Override
     public String getQueryString()
     {
-        return requestURI.getQuery();
+        return requestURI == null ? null : requestURI.getQuery();
     }
 
     @Override
