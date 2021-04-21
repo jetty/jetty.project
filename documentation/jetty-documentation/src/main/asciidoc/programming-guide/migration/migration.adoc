@@ -12,12 +12,13 @@
 //
 
 [appendix]
-[[_migration]]
+[[pg-migration]]
 == Migration Guides
 
-[[_migration_94_to_10]]
+[[pg-migration-94-to-10]]
 === Migrating from Jetty 9.4.x to Jetty 10.0.x
 
+[[pg-migration-94-to-10-java-version]]
 ==== Required Java Version Changes
 
 [cols="1,1", options="header"]
@@ -26,11 +27,13 @@
 | Java 8 | Java 11
 |===
 
-=== WebSocket Migration Guide
+[[pg-migration-94-to-10-websocket]]
+==== WebSocket Migration Guide
 
 Migrating from Jetty 9.4.x to Jetty 10.0.x requires changes in the coordinates of the Maven artifact dependencies for WebSocket. Some of these classes have also changed name and package. This is not a comprehensive list of changes but should cover the most common changes encountered during migration.
 
-==== Maven Artifacts Changes
+[[pg-migration-94-to-10-websocket-maven-artifact-changes]]
+===== Maven Artifacts Changes
 
 [cols="1a,1a", options="header"]
 |===
@@ -53,7 +56,8 @@ Migrating from Jetty 9.4.x to Jetty 10.0.x requires changes in the coordinates o
 
 |===
 
-==== Class Names Changes
+[[pg-migration-94-to-10-websocket-class-name-changes]]
+===== Class Names Changes
 
 [cols="1a,1a", options="header"]
 |===
@@ -81,7 +85,8 @@ Migrating from Jetty 9.4.x to Jetty 10.0.x requires changes in the coordinates o
 | `org.eclipse.jetty.websocket.**server.JettyWebSocketServletFactory**`
 |===
 
-==== Example Code
+[[pg-migration-94-to-10-websocket-example-code]]
+===== Example Code
 
 [cols="1a,1a", options="header"]
 |===
