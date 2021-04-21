@@ -30,6 +30,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 
@@ -985,9 +986,14 @@ public class BufferUtil
 
     public static ByteBuffer toMappedBuffer(File file) throws IOException
     {
-        try (FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.READ))
+        return toMappedBuffer(file.toPath(), 0, file.length());
+    }
+
+    public static ByteBuffer toMappedBuffer(Path filePath, long pos, long len) throws IOException
+    {
+        try (FileChannel channel = FileChannel.open(filePath, StandardOpenOption.READ))
         {
-            return channel.map(MapMode.READ_ONLY, 0, file.length());
+            return channel.map(MapMode.READ_ONLY, pos, len);
         }
     }
 

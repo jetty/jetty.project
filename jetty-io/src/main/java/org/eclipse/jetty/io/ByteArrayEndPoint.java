@@ -47,6 +47,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     static final Logger LOG = Log.getLogger(ByteArrayEndPoint.class);
     static final InetAddress NOIP;
     static final InetSocketAddress NOIPPORT;
+    private static final int MAX_BUFFER_SIZE = Integer.MAX_VALUE - 1024;
 
     static
     {
@@ -80,6 +81,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     private final Locker _locker = new Locker();
     private final Condition _hasOutput = _locker.newCondition();
     private final Queue<ByteBuffer> _inQ = new ArrayDeque<>();
+    private final int _outputSize;
     private ByteBuffer _out;
     private boolean _growOutput;
 
@@ -129,7 +131,8 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         super(timer);
         if (BufferUtil.hasContent(input))
             addInput(input);
-        _out = output == null ? BufferUtil.allocate(1024) : output;
+        _outputSize = (output == null) ? 1024 : output.capacity();
+        _out = output == null ? BufferUtil.allocate(_outputSize) : output;
         setIdleTimeout(idleTimeoutMs);
         onOpen();
     }
@@ -296,7 +299,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         try (Locker.Lock lock = _locker.lock())
         {
             b = _out;
-            _out = BufferUtil.allocate(b.capacity());
+            _out = BufferUtil.allocate(_outputSize);
         }
         getWriteFlusher().completeWrite();
         return b;
@@ -322,7 +325,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                     return null;
             }
             b = _out;
-            _out = BufferUtil.allocate(b.capacity());
+            _out = BufferUtil.allocate(_outputSize);
         }
         getWriteFlusher().completeWrite();
         return b;
@@ -436,9 +439,14 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                         BufferUtil.compact(_out);
                         if (b.remaining() > BufferUtil.space(_out))
                         {
-                            ByteBuffer n = BufferUtil.allocate(_out.capacity() + b.remaining() * 2);
-                            BufferUtil.append(n, _out);
-                            _out = n;
+                            // Don't grow larger than MAX_BUFFER_SIZE to avoid memory issues.
+                            if (_out.capacity() < MAX_BUFFER_SIZE)
+                            {
+                                long newBufferCapacity = Math.min((long)(_out.capacity() + b.remaining() * 1.5), MAX_BUFFER_SIZE);
+                                ByteBuffer n = BufferUtil.allocate(Math.toIntExact(newBufferCapacity));
+                                BufferUtil.append(n, _out);
+                                _out = n;
+                            }
                         }
                     }
 
