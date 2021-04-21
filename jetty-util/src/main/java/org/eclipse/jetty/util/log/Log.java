@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -168,6 +169,7 @@ public class Log
             if (announce && LOG != null)
                 LOG.info(String.format("Logging initialized @%dms to %s", Uptime.getUptime(), LOG.getClass().getName()));
         }
+        Objects.requireNonNull(LOG, "Root Logger may not be null");
     }
 
     private static void initStandardLogging(Throwable e)
@@ -195,7 +197,7 @@ public class Log
      */
     public static void setLog(Logger log)
     {
-        Log.LOG = log;
+        Log.LOG = Objects.requireNonNull(log, "Root Logger may not be null");
         __logClass = null;
     }
 
@@ -275,12 +277,21 @@ public class Log
     {
         initialized();
 
-        if (name == null)
-            return LOG;
+        Logger logger = null;
 
-        Logger logger = __loggers.get(name);
+        // Return root
+        if (name == null)
+            logger = LOG;
+
+        // use cache
         if (logger == null)
+            logger = __loggers.get(name);
+
+        // create new logger
+        if (logger == null && LOG != null)
             logger = LOG.getLogger(name);
+
+        Objects.requireNonNull(logger, "Logger with name [" + name + "]");
 
         return logger;
     }
