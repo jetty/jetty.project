@@ -294,6 +294,15 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         _forcedPath = forcedPath;
     }
 
+    private void copyClassServlet(ServletHolder holder) throws ServletException
+    {
+        this.setClassName(holder.getClassName());
+        if (holder.getServlet() != null)
+            this.setServlet(holder.getServlet());
+        if (holder.getServletInstance() != null)
+            this.setInstance(holder.getServletInstance());
+    }
+
     public boolean isEnabled()
     {
         return _enabled;
@@ -325,8 +334,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("JSP file {} for {} mapped to Servlet {}", _forcedPath, getName(), jsp.getClassName());
-                    // set the className for this servlet to the precompiled one
-                    setClassName(jsp.getClassName());
+                    // set the className/servlet/instance for this servlet to the precompiled one
+                    copyClassServlet(jsp);
                 }
                 else
                 {
@@ -336,7 +345,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("JSP file {} for {} mapped to JspServlet class {}", _forcedPath, getName(), jsp.getClassName());
-                        setClassName(jsp.getClassName());
+                        copyClassServlet(jsp);
                         //copy jsp init params that don't exist for this servlet
                         for (Map.Entry<String, String> entry : jsp.getInitParameters().entrySet())
                         {
