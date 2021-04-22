@@ -18,16 +18,24 @@
 
 package org.eclipse.jetty.webapp;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Iterator;
 import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.servlet.ServletMapping;
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.PathResource;
+import org.eclipse.jetty.webapp.jsp.FakePrecompiledJSP;
+import org.eclipse.jetty.webapp.jsp.RejectUncompiledJspServlet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,18 +57,47 @@ public class ForcedServletTest
         server.addConnector(connector);
 
         WebAppContext context = new ForcedWebAppContext();
+
+        // Lets setup the Webapp base resource properly
+        Path basePath = MavenTestingUtils.getTargetTestingPath(ForcedServletTest.class.getName()).resolve("webapp");
+        FS.ensureEmpty(basePath);
+        Path srcWebApp = MavenTestingUtils.getProjectDirPath("src/test/webapp-alt-jsp");
+        copyDir(srcWebApp, basePath);
+        copyClass(FakePrecompiledJSP.class, basePath.resolve("WEB-INF/classes"));
+
+        // Use the new base
+        context.setWarResource(new PathResource(basePath));
+
         // use a default descriptor with no "default" or "jsp" defined.
         Path altWebDefault = MavenTestingUtils.getTestResourcePathFile("alt-jsp-webdefault.xml");
         context.setDefaultsDescriptor(altWebDefault.toAbsolutePath().toString());
-        Path altWebApp = MavenTestingUtils.getProjectDirPath("src/test/webapp-alt-jsp");
-        context.setWarResource(new PathResource(altWebApp));
-
-        // context.getSystemClasspathPattern().add("org.eclipse.jetty.webapp.jsp.");
-        // context.getServerClasspathPattern().add("-org.eclipse.jetty.webapp.jsp.");
 
         server.setHandler(context);
         server.setDumpAfterStart(true);
         server.start();
+    }
+
+    private void copyClass(Class<?> clazz, Path destClasses) throws IOException
+    {
+        String classRelativeFilename = clazz.getName().replace('.', '/') + ".class";
+        Path destFile = destClasses.resolve(classRelativeFilename);
+        FS.ensureDirExists(destFile.getParent());
+
+        Path srcFile = MavenTestingUtils.getTargetPath("test-classes/" + classRelativeFilename);
+        Files.copy(srcFile, destFile);
+    }
+
+    private void copyDir(Path src, Path dest) throws IOException
+    {
+        FS.ensureDirExists(dest);
+        for (Iterator<Path> it = Files.list(src).iterator(); it.hasNext(); )
+        {
+            Path path = it.next();
+            if (Files.isRegularFile(path))
+                Files.copy(path, dest.resolve(path.getFileName()));
+            else if (Files.isDirectory(path))
+                copyDir(path, dest.resolve(path.getFileName()));
+        }
     }
 
     @AfterEach
@@ -86,6 +123,7 @@ public class ForcedServletTest
 
         String rawResponse = connector.getResponse(rawRequest.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        // Since this was a request to a resource ending in `*.jsp`, the RejectUncompiledJspServlet responded
         assertEquals(555, response.getStatus());
     }
 
@@ -103,6 +141,7 @@ public class ForcedServletTest
 
         String rawResponse = connector.getResponse(rawRequest.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        // Since this was a request to a resource ending in `*.jsp`, the RejectUncompiledJspServlet responded
         assertEquals(555, response.getStatus());
     }
 
@@ -120,6 +159,7 @@ public class ForcedServletTest
 
         String rawResponse = connector.getResponse(rawRequest.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        // status code 555 is from RejectUncompiledJspServlet
         assertEquals(555, response.getStatus());
     }
 
@@ -149,11 +189,30 @@ public class ForcedServletTest
         protected void startWebapp() throws Exception
         {
             System.err.printf("### Thread.cl = %s%n", Thread.currentThread().getContextClassLoader());
-            // This will result in any attempt to use an JSP that isn't precompiled and in the descriptor with status code 555
-            // forceServlet("jsp", RejectUncompiledJspServlet.class);
 
-            // TODO: alt fix - remove forced path
-            /*for (ServletHolder h : getServletHandler().getServlets())
+            // This will result in a 404 for all requests that don't belong to a more precise servlet
+            forceServlet("default", ServletHandler.Default404Servlet.class);
+            addServletMapping("default", "/");
+
+            // This will result in any attempt to use an JSP that isn't precompiled and in the descriptor with status code 555
+            forceServlet("jsp", RejectUncompiledJspServlet.class);
+            rejectForcedJspPaths();
+            addServletMapping("jsp", "*.jsp");
+
+            super.startWebapp();
+        }
+
+        private void addServletMapping(String name, String pathSpec)
+        {
+            ServletMapping mapping = new ServletMapping();
+            mapping.setServletName(name);
+            mapping.setPathSpec(pathSpec);
+            getServletHandler().addServletMapping(mapping);
+        }
+
+        private void rejectForcedJspPaths()
+        {
+            for (ServletHolder h : getServletHandler().getServlets())
             {
                 if (h.getForcedPath() != null)
                 {
@@ -161,12 +220,9 @@ public class ForcedServletTest
                     h.setHeldClass(RejectUncompiledJspServlet.class);
                     h.setForcedPath(null);
                 }
-            }*/
-
-            super.startWebapp();
+            }
         }
 
-        @SuppressWarnings("SameParameterValue")
         private void forceServlet(String name, Class<? extends HttpServlet> servlet) throws Exception
         {
             ServletHolder holder = getServletHandler().getServlet(name);
@@ -176,9 +232,7 @@ public class ForcedServletTest
                 holder.setInitOrder(1);
                 holder.setName(name);
                 holder.setAsyncSupported(true);
-                // Without the mapping, this forced servlet has no impact on non-precompiled JSP files.
-                // getServletHandler().addServletWithMapping(holder, "*.jsp");
-                // BAD / False Success - getServletHandler().addServlet(holder);
+                getServletHandler().addServlet(holder);
             }
         }
     }

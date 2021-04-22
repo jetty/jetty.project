@@ -299,9 +299,11 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         if (holder.getClassName() != null)
             this.setClassName(holder.getClassName());
         // TODO adding this after setting the classname (or instead of) fixes the exceptions.
-        /*Class<? extends Servlet> servletClass = holder.getHeldClass();
+        /*
+        Class<? extends Servlet> servletClass = holder.getHeldClass();
         if (servletClass != null)
-            this.setHeldClass(servletClass);*/
+            this.setHeldClass(servletClass);
+        */
         if (holder.getServlet() != null)
             this.setServlet(holder.getServlet());
         if (holder.getServletInstance() != null)
