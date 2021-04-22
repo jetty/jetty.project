@@ -97,7 +97,7 @@ public class Runner
     protected ArrayList<String> _configFiles;
     protected boolean _enableStats = false;
     protected String _statsPropFile;
-    protected String _portFile;
+    protected String _serverUriFile;
 
     /**
      * Classpath
@@ -170,7 +170,7 @@ public class Runner
         System.err.println(" --out file                          - info/warn/debug log filename (with optional 'yyyy_mm_dd' wildcard");
         System.err.println(" --host name|ip                      - interface to listen on (default is all interfaces)");
         System.err.println(" --port n                            - port to listen on (default 8080)");
-        System.err.println(" --port-file path                    - file to write a single line with the port used to serve http requests ");
+        System.err.println(" --server-uri-file path              - file to write a single line with server base URI");
         System.err.println(" --stop-port n                       - port to listen for stop command (or -DSTOP.PORT=n)");
         System.err.println(" --stop-key n                        - security string for stop command (required if --stop-port is present) (or -DSTOP.KEY=n)");
         System.err.println(" [--jar file]*n                      - each tuple specifies an extra jar to be added to the classloader");
@@ -300,8 +300,8 @@ public class Runner
                     _statsPropFile = args[++i];
                     _statsPropFile = ("unsecure".equalsIgnoreCase(_statsPropFile) ? null : _statsPropFile);
                     break;
-                case "--port-file":
-                    _portFile = args[++i];
+                case "--server-uri-file":
+                    _serverUriFile = args[++i];
                     break;
                 default:
                     // process system property type argument so users can use in second args part
@@ -529,12 +529,12 @@ public class Runner
     public void run() throws Exception
     {
         _server.start();
-        if (_portFile != null)
+        if (_serverUriFile != null)
         {
-            int localPort = ((ServerConnector)_server.getConnectors()[0]).getLocalPort();
-            Path fileWithPort = Paths.get(_portFile);
+            Path fileWithPort = Paths.get(_serverUriFile);
             Files.deleteIfExists(fileWithPort);
-            Files.writeString(fileWithPort, Integer.toString(localPort));
+            String serverUri = _server.getURI().toString();
+            Files.writeString(fileWithPort, serverUri);
         }
         _server.join();
     }

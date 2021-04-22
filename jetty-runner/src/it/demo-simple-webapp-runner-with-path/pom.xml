@@ -103,14 +103,14 @@
               <async>true</async>
               <executable>${java.home}/bin/java</executable>
               <arguments>
-<!--                <argument>-Xdebug</argument>-->
-<!--                <argument>-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=8000</argument>-->
                 <argument>-jar</argument>
                 <argument>${project.build.directory}/jetty-runner.jar</argument>
                 <argument>--out</argument>
                 <argument>${project.build.directory}/jetty-runner.out</argument>
                 <argument>--port</argument>
                 <argument>0</argument>
+                <argument>--path</argument>
+                <argument>french-chocolate-rocks</argument>
                 <argument>--server-uri-file</argument>
                 <argument>${project.build.directory}/server-uri.txt</argument>
                 <argument>${project.build.directory}/demo-simple-webapp.war</argument>

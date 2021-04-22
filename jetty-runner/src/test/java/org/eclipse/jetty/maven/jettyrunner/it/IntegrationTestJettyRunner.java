@@ -31,13 +31,12 @@ public class IntegrationTestJettyRunner
     @Test
     public void testGet() throws Exception
     {
-        int port = findPortUsed();
+        String serverUri = findServerUri();
         HttpClient httpClient = new HttpClient();
         try
         {
             httpClient.start();
-            ContentResponse response =
-                httpClient.newRequest("localhost", port).path("/").send();
+            ContentResponse response = httpClient.newRequest(serverUri).send();
             String res = response.getContentAsString();
             assertThat(res, Matchers.containsString("Hello World!"));
         }
@@ -47,17 +46,17 @@ public class IntegrationTestJettyRunner
         }
     }
 
-    private int findPortUsed() throws Exception
+    private String findServerUri() throws Exception
     {
         long now = System.currentTimeMillis();
 
         while (System.currentTimeMillis() - now < MINUTES.toMillis(2))
         {
-            Path portTxt = Paths.get("target", "port.txt");
+            Path portTxt = Paths.get("target", "server-uri.txt");
             if (Files.exists(portTxt))
             {
                 List<String> lines = Files.readAllLines(portTxt);
-                return Integer.parseInt(lines.get(0));
+                return lines.get(0);
             }
         }
 
