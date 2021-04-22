@@ -30,6 +30,6 @@ public class RejectUncompiledJspServlet extends HttpServlet
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         log(String.format("Uncompiled JSPs not supported by %s", request.getRequestURI()));
-        response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+        response.sendError(555);
     }
 }
