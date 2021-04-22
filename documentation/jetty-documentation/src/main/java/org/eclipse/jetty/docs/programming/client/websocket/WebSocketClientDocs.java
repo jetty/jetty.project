@@ -113,7 +113,7 @@ public class WebSocketClientDocs
         // receives WebSocket messages from the server.
         ClientEndPoint clientEndPoint = new ClientEndPoint();
         // The server URI to connect to.
-        URI serverURI = URI.create("ws://domain.com/path");
+        URI serverURI = URI.create("wss://domain.com/path");
 
         // Connect the client EndPoint to the server.
         CompletableFuture<Session> clientSessionPromise = webSocketClient.connect(clientEndPoint, serverURI);
@@ -132,7 +132,7 @@ public class WebSocketClientDocs
         webSocketClient.start();
 
         ClientEndPoint clientEndPoint = new ClientEndPoint();
-        URI serverURI = URI.create("ws://domain.com/path");
+        URI serverURI = URI.create("wss://domain.com/path");
 
         // Connect the client EndPoint to the server.
         CompletableFuture<Session> clientSessionPromise = webSocketClient.connect(clientEndPoint, serverURI);

@@ -52,6 +52,9 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/websocket/We
 
 You may create multiple instances of `WebSocketClient`, but typically one instance is enough for most applications.
 Creating multiple instances may be necessary for example when you need to specify different configuration parameters for different instances.
+For example, you may need different instances when you need to configure the `HttpClient` differently: different transports, different proxies, different cookie stores, different authentications, etc.
+
+WebSocket specific configuration may be typically be given a default value in `WebSocketClient` and then overridden more specifically, see for example xref:pg-websocket-session-configure[this section].
 
 [[pg-client-websocket-stop]]
 ==== Stopping WebSocketClient

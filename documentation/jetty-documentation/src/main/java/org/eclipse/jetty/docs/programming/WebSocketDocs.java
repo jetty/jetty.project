@@ -90,7 +90,7 @@ public class WebSocketDocs
         }
 
         @Override
-        public void onWebSocketBinary(byte[] payload, int offset, int len)
+        public void onWebSocketBinary(byte[] payload, int offset, int length)
         {
             // A WebSocket binary message is received.
 
@@ -101,7 +101,7 @@ public class WebSocketDocs
                 if (pngBytes[i] != payload[offset + i])
                     return;
             }
-            savePNGImage(payload, offset, len);
+            savePNGImage(payload, offset, length);
         }
     }
     // end::listenerEndpoint[]
@@ -150,7 +150,7 @@ public class WebSocketDocs
             session.getRemote().sendString("connected", WriteCallback.NOOP);
         }
 
-        @OnWebSocketClose // <2>
+        @OnWebSocketClose // <3>
         public void onClose(int statusCode, String reason)
         {
             // The WebSocket connection is closed.
@@ -159,7 +159,7 @@ public class WebSocketDocs
             disposeResources();
         }
 
-        @OnWebSocketError // <2>
+        @OnWebSocketError // <4>
         public void onError(Throwable cause)
         {
             // The WebSocket connection failed.
@@ -171,7 +171,7 @@ public class WebSocketDocs
             disposeResources();
         }
 
-        @OnWebSocketMessage // <2>
+        @OnWebSocketMessage // <5>
         public void onTextMessage(Session session, String message) // <3>
         {
             // A WebSocket textual message is received.
@@ -181,8 +181,8 @@ public class WebSocketDocs
                 session.getRemote().sendString(message.substring("echo:".length()), WriteCallback.NOOP);
         }
 
-        @OnWebSocketMessage // <2>
-        public void onBinaryMessage(byte[] payload, int offset, int len)
+        @OnWebSocketMessage // <5>
+        public void onBinaryMessage(byte[] payload, int offset, int length)
         {
             // A WebSocket binary message is received.
 
@@ -193,7 +193,7 @@ public class WebSocketDocs
                 if (pngBytes[i] != payload[offset + i])
                     return;
             }
-            savePNGImage(payload, offset, len);
+            savePNGImage(payload, offset, length);
         }
     }
     // end::annotatedEndpoint[]
@@ -475,7 +475,7 @@ public class WebSocketDocs
     {
     }
 
-    private static void savePNGImage(byte[] payload, int offset, int len)
+    private static void savePNGImage(byte[] payload, int offset, int length)
     {
     }
 
