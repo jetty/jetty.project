@@ -54,8 +54,12 @@ public class ForcedServletTest
         context.setDefaultsDescriptor(altWebDefault.toAbsolutePath().toString());
         Path altWebApp = MavenTestingUtils.getProjectDirPath("src/test/webapp-alt-jsp");
         context.setWarResource(new PathResource(altWebApp));
+
+        context.getSystemClasspathPattern().add("org.eclipse.jetty.webapp.jsp.");
+        context.getServerClasspathPattern().add("-org.eclipse.jetty.webapp.jsp.");
+
         Path testClasses = MavenTestingUtils.getTargetPath("test-classes");
-        context.setExtraClasspath(testClasses.toAbsolutePath().toString());
+        // context.setExtraClasspath(testClasses.toAbsolutePath().toString());
 
         server.setHandler(context);
         server.setDumpAfterStart(true);
@@ -147,6 +151,7 @@ public class ForcedServletTest
         @Override
         protected void startWebapp() throws Exception
         {
+            System.err.printf("### Thread.cl = %s%n", Thread.currentThread().getContextClassLoader());
             forceServlet("jsp", RejectUncompiledJspServlet.class);
             super.startWebapp();
         }
