@@ -35,8 +35,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
+@SuppressWarnings("unchecked")
 public class OpenIdAuthenticationTest
 {
     public static final String CLIENT_ID = "testClient101";
@@ -55,6 +57,7 @@ public class OpenIdAuthenticationTest
 
         server = new Server();
         connector = new ServerConnector(server);
+        connector.setPort(8080);
         server.addConnector(connector);
         ServletContextHandler context = new ServletContextHandler(server, "/", ServletContextHandler.SESSIONS);
 
@@ -122,30 +125,29 @@ public class OpenIdAuthenticationTest
     @Test
     public void testLoginLogout() throws Exception
     {
+        openIdProvider.setUser(new OpenIdProvider.User("123456789", "Alice"));
+
         String appUriString = "http://localhost:" + connector.getLocalPort();
 
         // Initially not authenticated
         ContentResponse response = client.GET(appUriString + "/");
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        String[] content = response.getContentAsString().split("[\r\n]+");
-        assertThat(content.length, is(1));
-        assertThat(content[0], is("not authenticated"));
+        String content = response.getContentAsString();
+        assertThat(content, containsString("not authenticated"));
 
         // Request to login is success
         response = client.GET(appUriString + "/login");
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        content = response.getContentAsString().split("[\r\n]+");
-        assertThat(content.length, is(1));
-        assertThat(content[0], is("success"));
+        content = response.getContentAsString();
+        assertThat(content, containsString("success"));
 
         // Now authenticated we can get info
         response = client.GET(appUriString + "/");
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        content = response.getContentAsString().split("[\r\n]+");
-        assertThat(content.length, is(3));
-        assertThat(content[0], is("userId: 123456789"));
-        assertThat(content[1], is("name: Alice"));
-        assertThat(content[2], is("email: Alice@example.com"));
+        content = response.getContentAsString();
+        assertThat(content, containsString("userId: 123456789"));
+        assertThat(content, containsString("name: Alice"));
+        assertThat(content, containsString("email: Alice@example.com"));
 
         // Request to admin page gives 403 as we do not have admin role
         response = client.GET(appUriString + "/admin");
@@ -154,9 +156,8 @@ public class OpenIdAuthenticationTest
         // We are no longer authenticated after logging out
         response = client.GET(appUriString + "/logout");
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        content = response.getContentAsString().split("[\r\n]+");
-        assertThat(content.length, is(1));
-        assertThat(content[0], is("not authenticated"));
+        content = response.getContentAsString();
+        assertThat(content, containsString("not authenticated"));
     }
 
     public static class LoginPage extends HttpServlet
@@ -164,7 +165,9 @@ public class OpenIdAuthenticationTest
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
         {
+            response.setContentType("text/html");
             response.getWriter().println("success");
+            response.getWriter().println("<br><a href=\"/\">Home</a>");
         }
     }
 
@@ -183,7 +186,7 @@ public class OpenIdAuthenticationTest
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
         {
-            Map<String, Object> userInfo = (Map)request.getSession().getAttribute(OpenIdAuthenticator.CLAIMS);
+            Map<String, Object> userInfo = (Map<String, Object>)request.getSession().getAttribute(OpenIdAuthenticator.CLAIMS);
             response.getWriter().println(userInfo.get("sub") + ": success");
         }
     }
@@ -193,18 +196,20 @@ public class OpenIdAuthenticationTest
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
         {
-            response.setContentType("text/plain");
+            response.setContentType("text/html");
             Principal userPrincipal = request.getUserPrincipal();
             if (userPrincipal != null)
             {
-                Map<String, Object> userInfo = (Map)request.getSession().getAttribute(OpenIdAuthenticator.CLAIMS);
-                response.getWriter().println("userId: " + userInfo.get("sub"));
-                response.getWriter().println("name: " + userInfo.get("name"));
-                response.getWriter().println("email: " + userInfo.get("email"));
+                Map<String, Object> userInfo = (Map<String, Object>)request.getSession().getAttribute(OpenIdAuthenticator.CLAIMS);
+                response.getWriter().println("userId: " + userInfo.get("sub") + "<br>");
+                response.getWriter().println("name: " + userInfo.get("name") + "<br>");
+                response.getWriter().println("email: " + userInfo.get("email") + "<br>");
+                response.getWriter().println("<br><a href=\"/logout\">Logout</a>");
             }
             else
             {
                 response.getWriter().println("not authenticated");
+                response.getWriter().println("<br><a href=\"/login\">Login</a>");
             }
         }
     }
@@ -214,8 +219,9 @@ public class OpenIdAuthenticationTest
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
         {
-            response.setContentType("text/plain");
+            response.setContentType("text/html");
             response.getWriter().println("not authorized");
+            response.getWriter().println("<br><a href=\"/\">Home</a>");
         }
     }
 }

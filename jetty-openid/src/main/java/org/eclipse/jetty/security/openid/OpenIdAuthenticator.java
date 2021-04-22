@@ -64,6 +64,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     public static final String CLAIMS = "org.eclipse.jetty.security.openid.claims";
     public static final String RESPONSE = "org.eclipse.jetty.security.openid.response";
     public static final String ERROR_PAGE = "org.eclipse.jetty.security.openid.error_page";
+    public static final String ALWAYS_SAVE_URI = "org.eclipse.jetty.security.openid.always_save_uri";
     public static final String J_URI = "org.eclipse.jetty.security.openid.URI";
     public static final String J_POST = "org.eclipse.jetty.security.openid.POST";
     public static final String J_METHOD = "org.eclipse.jetty.security.openid.METHOD";
@@ -96,6 +97,10 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         String error = configuration.getInitParameter(ERROR_PAGE);
         if (error != null)
             setErrorPage(error);
+
+        String alwaysSaveUri = configuration.getInitParameter(ALWAYS_SAVE_URI);
+        if (alwaysSaveUri != null)
+            setAlwaysSaveUri(Boolean.parseBoolean(alwaysSaveUri));
 
         if (_configuration != null)
             return;
