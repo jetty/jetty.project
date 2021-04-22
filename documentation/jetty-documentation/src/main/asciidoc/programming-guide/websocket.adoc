@@ -40,7 +40,6 @@ This event is emitted when the WebSocket communication has been successfully est
 Applications interested in the connect event receive the WebSocket _session_ so that they can use it to send data to the remote peer.
 * The _close_ event.
 This event is emitted when the WebSocket communication has been closed.
-// TODO: is this event emitted when the application calls Session.close()?
 Applications interested in the close event receive a WebSocket status code and an optional close reason message.
 * The _error_ event.
 This event is emitted when the WebSocket communication encounters a fatal error, such as an I/O error (for example, the network connection has been broken), or a protocol error (for example, the remote peer sends an invalid WebSocket frame).
@@ -83,15 +82,41 @@ include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=s
 [[pg-websocket-endpoints-annotated]]
 ===== Annotated Endpoints
 
-A WebSocket endpoint may annotate methods with `org.eclipse.jetty.websocket.api.annotations.*` annotations to receive WebSocket events:
+A WebSocket endpoint may annotate methods with `org.eclipse.jetty.websocket.api.annotations.*` annotations to receive WebSocket events.
+Each annotated method may take an optional `Session` argument as its first parameter:
 
 [source,java,indent=0]
 ----
 include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=annotatedEndpoint]
 ----
-<1> You must annotate the class with the `@WebSocket` annotation to make it an endpoint.
-<2> For each event you are interested in, use the correspondent annotation.
-<3> Note how methods annotated with `@OnWebSocketMessage` may optionally declare `Session` as first parameter.
+<1> Use the `@WebSocket` annotation at the class level to make it a WebSocket endpoint.
+<2> Use the `@OnWebSocketConnect` annotation for the _connect_ event.
+As this is the first event notified to the endpoint, you can configure the `Session` object.
+<3> Use the `@OnWebSocketClose` annotation for the _close_ event.
+The method may take an optional `Session` as first parameter.
+<4> Use the `@OnWebSocketError` annotation for the _error_ event.
+The method may take an optional `Session` as first parameter.
+<5> Use the `@OnWebSocketMessage` annotation for the _message_ event, both for textual and binary messages.
+The method may take an optional `Session` as first parameter.
+
+[NOTE]
+====
+For binary messages, you may declare the annotated method with either or these two signatures:
+
+[source,java]
+----
+@OnWebSocketMessage
+public void methodName(byte[] bytes, int offset, int length) { ... }
+----
+
+or
+
+[source,java]
+----
+@OnWebSocketMessage
+public void methodName(ByteBuffer buffer) { ... }
+----
+====
 
 ====== Message Streaming Reads
 
@@ -180,6 +205,16 @@ Furthermore, if you have initiated a non-blocking send, you cannot initiate a bl
 ====
 
 This requirement is necessary to avoid unbounded buffering that could lead to ``OutOfMemoryError``s.
+
+[CAUTION]
+====
+We strongly recommend that you follow the condition above.
+
+However, there may be cases where you want to explicitly control the number of outgoing buffered messages using `RemoteEndpoint.setMaxOutgoingFrames(int)`.
+
+Remember that trying to control the number of outgoing buffered messages is very difficult and tricky; you may set `maxOutgoingFrames=4` and have a situation where 6 threads try to concurrently send messages: threads 1 to 4 will be able to successfully buffer their messages, thread 5 may fail, but thread 6 may succeed because one of the previous threads completed its send.
+At this point you have an out-of-order message delivery that could be unexpected and very difficult to troubleshoot because it will happen non-deterministically.
+====
 
 While non-blocking APIs are more difficult to use, they don't block the sender thread and therefore use less resources, which in turn typically allows for greater scalability under load: with respect to blocking APIs, non-blocking APIs need less resources to cope with the same load.
 
