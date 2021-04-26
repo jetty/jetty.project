@@ -663,8 +663,7 @@ public class HttpChannelState
                         }
                         catch (Throwable x)
                         {
-                            LOG.warn(x + " while invoking onTimeout listener " + listener);
-                            LOG.debug(x);
+                            LOG.warn("{} while invoking onTimeout listener {}", x, listener, x);
                         }
                     }
                 }
