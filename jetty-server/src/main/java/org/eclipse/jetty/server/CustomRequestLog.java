@@ -315,6 +315,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
     /**
      * This allows you to set a custom filter to decide whether to log a request or omit it from the request log.
+     * This filter is evaluated after path filtering is applied from {@link #setIgnorePaths(String[])}.
      * @param filter - a BiPredicate which returns true if this request should be logged.
      */
     public void setFilter(BiPredicate<Request, Response> filter)
