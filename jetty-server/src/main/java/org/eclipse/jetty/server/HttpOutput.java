@@ -23,7 +23,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
-import java.util.ResourceBundle;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.RequestDispatcher;
@@ -627,6 +626,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 catch (Throwable t)
                 {
                     onWriteComplete(true, t);
+                    throw t;
                 }
             }
         }

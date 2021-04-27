@@ -47,8 +47,7 @@
             <project.basedir>${project.basedir}</project.basedir>
             <maven.local.repo>${settings.localRepository}</maven.local.repo>
             <prog_guide>../programming-guide/index.html</prog_guide>
-            <JDURL>http://www.eclipse.org/jetty/javadoc/jetty-10</JDURL>
-            <JXURL>http://download.eclipse.org/jetty/stable-9/xref</JXURL>
+            <JDURL>https://www.eclipse.org/jetty/javadoc/jetty-10</JDURL>
             <SRCDIR>${basedir}/..</SRCDIR>
             <GITBROWSEURL>https://github.com/eclipse/jetty.project/tree/master</GITBROWSEURL>
             <GITDOCURL>https://github.com/eclipse/jetty.project/tree/jetty-10.0.x-doc-refactor/jetty-documentation/src/main/asciidoc</GITDOCURL>

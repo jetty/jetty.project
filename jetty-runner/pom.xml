@@ -52,6 +52,17 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-invoker-plugin</artifactId>
         <executions>
           <execution>
@@ -65,8 +76,12 @@
           </execution>
         </executions>
         <configuration>
+          <debug>${it.debug}</debug>
+          <addTestClassPath>true</addTestClassPath>
           <scriptVariables>
             <maven.dependency.plugin.version>${maven.dependency.plugin.version}</maven.dependency.plugin.version>
+            <maven.surefire.version>${maven.surefire.version}</maven.surefire.version>
+            <hamcrest.version>${hamcrest.version}</hamcrest.version>
           </scriptVariables>
           <goals>
             <goal>clean</goal>
@@ -148,6 +163,19 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
       <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>demo-simple-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>

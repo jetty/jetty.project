@@ -19,10 +19,12 @@ import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.javax.common.InitException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RegisteredDecoder
 {
-    private final WebSocketComponents components;
+    private static final Logger LOG = LoggerFactory.getLogger(RegisteredDecoder.class);
 
     // The user supplied Decoder class
     public final Class<? extends Decoder> decoder;
@@ -31,6 +33,7 @@ public class RegisteredDecoder
     public final Class<?> objectType;
     public final boolean primitive;
     public final EndpointConfig config;
+    private final WebSocketComponents components;
 
     private Decoder instance;
 
@@ -76,6 +79,23 @@ public class RegisteredDecoder
         }
 
         return (T)instance;
+    }
+
+    public void destroyInstance()
+    {
+        if (instance != null)
+        {
+            try
+            {
+                instance.destroy();
+            }
+            catch (Throwable t)
+            {
+                LOG.warn("Error destroying Decoder", t);
+            }
+
+            instance = null;
+        }
     }
 
     @Override

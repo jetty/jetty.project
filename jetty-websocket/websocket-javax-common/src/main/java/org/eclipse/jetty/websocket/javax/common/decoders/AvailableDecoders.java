@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.websocket.javax.common.decoders;
 
+import java.io.Closeable;
 import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
@@ -30,7 +31,7 @@ import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
 
-public class AvailableDecoders implements Iterable<RegisteredDecoder>
+public class AvailableDecoders implements Iterable<RegisteredDecoder>, Closeable
 {
     private final List<RegisteredDecoder> registeredDecoders = new ArrayList<>();
     private final EndpointConfig config;
@@ -210,5 +211,11 @@ public class AvailableDecoders implements Iterable<RegisteredDecoder>
     public Stream<RegisteredDecoder> stream()
     {
         return registeredDecoders.stream();
+    }
+
+    @Override
+    public void close()
+    {
+        registeredDecoders.forEach(RegisteredDecoder::destroyInstance);
     }
 }

@@ -251,7 +251,8 @@ public class GzipWithSendErrorTest
         assertThat("Request Input Content Received", inputContentReceived.get(), is(0L));
         assertThat("Request Input Content Received less then initial buffer", inputContentReceived.get(), lessThanOrEqualTo((long)sizeActuallySent));
         assertThat("Request Connection BytesIn should have some minimal data", inputBytesIn.get(), greaterThanOrEqualTo(1024L));
-        assertThat("Request Connection BytesIn read should not have read all of the data", inputBytesIn.get(), lessThanOrEqualTo((long)sizeActuallySent));
+        long requestBytesSent = sizeActuallySent + 512; // Take into account headers and chunked metadata.
+        assertThat("Request Connection BytesIn read should not have read all of the data", inputBytesIn.get(), lessThanOrEqualTo(requestBytesSent));
 
         // Now provide rest
         content.offer(ByteBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent));
@@ -351,7 +352,8 @@ public class GzipWithSendErrorTest
         assertThat("Request Input Content Received", inputContentReceived.get(), read ? greaterThan(0L) : is(0L));
         assertThat("Request Input Content Received less then initial buffer", inputContentReceived.get(), lessThanOrEqualTo((long)sizeActuallySent));
         assertThat("Request Connection BytesIn should have some minimal data", inputBytesIn.get(), greaterThanOrEqualTo(1024L));
-        assertThat("Request Connection BytesIn read should not have read all of the data", inputBytesIn.get(), lessThanOrEqualTo((long)sizeActuallySent));
+        long requestBytesSent = sizeActuallySent + 512; // Take into account headers and chunked metadata.
+        assertThat("Request Connection BytesIn read should not have read all of the data", inputBytesIn.get(), lessThanOrEqualTo(requestBytesSent));
 
         // Now provide rest
         content.offer(ByteBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent));

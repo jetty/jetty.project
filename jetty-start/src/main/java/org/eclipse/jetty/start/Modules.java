@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -552,7 +551,7 @@ public class Modules implements Iterable<Module>
         Set<Module> providers = _provided.get(name);
         StartLog.debug("Providers of [%s] are %s", name, providers);
         if (providers == null || providers.isEmpty())
-            return Collections.emptySet();
+            return Set.of();
 
         providers = new HashSet<>(providers);
 

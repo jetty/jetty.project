@@ -59,6 +59,7 @@
     <maven.plugin-tools.version>3.6.0</maven.plugin-tools.version>
     <maven.install.plugin.version>3.0.0-M1</maven.install.plugin.version>
     <maven.deploy.plugin.version>3.0.0-M1</maven.deploy.plugin.version>
+    <maven.exec.plugin.version>3.0.0</maven.exec.plugin.version>
 
     <!-- testing -->
     <it.debug>false</it.debug>
@@ -768,8 +769,7 @@
               <require>asciidoctor-diagram</require>
             </requires>
             <attributes>
-              <JDURL>http://www.eclipse.org/jetty/javadoc/${project.version}</JDURL>
-              <JXURL>http://download.eclipse.org/jetty/stable-9/xref</JXURL>
+              <JDURL>https://www.eclipse.org/jetty/javadoc/jetty-10</JDURL>
               <SRCDIR>${basedir}/..</SRCDIR>
               <GITBROWSEURL>https://github.com/eclipse/jetty.project/tree/jetty-9.4.x</GITBROWSEURL>
               <GITDOCURL>https://github.com/eclipse/jetty.project/tree/jetty-10.0.x-doc-refactor/jetty-documentation/src/main/asciidoc</GITDOCURL>
@@ -813,7 +813,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>${maven.exec.plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.eclipse.m2e</groupId>

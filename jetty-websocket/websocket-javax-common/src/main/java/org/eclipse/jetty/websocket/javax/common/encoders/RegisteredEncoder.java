@@ -15,8 +15,13 @@ package org.eclipse.jetty.websocket.javax.common.encoders;
 
 import javax.websocket.Encoder;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RegisteredEncoder
 {
+    private static final Logger LOG = LoggerFactory.getLogger(RegisteredEncoder.class);
+
     public final Class<? extends Encoder> encoder;
     public final Class<? extends Encoder> interfaceType;
     public final Class<?> objectType;
@@ -44,6 +49,23 @@ public class RegisteredEncoder
     public boolean isType(Class<?> type)
     {
         return objectType.isAssignableFrom(type);
+    }
+
+    public void destroyInstance()
+    {
+        if (instance != null)
+        {
+            try
+            {
+                instance.destroy();
+            }
+            catch (Throwable t)
+            {
+                LOG.warn("Error destroying Decoder", t);
+            }
+
+            instance = null;
+        }
     }
 
     @Override
