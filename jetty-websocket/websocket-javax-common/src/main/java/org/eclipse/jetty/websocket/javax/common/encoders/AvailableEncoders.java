@@ -29,13 +29,12 @@ import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
 import org.eclipse.jetty.websocket.javax.common.InitException;
-import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class AvailableEncoders implements Predicate<Class<?>>, Closeable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(RegisteredDecoder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AvailableEncoders.class);
 
     public static class RegisteredEncoder
     {
