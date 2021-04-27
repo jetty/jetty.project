@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.websocket.javax.common.encoders;
 
+import java.io.Closeable;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
@@ -28,9 +29,14 @@ import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
 import org.eclipse.jetty.websocket.javax.common.InitException;
+import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class AvailableEncoders implements Predicate<Class<?>>
+public class AvailableEncoders implements Predicate<Class<?>>, Closeable
 {
+    private static final Logger LOG = LoggerFactory.getLogger(RegisteredDecoder.class);
+
     public static class RegisteredEncoder
     {
         public final Class<? extends Encoder> encoder;
@@ -60,6 +66,23 @@ public class AvailableEncoders implements Predicate<Class<?>>
         public boolean isType(Class<?> type)
         {
             return objectType.isAssignableFrom(type);
+        }
+
+        public void destroyInstance()
+        {
+            if (instance != null)
+            {
+                try
+                {
+                    instance.destroy();
+                }
+                catch (Throwable t)
+                {
+                    LOG.warn("Error destroying Decoder", t);
+                }
+
+                instance = null;
+            }
         }
 
         @Override
@@ -285,5 +308,11 @@ public class AvailableEncoders implements Predicate<Class<?>>
     public boolean test(Class<?> type)
     {
         return registeredEncoders.stream().anyMatch(registered -> registered.isType(type));
+    }
+
+    @Override
+    public void close()
+    {
+        registeredEncoders.forEach(RegisteredEncoder::destroyInstance);
     }
 }
