@@ -196,7 +196,6 @@ public class ForcedServletTest
 
             // This will result in any attempt to use an JSP that isn't precompiled and in the descriptor with status code 555
             forceServlet("jsp", RejectUncompiledJspServlet.class);
-            rejectForcedJspPaths();
             addServletMapping("jsp", "*.jsp");
 
             super.startWebapp();
@@ -208,19 +207,6 @@ public class ForcedServletTest
             mapping.setServletName(name);
             mapping.setPathSpec(pathSpec);
             getServletHandler().addServletMapping(mapping);
-        }
-
-        private void rejectForcedJspPaths()
-        {
-            for (ServletHolder h : getServletHandler().getServlets())
-            {
-                if (h.getForcedPath() != null)
-                {
-                    System.err.println("FORCED " + h.getForcedPath());
-                    h.setHeldClass(RejectUncompiledJspServlet.class);
-                    h.setForcedPath(null);
-                }
-            }
         }
 
         private void forceServlet(String name, Class<? extends HttpServlet> servlet) throws Exception

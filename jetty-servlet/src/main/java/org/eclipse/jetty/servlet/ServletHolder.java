@@ -294,20 +294,12 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         _forcedPath = forcedPath;
     }
 
-    private void copyClassServlet(ServletHolder holder) throws ServletException
+    private void setClassFrom(ServletHolder holder) throws ServletException
     {
-        if (holder.getClassName() != null)
-            this.setClassName(holder.getClassName());
-        // TODO adding this after setting the classname (or instead of) fixes the exceptions.
-        /*
-        Class<? extends Servlet> servletClass = holder.getHeldClass();
-        if (servletClass != null)
-            this.setHeldClass(servletClass);
-        */
-        if (holder.getServlet() != null)
-            this.setServlet(holder.getServlet());
-        if (holder.getServletInstance() != null)
-            this.setInstance(holder.getServletInstance());
+        if (_servlet != null || getInstance() != null)
+            throw new IllegalStateException();
+        this.setClassName(holder.getClassName());
+        this.setHeldClass(holder.getHeldClass());
     }
 
     public boolean isEnabled()
@@ -342,7 +334,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                     if (LOG.isDebugEnabled())
                         LOG.debug("JSP file {} for {} mapped to Servlet {}", _forcedPath, getName(), jsp.getClassName());
                     // set the className/servlet/instance for this servlet to the precompiled one
-                    copyClassServlet(jsp);
+                    setClassFrom(jsp);
                 }
                 else
                 {
@@ -352,7 +344,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("JSP file {} for {} mapped to JspServlet class {}", _forcedPath, getName(), jsp.getClassName());
-                        copyClassServlet(jsp);
+                        setClassFrom(jsp);
                         //copy jsp init params that don't exist for this servlet
                         for (Map.Entry<String, String> entry : jsp.getInitParameters().entrySet())
                         {
@@ -980,7 +972,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
     protected class Config extends HolderConfig implements ServletConfig
     {
-
         @Override
         public String getServletName()
         {
@@ -1241,9 +1232,9 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     @Override
     public String toString()
     {
-        return String.format("%s==%s@%x{jsp=%s,order=%d,inst=%b,async=%b,src=%s}",
+        return String.format("%s==%s@%x{jsp=%s,order=%d,inst=%b,async=%b,src=%s,%s}",
             getName(), getClassName(), hashCode(),
-            _forcedPath, _initOrder, _servlet != null, isAsyncSupported(), getSource());
+            _forcedPath, _initOrder, _servlet != null, isAsyncSupported(), getSource(), getState());
     }
 
     private class UnavailableServlet extends Wrapper
