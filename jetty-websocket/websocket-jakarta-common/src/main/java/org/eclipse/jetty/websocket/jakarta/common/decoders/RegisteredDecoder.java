@@ -18,9 +18,13 @@ import java.lang.reflect.InvocationTargetException;
 import jakarta.websocket.Decoder;
 import jakarta.websocket.EndpointConfig;
 import org.eclipse.jetty.websocket.jakarta.common.InitException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RegisteredDecoder
 {
+    private static final Logger LOG = LoggerFactory.getLogger(RegisteredDecoder.class);
+
     // The user supplied Decoder class
     public final Class<? extends Decoder> decoder;
     // The jakarta.websocket.Decoder.* type (eg: Decoder.Binary, Decoder.BinaryStream, Decoder.Text, Decoder.TextStream)
@@ -72,6 +76,23 @@ public class RegisteredDecoder
         }
 
         return (T)instance;
+    }
+
+    public void destroyInstance()
+    {
+        if (instance != null)
+        {
+            try
+            {
+                instance.destroy();
+            }
+            catch (Throwable t)
+            {
+                LOG.warn("Error destroying Decoder", t);
+            }
+
+            instance = null;
+        }
     }
 
     @Override
