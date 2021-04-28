@@ -72,7 +72,7 @@ public class ForcedServletTest
         context.setWarResource(new PathResource(basePath));
 
         server.setHandler(context);
-        server.setDumpAfterStart(true);
+        // server.setDumpAfterStart(true);
         server.start();
     }
 
@@ -187,8 +187,6 @@ public class ForcedServletTest
         @Override
         protected void startWebapp() throws Exception
         {
-            System.err.printf("### Thread.cl = %s%n", Thread.currentThread().getContextClassLoader());
-
             // This will result in a 404 for all requests that don't belong to a more precise servlet
             forceServlet("default", ServletHandler.Default404Servlet.class);
             addServletMapping("default", "/");
