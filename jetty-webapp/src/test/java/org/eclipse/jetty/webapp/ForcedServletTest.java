@@ -23,7 +23,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Iterator;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
@@ -36,7 +39,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.webapp.jsp.FakePrecompiledJSP;
-import org.eclipse.jetty.webapp.jsp.RejectUncompiledJspServlet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -221,6 +223,16 @@ public class ForcedServletTest
             holder.setName(name);
             holder.setAsyncSupported(true);
             handler.addServlet(holder);
+        }
+    }
+
+    public static class RejectUncompiledJspServlet extends HttpServlet
+    {
+        @Override
+        protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            log(String.format("Uncompiled JSPs not supported by %s", request.getRequestURI()));
+            response.sendError(555);
         }
     }
 }
