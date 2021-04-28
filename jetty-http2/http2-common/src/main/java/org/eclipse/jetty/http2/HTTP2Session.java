@@ -47,6 +47,7 @@ import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
+import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
@@ -1221,6 +1222,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         @Override
         public void succeeded()
         {
+            commit();
+
             bytesWritten.addAndGet(frameBytes);
             frameBytes = 0;
 
@@ -2072,6 +2075,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 return false;
 
             stream.setListener(listener);
+            stream.process(new PrefaceFrame(), Callback.NOOP);
+
             Callback streamCallback = Callback.from(() -> promise.succeeded(stream), x ->
             {
                 HTTP2Session.this.onStreamDestroyed(streamId);

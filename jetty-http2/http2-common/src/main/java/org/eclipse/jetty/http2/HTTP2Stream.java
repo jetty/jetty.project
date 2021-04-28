@@ -67,6 +67,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     private boolean remoteReset;
     private Listener listener;
     private long dataLength;
+    private boolean committed;
 
     public HTTP2Stream(Scheduler scheduler, ISession session, int streamId, boolean local)
     {
@@ -227,6 +228,18 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     }
 
     @Override
+    public void commit()
+    {
+        committed = true;
+    }
+
+    @Override
+    public boolean isCommitted()
+    {
+        return committed;
+    }
+
+    @Override
     public boolean isOpen()
     {
         return !isClosed();
@@ -278,6 +291,11 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         notIdle();
         switch (frame.getType())
         {
+            case PREFACE:
+            {
+                onNewStream(callback);
+                break;
+            }
             case HEADERS:
             {
                 onHeaders((HeadersFrame)frame, callback);
@@ -313,6 +331,12 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
                 throw new UnsupportedOperationException();
             }
         }
+    }
+
+    private void onNewStream(Callback callback)
+    {
+        notifyNewStream(this);
+        callback.succeeded();
     }
 
     private void onHeaders(HeadersFrame frame, Callback callback)
@@ -583,6 +607,22 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             Callback callback = sendCallback;
             sendCallback = null;
             return callback;
+        }
+    }
+
+    private void notifyNewStream(Stream stream)
+    {
+        Listener listener = this.listener;
+        if (listener != null)
+        {
+            try
+            {
+                listener.onNewStream(stream);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Failure while notifying listener {}", listener, x);
+            }
         }
     }
 

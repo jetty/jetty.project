@@ -75,6 +75,12 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
     }
 
     @Override
+    public void onNewStream(Stream stream)
+    {
+        getHttpChannel().setStream(stream);
+    }
+
+    @Override
     public void onHeaders(Stream stream, HeadersFrame frame)
     {
         HttpExchange exchange = getHttpExchange();

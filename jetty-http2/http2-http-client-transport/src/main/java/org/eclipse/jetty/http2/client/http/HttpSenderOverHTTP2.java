@@ -177,7 +177,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
         stream.headers(trailersFrame, callback);
     }
 
-    private class HeadersPromise implements Promise<Stream>
+    private static class HeadersPromise implements Promise<Stream>
     {
         private final HttpRequest request;
         private final Callback callback;
@@ -191,9 +191,6 @@ public class HttpSenderOverHTTP2 extends HttpSender
         @Override
         public void succeeded(Stream stream)
         {
-            HttpChannelOverHTTP2 channel = getHttpChannel();
-            channel.setStream(stream);
-            ((IStream)stream).setAttachment(channel);
             long idleTimeout = request.getIdleTimeout();
             if (idleTimeout >= 0)
                 stream.setIdleTimeout(idleTimeout);
