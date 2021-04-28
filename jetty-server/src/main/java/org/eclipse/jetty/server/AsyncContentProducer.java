@@ -30,6 +30,14 @@ import org.slf4j.LoggerFactory;
 class AsyncContentProducer implements ContentProducer
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncContentProducer.class);
+    private static final Throwable UNCONSUMED_CONTENT_EXCEPTION = new IOException("Unconsumed content")
+    {
+        @Override
+        public synchronized Throwable fillInStackTrace()
+        {
+            return this;
+        }
+    };
 
     private final AutoLock _lock = new AutoLock();
     private final HttpChannel _httpChannel;
@@ -151,11 +159,15 @@ class AsyncContentProducer implements ContentProducer
     }
 
     @Override
-    public boolean consumeAll(Throwable x)
+    public boolean consumeAll()
     {
         assertLocked();
+        Throwable x = UNCONSUMED_CONTENT_EXCEPTION;
         if (LOG.isDebugEnabled())
-            LOG.debug("consumeAll [e={}] {}", x, this);
+        {
+            x = new IOException("Unconsumed content");
+            LOG.debug("consumeAll {}", this, x);
+        }
         failCurrentContent(x);
         // A specific HttpChannel mechanism must be used as the following code
         // does not guarantee that the channel will synchronously deliver all

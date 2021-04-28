@@ -46,7 +46,7 @@ public interface ContentProducer
      * Doesn't change state.
      * @return true if EOF was reached.
      */
-    boolean consumeAll(Throwable x);
+    boolean consumeAll();
 
     /**
      * Check if the current data rate consumption is above the minimal rate.
