@@ -21,6 +21,7 @@ package org.eclipse.jetty.webapp;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Iterator;
 import javax.servlet.http.HttpServlet;
 
@@ -67,10 +68,6 @@ public class ForcedServletTest
 
         // Use the new base
         context.setWarResource(new PathResource(basePath));
-
-        // use a default descriptor with no "default" or "jsp" defined.
-        Path altWebDefault = MavenTestingUtils.getTestResourcePathFile("alt-jsp-webdefault.xml");
-        context.setDefaultsDescriptor(altWebDefault.toAbsolutePath().toString());
 
         server.setHandler(context);
         server.setDumpAfterStart(true);
@@ -211,15 +208,19 @@ public class ForcedServletTest
 
         private void forceServlet(String name, Class<? extends HttpServlet> servlet) throws Exception
         {
-            ServletHolder holder = getServletHandler().getServlet(name);
-            if (holder == null)
-            {
-                holder = new ServletHolder(servlet.getConstructor().newInstance());
-                holder.setInitOrder(1);
-                holder.setName(name);
-                holder.setAsyncSupported(true);
-                getServletHandler().addServlet(holder);
-            }
+            ServletHandler handler = getServletHandler();
+
+            // Remove existing holder
+            handler.setServlets(Arrays.stream(handler.getServlets())
+                .filter(h -> !h.getName().equals(name))
+                .toArray(ServletHolder[]::new));
+
+            // add the forced servlet
+            ServletHolder holder = new ServletHolder(servlet.getConstructor().newInstance());
+            holder.setInitOrder(1);
+            holder.setName(name);
+            holder.setAsyncSupported(true);
+            handler.addServlet(holder);
         }
     }
 }
