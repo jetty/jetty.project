@@ -69,8 +69,10 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -464,7 +466,8 @@ public class MaxConcurrentStreamsTest extends AbstractTest
                         break;
                     }
                 }
-                return null;
+                // Return a Stream listener that consumes the content.
+                return new Stream.Listener.Adapter();
             }
         });
         http2.setMaxConcurrentStreams(2);
@@ -509,8 +512,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         while (!clientEndPoint.getWriteFlusher().isPending())
         {
             long elapsed = System.nanoTime() - start;
-            if (TimeUnit.NANOSECONDS.toSeconds(elapsed) > 15)
-                throw new TimeoutException();
+            assertThat(TimeUnit.NANOSECONDS.toSeconds(elapsed), Matchers.lessThan(15L));
             Thread.sleep(100);
         }
         // Wait for the selector to update the SelectionKey to OP_WRITE.
@@ -539,7 +541,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         // Resolve the TCP congestion.
         request1Latch.countDown();
 
-        assertTrue(response1Latch.await(5, TimeUnit.SECONDS));
+        assertTrue(response1Latch.await(15, TimeUnit.SECONDS));
         assertTrue(response3Latch.await(5, TimeUnit.SECONDS));
     }
 
