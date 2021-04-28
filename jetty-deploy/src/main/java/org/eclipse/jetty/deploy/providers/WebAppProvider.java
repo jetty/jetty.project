@@ -55,13 +55,14 @@ import org.slf4j.LoggerFactory;
  * <p>For XML configured contexts, the ID map will contain a reference to the {@link Server} instance called "Server" and
  * properties for the webapp file as "jetty.webapp" and directory as "jetty.webapps".
  */
-@ManagedObject("Provider for start-up deployement of webapps based on presence in directory")
+@ManagedObject("Provider for start-up deployment of webapps based on presence in directory")
 public class WebAppProvider extends ScanningAppProvider
 {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(WebAppProvider.class);
 
     private boolean _extractWars = false;
     private boolean _parentLoaderPriority = false;
+    private boolean _stopOnWebappFail = false;
     private ConfigurationManager _configurationManager;
     private String _defaultsDescriptor;
     private File _tempDirectory;
@@ -236,6 +237,26 @@ public class WebAppProvider extends ScanningAppProvider
         return _tempDirectory;
     }
 
+    /**
+     * Check if the server should stop on webapp startup fail or not
+     *
+     * @return true of server should halt on webapp fail, false if server should remain running
+     */
+    public boolean isStopOnWebappFail()
+    {
+        return _stopOnWebappFail;
+    }
+
+    /**
+     * Set if server should halt on startup or not when webapp fails
+     *
+     * @param stopOnWebappFail true if webapp deployment fail should halt server
+     */
+    public void setStopOnWebappFail(boolean stopOnWebappFail)
+    {
+        _stopOnWebappFail = stopOnWebappFail;
+    }
+
     protected void initializeWebAppContextDefaults(WebAppContext webapp)
     {
         if (_defaultsDescriptor != null)
@@ -336,6 +357,7 @@ public class WebAppProvider extends ScanningAppProvider
         webAppContext.setDefaultContextPath(context);
         webAppContext.setWar(file.getAbsolutePath());
         initializeWebAppContextDefaults(webAppContext);
+        webAppContext.setThrowUnavailableOnStartupException(_stopOnWebappFail);
 
         return webAppContext;
     }

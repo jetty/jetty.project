@@ -28,3 +28,7 @@ etc/jetty-deploy.xml
 
 # Whether to extract *.war files
 # jetty.deploy.extractWars=true
+
+# Whether to halt server on startup if webapp fails to deploy
+# false lets server continue running, true halts server
+# jetty.deploy.stopOnWebappFail=false
