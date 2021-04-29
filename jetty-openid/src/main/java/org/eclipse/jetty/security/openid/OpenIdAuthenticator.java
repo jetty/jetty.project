@@ -14,6 +14,7 @@
 package org.eclipse.jetty.security.openid;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -202,16 +203,24 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         //See Servlet Spec 3.1 sec 13.6.3
         HttpServletRequest httpRequest = (HttpServletRequest)request;
         HttpSession session = httpRequest.getSession(false);
-        if (session == null || session.getAttribute(SessionAuthentication.__J_AUTHENTICATED) == null)
+        if (session == null)
             return; //not authenticated yet
 
-        String juri = (String)session.getAttribute(J_URI);
-        if (juri == null || juri.length() == 0)
-            return; //no original uri saved
+        String juri;
+        String method;
+        synchronized (session)
+        {
+            if (session.getAttribute(SessionAuthentication.__J_AUTHENTICATED) == null)
+                return; //not authenticated yet
 
-        String method = (String)session.getAttribute(J_METHOD);
-        if (method == null || method.length() == 0)
-            return; //didn't save original request method
+            juri = (String)session.getAttribute(J_URI);
+            if (juri == null || juri.length() == 0)
+                return; //no original uri saved
+
+            method = (String)session.getAttribute(J_METHOD);
+            if (method == null || method.length() == 0)
+                return; //didn't save original request method
+        }
 
         StringBuffer buf = httpRequest.getRequestURL();
         if (httpRequest.getQueryString() != null)
@@ -281,11 +290,11 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 synchronized (session)
                 {
                     uriRedirectInfo = removeAndClearCsrfMap(session, state);
-                    if (uriRedirectInfo == null)
-                    {
-                        sendError(request, response, "auth failed: invalid state parameter");
-                        return Authentication.SEND_FAILURE;
-                    }
+                }
+                if (uriRedirectInfo == null)
+                {
+                    sendError(request, response, "auth failed: invalid state parameter");
+                    return Authentication.SEND_FAILURE;
                 }
 
                 // Attempt to login with the provided authCode.
@@ -302,9 +311,12 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                     LOG.debug("authenticated {}->{}", openIdAuth, uriRedirectInfo.getUri());
 
                 // Save redirect info in session so original request can be restored after redirect.
-                session.setAttribute(J_URI, uriRedirectInfo.getUri());
-                session.setAttribute(J_METHOD, uriRedirectInfo.getMethod());
-                session.setAttribute(J_POST, uriRedirectInfo.getFormParameters());
+                synchronized (session)
+                {
+                    session.setAttribute(J_URI, uriRedirectInfo.getUri());
+                    session.setAttribute(J_METHOD, uriRedirectInfo.getMethod());
+                    session.setAttribute(J_POST, uriRedirectInfo.getFormParameters());
+                }
 
                 // Redirect to the original URI.
                 response.setContentLength(0);
@@ -313,20 +325,20 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             }
 
             // Look for cached authentication in the Session.
-            Authentication authentication = (Authentication)session.getAttribute(SessionAuthentication.__J_AUTHENTICATED);
-            if (authentication != null)
+            synchronized (session)
             {
-                // Has authentication been revoked?
-                if (authentication instanceof Authentication.User && _loginService != null &&
-                    !_loginService.validate(((Authentication.User)authentication).getUserIdentity()))
+                Authentication authentication = (Authentication)session.getAttribute(SessionAuthentication.__J_AUTHENTICATED);
+                if (authentication != null)
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("auth revoked {}", authentication);
-                    session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
-                }
-                else
-                {
-                    synchronized (session)
+                    // Has authentication been revoked?
+                    if (authentication instanceof Authentication.User && _loginService != null &&
+                        !_loginService.validate(((Authentication.User)authentication).getUserIdentity()))
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("auth revoked {}", authentication);
+                        session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
+                    }
+                    else
                     {
                         String jUri = (String)session.getAttribute(J_URI);
                         if (jUri != null)
@@ -489,7 +501,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         if (csrfMap == null)
             return null;
 
-        UriRedirectInfo uriRedirectInfo = csrfMap.remove(csrf);
+        UriRedirectInfo uriRedirectInfo = csrfMap.get(csrf);
         csrfMap.clear();
         return uriRedirectInfo;
     }
@@ -516,8 +528,10 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         return csrfMap;
     }
 
-    private static class UriRedirectInfo
+    private static class UriRedirectInfo implements Serializable
     {
+        private static final long serialVersionUID = 139567755844461433L;
+
         private final String _uri;
         private final String _method;
         private final MultiMap<String> _formParameters;
