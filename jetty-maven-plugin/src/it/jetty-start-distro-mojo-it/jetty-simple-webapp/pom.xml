@@ -103,6 +103,7 @@
                 <jetty.http.port>0</jetty.http.port>
               </jettyProperties>
               <modules>jsp,jstl,testmod</modules>
+              <jettyOptions>--debug</jettyOptions>
             </configuration>
           </execution>
         </executions>
