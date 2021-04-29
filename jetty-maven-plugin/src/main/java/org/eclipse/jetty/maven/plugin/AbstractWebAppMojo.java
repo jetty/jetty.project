@@ -290,7 +290,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     @Parameter
     protected int stopPort;
     
-    
     /**
      * Key to provide when stopping jetty on executing java -DSTOP.KEY=&lt;stopKey&gt; 
      * -DSTOP.PORT=&lt;stopPort&gt; -jar start.jar --stop
@@ -319,6 +318,13 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      */
     @Parameter
     protected String[] modules;
+
+    /**
+     * Extra options that can be passed to the jetty command line
+     */
+    @Parameter (property = "jetty.options")
+    protected String jettyOptions;
+
     //End of EXTERNAL only parameters
 
     //Start of parameters only valid for FORK
@@ -511,6 +517,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         jetty.setStopPort(stopPort);
         jetty.setEnv(env);
         jetty.setJvmArgs(jvmArgs);
+        jetty.setJettyOptions(jettyOptions);
         jetty.setJettyXmlFiles(jettyXmls);
         jetty.setJettyProperties(jettyProperties);
         jetty.setModules(modules);
