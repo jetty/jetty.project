@@ -62,7 +62,7 @@ public class WebAppProvider extends ScanningAppProvider
 
     private boolean _extractWars = false;
     private boolean _parentLoaderPriority = false;
-    private boolean _stopOnWebappFail = false;
+    private boolean _stopOnFailedDeploy = false;
     private ConfigurationManager _configurationManager;
     private String _defaultsDescriptor;
     private File _tempDirectory;
@@ -242,19 +242,19 @@ public class WebAppProvider extends ScanningAppProvider
      *
      * @return true of server should halt on webapp fail, false if server should remain running
      */
-    public boolean isStopOnWebappFail()
+    public boolean isStopOnFailedDeploy()
     {
-        return _stopOnWebappFail;
+        return _stopOnFailedDeploy;
     }
 
     /**
      * Set if server should halt on startup or not when webapp fails
      *
-     * @param stopOnWebappFail true if webapp deployment fail should halt server
+     * @param stopOnFailedDeploy true if webapp deployment fail should halt server
      */
-    public void setStopOnWebappFail(boolean stopOnWebappFail)
+    public void setStopOnFailedDeploy(boolean stopOnFailedDeploy)
     {
-        _stopOnWebappFail = stopOnWebappFail;
+        _stopOnFailedDeploy = stopOnFailedDeploy;
     }
 
     protected void initializeWebAppContextDefaults(WebAppContext webapp)
@@ -356,8 +356,8 @@ public class WebAppProvider extends ScanningAppProvider
 
         webAppContext.setDefaultContextPath(context);
         webAppContext.setWar(file.getAbsolutePath());
+        webAppContext.setThrowUnavailableOnStartupException(_stopOnFailedDeploy);
         initializeWebAppContextDefaults(webAppContext);
-        webAppContext.setThrowUnavailableOnStartupException(_stopOnWebappFail);
 
         return webAppContext;
     }

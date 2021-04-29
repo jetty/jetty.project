@@ -55,7 +55,7 @@
               </Set>
               <Set name="scanInterval"><Property name="jetty.deploy.scanInterval" default="1"/></Set>
               <Set name="extractWars"><Property name="jetty.deploy.extractWars" default="true"/></Set>
-              <Set name="stopOnWebappFail"><Property name="jetty.deploy.stopOnWebappFail" default="false"/></Set>
+              <Set name="stopOnFailedDeploy"><Property name="jetty.deploy.stopOnFailedDeploy" default="false"/></Set>
               <Set name="configurationManager">
                 <New class="org.eclipse.jetty.deploy.PropertiesConfigurationManager">
                   <!-- file of context configuration properties
