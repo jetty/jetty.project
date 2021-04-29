@@ -18,6 +18,7 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -61,11 +62,12 @@ public class AbstractTest
 
     protected void prepareClient()
     {
-        http2Client = new HTTP2Client();
-        client = new HttpClient(new HttpClientTransportOverHTTP2(http2Client));
         QueuedThreadPool clientExecutor = new QueuedThreadPool();
         clientExecutor.setName("client");
-        this.client.setExecutor(clientExecutor);
+        ClientConnector connector = new ClientConnector();
+        connector.setExecutor(clientExecutor);
+        http2Client = new HTTP2Client(connector);
+        client = new HttpClient(new HttpClientTransportOverHTTP2(http2Client));
     }
 
     @AfterEach

@@ -75,6 +75,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     private long dataDemand;
     private boolean dataInitial;
     private boolean dataProcess;
+    private boolean committed;
 
     public HTTP2Stream(Scheduler scheduler, ISession session, int streamId, MetaData.Request request, boolean local)
     {
@@ -251,6 +252,18 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     public boolean isLocallyClosed()
     {
         return closeState.get() == CloseState.LOCALLY_CLOSED;
+    }
+
+    @Override
+    public void commit()
+    {
+        committed = true;
+    }
+
+    @Override
+    public boolean isCommitted()
+    {
+        return committed;
     }
 
     @Override

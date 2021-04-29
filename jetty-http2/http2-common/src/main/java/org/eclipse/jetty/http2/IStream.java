@@ -130,6 +130,19 @@ public interface IStream extends Stream, Attachable, Closeable
     boolean isResetOrFailed();
 
     /**
+     * Marks this stream as committed.
+     *
+     * @see #isCommitted()
+     */
+    void commit();
+
+    /**
+     * @return whether bytes for this stream have been sent to the remote peer.
+     * @see #commit()
+     */
+    boolean isCommitted();
+
+    /**
      * <p>An ordered list of frames belonging to the same stream.</p>
      */
     public static class FrameList
