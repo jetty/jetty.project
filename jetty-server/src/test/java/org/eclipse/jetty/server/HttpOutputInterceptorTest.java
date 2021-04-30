@@ -186,7 +186,6 @@ public class HttpOutputInterceptorTest
         assertThat(error.getMessage(), containsString("thrown from interceptor"));
     }
 
-
     @Test
     public void testAsyncWriteFailed() throws Exception
     {
