@@ -51,7 +51,6 @@ public class HttpOutputInterceptorTest
 
     private Server _server;
     private LocalConnector _localConnector;
-    private ServerConnector _serverConnector;
     private HandlerCollection _handlerCollection;
     private StacklessLogging _stacklessLogging;
 
@@ -66,8 +65,8 @@ public class HttpOutputInterceptorTest
         _localConnector = new LocalConnector(_server, new HttpConnectionFactory(config));
         _localConnector.setIdleTimeout(Duration.ofMinutes(1).toMillis());
         _server.addConnector(_localConnector);
-        _serverConnector = new ServerConnector(_server, new HttpConnectionFactory(config));
-        _server.addConnector(_serverConnector);
+        ServerConnector serverConnector = new ServerConnector(_server, new HttpConnectionFactory(config));
+        _server.addConnector(serverConnector);
 
         _handlerCollection = new HandlerCollection();
         _server.setHandler(_handlerCollection);
@@ -241,7 +240,6 @@ public class HttpOutputInterceptorTest
                         {
                             response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
                             response.addHeader("throwableFromOnError", t.getMessage());
-                            response.setContentLength(0);
                         }
 
                         asyncContext.complete();
@@ -254,8 +252,6 @@ public class HttpOutputInterceptorTest
         String rawResponse = _localConnector.getResponse("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(500));
-
-        errorFuture.get().printStackTrace();
 
         assertThat(response.get("throwableFromOnError"), is("callback failed from interceptor"));
 
@@ -327,7 +323,6 @@ public class HttpOutputInterceptorTest
                         {
                             response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
                             response.addHeader("throwableFromOnError", t.getMessage());
-                            response.setContentLength(0);
                         }
 
                         asyncContext.complete();

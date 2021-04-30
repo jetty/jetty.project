@@ -750,8 +750,11 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
-    private void checkWritable() throws EofException
+    private void checkWritable() throws IOException
     {
+        if (_onError != null)
+            IO.throwIOException(_onError);
+
         if (_softClose)
                 throw new EofException("Closed");
 
@@ -764,9 +767,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             default:
                 break;
         }
-
-        if (_onError != null)
-            throw new EofException(_onError);
     }
 
     @Override
