@@ -191,6 +191,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private WriteListener _writeListener;
     private volatile Throwable _onError;
     private Callback _closedCallback;
+    private volatile boolean _abortOnCloseError;
 
     public HttpOutput(HttpChannel channel)
     {
@@ -266,7 +267,14 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 _firstByteTimeStamp = Long.MAX_VALUE;
         }
 
-        _interceptor.write(content, last, callback);
+        try
+        {
+            _interceptor.write(content, last, callback);
+        }
+        catch (Throwable t)
+        {
+            callback.failed(t);
+        }
     }
 
     private void onWriteComplete(boolean last, Throwable failure)
@@ -310,7 +318,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         try
         {
             if (failure != null)
-                _channel.abort(failure);
+            {
+                if (_channel.isCommitted() || _abortOnCloseError)
+                    _channel.abort(failure);
+            }
 
             if (closedCallback != null)
             {
@@ -519,15 +530,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         try (AutoLock l = _channelState.lock())
         {
             if (_onError != null)
-            {
-                if (_onError instanceof IOException)
-                    throw (IOException)_onError;
-                if (_onError instanceof RuntimeException)
-                    throw (RuntimeException)_onError;
-                if (_onError instanceof Error)
-                    throw (Error)_onError;
-                throw new IOException(_onError);
-            }
+                IO.throwIOException(_onError);
 
             switch (_state)
             {
@@ -613,6 +616,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             {
                 // Do an async close
                 channelWrite(content, true, new WriteCompleteCB());
+
+                // If an asynchronous error has happened already we can throw it here.
+                // Otherwise the async call to onWriteComplete must abort if there is a failure as onError may not be called.
+                _abortOnCloseError = true;
+                if (_onError != null)
+                    IO.throwIOException(_onError);
             }
             else
             {
