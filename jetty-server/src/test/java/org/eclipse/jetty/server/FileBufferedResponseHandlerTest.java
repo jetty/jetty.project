@@ -511,9 +511,7 @@ public class FileBufferedResponseHandlerTest
         _server.start();
         String rawResponse = _localConnector.getResponse("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-
-        // Response was aborted.
-        assertThat(response.getStatus(), is(0));
+        assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
 
         // We failed because of the next interceptor.
         Throwable error = errorFuture.get(5, TimeUnit.SECONDS);
@@ -559,9 +557,7 @@ public class FileBufferedResponseHandlerTest
         _server.start();
         String rawResponse = _localConnector.getResponse("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-
-        // Response was aborted.
-        assertThat(response.getStatus(), is(0));
+        assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
 
         // We failed because cannot create the file.
         Throwable error = errorFuture.get(5, TimeUnit.SECONDS);

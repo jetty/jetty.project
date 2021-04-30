@@ -260,6 +260,90 @@ public class HttpOutputInterceptorTest
     }
 
     @Test
+    public void testAsyncFlushFailed() throws Exception
+    {
+        addInterceptor(nextInterceptor -> new HttpOutput.Interceptor()
+        {
+            @Override
+            public void write(ByteBuffer content, boolean last, Callback callback)
+            {
+                callback.failed(new RuntimeException("callback failed from interceptor"));
+            }
+
+            @Override
+            public HttpOutput.Interceptor getNextInterceptor()
+            {
+                return nextInterceptor;
+            }
+        });
+
+        CompletableFuture<Throwable> errorFuture = new CompletableFuture<>();
+        AtomicInteger onErrorCount = new AtomicInteger(0);
+        _handlerCollection.addHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                baseRequest.setHandled(true);
+                byte[] content = "content to be written".getBytes();
+                AsyncContext asyncContext = request.startAsync();
+                baseRequest.getResponse().getHttpOutput().setBufferSize(content.length * 2);
+                ServletOutputStream outputStream = response.getOutputStream();
+                outputStream.setWriteListener(new WriteListener()
+                {
+                    private int state = 0;
+
+                    @Override
+                    public void onWritePossible() throws IOException
+                    {
+                        while (outputStream.isReady())
+                        {
+                            switch (state++)
+                            {
+                                case 0:
+                                    outputStream.write(content);
+                                    break;
+                                case 1:
+                                case 2:
+                                    // First flush will cause be failed in the interceptor, second flush will throw the error.
+                                    outputStream.flush();
+                                    break;
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onError(Throwable t)
+                    {
+                        // Record some information for testing.
+                        onErrorCount.incrementAndGet();
+                        errorFuture.complete(t);
+
+                        // Try to send back a 500 response instead of aborting the connection.
+                        if (!response.isCommitted())
+                        {
+                            response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
+                            response.addHeader("throwableFromOnError", t.getMessage());
+                        }
+
+                        asyncContext.complete();
+                    }
+                });
+            }
+        });
+
+        _server.start();
+        String rawResponse = _localConnector.getResponse("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(500));
+        assertThat(response.get("throwableFromOnError"), is("callback failed from interceptor"));
+
+        assertThat(onErrorCount.get(), is(1));
+        Throwable error = errorFuture.get(5, TimeUnit.SECONDS);
+        assertThat(error.getMessage(), containsString("callback failed from interceptor"));
+    }
+
+    @Test
     public void testAsyncCloseFailed() throws Exception
     {
         addInterceptor(nextInterceptor -> new HttpOutput.Interceptor()

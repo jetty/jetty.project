@@ -530,7 +530,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         try (AutoLock l = _channelState.lock())
         {
             if (_onError != null)
-                IO.throwIOException(_onError);
+                IO.throwCheckedIOException(_onError);
 
             switch (_state)
             {
@@ -621,7 +621,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 // Otherwise the async call to onWriteComplete must abort if there is a failure as onError may not be called.
                 _abortOnCloseError = true;
                 if (_onError != null)
-                    IO.throwIOException(_onError);
+                    IO.throwCheckedIOException(_onError);
             }
             else
             {
@@ -700,6 +700,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         ByteBuffer content = null;
         try (AutoLock l = _channelState.lock())
         {
+            if (_onError != null)
+                IO.throwCheckedIOException(_onError);
+
             switch (_state)
             {
                 case CLOSED:
@@ -753,7 +756,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private void checkWritable() throws IOException
     {
         if (_onError != null)
-            IO.throwIOException(_onError);
+            IO.throwCheckedIOException(_onError);
 
         if (_softClose)
                 throw new EofException("Closed");

@@ -508,13 +508,12 @@ public class IO
     }
 
     /**
-     * Throw an {@link IOException} given a {@link Throwable}, if the supplied throwable is itself an {@link IOException}
-     * it will be thrown, otherwise it will be wrapped with {@link IOException}. If the supplied throwable is a
-     * {@link RuntimeException} or an {@link Error} it will be thrown without being wrapped in {@link IOException}.
+     * This method will throw the supplied {@link Throwable} if it is an instance of {@link IOException},
+     * {@link RuntimeException} or {@link Error}. Otherwise it will be wrapped in a new {@link IOException} and thrown.
      * @param t the cause of the exception.
      * @throws IOException if supplied throwable is not RuntimeException or Error.
      */
-    public static void throwIOException(Throwable t) throws IOException
+    public static void throwCheckedIOException(Throwable t) throws IOException
     {
         if (t instanceof IOException)
             throw (IOException)t;
