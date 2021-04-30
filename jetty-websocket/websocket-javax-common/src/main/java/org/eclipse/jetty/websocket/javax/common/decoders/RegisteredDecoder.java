@@ -17,6 +17,7 @@ import java.lang.reflect.InvocationTargetException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.javax.common.InitException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,21 +33,23 @@ public class RegisteredDecoder
     public final Class<?> objectType;
     public final boolean primitive;
     public final EndpointConfig config;
+    private final WebSocketComponents components;
 
     private Decoder instance;
 
-    public RegisteredDecoder(Class<? extends Decoder> decoder, Class<? extends Decoder> interfaceType, Class<?> objectType, EndpointConfig endpointConfig)
+    public RegisteredDecoder(Class<? extends Decoder> decoder, Class<? extends Decoder> interfaceType, Class<?> objectType, EndpointConfig endpointConfig, WebSocketComponents components)
     {
-        this(decoder, interfaceType, objectType, endpointConfig, false);
+        this(decoder, interfaceType, objectType, endpointConfig, components, false);
     }
 
-    public RegisteredDecoder(Class<? extends Decoder> decoder, Class<? extends Decoder> interfaceType, Class<?> objectType, EndpointConfig endpointConfig, boolean primitive)
+    public RegisteredDecoder(Class<? extends Decoder> decoder, Class<? extends Decoder> interfaceType, Class<?> objectType, EndpointConfig endpointConfig, WebSocketComponents components, boolean primitive)
     {
         this.decoder = decoder;
         this.interfaceType = interfaceType;
         this.objectType = objectType;
         this.primitive = primitive;
         this.config = endpointConfig;
+        this.components = components;
     }
 
     public boolean implementsInterface(Class<? extends Decoder> type)
@@ -65,7 +68,7 @@ public class RegisteredDecoder
         {
             try
             {
-                instance = decoder.getConstructor().newInstance();
+                instance = components.getObjectFactory().createInstance(decoder);
                 instance.init(config);
                 return (T)instance;
             }

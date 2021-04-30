@@ -19,6 +19,7 @@ import javax.websocket.ClientEndpointConfig;
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.websocket.core.CoreSession;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.javax.common.encoders.AvailableEncoders;
 import org.junit.jupiter.api.AfterAll;
@@ -45,13 +46,22 @@ public abstract class AbstractJavaxWebSocketFrameHandlerTest
     protected AvailableDecoders decoders;
     protected Map<String, String> uriParams;
     protected EndpointConfig endpointConfig;
-    protected CoreSession coreSession = new CoreSession.Empty();
+    protected CoreSession coreSession = new CoreSession.Empty()
+    {
+        private final WebSocketComponents components = new WebSocketComponents();
+
+        @Override
+        public WebSocketComponents getWebSocketComponents()
+        {
+            return components;
+        }
+    };
 
     public AbstractJavaxWebSocketFrameHandlerTest()
     {
         endpointConfig = ClientEndpointConfig.Builder.create().build();
-        encoders = new AvailableEncoders(endpointConfig);
-        decoders = new AvailableDecoders(endpointConfig);
+        encoders = new AvailableEncoders(endpointConfig, coreSession.getWebSocketComponents());
+        decoders = new AvailableDecoders(endpointConfig, coreSession.getWebSocketComponents());
         uriParams = new HashMap<>();
     }
 

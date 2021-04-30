@@ -40,6 +40,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.Behavior;
@@ -291,7 +292,12 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
             headers(headers -> headers.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, extensionString));
 
         // Notify the listener which may change the headers directly.
-        notifyUpgradeListeners((listener) -> listener.onHandshakeRequest(this));
+        Exception listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeRequest(this));
+        if (listenerError != null)
+        {
+            abort(listenerError);
+            return;
+        }
 
         // Check if extensions were set in the headers from the upgrade listener.
         String extsAfterListener = String.join(",", getHeaders().getCSV(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, true));
@@ -306,8 +312,9 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
         }
     }
 
-    private void notifyUpgradeListeners(Consumer<UpgradeListener> action)
+    private Exception notifyUpgradeListeners(Consumer<UpgradeListener> action)
     {
+        MultiException multiException = null;
         for (UpgradeListener listener : upgradeListeners)
         {
             try
@@ -317,8 +324,13 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
             catch (Throwable t)
             {
                 LOG.info("Exception while invoking listener {}", listener, t);
+                if (multiException == null)
+                     multiException = new MultiException();
+                multiException.add(t);
             }
         }
+
+        return multiException;
     }
 
     public void upgrade(HttpResponse response, EndPoint endPoint)
@@ -437,7 +449,9 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
         WebSocketConnection wsConnection = new WebSocketConnection(endPoint, httpClient.getExecutor(), httpClient.getScheduler(), bufferPool, coreSession);
         wsClient.getEventListeners().forEach(wsConnection::addEventListener);
         coreSession.setWebSocketConnection(wsConnection);
-        notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(this, response));
+        Exception listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(this, response));
+        if (listenerError != null)
+            throw new WebSocketException("onHandshakeResponse error", listenerError);
 
         // Now swap out the connection
         try

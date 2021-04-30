@@ -159,8 +159,6 @@ public class JavaxWebSocketCreator implements WebSocketCreator
             // [JSR] Step 6: create endpoint class
             Class<?> endpointClass = config.getEndpointClass();
             Object endpoint = config.getConfigurator().getEndpointInstance(endpointClass);
-            // Do not decorate here (let the Connection and Session start first)
-            // This will allow CDI to see Session for injection into Endpoint classes.
             return new ConfiguredEndpoint(endpoint, config);
         }
         catch (InstantiationException e)

@@ -40,9 +40,9 @@ public class WebSocketServerComponents extends WebSocketComponents
     public static final String WEBSOCKET_DEFLATER_POOL_ATTRIBUTE = "jetty.websocket.deflater";
     public static final String WEBSOCKET_BUFFER_POOL_ATTRIBUTE = "jetty.websocket.bufferPool";
 
-    WebSocketServerComponents(InflaterPool inflaterPool, DeflaterPool deflaterPool, ByteBufferPool bufferPool)
+    WebSocketServerComponents(InflaterPool inflaterPool, DeflaterPool deflaterPool, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory)
     {
-        super(null, null, bufferPool, inflaterPool, deflaterPool);
+        super(null, objectFactory, bufferPool, inflaterPool, deflaterPool);
     }
 
     /**
@@ -79,7 +79,10 @@ public class WebSocketServerComponents extends WebSocketComponents
         if (bufferPool == null)
             bufferPool = server.getBean(ByteBufferPool.class);
 
-        WebSocketComponents serverComponents = new WebSocketServerComponents(inflaterPool, deflaterPool, bufferPool);
+        DecoratedObjectFactory objectFactory = (DecoratedObjectFactory)servletContext.getAttribute(DecoratedObjectFactory.ATTR);
+        WebSocketComponents serverComponents = new WebSocketServerComponents(inflaterPool, deflaterPool, bufferPool, objectFactory);
+        if (objectFactory != null)
+            serverComponents.unmanage(objectFactory);
 
         // These components may be managed by the server but not yet started.
         // In this case we don't want them to be managed by the components as well.

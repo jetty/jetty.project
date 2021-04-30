@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
 
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
@@ -36,79 +37,15 @@ public class AvailableEncoders implements Predicate<Class<?>>, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(AvailableEncoders.class);
 
-    public static class RegisteredEncoder
-    {
-        public final Class<? extends Encoder> encoder;
-        public final Class<? extends Encoder> interfaceType;
-        public final Class<?> objectType;
-        public final boolean primitive;
-        public Encoder instance;
-
-        public RegisteredEncoder(Class<? extends Encoder> encoder, Class<? extends Encoder> interfaceType, Class<?> objectType)
-        {
-            this(encoder, interfaceType, objectType, false);
-        }
-
-        public RegisteredEncoder(Class<? extends Encoder> encoder, Class<? extends Encoder> interfaceType, Class<?> objectType, boolean primitive)
-        {
-            this.encoder = encoder;
-            this.interfaceType = interfaceType;
-            this.objectType = objectType;
-            this.primitive = primitive;
-        }
-
-        public boolean implementsInterface(Class<? extends Encoder> type)
-        {
-            return interfaceType.isAssignableFrom(type);
-        }
-
-        public boolean isType(Class<?> type)
-        {
-            return objectType.isAssignableFrom(type);
-        }
-
-        public void destroyInstance()
-        {
-            if (instance != null)
-            {
-                try
-                {
-                    instance.destroy();
-                }
-                catch (Throwable t)
-                {
-                    LOG.warn("Error destroying Decoder", t);
-                }
-
-                instance = null;
-            }
-        }
-
-        @Override
-        public String toString()
-        {
-            StringBuilder str = new StringBuilder();
-            str.append(AvailableEncoders.RegisteredEncoder.class.getSimpleName());
-            str.append('[').append(encoder.getName());
-            str.append(',').append(interfaceType.getName());
-            str.append(',').append(objectType.getName());
-            if (primitive)
-            {
-                str.append(",PRIMITIVE");
-            }
-            str.append(']');
-            return str.toString();
-        }
-    }
-
     private final EndpointConfig config;
-    private LinkedList<RegisteredEncoder> registeredEncoders;
+    private final WebSocketComponents components;
+    private final LinkedList<RegisteredEncoder> registeredEncoders;
 
-    public AvailableEncoders(EndpointConfig config)
+    public AvailableEncoders(EndpointConfig config, WebSocketComponents components)
     {
-        Objects.requireNonNull(config);
-        this.config = config;
-        registeredEncoders = new LinkedList<>();
+        this.config = Objects.requireNonNull(config);
+        this.components = Objects.requireNonNull(components);
+        this.registeredEncoders = new LinkedList<>();
 
         // TEXT based [via Class reference]
         registerPrimitive(BooleanEncoder.class, Encoder.Text.class, Boolean.class);
@@ -289,7 +226,7 @@ public class AvailableEncoders implements Predicate<Class<?>>, Closeable
                 return registeredEncoder.instance;
             }
 
-            registeredEncoder.instance = registeredEncoder.encoder.getConstructor().newInstance();
+            registeredEncoder.instance = components.getObjectFactory().createInstance(registeredEncoder.encoder);
             registeredEncoder.instance.init(this.config);
             return registeredEncoder.instance;
         }
