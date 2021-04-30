@@ -18,17 +18,18 @@ import java.util.List;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.ClientEndpointConfig;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.jakarta.common.ClientEndpointConfigWrapper;
 
 public class AnnotatedClientEndpointConfig extends ClientEndpointConfigWrapper
 {
-    public AnnotatedClientEndpointConfig(ClientEndpoint anno)
+    public AnnotatedClientEndpointConfig(ClientEndpoint anno, WebSocketComponents components)
     {
         Configurator configurator;
         try
         {
-            configurator = anno.configurator().getDeclaredConstructor().newInstance();
+            configurator = components.getObjectFactory().createInstance(anno.configurator());
         }
         catch (Exception e)
         {

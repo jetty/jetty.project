@@ -44,7 +44,7 @@ public class DummyFrameHandlerFactory extends JakartaWebSocketFrameHandlerFactor
             return null;
         }
 
-        JakartaWebSocketFrameHandlerMetadata metadata = new JakartaWebSocketFrameHandlerMetadata(endpointConfig);
+        JakartaWebSocketFrameHandlerMetadata metadata = new JakartaWebSocketFrameHandlerMetadata(endpointConfig, components);
         return discoverJakartaFrameHandlerMetadata(endpointClass, metadata);
     }
 }

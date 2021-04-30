@@ -66,6 +66,11 @@ public abstract class JakartaWebSocketContainer extends ContainerLifeCycle imple
         return components.getObjectFactory();
     }
 
+    public WebSocketComponents getWebSocketComponents()
+    {
+        return components;
+    }
+
     public long getDefaultAsyncSendTimeout()
     {
         return defaultCustomizer.getWriteTimeout().toMillis();

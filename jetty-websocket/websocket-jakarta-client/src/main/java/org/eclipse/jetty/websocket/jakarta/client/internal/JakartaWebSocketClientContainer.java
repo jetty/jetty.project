@@ -229,9 +229,16 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
     @Override
     public Session connectToServer(final Endpoint endpoint, final ClientEndpointConfig providedConfig, final URI path) throws DeploymentException, IOException
     {
-        ClientEndpointConfig config = providedConfig;
-        if (config == null)
+        ClientEndpointConfig config;
+        if (providedConfig == null)
+        {
             config = new BasicClientEndpointConfig();
+        }
+        else
+        {
+            config = providedConfig;
+            components.getObjectFactory().decorate(providedConfig.getConfigurator());
+        }
 
         ConfiguredEndpoint instance = new ConfiguredEndpoint(endpoint, config);
         return connect(instance, path);
@@ -240,6 +247,7 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
     @Override
     public Session connectToServer(Object endpoint, URI path) throws DeploymentException, IOException
     {
+        // The Configurator will be decorated when it is created in the getAnnotatedConfig method.
         ClientEndpointConfig config = getAnnotatedConfig(endpoint);
         ConfiguredEndpoint instance = new ConfiguredEndpoint(endpoint, config);
         return connect(instance, path);
@@ -275,7 +283,7 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
         if (anno == null)
             throw new DeploymentException("Could not get ClientEndpoint annotation for " + endpoint.getClass().getName());
 
-        return new AnnotatedClientEndpointConfig(anno);
+        return new AnnotatedClientEndpointConfig(anno, components);
     }
 
     @Override

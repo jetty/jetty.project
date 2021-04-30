@@ -42,7 +42,7 @@ public class JakartaWebSocketServerFrameHandlerFactory extends JakartaWebSocketC
             return super.getMetadata(endpointClass, endpointConfig);
 
         UriTemplatePathSpec templatePathSpec = new UriTemplatePathSpec(anno.value());
-        JakartaWebSocketFrameHandlerMetadata metadata = new JakartaWebSocketFrameHandlerMetadata(endpointConfig);
+        JakartaWebSocketFrameHandlerMetadata metadata = new JakartaWebSocketFrameHandlerMetadata(endpointConfig, components);
         metadata.setUriTemplatePathSpec(templatePathSpec);
         return discoverJakartaFrameHandlerMetadata(endpointClass, metadata);
     }

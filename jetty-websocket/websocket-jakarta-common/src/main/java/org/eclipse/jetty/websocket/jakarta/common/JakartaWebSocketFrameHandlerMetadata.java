@@ -18,6 +18,7 @@ import java.lang.invoke.MethodHandle;
 import jakarta.websocket.Encoder;
 import jakarta.websocket.EndpointConfig;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.jakarta.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jakarta.common.encoders.AvailableEncoders;
@@ -64,10 +65,10 @@ public class JakartaWebSocketFrameHandlerMetadata
      */
     private UriTemplatePathSpec uriTemplatePathSpec;
 
-    public JakartaWebSocketFrameHandlerMetadata(EndpointConfig endpointConfig)
+    public JakartaWebSocketFrameHandlerMetadata(EndpointConfig endpointConfig, WebSocketComponents components)
     {
-        this.availableDecoders = new AvailableDecoders(endpointConfig);
-        this.availableEncoders = new AvailableEncoders(endpointConfig);
+        this.availableDecoders = new AvailableDecoders(endpointConfig, components);
+        this.availableEncoders = new AvailableEncoders(endpointConfig, components);
     }
 
     public AvailableDecoders getAvailableDecoders()

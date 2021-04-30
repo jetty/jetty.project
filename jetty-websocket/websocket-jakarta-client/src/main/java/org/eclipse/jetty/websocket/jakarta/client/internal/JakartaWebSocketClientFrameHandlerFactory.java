@@ -47,7 +47,7 @@ public class JakartaWebSocketClientFrameHandlerFactory extends JakartaWebSocketF
         if (endpointClass.getAnnotation(ClientEndpoint.class) == null)
             return null;
 
-        JakartaWebSocketFrameHandlerMetadata metadata = new JakartaWebSocketFrameHandlerMetadata(endpointConfig);
+        JakartaWebSocketFrameHandlerMetadata metadata = new JakartaWebSocketFrameHandlerMetadata(endpointConfig, components);
         return discoverJakartaFrameHandlerMetadata(endpointClass, metadata);
     }
 }
