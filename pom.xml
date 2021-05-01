@@ -972,7 +972,7 @@
         <plugin>
           <groupId>org.mortbay.jetty</groupId>
           <artifactId>h2spec-maven-plugin</artifactId>
-          <version>1.0.3</version>
+          <version>1.0.5-SNAPSHOT</version>
         </plugin>
       </plugins>
     </pluginManagement>
