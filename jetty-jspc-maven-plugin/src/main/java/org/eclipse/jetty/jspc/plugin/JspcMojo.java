@@ -65,7 +65,8 @@ import org.eclipse.jetty.util.resource.Resource;
  * </p>
  * Runs jspc compiler to produce .java and .class files
  */
-@Mojo(name = "jspc", defaultPhase = LifecyclePhase.PROCESS_CLASSES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
+@Mojo(name = "jspc", defaultPhase = LifecyclePhase.PROCESS_CLASSES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME,
+    threadSafe = true)
 public class JspcMojo extends AbstractMojo
 {
     public static final String END_OF_WEBAPP = "</web-app>";
@@ -242,12 +243,6 @@ public class JspcMojo extends AbstractMojo
     private String targetVersion;
 
     /**
-     * The JspC instance being used to compile the jsps.
-     */
-    @Parameter
-    private JettyJspC jspc;
-
-    /**
      * Whether dirs on the classpath should be scanned as well as jars.
      * True by default. This allows for scanning for tlds of dependent projects that
      * are in the reactor as unassembled jars.
@@ -330,8 +325,7 @@ public class JspcMojo extends AbstractMojo
         URLClassLoader fakeWebAppClassLoader = new URLClassLoader(new URL[0], webAppClassLoader);
         Thread.currentThread().setContextClassLoader(fakeWebAppClassLoader);
 
-        if (jspc == null)
-            jspc = new JettyJspC();
+        JettyJspC jspc = new JettyJspC();
 
         jspc.setWebXmlInclude(webXmlFragment);
         jspc.setUriroot(webAppSourceDirectory);
