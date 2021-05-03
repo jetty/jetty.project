@@ -96,6 +96,8 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
                 WebSocketMappings.ensureMappings(servletContext),
                 WebSocketServerComponents.getWebSocketComponents(servletContext),
                 coreClientSupplier);
+
+            // Manage the lifecycle (removes itself removed in lifeCycleStopping() method).
             contextHandler.addManaged(container);
             contextHandler.addEventListener(container);
         }

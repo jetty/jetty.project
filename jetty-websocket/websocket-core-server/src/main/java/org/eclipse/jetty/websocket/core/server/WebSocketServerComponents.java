@@ -91,15 +91,14 @@ public class WebSocketServerComponents extends WebSocketComponents
             serverComponents.unmanage(bufferPool);
 
         // Stop the WebSocketComponents when the ContextHandler stops.
-        // Don't use ServletContextListener as it will be a durable listener.
         ContextHandler contextHandler = Objects.requireNonNull(ContextHandler.getContextHandler(servletContext));
-        LifeCycle.start(serverComponents);
+        contextHandler.addManaged(serverComponents);
         contextHandler.addEventListener(new LifeCycle.Listener()
         {
             @Override
             public void lifeCycleStopping(LifeCycle event)
             {
-                LifeCycle.stop(serverComponents);
+                contextHandler.removeBean(serverComponents);
                 contextHandler.removeEventListener(this);
             }
         });
