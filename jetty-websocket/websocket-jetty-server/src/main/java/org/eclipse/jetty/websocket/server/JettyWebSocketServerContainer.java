@@ -80,12 +80,23 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         WebSocketMappings mappings = WebSocketMappings.ensureMappings(servletContext);
         WebSocketComponents components = WebSocketServerComponents.getWebSocketComponents(servletContext);
         JettyWebSocketServerContainer container = new JettyWebSocketServerContainer(contextHandler, mappings, components, executor);
-        servletContext.setAttribute(JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE, container);
 
-        // Manage the lifecycle (removes itself removed in lifeCycleStopping() method).
+        // Manage the lifecycle of the Container.
         contextHandler.addManaged(container);
         contextHandler.addEventListener(container);
+        contextHandler.addEventListener(new LifeCycle.Listener()
+        {
+            @Override
+            public void lifeCycleStopping(LifeCycle event)
+            {
+                contextHandler.getServletContext().removeAttribute(JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE);
+                contextHandler.removeBean(container);
+                contextHandler.removeEventListener(container);
+                contextHandler.removeEventListener(this);
+            }
+        });
 
+        servletContext.setAttribute(JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE, container);
         return container;
     }
 
@@ -118,13 +129,6 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
 
         addSessionListener(sessionTracker);
         addBean(sessionTracker);
-    }
-
-    @Override
-    public void lifeCycleStopping(LifeCycle event)
-    {
-        contextHandler.removeBean(this);
-        contextHandler.removeEventListener(this);
     }
 
     public void addMapping(String pathSpec, JettyWebSocketCreator creator)

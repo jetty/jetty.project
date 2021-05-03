@@ -98,6 +98,7 @@ public class WebSocketServerComponents extends WebSocketComponents
             @Override
             public void lifeCycleStopping(LifeCycle event)
             {
+                servletContext.removeAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE);
                 contextHandler.removeBean(serverComponents);
                 contextHandler.removeEventListener(this);
             }

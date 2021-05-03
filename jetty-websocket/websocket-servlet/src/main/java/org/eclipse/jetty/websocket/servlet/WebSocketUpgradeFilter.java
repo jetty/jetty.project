@@ -131,10 +131,20 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
                 @Override
                 public void lifeCycleStopping(LifeCycle event)
                 {
+                    // Remove the FilterHolder.
                     FilterHolder[] holders = Arrays.stream(servletHandler.getFilters())
                         .filter(h -> h != holder)
                         .toArray(FilterHolder[]::new);
                     servletHandler.setFilters(holders);
+
+                    // Remove the FilterMapping.
+                    FilterMapping[] mappings = Arrays.stream(servletHandler.getFilterMappings())
+                        .filter(m -> m != mapping)
+                        .toArray(FilterMapping[]::new);
+                    servletHandler.setFilterMappings(mappings);
+
+                    // Remove this event listener.
+                    contextHandler.removeEventListener(this);
                 }
             });
 

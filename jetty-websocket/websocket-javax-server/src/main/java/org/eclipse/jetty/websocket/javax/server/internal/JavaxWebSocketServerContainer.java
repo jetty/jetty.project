@@ -59,48 +59,60 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
         if (contextHandler.getServer() == null)
             throw new IllegalStateException("Server has not been set on the ServletContextHandler");
 
-        JavaxWebSocketServerContainer container = getContainer(servletContext);
-        if (container == null)
+        JavaxWebSocketServerContainer containerFromServletContext = getContainer(servletContext);
+        if (containerFromServletContext != null)
+            return containerFromServletContext;
+
+        Function<WebSocketComponents, WebSocketCoreClient> coreClientSupplier = (wsComponents) ->
         {
-            Function<WebSocketComponents, WebSocketCoreClient> coreClientSupplier = (wsComponents) ->
+            WebSocketCoreClient coreClient = (WebSocketCoreClient)servletContext.getAttribute(WebSocketCoreClient.WEBSOCKET_CORECLIENT_ATTRIBUTE);
+            if (coreClient == null)
             {
-                WebSocketCoreClient coreClient = (WebSocketCoreClient)servletContext.getAttribute(WebSocketCoreClient.WEBSOCKET_CORECLIENT_ATTRIBUTE);
-                if (coreClient == null)
-                {
-                    // Find Pre-Existing (Shared?) HttpClient and/or executor
-                    HttpClient httpClient = (HttpClient)servletContext.getAttribute(JavaxWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE);
-                    if (httpClient == null)
-                        httpClient = (HttpClient)contextHandler.getServer().getAttribute(JavaxWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE);
+                // Find Pre-Existing (Shared?) HttpClient and/or executor
+                HttpClient httpClient = (HttpClient)servletContext.getAttribute(JavaxWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE);
+                if (httpClient == null)
+                    httpClient = (HttpClient)contextHandler.getServer().getAttribute(JavaxWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE);
 
-                    Executor executor = httpClient == null ? null : httpClient.getExecutor();
-                    if (executor == null)
-                        executor = (Executor)servletContext.getAttribute("org.eclipse.jetty.server.Executor");
-                    if (executor == null)
-                        executor = contextHandler.getServer().getThreadPool();
+                Executor executor = httpClient == null ? null : httpClient.getExecutor();
+                if (executor == null)
+                    executor = (Executor)servletContext.getAttribute("org.eclipse.jetty.server.Executor");
+                if (executor == null)
+                    executor = contextHandler.getServer().getThreadPool();
 
-                    if (httpClient != null && httpClient.getExecutor() == null)
-                        httpClient.setExecutor(executor);
+                if (httpClient != null && httpClient.getExecutor() == null)
+                    httpClient.setExecutor(executor);
 
-                    // create the core client
-                    coreClient = new WebSocketCoreClient(httpClient, wsComponents);
-                    coreClient.getHttpClient().setName("Javax-WebSocketClient@" + Integer.toHexString(coreClient.getHttpClient().hashCode()));
-                    if (executor != null && httpClient == null)
-                        coreClient.getHttpClient().setExecutor(executor);
-                    servletContext.setAttribute(WebSocketCoreClient.WEBSOCKET_CORECLIENT_ATTRIBUTE, coreClient);
-                }
-                return coreClient;
-            };
+                // create the core client
+                coreClient = new WebSocketCoreClient(httpClient, wsComponents);
+                coreClient.getHttpClient().setName("Javax-WebSocketClient@" + Integer.toHexString(coreClient.getHttpClient().hashCode()));
+                if (executor != null && httpClient == null)
+                    coreClient.getHttpClient().setExecutor(executor);
+                servletContext.setAttribute(WebSocketCoreClient.WEBSOCKET_CORECLIENT_ATTRIBUTE, coreClient);
+            }
+            return coreClient;
+        };
 
-            // Create the Jetty ServerContainer implementation
-            container = new JavaxWebSocketServerContainer(
-                WebSocketMappings.ensureMappings(servletContext),
-                WebSocketServerComponents.getWebSocketComponents(servletContext),
-                coreClientSupplier);
+        // Create the Jetty ServerContainer implementation
+        JavaxWebSocketServerContainer container = new JavaxWebSocketServerContainer(
+            WebSocketMappings.ensureMappings(servletContext),
+            WebSocketServerComponents.getWebSocketComponents(servletContext),
+            coreClientSupplier);
 
-            // Manage the lifecycle (removes itself removed in lifeCycleStopping() method).
-            contextHandler.addManaged(container);
-            contextHandler.addEventListener(container);
-        }
+        // Manage the lifecycle of the Container.
+        contextHandler.addManaged(container);
+        contextHandler.addEventListener(container);
+        contextHandler.addEventListener(new LifeCycle.Listener()
+        {
+            @Override
+            public void lifeCycleStopping(LifeCycle event)
+            {
+                servletContext.removeAttribute(JAVAX_WEBSOCKET_CONTAINER_ATTRIBUTE);
+                contextHandler.removeBean(container);
+                contextHandler.removeEventListener(container);
+                contextHandler.removeEventListener(this);
+            }
+        });
+
         // Store a reference to the ServerContainer per - javax.websocket spec 1.0 final - section 6.4: Programmatic Server Deployment
         servletContext.setAttribute(JAVAX_WEBSOCKET_CONTAINER_ATTRIBUTE, container);
         return container;
@@ -140,18 +152,6 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
         super(components, coreClientSupplier);
         this.webSocketMappings = webSocketMappings;
         this.frameHandlerFactory = new JavaxWebSocketServerFrameHandlerFactory(this);
-    }
-
-    @Override
-    public void lifeCycleStopping(LifeCycle context)
-    {
-        ContextHandler contextHandler = (ContextHandler)context;
-        JavaxWebSocketServerContainer container = contextHandler.getBean(JavaxWebSocketServerContainer.class);
-        if (container == this)
-        {
-            contextHandler.removeBean(container);
-            LifeCycle.stop(container);
-        }
     }
 
     @Override

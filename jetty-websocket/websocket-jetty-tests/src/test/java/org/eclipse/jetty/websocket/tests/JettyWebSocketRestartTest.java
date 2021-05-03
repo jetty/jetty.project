@@ -34,6 +34,8 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JettyWebSocketRestartTest
@@ -66,7 +68,7 @@ public class JettyWebSocketRestartTest
     }
 
     @Test
-    public void testWebSocketUpgradeFilter() throws Exception
+    public void testWebSocketRestart() throws Exception
     {
         JettyWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
             container.addMapping("/", EchoSocket.class));
@@ -84,6 +86,8 @@ public class JettyWebSocketRestartTest
         assertThat(contextHandler.getEventListeners().size(), is(numEventListeners));
         assertThat(contextHandler.getContainedBeans(JettyWebSocketServerContainer.class).size(), is(1));
         assertThat(contextHandler.getContainedBeans(WebSocketServerComponents.class).size(), is(1));
+        assertNotNull(contextHandler.getServletContext().getAttribute(WebSocketServerComponents.WEBSOCKET_COMPONENTS_ATTRIBUTE));
+        assertNotNull(contextHandler.getServletContext().getAttribute(JettyWebSocketServerContainer.JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE));
 
         // We have one filter, and it is a WebSocketUpgradeFilter.
         FilterHolder[] filters = contextHandler.getServletHandler().getFilters();
@@ -95,6 +99,8 @@ public class JettyWebSocketRestartTest
         assertThat(contextHandler.getEventListeners().size(), is(0));
         assertThat(contextHandler.getContainedBeans(JettyWebSocketServerContainer.class).size(), is(0));
         assertThat(contextHandler.getContainedBeans(WebSocketServerComponents.class).size(), is(0));
+        assertNull(contextHandler.getServletContext().getAttribute(WebSocketServerComponents.WEBSOCKET_COMPONENTS_ATTRIBUTE));
+        assertNull(contextHandler.getServletContext().getAttribute(JettyWebSocketServerContainer.JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE));
         assertThat(contextHandler.getServletHandler().getFilters().length, is(0));
     }
 
