@@ -77,6 +77,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     @Deprecated
     public static final String CSRF_TOKEN = "org.eclipse.jetty.security.openid.csrf_token";
 
+    private final SecureRandom _secureRandom = new SecureRandom();
     private OpenIdConfiguration _configuration;
     private String _errorPage;
     private String _errorPath;
@@ -168,9 +169,12 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         {
             HttpSession session = ((HttpServletRequest)request).getSession();
             Authentication cached = new SessionAuthentication(getAuthMethod(), user, credentials);
-            session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, cached);
-            session.setAttribute(CLAIMS, ((OpenIdCredentials)credentials).getClaims());
-            session.setAttribute(RESPONSE, ((OpenIdCredentials)credentials).getResponse());
+            synchronized (session)
+            {
+                session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, cached);
+                session.setAttribute(CLAIMS, ((OpenIdCredentials)credentials).getClaims());
+                session.setAttribute(RESPONSE, ((OpenIdCredentials)credentials).getResponse());
+            }
         }
         return user;
     }
@@ -185,10 +189,12 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         if (session == null)
             return;
 
-        //clean up session
-        session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
-        session.removeAttribute(CLAIMS);
-        session.removeAttribute(RESPONSE);
+        synchronized (session)
+        {
+            session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
+            session.removeAttribute(CLAIMS);
+            session.removeAttribute(RESPONSE);
+        }
     }
 
     @Override
@@ -325,20 +331,23 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             }
 
             // Look for cached authentication in the Session.
-            synchronized (session)
+            Authentication authentication = (Authentication)session.getAttribute(SessionAuthentication.__J_AUTHENTICATED);
+            if (authentication != null)
             {
-                Authentication authentication = (Authentication)session.getAttribute(SessionAuthentication.__J_AUTHENTICATED);
-                if (authentication != null)
+                // Has authentication been revoked?
+                if (authentication instanceof Authentication.User && _loginService != null &&
+                    !_loginService.validate(((Authentication.User)authentication).getUserIdentity()))
                 {
-                    // Has authentication been revoked?
-                    if (authentication instanceof Authentication.User && _loginService != null &&
-                        !_loginService.validate(((Authentication.User)authentication).getUserIdentity()))
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("auth revoked {}", authentication);
+                    synchronized (session)
                     {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("auth revoked {}", authentication);
                         session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
                     }
-                    else
+                }
+                else
+                {
+                    synchronized (session)
                     {
                         String jUri = (String)session.getAttribute(J_URI);
                         if (jUri != null)
@@ -366,10 +375,10 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                             }
                         }
                     }
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("auth {}", authentication);
-                    return authentication;
                 }
+                if (LOG.isDebugEnabled())
+                    LOG.debug("auth {}", authentication);
+                return authentication;
             }
 
             // If we can't send challenge.
@@ -469,7 +478,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         synchronized (session)
         {
             Map<String, UriRedirectInfo> csrfMap = ensureCsrfMap(session);
-            antiForgeryToken = new BigInteger(130, new SecureRandom()).toString(32);
+            antiForgeryToken = new BigInteger(130, _secureRandom).toString(32);
             csrfMap.put(antiForgeryToken, new UriRedirectInfo(request));
         }
 
