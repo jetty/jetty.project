@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -105,7 +106,7 @@ public class HttpOutputInterceptorTest
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
-                byte[] content = "content to be written".getBytes();
+                byte[] content = "content to be written".getBytes(StandardCharsets.ISO_8859_1);
                 HttpOutput httpOutput = baseRequest.getResponse().getHttpOutput();
                 httpOutput.setBufferSize(content.length * 2);
                 httpOutput.write(content);
@@ -158,7 +159,7 @@ public class HttpOutputInterceptorTest
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
-                byte[] content = "content to be written".getBytes();
+                byte[] content = "content to be written".getBytes(StandardCharsets.ISO_8859_1);
                 HttpOutput httpOutput = baseRequest.getResponse().getHttpOutput();
                 httpOutput.setBufferSize(content.length * 2);
                 httpOutput.write(content);
@@ -212,7 +213,7 @@ public class HttpOutputInterceptorTest
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
-                byte[] content = "content to be written".getBytes();
+                byte[] content = "content to be written".getBytes(StandardCharsets.ISO_8859_1);
                 AsyncContext asyncContext = request.startAsync();
                 ServletOutputStream outputStream = response.getOutputStream();
                 baseRequest.getResponse().getHttpOutput().setBufferSize(0);
@@ -285,7 +286,7 @@ public class HttpOutputInterceptorTest
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
-                byte[] content = "content to be written".getBytes();
+                byte[] content = "content to be written".getBytes(StandardCharsets.ISO_8859_1);
                 AsyncContext asyncContext = request.startAsync();
                 baseRequest.getResponse().getHttpOutput().setBufferSize(content.length * 2);
                 ServletOutputStream outputStream = response.getOutputStream();
@@ -369,7 +370,7 @@ public class HttpOutputInterceptorTest
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
-                byte[] content = "content to be written".getBytes();
+                byte[] content = "content to be written".getBytes(StandardCharsets.ISO_8859_1);
                 AsyncContext asyncContext = request.startAsync();
                 baseRequest.getResponse().getHttpOutput().setBufferSize(content.length * 2);
                 ServletOutputStream outputStream = response.getOutputStream();
@@ -465,7 +466,7 @@ public class HttpOutputInterceptorTest
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
-                byte[] content = "content to be written".getBytes();
+                byte[] content = "content to be written".getBytes(StandardCharsets.ISO_8859_1);
                 AsyncContext asyncContext = request.startAsync();
                 ServletOutputStream outputStream = response.getOutputStream();
                 outputStream.setWriteListener(new WriteListener()
