@@ -1434,7 +1434,7 @@ public interface HttpFields extends Iterable<HttpField>
          *
          * @param fields the fields to copy data from
          */
-        Immutable(HttpField[] fields)
+        public Immutable(HttpField[] fields)
         {
             _fields = fields;
         }

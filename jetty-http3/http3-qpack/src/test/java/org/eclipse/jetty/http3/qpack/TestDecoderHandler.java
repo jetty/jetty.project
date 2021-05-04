@@ -16,11 +16,11 @@ package org.eclipse.jetty.http3.qpack;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.MetaData;
 
 public class TestDecoderHandler implements QpackDecoder.Handler
 {
-    private final Queue<HttpFields> _httpFieldsList = new LinkedList<>();
+    private final Queue<MetaData> _metadataList = new LinkedList<>();
     private final Queue<Instruction> _instructionList = new LinkedList<>();
     private QpackEncoder _encoder;
 
@@ -30,9 +30,9 @@ public class TestDecoderHandler implements QpackDecoder.Handler
     }
 
     @Override
-    public void onHttpFields(int streamId, HttpFields httpFields)
+    public void onHttpFields(int streamId, MetaData metadata)
     {
-        _httpFieldsList.add(httpFields);
+        _metadataList.add(metadata);
     }
 
     @Override
@@ -43,9 +43,9 @@ public class TestDecoderHandler implements QpackDecoder.Handler
             _encoder.parseInstruction(QpackTestUtil.toBuffer(instruction));
     }
 
-    public HttpFields getHttpFields()
+    public MetaData getMetaData()
     {
-        return _httpFieldsList.poll();
+        return _metadataList.poll();
     }
 
     public Instruction getInstruction()
@@ -55,6 +55,6 @@ public class TestDecoderHandler implements QpackDecoder.Handler
 
     public boolean isEmpty()
     {
-        return _httpFieldsList.isEmpty() && _instructionList.isEmpty();
+        return _metadataList.isEmpty() && _instructionList.isEmpty();
     }
 }

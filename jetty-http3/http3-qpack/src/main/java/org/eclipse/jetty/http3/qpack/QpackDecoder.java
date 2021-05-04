@@ -19,8 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.qpack.internal.QpackContext;
 import org.eclipse.jetty.http3.qpack.internal.instruction.InsertCountIncrementInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SectionAcknowledgmentInstruction;
@@ -41,15 +40,13 @@ import org.slf4j.LoggerFactory;
 public class QpackDecoder implements Dumpable
 {
     public static final Logger LOG = LoggerFactory.getLogger(QpackDecoder.class);
-    public static final HttpField.LongValueHttpField CONTENT_LENGTH_0 =
-        new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH, 0L);
 
     private final Handler _handler;
     private final QpackContext _context;
     private final DecoderInstructionParser _parser;
-
     private final List<EncodedFieldSection> _encodedFieldSections = new ArrayList<>();
     private final NBitIntegerParser _integerDecoder = new NBitIntegerParser();
+    private final int _maxHeaderSize;
 
     /**
      * @param maxHeaderSize The maximum allowed size of a headers block, expressed as total of all name and value characters, plus 32 per field
@@ -59,6 +56,7 @@ public class QpackDecoder implements Dumpable
         _context = new QpackContext();
         _handler = handler;
         _parser = new DecoderInstructionParser(new DecoderAdapter());
+        _maxHeaderSize = maxHeaderSize;
     }
 
     QpackContext getQpackContext()
@@ -68,7 +66,7 @@ public class QpackDecoder implements Dumpable
 
     public interface Handler
     {
-        void onHttpFields(int streamId, HttpFields httpFields);
+        void onHttpFields(int streamId, MetaData metadata);
 
         void onInstruction(Instruction instruction) throws QpackException;
     }
@@ -81,8 +79,8 @@ public class QpackDecoder implements Dumpable
                 LOG.debug(String.format("CtxTbl[%x] decoding %d octets", _context.hashCode(), buffer.remaining()));
 
             // If the buffer is big, don't even think about decoding it
-            // if (buffer.remaining() > _builder.getMaxSize())
-                //throw new QpackException.SessionException("431 Request Header Fields too large");
+            if (buffer.remaining() > _maxHeaderSize)
+                throw new QpackException.SessionException("431 Request Header Fields too large");
 
             _integerDecoder.setPrefix(8);
             int encodedInsertCount = _integerDecoder.decode(buffer);
@@ -103,12 +101,12 @@ public class QpackDecoder implements Dumpable
 
             // Parse the buffer into an Encoded Field Section.
             int base = signBit ? requiredInsertCount - deltaBase - 1 : requiredInsertCount + deltaBase;
-            EncodedFieldSection encodedFieldSection = new EncodedFieldSection(streamId, requiredInsertCount, base);
-            encodedFieldSection.parse(buffer);
+            EncodedFieldSection encodedFieldSection = new EncodedFieldSection(streamId, requiredInsertCount, base, buffer);
 
+            // Decode it straight away if we can, otherwise add it to the list of EncodedFieldSections.
             if (requiredInsertCount <= insertCount)
             {
-                _handler.onHttpFields(streamId, encodedFieldSection.decode(_context));
+                _handler.onHttpFields(streamId, encodedFieldSection.decode(_context, _maxHeaderSize));
                 _handler.onInstruction(new SectionAcknowledgmentInstruction(streamId));
             }
             else
@@ -130,7 +128,7 @@ public class QpackDecoder implements Dumpable
         {
             if (encodedFieldSection.getRequiredInsertCount() <= insertCount)
             {
-                _handler.onHttpFields(encodedFieldSection.getStreamId(), encodedFieldSection.decode(_context));
+                _handler.onHttpFields(encodedFieldSection.getStreamId(), encodedFieldSection.decode(_context, _maxHeaderSize));
                 _handler.onInstruction(new SectionAcknowledgmentInstruction(encodedFieldSection.getStreamId()));
             }
         }

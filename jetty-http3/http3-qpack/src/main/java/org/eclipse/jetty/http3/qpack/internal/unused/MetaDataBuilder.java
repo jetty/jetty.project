@@ -22,7 +22,6 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.qpack.QpackException;
-import org.eclipse.jetty.http3.qpack.QpackException.SessionException;
 
 public class MetaDataBuilder
 {
@@ -43,7 +42,7 @@ public class MetaDataBuilder
     /**
      * @param maxHeadersSize The maximum size of the headers, expressed as total name and value characters.
      */
-    protected MetaDataBuilder(int maxHeadersSize)
+    public MetaDataBuilder(int maxHeadersSize)
     {
         _maxSize = maxHeadersSize;
     }
@@ -280,21 +279,5 @@ public class MetaDataBuilder
             _size = 0;
             _contentLength = Long.MIN_VALUE;
         }
-    }
-
-    /**
-     * Check that the max size will not be exceeded.
-     *
-     * @param length the length
-     * @param huffman the huffman name
-     * @throws SessionException in case of size errors
-     */
-    public void checkSize(int length, boolean huffman) throws SessionException
-    {
-        // Apply a huffman fudge factor
-        if (huffman)
-            length = (length * 4) / 3;
-        if ((_size + length) > _maxSize)
-            throw new QpackException.SessionException("Header too large %d > %d", _size + length, _maxSize);
     }
 }

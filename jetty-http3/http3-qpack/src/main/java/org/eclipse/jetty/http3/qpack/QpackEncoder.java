@@ -23,10 +23,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http3.qpack.internal.EncodableEntry;
 import org.eclipse.jetty.http3.qpack.internal.QpackContext;
@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
 public class QpackEncoder implements Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(QpackEncoder.class);
-    private static final HttpField[] STATUSES = new HttpField[599];
+    public static final HttpField[] STATUSES = new HttpField[599];
     public static final EnumSet<HttpHeader> DO_NOT_HUFFMAN =
         EnumSet.of(
             HttpHeader.AUTHORIZATION,
@@ -83,10 +83,10 @@ public class QpackEncoder implements Dumpable
             HttpHeader.SET_COOKIE2);
     private static final EnumSet<HttpHeader> IGNORED_HEADERS = EnumSet.of(HttpHeader.CONNECTION, HttpHeader.KEEP_ALIVE,
         HttpHeader.PROXY_CONNECTION, HttpHeader.TRANSFER_ENCODING, HttpHeader.UPGRADE);
-    private static final PreEncodedHttpField TE_TRAILERS = new PreEncodedHttpField(HttpHeader.TE, "trailers");
-    private static final PreEncodedHttpField C_SCHEME_HTTP = new PreEncodedHttpField(HttpHeader.C_SCHEME, "http");
-    private static final PreEncodedHttpField C_SCHEME_HTTPS = new PreEncodedHttpField(HttpHeader.C_SCHEME, "https");
-    private static final EnumMap<HttpMethod, PreEncodedHttpField> C_METHODS = new EnumMap<>(HttpMethod.class);
+    public static final PreEncodedHttpField TE_TRAILERS = new PreEncodedHttpField(HttpHeader.TE, "trailers");
+    public static final PreEncodedHttpField C_SCHEME_HTTP = new PreEncodedHttpField(HttpHeader.C_SCHEME, "http");
+    public static final PreEncodedHttpField C_SCHEME_HTTPS = new PreEncodedHttpField(HttpHeader.C_SCHEME, "https");
+    public static final EnumMap<HttpMethod, PreEncodedHttpField> C_METHODS = new EnumMap<>(HttpMethod.class);
 
     static
     {
@@ -249,12 +249,13 @@ public class QpackEncoder implements Dumpable
         return !DO_NOT_HUFFMAN.contains(httpField.getHeader());
     }
 
-    public ByteBuffer encode(int streamId, HttpFields httpFields) throws QpackException
+    // TODO: Pass in buffer.
+    public ByteBuffer encode(int streamId, MetaData metadata) throws QpackException
     {
         // Verify that we can encode without errors.
-        if (httpFields != null)
+        if (metadata.getFields() != null)
         {
-            for (HttpField field : httpFields)
+            for (HttpField field :  metadata.getFields())
             {
                 String name = field.getName();
                 char firstChar = name.charAt(0);
@@ -282,18 +283,18 @@ public class QpackEncoder implements Dumpable
             streamInfo.add(sectionInfo);
 
             int requiredInsertCount = 0;
-            if (httpFields != null)
-            {
-                for (HttpField field : httpFields)
-                {
-                    EncodableEntry entry = encode(streamInfo, field);
-                    encodableEntries.add(entry);
 
-                    // Update the required InsertCount.
-                    int entryRequiredInsertCount = entry.getRequiredInsertCount();
-                    if (entryRequiredInsertCount > requiredInsertCount)
-                        requiredInsertCount = entryRequiredInsertCount;
-                }
+            // This will also extract pseudo headers from the metadata.
+            Http3Fields httpFields = new Http3Fields(metadata);
+            for (HttpField field : httpFields)
+            {
+                EncodableEntry entry = encode(streamInfo, field);
+                encodableEntries.add(entry);
+
+                // Update the required InsertCount.
+                int entryRequiredInsertCount = entry.getRequiredInsertCount();
+                if (entryRequiredInsertCount > requiredInsertCount)
+                    requiredInsertCount = entryRequiredInsertCount;
             }
 
             sectionInfo.setRequiredInsertCount(requiredInsertCount);
