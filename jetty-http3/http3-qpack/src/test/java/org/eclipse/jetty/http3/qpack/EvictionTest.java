@@ -18,11 +18,12 @@ import java.util.Random;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class EvictionTest
 {
@@ -62,9 +63,9 @@ public class EvictionTest
         {
             HttpFields httpFields = newRandomFields(5);
             int streamId = getPositiveInt(10);
-            ByteBuffer encodedFields = _encoder.encode(streamId, httpFields);
+            ByteBuffer encodedFields = _encoder.encode(streamId, new MetaData(HttpVersion.HTTP_3, httpFields));
             _decoder.decode(streamId, encodedFields);
-            HttpFields result = _decoderHandler.getHttpFields();
+            MetaData result = _decoderHandler.getMetaData();
 
 //            System.err.println("encoder: ");
 //            System.err.println(_encoder.dump());
@@ -75,7 +76,7 @@ public class EvictionTest
 //            System.err.println("====================");
 //            System.err.println();
 
-            assertThat(result, is(httpFields));
+            assertTrue(result.getFields().isEqualTo(httpFields));
         }
     }
 

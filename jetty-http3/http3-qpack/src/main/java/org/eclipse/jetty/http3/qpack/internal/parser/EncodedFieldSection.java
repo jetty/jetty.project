@@ -18,9 +18,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.http3.qpack.internal.QpackContext;
+import org.eclipse.jetty.http3.qpack.internal.unused.MetaDataBuilder;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerParser;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitStringParser;
 
@@ -34,11 +35,29 @@ public class EncodedFieldSection
     private final int _requiredInsertCount;
     private final int _base;
 
-    public EncodedFieldSection(int streamId, int requiredInsertCount, int base)
+    public EncodedFieldSection(int streamId, int requiredInsertCount, int base, ByteBuffer content) throws QpackException
     {
         _streamId = streamId;
         _requiredInsertCount = requiredInsertCount;
         _base = base;
+
+        while (content.hasRemaining())
+        {
+            EncodedField encodedField;
+            byte firstByte = content.get(content.position());
+            if ((firstByte & 0x80) != 0)
+                encodedField = parseIndexedFieldLine(content);
+            else if ((firstByte & 0x40) != 0)
+                encodedField = parseLiteralFieldLineWithNameReference(content);
+            else if ((firstByte & 0x20) != 0)
+                encodedField = parseLiteralFieldLineWithLiteralName(content);
+            else if ((firstByte & 0x10) != 0)
+                encodedField = parseIndexFieldLineWithPostBaseIndex(content);
+            else
+                encodedField = parseLiteralFieldLineWithPostBaseNameReference(content);
+
+            _encodedFields.add(encodedField);
+        }
     }
 
     public int getStreamId()
@@ -51,38 +70,18 @@ public class EncodedFieldSection
         return _requiredInsertCount;
     }
 
-    public void parse(ByteBuffer buffer) throws QpackException
-    {
-        while (buffer.hasRemaining())
-        {
-            EncodedField encodedField;
-            byte firstByte = buffer.get(buffer.position());
-            if ((firstByte & 0x80) != 0)
-                encodedField = parseIndexedFieldLine(buffer);
-            else if ((firstByte & 0x40) != 0)
-                encodedField = parseLiteralFieldLineWithNameReference(buffer);
-            else if ((firstByte & 0x20) != 0)
-                encodedField = parseLiteralFieldLineWithLiteralName(buffer);
-            else if ((firstByte & 0x10) != 0)
-                encodedField = parseIndexFieldLineWithPostBaseIndex(buffer);
-            else
-                encodedField = parseLiteralFieldLineWithPostBaseNameReference(buffer);
-
-            _encodedFields.add(encodedField);
-        }
-    }
-
-    public HttpFields decode(QpackContext context) throws QpackException
+    public MetaData decode(QpackContext context, int maxHeaderSize) throws QpackException
     {
         if (context.getDynamicTable().getInsertCount() < _requiredInsertCount)
             throw new IllegalStateException("Required Insert Count Not Reached");
 
-        HttpFields.Mutable httpFields = HttpFields.build();
+        MetaDataBuilder metaDataBuilder = new MetaDataBuilder(maxHeaderSize);
         for (EncodedField encodedField : _encodedFields)
         {
-            httpFields.add(encodedField.decode(context));
+            HttpField decodedField = encodedField.decode(context);
+            metaDataBuilder.emit(decodedField);
         }
-        return httpFields;
+        return metaDataBuilder.build();
     }
 
     private EncodedField parseIndexedFieldLine(ByteBuffer buffer) throws QpackException
@@ -166,7 +165,7 @@ public class EncodedFieldSection
         HttpField decode(QpackContext context) throws QpackException;
     }
 
-    private class LiteralField implements EncodedField
+    private static class LiteralField implements EncodedField
     {
         private final boolean _allowEncoding;
         private final String _name;
