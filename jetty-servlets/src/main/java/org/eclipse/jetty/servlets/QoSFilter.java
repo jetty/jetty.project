@@ -230,8 +230,8 @@ public class QoSFilter implements Filter
                             }
                             catch (IllegalStateException x)
                             {
-                                LOG.warn("Unable to resume suspended dispatch", x);
-                                continue;
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("dispatch failed", x);
                             }
                         }
                     }
@@ -356,12 +356,12 @@ public class QoSFilter implements Filter
         }
 
         @Override
-        public void onStartAsync(AsyncEvent event) throws IOException
+        public void onStartAsync(AsyncEvent event)
         {
         }
 
         @Override
-        public void onComplete(AsyncEvent event) throws IOException
+        public void onComplete(AsyncEvent event)
         {
         }
 
@@ -377,7 +377,7 @@ public class QoSFilter implements Filter
         }
 
         @Override
-        public void onError(AsyncEvent event) throws IOException
+        public void onError(AsyncEvent event)
         {
         }
     }
