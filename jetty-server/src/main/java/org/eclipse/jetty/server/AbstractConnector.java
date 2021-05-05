@@ -213,7 +213,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
         int cores = ProcessorUtils.availableProcessors();
         if (acceptors < 0)
-            acceptors = Math.max(1, Math.min(4, cores / 8));
+            acceptors = 1;
         if (acceptors > cores)
             LOG.warn("Acceptors should be <= availableProcessors: {} ", this);
         _acceptors = new Thread[acceptors];

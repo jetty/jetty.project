@@ -158,7 +158,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     }
 
     @ManagedAttribute(value = "Maximum number of selected keys", readonly = true)
-    public double getMaxSelectedKeys()
+    public long getMaxSelectedKeys()
     {
         return _keyStats.getMax();
     }
