@@ -1,4 +1,4 @@
-package org.eclipse.jetty.http3.qpack;
+package org.eclipse.jetty.http3.qpack.internal.metadata;
 
 import java.util.ArrayList;
 import java.util.EnumMap;

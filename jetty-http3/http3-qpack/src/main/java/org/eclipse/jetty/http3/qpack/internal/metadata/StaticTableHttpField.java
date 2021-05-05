@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack.internal.unused;
+package org.eclipse.jetty.http3.qpack.internal.metadata;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
