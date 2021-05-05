@@ -147,6 +147,7 @@ public class HttpChannelState
     private boolean _asyncWritePossible;
     private long _timeoutMs = DEFAULT_TIMEOUT;
     private AsyncContextEvent _event;
+    private Thread _onTimeoutThread;
 
     protected HttpChannelState(HttpChannel channel)
     {
@@ -573,7 +574,10 @@ public class HttpChannelState
             switch (_requestState)
             {
                 case ASYNC:
+                    break;
                 case EXPIRING:
+                    if (Thread.currentThread() != _onTimeoutThread)
+                        throw new IllegalStateException(this.getStatusStringLocked());
                     break;
                 default:
                     throw new IllegalStateException(this.getStatusStringLocked());
@@ -637,39 +641,50 @@ public class HttpChannelState
                 throw new IllegalStateException(toStringLocked());
             event = _event;
             listeners = _asyncListeners;
+            _onTimeoutThread = Thread.currentThread();
         }
 
-        if (listeners != null)
+        try
         {
-            Runnable task = new Runnable()
+            if (listeners != null)
             {
-                @Override
-                public void run()
+                Runnable task = new Runnable()
                 {
-                    for (AsyncListener listener : listeners)
+                    @Override
+                    public void run()
                     {
-                        try
+                        for (AsyncListener listener : listeners)
                         {
-                            listener.onTimeout(event);
-                        }
-                        catch (Throwable x)
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.warn("{} while invoking onTimeout listener {}", x.toString(), listener, x);
-                            else
-                                LOG.warn("{} while invoking onTimeout listener {}", x.toString(), listener);
+                            try
+                            {
+                                listener.onTimeout(event);
+                            }
+                            catch (Throwable x)
+                            {
+                                if (LOG.isDebugEnabled())
+                                    LOG.warn("{} while invoking onTimeout listener {}", x.toString(), listener, x);
+                                else
+                                    LOG.warn("{} while invoking onTimeout listener {}", x.toString(), listener);
+                            }
                         }
                     }
-                }
 
-                @Override
-                public String toString()
-                {
-                    return "onTimeout";
-                }
-            };
+                    @Override
+                    public String toString()
+                    {
+                        return "onTimeout";
+                    }
+                };
 
-            runInContext(event, task);
+                runInContext(event, task);
+            }
+        }
+        finally
+        {
+            synchronized (this)
+            {
+                _onTimeoutThread = null;
+            }
         }
     }
 
@@ -686,6 +701,11 @@ public class HttpChannelState
             switch (_requestState)
             {
                 case EXPIRING:
+                    if (Thread.currentThread() != _onTimeoutThread)
+                        throw new IllegalStateException(this.getStatusStringLocked());
+                    _requestState = _sendError ? RequestState.BLOCKING : RequestState.COMPLETE;
+                    break;
+
                 case ASYNC:
                     _requestState = _sendError ? RequestState.BLOCKING : RequestState.COMPLETE;
                     break;
