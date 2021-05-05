@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http3.qpack.internal.EncodableEntry;
+import org.eclipse.jetty.http3.qpack.internal.metadata.Http3Fields;
 import org.eclipse.jetty.http3.qpack.internal.QpackContext;
 import org.eclipse.jetty.http3.qpack.internal.StreamInfo;
 import org.eclipse.jetty.http3.qpack.internal.instruction.DuplicateInstruction;
@@ -44,12 +45,14 @@ import org.slf4j.LoggerFactory;
 public class QpackEncoder implements Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(QpackEncoder.class);
+
     public static final EnumSet<HttpHeader> DO_NOT_HUFFMAN =
         EnumSet.of(
             HttpHeader.AUTHORIZATION,
             HttpHeader.CONTENT_MD5,
             HttpHeader.PROXY_AUTHENTICATE,
             HttpHeader.PROXY_AUTHORIZATION);
+
     public static final EnumSet<HttpHeader> DO_NOT_INDEX =
         EnumSet.of(
             // HttpHeader.C_PATH,  // TODO more data needed
@@ -70,6 +73,8 @@ public class QpackEncoder implements Dumpable
             HttpHeader.LAST_MODIFIED,
             HttpHeader.SET_COOKIE,
             HttpHeader.SET_COOKIE2);
+
+    // TODO: why do we need this?
     public static final EnumSet<HttpHeader> NEVER_INDEX =
         EnumSet.of(
             HttpHeader.AUTHORIZATION,
@@ -108,11 +113,8 @@ public class QpackEncoder implements Dumpable
      */
     public void setCapacity(int capacity) throws QpackException
     {
-        synchronized (this)
-        {
-            _context.getDynamicTable().setCapacity(capacity);
-            _handler.onInstruction(new SetCapacityInstruction(capacity));
-        }
+        _context.getDynamicTable().setCapacity(capacity);
+        _handler.onInstruction(new SetCapacityInstruction(capacity));
     }
 
     protected boolean shouldIndex(HttpField httpField)
@@ -132,41 +134,38 @@ public class QpackEncoder implements Dumpable
 
     public boolean insert(HttpField field) throws QpackException
     {
-        synchronized (this)
+        DynamicTable dynamicTable = _context.getDynamicTable();
+
+        if (field.getValue() == null)
+            field = new HttpField(field.getHeader(), field.getName(), "");
+
+        boolean canCreateEntry = shouldIndex(field) && dynamicTable.canInsert(field);
+        if (!canCreateEntry)
+            return false;
+
+        // We can always reference on insertion as it will always arrive before any eviction.
+        Entry entry = _context.get(field);
+        if (entry != null)
         {
-            DynamicTable dynamicTable = _context.getDynamicTable();
-
-            if (field.getValue() == null)
-                field = new HttpField(field.getHeader(), field.getName(), "");
-
-            boolean canCreateEntry = shouldIndex(field) && dynamicTable.canInsert(field);
-            if (!canCreateEntry)
-                return false;
-
-            // We can always reference on insertion as it will always arrive before any eviction.
-            Entry entry = _context.get(field);
-            if (entry != null)
-            {
-                int index = _context.indexOf(entry);
-                dynamicTable.add(new Entry(field));
-                _handler.onInstruction(new DuplicateInstruction(index));
-                return true;
-            }
-
-            boolean huffman = shouldHuffmanEncode(field);
-            Entry nameEntry = _context.get(field.getName());
-            if (nameEntry != null)
-            {
-                int index = _context.indexOf(nameEntry);
-                dynamicTable.add(new Entry(field));
-                _handler.onInstruction(new IndexedNameEntryInstruction(!nameEntry.isStatic(), index, huffman, field.getValue()));
-                return true;
-            }
-
+            int index = _context.indexOf(entry);
             dynamicTable.add(new Entry(field));
-            _handler.onInstruction(new LiteralNameEntryInstruction(huffman, field.getName(), huffman, field.getValue()));
+            _handler.onInstruction(new DuplicateInstruction(index));
             return true;
         }
+
+        boolean huffman = shouldHuffmanEncode(field);
+        Entry nameEntry = _context.get(field.getName());
+        if (nameEntry != null)
+        {
+            int index = _context.indexOf(nameEntry);
+            dynamicTable.add(new Entry(field));
+            _handler.onInstruction(new IndexedNameEntryInstruction(!nameEntry.isStatic(), index, huffman, field.getValue()));
+            return true;
+        }
+
+        dynamicTable.add(new Entry(field));
+        _handler.onInstruction(new LiteralNameEntryInstruction(huffman, field.getName(), huffman, field.getValue()));
+        return true;
     }
 
     public void encode(ByteBuffer buffer, int streamId, MetaData metadata) throws QpackException
@@ -183,45 +182,38 @@ public class QpackEncoder implements Dumpable
             }
         }
 
-        int base;
-        int encodedInsertCount;
-        boolean signBit;
-        int deltaBase;
         List<EncodableEntry> encodableEntries = new ArrayList<>();
-        synchronized (this)
+        DynamicTable dynamicTable = _context.getDynamicTable();
+
+        StreamInfo streamInfo = _streamInfoMap.get(streamId);
+        if (streamInfo == null)
         {
-            DynamicTable dynamicTable = _context.getDynamicTable();
-
-            StreamInfo streamInfo = _streamInfoMap.get(streamId);
-            if (streamInfo == null)
-            {
-                streamInfo = new StreamInfo(streamId);
-                _streamInfoMap.put(streamId, streamInfo);
-            }
-            StreamInfo.SectionInfo sectionInfo = new StreamInfo.SectionInfo();
-            streamInfo.add(sectionInfo);
-
-            int requiredInsertCount = 0;
-
-            // This will also extract pseudo headers from the metadata.
-            Http3Fields httpFields = new Http3Fields(metadata);
-            for (HttpField field : httpFields)
-            {
-                EncodableEntry entry = encode(streamInfo, field);
-                encodableEntries.add(entry);
-
-                // Update the required InsertCount.
-                int entryRequiredInsertCount = entry.getRequiredInsertCount();
-                if (entryRequiredInsertCount > requiredInsertCount)
-                    requiredInsertCount = entryRequiredInsertCount;
-            }
-
-            sectionInfo.setRequiredInsertCount(requiredInsertCount);
-            base = dynamicTable.getBase();
-            encodedInsertCount = encodeInsertCount(requiredInsertCount, dynamicTable.getCapacity());
-            signBit = base < requiredInsertCount;
-            deltaBase = signBit ? requiredInsertCount - base - 1 : base - requiredInsertCount;
+            streamInfo = new StreamInfo(streamId);
+            _streamInfoMap.put(streamId, streamInfo);
         }
+        StreamInfo.SectionInfo sectionInfo = new StreamInfo.SectionInfo();
+        streamInfo.add(sectionInfo);
+
+        int requiredInsertCount = 0;
+
+        // This will also extract pseudo headers from the metadata.
+        Http3Fields httpFields = new Http3Fields(metadata);
+        for (HttpField field : httpFields)
+        {
+            EncodableEntry entry = encode(streamInfo, field);
+            encodableEntries.add(entry);
+
+            // Update the required InsertCount.
+            int entryRequiredInsertCount = entry.getRequiredInsertCount();
+            if (entryRequiredInsertCount > requiredInsertCount)
+                requiredInsertCount = entryRequiredInsertCount;
+        }
+
+        sectionInfo.setRequiredInsertCount(requiredInsertCount);
+        int base = dynamicTable.getBase();
+        int encodedInsertCount = encodeInsertCount(requiredInsertCount, dynamicTable.getCapacity());
+        boolean signBit = base < requiredInsertCount;
+        int deltaBase = signBit ? requiredInsertCount - base - 1 : base - requiredInsertCount;
 
         // Encode all the entries into the buffer.
         int pos = BufferUtil.flipToFill(buffer);
@@ -313,47 +305,38 @@ public class QpackEncoder implements Dumpable
 
     void insertCountIncrement(int increment) throws QpackException
     {
-        synchronized (this)
-        {
-            int insertCount = _context.getDynamicTable().getInsertCount();
-            if (_knownInsertCount + increment > insertCount)
-                throw new QpackException.StreamException("KnownInsertCount incremented over InsertCount");
-            _knownInsertCount += increment;
-        }
+        int insertCount = _context.getDynamicTable().getInsertCount();
+        if (_knownInsertCount + increment > insertCount)
+            throw new QpackException.StreamException("KnownInsertCount incremented over InsertCount");
+        _knownInsertCount += increment;
     }
 
     void sectionAcknowledgement(int streamId) throws QpackException
     {
-        synchronized (this)
-        {
-            StreamInfo streamInfo = _streamInfoMap.get(streamId);
-            if (streamInfo == null)
-                throw new QpackException.StreamException("No StreamInfo for " + streamId);
+        StreamInfo streamInfo = _streamInfoMap.get(streamId);
+        if (streamInfo == null)
+            throw new QpackException.StreamException("No StreamInfo for " + streamId);
 
-            // The KnownInsertCount should be updated to the earliest sent RequiredInsertCount on that stream.
-            StreamInfo.SectionInfo sectionInfo = streamInfo.acknowledge();
-            sectionInfo.release();
-            _knownInsertCount = Math.max(_knownInsertCount, sectionInfo.getRequiredInsertCount());
+        // The KnownInsertCount should be updated to the earliest sent RequiredInsertCount on that stream.
+        StreamInfo.SectionInfo sectionInfo = streamInfo.acknowledge();
+        sectionInfo.release();
+        _knownInsertCount = Math.max(_knownInsertCount, sectionInfo.getRequiredInsertCount());
 
-            // If we have no more outstanding section acknowledgments remove the StreamInfo.
-            if (streamInfo.isEmpty())
-                _streamInfoMap.remove(streamId);
-        }
+        // If we have no more outstanding section acknowledgments remove the StreamInfo.
+        if (streamInfo.isEmpty())
+            _streamInfoMap.remove(streamId);
     }
 
     void streamCancellation(int streamId) throws QpackException
     {
-        synchronized (this)
-        {
-            StreamInfo streamInfo = _streamInfoMap.remove(streamId);
-            if (streamInfo == null)
-                throw new QpackException.StreamException("No StreamInfo for " + streamId);
+        StreamInfo streamInfo = _streamInfoMap.remove(streamId);
+        if (streamInfo == null)
+            throw new QpackException.StreamException("No StreamInfo for " + streamId);
 
-            // Release all referenced entries outstanding on the stream that was cancelled.
-            for (StreamInfo.SectionInfo sectionInfo : streamInfo)
-            {
-                sectionInfo.release();
-            }
+        // Release all referenced entries outstanding on the stream that was cancelled.
+        for (StreamInfo.SectionInfo sectionInfo : streamInfo)
+        {
+            sectionInfo.release();
         }
     }
 
@@ -430,9 +413,6 @@ public class QpackEncoder implements Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        synchronized (this)
-        {
-            Dumpable.dumpObjects(out, indent, _context.getDynamicTable());
-        }
+        Dumpable.dumpObjects(out, indent, _context.getDynamicTable());
     }
 }

@@ -24,7 +24,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.http3.qpack.internal.unused.StaticTableHttpField;
+import org.eclipse.jetty.http3.qpack.internal.metadata.StaticTableHttpField;
 import org.eclipse.jetty.util.Index;
 
 public class StaticTable implements Iterable<Entry>

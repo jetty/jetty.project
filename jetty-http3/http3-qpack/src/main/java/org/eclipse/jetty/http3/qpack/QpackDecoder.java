@@ -73,46 +73,43 @@ public class QpackDecoder implements Dumpable
 
     public void decode(int streamId, ByteBuffer buffer) throws QpackException
     {
-        synchronized (this)
+        if (LOG.isDebugEnabled())
+            LOG.debug(String.format("CtxTbl[%x] decoding %d octets", _context.hashCode(), buffer.remaining()));
+
+        // If the buffer is big, don't even think about decoding it
+        if (buffer.remaining() > _maxHeaderSize)
+            throw new QpackException.SessionException("431 Request Header Fields too large");
+
+        _integerDecoder.setPrefix(8);
+        int encodedInsertCount = _integerDecoder.decode(buffer);
+        if (encodedInsertCount < 0)
+            throw new QpackException.CompressionException("Could not parse Required Insert Count");
+
+        _integerDecoder.setPrefix(7);
+        boolean signBit = (buffer.get(buffer.position()) & 0x80) != 0;
+        int deltaBase = _integerDecoder.decode(buffer);
+        if (deltaBase < 0)
+            throw new QpackException.CompressionException("Could not parse Delta Base");
+
+        // Decode the Required Insert Count using the DynamicTable state.
+        DynamicTable dynamicTable = _context.getDynamicTable();
+        int insertCount = dynamicTable.getInsertCount();
+        int maxDynamicTableSize = dynamicTable.getCapacity();
+        int requiredInsertCount = decodeInsertCount(encodedInsertCount, insertCount, maxDynamicTableSize);
+
+        // Parse the buffer into an Encoded Field Section.
+        int base = signBit ? requiredInsertCount - deltaBase - 1 : requiredInsertCount + deltaBase;
+        EncodedFieldSection encodedFieldSection = new EncodedFieldSection(streamId, requiredInsertCount, base, buffer);
+
+        // Decode it straight away if we can, otherwise add it to the list of EncodedFieldSections.
+        if (requiredInsertCount <= insertCount)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug(String.format("CtxTbl[%x] decoding %d octets", _context.hashCode(), buffer.remaining()));
-
-            // If the buffer is big, don't even think about decoding it
-            if (buffer.remaining() > _maxHeaderSize)
-                throw new QpackException.SessionException("431 Request Header Fields too large");
-
-            _integerDecoder.setPrefix(8);
-            int encodedInsertCount = _integerDecoder.decode(buffer);
-            if (encodedInsertCount < 0)
-                throw new QpackException.CompressionException("Could not parse Required Insert Count");
-
-            _integerDecoder.setPrefix(7);
-            boolean signBit = (buffer.get(buffer.position()) & 0x80) != 0;
-            int deltaBase = _integerDecoder.decode(buffer);
-            if (deltaBase < 0)
-                throw new QpackException.CompressionException("Could not parse Delta Base");
-
-            // Decode the Required Insert Count using the DynamicTable state.
-            DynamicTable dynamicTable = _context.getDynamicTable();
-            int insertCount = dynamicTable.getInsertCount();
-            int maxDynamicTableSize = dynamicTable.getCapacity();
-            int requiredInsertCount = decodeInsertCount(encodedInsertCount, insertCount, maxDynamicTableSize);
-
-            // Parse the buffer into an Encoded Field Section.
-            int base = signBit ? requiredInsertCount - deltaBase - 1 : requiredInsertCount + deltaBase;
-            EncodedFieldSection encodedFieldSection = new EncodedFieldSection(streamId, requiredInsertCount, base, buffer);
-
-            // Decode it straight away if we can, otherwise add it to the list of EncodedFieldSections.
-            if (requiredInsertCount <= insertCount)
-            {
-                _handler.onHttpFields(streamId, encodedFieldSection.decode(_context, _maxHeaderSize));
-                _handler.onInstruction(new SectionAcknowledgmentInstruction(streamId));
-            }
-            else
-            {
-                _encodedFieldSections.add(encodedFieldSection);
-            }
+            _handler.onHttpFields(streamId, encodedFieldSection.decode(_context, _maxHeaderSize));
+            _handler.onInstruction(new SectionAcknowledgmentInstruction(streamId));
+        }
+        else
+        {
+            _encodedFieldSections.add(encodedFieldSection);
         }
     }
 
@@ -136,54 +133,42 @@ public class QpackDecoder implements Dumpable
 
     void setCapacity(int capacity)
     {
-        synchronized (this)
-        {
-            _context.getDynamicTable().setCapacity(capacity);
-        }
+        _context.getDynamicTable().setCapacity(capacity);
     }
 
     void insert(int index) throws QpackException
     {
-        synchronized (this)
-        {
-            DynamicTable dynamicTable = _context.getDynamicTable();
-            Entry entry = dynamicTable.get(index);
+        DynamicTable dynamicTable = _context.getDynamicTable();
+        Entry entry = dynamicTable.get(index);
 
-            // Add the new Entry to the DynamicTable.
-            dynamicTable.add(entry);
-            _handler.onInstruction(new InsertCountIncrementInstruction(1));
-            checkEncodedFieldSections();
-        }
+        // Add the new Entry to the DynamicTable.
+        dynamicTable.add(entry);
+        _handler.onInstruction(new InsertCountIncrementInstruction(1));
+        checkEncodedFieldSections();
     }
 
     void insert(int nameIndex, boolean isDynamicTableIndex, String value) throws QpackException
     {
-        synchronized (this)
-        {
-            StaticTable staticTable = QpackContext.getStaticTable();
-            DynamicTable dynamicTable = _context.getDynamicTable();
-            Entry referencedEntry = isDynamicTableIndex ? dynamicTable.get(nameIndex) : staticTable.get(nameIndex);
+        StaticTable staticTable = QpackContext.getStaticTable();
+        DynamicTable dynamicTable = _context.getDynamicTable();
+        Entry referencedEntry = isDynamicTableIndex ? dynamicTable.get(nameIndex) : staticTable.get(nameIndex);
 
-            // Add the new Entry to the DynamicTable.
-            Entry entry = new Entry(new HttpField(referencedEntry.getHttpField().getHeader(), referencedEntry.getHttpField().getName(), value));
-            dynamicTable.add(entry);
-            _handler.onInstruction(new InsertCountIncrementInstruction(1));
-            checkEncodedFieldSections();
-        }
+        // Add the new Entry to the DynamicTable.
+        Entry entry = new Entry(new HttpField(referencedEntry.getHttpField().getHeader(), referencedEntry.getHttpField().getName(), value));
+        dynamicTable.add(entry);
+        _handler.onInstruction(new InsertCountIncrementInstruction(1));
+        checkEncodedFieldSections();
     }
 
     void insert(String name, String value) throws QpackException
     {
-        synchronized (this)
-        {
-            Entry entry = new Entry(new HttpField(name, value));
+        Entry entry = new Entry(new HttpField(name, value));
 
-            // Add the new Entry to the DynamicTable.
-            DynamicTable dynamicTable = _context.getDynamicTable();
-            dynamicTable.add(entry);
-            _handler.onInstruction(new InsertCountIncrementInstruction(1));
-            checkEncodedFieldSections();
-        }
+        // Add the new Entry to the DynamicTable.
+        DynamicTable dynamicTable = _context.getDynamicTable();
+        dynamicTable.add(entry);
+        _handler.onInstruction(new InsertCountIncrementInstruction(1));
+        checkEncodedFieldSections();
     }
 
     private static int decodeInsertCount(int encInsertCount, int totalNumInserts, int maxTableCapacity) throws QpackException
@@ -219,10 +204,7 @@ public class QpackDecoder implements Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        synchronized (this)
-        {
-            Dumpable.dumpObjects(out, indent, _context.getDynamicTable());
-        }
+        Dumpable.dumpObjects(out, indent, _context.getDynamicTable());
     }
 
     @Override
