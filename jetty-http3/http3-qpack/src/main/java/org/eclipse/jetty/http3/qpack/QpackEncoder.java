@@ -36,8 +36,6 @@ import org.eclipse.jetty.http3.qpack.internal.parser.EncoderInstructionParser;
 import org.eclipse.jetty.http3.qpack.internal.table.DynamicTable;
 import org.eclipse.jetty.http3.qpack.internal.table.Entry;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.NullByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
@@ -83,27 +81,19 @@ public class QpackEncoder implements Dumpable
         void onInstruction(Instruction instruction) throws QpackException;
     }
 
-    private final ByteBufferPool _bufferPool;
     private final Handler _handler;
     private final QpackContext _context;
     private final int _maxBlockedStreams;
     private final Map<Integer, StreamInfo> _streamInfoMap = new HashMap<>();
     private final EncoderInstructionParser _parser;
-    private int _knownInsertCount;
+    private int _knownInsertCount = 0;
     private int _blockedStreams = 0;
 
     public QpackEncoder(Handler handler, int maxBlockedStreams)
     {
-        this(handler, maxBlockedStreams, new NullByteBufferPool());
-    }
-
-    public QpackEncoder(Handler handler, int maxBlockedStreams, ByteBufferPool bufferPool)
-    {
         _handler = handler;
-        _bufferPool = bufferPool;
         _context = new QpackContext();
         _maxBlockedStreams = maxBlockedStreams;
-        _knownInsertCount = 0;
         _parser = new EncoderInstructionParser(new EncoderAdapter());
     }
 
@@ -115,7 +105,6 @@ public class QpackEncoder implements Dumpable
     /**
      * Set the capacity of the DynamicTable and send a instruction to set the capacity on the remote Decoder.
      * @param capacity the new capacity.
-     * @throws QpackException
      */
     public void setCapacity(int capacity) throws QpackException
     {
@@ -150,7 +139,7 @@ public class QpackEncoder implements Dumpable
             if (field.getValue() == null)
                 field = new HttpField(field.getHeader(), field.getName(), "");
 
-            boolean canCreateEntry = shouldIndex(field) &&  dynamicTable.canInsert(field);
+            boolean canCreateEntry = shouldIndex(field) && dynamicTable.canInsert(field);
             if (!canCreateEntry)
                 return false;
 
@@ -180,7 +169,7 @@ public class QpackEncoder implements Dumpable
         }
     }
 
-    public ByteBuffer encode(int streamId, MetaData metadata) throws QpackException
+    public void encode(ByteBuffer buffer, int streamId, MetaData metadata) throws QpackException
     {
         // Verify that we can encode without errors.
         if (metadata.getFields() != null)
@@ -234,16 +223,7 @@ public class QpackEncoder implements Dumpable
             deltaBase = signBit ? requiredInsertCount - base - 1 : base - requiredInsertCount;
         }
 
-        // Calculate the size required. TODO: it may be more efficient to just use a buffer of MAX_HEADER_SIZE?
-        int spaceRequired = 0;
-        spaceRequired += 1 + NBitIntegerEncoder.octectsNeeded(8, encodedInsertCount);
-        spaceRequired += 1 + NBitIntegerEncoder.octectsNeeded(7, deltaBase);
-        for (EncodableEntry encodableEntry : encodableEntries)
-        {
-            spaceRequired += encodableEntry.getRequiredSize(base);
-        }
-
-        ByteBuffer buffer = _bufferPool.acquire(spaceRequired, false);
+        // Encode all the entries into the buffer.
         int pos = BufferUtil.flipToFill(buffer);
 
         // Encode the Field Section Prefix into the ByteBuffer.
@@ -258,7 +238,6 @@ public class QpackEncoder implements Dumpable
         }
 
         BufferUtil.flipToFlush(buffer, pos);
-        return buffer;
     }
 
     private EncodableEntry encode(StreamInfo streamInfo, HttpField field) throws QpackException

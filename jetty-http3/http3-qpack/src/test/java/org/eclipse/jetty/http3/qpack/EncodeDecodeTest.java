@@ -77,7 +77,8 @@ public class EncodeDecodeTest
         int streamId = 0;
         HttpFields httpFields = HttpFields.build().add(":path", "/index.html");
 
-        ByteBuffer buffer = _encoder.encode(streamId, new MetaData(HttpVersion.HTTP_3, httpFields));
+        ByteBuffer buffer = BufferUtil.allocate(1024);
+        _encoder.encode(buffer, streamId, new MetaData(HttpVersion.HTTP_3, httpFields));
         assertNull(_encoderHandler.getInstruction());
         assertThat(BufferUtil.toHexString(buffer), QpackTestUtil.equalsHex("0000 510b 2f69 6e64 6578 2e68 746d 6c"));
         assertTrue(_encoderHandler.isEmpty());
@@ -107,7 +108,7 @@ public class EncodeDecodeTest
         httpFields = HttpFields.build()
             .add(":authority", "www.example.com")
             .add(":path", "/sample/path");
-        buffer = _encoder.encode(streamId, new MetaData(HttpVersion.HTTP_3, httpFields));
+        _encoder.encode(buffer, streamId, new MetaData(HttpVersion.HTTP_3, httpFields));
 
         instruction = _encoderHandler.getInstruction();
         assertThat(instruction, instanceOf(IndexedNameEntryInstruction.class));
