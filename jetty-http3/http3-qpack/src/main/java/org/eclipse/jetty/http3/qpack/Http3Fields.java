@@ -1,9 +1,12 @@
 package org.eclipse.jetty.http3.qpack;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpField;
@@ -11,17 +14,37 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
-
-import static org.eclipse.jetty.http3.qpack.QpackEncoder.C_METHODS;
-import static org.eclipse.jetty.http3.qpack.QpackEncoder.C_SCHEME_HTTP;
-import static org.eclipse.jetty.http3.qpack.QpackEncoder.C_SCHEME_HTTPS;
-import static org.eclipse.jetty.http3.qpack.QpackEncoder.STATUSES;
+import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.util.StringUtil;
 
 public class Http3Fields implements HttpFields
 {
+    public static final HttpField[] STATUSES = new HttpField[599];
+    private static final EnumSet<HttpHeader> IGNORED_HEADERS = EnumSet.of(HttpHeader.CONNECTION, HttpHeader.KEEP_ALIVE,
+        HttpHeader.PROXY_CONNECTION, HttpHeader.TRANSFER_ENCODING, HttpHeader.UPGRADE);
+    public static final PreEncodedHttpField TE_TRAILERS = new PreEncodedHttpField(HttpHeader.TE, "trailers");
+    public static final PreEncodedHttpField C_SCHEME_HTTP = new PreEncodedHttpField(HttpHeader.C_SCHEME, "http");
+    public static final PreEncodedHttpField C_SCHEME_HTTPS = new PreEncodedHttpField(HttpHeader.C_SCHEME, "https");
+    public static final EnumMap<HttpMethod, PreEncodedHttpField> C_METHODS = new EnumMap<>(HttpMethod.class);
+
+    static
+    {
+        for (HttpStatus.Code code : HttpStatus.Code.values())
+        {
+            STATUSES[code.getCode()] = new PreEncodedHttpField(HttpHeader.C_STATUS, Integer.toString(code.getCode()));
+        }
+        for (HttpMethod method : HttpMethod.values())
+        {
+            C_METHODS.put(method, new PreEncodedHttpField(HttpHeader.C_METHOD, method.asString()));
+        }
+    }
+
     private final List<HttpField> pseudoHeaders = new ArrayList<>(8);
     private final HttpFields httpFields;
+    private Set<String> hopHeaders;
+    private HttpField contentLengthHeader;
 
     public Http3Fields(MetaData metadata)
     {
@@ -55,6 +78,27 @@ public class Http3Fields implements HttpFields
                 status = new HttpField.IntValueHttpField(HttpHeader.C_STATUS, code);
             pseudoHeaders.add(status);
         }
+
+        if (httpFields != null)
+        {
+            // Remove the headers specified in the Connection header,
+            // for example: Connection: Close, TE, Upgrade, Custom.
+            for (String value : httpFields.getCSV(HttpHeader.CONNECTION, false))
+            {
+                if (hopHeaders == null)
+                    hopHeaders = new HashSet<>();
+                hopHeaders.add(StringUtil.asciiToLowerCase(value));
+            }
+
+            // If the HttpFields doesn't have content-length we will add it at the end from the metadata.
+            if (httpFields.getField(HttpHeader.CONTENT_LENGTH) == null)
+            {
+                long contentLength = metadata.getContentLength();
+                if (contentLength >= 0)
+                    contentLengthHeader = new HttpField(HttpHeader.CONTENT_LENGTH, String.valueOf(contentLength));
+            }
+        }
+
     }
 
     @Override
@@ -66,28 +110,43 @@ public class Http3Fields implements HttpFields
     @Override
     public HttpField getField(int index)
     {
-        if (index < pseudoHeaders.size())
-            return pseudoHeaders.get(index);
-        else if (httpFields != null)
-            return httpFields.getField(index - pseudoHeaders.size());
-        else
-            throw new NoSuchElementException();
+        return stream().skip(index).findFirst().orElse(null);
     }
 
     @Override
     public int size()
     {
-        if (httpFields == null)
-            return pseudoHeaders.size();
-        return pseudoHeaders.size() + httpFields.size();
+        return Math.toIntExact(stream().count());
     }
 
     @Override
     public Stream<HttpField> stream()
     {
+        Stream<HttpField> pseudoHeadersStream = pseudoHeaders.stream();
         if (httpFields == null)
-            return pseudoHeaders.stream();
-        return Stream.concat(pseudoHeaders.stream(), httpFields.stream());
+            return pseudoHeadersStream;
+
+        Stream<HttpField> httpFieldStream = httpFields.stream().filter(field ->
+        {
+            HttpHeader header = field.getHeader();
+
+            // If the header is specifically ignored skip it (Connection Specific Headers).
+            if (header != null && IGNORED_HEADERS.contains(header))
+                return false;
+
+            // If this is the TE header field it can only have the value "trailers".
+            if ((header == HttpHeader.TE) && !field.contains("trailers"))
+                return false;
+
+            // Remove the headers nominated by the Connection header field.
+            String name = field.getLowerCaseName();
+            return hopHeaders == null || !hopHeaders.contains(name);
+        });
+
+        if (contentLengthHeader != null)
+            return Stream.concat(pseudoHeadersStream, Stream.concat(httpFieldStream, Stream.of(contentLengthHeader)));
+        else
+            return Stream.concat(pseudoHeadersStream, httpFieldStream);
     }
 
     @Override
