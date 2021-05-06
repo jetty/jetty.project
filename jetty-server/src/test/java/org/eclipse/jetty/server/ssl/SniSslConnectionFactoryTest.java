@@ -44,6 +44,7 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
@@ -123,20 +124,22 @@ public class SniSslConnectionFactoryTest
 
     protected void start(String keystorePath) throws Exception
     {
-        start(ssl -> ssl.setKeyStorePath(keystorePath));
+        start(ssl ->
+        {
+            ssl.setKeyStorePath(keystorePath);
+            ssl.setKeyManagerPassword("keypwd");
+        });
     }
 
     protected void start(Consumer<SslContextFactory.Server> sslConfig) throws Exception
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePassword("storepwd");
         sslConfig.accept(sslContextFactory);
 
         File keystoreFile = sslContextFactory.getKeyStoreResource().getFile();
         if (!keystoreFile.exists())
             throw new FileNotFoundException(keystoreFile.getAbsolutePath());
-
-        sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
 
         ServerConnector https = _connector = new ServerConnector(_server,
             new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
@@ -194,6 +197,7 @@ public class SniSslConnectionFactoryTest
         start(ssl ->
         {
             ssl.setKeyStorePath("src/test/resources/keystore_sni.p12");
+            ssl.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
             ssl.setSNISelector((keyType, issuers, session, sniHost, certificates) ->
             {
                 // Make sure the *.domain.com comes before sub.domain.com
@@ -264,6 +268,7 @@ public class SniSslConnectionFactoryTest
         start(ssl ->
         {
             ssl.setKeyStorePath("src/test/resources/keystore_sni.p12");
+            ssl.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
             // Do not allow unmatched SNI.
             ssl.setSniRequired(true);
         });
@@ -281,6 +286,7 @@ public class SniSslConnectionFactoryTest
         start(ssl ->
         {
             ssl.setKeyStorePath("src/test/resources/keystore_sni.p12");
+            ssl.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
             // Do not allow unmatched SNI.
             ssl.setSniRequired(false);
             _httpsConfiguration.getCustomizers().stream()
@@ -307,6 +313,7 @@ public class SniSslConnectionFactoryTest
         start(ssl ->
         {
             ssl.setKeyStorePath("src/test/resources/keystore_sni.p12");
+            ssl.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
             // Do not allow unmatched SNI.
             ssl.setSniRequired(true);
             ssl.setSNISelector((keyType, issuers, session, sniHost, certificates) ->
@@ -338,6 +345,7 @@ public class SniSslConnectionFactoryTest
         {
             // Keystore has only one certificate, but we want to enforce SNI.
             ssl.setKeyStorePath("src/test/resources/keystore");
+            ssl.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
             ssl.setSniRequired(true);
         });
 
@@ -517,6 +525,21 @@ public class SniSslConnectionFactoryTest
         assertEquals("customize connector class org.eclipse.jetty.server.HttpConnection,true", history.poll());
         assertEquals("customize http class org.eclipse.jetty.server.HttpConnection,true", history.poll());
         assertEquals(0, history.size());
+    }
+
+    @Test
+    public void testSNIWithDifferentKeyTypes() throws Exception
+    {
+        // This KeyStore contains 2 certificates, one with keyAlg=EC, one with keyAlg=RSA.
+        start(ssl -> ssl.setKeyStorePath("src/test/resources/keystore_sni_key_types.p12"));
+
+        // Make a request with SNI = rsa.domain.com, the RSA certificate should be chosen.
+        HttpTester.Response response1 = HttpTester.parseResponse(getResponse("rsa.domain.com", "rsa.domain.com"));
+        assertEquals(HttpStatus.OK_200, response1.getStatus());
+
+        // Make a request with SNI = ec.domain.com, the EC certificate should be chosen.
+        HttpTester.Response response2 = HttpTester.parseResponse(getResponse("ec.domain.com", "ec.domain.com"));
+        assertEquals(HttpStatus.OK_200, response2.getStatus());
     }
 
     private String getResponse(String host, String cn) throws Exception
