@@ -40,6 +40,7 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
@@ -487,6 +488,21 @@ public class SniSslConnectionFactoryTest
         assertEquals("customize connector class org.eclipse.jetty.server.HttpConnection,true", history.poll());
         assertEquals("customize http class org.eclipse.jetty.server.HttpConnection,true", history.poll());
         assertEquals(0, history.size());
+    }
+
+    @Test
+    public void testSNIWithDifferentKeyTypes() throws Exception
+    {
+        // This KeyStore contains 2 certificates, one with keyAlg=EC, one with keyAlg=RSA.
+        start(ssl -> ssl.setKeyStorePath("src/test/resources/keystore_sni_key_types.p12"));
+
+        // Make a request with SNI = rsa.domain.com, the RSA certificate should be chosen.
+        HttpTester.Response response1 = HttpTester.parseResponse(getResponse("rsa.domain.com", "rsa.domain.com"));
+        assertEquals(HttpStatus.OK_200, response1.getStatus());
+
+        // Make a request with SNI = ec.domain.com, the EC certificate should be chosen.
+        HttpTester.Response response2 = HttpTester.parseResponse(getResponse("ec.domain.com", "ec.domain.com"));
+        assertEquals(HttpStatus.OK_200, response2.getStatus());
     }
 
     private String getResponse(String host, String cn) throws Exception

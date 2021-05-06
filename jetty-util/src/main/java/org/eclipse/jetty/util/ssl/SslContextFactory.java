@@ -2155,12 +2155,17 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         }
 
         /**
-         * Does the default {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} implementation
-         * require an SNI match?  Note that if a non SNI handshake is accepted, requests may still be rejected
-         * at the HTTP level for incorrect SNI (see SecureRequestCustomizer).
+         * <p>Returns whether an SNI match is required when choosing the alias that
+         * identifies the certificate to send to the client.</p>
+         * <p>The exact logic to choose an alias given the SNI is configurable via
+         * {@link #setSNISelector(SniX509ExtendedKeyManager.SniSelector)}.</p>
+         * <p>The default implementation is {@link #sniSelect(String, Principal[], SSLSession, String, Collection)}
+         * and if SNI is not required it will delegate the TLS implementation to
+         * choose an alias (typically the first alias in the KeyStore).</p>
+         * <p>Note that if a non SNI handshake is accepted, requests may still be rejected
+         * at the HTTP level for incorrect SNI (see SecureRequestCustomizer).</p>
          *
-         * @return true if no SNI match is handled as no certificate match, false if no SNI match is handled by
-         * delegation to the non SNI matching methods.
+         * @return whether an SNI match is required when choosing the alias that identifies the certificate
          */
         @ManagedAttribute("Whether the TLS handshake is rejected if there is no SNI host match")
         public boolean isSniRequired()
@@ -2169,14 +2174,12 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         }
 
         /**
-         * Set if the default {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} implementation
-         * require an SNI match? Note that if a non SNI handshake is accepted, requests may still be rejected
-         * at the HTTP level for incorrect SNI (see SecureRequestCustomizer).
-         * This setting may have no effect if {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} is
-         * overridden or a non null function is passed to {@link #setSNISelector(SniX509ExtendedKeyManager.SniSelector)}.
+         * <p>Sets whether an SNI match is required when choosing the alias that
+         * identifies the certificate to send to the client.</p>
+         * <p>This setting may have no effect if {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} is
+         * overridden or a custom function is passed to {@link #setSNISelector(SniX509ExtendedKeyManager.SniSelector)}.</p>
          *
-         * @param sniRequired true if no SNI match is handled as no certificate match, false if no SNI match is handled by
-         * delegation to the non SNI matching methods.
+         * @param sniRequired whether an SNI match is required when choosing the alias that identifies the certificate
          */
         public void setSniRequired(boolean sniRequired)
         {
@@ -2244,9 +2247,15 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
                     .filter(x509 -> x509.matches(sniHost))
                     .collect(Collectors.toList());
 
-                // No match, let the JDK decide unless unmatched SNIs are rejected.
                 if (matching.isEmpty())
-                    return isSniRequired() ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE;
+                {
+                    // There is no match for this SNI among the certificates valid for
+                    // this keyType; check if there is any certificate that matches this
+                    // SNI, as we will likely be called again with a different keyType.
+                    boolean anyMatching = aliasCerts().values().stream()
+                        .anyMatch(x509 -> x509.matches(sniHost));
+                    return isSniRequired() || anyMatching ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE;
+                }
 
                 String alias = matching.get(0).getAlias();
                 if (matching.size() == 1)
