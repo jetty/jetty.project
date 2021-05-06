@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
 import javax.net.ssl.ExtendedSSLSession;
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SNIMatcher;
+import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
@@ -115,12 +117,16 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         String host = null;
         if (session instanceof ExtendedSSLSession)
         {
-            host = ((ExtendedSSLSession)session).getRequestedServerNames().stream()
-                .findAny()
-                .filter(SNIHostName.class::isInstance)
-                .map(SNIHostName.class::cast)
-                .map(SNIHostName::getAsciiName)
-                .orElse(null);
+            List<SNIServerName> serverNames = ((ExtendedSSLSession)session).getRequestedServerNames();
+            if (serverNames != null)
+            {
+                host = serverNames.stream()
+                    .findAny()
+                    .filter(SNIHostName.class::isInstance)
+                    .map(SNIHostName.class::cast)
+                    .map(SNIHostName::getAsciiName)
+                    .orElse(null);
+            }
         }
         if (host == null)
         {
