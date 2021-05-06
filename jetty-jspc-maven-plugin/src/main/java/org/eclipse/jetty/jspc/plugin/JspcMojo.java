@@ -243,6 +243,12 @@ public class JspcMojo extends AbstractMojo
     private String targetVersion;
 
     /**
+     * The JspC instance being used to compile the jsps.
+     */
+    @Parameter
+    private JettyJspC jspc;
+
+    /**
      * Whether dirs on the classpath should be scanned as well as jars.
      * True by default. This allows for scanning for tlds of dependent projects that
      * are in the reactor as unassembled jars.
@@ -325,7 +331,8 @@ public class JspcMojo extends AbstractMojo
         URLClassLoader fakeWebAppClassLoader = new URLClassLoader(new URL[0], webAppClassLoader);
         Thread.currentThread().setContextClassLoader(fakeWebAppClassLoader);
 
-        JettyJspC jspc = new JettyJspC();
+        if (jspc == null)
+            jspc = new JettyJspC();
 
         jspc.setWebXmlInclude(webXmlFragment);
         jspc.setUriroot(webAppSourceDirectory);
