@@ -144,7 +144,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
     {
         if (scan < 0)
         {
-            getLog().info("Redeployment not enabled");
+            getLog().info("Automatic redeployment disabled, see 'mvn jetty:help' for more redeployment options");
             return; //no automatic or manual redeployment
         }
         
