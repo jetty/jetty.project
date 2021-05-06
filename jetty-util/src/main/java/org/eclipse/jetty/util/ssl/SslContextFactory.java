@@ -479,6 +479,11 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         _certWilds.clear();
     }
 
+    Map<String, X509> aliasCerts()
+    {
+        return _aliasX509;
+    }
+
     @ManagedAttribute(value = "The selected TLS protocol versions", readonly = true)
     public String[] getSelectedProtocols()
     {
@@ -2118,7 +2123,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
             _trustStoreResource);
     }
 
-    class Factory
+    private static class Factory
     {
         private final KeyStore _keyStore;
         private final KeyStore _trustStore;
@@ -2133,7 +2138,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         }
     }
 
-    class AliasSNIMatcher extends SNIMatcher
+    static class AliasSNIMatcher extends SNIMatcher
     {
         private String _host;
 
@@ -2235,11 +2240,17 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         }
 
         /**
-         * Does the default {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} implementation
-         * require an SNI match?  Note that if a non SNI handshake is accepted, requests may still be rejected
-         * at the HTTP level for incorrect SNI (see SecureRequestCustomizer).
-         * @return true if no SNI match is handled as no certificate match, false if no SNI match is handled by
-         *         delegation to the non SNI matching methods.
+         * <p>Returns whether an SNI match is required when choosing the alias that
+         * identifies the certificate to send to the client.</p>
+         * <p>The exact logic to choose an alias given the SNI is configurable via
+         * {@link #setSNISelector(SniX509ExtendedKeyManager.SniSelector)}.</p>
+         * <p>The default implementation is {@link #sniSelect(String, Principal[], SSLSession, String, Collection)}
+         * and if SNI is not required it will delegate the TLS implementation to
+         * choose an alias (typically the first alias in the KeyStore).</p>
+         * <p>Note that if a non SNI handshake is accepted, requests may still be rejected
+         * at the HTTP level for incorrect SNI (see SecureRequestCustomizer).</p>
+         *
+         * @return whether an SNI match is required when choosing the alias that identifies the certificate
          */
         @ManagedAttribute("Whether the TLS handshake is rejected if there is no SNI host match")
         public boolean isSniRequired()
@@ -2248,13 +2259,12 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         }
 
         /**
-         * Set if the default {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} implementation
-         * require an SNI match? Note that if a non SNI handshake is accepted, requests may still be rejected
-         * at the HTTP level for incorrect SNI (see SecureRequestCustomizer).
-         * This setting may have no effect if {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} is
-         * overridden or a non null function is passed to {@link #setSNISelector(SniX509ExtendedKeyManager.SniSelector)}.
-         * @param sniRequired true if no SNI match is handled as no certificate match, false if no SNI match is handled by
-         *                    delegation to the non SNI matching methods.
+         * <p>Sets whether an SNI match is required when choosing the alias that
+         * identifies the certificate to send to the client.</p>
+         * <p>This setting may have no effect if {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} is
+         * overridden or a custom function is passed to {@link #setSNISelector(SniX509ExtendedKeyManager.SniSelector)}.</p>
+         *
+         * @param sniRequired whether an SNI match is required when choosing the alias that identifies the certificate
          */
         public void setSniRequired(boolean sniRequired)
         {
@@ -2297,7 +2307,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
             if (sniHost == null)
             {
                 // No SNI, so reject or delegate.
-                return _sniRequired ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE;
+                return isSniRequired() ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE;
             }
             else
             {
@@ -2306,9 +2316,15 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
                     .filter(x509 -> x509.matches(sniHost))
                     .collect(Collectors.toList());
 
-                // No match, let the JDK decide unless unmatched SNIs are rejected.
                 if (matching.isEmpty())
-                    return isSniRequired() ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE;
+                {
+                    // There is no match for this SNI among the certificates valid for
+                    // this keyType; check if there is any certificate that matches this
+                    // SNI, as we will likely be called again with a different keyType.
+                    boolean anyMatching = aliasCerts().values().stream()
+                        .anyMatch(x509 -> x509.matches(sniHost));
+                    return isSniRequired() || anyMatching ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE;
+                }
 
                 String alias = matching.get(0).getAlias();
                 if (matching.size() == 1)

@@ -245,7 +245,7 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
          * <p>Selects a certificate based on SNI information.</p>
          * <p>This method may be invoked multiple times during the TLS handshake, with different parameters.
          * For example, the {@code keyType} could be different, and subsequently the collection of certificates
-         * (because they need to match the {@code keyType}.</p>
+         * (because they need to match the {@code keyType}).</p>
          *
          * @param keyType the key algorithm type name
          * @param issuers the list of acceptable CA issuer subject names or null if it does not matter which issuers are used
