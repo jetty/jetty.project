@@ -16,8 +16,6 @@ package org.eclipse.jetty.http3.qpack;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.qpack.internal.parser.DecoderInstructionParser;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -39,10 +37,30 @@ public class DecoderInstructionParserTest
     }
 
     @Test
-    public void testAddWithReferencedEntry() throws Exception
+    public void testSetDynamicTableCapacityInstruction() throws Exception
     {
-        String insertAuthorityEntry = "c00f7777772e6578616d706c652e636f6d";
-        ByteBuffer buffer = BufferUtil.toBuffer(TypeUtil.fromHexString(insertAuthorityEntry));
+        // Set Dynamic Table Capacity=220.
+        ByteBuffer buffer = QpackTestUtil.hexToBuffer("3fbd 01");
+        _instructionParser.parse(buffer);
+        assertThat(_handler.setCapacities.poll(), is(220));
+        assertTrue(_handler.isEmpty());
+    }
+
+    @Test
+    public void testDuplicateInstruction() throws Exception
+    {
+        // Duplicate (Relative Index = 2).
+        ByteBuffer buffer = QpackTestUtil.hexToBuffer("02");
+        _instructionParser.parse(buffer);
+        assertThat(_handler.duplicates.poll(), is(2));
+        assertTrue(_handler.isEmpty());
+    }
+
+    @Test
+    public void testInsertNameWithReferenceInstruction() throws Exception
+    {
+        // Insert With Name Reference to Static Table, Index=0 (:authority=www.example.com).
+        ByteBuffer buffer = QpackTestUtil.hexToBuffer("c00f 7777 772e 6578 616d 706c 652e 636f 6d");
         _instructionParser.parse(buffer);
         DecoderParserDebugHandler.ReferencedEntry entry = _handler.referencedNameEntries.poll();
         assertNotNull(entry);
@@ -50,8 +68,8 @@ public class DecoderInstructionParserTest
         assertThat(entry.dynamic, is(false));
         assertThat(entry.value, is("www.example.com"));
 
-        String insertPathEntry = "c10c2f73616d706c652f70617468";
-        buffer = BufferUtil.toBuffer(TypeUtil.fromHexString(insertPathEntry));
+        // Insert With Name Reference to Static Table, Index=1 (:path=/sample/path).
+        buffer = QpackTestUtil.hexToBuffer("c10c 2f73 616d 706c 652f 7061 7468");
         _instructionParser.parse(buffer);
         entry = _handler.referencedNameEntries.poll();
         assertNotNull(entry);
@@ -61,12 +79,19 @@ public class DecoderInstructionParserTest
     }
 
     @Test
-    public void testSetCapacity() throws Exception
+    public void testInsertWithLiteralNameInstruction() throws Exception
     {
-        String setCapacityString = "3fbd01";
-        ByteBuffer buffer = BufferUtil.toBuffer(TypeUtil.fromHexString(setCapacityString));
+        // Insert With Literal Name (custom-key=custom-value).
+        ByteBuffer buffer = QpackTestUtil.hexToBuffer("4a63 7573 746f 6d2d 6b65 790c 6375 7374 6f6d 2d76 616c 7565");
         _instructionParser.parse(buffer);
-        assertThat(_handler.setCapacities.poll(), is(220));
+
+        // We received the instruction correctly.
+        DecoderParserDebugHandler.LiteralEntry entry = _handler.literalNameEntries.poll();
+        assertNotNull(entry);
+        assertThat(entry.name, is("custom-key"));
+        assertThat(entry.value, is("custom-value"));
+
+        // There are no other instructions received.
         assertTrue(_handler.isEmpty());
     }
 }
