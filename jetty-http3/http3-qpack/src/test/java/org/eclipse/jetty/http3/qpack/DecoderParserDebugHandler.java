@@ -22,7 +22,7 @@ public class DecoderParserDebugHandler implements DecoderInstructionParser.Handl
 {
     public Queue<Integer> setCapacities = new LinkedList<>();
     public Queue<Integer> duplicates = new LinkedList<>();
-    public Queue<Entry> literalNameEntries = new LinkedList<>();
+    public Queue<LiteralEntry> literalNameEntries = new LinkedList<>();
     public Queue<ReferencedEntry> referencedNameEntries = new LinkedList<>();
 
     private final QpackDecoder _decoder;
@@ -37,30 +37,30 @@ public class DecoderParserDebugHandler implements DecoderInstructionParser.Handl
         _decoder = decoder;
     }
 
-    public static class Entry
+    public static class LiteralEntry
     {
-        public Entry(String name, String value)
+        public String name;
+        public String value;
+
+        public LiteralEntry(String name, String value)
         {
             this.value = value;
             this.name = name;
         }
-
-        String name;
-        String value;
     }
 
     public static class ReferencedEntry
     {
+        public int index;
+        public boolean dynamic;
+        public String value;
+
         public ReferencedEntry(int index, boolean dynamic, String value)
         {
             this.index = index;
             this.dynamic = dynamic;
             this.value = value;
         }
-
-        int index;
-        boolean dynamic;
-        String value;
     }
 
     @Override
@@ -90,7 +90,7 @@ public class DecoderParserDebugHandler implements DecoderInstructionParser.Handl
     @Override
     public void onInsertWithLiteralName(String name, String value) throws QpackException
     {
-        literalNameEntries.add(new Entry(name, value));
+        literalNameEntries.add(new LiteralEntry(name, value));
         if (_decoder != null)
             _decoder.insert(name, value);
     }
