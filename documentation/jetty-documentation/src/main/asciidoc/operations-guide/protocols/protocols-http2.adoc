@@ -143,6 +143,3 @@ microservice3 <--> jetty : HTTP/2
 microservice2 <--> microservice3 : HTTP/2
 microservice1 <--> microservice3 : HTTP/2
 ----
-
-include::protocols-http2s.adoc[]
-include::protocols-http2c.adoc[]

@@ -8,7 +8,7 @@ assignees: ''
 
 **Jetty version**
 
-**Java version**
+**Java version/vendor** `(use: java -version)`
 
 **OS type/version**
 

@@ -84,6 +84,17 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPCli
 
 Stopping `HttpClient` makes sure that the memory it holds (for example, authentication credentials, cookies, etc.) is released, and that the thread pool and scheduler are properly stopped allowing all threads used by `HttpClient` to exit.
 
+[NOTE]
+====
+You cannot call `HttpClient.stop()` from one of its own threads, as it would cause a deadlock.
+It is recommended that you stop `HttpClient` from an unrelated thread, or from a newly allocated thread, for example:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=stopFromOtherThread]
+----
+====
+
 [[pg-client-http-arch]]
 ==== HttpClient Architecture
 

@@ -859,4 +859,54 @@ public class DistributionTests extends AbstractJettyHomeTest
             }
         }
     }
+
+    @Test
+    public void testDefaultLoggingProviderNotActiveWhenExplicitProviderIsPresent() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution1 = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        String[] args1 = {
+            "--approve-all-licenses",
+            "--add-modules=logging-logback,http"
+        };
+
+        try (JettyHomeTester.Run run1 = distribution1.start(args1))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            Path jettyBase = run1.getConfig().getJettyBase();
+
+            assertTrue(Files.exists(jettyBase.resolve("resources/logback.xml")));
+            // The jetty-logging.properties should be absent.
+            assertFalse(Files.exists(jettyBase.resolve("resources/jetty-logging.properties")));
+        }
+
+        JettyHomeTester distribution2 = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        // Try the modules in reverse order, since it may execute a different code path.
+        String[] args2 = {
+            "--approve-all-licenses",
+            "--add-modules=http,logging-logback"
+        };
+
+        try (JettyHomeTester.Run run2 = distribution2.start(args2))
+        {
+            assertTrue(run2.awaitFor(1000, TimeUnit.SECONDS));
+            assertEquals(0, run2.getExitValue());
+
+            Path jettyBase = run2.getConfig().getJettyBase();
+
+            assertTrue(Files.exists(jettyBase.resolve("resources/logback.xml")));
+            // The jetty-logging.properties should be absent.
+            assertFalse(Files.exists(jettyBase.resolve("resources/jetty-logging.properties")));
+        }
+    }
 }

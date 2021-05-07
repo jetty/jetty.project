@@ -18,6 +18,7 @@ import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.javax.common.encoders.AvailableEncoders;
@@ -64,10 +65,10 @@ public class JavaxWebSocketFrameHandlerMetadata
      */
     private UriTemplatePathSpec uriTemplatePathSpec;
 
-    public JavaxWebSocketFrameHandlerMetadata(EndpointConfig endpointConfig)
+    public JavaxWebSocketFrameHandlerMetadata(EndpointConfig endpointConfig, WebSocketComponents components)
     {
-        this.availableDecoders = new AvailableDecoders(endpointConfig);
-        this.availableEncoders = new AvailableEncoders(endpointConfig);
+        this.availableDecoders = new AvailableDecoders(endpointConfig, components);
+        this.availableEncoders = new AvailableEncoders(endpointConfig, components);
     }
 
     public AvailableDecoders getAvailableDecoders()

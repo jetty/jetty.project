@@ -66,6 +66,11 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
         return components.getObjectFactory();
     }
 
+    public WebSocketComponents getWebSocketComponents()
+    {
+        return components;
+    }
+
     public long getDefaultAsyncSendTimeout()
     {
         return defaultCustomizer.getWriteTimeout().toMillis();

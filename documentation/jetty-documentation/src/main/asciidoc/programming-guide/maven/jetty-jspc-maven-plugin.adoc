@@ -90,6 +90,16 @@ keepSources::
 Default value: false
 +
 If true, the generated .java files are not deleted at the end of processing.
+scanAllDirectories::
+Default value: true
++
+Determines if dirs on the classpath should be scanned as well as jars.
+If true, this allows scanning for tlds of dependent projects that
+are in the reactor as unassembled jars.
+scanManifest::
+Default value: true
++
+Determines if the manifest of JAR files found on the classpath should be scanned.
 sourceVersion::
 Introduced in Jetty 9.3.6.
 Java version of jsp source files.

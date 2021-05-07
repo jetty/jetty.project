@@ -11,14 +11,19 @@
 // ========================================================================
 //
 
-[[websocket-jetty-api-adapter]]
-=== Using the WebSocketAdapter
+package org.eclipse.jetty.cdi.tests.websocket;
 
-A basic adapter for managing the Session object on the WebSocketListener.
+import java.util.logging.Logger;
+import javax.enterprise.inject.Default;
+import javax.enterprise.inject.Produces;
+import javax.enterprise.inject.spi.InjectionPoint;
 
-[source, java, subs="{sub-order}"]
-----
-include::{SRCDIR}/jetty-websocket/websocket-jetty-common/src/test/java/org/eclipse/jetty/websocket/common/endpoints/adapters/AdapterEchoSocket.java[]
-----
-
-This is a convenience class to make using the WebSocketListener easier, and provides some useful methods to check the state of the Session.
+public class LogFactory
+{
+    @Produces
+    @Default
+    public Logger createLogger(InjectionPoint injectionPoint)
+    {
+        return Logger.getLogger(injectionPoint.getMember().getDeclaringClass().getName());
+    }
+}

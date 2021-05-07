@@ -15,10 +15,10 @@ package org.eclipse.jetty.websocket.server.internal;
 
 import javax.servlet.ServletContext;
 
-import org.eclipse.jetty.websocket.api.WebSocketContainer;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
@@ -32,9 +32,9 @@ public class JettyServerFrameHandlerFactory extends JettyWebSocketFrameHandlerFa
         return (container == null) ? null : container.getBean(JettyServerFrameHandlerFactory.class);
     }
 
-    public JettyServerFrameHandlerFactory(WebSocketContainer container)
+    public JettyServerFrameHandlerFactory(JettyWebSocketServerContainer container, WebSocketComponents components)
     {
-        super(container);
+        super(container, components);
     }
 
     @Override

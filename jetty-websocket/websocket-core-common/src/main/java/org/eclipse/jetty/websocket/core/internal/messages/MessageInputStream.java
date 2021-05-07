@@ -95,7 +95,9 @@ public class MessageInputStream extends InputStream implements MessageSink
     @Override
     public int read(final byte[] b, final int off, final int len) throws IOException
     {
-        return read(ByteBuffer.wrap(b, off, len).flip());
+        ByteBuffer buffer = ByteBuffer.wrap(b, off, len).slice();
+        BufferUtil.clear(buffer);
+        return read(buffer);
     }
 
     public int read(ByteBuffer buffer) throws IOException

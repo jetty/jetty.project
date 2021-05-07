@@ -82,7 +82,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         File tempDirectory = context.getTempDirectory();
 
         // if we're not persisting the temp dir contents delete it
-        if (!context.isPersistTempDirectory() && !IO.isEmptyDir(tempDirectory))
+        if (!context.isPersistTempDirectory())
         {
             IO.delete(tempDirectory);
         }
@@ -165,8 +165,11 @@ public class WebInfConfiguration extends AbstractConfiguration
         //We need to make a temp dir. Check if the user has set a directory to use instead
         //of java.io.tmpdir as the parent of the dir
         File baseTemp = asFile(context.getAttribute(WebAppContext.BASETEMPDIR));
-        if (baseTemp != null && baseTemp.isDirectory() && baseTemp.canWrite())
+        if (baseTemp != null)
         {
+            if (!baseTemp.isDirectory() || !baseTemp.canWrite())
+                throw new IllegalStateException(WebAppContext.BASETEMPDIR + " is not a writable directory");
+
             //Make a temp directory as a child of the given base dir
             makeTempDirectory(baseTemp, context);
             return;
@@ -194,23 +197,20 @@ public class WebInfConfiguration extends AbstractConfiguration
      * Given an Object, return File reference for object.
      * Typically used to convert anonymous Object from getAttribute() calls to a File object.
      *
-     * @param fileattr the file attribute to analyze and return from (supports type File and type String, all others return null
-     * @return the File object, null if null, or null if not a File or String
+     * @param fileattr the file attribute to analyze and return from (supports type File, Path, and String).
+     * @return the File object if it can be converted otherwise null.
      */
     private File asFile(Object fileattr)
     {
         if (fileattr == null)
-        {
             return null;
-        }
         if (fileattr instanceof File)
-        {
             return (File)fileattr;
-        }
         if (fileattr instanceof String)
-        {
             return new File((String)fileattr);
-        }
+        if (fileattr instanceof Path)
+            return ((Path)fileattr).toFile();
+
         return null;
     }
 

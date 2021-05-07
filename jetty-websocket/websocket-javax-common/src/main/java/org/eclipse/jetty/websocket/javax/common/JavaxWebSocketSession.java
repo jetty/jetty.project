@@ -74,8 +74,8 @@ public class JavaxWebSocketSession implements javax.websocket.Session
         this.coreSession = coreSession;
         this.frameHandler = frameHandler;
         this.sessionId = UUID.randomUUID().toString();
-        this.availableDecoders = new AvailableDecoders(endpointConfig);
-        this.availableEncoders = new AvailableEncoders(endpointConfig);
+        this.availableDecoders = new AvailableDecoders(endpointConfig, container.getWebSocketComponents());
+        this.availableEncoders = new AvailableEncoders(endpointConfig, container.getWebSocketComponents());
 
         if (endpointConfig instanceof PathParamProvider)
         {

@@ -1270,6 +1270,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         @Override
         public void succeeded()
         {
+            commit();
+
             bytesWritten.addAndGet(frameBytes);
             frameBytes = 0;
 

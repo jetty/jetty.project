@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
@@ -29,6 +30,14 @@ import org.slf4j.LoggerFactory;
 class AsyncContentProducer implements ContentProducer
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncContentProducer.class);
+    private static final Throwable UNCONSUMED_CONTENT_EXCEPTION = new IOException("Unconsumed content")
+    {
+        @Override
+        public synchronized Throwable fillInStackTrace()
+        {
+            return this;
+        }
+    };
 
     private final AutoLock _lock = new AutoLock();
     private final HttpChannel _httpChannel;
@@ -150,11 +159,15 @@ class AsyncContentProducer implements ContentProducer
     }
 
     @Override
-    public boolean consumeAll(Throwable x)
+    public boolean consumeAll()
     {
         assertLocked();
+        Throwable x = UNCONSUMED_CONTENT_EXCEPTION;
         if (LOG.isDebugEnabled())
-            LOG.debug("consumeAll [e={}] {}", x, this);
+        {
+            x = new IOException("Unconsumed content");
+            LOG.debug("consumeAll {}", this, x);
+        }
         failCurrentContent(x);
         // A specific HttpChannel mechanism must be used as the following code
         // does not guarantee that the channel will synchronously deliver all
@@ -302,12 +315,16 @@ class AsyncContentProducer implements ContentProducer
 
                 // In case the _rawContent was set by consumeAll(), check the httpChannel
                 // to see if it has a more precise error. Otherwise, the exact same
-                // special content will be returned by the httpChannel.
-                HttpInput.Content refreshedRawContent = produceRawContent();
-                if (refreshedRawContent != null)
-                    _rawContent = refreshedRawContent;
+                // special content will be returned by the httpChannel; do not do that
+                // if the _error flag was set, meaning the current error is definitive.
+                if (!_error)
+                {
+                    HttpInput.Content refreshedRawContent = produceRawContent();
+                    if (refreshedRawContent != null)
+                        _rawContent = refreshedRawContent;
+                    _error = _rawContent.getError() != null;
+                }
 
-                _error = _rawContent.getError() != null;
                 if (LOG.isDebugEnabled())
                     LOG.debug("raw content is special (with error = {}), returning it {}", _error, this);
                 return _rawContent;
@@ -317,7 +334,9 @@ class AsyncContentProducer implements ContentProducer
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("using interceptor to transform raw content {}", this);
-                _transformedContent = _interceptor.readFrom(_rawContent);
+                _transformedContent = intercept();
+                if (_error)
+                    return _rawContent;
             }
             else
             {
@@ -367,6 +386,26 @@ class AsyncContentProducer implements ContentProducer
         if (LOG.isDebugEnabled())
             LOG.debug("returning transformed content {}", this);
         return _transformedContent;
+    }
+
+    private HttpInput.Content intercept()
+    {
+        try
+        {
+            return _interceptor.readFrom(_rawContent);
+        }
+        catch (Throwable x)
+        {
+            IOException failure = new IOException("Bad content", x);
+            failCurrentContent(failure);
+            // Set the _error flag to mark the error as definitive, i.e.:
+            // do not try to produce new raw content to get a fresher error.
+            _error = true;
+            Response response = _httpChannel.getResponse();
+            if (response.isCommitted())
+                _httpChannel.abort(failure);
+            return null;
+        }
     }
 
     private HttpInput.Content produceRawContent()

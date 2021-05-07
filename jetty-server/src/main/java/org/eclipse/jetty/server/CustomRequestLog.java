@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -279,6 +280,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     private final String _formatString;
     private transient PathMappings<String> _ignorePathMap;
     private String[] _ignorePaths;
+    private BiPredicate<Request, Response> _filter;
 
     public CustomRequestLog()
     {
@@ -311,6 +313,16 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         }
     }
 
+    /**
+     * This allows you to set a custom filter to decide whether to log a request or omit it from the request log.
+     * This filter is evaluated after path filtering is applied from {@link #setIgnorePaths(String[])}.
+     * @param filter - a BiPredicate which returns true if this request should be logged.
+     */
+    public void setFilter(BiPredicate<Request, Response> filter)
+    {
+        _filter = filter;
+    }
+
     @ManagedAttribute("The RequestLogWriter")
     public RequestLog.Writer getWriter()
     {
@@ -325,11 +337,14 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @Override
     public void log(Request request, Response response)
     {
+        if (_ignorePathMap != null && _ignorePathMap.getMatch(request.getRequestURI()) != null)
+            return;
+
+        if (_filter != null && !_filter.test(request, response))
+            return;
+
         try
         {
-            if (_ignorePathMap != null && _ignorePathMap.getMatch(request.getRequestURI()) != null)
-                return;
-
             StringBuilder sb = _buffers.get();
             sb.setLength(0);
 
