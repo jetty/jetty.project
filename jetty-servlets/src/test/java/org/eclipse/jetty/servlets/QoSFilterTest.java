@@ -99,10 +99,7 @@ public class QoSFilterTest
 
         rethrowExceptions(futures);
 
-        if (TestServlet.__maxSleepers <= maxQos)
-            LOG.warn("TEST WAS NOT PARALLEL ENOUGH!");
-        else
-            assertThat(TestServlet.__maxSleepers, Matchers.lessThanOrEqualTo(numConnections));
+        assertThat(TestServlet.__maxSleepers, Matchers.lessThanOrEqualTo(numConnections));
     }
 
     @Test
@@ -124,10 +121,7 @@ public class QoSFilterTest
 
         rethrowExceptions(futures);
 
-        if (TestServlet.__maxSleepers < maxQos)
-            LOG.warn("TEST WAS NOT PARALLEL ENOUGH!");
-        else
-            assertEquals(TestServlet.__maxSleepers, maxQos);
+        assertEquals(TestServlet.__maxSleepers, maxQos);
     }
 
     @Test
@@ -149,10 +143,7 @@ public class QoSFilterTest
 
         rethrowExceptions(futures);
 
-        if (TestServlet.__maxSleepers < maxQos)
-            LOG.warn("TEST WAS NOT PARALLEL ENOUGH!");
-        else
-            assertEquals(TestServlet.__maxSleepers, maxQos);
+        assertEquals(TestServlet.__maxSleepers, maxQos);
     }
 
     private void rethrowExceptions(List<Future<Void>> futures) throws Exception
@@ -253,7 +244,7 @@ public class QoSFilterTest
                         __maxSleepers = __sleepers;
                 }
 
-                Thread.sleep(500);
+                Thread.sleep(50);
 
                 synchronized (TestServlet.class)
                 {
