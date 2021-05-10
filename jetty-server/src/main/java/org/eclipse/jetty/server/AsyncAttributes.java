@@ -15,8 +15,8 @@ package org.eclipse.jetty.server;
 
 import java.util.HashSet;
 import java.util.Set;
-import javax.servlet.AsyncContext;
 
+import jakarta.servlet.AsyncContext;
 import org.eclipse.jetty.util.Attributes;
 
 class AsyncAttributes extends Attributes.Wrapper

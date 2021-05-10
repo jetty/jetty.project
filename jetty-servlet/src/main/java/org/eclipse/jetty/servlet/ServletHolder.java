@@ -30,20 +30,20 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import javax.servlet.GenericServlet;
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.Servlet;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRegistration;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.ServletSecurityElement;
-import javax.servlet.SingleThreadModel;
-import javax.servlet.UnavailableException;
-import javax.servlet.http.HttpServletResponse;
 
+import jakarta.servlet.GenericServlet;
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRegistration;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.ServletSecurityElement;
+import jakarta.servlet.SingleThreadModel;
+import jakarta.servlet.UnavailableException;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.RunAsToken;
 import org.eclipse.jetty.server.Request;
@@ -62,7 +62,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Servlet Instance and Context Holder.
  * <p>
- * Holds the name, params and some state of a javax.servlet.Servlet
+ * Holds the name, params and some state of a jakarta.servlet.Servlet
  * instance. It implements the ServletConfig interface.
  * This class will organise the loading of the servlet when needed or
  * requested.
@@ -372,7 +372,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 throw ex;
         }
 
-        //servlet is not an instance of javax.servlet.Servlet
+        //servlet is not an instance of jakarta.servlet.Servlet
         try
         {
             checkServletType();
@@ -496,14 +496,14 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     /**
      * Check to ensure class of servlet is acceptable.
      *
-     * @throws UnavailableException if Servlet class is not of type {@link javax.servlet.Servlet}
+     * @throws UnavailableException if Servlet class is not of type {@link jakarta.servlet.Servlet}
      */
     public void checkServletType()
         throws UnavailableException
     {
-        if (getHeldClass() == null || !javax.servlet.Servlet.class.isAssignableFrom(getHeldClass()))
+        if (getHeldClass() == null || !jakarta.servlet.Servlet.class.isAssignableFrom(getHeldClass()))
         {
-            throw new UnavailableException("Servlet " + getHeldClass() + " is not a javax.servlet.Servlet");
+            throw new UnavailableException("Servlet " + getHeldClass() + " is not a jakarta.servlet.Servlet");
         }
     }
 
@@ -516,7 +516,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
 
     /**
-     * Check if there is a javax.servlet.annotation.ServletSecurity
+     * Check if there is a jakarta.servlet.annotation.ServletSecurity
      * annotation on the servlet class. If there is, then we force
      * it to be loaded on startup, because all of the security
      * constraints must be calculated as the container starts.
@@ -526,7 +526,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         if (getHeldClass() == null)
             return;
 
-        if ((getHeldClass().getAnnotation(javax.servlet.annotation.ServletSecurity.class) != null) && !_initOnStartup)
+        if ((getHeldClass().getAnnotation(jakarta.servlet.annotation.ServletSecurity.class) != null) && !_initOnStartup)
             setInitOrder(Integer.MAX_VALUE);
     }
 
@@ -584,7 +584,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             servlet = getInstance();
             if (servlet == null)
                 servlet = newInstance();
-            if (servlet instanceof javax.servlet.SingleThreadModel)
+            if (servlet instanceof SingleThreadModel)
             {
                 predestroyServlet(servlet);
                 servlet = new SingleThreadedWrapper();

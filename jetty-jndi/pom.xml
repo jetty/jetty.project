@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.3-SNAPSHOT</version>
+    <version>11.0.3-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -18,20 +18,12 @@
   <build>
     <plugins>
       <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-modules javax.mail.glassfish
-          </argLine>
-        </configuration>
-      </plugin>
-      <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Import-Package>javax.mail.*;resolution:=optional,*</Import-Package>
+            <Import-Package>jakarta.mail.*;resolution:=optional,*</Import-Package>
           </instructions>
         </configuration>
       </plugin>
@@ -65,16 +57,9 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.mail.glassfish</artifactId>
-      <version>1.4.1.v201005082020</version>
-      <scope>provided</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.eclipse.jetty.orbit</groupId>
-          <artifactId>javax.activation</artifactId>
-        </exclusion>
-      </exclusions>
+      <groupId>jakarta.mail</groupId>
+      <artifactId>jakarta.mail-api</artifactId>
+      <optional>true</optional>
     </dependency>
   </dependencies>
 </project>

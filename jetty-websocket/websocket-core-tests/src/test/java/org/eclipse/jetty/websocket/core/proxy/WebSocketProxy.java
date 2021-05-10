@@ -184,7 +184,8 @@ class WebSocketProxy
                             // the callback is saved until a close response comes in sendFrame from Server2Proxy
                             // if the callback was completed here then core would send its own close response
                             closeCallback = callback;
-                            sendCallback = Callback.from(() -> {}, callback::failed);
+                            sendCallback = Callback.from(() ->
+                            {}, callback::failed);
                         }
                         break;
 
@@ -522,7 +523,8 @@ class WebSocketProxy
                         {
                             state = State.ISHUT;
                             closeCallback = callback;
-                            sendCallback = Callback.from(() -> {}, callback::failed);
+                            sendCallback = Callback.from(() ->
+                            {}, callback::failed);
                         }
                         break;
 
@@ -545,7 +547,6 @@ class WebSocketProxy
                 callback.failed(failure);
             else
                 client2Proxy.send(frame, sendCallback);
-
         }
 
         @Override
@@ -622,7 +623,7 @@ class WebSocketProxy
                     case ISHUT:
                         state = State.FAILED;
                         Callback doubleCallback = Callback.from(callback, closeCallback);
-                        sendCallback =  Callback.from(doubleCallback, failure);
+                        sendCallback = Callback.from(doubleCallback, failure);
                         break;
 
                     default:

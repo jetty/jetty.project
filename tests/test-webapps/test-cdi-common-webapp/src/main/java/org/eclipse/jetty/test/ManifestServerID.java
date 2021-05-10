@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.test;
 
-import javax.enterprise.inject.Produces;
+import jakarta.enterprise.inject.Produces;
 
 public class ManifestServerID
 {

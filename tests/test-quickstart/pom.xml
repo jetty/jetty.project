@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>tests-parent</artifactId>
-    <version>10.0.3-SNAPSHOT</version>
+    <version>11.0.3-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -57,12 +57,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.mail.glassfish</artifactId>
-      <version>1.4.1.v201005082020</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-servlets</artifactId>
       <version>${project.version}</version>
@@ -91,7 +85,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-javax-server</artifactId>
+      <artifactId>websocket-jakarta-server</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -109,7 +103,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>apache-jstl</artifactId>
+      <artifactId>glassfish-jstl</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

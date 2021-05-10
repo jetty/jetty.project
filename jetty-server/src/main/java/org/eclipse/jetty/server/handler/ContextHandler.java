@@ -37,31 +37,31 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.FilterRegistration;
-import javax.servlet.FilterRegistration.Dynamic;
-import javax.servlet.RequestDispatcher;
-import javax.servlet.Servlet;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextAttributeEvent;
-import javax.servlet.ServletContextAttributeListener;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRegistration;
-import javax.servlet.ServletRequestAttributeListener;
-import javax.servlet.ServletRequestEvent;
-import javax.servlet.ServletRequestListener;
-import javax.servlet.SessionCookieConfig;
-import javax.servlet.SessionTrackingMode;
-import javax.servlet.descriptor.JspConfigDescriptor;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSessionAttributeListener;
-import javax.servlet.http.HttpSessionIdListener;
-import javax.servlet.http.HttpSessionListener;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterRegistration;
+import jakarta.servlet.FilterRegistration.Dynamic;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletContextAttributeEvent;
+import jakarta.servlet.ServletContextAttributeListener;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRegistration;
+import jakarta.servlet.ServletRequestAttributeListener;
+import jakarta.servlet.ServletRequestEvent;
+import jakarta.servlet.ServletRequestListener;
+import jakarta.servlet.SessionCookieConfig;
+import jakarta.servlet.SessionTrackingMode;
+import jakarta.servlet.descriptor.JspConfigDescriptor;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSessionAttributeListener;
+import jakarta.servlet.http.HttpSessionIdListener;
+import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.ClassLoaderDump;
@@ -110,7 +110,7 @@ import org.slf4j.LoggerFactory;
 @ManagedObject("URI Context")
 public class ContextHandler extends ScopedHandler implements Attributes, Graceful
 {
-    public static final int SERVLET_MAJOR_VERSION = 4;
+    public static final int SERVLET_MAJOR_VERSION = 5;
     public static final int SERVLET_MINOR_VERSION = 0;
     public static final Class<?>[] SERVLET_LISTENER_TYPES =
         {
@@ -174,7 +174,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     public enum ContextStatus
     {
-        NOTSET, 
+        NOTSET,
         INITIALIZED,
         DESTROYED
     }
@@ -580,6 +580,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /**
      * Get the context path in a form suitable to be returned from {@link HttpServletRequest#getContextPath()}
      * or {@link ServletContext#getContextPath()}.
+     *
      * @return Returns the encoded contextPath, or empty string for root context
      */
     public String getRequestContextPath()
@@ -589,7 +590,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     /*
-     * @see javax.servlet.ServletContext#getInitParameter(java.lang.String)
+     * @see jakarta.servlet.ServletContext#getInitParameter(java.lang.String)
      */
     public String getInitParameter(String name)
     {
@@ -602,7 +603,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     /*
-     * @see javax.servlet.ServletContext#getInitParameterNames()
+     * @see jakarta.servlet.ServletContext#getInitParameterNames()
      */
     public Enumeration<String> getInitParameterNames()
     {
@@ -619,7 +620,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     /*
-     * @see javax.servlet.ServletContext#getServletContextName()
+     * @see jakarta.servlet.ServletContext#getServletContextName()
      */
     @ManagedAttribute(value = "Display name of the Context", readonly = true)
     public String getDisplayName()
@@ -877,7 +878,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
             // defers the calling of super.doStart()
             startContext();
-            
+
             contextInitialized();
 
             _availability.compareAndSet(Availability.STARTING, Availability.AVAILABLE);
@@ -944,8 +945,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * of initializing filters, servlets and listeners. However, if there is
      * no ServletHandler, the ContextHandler will call this method during
      * doStart().
-     * 
-     * @throws Exception
      */
     public void contextInitialized() throws Exception
     {
@@ -972,8 +971,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * proper sequence of destroying filters, servlets and listeners.
      * If there is no ServletHandler, the ContextHandler must ensure
      * these listeners are called instead.
-     * 
-     * @throws Exception
      */
     public void contextDestroyed() throws Exception
     {
@@ -1065,7 +1062,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             stopContext();
 
             contextDestroyed();
-            
+
             // retain only durable listeners
             setEventListeners(_durableListeners);
             _durableListeners.clear();
@@ -1172,7 +1169,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     /*
-     * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
+     * @see org.eclipse.jetty.server.Handler#handle(jakarta.servlet.http.HttpServletRequest, jakarta.servlet.http.HttpServletResponse)
      */
     public boolean checkContext(final String target, final Request baseRequest, final HttpServletResponse response) throws IOException
     {
@@ -1532,7 +1529,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * Set a context attribute. Attributes set via this API cannot be overridden by the ServletContext.setAttribute API. Their lifecycle spans the stop/start of
      * a context. No attribute listener events are triggered by this API.
      *
-     * @see javax.servlet.ServletContext#setAttribute(java.lang.String, java.lang.Object)
+     * @see jakarta.servlet.ServletContext#setAttribute(java.lang.String, java.lang.Object)
      */
     @Override
     public void setAttribute(String name, Object value)
@@ -2086,7 +2083,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /**
      * Context.
      * <p>
-     * A partial implementation of {@link javax.servlet.ServletContext}. A complete implementation is provided by the
+     * A partial implementation of {@link jakarta.servlet.ServletContext}. A complete implementation is provided by the
      * derived {@link ContextHandler} implementations.
      * </p>
      */
@@ -2741,21 +2738,21 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         @Override
-        public javax.servlet.ServletRegistration.Dynamic addServlet(String servletName, Class<? extends Servlet> servletClass)
+        public jakarta.servlet.ServletRegistration.Dynamic addServlet(String servletName, Class<? extends Servlet> servletClass)
         {
             LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "addServlet(String, Class)");
             return null;
         }
 
         @Override
-        public javax.servlet.ServletRegistration.Dynamic addServlet(String servletName, Servlet servlet)
+        public jakarta.servlet.ServletRegistration.Dynamic addServlet(String servletName, Servlet servlet)
         {
             LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "addServlet(String, Servlet)");
             return null;
         }
 
         @Override
-        public javax.servlet.ServletRegistration.Dynamic addServlet(String servletName, String className)
+        public jakarta.servlet.ServletRegistration.Dynamic addServlet(String servletName, String className)
         {
             LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "addServlet(String, String)");
             return null;

@@ -25,6 +25,6 @@ module org.eclipse.jetty.jndi
     // Only required if using DataSourceCloser.
     requires static java.sql;
     // Only required if using MailSessionReference.
-    requires static javax.mail.glassfish;
+    requires static jakarta.mail;
     requires static org.eclipse.jetty.security;
 }

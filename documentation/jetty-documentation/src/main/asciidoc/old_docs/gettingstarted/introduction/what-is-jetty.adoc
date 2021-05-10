@@ -14,7 +14,7 @@
 [[what-is-jetty]]
 === What is Jetty?
 
-Eclipse Jetty is an open-source project providing an HTTP server, HTTP client, and servlet container.
+Eclipse Jetty is an open-source project providing an HTTP server, HTTP client, and Servlet container.
 
 The Jetty documentation is broken up in to four parts:
 

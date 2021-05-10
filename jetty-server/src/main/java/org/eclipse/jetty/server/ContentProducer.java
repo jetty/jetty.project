@@ -116,7 +116,7 @@ public interface ContentProducer
      * Check if this {@link ContentProducer} instance has some content that can be read without blocking.
      * If there is some, the next call to {@link #nextContent()} will not block.
      * If there isn't any and the implementation does not block, this method will trigger a
-     * {@link javax.servlet.ReadListener} callback once some content is available.
+     * {@link jakarta.servlet.ReadListener} callback once some content is available.
      * This call is always non-blocking.
      * @return true if some content is immediately available, false otherwise.
      */

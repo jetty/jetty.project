@@ -28,10 +28,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
-import javax.servlet.ServletRequest;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.URIUtil;
@@ -75,11 +75,11 @@ public class ServerUpgradeRequest
     }
 
     /**
-     * @return The {@link X509Certificate} instance at request attribute "javax.servlet.request.X509Certificate" or null.
+     * @return The {@link X509Certificate} instance at request attribute "jakarta.servlet.request.X509Certificate" or null.
      */
     public X509Certificate[] getCertificates()
     {
-        return (X509Certificate[])request.getAttribute("javax.servlet.request.X509Certificate");
+        return (X509Certificate[])request.getAttribute("jakarta.servlet.request.X509Certificate");
     }
 
     /**

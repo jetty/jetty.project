@@ -20,16 +20,16 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.FilterRegistration;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.FilterRegistration;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -92,9 +92,9 @@ public class FilterHolder extends Holder<Filter>
     {
         super.doStart();
 
-        if (!javax.servlet.Filter.class.isAssignableFrom(getHeldClass()))
+        if (!jakarta.servlet.Filter.class.isAssignableFrom(getHeldClass()))
         {
-            String msg = getHeldClass() + " is not a javax.servlet.Filter";
+            String msg = getHeldClass() + " is not a jakarta.servlet.Filter";
             doStop();
             throw new IllegalStateException(msg);
         }

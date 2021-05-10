@@ -2,7 +2,7 @@
 <metadata modelVersion="1.1.0">
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-rewrite</artifactId>
-  <version>10.0.0-SNAPSHOT</version>
+  <version>11.0.0-SNAPSHOT</version>
   <versioning>
     <snapshot>
       <timestamp>20200918.022411</timestamp>

@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.demos</groupId>
     <artifactId>demos-parent</artifactId>
-    <version>10.0.3-SNAPSHOT</version>
+    <version>11.0.3-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -26,7 +26,7 @@
             <supportedProjectType>war</supportedProjectType>
           </supportedProjectTypes>
           <instructions>
-            <Import-Package>javax.servlet.jsp.*;version="[2.2.0,4.1)",org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",*</Import-Package>
+            <Import-Package>jakarta.servlet.jsp.*;version="[3,4)",org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",*</Import-Package>
             <Export-Package>!com.acme.*</Export-Package>
             <Web-ContextPath>/demo-jsp</Web-ContextPath>
             <Bundle-ClassPath>.,WEB-INF/classes</Bundle-ClassPath>
@@ -68,19 +68,17 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-servlet-api</artifactId>
+      <artifactId>jetty-jakarta-servlet-api</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>javax.servlet.jsp</groupId>
-      <artifactId>javax.servlet.jsp-api</artifactId>
-      <version>2.3.3</version>
+      <groupId>jakarta.servlet.jsp</groupId>
+      <artifactId>jakarta.servlet.jsp-api</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>jakarta.servlet.jsp.jstl</groupId>
       <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
-      <version>1.2.7</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>

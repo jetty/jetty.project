@@ -13,10 +13,10 @@
 
 package org.eclipse.jetty.cdi.tests;
 
-import javax.enterprise.inject.spi.BeanManager;
-import javax.inject.Inject;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.inject.Inject;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
 
 public class MyContextListener implements ServletContextListener
 {

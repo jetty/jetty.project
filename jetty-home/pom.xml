@@ -3,7 +3,7 @@
   <parent>
     <artifactId>jetty-project</artifactId>
     <groupId>org.eclipse.jetty</groupId>
-    <version>10.0.3-SNAPSHOT</version>
+    <version>11.0.3-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-home</artifactId>
@@ -127,7 +127,7 @@
                 org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
               </excludeGroupIds>
               <excludeArtifactIds>
-                apache-jsp,apache-jstl,jetty-start,jetty-slf4j-impl
+                apache-jsp,glassfish-jstl,jetty-start,jetty-slf4j-impl
               </excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
@@ -145,7 +145,7 @@
                 org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
               </excludeGroupIds>
               <excludeArtifactIds>
-                apache-jsp,apache-jstl,jetty-start
+                apache-jsp,glassfish-jstl,jetty-start
               </excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
@@ -205,27 +205,27 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-lib-javax-websocket-deps</id>
+            <id>copy-lib-jakarta-websocket-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.toolchain</includeGroupIds>
-              <includeArtifactIds>jetty-javax-websocket-api</includeArtifactIds>
+              <includeArtifactIds>jetty-jakarta-websocket-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/websocket</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-lib-javax-websocket-src-deps</id>
+            <id>copy-lib-jakarta-websocket-src-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.toolchain</includeGroupIds>
-              <includeArtifactIds>jetty-javax-websocket-api</includeArtifactIds>
+              <includeArtifactIds>jetty-jakarta-websocket-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/websocket</outputDirectory>
@@ -293,11 +293,11 @@
               <artifactItems>
                 <artifactItem>
                   <groupId>org.eclipse.jetty.toolchain</groupId>
-                  <artifactId>jetty-servlet-api</artifactId>
+                  <artifactId>jetty-jakarta-servlet-api</artifactId>
                   <version>${servlet.api.version}</version>
                   <overWrite>true</overWrite>
                   <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                  <destFileName>jetty-servlet-api-${servlet.api.version}.jar</destFileName>
+                  <destFileName>jetty-jakarta-servlet-api-${servlet.api.version}.jar</destFileName>
                 </artifactItem>
               </artifactItems>
             </configuration>
@@ -376,32 +376,30 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-apache-jstl-deps</id>
+            <id>copy-glassfish-jstl-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <excludeGroupIds>org.glassfish.web</excludeGroupIds>
-              <includeArtifactIds>taglibs-standard-spec,taglibs-standard-impl</includeArtifactIds>
+              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
               <prependGroupId>true</prependGroupId>
               <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/apache-jstl</outputDirectory>
+              <outputDirectory>${assembly-directory}/lib/glassfish-jstl</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-apache-jstl-src-deps</id>
+            <id>copy-glassfish-jstl-src-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <excludeGroupIds>org.glassfish.web</excludeGroupIds>
-              <includeArtifactIds>taglibs-standard-spec,taglibs-standard-impl</includeArtifactIds>
+              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
               <prependGroupId>true</prependGroupId>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/apache-jstl</outputDirectory>
+              <outputDirectory>${source-assembly-directory}/lib/glassfish-jstl</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -538,13 +536,13 @@
     <!-- Orbit Deps -->
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.mail.glassfish</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>javax.security.auth.message</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>jakarta.mail</groupId>
+      <artifactId>jakarta.mail-api</artifactId>
+    </dependency>
     <dependency>
       <groupId>jakarta.annotation</groupId>
       <artifactId>jakarta.annotation-api</artifactId>
@@ -620,7 +618,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-javax-server</artifactId>
+      <artifactId>websocket-jakarta-server</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -630,7 +628,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>apache-jstl</artifactId>
+      <artifactId>glassfish-jstl</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

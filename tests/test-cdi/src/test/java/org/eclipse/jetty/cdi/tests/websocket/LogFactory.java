@@ -14,9 +14,10 @@
 package org.eclipse.jetty.cdi.tests.websocket;
 
 import java.util.logging.Logger;
-import javax.enterprise.inject.Default;
-import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.spi.InjectionPoint;
+
+import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.spi.InjectionPoint;
 
 public class LogFactory
 {

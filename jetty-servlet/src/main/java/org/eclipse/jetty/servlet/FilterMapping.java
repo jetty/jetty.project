@@ -18,8 +18,8 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import javax.servlet.DispatcherType;
 
+import jakarta.servlet.DispatcherType;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;

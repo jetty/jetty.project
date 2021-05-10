@@ -119,7 +119,7 @@ public class WebInfConfiguration extends AbstractConfiguration
      * exit depends on value of persistTempDirectory.
      * </li>
      * <li>
-     * Iff javax.servlet.context.tempdir context attribute is set for
+     * Iff jakarta.servlet.context.tempdir context attribute is set for
      * this webapp &amp;&amp; exists &amp;&amp; writeable, then use it. Set delete on exit depends on
      * value of persistTempDirectory.
      * </li>
@@ -148,7 +148,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             return;
         }
 
-        // No temp directory configured, try to establish one via the javax.servlet.context.tempdir.
+        // No temp directory configured, try to establish one via the jakarta.servlet.context.tempdir.
         File servletTmpDir = asFile(context.getAttribute(WebAppContext.TEMPDIR));
         if (servletTmpDir != null)
         {

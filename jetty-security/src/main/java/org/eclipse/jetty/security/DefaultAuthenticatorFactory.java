@@ -14,8 +14,8 @@
 package org.eclipse.jetty.security;
 
 import java.util.Collection;
-import javax.servlet.ServletContext;
 
+import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.ClientCertAuthenticator;

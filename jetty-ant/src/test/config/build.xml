@@ -31,7 +31,7 @@
       </loginServices>
       <webApp war="test.war" contextpath="/test" >
         <attributes>
-          <attribute name="org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern" value=".*/jetty-servlet-api-[^/]*\.jar$"/>
+          <attribute name="org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern" value=".*/jetty-jakarta-servlet-api-[^/]*\.jar$"/>
         </attributes>
       </webApp>
     </jetty.run>

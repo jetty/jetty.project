@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.websocket</groupId>
     <artifactId>websocket-parent</artifactId>
-    <version>10.0.3-SNAPSHOT</version>
+    <version>11.0.3-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -14,6 +14,18 @@
     <bundle-symbolic-name>${project.groupId}.common</bundle-symbolic-name>
   </properties>
 
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>
+            @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.websocket.jetty.common=org.eclipse.jetty.io
+          </argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>

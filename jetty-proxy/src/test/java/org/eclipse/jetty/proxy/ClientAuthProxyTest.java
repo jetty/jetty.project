@@ -30,10 +30,10 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.X509ExtendedKeyManager;
 import javax.security.auth.x500.X500Principal;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpDestination;
@@ -139,7 +139,7 @@ public class ClientAuthProxyTest
             @Override
             protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                X509Certificate[] certificates = (X509Certificate[])request.getAttribute(SecureRequestCustomizer.JAVAX_SERVLET_REQUEST_X_509_CERTIFICATE);
+                X509Certificate[] certificates = (X509Certificate[])request.getAttribute(SecureRequestCustomizer.JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE);
                 Assertions.assertNotNull(certificates);
                 X509Certificate certificate = certificates[0];
                 X500Principal principal = certificate.getSubjectX500Principal();
@@ -212,7 +212,7 @@ public class ClientAuthProxyTest
 
     private static String retrieveUser(HttpServletRequest request)
     {
-        X509Certificate[] certificates = (X509Certificate[])request.getAttribute(SecureRequestCustomizer.JAVAX_SERVLET_REQUEST_X_509_CERTIFICATE);
+        X509Certificate[] certificates = (X509Certificate[])request.getAttribute(SecureRequestCustomizer.JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE);
         String clientName = certificates[0].getSubjectX500Principal().getName();
         Matcher matcher = Pattern.compile("CN=([^,]+)").matcher(clientName);
         if (matcher.find())

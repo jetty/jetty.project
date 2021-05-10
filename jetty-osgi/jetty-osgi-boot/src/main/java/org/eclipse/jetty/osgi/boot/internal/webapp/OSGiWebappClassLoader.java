@@ -22,8 +22,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.jar.JarFile;
-import javax.servlet.http.HttpServlet;
 
+import jakarta.servlet.http.HttpServlet;
 import org.eclipse.jetty.osgi.boot.utils.BundleClassLoaderHelperFactory;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.Resource;

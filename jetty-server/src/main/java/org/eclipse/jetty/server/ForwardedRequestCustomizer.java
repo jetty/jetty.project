@@ -17,8 +17,8 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.net.InetSocketAddress;
-import javax.servlet.ServletRequest;
 
+import jakarta.servlet.ServletRequest;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
@@ -776,7 +776,7 @@ public class ForwardedRequestCustomizer implements Customizer
          */
         public void handleCipherSuite(HttpField field)
         {
-            _request.setAttribute("javax.servlet.request.cipher_suite", field.getValue());
+            _request.setAttribute("jakarta.servlet.request.cipher_suite", field.getValue());
 
             // Is ForwardingRequestCustomizer configured to trigger isSecure and scheme change on this header?
             if (isSslIsSecure())
@@ -792,7 +792,7 @@ public class ForwardedRequestCustomizer implements Customizer
          */
         public void handleSslSessionId(HttpField field)
         {
-            _request.setAttribute("javax.servlet.request.ssl_session_id", field.getValue());
+            _request.setAttribute("jakarta.servlet.request.ssl_session_id", field.getValue());
 
             // Is ForwardingRequestCustomizer configured to trigger isSecure and scheme change on this header?
             if (isSslIsSecure())

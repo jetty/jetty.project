@@ -153,7 +153,7 @@ re-compilation attempt? Used in development mode only and is disabled by
 default as compilation may be expensive and could lead to excessive
 resource usage. |FALSE |–
 
-|scratchDir |Directory where servlets are generated. The default is the value of the context attribute `javax.servlet.context.tempdir`, or the system property `java.io.tmpdir` if the context attribute is not set. |– |–
+|scratchDir |Directory where servlets are generated. The default is the value of the context attribute `jakarta.servlet.context.tempdir`, or the system property `java.io.tmpdir` if the context attribute is not set. |– |–
 
 |strictQuoteEscaping |Should the quote escaping required by section JSP.1.6 of the JSP specification be applied to scriplet expression.
              |TRUE|-
@@ -279,9 +279,9 @@ It is also automatically on the classpath for the Jetty Maven plugin, which uses
 If you are using Jetty in an embedded scenario, and you need to use JSTL, then you must ensure that the JSTL jars are included on the _container's_ classpath - that is the classpath that is the _parent_ of the webapp's classpath.
 This is a restriction that arises from the JavaEE specification.
 
-====== Apache JSP
+====== Glassfish JSTL
 
-You will need to put the jars that are present in the `{$jetty.home}/lib/apache-jstl` directory onto the _container's_ classpath.
+You will need to put the jars that are present in the `{$jetty.home}/lib/glassfish-jstl` directory onto the _container's_ classpath.
 The Apache JSP engine will find the JSTL tag definitions inside these jars during startup.
 
 As an efficiency enhancement, you can have jetty examine the JSTL jars to find the tags, and pre-feed them into the Apache JSP engine.

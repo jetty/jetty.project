@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>10.0.3-SNAPSHOT</version>
+    <version>11.0.3-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-osgi-boot</artifactId>
@@ -70,16 +70,17 @@
           <instructions>
             <Bundle-SymbolicName>org.eclipse.jetty.osgi.boot;singleton:=true</Bundle-SymbolicName>
             <Bundle-Activator>org.eclipse.jetty.osgi.boot.JettyBootstrapActivator</Bundle-Activator>
-            <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
-            <Import-Package>javax.mail;version="1.4.0";resolution:=optional,
-                javax.mail.event;version="1.4.0";resolution:=optional,
-                javax.mail.internet;version="1.4.0";resolution:=optional,
-                javax.mail.search;version="1.4.0";resolution:=optional,
-                javax.mail.util;version="1.4.0";resolution:=optional,
-                javax.servlet;version="[$(version;==;${servlet.api.version}),$(version;+;${servlet.api.version}))",
-                javax.servlet.http;version="[$(version;==;${servlet.api.version}),$(version;+;${servlet.api.version}))",
-                javax.transaction;version="1.1.0";resolution:=optional,
-                javax.transaction.xa;version="1.1.0";resolution:=optional,
+            <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
+            <Import-Package>
+                jakarta.mail;version="2.0";resolution:=optional,
+                jakarta.mail.event;version="2.0";resolution:=optional,
+                jakarta.mail.internet;version="2.0";resolution:=optional,
+                jakarta.mail.search;version="2.0";resolution:=optional,
+                jakarta.mail.util;version="2.0";resolution:=optional,
+                jakarta.servlet;version="[$(version;==;${servlet.api.version}),$(version;+;${servlet.api.version}))",
+                jakarta.servlet.http;version="[$(version;==;${servlet.api.version}),$(version;+;${servlet.api.version}))",
+                jakarta.transaction;version="2.0.0";resolution:=optional,
+                jakarta.transaction.xa;version="2.0.0";resolution:=optional,
                 org.objectweb.asm;version="$(version;=;${asm.version})";resolution:=optional,
                 org.osgi.framework,
                 org.osgi.service.cm;version="1.4.0",

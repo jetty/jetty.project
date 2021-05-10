@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.websocket.core.server;
 
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -50,7 +49,7 @@ public class WebSocketServerComponents extends WebSocketComponents
      * This ensures a {@link WebSocketComponents} is available at the {@link ServletContext} attribute {@link #WEBSOCKET_COMPONENTS_ATTRIBUTE}.
      * </p>
      * <p>
-     * This should be called when the server is starting, usually by a {@link javax.servlet.ServletContainerInitializer}.
+     * This should be called when the server is starting, usually by a {@link jakarta.servlet.ServletContainerInitializer}.
      * </p>
      * <p>
      * Servlet context attributes can be set with {@link #WEBSOCKET_BUFFER_POOL_ATTRIBUTE}, {@link #WEBSOCKET_INFLATER_POOL_ATTRIBUTE}

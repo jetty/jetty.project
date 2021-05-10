@@ -36,9 +36,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.servlet.ServletContainerInitializer;
-import javax.servlet.annotation.HandlesTypes;
 
+import jakarta.servlet.ServletContainerInitializer;
+import jakarta.servlet.annotation.HandlesTypes;
 import org.eclipse.jetty.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.servlet.ServletContainerInitializerHolder;
@@ -197,7 +197,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
      */
     public class ServletContainerInitializerOrdering
     {
-        private Map<String, Integer> _indexMap = new HashMap<String, Integer>();
+        private Map<String, Integer> _indexMap = new HashMap<>();
         private Integer _star = null;
         private String _ordering = null;
 

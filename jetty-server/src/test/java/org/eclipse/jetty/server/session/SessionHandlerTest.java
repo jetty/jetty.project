@@ -16,11 +16,10 @@ package org.eclipse.jetty.server.session;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import javax.servlet.SessionTrackingMode;
-import javax.servlet.http.HttpSession;
-import javax.servlet.http.HttpSessionEvent;
-import javax.servlet.http.HttpSessionListener;
 
+import jakarta.servlet.SessionTrackingMode;
+import jakarta.servlet.http.HttpSessionEvent;
+import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Test;
 

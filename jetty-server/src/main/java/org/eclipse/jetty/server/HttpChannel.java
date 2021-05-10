@@ -27,10 +27,10 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.servlet.DispatcherType;
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletException;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletException;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -1149,7 +1149,7 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
      * <p>It is recommended that the event parameters are <em>not</em> acted upon
      * in the listener methods, or undefined behavior may result. For example, it
      * would be a bad idea to try to read some content from the
-     * {@link javax.servlet.ServletInputStream} in listener methods. On the other
+     * {@link jakarta.servlet.ServletInputStream} in listener methods. On the other
      * hand, it is legit to store request attributes in one listener method that
      * may be possibly retrieved in another listener method in a later event.</p>
      * <p>Listener methods are invoked synchronously from the thread that is

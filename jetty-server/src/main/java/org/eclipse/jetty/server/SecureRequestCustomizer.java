@@ -21,8 +21,8 @@ import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
-import javax.servlet.ServletRequest;
 
+import jakarta.servlet.ServletRequest;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -49,10 +49,11 @@ import org.slf4j.LoggerFactory;
 public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 {
     private static final Logger LOG = LoggerFactory.getLogger(SecureRequestCustomizer.class);
-    public static final String JAVAX_SERVLET_REQUEST_X_509_CERTIFICATE = "javax.servlet.request.X509Certificate";
-    public static final String JAVAX_SERVLET_REQUEST_CIPHER_SUITE = "javax.servlet.request.cipher_suite";
-    public static final String JAVAX_SERVLET_REQUEST_KEY_SIZE = "javax.servlet.request.key_size";
-    public static final String JAVAX_SERVLET_REQUEST_SSL_SESSION_ID = "javax.servlet.request.ssl_session_id";
+
+    public static final String JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE = "jakarta.servlet.request.X509Certificate";
+    public static final String JAKARTA_SERVLET_REQUEST_CIPHER_SUITE = "jakarta.servlet.request.cipher_suite";
+    public static final String JAKARTA_SERVLET_REQUEST_KEY_SIZE = "jakarta.servlet.request.key_size";
+    public static final String JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID = "jakarta.servlet.request.ssl_session_id";
     public static final String X509_CERT = "org.eclipse.jetty.server.x509_cert";
 
     private String sslSessionAttribute = "org.eclipse.jetty.servlet.request.ssl_session";
@@ -227,10 +228,10 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
      * The requirements of the Servlet specs are:
      * </p>
      * <ul>
-     * <li>an attribute named "javax.servlet.request.ssl_session_id" of type String (since Servlet Spec 3.0).</li>
-     * <li>an attribute named "javax.servlet.request.cipher_suite" of type String.</li>
-     * <li>an attribute named "javax.servlet.request.key_size" of type Integer.</li>
-     * <li>an attribute named "javax.servlet.request.X509Certificate" of type java.security.cert.X509Certificate[]. This
+     * <li>an attribute named "jakarta.servlet.request.ssl_session_id" of type String (since Servlet Spec 3.0).</li>
+     * <li>an attribute named "jakarta.servlet.request.cipher_suite" of type String.</li>
+     * <li>an attribute named "jakarta.servlet.request.key_size" of type Integer.</li>
+     * <li>an attribute named "jakarta.servlet.request.X509Certificate" of type java.security.cert.X509Certificate[]. This
      * is an array of objects of type X509Certificate, the order of this array is defined as being in ascending order of
      * trust. The first certificate in the chain is the one set by the client, the next is the one used to authenticate
      * the first, and so on.</li>
@@ -353,13 +354,13 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         {
             switch (name)
             {
-                case JAVAX_SERVLET_REQUEST_X_509_CERTIFICATE:
+                case JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE:
                     return _certs;
-                case JAVAX_SERVLET_REQUEST_CIPHER_SUITE:
+                case JAKARTA_SERVLET_REQUEST_CIPHER_SUITE:
                     return _cipherSuite;
-                case JAVAX_SERVLET_REQUEST_KEY_SIZE:
+                case JAKARTA_SERVLET_REQUEST_KEY_SIZE:
                     return _keySize;
-                case JAVAX_SERVLET_REQUEST_SSL_SESSION_ID:
+                case JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID:
                     return _sessionId;
                 default:
                     if (!StringUtil.isEmpty(_sessionAttribute) && _sessionAttribute.equals(name))
@@ -398,19 +399,19 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         public Set<String> getAttributeNameSet()
         {
             Set<String> names = new HashSet<>(_attributes.getAttributeNameSet());
-            names.remove(JAVAX_SERVLET_REQUEST_X_509_CERTIFICATE);
-            names.remove(JAVAX_SERVLET_REQUEST_CIPHER_SUITE);
-            names.remove(JAVAX_SERVLET_REQUEST_KEY_SIZE);
-            names.remove(JAVAX_SERVLET_REQUEST_SSL_SESSION_ID);
+            names.remove(JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE);
+            names.remove(JAKARTA_SERVLET_REQUEST_CIPHER_SUITE);
+            names.remove(JAKARTA_SERVLET_REQUEST_KEY_SIZE);
+            names.remove(JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID);
 
             if (_certs != null)
-                names.add(JAVAX_SERVLET_REQUEST_X_509_CERTIFICATE);
+                names.add(JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE);
             if (_cipherSuite != null)
-                names.add(JAVAX_SERVLET_REQUEST_CIPHER_SUITE);
+                names.add(JAKARTA_SERVLET_REQUEST_CIPHER_SUITE);
             if (_keySize != null)
-                names.add(JAVAX_SERVLET_REQUEST_KEY_SIZE);
+                names.add(JAKARTA_SERVLET_REQUEST_KEY_SIZE);
             if (_sessionId != null)
-                names.add(JAVAX_SERVLET_REQUEST_SSL_SESSION_ID);
+                names.add(JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID);
             if (!StringUtil.isEmpty(_sessionAttribute))
                 names.add(_sessionAttribute);
 

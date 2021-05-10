@@ -29,7 +29,7 @@ module org.eclipse.jetty.plus
     // Only required if using DataSourceLoginService.
     requires static java.sql;
     // Only required if using Transaction.
-    requires static java.transaction;
+    requires static jakarta.transaction;
     // Only required if using RunAs.
     requires static org.eclipse.jetty.servlet;
 

@@ -24,14 +24,14 @@ import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Supplier;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.ServletResponse;
-import javax.servlet.ServletResponseWrapper;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
-import javax.servlet.http.HttpSession;
 
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.ServletResponseWrapper;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponseWrapper;
+import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpContent;
@@ -502,7 +502,7 @@ public class Response implements HttpServletResponse
      * can still be sent.   This method is called by sendError if it is passed 102.
      *
      * @throws IOException if unable to send the 102 response
-     * @see javax.servlet.http.HttpServletResponse#sendError(int)
+     * @see jakarta.servlet.http.HttpServletResponse#sendError(int)
      */
     public void sendProcessing() throws IOException
     {

@@ -11,8 +11,7 @@
 // ========================================================================
 //
 
-import javax.servlet.ServletContainerInitializer;
-
+import jakarta.servlet.ServletContainerInitializer;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.webapp.Configuration;
 
@@ -20,7 +19,7 @@ module org.eclipse.jetty.annotations
 {
     exports org.eclipse.jetty.annotations;
 
-    requires java.annotation;
+    requires jakarta.annotation;
     requires java.naming;
     requires transitive org.eclipse.jetty.plus;
     requires transitive org.objectweb.asm;

@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.3-SNAPSHOT</version>
+    <version>11.0.3-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -23,7 +23,7 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Import-Package>javax.transaction.*;version="1.1",*</Import-Package>
+            <Import-Package>jakarta.transaction.*;version="2.0.0",*</Import-Package>
             <Require-Capability>
               osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
             </Require-Capability>

@@ -2,14 +2,14 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.3-SNAPSHOT</version>
+    <version>11.0.3-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-slf4j-impl</artifactId>
   <name>Jetty :: Slf4j Implementation</name>
   <description>Slf4j Logging Implementation based on Jetty's older StdErrLog</description>
-
+  
   <properties>
     <bundle-symbolic-name>${project.groupId}.logging</bundle-symbolic-name>
   </properties>

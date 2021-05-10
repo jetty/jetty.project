@@ -18,8 +18,8 @@ import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-import javax.inject.Inject;
 
+import jakarta.inject.Inject;
 import org.eclipse.jetty.cdi.CdiDecoratingListener;
 import org.eclipse.jetty.cdi.CdiServletContainerInitializer;
 import org.eclipse.jetty.server.Server;

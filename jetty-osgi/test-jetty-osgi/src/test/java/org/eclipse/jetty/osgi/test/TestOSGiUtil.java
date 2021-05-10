@@ -141,7 +141,7 @@ public class TestOSGiUtil
         {
             res.add(systemProperty("org.ops4j.pax.url.mvn.settings").value(System.getProperty("settingsFilePath")));
         }
-        
+
         //make src/test/resources/jetty-logging.properties visible to jetty in the osgi container        
         TinyBundle loggingPropertiesBundle = TinyBundles.bundle();
         loggingPropertiesBundle.add("jetty-logging.properties", ClassLoader.getSystemResource("jetty-logging.properties"));
@@ -149,7 +149,7 @@ public class TestOSGiUtil
         loggingPropertiesBundle.set(Constants.FRAGMENT_HOST, "org.eclipse.jetty.logging");
         loggingPropertiesBundle.add(FragmentActivator.class);
         res.add(CoreOptions.streamBundle(loggingPropertiesBundle.build()).noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-servlet-api").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-jakarta-servlet-api").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.platform").artifactId("org.eclipse.osgi.util").versionAsInProject());
         res.add(mavenBundle().groupId("org.eclipse.platform").artifactId("org.eclipse.osgi.services").versionAsInProject());
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm").versionAsInProject().start());
@@ -159,7 +159,13 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm-util").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.apache.aries.spifly").artifactId("org.apache.aries.spifly.dynamic.bundle").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.annotation").artifactId("jakarta.annotation-api").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.apache.geronimo.specs").artifactId("geronimo-jta_1.1_spec").version("1.1.1").start());
+        
+        //remove unused imports and exports from jakarta.transaction-api manifest
+        res.add(wrappedBundle(mavenBundle().groupId("jakarta.transaction").artifactId("jakarta.transaction-api").versionAsInProject())
+            .instructions("Import-Package=javax.transaction.xa&Export-Package=jakarta.transaction.*;version=\"2.0.0\"")
+            .overwriteManifest(OverwriteMode.MERGE)
+            .start());
+
         //the slf4j-api jar does not have support for ServiceLoader in osgi in its manifest, so add it now
         res.add(wrappedBundle(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").versionAsInProject())
             .instructions("Require-Capability=osgi.serviceloader;filter:=\"(osgi.serviceloader=org.slf4j.spi.SLF4JServiceProvider)\",osgi.extender;filter:=\"(osgi.extender=osgi.serviceloader.processor)\"")
@@ -188,11 +194,10 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-jetty-server").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-jetty-client").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-jetty-common").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-javax-websocket-api").versionAsInProject().noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-javax-server").versionAsInProject().noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-javax-client").versionAsInProject().noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-javax-common").versionAsInProject().noStart());
-
+        res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-jakarta-websocket-api").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-jakarta-server").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-jakarta-client").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-jakarta-common").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-boot").versionAsInProject().start());
         return res;
     }
@@ -202,11 +207,11 @@ public class TestOSGiUtil
         List<Option> res = new ArrayList<>();
 
         //jetty jsp bundles  
-        res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("javax.servlet.jsp.jstl").versionAsInProject());
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-el").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-jsp").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("apache-jsp").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.glassfish.web").artifactId("javax.servlet.jsp.jstl").versionAsInProject().start());
+        res.add(mavenBundle().groupId("jakarta.servlet.jsp.jstl").artifactId("jakarta.servlet.jsp.jstl-api").versionAsInProject());
+        res.add(mavenBundle().groupId("org.glassfish.web").artifactId("jakarta.servlet.jsp.jstl").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jdt").artifactId("ecj").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-boot-jsp").versionAsInProject().noStart());
         return res;
@@ -219,10 +224,10 @@ public class TestOSGiUtil
         {
             Bundle prevBundle = bundles.put(b.getSymbolicName(), b);
             String err = prevBundle != null ? "2 versions of the bundle " + b.getSymbolicName() +
-                    " " +
-                    b.getHeaders().get("Bundle-Version") +
-                    " and " +
-                    prevBundle.getHeaders().get("Bundle-Version") : "";
+                " " +
+                b.getHeaders().get("Bundle-Version") +
+                " and " +
+                prevBundle.getHeaders().get("Bundle-Version") : "";
             assertNull(err, prevBundle);
         }
         return bundles.get(symbolicName);
@@ -304,4 +309,6 @@ public class TestOSGiUtil
     {
         assertTrue(message + "\nContains: <" + needle + ">\nIn:\n" + haystack, haystack.contains(needle));
     }
+//        }
+//    }
 }

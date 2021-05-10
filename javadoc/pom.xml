@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.3-SNAPSHOT</version>
+    <version>11.0.3-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -109,9 +109,15 @@
                 alpn-api,
                 javax.servlet,
                 javax.websocket,
+                jakarta.servlet,
+                jakarta.websocket,
                 jetty-servlet-api,
                 jetty-javax-websocket-api,
-                javax.mail.glassfish,
+                jetty-jakarta-servlet-api,
+                jetty-jakarta-websocket-api,
+                javax.mail,
+                jakarta.mail-api,
+                mailapi,
                 javax.security.auth.message,
                 plexus-utils,
                 plexus-interpolation
@@ -195,7 +201,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>apache-jstl</artifactId>
+      <artifactId>glassfish-jstl</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
@@ -333,13 +339,13 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-javax-server</artifactId>
+      <artifactId>websocket-jakarta-server</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-javax-client</artifactId>
+      <artifactId>websocket-jakarta-client</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
@@ -371,16 +377,15 @@
     <!-- javax.mail Dep -->
     <!-- to support MailSessionReference.java -->
     <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.mail.glassfish</artifactId>
-      <version>1.4.1.v201005082020</version>
+      <groupId>jakarta.mail</groupId>
+      <artifactId>jakarta.mail-api</artifactId>
       <scope>provided</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.eclipse.jetty.orbit</groupId>
-          <artifactId>javax.activation</artifactId>
-        </exclusion>
-      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.sun.mail</groupId>
+      <artifactId>jakarta.mail</artifactId>
+      <version>${mail-api.version}</version>
+      <scope>provided</scope>
     </dependency>
     <!-- === Maven Plugin Deps == -->
     <dependency>
@@ -428,6 +433,12 @@
       <groupId>org.infinispan.protostream</groupId>
       <artifactId>protostream</artifactId>
       <version>4.2.2.Final</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.sun.activation</groupId>
+      <artifactId>jakarta.activation</artifactId>
+      <version>2.0.0</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>

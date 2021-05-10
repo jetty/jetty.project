@@ -21,10 +21,10 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.servlet.ServletContainerInitializer;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
 
+import jakarta.servlet.ServletContainerInitializer;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;

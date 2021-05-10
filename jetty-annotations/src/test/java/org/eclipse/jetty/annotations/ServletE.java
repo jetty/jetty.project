@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.annotations;
 
-import javax.annotation.PreDestroy;
-import javax.servlet.http.HttpServlet;
+import jakarta.annotation.PreDestroy;
+import jakarta.servlet.http.HttpServlet;
 
 public class ServletE extends HttpServlet
 {

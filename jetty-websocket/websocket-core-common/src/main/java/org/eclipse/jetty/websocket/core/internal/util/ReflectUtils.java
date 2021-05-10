@@ -32,7 +32,7 @@ import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 public class ReflectUtils
 {
 
-    private static final Pattern JAVAX_CLASSNAME_PATTERN = Pattern.compile("^javax*\\..*");
+    private static final Pattern JAKARTA_CLASSNAME_PATTERN = Pattern.compile("^jakarta*\\..*");
 
     private static class GenericRef
     {
@@ -363,7 +363,7 @@ public class ReflectUtils
             Class<?> clazz = (Class<?>)type;
             // prevent spinning off into Serialization and other parts of the
             // standard tree that we could care less about
-            if (JAVAX_CLASSNAME_PATTERN.matcher(clazz.getName()).matches())
+            if (JAKARTA_CLASSNAME_PATTERN.matcher(clazz.getName()).matches())
             {
                 return false;
             }

@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>10.0.3-SNAPSHOT</version>
+  <version>11.0.3-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
@@ -24,9 +24,16 @@
     <logback.version>1.3.0-alpha5</logback.version>
     <disruptor.version>3.4.2</disruptor.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
-    <servlet.api.version>4.0.6</servlet.api.version>
-    <websocket.api.version>1.1.2</websocket.api.version>
-    <jsp.version>9.0.29</jsp.version>
+    <servlet.api.version>5.0.2</servlet.api.version>
+    <!-- change version in jetty-websocket/websocket-jakarta-server/src/main/config/modules/websocket-jakarta.mod -->
+    <websocket.api.version>2.0.0</websocket.api.version>
+    <jsp.version>10.0.2</jsp.version>
+    <jstl.version>2.0.0</jstl.version>
+    <jsp.api.version>3.0</jsp.api.version>
+    <annotation-api.version>2.0.0</annotation-api.version>
+    <transaction-api.version>2.0.0</transaction-api.version>
+    <mail-api.version>2.0.0</mail-api.version>
+    <inject-api.version>2.0.0</inject-api.version>
     <infinispan.version>9.4.8.Final</infinispan.version>
     <infinispan.protostream.version>4.3.4.Final</infinispan.protostream.version>
     <gson.version>2.8.6</gson.version>
@@ -40,7 +47,7 @@
     <junit.version>5.7.0</junit.version>
     <maven.version>3.6.3</maven.version>
     <maven.resolver.version>1.6.1</maven.resolver.version>
-    <weld.version>3.1.5.Final</weld.version>
+    <weld.version>4.0.0.Beta5</weld.version>
     <jboss.logging.version>3.4.1.Final</jboss.logging.version>
     <jetty.perf-helper.version>1.0.6</jetty.perf-helper.version>
     <ant.version>1.10.9</ant.version>
@@ -52,7 +59,7 @@
     <!-- some maven plugins versions -->
     <maven.surefire.version>3.0.0-M5</maven.surefire.version>
     <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
-    <maven.dependency.plugin.version>3.1.2</maven.dependency.plugin.version>
+    <maven.dependency.plugin.version>3.1.1</maven.dependency.plugin.version>
     <maven.resources.plugin.version>3.2.0</maven.resources.plugin.version>
     <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
     <maven.war.plugin.version>3.3.1</maven.war.plugin.version>
@@ -69,7 +76,6 @@
     <!-- springboot is only used for jetty-maven-plugin it test
     otherwise depending on Spring Boot might be chicken and egg issue :) -->
     <springboot.version>2.1.1.RELEASE</springboot.version>
-    <annotation-api.version>1.3.5</annotation-api.version>
     <jackson-databind.version>2.9.10.7</jackson-databind.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <settingsPath>src/it/settings.xml</settingsPath>
@@ -117,7 +123,7 @@
     <module>jetty-servlets</module>
     <module>jetty-util-ajax</module>
     <module>apache-jsp</module>
-    <module>apache-jstl</module>
+    <module>glassfish-jstl</module>
     <module>jetty-maven-plugin</module>
     <module>jetty-jspc-maven-plugin</module>
     <module>jetty-deploy</module>
@@ -204,9 +210,16 @@
                 -->
                 <requireUpperBoundDeps>
                   <excludes>
-                    <exclude>javax.enterprise:cdi-api</exclude>
+                    <exclude>jakarta.enterprise:jakarta.enterprise.cdi-api</exclude>
                   </excludes>
                 </requireUpperBoundDeps>
+                <!-- olamy we should ban those dependencies as they contain bad module-info.java -->
+<!--                <bannedDependencies> -->
+<!--                  <excludes> -->
+<!--                    <exclude>jakarta.servlet:jakarta.servlet-api</exclude> -->
+<!--                    <exclude>javax.servlet:javax.servlet-api</exclude> -->
+<!--                  </excludes> -->
+<!--                </bannedDependencies> -->
               </rules>
             </configuration>
           </execution>
@@ -769,7 +782,7 @@
               <require>asciidoctor-diagram</require>
             </requires>
             <attributes>
-              <JDURL>https://www.eclipse.org/jetty/javadoc/jetty-10</JDURL>
+              <JDURL>https://www.eclipse.org/jetty/javadoc/jetty-11</JDURL>
               <SRCDIR>${basedir}/..</SRCDIR>
               <GITBROWSEURL>https://github.com/eclipse/jetty.project/tree/jetty-9.4.x</GITBROWSEURL>
               <GITDOCURL>https://github.com/eclipse/jetty.project/tree/jetty-10.0.x-doc-refactor/jetty-documentation/src/main/asciidoc</GITDOCURL>
@@ -1001,18 +1014,41 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-servlet-api</artifactId>
+        <artifactId>jetty-jakarta-servlet-api</artifactId>
         <version>${servlet.api.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.servlet.jsp</groupId>
+        <artifactId>jakarta.servlet.jsp-api</artifactId>
+        <version>3.0.0</version>
+        <scope>provided</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-javax-websocket-api</artifactId>
+        <artifactId>jetty-jakarta-websocket-api</artifactId>
         <version>${websocket.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.annotation</groupId>
         <artifactId>jakarta.annotation-api</artifactId>
         <version>${annotation-api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.inject</groupId>
+        <artifactId>jakarta.inject-api</artifactId>
+        <version>${inject-api.version}</version>
       </dependency>
       <dependency>
         <groupId>org.ow2.asm</groupId>
@@ -1045,32 +1081,37 @@
         <artifactId>apache-jsp</artifactId>
         <version>${jsp.version}</version>
       </dependency>
-      <!-- JSTL Impl -->
       <dependency>
-        <groupId>org.apache.taglibs</groupId>
-        <artifactId>taglibs-standard-impl</artifactId>
-        <version>1.2.5</version>
+        <groupId>org.glassfish.web</groupId>
+        <artifactId>jakarta.servlet.jsp.jstl</artifactId>
+        <version>${jstl.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mortbay.jasper</groupId>
+        <artifactId>apache-el</artifactId>
+        <version>${jsp.version}</version>
       </dependency>
       <!-- JSTL API -->
       <dependency>
-        <groupId>org.apache.taglibs</groupId>
-        <artifactId>taglibs-standard-spec</artifactId>
-        <version>1.2.5</version>
+        <groupId>jakarta.servlet.jsp.jstl</groupId>
+        <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+        <version>2.0.0</version>
+        <exclusions>
+          <exclusion>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.activation</artifactId>
-        <version>1.1.0.v201105071233</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.mail.glassfish</artifactId>
-        <version>1.4.1.v201005082020</version>
+        <groupId>jakarta.mail</groupId>
+        <artifactId>jakarta.mail-api</artifactId>
+        <version>${mail-api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.transaction</groupId>
         <artifactId>jakarta.transaction-api</artifactId>
-        <version>1.3.2</version>
+        <version>${transaction-api.version}</version>
       </dependency>
       <!-- maven deps -->
       <dependency>
@@ -1582,6 +1623,9 @@
           <snapshots>
             <enabled>true</enabled>
           </snapshots>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
         </repository>
         <repository>
           <id>oss.snapshots</id>

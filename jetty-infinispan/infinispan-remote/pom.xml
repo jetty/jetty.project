@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>infinispan-parent</artifactId>
-    <version>10.0.3-SNAPSHOT</version>
+    <version>11.0.3-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>infinispan-remote</artifactId>
@@ -28,7 +28,7 @@
               <appendOutput>false</appendOutput>
               <outputFile>${project.build.directory}/deps.txt</outputFile>
               <sort>true</sort>
-              <excludeGroupIds>org.eclipse.jetty,javax.servlet</excludeGroupIds>
+              <excludeGroupIds>org.eclipse.jetty,jakarta.servlet</excludeGroupIds>
               <prependGroupId>true</prependGroupId>
               <includeScope>provided</includeScope>
             </configuration>

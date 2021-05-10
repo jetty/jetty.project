@@ -20,10 +20,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -62,7 +62,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
 
     public static JettyWebSocketServerContainer ensureContainer(ServletContext servletContext)
     {
-        ServletContextHandler contextHandler = ServletContextHandler.getServletContextHandler(servletContext, "Javax Websocket");
+        ServletContextHandler contextHandler = ServletContextHandler.getServletContextHandler(servletContext, "Jakarta Websocket");
         if (contextHandler.getServer() == null)
             throw new IllegalStateException("Server has not been set on the ServletContextHandler");
 

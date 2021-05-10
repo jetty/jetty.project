@@ -22,10 +22,10 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
-import javax.servlet.DispatcherType;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletResponse;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;

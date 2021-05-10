@@ -29,15 +29,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletRegistration.Dynamic;
-import javax.servlet.ServletSecurityElement;
-import javax.servlet.http.HttpSessionActivationListener;
-import javax.servlet.http.HttpSessionAttributeListener;
-import javax.servlet.http.HttpSessionBindingListener;
-import javax.servlet.http.HttpSessionIdListener;
-import javax.servlet.http.HttpSessionListener;
 
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletRegistration.Dynamic;
+import jakarta.servlet.ServletSecurityElement;
+import jakarta.servlet.http.HttpSessionActivationListener;
+import jakarta.servlet.http.HttpSessionAttributeListener;
+import jakarta.servlet.http.HttpSessionBindingListener;
+import jakarta.servlet.http.HttpSessionIdListener;
+import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
@@ -124,7 +124,7 @@ import org.slf4j.LoggerFactory;
  * <ul>
  * <li>add {@link ManagedAttributeListener}</li>
  * <li>{@link AbstractHandler#doStart}</li>
- * <li>{@link #callContextInitialized(javax.servlet.ServletContextListener, javax.servlet.ServletContextEvent)}</li>
+ * <li>{@link #callContextInitialized(jakarta.servlet.ServletContextListener, jakarta.servlet.ServletContextEvent)}</li>
  * </ul>
  * </li>
  * <li>{@link ServletHandler#initialize()}</li>
@@ -166,6 +166,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public static final ClassMatcher __dftSystemClasses = new ClassMatcher(
         "java.",                            // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
         "javax.",                           // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
+        "jakarta.",                         // Jakarta classes (per servlet spec v5.0 / Section 15.2.1)
         "org.xml.",                         // javax.xml
         "org.w3c."                          // javax.xml
     );
@@ -1150,7 +1151,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /**
      * Set temporary directory for context.
-     * The javax.servlet.context.tempdir attribute is also set.
+     * The jakarta.servlet.context.tempdir attribute is also set.
      *
      * @param dir Writable temporary directory.
      */

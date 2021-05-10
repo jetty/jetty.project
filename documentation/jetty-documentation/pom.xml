@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.documentation</groupId>
     <artifactId>documentation-parent</artifactId>
-    <version>10.0.3-SNAPSHOT</version>
+    <version>11.0.3-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -47,7 +47,7 @@
             <project.basedir>${project.basedir}</project.basedir>
             <maven.local.repo>${settings.localRepository}</maven.local.repo>
             <prog_guide>../programming-guide/index.html</prog_guide>
-            <JDURL>https://www.eclipse.org/jetty/javadoc/jetty-10</JDURL>
+            <JDURL>https://www.eclipse.org/jetty/javadoc/jetty-11</JDURL>
             <SRCDIR>${basedir}/..</SRCDIR>
             <GITBROWSEURL>https://github.com/eclipse/jetty.project/tree/master</GITBROWSEURL>
             <GITDOCURL>https://github.com/eclipse/jetty.project/tree/jetty-10.0.x-doc-refactor/jetty-documentation/src/main/asciidoc</GITDOCURL>
@@ -145,7 +145,7 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-servlet-api</artifactId>
+      <artifactId>jetty-jakarta-servlet-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.3-SNAPSHOT</version>
+    <version>11.0.3-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-maven-plugin</artifactId>
@@ -99,12 +99,21 @@
           <setupIncludes>
             <setupInclude>it-parent-pom/pom.xml</setupInclude>
           </setupIncludes>
+          <pomExcludes>
+            <!-- enable again when springboot is migrated to jakarta -->
+            <pomExclude>javax-annotation-api/pom.xml</pomExclude>
+            <!-- enable again when gwt is migrated to jakarta -->
+            <pomExclude>jetty-start-gwt-it/pom.xml</pomExclude>
+            <!-- bean-validation-webapp-2.25.1.war is not jakarta namespace ready -->
+            <pomExclude>jetty-start-war-mojo-it/pom.xml</pomExclude>
+          </pomExcludes>
           <scriptVariables>
             <jettyStopKey>${jetty.stopKey}</jettyStopKey>
             <jettyStopPort>${jetty.stopPort}</jettyStopPort>
             <maven.surefire.version>${maven.surefire.version}</maven.surefire.version>
             <servletApiVersion>${servlet.api.version}</servletApiVersion>
           </scriptVariables>
+          <settingsFile>src/it/settings.xml</settingsFile>
           <goals>
             <goal>clean</goal>
           </goals>
@@ -157,7 +166,7 @@
       <version>${project.version}</version>
       <exclusions>
         <exclusion>
-          <groupId>javax.servlet</groupId>
+          <groupId>jakarta.servlet</groupId>
           <artifactId>servlet-api</artifactId>
         </exclusion>
       </exclusions>
@@ -219,7 +228,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-javax-server</artifactId>
+      <artifactId>websocket-jakarta-server</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -234,7 +243,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>apache-jstl</artifactId>
+      <artifactId>glassfish-jstl</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

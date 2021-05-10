@@ -40,7 +40,7 @@ public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationH
     @Override
     public void handle(ClassInfo info, String annotationName)
     {
-        if (annotationName == null || !"javax.servlet.annotation.WebServlet".equals(annotationName))
+        if (annotationName == null || !"jakarta.servlet.annotation.WebServlet".equals(annotationName))
             return;
 
         WebServletAnnotation annotation = new WebServletAnnotation(_context, info.getClassName(), info.getContainingResource());
@@ -50,7 +50,7 @@ public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationH
     @Override
     public void handle(FieldInfo info, String annotationName)
     {
-        if (annotationName == null || !"javax.servlet.annotation.WebServlet".equals(annotationName))
+        if (annotationName == null || !"jakarta.servlet.annotation.WebServlet".equals(annotationName))
             return;
 
         LOG.warn("@WebServlet annotation not supported for fields");
@@ -59,7 +59,7 @@ public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationH
     @Override
     public void handle(MethodInfo info, String annotationName)
     {
-        if (annotationName == null || !"javax.servlet.annotation.WebServlet".equals(annotationName))
+        if (annotationName == null || !"jakarta.servlet.annotation.WebServlet".equals(annotationName))
             return;
 
         LOG.warn("@WebServlet annotation not supported for methods");

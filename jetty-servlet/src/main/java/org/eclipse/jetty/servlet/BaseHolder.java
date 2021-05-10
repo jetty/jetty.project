@@ -15,9 +15,9 @@ package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
 import java.util.function.BiFunction;
-import javax.servlet.ServletContext;
-import javax.servlet.UnavailableException;
 
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.UnavailableException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.Loader;

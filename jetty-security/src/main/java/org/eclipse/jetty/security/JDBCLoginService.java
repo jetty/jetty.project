@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import jakarta.servlet.ServletRequest;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Credential;

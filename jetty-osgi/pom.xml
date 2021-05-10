@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.3-SNAPSHOT</version>
+    <version>11.0.3-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -136,7 +136,7 @@
         <exclusions>
           <exclusion>
             <!-- we use the servlet jar from orbit -->
-            <groupId>javax.servlet</groupId>
+            <groupId>jakarta.servlet</groupId>
             <artifactId>servlet-api</artifactId>
           </exclusion>
           <exclusion>

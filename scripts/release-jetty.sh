@@ -138,7 +138,7 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
         # PATH_ORIG=$PATH
         # JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.8.0_171.jdk/Contents/Home
         # PATH=$JAVA_HOME/bin:$PATH
-        mvn -N -Pupdate-version generate-resources
+        mvn --debug -N -Pupdate-version generate-resources
         cp VERSION.txt VERSION.txt.backup
         cat VERSION.txt.backup | sed -e "s/$VER_CURRENT/$VER_RELEASE/" > VERSION.txt
         rm VERSION.txt.backup

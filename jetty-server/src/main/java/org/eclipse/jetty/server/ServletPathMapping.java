@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.server;
 
-import javax.servlet.http.HttpServletMapping;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.MappingMatch;
-
+import jakarta.servlet.http.HttpServletMapping;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.MappingMatch;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 
@@ -24,7 +23,7 @@ import org.eclipse.jetty.http.pathmap.ServletPathSpec;
  * Implementation of HttpServletMapping.
  *
  * Represents the application of a {@link ServletPathSpec} to a specific path
- * that resulted in a mapping to a {@link javax.servlet.Servlet}.
+ * that resulted in a mapping to a {@link jakarta.servlet.Servlet}.
  * As well as supporting the standard {@link HttpServletMapping} methods, this
  * class also carries fields, which can be precomputed for the implementation
  * of {@link HttpServletRequest#getServletPath()} and

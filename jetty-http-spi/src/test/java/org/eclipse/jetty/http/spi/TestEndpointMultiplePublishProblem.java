@@ -14,15 +14,15 @@
 package org.eclipse.jetty.http.spi;
 
 import java.net.URL;
-import javax.jws.WebMethod;
-import javax.jws.WebService;
 import javax.xml.namespace.QName;
-import javax.xml.ws.BindingProvider;
-import javax.xml.ws.Endpoint;
-import javax.xml.ws.Service;
-import javax.xml.ws.WebEndpoint;
-import javax.xml.ws.WebServiceClient;
 
+import jakarta.jws.WebMethod;
+import jakarta.jws.WebService;
+import jakarta.xml.ws.BindingProvider;
+import jakarta.xml.ws.Endpoint;
+import jakarta.xml.ws.Service;
+import jakarta.xml.ws.WebEndpoint;
+import jakarta.xml.ws.WebServiceClient;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.server.Server;

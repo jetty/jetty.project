@@ -17,9 +17,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.atomic.LongAdder;
-import javax.servlet.ReadListener;
-import javax.servlet.ServletInputStream;
 
+import jakarta.servlet.ReadListener;
+import jakarta.servlet.ServletInputStream;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;

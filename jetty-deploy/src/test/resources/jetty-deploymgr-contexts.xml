@@ -11,7 +11,7 @@
         
         <Call name="setContextAttribute">
           <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
-          <Arg>.*/jetty-servlet-api-[^/]*\.jar$</Arg>
+          <Arg>.*/jetty-jakarta-servlet-api-[^/]*\.jar$</Arg>
         </Call>
         
         <Call id="webappprovider" name="addAppProvider">
