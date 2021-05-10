@@ -14,9 +14,12 @@
 package org.eclipse.jetty.security.openid;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import jakarta.servlet.ServletRequest;
@@ -67,10 +70,14 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     public static final String J_URI = "org.eclipse.jetty.security.openid.URI";
     public static final String J_POST = "org.eclipse.jetty.security.openid.POST";
     public static final String J_METHOD = "org.eclipse.jetty.security.openid.METHOD";
-    public static final String CSRF_TOKEN = "org.eclipse.jetty.security.openid.csrf_token";
     public static final String J_SECURITY_CHECK = "/j_security_check";
     public static final String ERROR_PARAMETER = "error_description_jetty";
+    private static final String CSRF_MAP = "org.eclipse.jetty.security.openid.csrf_map";
 
+    @Deprecated
+    public static final String CSRF_TOKEN = "org.eclipse.jetty.security.openid.csrf_token";
+
+    private final SecureRandom _secureRandom = new SecureRandom();
     private OpenIdConfiguration _configuration;
     private String _errorPage;
     private String _errorPath;
@@ -112,18 +119,13 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         return Constraint.__OPENID_AUTH;
     }
 
-    /**
-     * If true, uris that cause a redirect to a login page will always
-     * be remembered. If false, only the first uri that leads to a login
-     * page redirect is remembered.
-     *
-     * @param alwaysSave true to always save the uri
-     */
+    @Deprecated
     public void setAlwaysSaveUri(boolean alwaysSave)
     {
         _alwaysSaveUri = alwaysSave;
     }
 
+    @Deprecated
     public boolean isAlwaysSaveUri()
     {
         return _alwaysSaveUri;
@@ -167,9 +169,12 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         {
             HttpSession session = ((HttpServletRequest)request).getSession();
             Authentication cached = new SessionAuthentication(getAuthMethod(), user, credentials);
-            session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, cached);
-            session.setAttribute(CLAIMS, ((OpenIdCredentials)credentials).getClaims());
-            session.setAttribute(RESPONSE, ((OpenIdCredentials)credentials).getResponse());
+            synchronized (session)
+            {
+                session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, cached);
+                session.setAttribute(CLAIMS, ((OpenIdCredentials)credentials).getClaims());
+                session.setAttribute(RESPONSE, ((OpenIdCredentials)credentials).getResponse());
+            }
         }
         return user;
     }
@@ -184,10 +189,12 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         if (session == null)
             return;
 
-        //clean up session
-        session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
-        session.removeAttribute(CLAIMS);
-        session.removeAttribute(RESPONSE);
+        synchronized (session)
+        {
+            session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
+            session.removeAttribute(CLAIMS);
+            session.removeAttribute(RESPONSE);
+        }
     }
 
     @Override
@@ -202,16 +209,24 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         //See Servlet Spec 3.1 sec 13.6.3
         HttpServletRequest httpRequest = (HttpServletRequest)request;
         HttpSession session = httpRequest.getSession(false);
-        if (session == null || session.getAttribute(SessionAuthentication.__J_AUTHENTICATED) == null)
+        if (session == null)
             return; //not authenticated yet
 
-        String juri = (String)session.getAttribute(J_URI);
-        if (juri == null || juri.length() == 0)
-            return; //no original uri saved
+        String juri;
+        String method;
+        synchronized (session)
+        {
+            if (session.getAttribute(SessionAuthentication.__J_AUTHENTICATED) == null)
+                return; //not authenticated yet
 
-        String method = (String)session.getAttribute(J_METHOD);
-        if (method == null || method.length() == 0)
-            return; //didn't save original request method
+            juri = (String)session.getAttribute(J_URI);
+            if (juri == null || juri.length() == 0)
+                return; //no original uri saved
+
+            method = (String)session.getAttribute(J_METHOD);
+            if (method == null || method.length() == 0)
+                return; //didn't save original request method
+        }
 
         StringBuffer buf = httpRequest.getRequestURL();
         if (httpRequest.getQueryString() != null)
@@ -220,10 +235,10 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         if (!juri.equals(buf.toString()))
             return; //this request is not for the same url as the original
 
-        //restore the original request's method on this request
+        // Restore the original request's method on this request.
         if (LOG.isDebugEnabled())
             LOG.debug("Restoring original method {} for {} with method {}", method, juri, httpRequest.getMethod());
-        Request baseRequest = Request.getBaseRequest(request);
+        Request baseRequest = Objects.requireNonNull(Request.getBaseRequest(request));
         baseRequest.setMethod(method);
     }
 
@@ -234,6 +249,9 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         final HttpServletResponse response = (HttpServletResponse)res;
         final Request baseRequest = Objects.requireNonNull(Request.getBaseRequest(request));
         final Response baseResponse = baseRequest.getResponse();
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("validateRequest({},{},{})", req, res, mandatory);
 
         String uri = request.getRequestURI();
         if (uri == null)
@@ -260,48 +278,56 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             if (isJSecurityCheck(uri))
             {
                 String authCode = request.getParameter("code");
-                if (authCode != null)
+                if (authCode == null)
                 {
-                    // Verify anti-forgery state token
-                    String state = request.getParameter("state");
-                    String antiForgeryToken = (String)session.getAttribute(CSRF_TOKEN);
-                    if (antiForgeryToken == null || !antiForgeryToken.equals(state))
-                    {
-                        sendError(request, response, "auth failed: invalid state parameter");
-                        return Authentication.SEND_FAILURE;
-                    }
-
-                    // Attempt to login with the provided authCode
-                    OpenIdCredentials credentials = new OpenIdCredentials(authCode, getRedirectUri(request));
-                    UserIdentity user = login(null, credentials, request);
-                    if (user != null)
-                    {
-                        // Redirect to original request
-                        String nuri;
-                        synchronized (session)
-                        {
-                            nuri = (String)session.getAttribute(J_URI);
-
-                            if (nuri == null || nuri.length() == 0)
-                            {
-                                nuri = request.getContextPath();
-                                if (nuri.length() == 0)
-                                    nuri = URIUtil.SLASH;
-                            }
-                        }
-                        OpenIdAuthentication openIdAuth = new OpenIdAuthentication(getAuthMethod(), user);
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("authenticated {}->{}", openIdAuth, nuri);
-
-                        response.setContentLength(0);
-                        baseResponse.sendRedirect(nuri, true);
-                        return openIdAuth;
-                    }
+                    sendError(request, response, "auth failed: no code parameter");
+                    return Authentication.SEND_FAILURE;
                 }
 
-                // Not authenticated.
-                sendError(request, response, null);
-                return Authentication.SEND_FAILURE;
+                String state = request.getParameter("state");
+                if (state == null)
+                {
+                    sendError(request, response, "auth failed: no state parameter");
+                    return Authentication.SEND_FAILURE;
+                }
+
+                // Verify anti-forgery state token.
+                UriRedirectInfo uriRedirectInfo;
+                synchronized (session)
+                {
+                    uriRedirectInfo = removeAndClearCsrfMap(session, state);
+                }
+                if (uriRedirectInfo == null)
+                {
+                    sendError(request, response, "auth failed: invalid state parameter");
+                    return Authentication.SEND_FAILURE;
+                }
+
+                // Attempt to login with the provided authCode.
+                OpenIdCredentials credentials = new OpenIdCredentials(authCode, getRedirectUri(request));
+                UserIdentity user = login(null, credentials, request);
+                if (user == null)
+                {
+                    sendError(request, response, null);
+                    return Authentication.SEND_FAILURE;
+                }
+
+                OpenIdAuthentication openIdAuth = new OpenIdAuthentication(getAuthMethod(), user);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("authenticated {}->{}", openIdAuth, uriRedirectInfo.getUri());
+
+                // Save redirect info in session so original request can be restored after redirect.
+                synchronized (session)
+                {
+                    session.setAttribute(J_URI, uriRedirectInfo.getUri());
+                    session.setAttribute(J_METHOD, uriRedirectInfo.getMethod());
+                    session.setAttribute(J_POST, uriRedirectInfo.getFormParameters());
+                }
+
+                // Redirect to the original URI.
+                response.setContentLength(0);
+                baseResponse.sendRedirect(uriRedirectInfo.getUri(), true);
+                return openIdAuth;
             }
 
             // Look for cached authentication in the Session.
@@ -314,7 +340,10 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("auth revoked {}", authentication);
-                    session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
+                    synchronized (session)
+                    {
+                        session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
+                    }
                 }
                 else
                 {
@@ -323,8 +352,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                         String jUri = (String)session.getAttribute(J_URI);
                         if (jUri != null)
                         {
-                            //check if the request is for the same url as the original and restore
-                            //params if it was a post
+                            // Check if the request is for the same url as the original and restore params if it was a post.
                             if (LOG.isDebugEnabled())
                                 LOG.debug("auth retry {}->{}", authentication, jUri);
                             StringBuffer buf = request.getRequestURL();
@@ -347,10 +375,10 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                             }
                         }
                     }
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("auth {}", authentication);
-                    return authentication;
                 }
+                if (LOG.isDebugEnabled())
+                    LOG.debug("auth {}", authentication);
+                return authentication;
             }
 
             // If we can't send challenge.
@@ -361,29 +389,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 return Authentication.UNAUTHENTICATED;
             }
 
-            // Remember the current URI.
-            synchronized (session)
-            {
-                // But only if it is not set already, or we save every uri that leads to a login redirect
-                if (session.getAttribute(J_URI) == null || isAlwaysSaveUri())
-                {
-                    StringBuffer buf = request.getRequestURL();
-                    if (request.getQueryString() != null)
-                        buf.append("?").append(request.getQueryString());
-                    session.setAttribute(J_URI, buf.toString());
-                    session.setAttribute(J_METHOD, request.getMethod());
-
-                    if (MimeTypes.Type.FORM_ENCODED.is(req.getContentType()) && HttpMethod.POST.is(request.getMethod()))
-                    {
-                        MultiMap<String> formParameters = new MultiMap<>();
-                        baseRequest.extractFormParameters(formParameters);
-                        session.setAttribute(J_POST, formParameters);
-                    }
-                }
-            }
-
             // Send the the challenge.
-            String challengeUri = getChallengeUri(request);
+            String challengeUri = getChallengeUri(baseRequest);
             if (LOG.isDebugEnabled())
                 LOG.debug("challenge {}->{}", session.getId(), challengeUri);
             baseResponse.sendRedirect(challengeUri, true);
@@ -464,16 +471,15 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         return redirectUri.toString();
     }
 
-    protected String getChallengeUri(HttpServletRequest request)
+    protected String getChallengeUri(Request request)
     {
         HttpSession session = request.getSession();
         String antiForgeryToken;
         synchronized (session)
         {
-            antiForgeryToken = (session.getAttribute(CSRF_TOKEN) == null)
-                ? new BigInteger(130, new SecureRandom()).toString(32)
-                : (String)session.getAttribute(CSRF_TOKEN);
-            session.setAttribute(CSRF_TOKEN, antiForgeryToken);
+            Map<String, UriRedirectInfo> csrfMap = ensureCsrfMap(session);
+            antiForgeryToken = new BigInteger(130, _secureRandom).toString(32);
+            csrfMap.put(antiForgeryToken, new UriRedirectInfo(request));
         }
 
         // any custom scopes requested from configuration
@@ -494,7 +500,82 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     @Override
     public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser)
     {
-        return true;
+        return req.isSecure();
+    }
+
+    private UriRedirectInfo removeAndClearCsrfMap(HttpSession session, String csrf)
+    {
+        @SuppressWarnings("unchecked")
+        Map<String, UriRedirectInfo> csrfMap = (Map<String, UriRedirectInfo>)session.getAttribute(CSRF_MAP);
+        if (csrfMap == null)
+            return null;
+
+        UriRedirectInfo uriRedirectInfo = csrfMap.get(csrf);
+        csrfMap.clear();
+        return uriRedirectInfo;
+    }
+
+    private Map<String, UriRedirectInfo> ensureCsrfMap(HttpSession session)
+    {
+        @SuppressWarnings("unchecked")
+        Map<String, UriRedirectInfo> csrfMap = (Map<String, UriRedirectInfo>)session.getAttribute(CSRF_MAP);
+        if (csrfMap == null)
+        {
+            // Create a custom Map so we can only have a limited number of request URIs saved.
+            csrfMap = new LinkedHashMap<>()
+            {
+                private static final int MAX_SIZE = 64;
+
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, UriRedirectInfo> eldest)
+                {
+                    return size() > MAX_SIZE;
+                }
+            };
+            session.setAttribute(CSRF_MAP, csrfMap);
+        }
+        return csrfMap;
+    }
+
+    private static class UriRedirectInfo implements Serializable
+    {
+        private static final long serialVersionUID = 139567755844461433L;
+
+        private final String _uri;
+        private final String _method;
+        private final MultiMap<String> _formParameters;
+
+        public UriRedirectInfo(Request request)
+        {
+            _uri = request.getRequestURI();
+            _method = request.getMethod();
+
+            if (MimeTypes.Type.FORM_ENCODED.is(request.getContentType()) && HttpMethod.POST.is(request.getMethod()))
+            {
+                MultiMap<String> formParameters = new MultiMap<>();
+                request.extractFormParameters(formParameters);
+                _formParameters = formParameters;
+            }
+            else
+            {
+                _formParameters = null;
+            }
+        }
+
+        public String getUri()
+        {
+            return _uri;
+        }
+
+        public String getMethod()
+        {
+            return _method;
+        }
+
+        public MultiMap<String> getFormParameters()
+        {
+            return _formParameters;
+        }
     }
 
     /**
