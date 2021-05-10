@@ -55,7 +55,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2Stream.class);
 
     private final AutoLock lock = new AutoLock();
-    private final Queue<DataEntry> dataQueue = new ArrayDeque<>();
+    private Queue<DataEntry> dataQueue;
     private final AtomicReference<Object> attachment = new AtomicReference<>();
     private final AtomicReference<ConcurrentMap<String, Object>> attributes = new AtomicReference<>();
     private final AtomicReference<CloseState> closeState = new AtomicReference<>(CloseState.NOT_CLOSED);
@@ -235,12 +235,15 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public boolean failAllData(Throwable x)
     {
-        List<DataEntry> copy;
+        List<DataEntry> copy = List.of();
         try (AutoLock l = lock.lock())
         {
             dataDemand = 0;
-            copy = new ArrayList<>(dataQueue);
-            dataQueue.clear();
+            if (dataQueue != null)
+            {
+                copy = new ArrayList<>(dataQueue);
+                dataQueue.clear();
+            }
         }
         copy.forEach(dataEntry -> dataEntry.callback.failed(x));
         DataEntry lastDataEntry = copy.isEmpty() ? null : copy.get(copy.size() - 1);
@@ -413,6 +416,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         DataEntry entry = new DataEntry(frame, callback);
         try (AutoLock l = lock.lock())
         {
+            if (dataQueue == null)
+                dataQueue = new ArrayDeque<>(8);
             dataQueue.offer(entry);
             initial = dataInitial;
             if (initial)
@@ -454,7 +459,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         {
             demand = dataDemand = MathUtils.cappedAdd(dataDemand, n);
             if (!dataProcess)
-                dataProcess = proceed = !dataQueue.isEmpty();
+                dataProcess = proceed = dataQueue != null && !dataQueue.isEmpty();
         }
         if (LOG.isDebugEnabled())
             LOG.debug("Demand {}/{}, {} data processing for {}", n, demand, proceed ? "proceeding" : "stalling", this);
@@ -469,7 +474,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             DataEntry dataEntry;
             try (AutoLock l = lock.lock())
             {
-                if (dataQueue.isEmpty() || dataDemand == 0)
+                if (dataQueue == null || dataQueue.isEmpty() || dataDemand == 0)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Stalling data processing for {}", this);
