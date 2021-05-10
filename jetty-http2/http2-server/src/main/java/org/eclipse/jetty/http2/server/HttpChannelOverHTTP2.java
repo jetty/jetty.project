@@ -587,7 +587,8 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
     {
         if (LOG.isDebugEnabled())
             LOG.debug("failing all content with {} {}", failure, this);
-        boolean atEof = getStream().failAllData(failure);
+        IStream stream = getStream();
+        boolean atEof = stream == null || stream.failAllData(failure);
         atEof |= _contentDemander.failContent(failure);
         if (LOG.isDebugEnabled())
             LOG.debug("failed all content, reached EOF? {}", atEof);
