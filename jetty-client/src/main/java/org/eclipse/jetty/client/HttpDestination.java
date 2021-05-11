@@ -597,7 +597,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             // When the timeout expires, scan the exchange queue for the next
             // earliest exchange that may expire, and reschedule a new timeout.
             long earliest = earliestTimeout.getAndUpdate(t -> Math.min(t, expiresAt));
-            if (expiresAt != earliest)
+            if (expiresAt < earliest)
             {
                 // A new request expires earlier than previous requests, schedule it.
                 long delay = Math.max(0, expiresAt - System.nanoTime());
