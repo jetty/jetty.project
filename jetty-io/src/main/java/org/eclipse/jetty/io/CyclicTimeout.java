@@ -119,10 +119,12 @@ public abstract class CyclicTimeout implements Destroyable
             if (_timeout.compareAndSet(timeout, new Timeout(newTimeoutAt, wakeup)))
             {
                 if (LOG.isDebugEnabled())
+                {
                     LOG.debug("Installed timeout in {} ms, {} wake up in {} ms",
                         units.toMillis(delay),
                         newWakeup != null ? "new" : "existing",
                         TimeUnit.NANOSECONDS.toMillis(wakeup._at - now));
+                }
                 break;
             }
         }
