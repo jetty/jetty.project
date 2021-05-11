@@ -567,14 +567,15 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                 LOG.debug("{} timeouts check", this);
 
             long now = System.nanoTime();
-
+            long earliest = Long.MAX_VALUE;
             // Reset the earliest timeout so we can expire again.
             // A concurrent call to schedule(long) may lose an earliest
             // value, but the corresponding exchange is already enqueued
             // and will be seen by scanning the exchange queue below.
-            earliestTimeout.set(Long.MAX_VALUE);
+            earliestTimeout.set(earliest);
 
-            long earliest = Long.MAX_VALUE;
+            // Scan the message queue to abort expired exchanges
+            // and to find the exchange that expire the earliest.
             for (HttpExchange exchange : exchanges)
             {
                 HttpRequest request = exchange.getRequest();
@@ -596,8 +597,8 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             // Schedule a timeout for the earliest exchange that may expire.
             // When the timeout expires, scan the exchange queue for the next
             // earliest exchange that may expire, and reschedule a new timeout.
-            long earliest = earliestTimeout.getAndUpdate(t -> Math.min(t, expiresAt));
-            if (expiresAt < earliest)
+            long prevEarliest = earliestTimeout.getAndUpdate(t -> Math.min(t, expiresAt));
+            if (expiresAt < prevEarliest)
             {
                 // A new request expires earlier than previous requests, schedule it.
                 long delay = Math.max(0, expiresAt - System.nanoTime());
