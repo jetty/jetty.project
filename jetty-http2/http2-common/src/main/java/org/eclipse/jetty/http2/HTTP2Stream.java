@@ -17,9 +17,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.channels.WritePendingException;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Queue;
+import java.util.Deque;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -55,7 +53,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2Stream.class);
 
     private final AutoLock lock = new AutoLock();
-    private Queue<DataEntry> dataQueue;
+    private Deque<DataEntry> dataQueue;
     private final AtomicReference<Object> attachment = new AtomicReference<>();
     private final AtomicReference<ConcurrentMap<String, Object>> attributes = new AtomicReference<>();
     private final AtomicReference<CloseState> closeState = new AtomicReference<>(CloseState.NOT_CLOSED);
@@ -235,18 +233,19 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public boolean failAllData(Throwable x)
     {
-        List<DataEntry> copy = List.of();
+        Deque<DataEntry> copy;
         try (AutoLock l = lock.lock())
         {
             dataDemand = 0;
-            if (dataQueue != null)
-            {
-                copy = new ArrayList<>(dataQueue);
-                dataQueue.clear();
-            }
+            copy = dataQueue;
+            dataQueue = null;
         }
-        copy.forEach(dataEntry -> dataEntry.callback.failed(x));
-        DataEntry lastDataEntry = copy.isEmpty() ? null : copy.get(copy.size() - 1);
+        DataEntry lastDataEntry = null;
+        if (copy != null)
+        {
+            copy.forEach(dataEntry -> dataEntry.callback.failed(x));
+            lastDataEntry = copy.isEmpty() ? null : copy.peekLast();
+        }
         if (lastDataEntry == null)
             return isRemotelyClosed();
         return lastDataEntry.frame.isEndStream();
@@ -417,7 +416,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         try (AutoLock l = lock.lock())
         {
             if (dataQueue == null)
-                dataQueue = new ArrayDeque<>(8);
+                dataQueue = new ArrayDeque<>();
             dataQueue.offer(entry);
             initial = dataInitial;
             if (initial)
