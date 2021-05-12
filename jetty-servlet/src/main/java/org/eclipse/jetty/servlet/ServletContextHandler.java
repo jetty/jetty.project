@@ -175,7 +175,6 @@ public class ServletContextHandler extends ContextHandler
         _servletHandler = servletHandler;
 
         _objFactory = new DecoratedObjectFactory();
-        _objFactory.addDecorator(new DeprecationWarning());
 
         // Link the handlers
         relinkHandlers();
@@ -302,6 +301,7 @@ public class ServletContextHandler extends ContextHandler
     @Override
     protected void doStart() throws Exception
     {
+        _objFactory.addDecorator(new DeprecationWarning());
         getServletContext().setAttribute(DecoratedObjectFactory.ATTR, _objFactory);
         super.doStart();
     }
