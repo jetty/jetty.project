@@ -61,6 +61,7 @@ import org.eclipse.jetty.util.URIUtil;
  * appropriate. This means that when not in development mode, the servlet must be
  * restarted before changed content will be served.</p>
  */
+@Deprecated
 public class ConcatServlet extends HttpServlet
 {
     private boolean _development;
@@ -125,7 +126,8 @@ public class ConcatServlet extends HttpServlet
                 }
             }
 
-            RequestDispatcher dispatcher = getServletContext().getRequestDispatcher(path);
+            // Use the original string and not the decoded path as the Dispatcher will decode again.
+            RequestDispatcher dispatcher = getServletContext().getRequestDispatcher(part);
             if (dispatcher != null)
                 dispatchers.add(dispatcher);
         }
