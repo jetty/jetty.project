@@ -60,7 +60,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     private final ProxyConfiguration.Proxy proxy;
     private final ClientConnectionFactory connectionFactory;
     private final HttpField hostField;
-    private final TimeoutTask timeout;
+    private final RequestTimeouts requestTimeouts;
     private ConnectionPool connectionPool;
 
     public HttpDestination(HttpClient client, Origin origin)
@@ -73,7 +73,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         this.requestNotifier = new RequestNotifier(client);
         this.responseNotifier = new ResponseNotifier();
 
-        this.timeout = new TimeoutTask(client.getScheduler());
+        this.requestTimeouts = new RequestTimeouts(client.getScheduler());
 
         String host = HostPort.normalizeHost(getHost());
         if (!client.isDefaultPort(getScheme(), getPort()))
@@ -257,7 +257,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             {
                 long expiresAt = request.getTimeoutAt();
                 if (expiresAt != -1)
-                    timeout.schedule(expiresAt);
+                    requestTimeouts.schedule(expiresAt);
 
                 if (!client.isRunning() && exchanges.remove(exchange))
                 {
@@ -409,7 +409,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         if (LOG.isDebugEnabled())
             LOG.debug("Closed {}", this);
         connectionPool.close();
-        timeout.destroy();
+        requestTimeouts.destroy();
     }
 
     public void release(Connection connection)
@@ -527,15 +527,15 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     }
 
     /**
-     * This class enforces the total timeout for exchanges that are still in the queue.
-     * The total timeout for exchanges that are not in the destination queue is enforced
-     * by {@link HttpChannel}.
+     * <p>Enforces the total timeout for for exchanges that are still in the queue.</p>
+     * <p>The total timeout for exchanges that are not in the destination queue
+     * is enforced in {@link HttpChannel} by {@link TimeoutCompleteListener}.</p>
      */
-    private class TimeoutTask extends CyclicTimeout
+    private class RequestTimeouts extends CyclicTimeout
     {
-        private final AtomicLong nextTimeout = new AtomicLong(Long.MAX_VALUE);
+        private final AtomicLong earliestTimeout = new AtomicLong(Long.MAX_VALUE);
 
-        private TimeoutTask(Scheduler scheduler)
+        private RequestTimeouts(Scheduler scheduler)
         {
             super(scheduler);
         }
@@ -544,14 +544,18 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         public void onTimeoutExpired()
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} timeout expired", this);
+                LOG.debug("{} timeouts check", this);
 
-            nextTimeout.set(Long.MAX_VALUE);
             long now = System.nanoTime();
-            long nextExpiresAt = Long.MAX_VALUE;
+            long earliest = Long.MAX_VALUE;
+            // Reset the earliest timeout so we can expire again.
+            // A concurrent call to schedule(long) may lose an earliest
+            // value, but the corresponding exchange is already enqueued
+            // and will be seen by scanning the exchange queue below.
+            earliestTimeout.set(earliest);
 
-            // Check all queued exchanges for those that have expired
-            // and to determine when the next check must be.
+            // Scan the message queue to abort expired exchanges
+            // and to find the exchange that expire the earliest.
             for (HttpExchange exchange : exchanges)
             {
                 HttpRequest request = exchange.getRequest();
@@ -560,34 +564,27 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                     continue;
                 if (expiresAt <= now)
                     request.abort(new TimeoutException("Total timeout " + request.getTimeout() + " ms elapsed"));
-                else if (expiresAt < nextExpiresAt)
-                    nextExpiresAt = expiresAt;
+                else if (expiresAt < earliest)
+                    earliest = expiresAt;
             }
 
-            if (nextExpiresAt < Long.MAX_VALUE && client.isRunning())
-                schedule(nextExpiresAt);
+            if (earliest < Long.MAX_VALUE && client.isRunning())
+                schedule(earliest);
         }
 
         private void schedule(long expiresAt)
         {
-            // Schedule a timeout for the soonest any known exchange can expire.
-            // If subsequently that exchange is removed from the queue, the
-            // timeout is not cancelled, instead the entire queue is swept
-            // for expired exchanges and a new timeout is set.
-            long timeoutAt = nextTimeout.getAndUpdate(e -> Math.min(e, expiresAt));
-            if (timeoutAt != expiresAt)
+            // Schedule a timeout for the earliest exchange that may expire.
+            // When the timeout expires, scan the exchange queue for the next
+            // earliest exchange that may expire, and reschedule a new timeout.
+            long prevEarliest = earliestTimeout.getAndUpdate(t -> Math.min(t, expiresAt));
+            if (expiresAt < prevEarliest)
             {
-                long delay = expiresAt - System.nanoTime();
-                if (delay <= 0)
-                {
-                    onTimeoutExpired();
-                }
-                else
-                {
-                    schedule(delay, TimeUnit.NANOSECONDS);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} scheduled timeout in {} ms", this, TimeUnit.NANOSECONDS.toMillis(delay));
-                }
+                // A new request expires earlier than previous requests, schedule it.
+                long delay = Math.max(0, expiresAt - System.nanoTime());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} scheduling timeout in {} ms", this, TimeUnit.NANOSECONDS.toMillis(delay));
+                schedule(delay, TimeUnit.NANOSECONDS);
             }
         }
     }

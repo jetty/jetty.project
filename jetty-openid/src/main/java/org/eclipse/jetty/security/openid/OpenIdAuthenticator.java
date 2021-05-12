@@ -521,20 +521,28 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         Map<String, UriRedirectInfo> csrfMap = (Map<String, UriRedirectInfo>)session.getAttribute(CSRF_MAP);
         if (csrfMap == null)
         {
-            // Create a custom Map so we can only have a limited number of request URIs saved.
-            csrfMap = new LinkedHashMap<>()
-            {
-                private static final int MAX_SIZE = 64;
-
-                @Override
-                protected boolean removeEldestEntry(Map.Entry<String, UriRedirectInfo> eldest)
-                {
-                    return size() > MAX_SIZE;
-                }
-            };
+            csrfMap = new MRUMap(64);
             session.setAttribute(CSRF_MAP, csrfMap);
         }
         return csrfMap;
+    }
+
+    private static class MRUMap extends LinkedHashMap<String, UriRedirectInfo>
+    {
+        private static final long serialVersionUID = 5375723072014233L;
+
+        private final int _size;
+
+        private MRUMap(int size)
+        {
+            _size = size;
+        }
+
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, UriRedirectInfo> eldest)
+        {
+            return size() > _size;
+        }
     }
 
     private static class UriRedirectInfo implements Serializable

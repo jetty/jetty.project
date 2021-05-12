@@ -59,6 +59,10 @@ public final class UriCompliance implements ComplianceViolation.Mode
          */
         AMBIGUOUS_PATH_PARAMETER("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path parameter"),
         /**
+         * Allow ambiguous path encoding within a URI segment e.g. <code>/%2557EB-INF</code>
+         */
+        AMBIGUOUS_PATH_ENCODING("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path encoding"),
+        /**
          * Allow Non canonical ambiguous paths. eg <code>/foo/x%2f%2e%2e%/bar</code> provided to applications as <code>/foo/x/../bar</code>
          */
         NON_CANONICAL_AMBIGUOUS_PATHS("https://tools.ietf.org/html/rfc3986#section-3.3", "Non canonical ambiguous paths");
@@ -94,15 +98,15 @@ public final class UriCompliance implements ComplianceViolation.Mode
     /**
      * The default compliance mode that extends RFC3986 compliance with additional violations to avoid most ambiguous URIs.
      * This mode does allow {@link Violation#AMBIGUOUS_PATH_SEPARATOR}, but disallows
-     * {@link Violation#AMBIGUOUS_PATH_PARAMETER} and {@link Violation#AMBIGUOUS_PATH_SEGMENT}.
+     * {@link Violation#AMBIGUOUS_PATH_PARAMETER}, {@link Violation#AMBIGUOUS_PATH_SEGMENT} and {@link Violation#AMBIGUOUS_PATH_ENCODING}.
      * Ambiguous paths are not allowed by {@link Violation#NON_CANONICAL_AMBIGUOUS_PATHS}.
      */
     public static final UriCompliance DEFAULT = new UriCompliance("DEFAULT", of(Violation.AMBIGUOUS_PATH_SEPARATOR));
 
     /**
-     * LEGACY compliance mode that models Jetty-9.4 behavior by allowing {@link Violation#AMBIGUOUS_PATH_SEGMENT} and {@link Violation#AMBIGUOUS_PATH_SEPARATOR}
+     * LEGACY compliance mode that models Jetty-9.4 behavior by allowing {@link Violation#AMBIGUOUS_PATH_SEGMENT}, {@link Violation#AMBIGUOUS_PATH_SEPARATOR} and {@link Violation#AMBIGUOUS_PATH_ENCODING}.
      */
-    public static final UriCompliance LEGACY = new UriCompliance("LEGACY", of(Violation.AMBIGUOUS_PATH_SEGMENT, Violation.AMBIGUOUS_PATH_SEPARATOR));
+    public static final UriCompliance LEGACY = new UriCompliance("LEGACY", of(Violation.AMBIGUOUS_PATH_SEGMENT, Violation.AMBIGUOUS_PATH_SEPARATOR, Violation.AMBIGUOUS_PATH_ENCODING));
 
     /**
      * Compliance mode that exactly follows RFC3986, including allowing all additional ambiguous URI Violations,

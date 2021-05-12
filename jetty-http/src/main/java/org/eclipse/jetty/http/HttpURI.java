@@ -52,6 +52,7 @@ public interface HttpURI
     {
         SEGMENT,
         SEPARATOR,
+        ENCODING,
         PARAM
     }
 
@@ -158,6 +159,11 @@ public interface HttpURI
      * @return True if the URI has a possibly ambiguous path parameter like '..;'
      */
     boolean hasAmbiguousParameter();
+
+    /**
+     * @return True if the URI has an encoded '%' character.
+     */
+    boolean hasAmbiguousEncoding();
 
     default URI toURI()
     {
@@ -384,6 +390,12 @@ public interface HttpURI
         public boolean hasAmbiguousParameter()
         {
             return _ambiguous.contains(Ambiguous.PARAM);
+        }
+
+        @Override
+        public boolean hasAmbiguousEncoding()
+        {
+            return _ambiguous.contains(Ambiguous.ENCODING);
         }
 
         @Override
@@ -727,6 +739,12 @@ public interface HttpURI
             return _ambiguous.contains(Ambiguous.PARAM);
         }
 
+        @Override
+        public boolean hasAmbiguousEncoding()
+        {
+            return _ambiguous.contains(Ambiguous.ENCODING);
+        }
+
         public Mutable normalize()
         {
             HttpScheme scheme = _scheme == null ? null : HttpScheme.CACHE.get(_scheme);
@@ -884,7 +902,7 @@ public interface HttpURI
             int segment = 0; // the start of the current segment within the path
             boolean encoded = false; // set to true if the path contains % encoded characters
             boolean dot = false; // set to true if the path containers . or .. segments
-            int escapedSlash = 0; // state of parsing a %2f
+            int escapedTwo = 0; // state of parsing a %2<x>
             int end = uri.length();
             for (int i = 0; i < end; i++)
             {
@@ -920,7 +938,7 @@ public interface HttpURI
                                 break;
                             case '%':
                                 encoded = true;
-                                escapedSlash = 1;
+                                escapedTwo = 1;
                                 mark = pathMark = segment = i;
                                 state = State.PATH;
                                 break;
@@ -972,7 +990,7 @@ public interface HttpURI
                             case '%':
                                 // must have be in an encoded path
                                 encoded = true;
-                                escapedSlash = 1;
+                                escapedTwo = 1;
                                 state = State.PATH;
                                 break;
                             case '#':
@@ -1120,19 +1138,24 @@ public interface HttpURI
                                 break;
                             case '%':
                                 encoded = true;
-                                escapedSlash = 1;
+                                escapedTwo = 1;
                                 break;
                             case '2':
-                                escapedSlash = escapedSlash == 1 ? 2 : 0;
+                                escapedTwo = escapedTwo == 1 ? 2 : 0;
                                 break;
                             case 'f':
                             case 'F':
-                                if (escapedSlash == 2)
+                                if (escapedTwo == 2)
                                     _ambiguous.add(Ambiguous.SEPARATOR);
-                                escapedSlash = 0;
+                                escapedTwo = 0;
+                                break;
+                            case '5':
+                                if (escapedTwo == 2)
+                                    _ambiguous.add(Ambiguous.ENCODING);
+                                escapedTwo = 0;
                                 break;
                             default:
-                                escapedSlash = 0;
+                                escapedTwo = 0;
                                 break;
                         }
                         break;

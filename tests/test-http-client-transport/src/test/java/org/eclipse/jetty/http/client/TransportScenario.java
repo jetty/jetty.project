@@ -266,6 +266,13 @@ public class TransportScenario
             setConnectionIdleTimeout(idleTimeout);
     }
 
+    public void setMaxRequestsPerConnection(int maxRequestsPerConnection)
+    {
+        AbstractHTTP2ServerConnectionFactory h2 = connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class);
+        if (h2 != null)
+            h2.setMaxConcurrentStreams(maxRequestsPerConnection);
+    }
+
     public void start(Handler handler) throws Exception
     {
         start(handler, null);
