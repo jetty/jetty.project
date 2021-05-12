@@ -39,12 +39,6 @@ import static java.lang.Long.MAX_VALUE;
  * session there is a CyclicTimeout and at the beginning of the
  * request processing the timeout is canceled (via cancel()), but at
  * the end of the request processing the timeout is re-scheduled.</p>
- * <p>Another typical scenario is for a parent entity to manage
- * the timeouts of many children entities; the timeout is scheduled
- * for the child entity that expires the earlier; when the timeout
- * expires, the implementation scans the children entities to find
- * the expired child entities and to find the next child entity
- * that expires the earlier. </p>
  * <p>This implementation has a {@link Timeout} holding the time
  * at which the scheduled task should fire, and a linked list of
  * {@link Wakeup}, each holding the actual scheduled task.</p>
@@ -59,6 +53,8 @@ import static java.lang.Long.MAX_VALUE;
  * When the Wakeup task fires, it will see that the Timeout is now
  * in the future and will attach a new Wakeup with the future time
  * to the Timeout, and submit a scheduler task for the new Wakeup.</p>
+ *
+ * @see CyclicTimeouts
  */
 public abstract class CyclicTimeout implements Destroyable
 {
