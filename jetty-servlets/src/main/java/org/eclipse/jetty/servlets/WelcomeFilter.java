@@ -22,6 +22,8 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 
+import org.eclipse.jetty.util.URIUtil;
+
 /**
  * Welcome Filter
  * This filter can be used to server an index file for a directory
@@ -36,6 +38,7 @@ import javax.servlet.http.HttpServletRequest;
  *
  * Requests to "/some/directory" will be redirected to "/some/directory/".
  */
+@Deprecated
 public class WelcomeFilter implements Filter
 {
     private String welcome;
@@ -56,7 +59,10 @@ public class WelcomeFilter implements Filter
     {
         String path = ((HttpServletRequest)request).getServletPath();
         if (welcome != null && path.endsWith("/"))
-            request.getRequestDispatcher(path + welcome).forward(request, response);
+        {
+            String uriInContext = URIUtil.encodePath(URIUtil.addPaths(path, welcome));
+            request.getRequestDispatcher(uriInContext).forward(request, response);
+        }
         else
             chain.doFilter(request, response);
     }

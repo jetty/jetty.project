@@ -428,7 +428,7 @@ public class ResourceService
                 return;
             }
 
-            RequestDispatcher dispatcher = context.getRequestDispatcher(welcome);
+            RequestDispatcher dispatcher = context.getRequestDispatcher(URIUtil.encodePath(welcome));
             if (dispatcher != null)
             {
                 // Forward to the index
