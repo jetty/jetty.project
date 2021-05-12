@@ -902,7 +902,7 @@ public interface HttpURI
             int segment = 0; // the start of the current segment within the path
             boolean encoded = false; // set to true if the path contains % encoded characters
             boolean dot = false; // set to true if the path containers . or .. segments
-            int escapedTwo = 0; // state of parsing a %2f
+            int escapedTwo = 0; // state of parsing a %2<x>
             int end = uri.length();
             for (int i = 0; i < end; i++)
             {
