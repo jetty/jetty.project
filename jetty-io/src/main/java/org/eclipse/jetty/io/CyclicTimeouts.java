@@ -17,12 +17,14 @@ import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>A {@link CyclicTimeout} that manages the timeouts for many entities.</p>
+ * <p>An implementation of a timeout that manages many {@link Expirable expirable} entities whose
+ * timeouts are mostly cancelled or re-scheduled.</p>
  * <p>A typical scenario is for a parent entity to manage the timeouts of many children entities.</p>
  * <p>When a new entity is created, call {@link #schedule(T)} with the new entity so that
  * this instance can be aware and manage the timeout of the new entity.</p>
@@ -37,24 +39,32 @@ import org.slf4j.LoggerFactory;
  * <p>When the iteration is complete, this instance is re-scheduled with the earliest expiration time
  * calculated during the iteration.</p>
  *
- * @param <T> the entity type
+ * @param <T> the {@link Expirable} entity type
+ * @see CyclicTimeout
  */
-public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> extends CyclicTimeout implements Iterable<T>
+public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> implements Destroyable
 {
     private static final Logger LOG = LoggerFactory.getLogger(CyclicTimeouts.class);
 
     private final AtomicLong earliestTimeout = new AtomicLong(Long.MAX_VALUE);
+    private final CyclicTimeout cyclicTimeout;
 
     public CyclicTimeouts(Scheduler scheduler)
     {
-        super(scheduler);
+        cyclicTimeout = new CyclicTimeout(scheduler)
+        {
+            @Override
+            public void onTimeoutExpired()
+            {
+                CyclicTimeouts.this.onTimeoutExpired();
+            }
+        };
     }
 
     /**
      * @return the entities to iterate over when this instance expires
      */
-    @Override
-    public abstract Iterator<T> iterator();
+    protected abstract Iterator<T> iterator();
 
     /**
      * <p>Invoked during the iteration when the given entity is expired.</p>
@@ -64,8 +74,7 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> extends
      */
     protected abstract boolean onExpired(T expirable);
 
-    @Override
-    public void onTimeoutExpired()
+    private void onTimeoutExpired()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} timeouts check", this);
@@ -124,8 +133,14 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> extends
             long delay = Math.max(0, expiresAt - System.nanoTime());
             if (LOG.isDebugEnabled())
                 LOG.debug("{} scheduling timeout in {} ms", this, TimeUnit.NANOSECONDS.toMillis(delay));
-            schedule(delay, TimeUnit.NANOSECONDS);
+            cyclicTimeout.schedule(delay, TimeUnit.NANOSECONDS);
         }
+    }
+
+    @Override
+    public void destroy()
+    {
+        cyclicTimeout.destroy();
     }
 
     /**

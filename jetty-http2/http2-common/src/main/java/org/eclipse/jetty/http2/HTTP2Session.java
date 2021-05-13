@@ -2320,7 +2320,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
 
         @Override
-        public Iterator<HTTP2Stream> iterator()
+        protected Iterator<HTTP2Stream> iterator()
         {
             return streams.values().stream().map(HTTP2Stream.class::cast).iterator();
         }

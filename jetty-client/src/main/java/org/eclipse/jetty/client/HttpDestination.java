@@ -535,7 +535,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         }
 
         @Override
-        public Iterator<HttpExchange> iterator()
+        protected Iterator<HttpExchange> iterator()
         {
             return exchanges.iterator();
         }
