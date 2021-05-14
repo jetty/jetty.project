@@ -26,13 +26,13 @@ import org.slf4j.LoggerFactory;
  * <p>An implementation of a timeout that manages many {@link Expirable expirable} entities whose
  * timeouts are mostly cancelled or re-scheduled.</p>
  * <p>A typical scenario is for a parent entity to manage the timeouts of many children entities.</p>
- * <p>When a new entity is created, call {@link #schedule(T)} with the new entity so that
+ * <p>When a new entity is created, call {@link #schedule(Expirable)} with the new entity so that
  * this instance can be aware and manage the timeout of the new entity.</p>
  * <p>Eventually, this instance wakes up and iterates over the entities provided by {@link #iterator()}.
  * During the iteration, each entity:</p>
  * <ul>
  *   <li>may never expire (see {@link Expirable#getExpireNanoTime()}; the entity is ignored</li>
- *   <li>may be expired; {@link #onExpired(T)} is called with that entity as parameter</li>
+ *   <li>may be expired; {@link #onExpired(Expirable)} is called with that entity as parameter</li>
  *   <li>may expire at a future time; the iteration records the earliest expiration time among
  *   all non-expired entities</li>
  * </ul>
