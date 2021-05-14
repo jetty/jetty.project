@@ -49,13 +49,13 @@ pipeline {
           }
         }
 
-        stage("Build / Test - JDK15") {
+        stage("Build / Test - JDK16") {
           agent { node { label 'linux' } }
           steps {
             container( 'jetty-build' ) {
               timeout( time: 240, unit: 'MINUTES' ) {
-                mavenBuild( "jdk15", "clean install -Djacoco.skip=true", "maven3")
-                recordIssues id: "jdk15", name: "Static Analysis jdk15", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser()]
+                mavenBuild( "jdk16", "clean install -Djacoco.skip=true", "maven3")
+                recordIssues id: "jdk16", name: "Static Analysis jdk16", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser()]
               }
             }
           }
