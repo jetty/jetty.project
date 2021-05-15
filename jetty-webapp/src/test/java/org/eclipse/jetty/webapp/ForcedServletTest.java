@@ -38,7 +38,6 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.PathResource;
-import org.eclipse.jetty.webapp.jsp.FakePrecompiledJSP;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -231,6 +230,30 @@ public class ForcedServletTest
         {
             log(String.format("Uncompiled JSPs not supported by %s", request.getRequestURI()));
             response.sendError(555);
+        }
+    }
+
+    public static class FakeJspServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            resp.setCharacterEncoding("utf-8");
+            resp.setContentType("text/plain");
+            resp.setStatus(HttpServletResponse.SC_OK);
+            resp.getWriter().println("This is the FakeJspServlet");
+        }
+    }
+
+    public static class FakePrecompiledJSP extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            resp.setCharacterEncoding("utf-8");
+            resp.setContentType("text/plain");
+            resp.setStatus(HttpServletResponse.SC_OK);
+            resp.getWriter().println("This is the FakePrecompiledJSP");
         }
     }
 }
