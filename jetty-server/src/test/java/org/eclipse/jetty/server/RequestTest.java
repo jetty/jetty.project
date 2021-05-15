@@ -1972,7 +1972,9 @@ public class RequestTest
         @Override
         public HttpSession getSession()
         {
-            return new Session(new SessionHandler(), new SessionData(TEST_SESSION_ID,  "", "0.0.0.0", 0, 0, 0, 300));
+            Session session = new Session(new SessionHandler(), new SessionData(TEST_SESSION_ID,  "", "0.0.0.0", 0, 0, 0, 300));
+            session.setResident(true); //necessary for session methods to not throw ISE
+            return session;
         }
 
         @Override

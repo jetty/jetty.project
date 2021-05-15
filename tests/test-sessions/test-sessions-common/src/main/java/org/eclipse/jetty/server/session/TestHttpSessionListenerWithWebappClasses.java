@@ -30,9 +30,9 @@ public class TestHttpSessionListenerWithWebappClasses extends TestHttpSessionLis
         super();
     }
 
-    public TestHttpSessionListenerWithWebappClasses(boolean access)
+    public TestHttpSessionListenerWithWebappClasses(boolean attribute, boolean lastAccessTime)
     {
-        super(access);
+        super(attribute, lastAccessTime);
     }
 
     @Override
@@ -47,7 +47,7 @@ public class TestHttpSessionListenerWithWebappClasses extends TestHttpSessionLis
         }
         catch (Exception cnfe)
         {
-            ex = cnfe;
+            attributeException = cnfe;
         }
         super.sessionDestroyed(se);
     }

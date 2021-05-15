@@ -27,16 +27,18 @@ public class TestHttpSessionListener implements HttpSessionListener
     public List<String> createdSessions = new ArrayList<>();
     public List<String> destroyedSessions = new ArrayList<>();
     public boolean accessAttribute = false;
-    public Exception ex = null;
+    public boolean lastAccessTime = false;
+    public Exception attributeException = null;
+    public Exception accessTimeException = null;
 
-    public TestHttpSessionListener(boolean access)
+    public TestHttpSessionListener(boolean accessAttribute, boolean lastAccessTime)
     {
-        accessAttribute = access;
+        this.accessAttribute = accessAttribute;
+        this.lastAccessTime = lastAccessTime;
     }
 
     public TestHttpSessionListener()
     {
-        accessAttribute = false;
     }
 
     public void sessionDestroyed(HttpSessionEvent se)
@@ -50,7 +52,19 @@ public class TestHttpSessionListener implements HttpSessionListener
             }
             catch (Exception e)
             {
-                ex = e;
+                attributeException = e;
+            }
+        }
+        
+        if (lastAccessTime)
+        {
+            try
+            {
+                se.getSession().getLastAccessedTime();
+            }
+            catch (Exception e)
+            {
+                accessTimeException = e;
             }
         }
     }
