@@ -115,12 +115,11 @@ public abstract class HttpChannel
         HttpExchange exchange = getHttpExchange();
         if (exchange != null)
         {
-            HttpRequest request = exchange.getRequest();
-            long timeoutAt = request.getTimeoutAt();
-            if (timeoutAt != -1)
+            long timeoutAt = exchange.getExpireNanoTime();
+            if (timeoutAt != Long.MAX_VALUE)
             {
                 exchange.getResponseListeners().add(_totalTimeout);
-                _totalTimeout.schedule(request, timeoutAt);
+                _totalTimeout.schedule(exchange.getRequest(), timeoutAt);
             }
             send(exchange);
         }

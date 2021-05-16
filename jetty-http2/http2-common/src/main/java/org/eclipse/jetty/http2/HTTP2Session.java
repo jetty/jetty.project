@@ -21,6 +21,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -56,6 +57,7 @@ import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.AtomicBiInteger;
@@ -89,12 +91,12 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private final AtomicInteger sendWindow = new AtomicInteger();
     private final AtomicInteger recvWindow = new AtomicInteger();
     private final AtomicLong bytesWritten = new AtomicLong();
-    private final Scheduler scheduler;
     private final EndPoint endPoint;
     private final Generator generator;
     private final Session.Listener listener;
     private final FlowControlStrategy flowControl;
     private final HTTP2Flusher flusher;
+    private final StreamTimeouts streamTimeouts;
     private int maxLocalStreams;
     private int maxRemoteStreams;
     private long streamIdleTimeout;
@@ -105,12 +107,12 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     public HTTP2Session(Scheduler scheduler, EndPoint endPoint, Generator generator, Session.Listener listener, FlowControlStrategy flowControl, int initialStreamId)
     {
-        this.scheduler = scheduler;
         this.endPoint = endPoint;
         this.generator = generator;
         this.listener = listener;
         this.flowControl = flowControl;
         this.flusher = new HTTP2Flusher(this);
+        this.streamTimeouts = new StreamTimeouts(scheduler);
         this.maxLocalStreams = -1;
         this.maxRemoteStreams = -1;
         this.localStreamIds.set(initialStreamId);
@@ -613,7 +615,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     protected IStream newStream(int streamId, MetaData.Request request, boolean local)
     {
-        return new HTTP2Stream(scheduler, this, streamId, request, local);
+        return new HTTP2Stream(this, streamId, request, local);
     }
 
     @Override
@@ -989,6 +991,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "upgrade");
     }
 
+    void scheduleTimeout(HTTP2Stream stream)
+    {
+        streamTimeouts.schedule(stream);
+    }
+
     private void onStreamCreated(int streamId)
     {
         if (LOG.isDebugEnabled())
@@ -1026,6 +1033,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private void terminate(Throwable cause)
     {
         flusher.terminate(cause);
+        streamTimeouts.destroy();
         disconnect();
     }
 
@@ -2301,6 +2309,27 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         private class Slot
         {
             private volatile List<HTTP2Flusher.Entry> entries;
+        }
+    }
+
+    private class StreamTimeouts extends CyclicTimeouts<HTTP2Stream>
+    {
+        private StreamTimeouts(Scheduler scheduler)
+        {
+            super(scheduler);
+        }
+
+        @Override
+        protected Iterator<HTTP2Stream> iterator()
+        {
+            return streams.values().stream().map(HTTP2Stream.class::cast).iterator();
+        }
+
+        @Override
+        protected boolean onExpired(HTTP2Stream stream)
+        {
+            stream.onIdleExpired(new TimeoutException("Idle timeout " + stream.getIdleTimeout() + " ms elapsed"));
+            return false;
         }
     }
 }
