@@ -187,7 +187,6 @@ public abstract class Holder<T> extends BaseHolder<T>
 
     protected class HolderConfig
     {
-
         public ServletContext getServletContext()
         {
             return getServletHandler().getServletContext();
