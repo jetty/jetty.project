@@ -37,8 +37,8 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
+import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.IdleTimeout;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.Promise;
@@ -48,7 +48,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpable
+public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.Expirable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2Stream.class);
 
@@ -74,16 +74,23 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     private boolean dataInitial;
     private boolean dataProcess;
     private boolean committed;
+    private long idleTimeout;
+    private long expireNanoTime = Long.MAX_VALUE;
 
-    public HTTP2Stream(Scheduler scheduler, ISession session, int streamId, MetaData.Request request, boolean local)
+    public HTTP2Stream(ISession session, int streamId, MetaData.Request request, boolean local)
     {
-        super(scheduler);
         this.session = session;
         this.streamId = streamId;
         this.request = request;
         this.local = local;
         this.dataLength = Long.MIN_VALUE;
         this.dataInitial = true;
+    }
+
+    @Deprecated
+    public HTTP2Stream(Scheduler scheduler, ISession session, int streamId, MetaData.Request request, boolean local)
+    {
+        this(session, streamId, request, local);
     }
 
     @Override
@@ -268,13 +275,39 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         return committed;
     }
 
-    @Override
     public boolean isOpen()
     {
         return !isClosed();
     }
 
     @Override
+    public void notIdle()
+    {
+        long idleTimeout = getIdleTimeout();
+        if (idleTimeout > 0)
+            expireNanoTime = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(idleTimeout);
+    }
+
+    @Override
+    public long getExpireNanoTime()
+    {
+        return expireNanoTime;
+    }
+
+    @Override
+    public long getIdleTimeout()
+    {
+        return idleTimeout;
+    }
+
+    @Override
+    public void setIdleTimeout(long idleTimeout)
+    {
+        this.idleTimeout = idleTimeout;
+        notIdle();
+        ((HTTP2Session)session).scheduleTimeout(this);
+    }
+
     protected void onIdleExpired(TimeoutException timeout)
     {
         if (LOG.isDebugEnabled())
@@ -683,10 +716,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         }
     }
 
-    @Override
     public void onClose()
     {
-        super.onClose();
         notifyClosed(this);
     }
 

@@ -78,7 +78,7 @@ public class HttpRequest implements Request
     private boolean versionExplicit;
     private long idleTimeout = -1;
     private long timeout;
-    private long timeoutAt;
+    private long timeoutAt = Long.MAX_VALUE;
     private Content content;
     private boolean followRedirects;
     private List<HttpCookie> cookies;
@@ -821,11 +821,12 @@ public class HttpRequest implements Request
     void sent()
     {
         long timeout = getTimeout();
-        timeoutAt = timeout > 0 ? System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) : -1;
+        if (timeout > 0)
+            timeoutAt = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout);
     }
 
     /**
-     * @return The nanoTime at which the timeout expires or -1 if there is no timeout.
+     * @return The nanoTime at which the timeout expires or {@link Long#MAX_VALUE} if there is no timeout.
      * @see #timeout(long, TimeUnit)
      */
     long getTimeoutAt()

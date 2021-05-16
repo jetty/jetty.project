@@ -17,12 +17,11 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
@@ -31,7 +30,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ClientConnectionFactory;
-import org.eclipse.jetty.io.CyclicTimeout;
+import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
@@ -255,10 +254,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         {
             if (enqueue(exchanges, exchange))
             {
-                long expiresAt = request.getTimeoutAt();
-                if (expiresAt != -1)
-                    requestTimeouts.schedule(expiresAt);
-
+                requestTimeouts.schedule(exchange);
                 if (!client.isRunning() && exchanges.remove(exchange))
                 {
                     request.abort(new RejectedExecutionException(client + " is stopping"));
@@ -531,61 +527,25 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
      * <p>The total timeout for exchanges that are not in the destination queue
      * is enforced in {@link HttpChannel} by {@link TimeoutCompleteListener}.</p>
      */
-    private class RequestTimeouts extends CyclicTimeout
+    private class RequestTimeouts extends CyclicTimeouts<HttpExchange>
     {
-        private final AtomicLong earliestTimeout = new AtomicLong(Long.MAX_VALUE);
-
         private RequestTimeouts(Scheduler scheduler)
         {
             super(scheduler);
         }
 
         @Override
-        public void onTimeoutExpired()
+        protected Iterator<HttpExchange> iterator()
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} timeouts check", this);
-
-            long now = System.nanoTime();
-            long earliest = Long.MAX_VALUE;
-            // Reset the earliest timeout so we can expire again.
-            // A concurrent call to schedule(long) may lose an earliest
-            // value, but the corresponding exchange is already enqueued
-            // and will be seen by scanning the exchange queue below.
-            earliestTimeout.set(earliest);
-
-            // Scan the message queue to abort expired exchanges
-            // and to find the exchange that expire the earliest.
-            for (HttpExchange exchange : exchanges)
-            {
-                HttpRequest request = exchange.getRequest();
-                long expiresAt = request.getTimeoutAt();
-                if (expiresAt == -1)
-                    continue;
-                if (expiresAt <= now)
-                    request.abort(new TimeoutException("Total timeout " + request.getTimeout() + " ms elapsed"));
-                else if (expiresAt < earliest)
-                    earliest = expiresAt;
-            }
-
-            if (earliest < Long.MAX_VALUE && client.isRunning())
-                schedule(earliest);
+            return exchanges.iterator();
         }
 
-        private void schedule(long expiresAt)
+        @Override
+        protected boolean onExpired(HttpExchange exchange)
         {
-            // Schedule a timeout for the earliest exchange that may expire.
-            // When the timeout expires, scan the exchange queue for the next
-            // earliest exchange that may expire, and reschedule a new timeout.
-            long prevEarliest = earliestTimeout.getAndUpdate(t -> Math.min(t, expiresAt));
-            if (expiresAt < prevEarliest)
-            {
-                // A new request expires earlier than previous requests, schedule it.
-                long delay = Math.max(0, expiresAt - System.nanoTime());
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} scheduling timeout in {} ms", this, TimeUnit.NANOSECONDS.toMillis(delay));
-                schedule(delay, TimeUnit.NANOSECONDS);
-            }
+            HttpRequest request = exchange.getRequest();
+            request.abort(new TimeoutException("Total timeout " + request.getTimeout() + " ms elapsed"));
+            return false;
         }
     }
 }
