@@ -294,7 +294,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         _forcedPath = forcedPath;
     }
 
-    private void setClassFrom(ServletHolder holder) throws ServletException
+    private void setClassFrom(ServletHolder holder)
     {
         if (_servlet != null || getInstance() != null)
             throw new IllegalStateException();

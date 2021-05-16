@@ -1,19 +1,14 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
-//
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.webapp;
@@ -31,11 +26,13 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.junit.jupiter.api.AfterEach;
@@ -181,10 +178,17 @@ public class ForcedServletTest
         assertThat(responseBody, containsString("This is the FakePrecompiledJSP"));
     }
 
-    public static class ForcedWebAppContext extends WebAppContext
+    public static class TestInit extends AbstractLifeCycle implements ServletContextHandler.ServletContainerInitializerCaller
     {
+        private final WebAppContext _webapp;
+
+        public TestInit(ForcedWebAppContext webapp)
+        {
+            _webapp = webapp;
+        }
+
         @Override
-        protected void startWebapp() throws Exception
+        protected void doStart() throws Exception
         {
             // This will result in a 404 for all requests that don't belong to a more precise servlet
             forceServlet("default", ServletHandler.Default404Servlet.class);
@@ -193,8 +197,7 @@ public class ForcedServletTest
             // This will result in any attempt to use an JSP that isn't precompiled and in the descriptor with status code 555
             forceServlet("jsp", RejectUncompiledJspServlet.class);
             addServletMapping("jsp", "*.jsp");
-
-            super.startWebapp();
+            super.doStart();
         }
 
         private void addServletMapping(String name, String pathSpec)
@@ -202,12 +205,12 @@ public class ForcedServletTest
             ServletMapping mapping = new ServletMapping();
             mapping.setServletName(name);
             mapping.setPathSpec(pathSpec);
-            getServletHandler().addServletMapping(mapping);
+            _webapp.getServletHandler().addServletMapping(mapping);
         }
 
         private void forceServlet(String name, Class<? extends HttpServlet> servlet) throws Exception
         {
-            ServletHandler handler = getServletHandler();
+            ServletHandler handler = _webapp.getServletHandler();
 
             // Remove existing holder
             handler.setServlets(Arrays.stream(handler.getServlets())
@@ -220,6 +223,13 @@ public class ForcedServletTest
             holder.setName(name);
             holder.setAsyncSupported(true);
             handler.addServlet(holder);
+        }
+    }
+
+    public static class ForcedWebAppContext extends WebAppContext
+    {
+        {
+            addBean(new TestInit(this));
         }
     }
 
