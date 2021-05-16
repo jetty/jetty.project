@@ -55,7 +55,8 @@ public class ForcedServletTest
         connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        WebAppContext context = new ForcedWebAppContext();
+        WebAppContext context = new WebAppContext();
+        context.addBean(new TestInit(context));
 
         // Lets setup the Webapp base resource properly
         Path basePath = MavenTestingUtils.getTargetTestingPath(ForcedServletTest.class.getName()).resolve("webapp");
@@ -182,7 +183,7 @@ public class ForcedServletTest
     {
         private final WebAppContext _webapp;
 
-        public TestInit(ForcedWebAppContext webapp)
+        public TestInit(WebAppContext webapp)
         {
             _webapp = webapp;
         }
@@ -223,13 +224,6 @@ public class ForcedServletTest
             holder.setName(name);
             holder.setAsyncSupported(true);
             handler.addServlet(holder);
-        }
-    }
-
-    public static class ForcedWebAppContext extends WebAppContext
-    {
-        {
-            addBean(new TestInit(this));
         }
     }
 
