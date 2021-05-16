@@ -294,6 +294,14 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         _forcedPath = forcedPath;
     }
 
+    private void setClassFrom(ServletHolder holder)
+    {
+        if (_servlet != null || getInstance() != null)
+            throw new IllegalStateException();
+        this.setClassName(holder.getClassName());
+        this.setHeldClass(holder.getHeldClass());
+    }
+
     public boolean isEnabled()
     {
         return _enabled;
@@ -325,8 +333,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("JSP file {} for {} mapped to Servlet {}", _forcedPath, getName(), jsp.getClassName());
-                    // set the className for this servlet to the precompiled one
-                    setClassName(jsp.getClassName());
+                    // set the className/servlet/instance for this servlet to the precompiled one
+                    setClassFrom(jsp);
                 }
                 else
                 {
@@ -336,7 +344,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("JSP file {} for {} mapped to JspServlet class {}", _forcedPath, getName(), jsp.getClassName());
-                        setClassName(jsp.getClassName());
+                        setClassFrom(jsp);
                         //copy jsp init params that don't exist for this servlet
                         for (Map.Entry<String, String> entry : jsp.getInitParameters().entrySet())
                         {
@@ -927,7 +935,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
     protected class Config extends HolderConfig implements ServletConfig
     {
-
         @Override
         public String getServletName()
         {
@@ -1185,9 +1192,9 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     @Override
     public String toString()
     {
-        return String.format("%s==%s@%x{jsp=%s,order=%d,inst=%b,async=%b,src=%s}",
+        return String.format("%s==%s@%x{jsp=%s,order=%d,inst=%b,async=%b,src=%s,%s}",
             getName(), getClassName(), hashCode(),
-            _forcedPath, _initOrder, _servlet != null, isAsyncSupported(), getSource());
+            _forcedPath, _initOrder, _servlet != null, isAsyncSupported(), getSource(), getState());
     }
 
     private class UnavailableServlet extends Wrapper
