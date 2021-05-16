@@ -1,4 +1,14 @@
-jetty-9.4.41-SNAPSHOT
+jetty-9.4.41.v20210516 - 16 May 2021
+ + 6099 Cipher preference may break SNI if certificates have different key
+   types
+ + 6186 Add Null Protection on Log / Logger
+ + 6205 OpenIdAuthenticator may use incorrect redirect
+ + 6208 HTTP/2 max local stream count exceeded
+ + 6227 Better resolve race between `AsyncListener.onTimeout` and
+   `AsyncContext.dispatch`
+ + 6254 Total timeout not enforced for queued requests
+ + 6263 Review URI encoding in ConcatServlet & WelcomeFilter
+ + 6277 Better handle exceptions thrown from session destroy listener
 
 jetty-9.4.40.v20210413 - 13 April 2021
  + 6082 SslConnection compacting
