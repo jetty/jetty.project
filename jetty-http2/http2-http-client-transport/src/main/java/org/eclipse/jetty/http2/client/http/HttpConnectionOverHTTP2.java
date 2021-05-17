@@ -100,7 +100,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         return new HttpChannelOverHTTP2(getHttpDestination(), this, getSession());
     }
 
-    protected void release(HttpChannelOverHTTP2 channel)
+    protected boolean release(HttpChannelOverHTTP2 channel)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Released {}", channel);
@@ -111,10 +111,12 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
                 channel.destroy();
             else if (isRecycleHttpChannels())
                 idleChannels.offer(channel);
+            return true;
         }
         else
         {
             channel.destroy();
+            return false;
         }
     }
 
