@@ -15,7 +15,7 @@
     <Arg>
       <New id="sslConnector" class="org.eclipse.jetty.server.ServerConnector">
         <Arg name="server"><Ref refid="Server" /></Arg>
-        <Arg name="acceptors" type="int"><Property name="jetty.ssl.acceptors" default="-1"/></Arg>
+        <Arg name="acceptors" type="int"><Property name="jetty.ssl.acceptors" default="1"/></Arg>
         <Arg name="selectors" type="int"><Property name="jetty.ssl.selectors" default="-1"/></Arg>
         <Arg name="factories">
           <Array type="org.eclipse.jetty.server.ConnectionFactory">

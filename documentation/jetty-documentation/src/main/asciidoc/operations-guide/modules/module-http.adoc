@@ -29,7 +29,8 @@ The network port that Jetty listens to for clear-text HTTP/1.1 connections -- de
 `jetty.http.idleTimeout`::
 The amount of time a connection can be idle (i.e. no bytes received and no bytes sent) until the server decides to close it to save resources -- default `30` seconds.
 `jetty.http.acceptors`::
-The number of threads that compete to accept connections -- default -1 (i.e. an accept heuristic decides the value; the current heuristic defaults to `1`).
+The number of threads that compete to accept connections -- default 1. Use -1 to let the accept heuristic decides the value; the current heuristic calculates a value based on the number of cores).
+Refer to xref:og-module-http-acceptors[this section] for more information about acceptor threads.
 `jetty.http.selectors`::
 The number of NIO selectors (with an associated thread) that manage connections -- default -1 (i.e. a select heuristic decides the value; the current heuristic calculates a value based on the number of cores).
 

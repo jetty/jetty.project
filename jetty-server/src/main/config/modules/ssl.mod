@@ -28,7 +28,7 @@ etc/jetty-ssl-context.xml
 # jetty.ssl.idleTimeout=30000
 
 ## The number of acceptors (-1 picks a default value based on number of cores).
-# jetty.ssl.acceptors=-1
+# jetty.ssl.acceptors=1
 
 ## The number of selectors (-1 picks a default value based on number of cores).
 # jetty.ssl.selectors=-1
