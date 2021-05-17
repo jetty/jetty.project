@@ -106,8 +106,8 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     public void release()
     {
         setStream(null);
-        connection.release(this);
-        getHttpDestination().release(getHttpConnection());
+        if (connection.release(this))
+            getHttpDestination().release(getHttpConnection());
     }
 
     @Override
