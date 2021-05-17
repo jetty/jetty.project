@@ -463,7 +463,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         {
             boolean removed = entry.tryRemove();
             if (!removed)
-                LOGGER.warn("Pooled connection still in use: {}", entry);
+                LOGGER.warn("Pooled object still in use: {}", entry);
             if (removed && entry.pooled instanceof Closeable)
                 IO.close((Closeable)entry.pooled);
         }
