@@ -640,6 +640,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${maven.surefire.version}</version>
           <configuration>
+            <trimStackTrace>false</trimStackTrace>
             <rerunFailingTestsCount>${surefire.rerunFailingTestsCount}</rerunFailingTestsCount>
             <forkedProcessTimeoutInSeconds>3600</forkedProcessTimeoutInSeconds>
             <argLine>@{argLine} -Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx6g -Xms2g -XX:+PrintGCDetails</argLine>
