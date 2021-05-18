@@ -22,6 +22,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -82,8 +84,10 @@ public class CDITests extends AbstractDistributionTest
     public void testCDIIncludedInWebapp(String implementation, String integration, Consumer<DistributionTester> configure) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
+        String javaOptions = System.getProperty("javaOptions");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .javaOptions(javaOptions == null ? Collections.emptyList() : Arrays.asList(javaOptions.split("\\s+")))
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
@@ -92,6 +96,7 @@ public class CDITests extends AbstractDistributionTest
             "--approve-all-licenses",
             "--add-to-start=http,deploy,annotations,jsp" + (integration == null ? "" : ("," + integration))
         };
+
         try (DistributionTester.Run run1 = distribution.start(args1))
         {
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
