@@ -73,7 +73,7 @@ public class FileTestHelper
         try (Stream<Path> s = Files.list(storeDirRoot))
         {
             return s
-                .filter((path) -> path.getFileName().toString().contains(sessionId))
+                .filter((path) -> path.getFileName().toString().endsWith("_" + sessionId))
                 .findFirst()
                 .map(Path::toFile)
                 .orElse(null);
