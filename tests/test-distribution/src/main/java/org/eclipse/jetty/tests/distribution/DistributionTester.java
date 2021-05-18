@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -149,7 +150,7 @@ public class DistributionTester
 
         List<String> commands = new ArrayList<>();
         commands.add(getJavaExecutable());
-        commands.addAll(config.javaOptions);
+        commands.addAll(config.javaOptions == null ? Collections.emptyList() : config.javaOptions);
         commands.add("-Djava.io.tmpdir=" + workDir.toAbsolutePath().toString());
         commands.add("-jar");
         commands.add(config.jettyHome.toAbsolutePath() + "/start.jar");
