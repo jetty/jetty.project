@@ -361,7 +361,7 @@ public class SslContextFactoryTest
         assertTrue(cf.getX509("other").matches("www.example.com"));
         assertFalse(cf.getX509("other").matches("eclipse.org"));
 
-        assertThat(cf.getX509("san").getHosts(), containsInAnyOrder("www.san.com", "m.san.com"));
+        assertThat(cf.getX509("san").getHosts(), containsInAnyOrder("san example", "www.san.com", "m.san.com"));
         assertTrue(cf.getX509("san").getWilds().isEmpty());
         assertTrue(cf.getX509("san").matches("www.san.com"));
         assertTrue(cf.getX509("san").matches("m.san.com"));
