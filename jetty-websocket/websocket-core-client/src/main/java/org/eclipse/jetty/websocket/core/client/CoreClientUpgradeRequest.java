@@ -442,6 +442,7 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
             WebSocketConstants.SPEC_VERSION_STRING);
 
         WebSocketCoreSession coreSession = new WebSocketCoreSession(frameHandler, Behavior.CLIENT, negotiated, wsClient.getWebSocketComponents());
+        coreSession.setClassLoader(wsClient.getClassLoader());
         customizer.customize(coreSession);
 
         HttpClient httpClient = wsClient.getHttpClient();

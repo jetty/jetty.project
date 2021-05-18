@@ -100,6 +100,7 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
             // Configure the WebAppContext.
             context = new WebAppContext();
             context.setContextPath("/" + contextName);
+            context.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
             context.setBaseResource(new PathResource(contextDir));
             context.setAttribute("org.eclipse.jetty.websocket.javax", Boolean.TRUE);
             context.addConfiguration(new JavaxWebSocketConfiguration());

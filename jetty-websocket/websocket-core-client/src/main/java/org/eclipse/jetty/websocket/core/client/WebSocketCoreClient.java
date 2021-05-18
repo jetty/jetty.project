@@ -38,6 +38,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketCoreClient.class);
     private final HttpClient httpClient;
     private final WebSocketComponents components;
+    private ClassLoader classLoader;
 
     // TODO: Things to consider for inclusion in this class (or removal if they can be set elsewhere, like HttpClient)
     // - AsyncWrite Idle Timeout
@@ -61,10 +62,21 @@ public class WebSocketCoreClient extends ContainerLifeCycle
         if (httpClient == null)
             httpClient = Objects.requireNonNull(HttpClientProvider.get());
 
+        this.classLoader = Thread.currentThread().getContextClassLoader();
         this.httpClient = httpClient;
         this.components = webSocketComponents;
         addBean(httpClient);
         addBean(webSocketComponents);
+    }
+
+    public ClassLoader getClassLoader()
+    {
+        return classLoader;
+    }
+
+    public void setClassLoader(ClassLoader classLoader)
+    {
+        this.classLoader = classLoader;
     }
 
     public CompletableFuture<CoreSession> connect(FrameHandler frameHandler, URI wsUri) throws IOException

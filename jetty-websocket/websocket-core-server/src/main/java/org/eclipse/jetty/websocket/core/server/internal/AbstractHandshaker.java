@@ -209,7 +209,7 @@ public abstract class AbstractHandshaker implements Handshaker
                 if (contextHandler != null)
                     contextHandler.handle(runnable);
                 else
-                    runnable.run();
+                    super.handle(runnable);
             }
         };
     }
