@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SNIHostName;
+import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
@@ -61,6 +62,7 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
@@ -973,8 +975,6 @@ public class HttpClientTLSTest
         startServer(serverTLS, new EmptyServerHandler());
 
         SslContextFactory.Client clientTLS = new SslContextFactory.Client();
-        // Force to send a non-domain SNI.
-        clientTLS.setSNIProvider((sslEngine, serverNames) -> Collections.singletonList(new SNIHostName("127.0.0.1")));
         // Trust any certificate received by the server.
         clientTLS.setTrustStorePath("src/test/resources/keystore_sni_non_domain.p12");
         clientTLS.setTrustStorePassword("storepwd");
@@ -982,25 +982,36 @@ public class HttpClientTLSTest
         clientTLS.setEndpointIdentificationAlgorithm("HTTPS");
         startClient(clientTLS);
 
+        AtomicReference<String> hostRef = new AtomicReference<>();
+        clientTLS.setSNIProvider((sslEngine, serverNames) ->
+        {
+            SNIServerName sni = new SNIHostName(hostRef.get().getBytes(StandardCharsets.US_ASCII));
+            return Collections.singletonList(sni);
+        });
+
         // Send a request with SNI "localhost", we should get the certificate at alias=localhost.
-        ContentResponse response1 = client.newRequest("localhost", connector.getLocalPort())
+        hostRef.set("localhost");
+        ContentResponse response1 = client.newRequest(hostRef.get(), connector.getLocalPort())
             .scheme(HttpScheme.HTTPS.asString())
             .send();
-
         assertEquals(HttpStatus.OK_200, response1.getStatus());
 
         // Send a request with SNI "127.0.0.1", we should get the certificate at alias=ip.
-        ContentResponse response2 = client.newRequest("127.0.0.1", connector.getLocalPort())
+        hostRef.set("127.0.0.1");
+        ContentResponse response2 = client.newRequest(hostRef.get(), connector.getLocalPort())
             .scheme(HttpScheme.HTTPS.asString())
             .send();
-
         assertEquals(HttpStatus.OK_200, response2.getStatus());
 
-        // Send a request with SNI "[::1]", we should get the certificate at alias=ip.
-        ContentResponse response3 = client.newRequest("[::1]", connector.getLocalPort())
-            .scheme(HttpScheme.HTTPS.asString())
-            .send();
+        if (Net.isIpv6InterfaceAvailable())
+        {
+            // Send a request with SNI "[::1]", we should get the certificate at alias=ip.
+            hostRef.set("[::1]");
+            ContentResponse response3 = client.newRequest(hostRef.get(), connector.getLocalPort())
+                .scheme(HttpScheme.HTTPS.asString())
+                .send();
 
-        assertEquals(HttpStatus.OK_200, response3.getStatus());
+            assertEquals(HttpStatus.OK_200, response3.getStatus());
+        }
     }
 }
