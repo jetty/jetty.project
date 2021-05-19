@@ -249,10 +249,10 @@ public class MetaDataBuilder
                 else
                     return new MetaData.Request(
                         _method,
-                        _scheme == null ? HttpScheme.HTTP.asString() : _scheme.asString(),
+                        _scheme.asString(),
                         _authority,
                         _path,
-                        HttpVersion.HTTP_2,
+                        HttpVersion.HTTP_3,
                         fields,
                         _contentLength);
             }
@@ -260,10 +260,10 @@ public class MetaDataBuilder
             {
                 if (_status == null)
                     throw new QpackException.StreamException("No Status");
-                return new MetaData.Response(HttpVersion.HTTP_2, _status, fields, _contentLength);
+                return new MetaData.Response(HttpVersion.HTTP_3, _status, fields, _contentLength);
             }
 
-            return new MetaData(HttpVersion.HTTP_2, fields, _contentLength);
+            return new MetaData(HttpVersion.HTTP_3, fields, _contentLength);
         }
         finally
         {

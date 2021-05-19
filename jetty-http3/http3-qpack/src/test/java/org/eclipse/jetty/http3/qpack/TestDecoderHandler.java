@@ -30,7 +30,7 @@ public class TestDecoderHandler implements QpackDecoder.Handler
     }
 
     @Override
-    public void onHttpFields(int streamId, MetaData metadata)
+    public void onMetaData(int streamId, MetaData metadata)
     {
         _metadataList.add(metadata);
     }
