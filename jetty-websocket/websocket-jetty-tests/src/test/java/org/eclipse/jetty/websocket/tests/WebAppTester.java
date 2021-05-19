@@ -62,7 +62,6 @@ public class WebAppTester extends ContainerLifeCycle
     private final Server _server;
     private final ServerConnector _serverConnector;
     private final ContextHandlerCollection _contexts;
-    private Configuration[] excludedConfiguration;
 
     public WebAppTester()
     {

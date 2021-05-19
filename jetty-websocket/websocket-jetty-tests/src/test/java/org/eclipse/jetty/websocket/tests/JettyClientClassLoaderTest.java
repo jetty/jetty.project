@@ -46,6 +46,8 @@ import org.eclipse.jetty.websocket.server.config.JettyWebSocketConfiguration;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnJre;
+import org.junit.jupiter.api.condition.JRE;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -206,6 +208,11 @@ public class JettyClientClassLoaderTest
         assertThat(response.getContentAsString(), containsString("ClientClassLoader: " + serverClassLoader));
     }
 
+    /**
+     * This reproduces some classloading issue with MethodHandles in JDK14-110, This has been fixed in JDK16.
+     * @see <a href="https://bugs.openjdk.java.net/browse/JDK-8244090">JDK-8244090</a>
+     */
+    @DisabledOnJre({JRE.JAVA_14, JRE.JAVA_15})
     @Test
     public void websocketProvidedByWebApp() throws Exception
     {
