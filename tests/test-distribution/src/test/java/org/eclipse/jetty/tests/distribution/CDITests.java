@@ -84,10 +84,10 @@ public class CDITests extends AbstractDistributionTest
     public void testCDIIncludedInWebapp(String implementation, String integration, Consumer<DistributionTester> configure) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
-        String javaOptions = System.getProperty("javaOptions");
+        String jvmArgs = System.getProperty("cdi.tests.jvmArgs");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
-            .javaOptions(javaOptions == null ? Collections.emptyList() : Arrays.asList(javaOptions.split("\\s+")))
+            .jvmArgs(jvmArgs == null ? Collections.emptyList() : Arrays.asList(jvmArgs.split("\\s+")))
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 

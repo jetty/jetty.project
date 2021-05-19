@@ -172,7 +172,7 @@
               <artifactId>maven-surefire-plugin</artifactId>
               <configuration>
                 <systemPropertyVariables>
-                  <javaOptions>--add-opens java.base/jdk.internal.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</javaOptions>
+                  <cdi.tests.jvmArgs>--add-opens java.base/jdk.internal.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</cdi.tests.jvmArgs>
                 </systemPropertyVariables>
               </configuration>
             </plugin>

@@ -150,7 +150,7 @@ public class DistributionTester
 
         List<String> commands = new ArrayList<>();
         commands.add(getJavaExecutable());
-        commands.addAll(config.javaOptions == null ? Collections.emptyList() : config.javaOptions);
+        commands.addAll(config.jvmArgs);
         commands.add("-Djava.io.tmpdir=" + workDir.toAbsolutePath().toString());
         commands.add("-jar");
         commands.add(config.jettyHome.toAbsolutePath() + "/start.jar");
@@ -382,18 +382,18 @@ public class DistributionTester
         private String jettyVersion;
         private String mavenLocalRepository = System.getProperty("user.home") + "/.m2/repository";
         private Map<String, String> mavenRemoteRepositories = new HashMap<>();
-        private List<String> javaOptions;
+        private List<String> jvmArgs = new ArrayList<>();
 
         @Override
         public String toString()
         {
-            return String.format("%s@%x{jettyBase=%s, jettyHome=%s, jettyVersion=%s, javaOptions=%s, mavenLocalRepository=%s, mavenRemoteRepositories=%s}",
+            return String.format("%s@%x{jettyBase=%s, jettyHome=%s, jettyVersion=%s, jvmArgs=%s, mavenLocalRepository=%s, mavenRemoteRepositories=%s}",
                 getClass().getSimpleName(),
                 hashCode(),
                 jettyBase,
                 jettyHome,
                 jettyVersion,
-                javaOptions,
+                jvmArgs,
                 mavenLocalRepository,
                 mavenRemoteRepositories);
         }
@@ -576,12 +576,12 @@ public class DistributionTester
         }
 
         /**
-         * @param javaOptions to use java options such <code></code>
+         * @param jvmArgs the jvm args to add
          * @return the {@link Builder}
          */
-        public Builder javaOptions(List<String> javaOptions)
+        public Builder jvmArgs(List<String> jvmArgs)
         {
-            config.javaOptions = javaOptions;
+            config.jvmArgs = jvmArgs;
             return this;
         }
 
