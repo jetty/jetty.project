@@ -52,7 +52,7 @@ public class FileTestHelper
         try (Stream<Path> s = Files.list(workDir.getPath()))
         {
             return s
-                .filter((path) -> path.getFileName().toString().contains(sessionId))
+                .filter((path) -> path.getFileName().toString().endsWith("_" + sessionId))
                 .findFirst()
                 .map(Path::toFile)
                 .orElse(null);
