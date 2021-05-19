@@ -29,6 +29,7 @@ import org.eclipse.jetty.http3.qpack.internal.table.DynamicTable;
 import org.eclipse.jetty.http3.qpack.internal.table.Entry;
 import org.eclipse.jetty.http3.qpack.internal.table.StaticTable;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerParser;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +67,7 @@ public class QpackDecoder implements Dumpable
 
     public interface Handler
     {
-        void onHttpFields(int streamId, MetaData metadata);
+        void onMetaData(int streamId, MetaData metadata);
 
         void onInstruction(Instruction instruction) throws QpackException;
     }
@@ -74,7 +75,7 @@ public class QpackDecoder implements Dumpable
     public void decode(int streamId, ByteBuffer buffer) throws QpackException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug(String.format("CtxTbl[%x] decoding %d octets", _context.hashCode(), buffer.remaining()));
+            LOG.debug("Decoding: streamId={}, buffer={}", streamId, BufferUtil.toDetailString(buffer));
 
         // If the buffer is big, don't even think about decoding it
         if (buffer.remaining() > _maxHeaderSize)
@@ -104,11 +105,17 @@ public class QpackDecoder implements Dumpable
         // Decode it straight away if we can, otherwise add it to the list of EncodedFieldSections.
         if (requiredInsertCount <= insertCount)
         {
-            _handler.onHttpFields(streamId, encodedFieldSection.decode(_context, _maxHeaderSize));
+            MetaData metaData = encodedFieldSection.decode(_context, _maxHeaderSize);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Decoded: streamId={}, metadata={}", streamId, metaData);
+
+            _handler.onMetaData(streamId, metaData);
             _handler.onInstruction(new SectionAcknowledgmentInstruction(streamId));
         }
         else
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Deferred Decoding: streamId={}, encodedFieldSection={}", streamId, encodedFieldSection);
             _encodedFieldSections.add(encodedFieldSection);
         }
     }
@@ -125,8 +132,13 @@ public class QpackDecoder implements Dumpable
         {
             if (encodedFieldSection.getRequiredInsertCount() <= insertCount)
             {
-                _handler.onHttpFields(encodedFieldSection.getStreamId(), encodedFieldSection.decode(_context, _maxHeaderSize));
-                _handler.onInstruction(new SectionAcknowledgmentInstruction(encodedFieldSection.getStreamId()));
+                int streamId = encodedFieldSection.getStreamId();
+                MetaData metaData = encodedFieldSection.decode(_context, _maxHeaderSize);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Decoded: streamId={}, metadata={}", streamId, metaData);
+
+                _handler.onMetaData(streamId, metaData);
+                _handler.onInstruction(new SectionAcknowledgmentInstruction(streamId));
             }
         }
     }
@@ -138,10 +150,14 @@ public class QpackDecoder implements Dumpable
 
     void insert(int index) throws QpackException
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Duplicate: index={}", index);
+
         DynamicTable dynamicTable = _context.getDynamicTable();
-        Entry entry = dynamicTable.get(index);
+        Entry referencedEntry = dynamicTable.get(index);
 
         // Add the new Entry to the DynamicTable.
+        Entry entry = new Entry(referencedEntry.getHttpField());
         dynamicTable.add(entry);
         _handler.onInstruction(new InsertCountIncrementInstruction(1));
         checkEncodedFieldSections();
@@ -149,6 +165,9 @@ public class QpackDecoder implements Dumpable
 
     void insert(int nameIndex, boolean isDynamicTableIndex, String value) throws QpackException
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Insert Name Reference: nameIndex={}, dynamic={}, value={}", nameIndex, isDynamicTableIndex, value);
+
         StaticTable staticTable = QpackContext.getStaticTable();
         DynamicTable dynamicTable = _context.getDynamicTable();
         Entry referencedEntry = isDynamicTableIndex ? dynamicTable.get(nameIndex) : staticTable.get(nameIndex);
@@ -162,6 +181,9 @@ public class QpackDecoder implements Dumpable
 
     void insert(String name, String value) throws QpackException
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Insert Literal Entry: name={}, value={}", name, value);
+
         Entry entry = new Entry(new HttpField(name, value));
 
         // Add the new Entry to the DynamicTable.

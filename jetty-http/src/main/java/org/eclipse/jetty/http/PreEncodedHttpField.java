@@ -54,9 +54,13 @@ public class PreEncodedHttpField extends HttpField
         });
 
         LOG.debug("HttpField encoders loaded: {}", encoders);
-        int size = encoders.size();
 
-        __encoders = new HttpFieldPreEncoder[size == 0 ? 1 : size];
+        int size = 1;
+        for (HttpFieldPreEncoder e : encoders)
+        {
+            size = Math.max(size, index(e.getHttpVersion()) + 1);
+        }
+        __encoders = new HttpFieldPreEncoder[size];
         for (HttpFieldPreEncoder e : encoders)
         {
             int i = index(e.getHttpVersion());
@@ -82,6 +86,9 @@ public class PreEncodedHttpField extends HttpField
             case HTTP_2:
                 return 1;
 
+            case HTTP_3:
+                return 2;
+
             default:
                 return -1;
         }
@@ -94,7 +101,8 @@ public class PreEncodedHttpField extends HttpField
         super(header, name, value);
         for (int i = 0; i < __encoders.length; i++)
         {
-            _encodedField[i] = __encoders[i].getEncodedField(header, name, value);
+            if (__encoders[i] != null)
+                _encodedField[i] = __encoders[i].getEncodedField(header, name, value);
         }
     }
 

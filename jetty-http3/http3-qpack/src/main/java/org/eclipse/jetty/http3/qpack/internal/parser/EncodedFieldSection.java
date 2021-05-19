@@ -109,7 +109,7 @@ public class EncodedFieldSection
         _stringParser.setPrefix(8);
         String value = _stringParser.decode(buffer);
         if (value == null)
-            throw new QpackException.CompressionException("Value");
+            throw new QpackException.CompressionException("Incomplete Value");
 
         return new IndexedNameField(allowEncoding, dynamicTable, nameIndex, value);
     }

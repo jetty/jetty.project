@@ -144,8 +144,8 @@ public class DynamicTable implements Iterable<Entry>, Dumpable
 
         Entry firstEntry = _entries.get(0);
         int index = absoluteIndex - firstEntry.getIndex();
-        if (index >= _entries.size())
-            throw new IllegalArgumentException("Invalid Index");
+        if (index < 0 || index >= _entries.size())
+            throw new IllegalArgumentException("Invalid Index " + index);
 
         return _entries.get(index);
     }
