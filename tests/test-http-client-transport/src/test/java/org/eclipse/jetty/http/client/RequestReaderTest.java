@@ -56,12 +56,13 @@ public class RequestReaderTest extends AbstractTest<TransportScenario>
                     if (b == -1)
                         break;
                 }
+                // Paranoid check.
+                assertThat(br.read(), is(-1));
                 baseRequest.setHandled(true);
             }
         }, client -> {});
 
-        ContentResponse response1 = scenario.client.newRequest("localhost", scenario.server.getURI().getPort())
-            .scheme(scenario.server.getURI().getScheme())
+        ContentResponse response1 = scenario.client.newRequest(scenario.newURI())
             .method("POST")
             .timeout(5, TimeUnit.SECONDS)
             .body(new BytesRequestContent(new byte[512]))
@@ -69,8 +70,7 @@ public class RequestReaderTest extends AbstractTest<TransportScenario>
         assertThat(response1.getStatus(), is(HttpStatus.OK_200));
 
         // Send a 2nd request to make sure recycling works.
-        ContentResponse response2 = scenario.client.newRequest("localhost", scenario.server.getURI().getPort())
-            .scheme(scenario.server.getURI().getScheme())
+        ContentResponse response2 = scenario.client.newRequest(scenario.newURI())
             .method("POST")
             .timeout(5, TimeUnit.SECONDS)
             .body(new BytesRequestContent(new byte[512]))
