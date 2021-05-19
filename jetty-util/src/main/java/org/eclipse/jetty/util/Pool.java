@@ -431,8 +431,17 @@ public class Pool<T> implements AutoCloseable, Dumpable
         // iterate the copy and close its entries
         for (Entry entry : copy)
         {
-            if (entry.tryRemove() && entry.pooled instanceof Closeable)
-                IO.close((Closeable)entry.pooled);
+            boolean removed = entry.tryRemove();
+            if (removed)
+            {
+                if (entry.pooled instanceof Closeable)
+                    IO.close((Closeable)entry.pooled);
+            }
+            else
+            {
+                if (LOGGER.isDebugEnabled())
+                    LOGGER.debug("Pooled object still in use: {}", entry);
+            }
         }
     }
 
