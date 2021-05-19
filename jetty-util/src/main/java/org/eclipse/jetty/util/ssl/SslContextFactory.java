@@ -2246,17 +2246,19 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
          * <a href="https://datatracker.ietf.org/doc/html/rfc6066#section-3">TLS 1.3</a>,
          * or when they are non-domain strings such as {@code "localhost"}.</p>
          * <p>If you need to send custom SNI, such as a non-domain SNI or an IP address SNI,
-         * you can set your own SNI provider or use {@link #IP_ADDRESS_SNI_PROVIDER}.</p>
+         * you can set your own SNI provider or use {@link #NON_DOMAIN_SNI_PROVIDER}.</p>
          */
         @FunctionalInterface
         public interface SniProvider
         {
             /**
-             * <p>An SNI provider that sends, if the given {@code serverNames} list is empty,
-             * the host address retrieved via
-             * {@link InetAddress#getHostAddress() InetAddress.getLocalHost().getHostAddress()}.</p>
+             * <p>An SNI provider that, if the given {@code serverNames} list is empty,
+             * retrieves the host via {@link SSLEngine#getPeerHost()}, converts it to
+             * ASCII bytes, and sends it as SNI.</p>
+             * <p>This allows to send non-domain SNI such as {@code "localhost"} or
+             * IP addresses.</p>
              */
-            public static final SniProvider IP_ADDRESS_SNI_PROVIDER = Client::getSniServerNames;
+            public static final SniProvider NON_DOMAIN_SNI_PROVIDER = Client::getSniServerNames;
 
             /**
              * <p>Provides the SNI names to send to the server.</p>
@@ -2277,17 +2279,12 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         {
             if (serverNames.isEmpty())
             {
-                try
+                String host = sslEngine.getPeerHost();
+                if (host != null)
                 {
-                    String address = InetAddress.getLocalHost().getHostAddress();
                     // Must use the byte[] constructor, because the character ':' is forbidden when
                     // using the String constructor (but typically present in IPv6 addresses).
-                    return Collections.singletonList(new SNIHostName(address.getBytes(StandardCharsets.US_ASCII)));
-                }
-                catch (Throwable x)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Could not retrieve localhost address", x);
+                    return Collections.singletonList(new SNIHostName(host.getBytes(StandardCharsets.US_ASCII)));
                 }
             }
             return serverNames;
