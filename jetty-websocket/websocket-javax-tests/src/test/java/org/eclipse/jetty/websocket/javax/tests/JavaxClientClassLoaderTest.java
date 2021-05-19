@@ -49,8 +49,9 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class ClientClassLoaderTest
+public class JavaxClientClassLoaderTest
 {
     private WSServer server;
     private HttpClient httpClient;
@@ -85,7 +86,7 @@ public class ClientClassLoaderTest
         @OnOpen
         public void onOpen(Session session)
         {
-            session.getAsyncRemote().sendText("ClassLoader: " + Thread.currentThread().getContextClassLoader());
+            session.getAsyncRemote().sendText("ContextClassLoader: " + Thread.currentThread().getContextClassLoader());
         }
 
         @OnMessage
@@ -98,23 +99,21 @@ public class ClientClassLoaderTest
     @WebServlet("/servlet")
     public static class WebSocketClientServlet extends HttpServlet
     {
-        private WebSocketContainer clientContainer;
+        private final WebSocketContainer clientContainer = ContainerProvider.getWebSocketContainer();
 
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp)
         {
-            clientContainer = ContainerProvider.getWebSocketContainer();
-
             URI wsEchoUri = URI.create("ws://localhost:" + req.getServerPort() + "/echo/");
             ClientSocket clientSocket = new ClientSocket();
 
             try (Session ignored = clientContainer.connectToServer(clientSocket, wsEchoUri))
             {
                 String recv = clientSocket.textMessages.poll(5, TimeUnit.SECONDS);
-                assertThat(recv, containsString("ClassLoader: WebAppClassLoader"));
-
+                assertNotNull(recv);
                 resp.setStatus(HttpStatus.OK_200);
-                resp.getWriter().write("test complete");
+                resp.getWriter().println(recv);
+                resp.getWriter().println("ClientClassLoader: " + clientContainer.getClass().getClassLoader());
             }
             catch (Exception e)
             {
@@ -178,8 +177,13 @@ public class ClientClassLoaderTest
         // After hitting each WebApp we will get 200 response if test succeeds.
         ContentResponse response = httpClient.GET(server.getServerUri().resolve("/app/servlet"));
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response.getContentAsString(), containsString("test complete"));
-    }
+
+        // The ContextClassLoader in the WebSocketClients onOpen was the WebAppClassloader.
+        assertThat(response.getContentAsString(), containsString("ContextClassLoader: WebAppClassLoader"));
+
+        // Verify that we used Servers version of WebSocketClient.
+        ClassLoader serverClassLoader = server.getServer().getClass().getClassLoader();
+        assertThat(response.getContentAsString(), containsString("ClientClassLoader: " + serverClassLoader));    }
 
     @Test
     public void websocketProvidedByWebApp() throws Exception
@@ -203,6 +207,11 @@ public class ClientClassLoaderTest
         // After hitting each WebApp we will get 200 response if test succeeds.
         ContentResponse response = httpClient.GET(server.getServerUri().resolve("/app/servlet"));
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response.getContentAsString(), containsString("test complete"));
+
+        // The ContextClassLoader in the WebSocketClients onOpen was the WebAppClassloader.
+        assertThat(response.getContentAsString(), containsString("ContextClassLoader: WebAppClassLoader"));
+
+        // Verify that we used WebApps version of WebSocketClient.
+        assertThat(response.getContentAsString(), containsString("ClientClassLoader: WebAppClassLoader"));
     }
 }

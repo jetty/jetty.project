@@ -76,7 +76,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle
 
     public void setClassLoader(ClassLoader classLoader)
     {
-        this.classLoader = classLoader;
+        this.classLoader = Objects.requireNonNull(classLoader);
     }
 
     public CompletableFuture<CoreSession> connect(FrameHandler frameHandler, URI wsUri) throws IOException
