@@ -209,11 +209,13 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
     @Override
     public void recycle()
     {
-        _expect100Continue = false;
-        _delayedUntilContent = false;
-        _contentDemander.recycle();
         super.recycle();
         getHttpTransport().recycle();
+        _expect100Continue = false;
+        _delayedUntilContent = false;
+        // The content demander must be the very last thing to be recycled
+        // to make sure any pending demanding content gets cleared off.
+        _contentDemander.recycle();
     }
 
     @Override
