@@ -41,7 +41,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class DirectHTTP2OverTLSTest
+public class PriorKnowledgeHTTP2OverTLSTest
 {
     private Server server;
     private ServerConnector connector;
