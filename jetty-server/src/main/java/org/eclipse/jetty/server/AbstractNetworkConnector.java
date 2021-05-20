@@ -30,7 +30,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
 @ManagedObject("AbstractNetworkConnector")
 public abstract class AbstractNetworkConnector extends AbstractConnector implements NetworkConnector
 {
-
     private volatile String _host;
     private volatile int _port = 0;
 
