@@ -267,6 +267,11 @@ public interface Index<V>
         return new ArrayTrie<>(true, maxCapacity);
     }
 
+    static <V> Index<V> empty(boolean caseSensitive)
+    {
+        return EmptyTrie.instance(caseSensitive);
+    }
+
     /**
      * Builder of {@link Index} instances.
      * @param <V> the entry type

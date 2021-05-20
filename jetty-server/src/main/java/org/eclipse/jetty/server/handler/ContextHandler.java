@@ -73,6 +73,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.StringUtil;
@@ -214,7 +215,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private final List<ServletRequestAttributeListener> _servletRequestAttributeListeners = new CopyOnWriteArrayList<>();
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final Set<EventListener> _durableListeners = new HashSet<>();
-    private String[] _protectedTargets;
+    private Index<Boolean> _protectedTargets = Index.empty(false);
     private final CopyOnWriteArrayList<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<>();
 
     public enum Availability
@@ -1474,30 +1475,23 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public boolean isProtectedTarget(String target)
     {
-        if (target == null || _protectedTargets == null)
+        if (target == null || _protectedTargets.isEmpty())
             return false;
 
-        while (target.startsWith("//"))
-        {
+        if (target.startsWith("//"))
+            // ignore empty segments which may be discard by file system
             target = URIUtil.compactPath(target);
-        }
 
-        for (int i = 0; i < _protectedTargets.length; i++)
-        {
-            String t = _protectedTargets[i];
-            if (StringUtil.startsWithIgnoreCase(target, t))
-            {
-                if (target.length() == t.length())
-                    return true;
+        Boolean exact = _protectedTargets.getBest(target);
 
-                // Check that the target prefix really is a path segment, thus
-                // it can end with /, a query, a target or a parameter
-                char c = target.charAt(t.length());
-                if (c == '/' || c == '?' || c == '#' || c == ';')
-                    return true;
-            }
-        }
-        return false;
+        if (exact == null)
+            // Not protected
+            return false;
+        if (exact)
+            // protected if exact length
+            return _protectedTargets.get(target) == Boolean.TRUE;
+        // protected prefix
+        return true;
     }
 
     /**
@@ -1505,13 +1499,22 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void setProtectedTargets(String[] targets)
     {
-        if (targets == null)
+        Index.Builder<Boolean> builder = new Index.Builder<>();
+        if (targets != null)
         {
-            _protectedTargets = null;
-            return;
-        }
+            for (String t : targets)
+            {
+                if (!t.startsWith("/") || t.indexOf('/', 2) > 0)
+                    throw new IllegalArgumentException("Bad protected target: " + t);
+                // Index to TRUE if exact match required
+                builder.with(t, Boolean.TRUE);
 
-        _protectedTargets = Arrays.copyOf(targets, targets.length);
+                // Index to FALSE for prefix matches
+                for (String s : new String[] {"/", "?", "#", ";"})
+                    builder.with(t + s, Boolean.FALSE);
+            }
+        }
+        _protectedTargets = builder.caseSensitive(false).build();
     }
 
     public String[] getProtectedTargets()
@@ -1519,7 +1522,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         if (_protectedTargets == null)
             return null;
 
-        return Arrays.copyOf(_protectedTargets, _protectedTargets.length);
+        return _protectedTargets.keySet().stream()
+            .filter(_protectedTargets::get)
+            .toArray(String[]::new);
     }
 
     @Override
