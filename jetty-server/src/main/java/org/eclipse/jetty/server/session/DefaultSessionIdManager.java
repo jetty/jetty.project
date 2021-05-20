@@ -339,6 +339,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         _houseKeeper.stop();
         if (_ownHouseKeeper)
         {
+            removeBean(_houseKeeper);
             _houseKeeper = null;
         }
         _random = null;

@@ -66,23 +66,37 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         if (contextHandler.getServer() == null)
             throw new IllegalStateException("Server has not been set on the ServletContextHandler");
 
-        JettyWebSocketServerContainer container = getContainer(servletContext);
-        if (container == null)
+        // If we find a container in the servlet context return it.
+        JettyWebSocketServerContainer containerFromServletContext = getContainer(servletContext);
+        if (containerFromServletContext != null)
+            return containerFromServletContext;
+
+        // Find Pre-Existing executor.
+        Executor executor = (Executor)servletContext.getAttribute("org.eclipse.jetty.server.Executor");
+        if (executor == null)
+            executor = contextHandler.getServer().getThreadPool();
+
+        // Create the Jetty ServerContainer implementation.
+        WebSocketMappings mappings = WebSocketMappings.ensureMappings(servletContext);
+        WebSocketComponents components = WebSocketServerComponents.getWebSocketComponents(servletContext);
+        JettyWebSocketServerContainer container = new JettyWebSocketServerContainer(contextHandler, mappings, components, executor);
+
+        // Manage the lifecycle of the Container.
+        contextHandler.addManaged(container);
+        contextHandler.addEventListener(container);
+        contextHandler.addEventListener(new LifeCycle.Listener()
         {
-            // Find Pre-Existing executor
-            Executor executor = (Executor)servletContext.getAttribute("org.eclipse.jetty.server.Executor");
-            if (executor == null)
-                executor = contextHandler.getServer().getThreadPool();
+            @Override
+            public void lifeCycleStopping(LifeCycle event)
+            {
+                contextHandler.getServletContext().removeAttribute(JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE);
+                contextHandler.removeBean(container);
+                contextHandler.removeEventListener(container);
+                contextHandler.removeEventListener(this);
+            }
+        });
 
-            // Create the Jetty ServerContainer implementation
-            WebSocketMappings mappings = WebSocketMappings.ensureMappings(servletContext);
-            WebSocketComponents components = WebSocketServerComponents.getWebSocketComponents(servletContext);
-            container = new JettyWebSocketServerContainer(contextHandler, mappings, components, executor);
-            servletContext.setAttribute(JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE, container);
-            contextHandler.addManaged(container);
-            contextHandler.addEventListener(container);
-        }
-
+        servletContext.setAttribute(JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE, container);
         return container;
     }
 

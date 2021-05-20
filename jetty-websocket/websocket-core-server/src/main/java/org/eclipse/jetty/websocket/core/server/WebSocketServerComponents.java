@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.websocket.core.server;
 
+import java.util.Objects;
 import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.compression.DeflaterPool;
@@ -93,17 +93,21 @@ public class WebSocketServerComponents extends WebSocketComponents
         if (server.contains(bufferPool))
             serverComponents.unmanage(bufferPool);
 
-        servletContext.setAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE, serverComponents);
-        LifeCycle.start(serverComponents);
-        servletContext.addListener(new ServletContextListener()
+        // Stop the WebSocketComponents when the ContextHandler stops.
+        ContextHandler contextHandler = Objects.requireNonNull(ContextHandler.getContextHandler(servletContext));
+        contextHandler.addManaged(serverComponents);
+        contextHandler.addEventListener(new LifeCycle.Listener()
         {
             @Override
-            public void contextDestroyed(ServletContextEvent sce)
+            public void lifeCycleStopping(LifeCycle event)
             {
-                LifeCycle.stop(serverComponents);
+                servletContext.removeAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE);
+                contextHandler.removeBean(serverComponents);
+                contextHandler.removeEventListener(this);
             }
         });
 
+        servletContext.setAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE, serverComponents);
         return serverComponents;
     }
 
