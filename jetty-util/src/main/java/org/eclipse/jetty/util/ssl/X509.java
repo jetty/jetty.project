@@ -213,7 +213,7 @@ public class X509
     {
         int index = host.indexOf(':');
         if (index >= 0)
-            index = host.indexOf(':', index + 1) ;
+            index = host.indexOf(':', index + 1);
         return index > 0;
     }
 
