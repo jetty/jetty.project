@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.servlet;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Objects;
 import javax.servlet.DispatcherType;
@@ -131,19 +130,8 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
                 @Override
                 public void lifeCycleStopping(LifeCycle event)
                 {
-                    // Remove the FilterHolder.
-                    FilterHolder[] holders = Arrays.stream(servletHandler.getFilters())
-                        .filter(h -> h != holder)
-                        .toArray(FilterHolder[]::new);
-                    servletHandler.setFilters(holders);
-
-                    // Remove the FilterMapping.
-                    FilterMapping[] mappings = Arrays.stream(servletHandler.getFilterMappings())
-                        .filter(m -> m != mapping)
-                        .toArray(FilterMapping[]::new);
-                    servletHandler.setFilterMappings(mappings);
-
-                    // Remove this event listener.
+                    servletHandler.removeFilterHolder(holder);
+                    servletHandler.removeFilterMapping(mapping);
                     contextHandler.removeEventListener(this);
                 }
             });
