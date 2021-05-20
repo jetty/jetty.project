@@ -26,7 +26,7 @@ etc/jetty-http.xml
 # jetty.http.idleTimeout=30000
 
 ## The number of acceptors (-1 picks a default value based on number of cores).
-# jetty.http.acceptors=-1
+# jetty.http.acceptors=1
 
 ## The number of selectors (-1 picks a default value based on number of cores).
 # jetty.http.selectors=-1
