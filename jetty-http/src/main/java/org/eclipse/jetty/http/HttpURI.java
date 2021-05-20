@@ -377,13 +377,13 @@ public interface HttpURI
         @Override
         public boolean hasAmbiguousSegment()
         {
-            return _ambiguous.contains(Mutable.Ambiguous.SEGMENT);
+            return _ambiguous.contains(Ambiguous.SEGMENT);
         }
 
         @Override
         public boolean hasAmbiguousSeparator()
         {
-            return _ambiguous.contains(Mutable.Ambiguous.SEPARATOR);
+            return _ambiguous.contains(Ambiguous.SEPARATOR);
         }
 
         @Override
@@ -453,6 +453,7 @@ public interface HttpURI
             .with("%2e%2e", Boolean.TRUE)
             .with(".%2e", Boolean.TRUE)
             .with("%2e.", Boolean.TRUE)
+            .with("", Boolean.TRUE)
             .with("..", Boolean.FALSE)
             .with(".", Boolean.FALSE)
             .build();

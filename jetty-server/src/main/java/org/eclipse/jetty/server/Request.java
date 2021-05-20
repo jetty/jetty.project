@@ -1252,7 +1252,7 @@ public class Request implements HttpServletRequest
     public RequestDispatcher getRequestDispatcher(String path)
     {
         // path is encoded, potentially with query
-
+        // TODO: why do we do this?
         path = URIUtil.compactPath(path);
 
         if (path == null || _context == null)

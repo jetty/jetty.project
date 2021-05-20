@@ -361,6 +361,13 @@ public class HttpURITest
                 {".%2e", "..", EnumSet.of(Ambiguous.SEGMENT)},
                 {"%2e%2e", "..", EnumSet.of(Ambiguous.SEGMENT)},
 
+                // empty segment treated as ambiguous
+                {"/foo//bar", "/foo//bar", EnumSet.of(Ambiguous.SEGMENT)},
+                {"/foo//../bar", "/foo/bar", EnumSet.of(Ambiguous.SEGMENT)},
+                {"/foo///../../../bar", "/bar", EnumSet.of(Ambiguous.SEGMENT)},
+                {"/foo/./../bar", "/bar", EnumSet.noneOf(Ambiguous.class)},
+                {"/foo//./bar", "/foo//bar", EnumSet.of(Ambiguous.SEGMENT)},
+
                 // ambiguous parameter inclusions
                 {"/path/.;/info", "/path/./info", EnumSet.of(Ambiguous.PARAM)},
                 {"/path/.;param/info", "/path/./info", EnumSet.of(Ambiguous.PARAM)},
@@ -376,6 +383,11 @@ public class HttpURITest
                 {"%2f/info", "//info", EnumSet.of(Ambiguous.SEPARATOR)},
                 {"%2F/info", "//info", EnumSet.of(Ambiguous.SEPARATOR)},
                 {"/path/%2f../info", "/path//../info", EnumSet.of(Ambiguous.SEPARATOR)},
+
+                // ambiguous encoding
+                {"/path/%25/info", "/path/%/info", EnumSet.of(Ambiguous.ENCODING)},
+                {"%25/info", "%/info", EnumSet.of(Ambiguous.ENCODING)},
+                {"/path/%25../info", "/path/%../info", EnumSet.of(Ambiguous.ENCODING)},
 
                 // combinations
                 {"/path/%2f/..;/info", "/path///../info", EnumSet.of(Ambiguous.SEPARATOR, Ambiguous.PARAM)},
@@ -401,6 +413,7 @@ public class HttpURITest
             assertThat(uri.hasAmbiguousSegment(), is(expected.contains(Ambiguous.SEGMENT)));
             assertThat(uri.hasAmbiguousSeparator(), is(expected.contains(Ambiguous.SEPARATOR)));
             assertThat(uri.hasAmbiguousParameter(), is(expected.contains(Ambiguous.PARAM)));
+            assertThat(uri.hasAmbiguousEncoding(), is(expected.contains(Ambiguous.ENCODING)));
         }
         catch (Exception e)
         {
