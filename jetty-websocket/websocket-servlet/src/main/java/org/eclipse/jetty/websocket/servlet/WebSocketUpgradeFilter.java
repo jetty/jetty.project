@@ -34,6 +34,7 @@ import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
@@ -122,6 +123,18 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
             // Add the default WebSocketUpgradeFilter as the first filter in the list.
             servletHandler.prependFilter(holder);
             servletHandler.prependFilterMapping(mapping);
+
+            // If we create the filter we must also make sure it is removed if the context is stopped.
+            contextHandler.addEventListener(new LifeCycle.Listener()
+            {
+                @Override
+                public void lifeCycleStopping(LifeCycle event)
+                {
+                    servletHandler.removeFilterHolder(holder);
+                    servletHandler.removeFilterMapping(mapping);
+                    contextHandler.removeEventListener(this);
+                }
+            });
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Adding {} mapped to {} in {}", holder, pathSpec, servletContext);
