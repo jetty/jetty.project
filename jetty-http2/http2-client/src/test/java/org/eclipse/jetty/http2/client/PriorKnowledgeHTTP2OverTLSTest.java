@@ -11,18 +11,23 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client.http;
+package org.eclipse.jetty.http2.client;
 
+import java.net.InetSocketAddress;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.HTTP2Cipher;
-import org.eclipse.jetty.http2.client.HTTP2Client;
+import org.eclipse.jetty.http2.api.Session;
+import org.eclipse.jetty.http2.api.Stream;
+import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -34,18 +39,20 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class DirectHTTP2OverTLSTest
+public class PriorKnowledgeHTTP2OverTLSTest
 {
     private Server server;
     private ServerConnector connector;
-    private HttpClient client;
+    private HTTP2Client client;
 
     private void start(Handler handler) throws Exception
     {
@@ -75,19 +82,16 @@ public class DirectHTTP2OverTLSTest
         clientThreads.setName("client");
         clientConnector.setExecutor(clientThreads);
         clientConnector.setSslContextFactory(newClientSslContextFactory());
-        HttpClientTransportOverHTTP2 transport = new HttpClientTransportOverHTTP2(new HTTP2Client(clientConnector));
-        transport.setUseALPN(false);
-        client = new HttpClient(transport);
+        client = new HTTP2Client(clientConnector);
+        client.setUseALPN(false);
         client.start();
     }
 
     @AfterEach
     public void dispose() throws Exception
     {
-        if (client != null)
-            client.stop();
-        if (server != null)
-            server.stop();
+        LifeCycle.stop(client);
+        LifeCycle.stop(server);
     }
 
     private SslContextFactory.Server newServerSslContextFactory()
@@ -101,7 +105,7 @@ public class DirectHTTP2OverTLSTest
     {
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
         configureSslContextFactory(sslContextFactory);
-        sslContextFactory.setEndpointIdentificationAlgorithm(null);
+//        sslContextFactory.setEndpointIdentificationAlgorithm(null);
         return sslContextFactory;
     }
 
@@ -127,10 +131,27 @@ public class DirectHTTP2OverTLSTest
             }
         });
 
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-            .scheme(HttpScheme.HTTPS.asString())
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
+        int port = connector.getLocalPort();
+        MetaData.Response response = client.connect(client.getClientConnector().getSslContextFactory(), new InetSocketAddress("localhost", port), new Session.Listener.Adapter())
+            .thenCompose(session ->
+            {
+                CompletableFuture<MetaData.Response> responsePromise = new CompletableFuture<>();
+                HttpURI.Mutable uri = HttpURI.build("https://localhost:" + port + "/path");
+                MetaData.Request request = new MetaData.Request("GET", uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                return session.newStream(new HeadersFrame(request, null, true), new Stream.Listener.Adapter()
+                {
+                    @Override
+                    public void onHeaders(Stream stream, HeadersFrame frame)
+                    {
+                        assertTrue(frame.isEndStream());
+                        MetaData metaData = frame.getMetaData();
+                        assertTrue(metaData.isResponse());
+                        MetaData.Response response = (MetaData.Response)metaData;
+                        responsePromise.complete(response);
+                    }
+                }).thenCompose(stream -> responsePromise);
+            })
+            .get(5, TimeUnit.SECONDS);
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
