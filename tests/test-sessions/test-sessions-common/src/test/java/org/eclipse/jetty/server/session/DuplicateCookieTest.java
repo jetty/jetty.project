@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test having multiple session cookies in a request.
@@ -83,7 +84,7 @@ public class DuplicateCookieTest
             assertEquals("4422", response.getContentAsString());
 
             //ensure request has finished processing so session will be completed
-            latch.await(5, TimeUnit.SECONDS);
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
 
             //check session is drained of requests
             assertEquals(0, s4422.getRequests());
@@ -149,7 +150,7 @@ public class DuplicateCookieTest
             assertEquals("1122", response.getContentAsString());
 
             //ensure request has finished processing so session will be completed
-            latch.await(5, TimeUnit.SECONDS);
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
 
             //check valid session is drained of requests
             assertEquals(0, s1122.getRequests());
@@ -216,7 +217,7 @@ public class DuplicateCookieTest
             assertEquals("1122", response.getContentAsString());
 
             //ensure request has completed so session will be completed
-            latch.await(5, TimeUnit.SECONDS);
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
 
             //check valid session drained of requests
             assertEquals(0, s1122.getRequests());
@@ -282,7 +283,7 @@ public class DuplicateCookieTest
             assertEquals("1122", response.getContentAsString());
 
             //ensure request has completed so session will be completed
-            latch.await(5, TimeUnit.SECONDS);
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
 
             //check valid session drained of requests
             assertEquals(0, s1122.getRequests());
@@ -345,7 +346,7 @@ public class DuplicateCookieTest
             assertEquals(HttpServletResponse.SC_BAD_REQUEST, response.getStatus());
 
             //ensure request has completed so any session will be completed
-            latch.await(5, TimeUnit.SECONDS);
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
 
             //check that all sessions have their request counts decremented correctly after the request, back to 0
             assertEquals(0, s1234.getRequests());
@@ -402,7 +403,7 @@ public class DuplicateCookieTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             //ensure request has finished processing so session will be completed
-            latch.await(5, TimeUnit.SECONDS);
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
 
             //check that all valid sessions have their request counts decremented correctly after the request, back to 0
             assertEquals(0, s1234.getRequests());
