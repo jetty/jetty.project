@@ -182,21 +182,45 @@ public class X509
                 return true;
         }
 
-        InetAddress address = toInetAddress(host);
-        if (address != null)
-            return _addresses.contains(address);
+        // Check if the host looks like an IP address to avoid
+        // DNS lookup for host names that did not match.
+        if (seemsIPAddress(host))
+        {
+            InetAddress address = toInetAddress(host);
+            if (address != null)
+                return _addresses.contains(address);
+        }
 
         return false;
+    }
+
+    private static boolean seemsIPAddress(String host)
+    {
+        // IPv4 is just numbers and dots.
+        String ipv4RegExp = "[0-9\\.]+";
+        // IPv6 is hex and colons and possibly brackets.
+        String ipv6RegExp = "[0-9a-fA-F:\\[\\]]+";
+        return host.matches(ipv4RegExp) ||
+            (host.matches(ipv6RegExp) && containsAtLeastTwoColons(host));
+    }
+
+    private static boolean containsAtLeastTwoColons(String host)
+    {
+        int index = host.indexOf(':');
+        if (index >= 0)
+            index = host.indexOf(':', index + 1);
+        return index > 0;
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x(%s,h=%s,w=%s)",
+        return String.format("%s@%x(%s,h=%s,a=%s,w=%s)",
             getClass().getSimpleName(),
             hashCode(),
             _alias,
             _hosts,
+            _addresses,
             _wilds);
     }
 }

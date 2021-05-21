@@ -196,7 +196,7 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         if (delegate)
             alias = _delegate.chooseServerAlias(keyType, issuers, socket);
         if (LOG.isDebugEnabled())
-            LOG.debug("Chose {} alias {}/{} on {}", delegate ? "delegate" : "explicit", alias, keyType, socket);
+            LOG.debug("Chose {} alias={} keyType={} on {}", delegate ? "delegate" : "explicit", String.valueOf(alias), keyType, socket);
         return alias;
     }
 
@@ -210,7 +210,7 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         if (delegate)
             alias = _delegate.chooseEngineServerAlias(keyType, issuers, engine);
         if (LOG.isDebugEnabled())
-            LOG.debug("Chose {} alias {}/{} on {}", delegate ? "delegate" : "explicit", alias, keyType, engine);
+            LOG.debug("Chose {} alias={} keyType={} on {}", delegate ? "delegate" : "explicit", String.valueOf(alias), keyType, engine);
         return alias;
     }
 
