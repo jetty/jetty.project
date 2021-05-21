@@ -1,0 +1,46 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-server-compliance]]
+=== Server Compliance Modes
+
+TODO THIS IS A DRAFT
+
+The Jetty server strives to keep up with the latest https://en.wikipedia.org/wiki/Request_for_Comments[IETF RFC]s for compliance with internet specifications, which
+are periodically updated.  When possible Jetty will support backwards compatibility by providing compliance modes that can be configured to allow some legacy violations of the specifications. There are compliance modes provided for:
+
+* xref:og-server-compliance-http[HTTP Compliance]
+* xref:og-server-compliance-uri[URI Compliance]
+* xref:og-server-compliance-cookie[Cookie Compliance]
+
+Compliance modes are defined as sets of allowed violations (e.g. "RFC7230_LEGACY") or custom sets maybe created from string representations (e.g. "RFC2616,-MULTILINE_FIELD_VALUE"). Compliance modes are configured in the server.ini file:
+
+    ## HTTP Compliance: RFC7230, RFC7230_LEGACY, RFC2616, RFC2616_LEGACY, LEGACY
+    # jetty.httpConfig.compliance=RFC7230
+
+    ## URI Compliance: SAFE, STRICT
+    # jetty.httpConfig.uriCompliance=SAFE
+
+    ## Cookie compliance mode for parsing request Cookie headers: RFC2965, RFC6265
+    # jetty.httpConfig.requestCookieCompliance=RFC6265
+
+    ## Cookie compliance mode for generating response Set-Cookie: RFC2965, RFC6265
+    # jetty.httpConfig.responseCookieCompliance=RFC6265
+
+If the available compliance modes are insufficient for your needs, then the Customizer and/or rewrite mechanisms can be used to validate and/or mutate requests according to other interpretations of the specifications.
+
+include::server-compliance-http.adoc[]
+include::server-compliance-uri.adoc[]
+include::server-compliance-cookie.adoc[]
+
+

@@ -1,0 +1,39 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-server-compliance-uri]]
+=== URI Compliance Modes
+Ambiguous compliance modes are not actual violations of the RFC, rather they are additional condition that jetty can enforce in addition to the RFC
+
+
+
+        /**
+         * Allow ambiguous path segments e.g. <code>/foo/%2e%2e/bar</code>
+         */
+        AMBIGUOUS_PATH_SEGMENT("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path segment"),
+        /**
+         * Allow ambiguous path separator within a URI segment e.g. <code>/foo/b%2fr</code>
+         */
+        AMBIGUOUS_PATH_SEPARATOR("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path separator"),
+        /**
+         * Allow ambiguous path parameters within a URI segment e.g. <code>/foo/..;/bar</code>
+         */
+        AMBIGUOUS_PATH_PARAMETER("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path parameter"),
+        /**
+         * Allow ambiguous path encoding within a URI segment e.g. <code>/%2557EB-INF</code>
+         */
+        AMBIGUOUS_PATH_ENCODING("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path encoding"),
+        /**
+         * Allow Non canonical ambiguous paths. eg <code>/foo/x%2f%2e%2e%/bar</code> provided to applications as <code>/foo/x/../bar</code>
+         */
+        NON_CANONICAL_AMBIGUOUS_PATHS("https://tools.ietf.org/html/rfc3986#section-3.3", "Non canonical ambiguous paths");

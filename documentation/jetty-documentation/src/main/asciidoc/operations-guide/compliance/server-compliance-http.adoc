@@ -1,0 +1,32 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-server-compliance-http]]
+=== HTTP Compliance Modes
+When Jetty was first implemented in 1995, there was a W3C specification for https://www.w3.org/Protocols/HTTP/AsImplemented.html[HTTP/0.9], which since has been obsoleted or augmented by:
+
+ * https://datatracker.ietf.org/doc/html/rfc1945[RFC 1945] for HTTP/1.0 in 1996
+ * https://datatracker.ietf.org/doc/html/rfc2068[RFC 2068] for HTTP/1.1  in 1997
+ * https://datatracker.ietf.org/doc/html/rfc2616[RFC 2616] for HTTP/1.1 bis in 1999
+ * https://datatracker.ietf.org/doc/html/rfc7230[RFC 7230], https://datatracker.ietf.org/doc/html/rfc7231[RFC 7231], https://datatracker.ietf.org/doc/html/rfc7232[RFC 7232], https://datatracker.ietf.org/doc/html/rfc7233[RFC 7233], https://datatracker.ietf.org/doc/html/rfc7234[RFC 7234], https://datatracker.ietf.org/doc/html/rfc7235[RFC 7235] again for HTTP/1.1 in 2014
+ * https://datatracker.ietf.org/doc/html/rfc7540[RFC 7540] for HTTP/2.0 in 2015
+
+
+        CASE_SENSITIVE_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2", "Field name is case-insensitive"),
+        CASE_INSENSITIVE_METHOD("https://tools.ietf.org/html/rfc7230#section-3.1.1", "Method is case-sensitive"),
+        HTTP_0_9("https://tools.ietf.org/html/rfc7230#appendix-A.2", "HTTP/0.9 not supported"),
+        MULTILINE_FIELD_VALUE("https://tools.ietf.org/html/rfc7230#section-3.2.4", "Line Folding not supported"),
+        MULTIPLE_CONTENT_LENGTHS("https://tools.ietf.org/html/rfc7230#section-3.3.1", "Multiple Content-Lengths"),
+        TRANSFER_ENCODING_WITH_CONTENT_LENGTH("https://tools.ietf.org/html/rfc7230#section-3.3.1", "Transfer-Encoding and Content-Length"),
+        WHITESPACE_AFTER_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2.4", "Whitespace not allowed after field name"),
+        NO_COLON_AFTER_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2", "Fields must have a Colon");
