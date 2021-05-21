@@ -180,6 +180,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         DESTROYED
     }
 
+    /**
+     * The type of protected target match
+     * @see #_protectedTargets
+     */
+    private enum ProtectedTargetType
+    {
+        EXACT,
+        PREFIX
+    }
+
     protected ContextStatus _contextStatus = ContextStatus.NOTSET;
     protected Context _scontext;
     private final AttributesMap _attributes;
@@ -215,7 +225,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private final List<ServletRequestAttributeListener> _servletRequestAttributeListeners = new CopyOnWriteArrayList<>();
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final Set<EventListener> _durableListeners = new HashSet<>();
-    private Index<Boolean> _protectedTargets = Index.empty(false);
+    private Index<ProtectedTargetType> _protectedTargets = Index.empty(false);
     private final CopyOnWriteArrayList<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<>();
 
     public enum Availability
@@ -1482,16 +1492,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             // ignore empty segments which may be discard by file system
             target = URIUtil.compactPath(target);
 
-        Boolean exact = _protectedTargets.getBest(target);
+        ProtectedTargetType type = _protectedTargets.getBest(target);
 
-        if (exact == null)
-            // Not protected
-            return false;
-        if (exact)
-            // protected if exact length
-            return _protectedTargets.get(target) == Boolean.TRUE;
-        // protected prefix
-        return true;
+        return type == ProtectedTargetType.PREFIX ||
+            type == ProtectedTargetType.EXACT && _protectedTargets.get(target) == ProtectedTargetType.EXACT;
     }
 
     /**
@@ -1499,19 +1503,19 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void setProtectedTargets(String[] targets)
     {
-        Index.Builder<Boolean> builder = new Index.Builder<>();
+        Index.Builder<ProtectedTargetType> builder = new Index.Builder<>();
         if (targets != null)
         {
             for (String t : targets)
             {
-                if (!t.startsWith("/") || t.indexOf('/', 2) > 0)
+                if (!t.startsWith("/"))
                     throw new IllegalArgumentException("Bad protected target: " + t);
-                // Index to TRUE if exact match required
-                builder.with(t, Boolean.TRUE);
 
-                // Index to FALSE for prefix matches
-                for (String s : new String[] {"/", "?", "#", ";"})
-                    builder.with(t + s, Boolean.FALSE);
+                builder.with(t, ProtectedTargetType.EXACT);
+                builder.with(t + "/", ProtectedTargetType.PREFIX);
+                builder.with(t + "?", ProtectedTargetType.PREFIX);
+                builder.with(t + "#", ProtectedTargetType.PREFIX);
+                builder.with(t + ";", ProtectedTargetType.PREFIX);
             }
         }
         _protectedTargets = builder.caseSensitive(false).build();
@@ -1523,7 +1527,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return null;
 
         return _protectedTargets.keySet().stream()
-            .filter(_protectedTargets::get)
+            .filter(s -> _protectedTargets.get(s) == ProtectedTargetType.EXACT)
             .toArray(String[]::new);
     }
 

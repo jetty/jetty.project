@@ -73,7 +73,8 @@ public interface Index<V>
     V getBest(String s, int offset, int len);
 
     /**
-     * Get the best match from key in a String.
+     * Get the best match from key in a String, which may be
+     * a prefix match or an exact match.
      *
      * @param s The string
      * @return The value or null if not found
