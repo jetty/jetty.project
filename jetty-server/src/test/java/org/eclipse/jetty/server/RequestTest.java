@@ -1792,14 +1792,20 @@ public class RequestTest
     }
 
     @Test
-    public void testDoubleSlash() throws Exception
+    public void testAmbiguousDoubleSlash() throws Exception
     {
         _handler._checker = (request, response) -> true;
-        String request = "GET //../foo HTTP/1.0\r\n" +
+        String request = "GET /ambiguous/doubleSlash// HTTP/1.0\r\n" +
             "Host: whatever\r\n" +
             "\r\n";
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
     }
     
     @Test

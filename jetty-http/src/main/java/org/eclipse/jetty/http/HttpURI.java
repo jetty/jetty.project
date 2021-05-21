@@ -450,12 +450,12 @@ public interface HttpURI
         private static final Index<Boolean> __ambiguousSegments = new Index.Builder<Boolean>()
             .caseSensitive(false)
             .with("%2e", Boolean.TRUE)
-            .with("%2e%2e", Boolean.TRUE)
-            .with(".%2e", Boolean.TRUE)
-            .with("%2e.", Boolean.TRUE)
-            .with("", Boolean.TRUE)
-            .with("..", Boolean.FALSE)
-            .with(".", Boolean.FALSE)
+            .with("%2e%2e", Boolean.TRUE) // Is real dot dot segment not removed by normalisation
+            .with(".%2e", Boolean.TRUE)   // Is real dot dot segment not removed by normalisation
+            .with("%2e.", Boolean.TRUE)   // Is real dot dot segment not removed by normalisation
+            .with("", Boolean.TRUE)       // An empty segment may be interpreted differently by file systems
+            .with("..", Boolean.FALSE)    // If followed by a parameter is not removed by dot dot normalisation
+            .with(".", Boolean.FALSE)     // If followed by a parameter is not removed by dot normalisation
             .build();
 
         private String _scheme;
@@ -1282,6 +1282,21 @@ public interface HttpURI
         {
             if (!_ambiguous.contains(Ambiguous.SEGMENT))
             {
+                if (segment == end)
+                {
+                    // Falsely reported empty segment before the first slash.
+                    if (segment == 0)
+                        return;
+
+                    // If the segment starts after the URI string it means the string ended with a '/'.
+                    if (segment > uri.length() - 1)
+                        return;
+
+                    // It is only a true empty segment if it actually ends with a '/' character.
+                    if (uri.charAt(end) != '/')
+                        return;
+                }
+
                 Boolean ambiguous = __ambiguousSegments.get(uri, segment, end - segment);
                 if (ambiguous == Boolean.TRUE)
                     _ambiguous.add(Ambiguous.SEGMENT);
