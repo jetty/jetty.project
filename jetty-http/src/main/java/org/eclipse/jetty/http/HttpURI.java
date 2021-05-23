@@ -449,13 +449,13 @@ public interface HttpURI
          */
         private static final Index<Boolean> __ambiguousSegments = new Index.Builder<Boolean>()
             .caseSensitive(false)
-            .with("%2e", Boolean.TRUE)
-            .with("%2e%2e", Boolean.TRUE) // Is real dot dot segment not removed by normalisation
-            .with(".%2e", Boolean.TRUE)   // Is real dot dot segment not removed by normalisation
-            .with("%2e.", Boolean.TRUE)   // Is real dot dot segment not removed by normalisation
-            .with("", Boolean.TRUE)       // An empty segment may be interpreted differently by file systems
-            .with("..", Boolean.FALSE)    // If followed by a parameter is not removed by dot dot normalisation
-            .with(".", Boolean.FALSE)     // If followed by a parameter is not removed by dot normalisation
+            .with("%2e", Boolean.TRUE)    // Is real dot segment not removed by normalisation.
+            .with("%2e%2e", Boolean.TRUE) // Is real dot dot segment not removed by normalisation.
+            .with(".%2e", Boolean.TRUE)   // Is real dot dot segment not removed by normalisation.
+            .with("%2e.", Boolean.TRUE)   // Is real dot dot segment not removed by normalisation.
+            .with("", Boolean.TRUE)       // An empty segment may be interpreted differently by file systems.
+            .with("..", Boolean.FALSE)    // If followed by a parameter is not removed by dot dot normalisation.
+            .with(".", Boolean.FALSE)     // If followed by a parameter is not removed by dot normalisation.
             .build();
 
         private String _scheme;
