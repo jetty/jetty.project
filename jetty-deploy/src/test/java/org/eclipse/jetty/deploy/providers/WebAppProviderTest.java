@@ -14,7 +14,6 @@
 package org.eclipse.jetty.deploy.providers;
 
 import java.io.File;
-import java.net.URL;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,7 +34,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,7 +43,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.junit.jupiter.api.condition.OS.LINUX;
-import static org.junit.jupiter.api.condition.OS.MAC;
 
 @ExtendWith(WorkDirExtension.class)
 public class WebAppProviderTest
@@ -95,7 +92,6 @@ public class WebAppProviderTest
         jetty.stop();
     }
 
-    @Disabled("See issue #1200")
     @Test
     public void testStartupContext()
     {
@@ -109,10 +105,9 @@ public class WebAppProviderTest
         assertDirNotExists("root of work directory", workDir, "jsp");
 
         // Test for correct behaviour
-        assertTrue(hasJettyGeneratedPath(workDir, "foo.war"), "Should have generated directory in work directory: " + workDir);
+        assertTrue(hasJettyGeneratedPath(workDir, "foo_war"), "Should have generated directory in work directory: " + workDir);
     }
     
-    @Disabled("See issue #1200")
     @Test
     public void testStartupSymlinkContext()
     {
@@ -128,7 +123,7 @@ public class WebAppProviderTest
 
         // Test for expected work/temp directory behaviour
         File workDir = jetty.getJettyDir("workish");
-        assertTrue(hasJettyGeneratedPath(workDir, "bar.war"), "Should have generated directory in work directory: " + workDir);
+        assertTrue(hasJettyGeneratedPath(workDir, "bar_war"), "Should have generated directory in work directory: " + workDir);
     }
     
     @Test

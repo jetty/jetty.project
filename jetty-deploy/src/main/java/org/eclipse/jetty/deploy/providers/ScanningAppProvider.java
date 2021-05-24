@@ -48,6 +48,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
     private final List<Resource> _monitored = new CopyOnWriteArrayList<>();
     private int _scanInterval = 10;
     private Scanner _scanner;
+    private boolean _followSymlinks;
 
     private final Scanner.DiscreteListener _scannerListener = new Scanner.DiscreteListener()
     {
@@ -79,6 +80,16 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
     {
         _filenameFilter = filter;
         addBean(_appMap);
+    }
+
+    public boolean isFollowSymlinks()
+    {
+        return _followSymlinks;
+    }
+
+    public void setFollowSymlinks(boolean followSymlinks)
+    {
+        _followSymlinks = followSymlinks;
     }
 
     protected void setFilenameFilter(FilenameFilter filter)
@@ -128,7 +139,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
                 LOG.warn("Does not exist: {}", resource);
         }
 
-        _scanner = new Scanner();
+        _scanner = new Scanner(null, _followSymlinks);
         _scanner.setScanDirs(files);
         _scanner.setScanInterval(_scanInterval);
         _scanner.setFilenameFilter(_filenameFilter);
