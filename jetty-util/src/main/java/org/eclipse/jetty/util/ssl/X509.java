@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 import javax.security.auth.x500.X500Principal;
@@ -40,6 +41,10 @@ public class X509
      */
     private static final int SUBJECT_ALTERNATIVE_NAMES__DNS_NAME = 2;
     private static final int SUBJECT_ALTERNATIVE_NAMES__IP_ADDRESS = 7;
+    private static final String IPV4 = "([0-9]{1,3})(\\.[0-9]{1,3}){3}";
+    private static final Pattern IPV4_REGEXP = Pattern.compile("^" + IPV4 + "$");
+    // Look-ahead for 2 ':' + IPv6 characters + optional IPv4 at the end.
+    private static final Pattern IPV6_REGEXP = Pattern.compile("(?=.*:.*:)^([0-9a-fA-F:\\[\\]]+)(:" + IPV4 + ")?$");
 
     public static boolean isCertSign(X509Certificate x509)
     {
@@ -196,20 +201,7 @@ public class X509
 
     private static boolean seemsIPAddress(String host)
     {
-        // IPv4 is just numbers and dots.
-        String ipv4RegExp = "[0-9\\.]+";
-        // IPv6 is hex and colons and possibly brackets.
-        String ipv6RegExp = "[0-9a-fA-F:\\[\\]]+";
-        return host.matches(ipv4RegExp) ||
-            (host.matches(ipv6RegExp) && containsAtLeastTwoColons(host));
-    }
-
-    private static boolean containsAtLeastTwoColons(String host)
-    {
-        int index = host.indexOf(':');
-        if (index >= 0)
-            index = host.indexOf(':', index + 1);
-        return index > 0;
+        return IPV4_REGEXP.matcher(host).matches() || IPV6_REGEXP.matcher(host).matches();
     }
 
     @Override
