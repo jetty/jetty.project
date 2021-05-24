@@ -355,12 +355,16 @@ public class Scanner extends ContainerLifeCycle
         this(scheduler, true);
     }
 
-    public Scanner(Scheduler scheduler, boolean followSymLinks)
+    /**
+     * @param scheduler The scheduler to use for scanning.
+     * @param reportRealPaths If true, the {@link Listener}s are called with the real path of scanned files.
+     */
+    public Scanner(Scheduler scheduler, boolean reportRealPaths)
     {
         //Create the scheduler and start it
         _scheduler = scheduler == null ? new ScheduledExecutorScheduler("Scanner-" + SCANNER_IDS.getAndIncrement(), true, 1) : scheduler;
         addBean(_scheduler);
-        _linkOptions = followSymLinks ? new LinkOption[0] : new LinkOption[] {LinkOption.NOFOLLOW_LINKS};
+        _linkOptions = reportRealPaths ? new LinkOption[0] : new LinkOption[] {LinkOption.NOFOLLOW_LINKS};
     }
 
     /**
@@ -419,11 +423,11 @@ public class Scanner extends ContainerLifeCycle
         try
         {
             // Always follow links when check ultimate type of the path
-            Path real = path.toRealPath(LinkOption.NOFOLLOW_LINKS);
+            Path real = path.toRealPath();
             if (!Files.exists(real) || Files.isDirectory(real))
                 throw new IllegalStateException("Not file or doesn't exist: " + path);
 
-            _scannables.putIfAbsent(path.toRealPath(_linkOptions), new IncludeExcludeSet<>(PathMatcherSet.class));
+            _scannables.putIfAbsent(real, new IncludeExcludeSet<>(PathMatcherSet.class));
         }
         catch (IOException e)
         {
@@ -445,13 +449,15 @@ public class Scanner extends ContainerLifeCycle
         if (p == null)
             throw new IllegalStateException("Null path");
 
-        if (!Files.exists(p) || !Files.isDirectory(p))
-            throw new IllegalStateException("Not directory or doesn't exist: " + p);
-
         try
         {
+            // Check status of the real path
+            Path real = p.toRealPath();
+            if (!Files.exists(real) || !Files.isDirectory(real))
+                throw new IllegalStateException("Not directory or doesn't exist: " + p);
+
             IncludeExcludeSet<PathMatcher, Path> includesExcludes = new IncludeExcludeSet<>(PathMatcherSet.class);
-            IncludeExcludeSet<PathMatcher, Path> prev = _scannables.putIfAbsent(p.toRealPath(_linkOptions), includesExcludes);
+            IncludeExcludeSet<PathMatcher, Path> prev = _scannables.putIfAbsent(real, includesExcludes);
             if (prev != null)
                 includesExcludes = prev;
             return includesExcludes;

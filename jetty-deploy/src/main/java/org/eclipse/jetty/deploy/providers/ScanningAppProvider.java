@@ -48,7 +48,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
     private final List<Resource> _monitored = new CopyOnWriteArrayList<>();
     private int _scanInterval = 10;
     private Scanner _scanner;
-    private boolean _followSymlinks;
+    private boolean _useRealPaths;
 
     private final Scanner.DiscreteListener _scannerListener = new Scanner.DiscreteListener()
     {
@@ -82,14 +82,20 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         addBean(_appMap);
     }
 
-    public boolean isFollowSymlinks()
+    /**
+     * @return True if the real path of the scanned files should be used for deployment.
+     */
+    public boolean isUseRealPaths()
     {
-        return _followSymlinks;
+        return _useRealPaths;
     }
 
-    public void setFollowSymlinks(boolean followSymlinks)
+    /**
+     * @param useRealPaths True if the real path of the scanned files should be used for deployment.
+     */
+    public void setUseRealPaths(boolean useRealPaths)
     {
-        _followSymlinks = followSymlinks;
+        _useRealPaths = useRealPaths;
     }
 
     protected void setFilenameFilter(FilenameFilter filter)
@@ -139,7 +145,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
                 LOG.warn("Does not exist: {}", resource);
         }
 
-        _scanner = new Scanner(null, _followSymlinks);
+        _scanner = new Scanner(null, _useRealPaths);
         _scanner.setScanDirs(files);
         _scanner.setScanInterval(_scanInterval);
         _scanner.setFilenameFilter(_filenameFilter);

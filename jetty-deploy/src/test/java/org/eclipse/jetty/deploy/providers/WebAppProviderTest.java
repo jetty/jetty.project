@@ -65,10 +65,13 @@ public class WebAppProviderTest
 
         // Make symlink
         Path pathWar3 = MavenTestingUtils.getTestResourcePathFile("webapps/foo-webapp-3.war");
+        Path pathFoo = jetty.getJettyDir("webapps/foo.war").toPath();
         Path pathBar = jetty.getJettyDir("webapps/bar.war").toPath();
+        Path pathBob = jetty.getJettyDir("webapps/bob.war").toPath();
         try
         {
             Files.createSymbolicLink(pathBar, pathWar3);
+            Files.createSymbolicLink(pathBob, pathFoo);
             symlinkSupported = true;
         }
         catch (UnsupportedOperationException | FileSystemException e)
@@ -96,7 +99,7 @@ public class WebAppProviderTest
     public void testStartupContext()
     {
         // Check Server for Handlers
-        jetty.assertWebAppContextsExists("/bar", "/foo");
+        jetty.assertWebAppContextsExists("/bar", "/foo", "/bob");
 
         File workDir = jetty.getJettyDir("workish");
 
@@ -119,7 +122,7 @@ public class WebAppProviderTest
         assertTrue(barLink.isFile(), "bar.war link isFile: " + barLink.toString());
 
         // Check Server for expected Handlers
-        jetty.assertWebAppContextsExists("/bar", "/foo");
+        jetty.assertWebAppContextsExists("/bar", "/foo", "/bob");
 
         // Test for expected work/temp directory behaviour
         File workDir = jetty.getJettyDir("workish");
