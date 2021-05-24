@@ -49,6 +49,8 @@ import org.slf4j.LoggerFactory;
  *
  * Utility for scanning a directory for added, removed and changed
  * files and reporting these events via registered Listeners.
+ * The scanner operates on the {@link Path#toRealPath(LinkOption...)} of the files scanned and
+ * can be configured to follow symlinks.
  */
 public class Scanner extends ContainerLifeCycle
 {
@@ -257,25 +259,62 @@ public class Scanner extends ContainerLifeCycle
      */
     public interface DiscreteListener extends Listener
     {
+        /**
+         * Called when a file is changed.
+         * Default implementation calls {@link #fileChanged(String)}.
+         * @param path the {@link Path#toRealPath(LinkOption...)} of the changed file
+         * @throws Exception May be thrown for handling errors
+         */
         default void pathChanged(Path path) throws Exception
         {
-            fileChanged(path.toFile().getPath());
+            path.toString();
+            fileChanged(path.toString());
         }
 
+        /**
+         * Called when a file is added.
+         * Default implementation calls {@link #fileAdded(String)}.
+         * @param path the {@link Path#toRealPath(LinkOption...)} of the added file
+         * @throws Exception May be thrown for handling errors
+         */
         default void pathAdded(Path path) throws Exception
         {
-            fileAdded(path.toFile().getPath());
+            fileAdded(path.toString());
         }
 
+        /**
+         * Called when a file is removed.
+         * Default implementation calls {@link #fileRemoved(String)}.
+         * @param path the {@link Path#toRealPath(LinkOption...)} of the removed file
+         * @throws Exception May be thrown for handling errors
+         */
         default void pathRemoved(Path path) throws Exception
         {
-            fileRemoved(path.toFile().getPath());
+            fileRemoved(path.toString());
         }
 
+        /**
+         * Called when a file is changed.
+         * May not be called if {@link #pathChanged(Path)} is overridden.
+         * @param filename the {@link Path#toRealPath(LinkOption...)} as a string of the changed file
+         * @throws Exception May be thrown for handling errors
+         */
         void fileChanged(String filename) throws Exception;
 
+        /**
+         * Called when a file is added.
+         * May not be called if {@link #pathAdded(Path)} is overridden.
+         * @param filename the {@link Path#toRealPath(LinkOption...)} as a string of the added file
+         * @throws Exception May be thrown for handling errors
+         */
         void fileAdded(String filename) throws Exception;
 
+        /**
+         * Called when a file is removed.
+         * May not be called if {@link #pathRemoved(Path)} is overridden.
+         * @param filename the {@link Path#toRealPath(LinkOption...)} as a string of the removed file
+         * @throws Exception May be thrown for handling errors
+         */
         void fileRemoved(String filename) throws Exception;
     }
 
@@ -286,7 +325,7 @@ public class Scanner extends ContainerLifeCycle
     {
         default void pathsChanged(Set<Path> paths) throws Exception
         {
-            filesChanged(paths.stream().map(Path::toFile).map(File::getPath).collect(Collectors.toSet()));
+            filesChanged(paths.stream().map(Path::toString).collect(Collectors.toSet()));
         }
 
         void filesChanged(Set<String> filenames) throws Exception;
@@ -367,21 +406,24 @@ public class Scanner extends ContainerLifeCycle
     /**
      * Add a file to be scanned. The file must not be null, and must exist.
      *
-     * @param p the Path of the file to scan.
+     * @param path the Path of the file to scan.
      */
-    public void addFile(Path p)
+    public void addFile(Path path)
     {
         if (isRunning())
             throw new IllegalStateException("Scanner started");
 
-        if (p == null)
+        if (path == null)
             throw new IllegalStateException("Null path");
 
-        if (!Files.exists(p) || Files.isDirectory(p))
-            throw new IllegalStateException("Not file or doesn't exist: " + p);
         try
         {
-            _scannables.putIfAbsent(p.toRealPath(), new IncludeExcludeSet<>(PathMatcherSet.class));
+            // Always follow links when check ultimate type of the path
+            Path real = path.toRealPath(LinkOption.NOFOLLOW_LINKS);
+            if (!Files.exists(real) || Files.isDirectory(real))
+                throw new IllegalStateException("Not file or doesn't exist: " + path);
+
+            _scannables.putIfAbsent(path.toRealPath(_linkOptions), new IncludeExcludeSet<>(PathMatcherSet.class));
         }
         catch (IOException e)
         {
@@ -409,7 +451,7 @@ public class Scanner extends ContainerLifeCycle
         try
         {
             IncludeExcludeSet<PathMatcher, Path> includesExcludes = new IncludeExcludeSet<>(PathMatcherSet.class);
-            IncludeExcludeSet<PathMatcher, Path> prev = _scannables.putIfAbsent(p.toRealPath(), includesExcludes);
+            IncludeExcludeSet<PathMatcher, Path> prev = _scannables.putIfAbsent(p.toRealPath(_linkOptions), includesExcludes);
             if (prev != null)
                 includesExcludes = prev;
             return includesExcludes;
