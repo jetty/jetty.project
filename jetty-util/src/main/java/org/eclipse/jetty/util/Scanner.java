@@ -201,7 +201,7 @@ public class Scanner extends ContainerLifeCycle
         @Override
         public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException
         {
-            path = path.toRealPath(LinkOption.NOFOLLOW_LINKS);
+            path = path.toRealPath(_linkOptions);
 
             if (!Files.exists(path))
                 return FileVisitResult.CONTINUE;
