@@ -21,12 +21,7 @@ When Jetty was first implemented in 1995, there was a W3C specification for http
  * https://datatracker.ietf.org/doc/html/rfc7230[RFC 7230], https://datatracker.ietf.org/doc/html/rfc7231[RFC 7231], https://datatracker.ietf.org/doc/html/rfc7232[RFC 7232], https://datatracker.ietf.org/doc/html/rfc7233[RFC 7233], https://datatracker.ietf.org/doc/html/rfc7234[RFC 7234], https://datatracker.ietf.org/doc/html/rfc7235[RFC 7235] again for HTTP/1.1 in 2014
  * https://datatracker.ietf.org/doc/html/rfc7540[RFC 7540] for HTTP/2.0 in 2015
 
+In addition to these evolving requirements, some earlier version of Jetty did not completely implement the RFC at the time (e.g. case insentive method names).   The https://www.eclipse.org/jetty/javadoc/jetty-10/org/eclipse/jetty/http/HttpCompliance.Violation.html[HttpCompliance.Violation] enumeration contains the RFC violations that can be allowed to support legacy operation of Jetty.
 
-        CASE_SENSITIVE_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2", "Field name is case-insensitive"),
-        CASE_INSENSITIVE_METHOD("https://tools.ietf.org/html/rfc7230#section-3.1.1", "Method is case-sensitive"),
-        HTTP_0_9("https://tools.ietf.org/html/rfc7230#appendix-A.2", "HTTP/0.9 not supported"),
-        MULTILINE_FIELD_VALUE("https://tools.ietf.org/html/rfc7230#section-3.2.4", "Line Folding not supported"),
-        MULTIPLE_CONTENT_LENGTHS("https://tools.ietf.org/html/rfc7230#section-3.3.1", "Multiple Content-Lengths"),
-        TRANSFER_ENCODING_WITH_CONTENT_LENGTH("https://tools.ietf.org/html/rfc7230#section-3.3.1", "Transfer-Encoding and Content-Length"),
-        WHITESPACE_AFTER_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2.4", "Whitespace not allowed after field name"),
-        NO_COLON_AFTER_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2", "Fields must have a Colon");
+The https://www.eclipse.org/jetty/javadoc/jetty-10/org/eclipse/jetty/http/HttpCompliance.html[HttpCompliance] class defines several named https://www.eclipse.org/jetty/javadoc/jetty-10/org/eclipse/jetty/http/ComplianceViolation.Mode.html[Mode]s that
+support common deployed sets of violations.
