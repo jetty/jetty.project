@@ -367,6 +367,14 @@ public class HttpURITest
                 {"/foo///../../../bar", "/bar", EnumSet.of(Ambiguous.SEGMENT)},
                 {"/foo/./../bar", "/bar", EnumSet.noneOf(Ambiguous.class)},
                 {"/foo//./bar", "/foo//bar", EnumSet.of(Ambiguous.SEGMENT)},
+                {"foo/bar", "foo/bar", EnumSet.noneOf(Ambiguous.class)},
+                {"foo;/bar", "foo/bar", EnumSet.noneOf(Ambiguous.class)},
+                {";/bar", "/bar", EnumSet.of(Ambiguous.SEGMENT)},
+                {";?n=v", "", EnumSet.of(Ambiguous.SEGMENT)},
+                {"?n=v", "", EnumSet.noneOf(Ambiguous.class)},
+                {"#n=v", "", EnumSet.noneOf(Ambiguous.class)},
+                {"", "", EnumSet.noneOf(Ambiguous.class)},
+                {"http:/foo", "/foo", EnumSet.noneOf(Ambiguous.class)},
 
                 // ambiguous parameter inclusions
                 {"/path/.;/info", "/path/./info", EnumSet.of(Ambiguous.PARAM)},
@@ -439,8 +447,8 @@ public class HttpURITest
                 {"/foo;bar", EnumSet.noneOf(Ambiguous.class)},
                 {"/foo/?bar", EnumSet.noneOf(Ambiguous.class)},
                 {"/foo/#bar", EnumSet.noneOf(Ambiguous.class)},
-                {"/foo/;bar", EnumSet.noneOf(Ambiguous.class)},
-                }).map(Arguments::of);
+                {"/foo/;bar", EnumSet.of(Ambiguous.SEGMENT)},
+            }).map(Arguments::of);
     }
 
     @ParameterizedTest

@@ -920,16 +920,21 @@ public interface HttpURI
                                 state = State.HOST_OR_PATH;
                                 break;
                             case ';':
+                                checkSegment(uri, segment, i, true);
                                 mark = i + 1;
                                 state = State.PARAM;
                                 break;
                             case '?':
                                 // assume empty path (if seen at start)
+                                checkSegment(uri, segment, i, false);
                                 _path = "";
                                 mark = i + 1;
                                 state = State.QUERY;
                                 break;
                             case '#':
+                                // assume empty path (if seen at start)
+                                checkSegment(uri, segment, i, false);
+                                _path = "";
                                 mark = i + 1;
                                 state = State.FRAGMENT;
                                 break;
@@ -1114,27 +1119,25 @@ public interface HttpURI
                         switch (c)
                         {
                             case ';':
-                                if (segment != i)
-                                    checkSegment(uri, segment, i, true);
+                                checkSegment(uri, segment, i, true);
                                 mark = i + 1;
                                 state = State.PARAM;
                                 break;
                             case '?':
-                                if (segment != i)
-                                    checkSegment(uri, segment, i, false);
+                                checkSegment(uri, segment, i, false);
                                 _path = uri.substring(pathMark, i);
                                 mark = i + 1;
                                 state = State.QUERY;
                                 break;
                             case '#':
-                                if (segment != i)
-                                    checkSegment(uri, segment, i, false);
+                                checkSegment(uri, segment, i, false);
                                 _path = uri.substring(pathMark, i);
                                 mark = i + 1;
                                 state = State.FRAGMENT;
                                 break;
                             case '/':
-                                if (segment - 1 >= 0 && uri.charAt(segment - 1) == '/')
+                                // There is no leading segment when parsing only a path that starts with slash.
+                                if (i != 0)
                                     checkSegment(uri, segment, i, false);
                                 segment = i + 1;
                                 break;
@@ -1223,6 +1226,9 @@ public interface HttpURI
             switch (state)
             {
                 case START:
+                    _path = "";
+                    checkSegment(uri, segment, end, false);
+                    break;
                 case ASTERISK:
                     break;
                 case SCHEME_OR_PATH:
@@ -1243,8 +1249,7 @@ public interface HttpURI
                     _param = uri.substring(mark, end);
                     break;
                 case PATH:
-                    if (segment != end)
-                        checkSegment(uri, segment, end, false);
+                    checkSegment(uri, segment, end, false);
                     _path = uri.substring(pathMark, end);
                     break;
                 case QUERY:
@@ -1287,11 +1292,22 @@ public interface HttpURI
         {
             if (!_ambiguous.contains(Ambiguous.SEGMENT))
             {
+                // Empty segments are only ambiguous if followed by a '#', '?' or end of string.
+                if (end == segment && (end == uri.length() || ("#?".indexOf(uri.charAt(end)) >= 0)))
+                    return;
+
+                // Look for segment in the ambiguous segment index.
                 Boolean ambiguous = __ambiguousSegments.get(uri, segment, end - segment);
                 if (ambiguous == Boolean.TRUE)
+                {
+                    // The segment is always ambiguous.
                     _ambiguous.add(Ambiguous.SEGMENT);
+                }
                 else if (param && ambiguous == Boolean.FALSE)
+                {
+                    // The segment is ambiguous only when followed by a parameter.
                     _ambiguous.add(Ambiguous.PARAM);
+                }
             }
         }
     }
