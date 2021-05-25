@@ -1114,24 +1114,28 @@ public interface HttpURI
                         switch (c)
                         {
                             case ';':
-                                checkSegment(uri, segment, i, true);
+                                if (segment != i)
+                                    checkSegment(uri, segment, i, true);
                                 mark = i + 1;
                                 state = State.PARAM;
                                 break;
                             case '?':
-                                checkSegment(uri, segment, i, false);
+                                if (segment != i)
+                                    checkSegment(uri, segment, i, false);
                                 _path = uri.substring(pathMark, i);
                                 mark = i + 1;
                                 state = State.QUERY;
                                 break;
                             case '#':
-                                checkSegment(uri, segment, i, false);
+                                if (segment != i)
+                                    checkSegment(uri, segment, i, false);
                                 _path = uri.substring(pathMark, i);
                                 mark = i + 1;
                                 state = State.FRAGMENT;
                                 break;
                             case '/':
-                                checkSegment(uri, segment, i, false);
+                                if (segment - 1 >= 0 && uri.charAt(segment - 1) == '/')
+                                    checkSegment(uri, segment, i, false);
                                 segment = i + 1;
                                 break;
                             case '.':
@@ -1239,7 +1243,8 @@ public interface HttpURI
                     _param = uri.substring(mark, end);
                     break;
                 case PATH:
-                    checkSegment(uri, segment, end, false);
+                    if (segment != end)
+                        checkSegment(uri, segment, end, false);
                     _path = uri.substring(pathMark, end);
                     break;
                 case QUERY:
@@ -1282,21 +1287,6 @@ public interface HttpURI
         {
             if (!_ambiguous.contains(Ambiguous.SEGMENT))
             {
-                if (segment == end)
-                {
-                    // Falsely reported empty segment before the first slash.
-                    if (segment == 0)
-                        return;
-
-                    // If the segment starts after the URI string it means the string ended with a '/'.
-                    if (segment > uri.length() - 1)
-                        return;
-
-                    // It is only a true empty segment if it actually ends with a '/' character.
-                    if (uri.charAt(end) != '/')
-                        return;
-                }
-
                 Boolean ambiguous = __ambiguousSegments.get(uri, segment, end - segment);
                 if (ambiguous == Boolean.TRUE)
                     _ambiguous.add(Ambiguous.SEGMENT);

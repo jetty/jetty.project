@@ -427,6 +427,7 @@ public class HttpURITest
             {
                 // Empty segment tests.
                 {"/", EnumSet.noneOf(Ambiguous.class)},
+                {"/#", EnumSet.noneOf(Ambiguous.class)},
                 {"/path", EnumSet.noneOf(Ambiguous.class)},
                 {"/path/", EnumSet.noneOf(Ambiguous.class)},
                 {"//", EnumSet.of(Ambiguous.SEGMENT)},
@@ -434,7 +435,11 @@ public class HttpURITest
                 {"/foo//bar", EnumSet.of(Ambiguous.SEGMENT)},
                 {"//foo/bar", EnumSet.of(Ambiguous.SEGMENT)},
                 {"/foo?bar", EnumSet.noneOf(Ambiguous.class)},
+                {"/foo#bar", EnumSet.noneOf(Ambiguous.class)},
+                {"/foo;bar", EnumSet.noneOf(Ambiguous.class)},
                 {"/foo/?bar", EnumSet.noneOf(Ambiguous.class)},
+                {"/foo/#bar", EnumSet.noneOf(Ambiguous.class)},
+                {"/foo/;bar", EnumSet.noneOf(Ambiguous.class)},
                 }).map(Arguments::of);
     }
 
