@@ -21,6 +21,7 @@ import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.XmlClientConfigBuilder;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SerializerConfig;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.Hazelcast;
@@ -31,6 +32,8 @@ import org.eclipse.jetty.server.session.SessionDataStore;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Factory to construct {@link HazelcastSessionDataStore}
@@ -39,7 +42,8 @@ public class HazelcastSessionDataStoreFactory
     extends AbstractSessionDataStoreFactory
     implements SessionDataStoreFactory
 {
-
+    private static final Logger LOG = LoggerFactory.getLogger(HazelcastSessionDataStoreFactory.class);
+    
     private String hazelcastInstanceName = "JETTY_DISTRIBUTED_SESSION_INSTANCE";
 
     private boolean onlyClient;
@@ -78,9 +82,10 @@ public class HazelcastSessionDataStoreFactory
             {
                 if (onlyClient)
                 {
+                    ClientConfig config;
                     if (StringUtil.isEmpty(configurationLocation))
                     {
-                        ClientConfig config = new ClientConfig();
+                        config = new ClientConfig();
 
                         if (addresses != null && !addresses.isEmpty())
                         {
@@ -91,20 +96,22 @@ public class HazelcastSessionDataStoreFactory
                             .setImplementation(new SessionDataSerializer())
                             .setTypeClass(SessionData.class);
                         config.getSerializationConfig().addSerializerConfig(sc);
-                        hazelcastInstance = HazelcastClient.newHazelcastClient(config);
                     }
                     else
                     {
-                        hazelcastInstance = HazelcastClient.newHazelcastClient(
-                            new XmlClientConfigBuilder(configurationLocation).build());
+                        config = new XmlClientConfigBuilder(configurationLocation).build();
+                        if (config.getSerializationConfig().getSerializerConfigs().stream().noneMatch(s ->
+                        SessionData.class.getName().equals(s.getTypeClassName()) && s.getImplementation() instanceof SessionDataSerializer))
+                            LOG.warn("Hazelcast xml config is missing org.eclipse.jetty.hazelcast.session.SessionDataSerializer - sessions may not serialize correctly");
                     }
+                    
+                    hazelcastInstance = HazelcastClient.newHazelcastClient(config);
                 }
                 else
                 {
                     Config config;
                     if (StringUtil.isEmpty(configurationLocation))
                     {
-
                         SerializerConfig sc = new SerializerConfig()
                             .setImplementation(new SessionDataSerializer())
                             .setTypeClass(SessionData.class);
@@ -126,6 +133,9 @@ public class HazelcastSessionDataStoreFactory
                     else
                     {
                         config = new XmlConfigBuilder(configurationLocation).build();
+                        if (config.getSerializationConfig().getSerializerConfigs().stream().noneMatch(s ->
+                            SessionData.class.getName().equals(s.getTypeClassName()) && s.getImplementation() instanceof SessionDataSerializer))
+                            LOG.warn("Hazelcast xml config is missing org.eclipse.jetty.hazelcast.session.SessionDataSerializer - sessions may not serialize correctly");
                     }
                     config.setInstanceName(hazelcastInstanceName);
                     hazelcastInstance = Hazelcast.getOrCreateHazelcastInstance(config);
