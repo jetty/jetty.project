@@ -448,6 +448,7 @@ public class Request implements HttpServletRequest
                 }
                 catch (IllegalStateException | IllegalArgumentException e)
                 {
+                    LOG.warn(e.toString());
                     throw new BadMessageException("Unable to parse form content", e);
                 }
             }
