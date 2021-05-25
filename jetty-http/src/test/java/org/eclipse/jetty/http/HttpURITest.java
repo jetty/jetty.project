@@ -420,4 +420,33 @@ public class HttpURITest
             assertThat(decodedPath, nullValue());
         }
     }
+
+    public static Stream<Arguments> emptySegmentTests()
+    {
+        return Arrays.stream(new Object[][]
+            {
+                // Empty segment tests.
+                {"/", EnumSet.noneOf(Ambiguous.class)},
+                {"/path", EnumSet.noneOf(Ambiguous.class)},
+                {"/path/", EnumSet.noneOf(Ambiguous.class)},
+                {"//", EnumSet.of(Ambiguous.SEGMENT)},
+                {"/foo//", EnumSet.of(Ambiguous.SEGMENT)},
+                {"/foo//bar", EnumSet.of(Ambiguous.SEGMENT)},
+                {"//foo/bar", EnumSet.of(Ambiguous.SEGMENT)},
+                {"/foo?bar", EnumSet.noneOf(Ambiguous.class)},
+                {"/foo/?bar", EnumSet.noneOf(Ambiguous.class)},
+                }).map(Arguments::of);
+    }
+
+    @ParameterizedTest
+    @MethodSource("emptySegmentTests")
+    public void testEmptySegment(String input, EnumSet<Ambiguous> expected)
+    {
+        HttpURI uri = HttpURI.from("GET", input);
+        assertThat(uri.isAmbiguous(), is(!expected.isEmpty()));
+        assertThat(uri.hasAmbiguousSegment(), is(expected.contains(Ambiguous.SEGMENT)));
+        assertThat(uri.hasAmbiguousSeparator(), is(expected.contains(Ambiguous.SEPARATOR)));
+        assertThat(uri.hasAmbiguousParameter(), is(expected.contains(Ambiguous.PARAM)));
+        assertThat(uri.hasAmbiguousEncoding(), is(expected.contains(Ambiguous.ENCODING)));
+    }
 }
