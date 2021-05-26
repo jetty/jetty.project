@@ -68,6 +68,20 @@ public interface WebSocketContainerScope
     SslContextFactory getSslContextFactory();
 
     /**
+     * <p>The ClassLoader used to load classes for the WebSocketSession.</p>
+     * <p>By default this will be the ContextClassLoader at the time this method is called. However this will be overridden
+     * by the WebSocketClient to use the ContextClassLoader at the time it was created, this is because the
+     * client uses its own {@link org.eclipse.jetty.util.thread.ThreadPool} so the WebSocketSessions may be created when
+     * the ContextClassLoader is not set.</p>
+     *
+     * @return the classloader.
+     */
+    default ClassLoader getClassLoader()
+    {
+        return Thread.currentThread().getContextClassLoader();
+    }
+
+    /**
      * Test for if the container has been started.
      *
      * @return true if container is started and running

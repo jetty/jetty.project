@@ -1,14 +1,19 @@
 //
-// ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  ========================================================================
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-// This program and the accompanying materials are made available under the
-// terms of the Eclipse Public License v. 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
-// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
-// ========================================================================
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
 //
 
 package org.eclipse.jetty.websocket.jsr356.server;
@@ -35,6 +40,8 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.xml.XmlConfiguration;
@@ -48,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class JavaxClientClassLoaderTest
 {
-    private WebAppTester server;
+    private final WebAppTester server = new WebAppTester();
     private HttpClient httpClient;
 
     @FunctionalInterface
@@ -59,7 +66,6 @@ public class JavaxClientClassLoaderTest
 
     public void start(ThrowingRunnable configuration) throws Exception
     {
-        server = new WebAppTester();
         configuration.run();
         server.start();
         httpClient = new HttpClient();
@@ -129,13 +135,18 @@ public class JavaxClientClassLoaderTest
 
     public WebAppTester.WebApp createWebSocketWebapp(String contextName) throws Exception
     {
-        WebAppTester.WebApp app = server.createWebApp(contextName);
+        WebAppTester.WebApp app = this.server.createWebApp(contextName);
+
+        // We must hide the websocket classes from the webapp if we are to include websocket client jars in WEB-INF/lib.
+        WebAppContext context = app.getWebAppContext();
+        context.getServerClasspathPattern().include("org.eclipse.jetty.websocket.");
+        context.getSystemClasspathPattern().exclude("org.eclipse.jetty.websocket.");
 
         // Copy over the individual jars required for Javax WebSocket.
         app.createWebInf();
         app.copyLib(WebSocketContainer.class, "websocket-javax-api.jar");
-        app.copyLib(ServerContainer.class, "websocket-javax-server.jar");
         app.copyLib(ClientContainer.class, "websocket-javax-client.jar");
+        app.copyLib(WebSocketClient.class, "websocket-jetty-client.jar");
         app.copyLib(WebSocketSession.class, "websocket-common.jar");
         app.copyLib(ContainerLifeCycle.class, "jetty-util.jar");
         app.copyLib(Response.class, "jetty-client.jar");
@@ -158,7 +169,6 @@ public class JavaxClientClassLoaderTest
             app1.deploy();
 
             WebAppTester.WebApp app2 = server.createWebApp("/echo");
-            app2.getWebAppContext().setAttribute("org.eclipse.jetty.websocket.jsr356", Boolean.TRUE);
             app2.createWebInf();
             app2.copyClass(EchoSocket.class);
             app2.deploy();
@@ -189,7 +199,6 @@ public class JavaxClientClassLoaderTest
 
             // Do not exclude JavaxWebSocketConfiguration for this webapp (we need the websocket server classes).
             WebAppTester.WebApp app2 = server.createWebApp("/echo");
-            app2.getWebAppContext().setAttribute("org.eclipse.jetty.websocket.jsr356", Boolean.TRUE);
             app2.createWebInf();
             app2.copyClass(EchoSocket.class);
             app2.deploy();
