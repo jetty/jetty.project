@@ -159,16 +159,14 @@ public class MessageInputStream extends InputStream implements MessageAppender
 
             // Release any buffers taken from the pool.
             if (activeBuffer != null && activeBuffer != EOF)
-            {
                 bufferPool.release(activeBuffer);
-                activeBuffer = null;
-            }
 
             for (ByteBuffer buffer : buffers)
             {
                 bufferPool.release(buffer);
             }
 
+            activeBuffer = null;
             buffers.clear();
             state = State.CLOSED;
             buffers.add(EOF);
@@ -221,15 +219,8 @@ public class MessageInputStream extends InputStream implements MessageAppender
             }
 
             // grab a fresh buffer
-            while (activeBuffer == null || !activeBuffer.hasRemaining())
+            while (activeBuffer == null)
             {
-                if (activeBuffer != null)
-                {
-                    // All content consumed, release back to pool.
-                    bufferPool.release(activeBuffer);
-                    activeBuffer = null;
-                }
-
                 if (LOG.isDebugEnabled())
                     LOG.debug("Waiting {} ms to read", timeoutMs);
 
@@ -267,6 +258,10 @@ public class MessageInputStream extends InputStream implements MessageAppender
                 SuspendToken resume = null;
                 synchronized (this)
                 {
+                    // Release buffer back to pool.
+                    bufferPool.release(activeBuffer);
+                    activeBuffer = null;
+
                     switch (state)
                     {
                         case CLOSED:
