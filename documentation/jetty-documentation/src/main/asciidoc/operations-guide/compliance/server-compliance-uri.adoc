@@ -13,27 +13,17 @@
 
 [[og-server-compliance-uri]]
 === URI Compliance Modes
-Ambiguous compliance modes are not actual violations of the RFC, rather they are additional condition that jetty can enforce in addition to the RFC
 
+Universal Resource Locators (URLs) where initially formalized in 1994 in https://datatracker.ietf.org/doc/html/rfc1738[RFC 1738] and then refined in 1995 with relative URLs by https://datatracker.ietf.org/doc/html/rfc1808[RFC 1808].  In 1998, URLs were generalized to Universal Resource Identifiers (URIs) by https://datatracker.ietf.org/doc/html/rfc2396[RFC 2396], which also introduced features such a https://datatracker.ietf.org/doc/html/rfc2396#section-3.3[path parameter]s.  This was then obsoleted in 2005 by https://datatracker.ietf.org/doc/html/rfc3986[RFC 3986] which removed the definition for path parameters.  Unfortunately by this stage the existence and use of such parameters had already been codified in the servlet specification (e.g. `/some/path;JSESSIONID=a8b38cd02b1c`, even though there is now no current formal definition!
 
+Currently there are URIs that are entirely valid by https://datatracker.ietf.org/doc/html/rfc3986[RFC 3986], but which are ambiguous when handled by the servlet API:
 
-        /**
-         * Allow ambiguous path segments e.g. <code>/foo/%2e%2e/bar</code>
-         */
-        AMBIGUOUS_PATH_SEGMENT("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path segment"),
-        /**
-         * Allow ambiguous path separator within a URI segment e.g. <code>/foo/b%2fr</code>
-         */
-        AMBIGUOUS_PATH_SEPARATOR("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path separator"),
-        /**
-         * Allow ambiguous path parameters within a URI segment e.g. <code>/foo/..;/bar</code>
-         */
-        AMBIGUOUS_PATH_PARAMETER("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path parameter"),
-        /**
-         * Allow ambiguous path encoding within a URI segment e.g. <code>/%2557EB-INF</code>
-         */
-        AMBIGUOUS_PATH_ENCODING("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path encoding"),
-        /**
-         * Allow Non canonical ambiguous paths. eg <code>/foo/x%2f%2e%2e%/bar</code> provided to applications as <code>/foo/x/../bar</code>
-         */
-        NON_CANONICAL_AMBIGUOUS_PATHS("https://tools.ietf.org/html/rfc3986#section-3.3", "Non canonical ambiguous paths");
+* A URI with `..` and path parameters is not normalized by RFC 3986, since the path `/some/..;/path` does not include the exact segment `..`. However, once the parameters is removed by the the servlet API methods, the resulting `/some/../path` can easily be normalized to `/path` rather than be treated as a path that has `..;` as a segment.
+* A URI like `/some/%2e%2e/path` will not by normalized by RFC 3986, yet when decoded by the servlet API will result in `/some/../path` which can easily be normalized to `/path` rather than be treated as a path that has `..` as a segment.
+* A URI with empty segments like `/some//../path` may be correctly normalized to `/some/path` (the `..` removes the previous empty segment) by the servlet API itself, yet if the raw path is passed to some other APIs (eg File) it can be interpreted as `/path` (the `//` is treated as `/` and the `..` thus removes the `/some` segment ).
+
+Thus in order to avoid ambiguous URIs, jetty imposes additional URI requirements in excess of what is required by https://datatracker.ietf.org/doc/html/rfc3986[RFC 3986] compliance.
+These additional requirements may optionally be violated and are defined by the https://www.eclipse.org/jetty/javadoc/jetty-10/org/eclipse/jetty/http/UriCompliance.Violation.html[UriCompliance.Violation] enumeration.  These possible violations are then grouped into https://www.eclipse.org/jetty/javadoc/jetty-10/org/eclipse/jetty/http/ComplianceViolation.Mode.html[Mode]s by the
+The https://www.eclipse.org/jetty/javadoc/jetty-10/org/eclipse/jetty/http/UriCompliance.html[HttpCompliance] class, which also defines several named modes that support common deployed sets of violations, with the default being https://www.eclipse.org/jetty/javadoc/jetty-10/org/eclipse/jetty/http/UriCompliance.html#DEFAULT[DEFAULT].
+
+The `UriCompliance` mode can be configured with the `jetty.httpConfig.uriCompliance` property in the `server.ini` file (see the xref:og-modules[Modules Guide]).

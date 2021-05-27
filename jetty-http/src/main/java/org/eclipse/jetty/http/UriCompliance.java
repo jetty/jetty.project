@@ -40,7 +40,8 @@ public final class UriCompliance implements ComplianceViolation.Mode
 
     /**
      * These are URI compliance "violations", which may be allowed by the compliance mode. These are actual
-     * violations of the RFC, as they represent additional requirements in excess of the strict compliance of rfc3986.
+     * violations of the RFC, as they represent additional requirements in excess of the strict compliance of
+     * <a href="https://datatracker.ietf.org/doc/html/rfc3986">RFC 3986</a>.
      * A compliance mode that contains one or more of these Violations, allows request to violate the corresponding
      * additional requirement.
      */
@@ -96,23 +97,29 @@ public final class UriCompliance implements ComplianceViolation.Mode
     }
 
     /**
-     * The default compliance mode that extends RFC3986 compliance with additional violations to avoid most ambiguous URIs.
-     * This mode does allow {@link Violation#AMBIGUOUS_PATH_SEPARATOR}, but disallows
-     * {@link Violation#AMBIGUOUS_PATH_PARAMETER}, {@link Violation#AMBIGUOUS_PATH_SEGMENT} and {@link Violation#AMBIGUOUS_PATH_ENCODING}.
-     * Ambiguous paths are not allowed by {@link Violation#NON_CANONICAL_AMBIGUOUS_PATHS}.
+     * The default compliance mode that extends <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a> compliance with
+     * additional violations to avoid most ambiguous URIs.
+     * This mode does allow {@link Violation#AMBIGUOUS_PATH_SEPARATOR}, but disallows all out {@link Violation}s.
      */
     public static final UriCompliance DEFAULT = new UriCompliance("DEFAULT", of(Violation.AMBIGUOUS_PATH_SEPARATOR));
+
+    /**
+     * Compliance mode that exactly follows <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a>,
+     * including allowing all additional ambiguous URI Violations,
+     * except {@link Violation#NON_CANONICAL_AMBIGUOUS_PATHS}, thus ambiguous paths are canonicalized for safety.
+     */
+    public static final UriCompliance RFC3986 = new UriCompliance("RFC3986", complementOf(of(Violation.NON_CANONICAL_AMBIGUOUS_PATHS)));
+
+    /**
+     * Compliance mode that follows <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a>
+     * plus it does not allow any ambiguous URI {@link Violation}s.
+     */
+    public static final UriCompliance RFC3986_UNAMBIGUOUS = new UriCompliance("RFC3986_UNAMBIGUOUS", noneOf(Violation.class));
 
     /**
      * LEGACY compliance mode that models Jetty-9.4 behavior by allowing {@link Violation#AMBIGUOUS_PATH_SEGMENT}, {@link Violation#AMBIGUOUS_PATH_SEPARATOR} and {@link Violation#AMBIGUOUS_PATH_ENCODING}.
      */
     public static final UriCompliance LEGACY = new UriCompliance("LEGACY", of(Violation.AMBIGUOUS_PATH_SEGMENT, Violation.AMBIGUOUS_PATH_SEPARATOR, Violation.AMBIGUOUS_PATH_ENCODING));
-
-    /**
-     * Compliance mode that exactly follows RFC3986, including allowing all additional ambiguous URI Violations,
-     * except {@link Violation#NON_CANONICAL_AMBIGUOUS_PATHS}, thus ambiguous paths are canonicalized for safety.
-     */
-    public static final UriCompliance RFC3986 = new UriCompliance("RFC3986", complementOf(of(Violation.NON_CANONICAL_AMBIGUOUS_PATHS)));
 
     /**
      * Compliance mode that allows all URI Violations, including allowing ambiguous paths in non canonicalized form.

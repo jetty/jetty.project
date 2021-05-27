@@ -25,13 +25,20 @@ import static java.util.EnumSet.copyOf;
 import static java.util.EnumSet.noneOf;
 
 /**
- * The compliance for Cookie handling.
+ * The compliance mode for Cookie handling.
  */
 public class CookieCompliance implements ComplianceViolation.Mode
 {
     public enum Violation implements ComplianceViolation
     {
+        /**
+         * Allow a comma as part of a cookie value
+         */
         COMMA_NOT_VALID_OCTET("https://tools.ietf.org/html/rfc6265#section-4.1.1", "Comma not valid as cookie-octet or separator"),
+
+        /**
+         * Allow cookies to have $ prefixed reserved parameters
+         */
         RESERVED_NAMES_NOT_DOLLAR_PREFIXED("https://tools.ietf.org/html/rfc6265#section-4.1.1", "Reserved names no longer use '$' prefix");
 
         private final String url;
@@ -62,7 +69,14 @@ public class CookieCompliance implements ComplianceViolation.Mode
         }
     }
 
+    /**
+     * A CookieCompliance mode that enforces <a href="https://tools.ietf.org/html/rfc6265">RFC 6265</a> compliance.
+     */
     public static final CookieCompliance RFC6265 = new CookieCompliance("RFC6265", noneOf(Violation.class));
+
+    /**
+     * A CookieCompliance mode that allows <a href="https://tools.ietf.org/html/rfc2965">RFC 2965</a> compliance.
+     */
     public static final CookieCompliance RFC2965 = new CookieCompliance("RFC2965", allOf(Violation.class));
 
     private static final List<CookieCompliance> KNOWN_MODES = Arrays.asList(RFC6265, RFC2965);

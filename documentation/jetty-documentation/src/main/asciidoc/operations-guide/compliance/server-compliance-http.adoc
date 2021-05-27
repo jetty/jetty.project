@@ -13,7 +13,7 @@
 
 [[og-server-compliance-http]]
 === HTTP Compliance Modes
-When Jetty was first implemented in 1995, there was a W3C specification for https://www.w3.org/Protocols/HTTP/AsImplemented.html[HTTP/0.9], which since has been obsoleted or augmented by:
+In 1995, when Jetty was first implemented, there were no RFC specification of HTTP, only a W3C specification for https://www.w3.org/Protocols/HTTP/AsImplemented.html[HTTP/0.9], which has since been obsoleted or augmented by:
 
  * https://datatracker.ietf.org/doc/html/rfc1945[RFC 1945] for HTTP/1.0 in 1996
  * https://datatracker.ietf.org/doc/html/rfc2068[RFC 2068] for HTTP/1.1  in 1997
@@ -23,5 +23,7 @@ When Jetty was first implemented in 1995, there was a W3C specification for http
 
 In addition to these evolving requirements, some earlier version of Jetty did not completely implement the RFC at the time (e.g. case insentive method names).   The https://www.eclipse.org/jetty/javadoc/jetty-10/org/eclipse/jetty/http/HttpCompliance.Violation.html[HttpCompliance.Violation] enumeration contains the RFC violations that can be allowed to support legacy operation of Jetty.
 
-The https://www.eclipse.org/jetty/javadoc/jetty-10/org/eclipse/jetty/http/HttpCompliance.html[HttpCompliance] class defines several named https://www.eclipse.org/jetty/javadoc/jetty-10/org/eclipse/jetty/http/ComplianceViolation.Mode.html[Mode]s that
-support common deployed sets of violations.
+The https://www.eclipse.org/jetty/javadoc/jetty-10/org/eclipse/jetty/http/HttpCompliance.Violation.html[HttpCompliance.Violation] enumeration defines the RFC requirements that may be optionally enforced by jetty.  These possible violations are then grouped into https://www.eclipse.org/jetty/javadoc/jetty-10/org/eclipse/jetty/http/ComplianceViolation.Mode.html[Mode]s by the
+The https://www.eclipse.org/jetty/javadoc/jetty-10/org/eclipse/jetty/http/HttpCompliance.html[HttpCompliance] class, which also defines several named modes that support common deployed sets of violations, with the default being https://www.eclipse.org/jetty/javadoc/jetty-10/org/eclipse/jetty/http/HttpCompliance.html#RFC7230[RFC7230].
+
+The `HttpCompliance` mode can be configured with the `jetty.httpConfig.compliance` property in the `server.ini` file (see the xref:og-modules[Modules Guide]).

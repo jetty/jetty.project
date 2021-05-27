@@ -13,6 +13,9 @@
 
 [[og-server-compliance-cookie]]
 === Cookie Compliance Modes
+The standards for Cookies have varied greatly over time from a defacto standard, through https://tools.ietf.org/html/rfc2965[RFC 2965] and currently to https://tools.ietf.org/html/rfc6265[RFC 6265].
 
-        COMMA_NOT_VALID_OCTET("https://tools.ietf.org/html/rfc6265#section-4.1.1", "Comma not valid as cookie-octet or separator"),
-        RESERVED_NAMES_NOT_DOLLAR_PREFIXED("https://tools.ietf.org/html/rfc6265#section-4.1.1", "Reserved names no longer use '$' prefix");
+The https://www.eclipse.org/jetty/javadoc/jetty-10/org/eclipse/jetty/http/CookieCompliance.Violation.html[CookieCompliance.Violation] enumeration defines the RFC requirements that may be optionally enforced by jetty when parsing `Cookie` headers.  These possible violations are then grouped into https://www.eclipse.org/jetty/javadoc/jetty-10/org/eclipse/jetty/http/ComplianceViolation.Mode.html[Mode]s by the
+The https://www.eclipse.org/jetty/javadoc/jetty-10/org/eclipse/jetty/http/CookieCompliance.html[HttpCompliance] class, which also defines several named modes that support common deployed sets of violations, with the default being https://www.eclipse.org/jetty/javadoc/jetty-10/org/eclipse/jetty/http/CookieCompliance.html#RFC6265[RFC6265]. These named modes are also used to determine the format of generated `Set-Cookie` headers.
+
+The `CookieCompliance` modes can be configured with the `jetty.httpConfig.requestCookieCompliance` and `jetty.httpConfig.responseCookieCompliance` properties in the `server.ini` file (see the xref:og-modules[Modules Guide]).
