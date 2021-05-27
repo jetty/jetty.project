@@ -1694,6 +1694,8 @@ public class Request implements HttpServletRequest
             compliance = _channel == null || _channel.getHttpConfiguration() == null ? null : _channel.getHttpConfiguration().getUriCompliance();
             if (uri.hasAmbiguousSegment() && (compliance == null || !compliance.allows(UriCompliance.Violation.AMBIGUOUS_PATH_SEGMENT)))
                 throw new BadMessageException("Ambiguous segment in URI");
+            if (uri.hasAmbiguousEmptySegment() && (compliance == null || !compliance.allows(UriCompliance.Violation.AMBIGUOUS_EMPTY_SEGMENT)))
+                throw new BadMessageException("Ambiguous empty segment in URI");
             if (uri.hasAmbiguousSeparator() && (compliance == null || !compliance.allows(UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR)))
                 throw new BadMessageException("Ambiguous segment in URI");
             if (uri.hasAmbiguousParameter() && (compliance == null || !compliance.allows(UriCompliance.Violation.AMBIGUOUS_PATH_PARAMETER)))

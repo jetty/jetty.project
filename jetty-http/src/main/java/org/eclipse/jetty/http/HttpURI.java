@@ -51,6 +51,7 @@ public interface HttpURI
     enum Ambiguous
     {
         SEGMENT,
+        EMPTY,
         SEPARATOR,
         ENCODING,
         PARAM
@@ -149,6 +150,11 @@ public interface HttpURI
      * @return True if the URI has a possibly ambiguous segment like '..;' or '%2e%2e'
      */
     boolean hasAmbiguousSegment();
+
+    /**
+     * @return True if the URI empty segment that is ambiguous like '//' or '/;param/'.
+     */
+    boolean hasAmbiguousEmptySegment();
 
     /**
      * @return True if the URI has a possibly ambiguous separator of %2f
@@ -381,6 +387,12 @@ public interface HttpURI
         }
 
         @Override
+        public boolean hasAmbiguousEmptySegment()
+        {
+            return _ambiguous.contains(Ambiguous.EMPTY);
+        }
+
+        @Override
         public boolean hasAmbiguousSeparator()
         {
             return _ambiguous.contains(Ambiguous.SEPARATOR);
@@ -453,7 +465,6 @@ public interface HttpURI
             .with("%2e%2e", Boolean.TRUE) // Is real dot dot segment not removed by normalisation.
             .with(".%2e", Boolean.TRUE)   // Is real dot dot segment not removed by normalisation.
             .with("%2e.", Boolean.TRUE)   // Is real dot dot segment not removed by normalisation.
-            .with("", Boolean.TRUE)       // An empty segment may be interpreted differently by file systems.
             .with("..", Boolean.FALSE)    // If followed by a parameter is not removed by dot dot normalisation.
             .with(".", Boolean.FALSE)     // If followed by a parameter is not removed by dot normalisation.
             .build();
@@ -469,6 +480,7 @@ public interface HttpURI
         private String _uri;
         private String _decodedPath;
         private final EnumSet<Ambiguous> _ambiguous = EnumSet.noneOf(Ambiguous.class);
+        private boolean _emptySegment;
 
         private Mutable()
         {
@@ -729,6 +741,12 @@ public interface HttpURI
         }
 
         @Override
+        public boolean hasAmbiguousEmptySegment()
+        {
+            return _ambiguous.contains(Ambiguous.EMPTY);
+        }
+
+        @Override
         public boolean hasAmbiguousSeparator()
         {
             return _ambiguous.contains(Mutable.Ambiguous.SEPARATOR);
@@ -905,6 +923,7 @@ public interface HttpURI
             boolean dot = false; // set to true if the path containers . or .. segments
             int escapedTwo = 0; // state of parsing a %2<x>
             int end = uri.length();
+            _emptySegment = false;
             for (int i = 0; i < end; i++)
             {
                 char c = uri.charAt(i);
@@ -1290,24 +1309,42 @@ public interface HttpURI
          */
         private void checkSegment(String uri, int segment, int end, boolean param)
         {
-            if (!_ambiguous.contains(Ambiguous.SEGMENT))
+            // We had a non last empty segment meaning it was ambiguous.
+            if (_emptySegment)
+                _ambiguous.add(Ambiguous.EMPTY);
+
+            if (end == segment)
             {
                 // Empty segments are only ambiguous if followed by a '#', '?' or end of string.
-                if (end == segment && (end == uri.length() || ("#?".indexOf(uri.charAt(end)) >= 0)))
+                if (end >= uri.length() || ("#?".indexOf(uri.charAt(end)) >= 0))
                     return;
 
-                // Look for segment in the ambiguous segment index.
-                Boolean ambiguous = __ambiguousSegments.get(uri, segment, end - segment);
-                if (ambiguous == Boolean.TRUE)
+                // If the first segment is empty then it is ambiguous.
+                if (segment == 0)
                 {
-                    // The segment is always ambiguous.
-                    _ambiguous.add(Ambiguous.SEGMENT);
+                    _ambiguous.add(Ambiguous.EMPTY);
+                    return;
                 }
-                else if (param && ambiguous == Boolean.FALSE)
+
+                // Otherwise only a non last empty segment is ambiguous.
+                if (!_emptySegment)
                 {
-                    // The segment is ambiguous only when followed by a parameter.
-                    _ambiguous.add(Ambiguous.PARAM);
+                    _emptySegment = true;
+                    return;
                 }
+            }
+
+            // Look for segment in the ambiguous segment index.
+            Boolean ambiguous = __ambiguousSegments.get(uri, segment, end - segment);
+            if (ambiguous == Boolean.TRUE)
+            {
+                // The segment is always ambiguous.
+                _ambiguous.add(Ambiguous.SEGMENT);
+            }
+            else if (param && ambiguous == Boolean.FALSE)
+            {
+                // The segment is ambiguous only when followed by a parameter.
+                _ambiguous.add(Ambiguous.PARAM);
             }
         }
     }

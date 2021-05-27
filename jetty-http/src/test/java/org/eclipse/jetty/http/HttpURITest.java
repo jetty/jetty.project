@@ -362,15 +362,15 @@ public class HttpURITest
                 {"%2e%2e", "..", EnumSet.of(Ambiguous.SEGMENT)},
 
                 // empty segment treated as ambiguous
-                {"/foo//bar", "/foo//bar", EnumSet.of(Ambiguous.SEGMENT)},
-                {"/foo//../bar", "/foo/bar", EnumSet.of(Ambiguous.SEGMENT)},
-                {"/foo///../../../bar", "/bar", EnumSet.of(Ambiguous.SEGMENT)},
+                {"/foo//bar", "/foo//bar", EnumSet.of(Ambiguous.EMPTY)},
+                {"/foo//../bar", "/foo/bar", EnumSet.of(Ambiguous.EMPTY)},
+                {"/foo///../../../bar", "/bar", EnumSet.of(Ambiguous.EMPTY)},
                 {"/foo/./../bar", "/bar", EnumSet.noneOf(Ambiguous.class)},
-                {"/foo//./bar", "/foo//bar", EnumSet.of(Ambiguous.SEGMENT)},
+                {"/foo//./bar", "/foo//bar", EnumSet.of(Ambiguous.EMPTY)},
                 {"foo/bar", "foo/bar", EnumSet.noneOf(Ambiguous.class)},
                 {"foo;/bar", "foo/bar", EnumSet.noneOf(Ambiguous.class)},
-                {";/bar", "/bar", EnumSet.of(Ambiguous.SEGMENT)},
-                {";?n=v", "", EnumSet.of(Ambiguous.SEGMENT)},
+                {";/bar", "/bar", EnumSet.of(Ambiguous.EMPTY)},
+                {";?n=v", "", EnumSet.of(Ambiguous.EMPTY)},
                 {"?n=v", "", EnumSet.noneOf(Ambiguous.class)},
                 {"#n=v", "", EnumSet.noneOf(Ambiguous.class)},
                 {"", "", EnumSet.noneOf(Ambiguous.class)},
@@ -438,16 +438,17 @@ public class HttpURITest
                 {"/#", EnumSet.noneOf(Ambiguous.class)},
                 {"/path", EnumSet.noneOf(Ambiguous.class)},
                 {"/path/", EnumSet.noneOf(Ambiguous.class)},
-                {"//", EnumSet.of(Ambiguous.SEGMENT)},
-                {"/foo//", EnumSet.of(Ambiguous.SEGMENT)},
-                {"/foo//bar", EnumSet.of(Ambiguous.SEGMENT)},
-                {"//foo/bar", EnumSet.of(Ambiguous.SEGMENT)},
+                {"//", EnumSet.of(Ambiguous.EMPTY)},
+                {"/foo//", EnumSet.of(Ambiguous.EMPTY)},
+                {"/foo//bar", EnumSet.of(Ambiguous.EMPTY)},
+                {"//foo/bar", EnumSet.of(Ambiguous.EMPTY)},
                 {"/foo?bar", EnumSet.noneOf(Ambiguous.class)},
                 {"/foo#bar", EnumSet.noneOf(Ambiguous.class)},
                 {"/foo;bar", EnumSet.noneOf(Ambiguous.class)},
                 {"/foo/?bar", EnumSet.noneOf(Ambiguous.class)},
                 {"/foo/#bar", EnumSet.noneOf(Ambiguous.class)},
-                {"/foo/;bar", EnumSet.of(Ambiguous.SEGMENT)},
+                {"/foo/;param", EnumSet.noneOf(Ambiguous.class)},
+                {"/foo/;param/bar", EnumSet.of(Ambiguous.EMPTY)},
             }).map(Arguments::of);
     }
 
@@ -457,6 +458,7 @@ public class HttpURITest
     {
         HttpURI uri = HttpURI.from("GET", input);
         assertThat(uri.isAmbiguous(), is(!expected.isEmpty()));
+        assertThat(uri.hasAmbiguousEmptySegment(), is(expected.contains(Ambiguous.EMPTY)));
         assertThat(uri.hasAmbiguousSegment(), is(expected.contains(Ambiguous.SEGMENT)));
         assertThat(uri.hasAmbiguousSeparator(), is(expected.contains(Ambiguous.SEPARATOR)));
         assertThat(uri.hasAmbiguousParameter(), is(expected.contains(Ambiguous.PARAM)));
