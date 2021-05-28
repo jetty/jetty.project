@@ -250,7 +250,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     private String toDetailString()
     {
-        ByteBuffer buffer = _retainableByteBuffer == null ? null :_retainableByteBuffer.getBuffer();
+        ByteBuffer buffer = _retainableByteBuffer == null ? null : _retainableByteBuffer.getBuffer();
         return BufferUtil.toDetailString(buffer);
     }
 
