@@ -101,7 +101,7 @@ public class HazelcastSessionDataStoreFactory
                     {
                         config = new XmlClientConfigBuilder(configurationLocation).build();
                         if (config.getSerializationConfig().getSerializerConfigs().stream().noneMatch(s ->
-                        SessionData.class.getName().equals(s.getTypeClassName()) && s.getImplementation() instanceof SessionDataSerializer))
+                            SessionData.class.getName().equals(s.getTypeClassName()) && s.getImplementation() instanceof SessionDataSerializer))
                             LOG.warn("Hazelcast xml config is missing org.eclipse.jetty.hazelcast.session.SessionDataSerializer - sessions may not serialize correctly");
                     }
                     
