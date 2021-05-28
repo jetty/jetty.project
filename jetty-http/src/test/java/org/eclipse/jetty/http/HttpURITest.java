@@ -28,6 +28,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -429,11 +430,41 @@ public class HttpURITest
         }
     }
 
-    public static Stream<Arguments> emptySegmentTests()
+    public static Stream<Arguments> pathFromQueryTests()
     {
         return Arrays.stream(new Object[][]
             {
-                // Empty segment tests.
+                // Simple path example
+                {"/path/info", EnumSet.noneOf(Ambiguous.class)},
+
+                // legal non ambiguous relative paths
+                {"/path/../info", EnumSet.noneOf(Ambiguous.class)},
+                {"/path/./info", EnumSet.noneOf(Ambiguous.class)},
+                {"path/../info", EnumSet.noneOf(Ambiguous.class)},
+                {"path/./info", EnumSet.noneOf(Ambiguous.class)},
+
+                // illegal paths
+                {"/../path/info", null},
+                {"../path/info", null},
+                {"/path/%XX/info", null},
+                {"/path/%2/F/info", null},
+
+                // ambiguous dot encodings
+                {"/path/%2e/info", EnumSet.of(Ambiguous.SEGMENT)},
+                {"path/%2e/info/", EnumSet.of(Ambiguous.SEGMENT)},
+                {"/path/%2e%2e/info", EnumSet.of(Ambiguous.SEGMENT)},
+                {"/path/%2e%2e;/info", EnumSet.of(Ambiguous.SEGMENT)},
+                {"/path/%2e%2e;param/info", EnumSet.of(Ambiguous.SEGMENT)},
+                {"/path/%2e%2e;param;other/info;other", EnumSet.of(Ambiguous.SEGMENT)},
+                {"%2e/info", EnumSet.of(Ambiguous.SEGMENT)},
+                {"%2e%2e/info", EnumSet.of(Ambiguous.SEGMENT)},
+                {"%2e%2e;/info", EnumSet.of(Ambiguous.SEGMENT)},
+                {"%2e", EnumSet.of(Ambiguous.SEGMENT)},
+                {"%2e.", EnumSet.of(Ambiguous.SEGMENT)},
+                {".%2e", EnumSet.of(Ambiguous.SEGMENT)},
+                {"%2e%2e", EnumSet.of(Ambiguous.SEGMENT)},
+
+                // empty segment treated as ambiguous
                 {"/", EnumSet.noneOf(Ambiguous.class)},
                 {"/#", EnumSet.noneOf(Ambiguous.class)},
                 {"/path", EnumSet.noneOf(Ambiguous.class)},
@@ -449,14 +480,58 @@ public class HttpURITest
                 {"/foo/#bar", EnumSet.noneOf(Ambiguous.class)},
                 {"/foo/;param", EnumSet.noneOf(Ambiguous.class)},
                 {"/foo/;param/bar", EnumSet.of(Ambiguous.EMPTY)},
+                {"/foo//bar", EnumSet.of(Ambiguous.EMPTY)},
+                {"/foo//../bar", EnumSet.of(Ambiguous.EMPTY)},
+                {"/foo///../../../bar", EnumSet.of(Ambiguous.EMPTY)},
+                {"/foo/./../bar", EnumSet.noneOf(Ambiguous.class)},
+                {"/foo//./bar", EnumSet.of(Ambiguous.EMPTY)},
+                {"foo/bar", EnumSet.noneOf(Ambiguous.class)},
+                {"foo;/bar", EnumSet.noneOf(Ambiguous.class)},
+                {";/bar", EnumSet.of(Ambiguous.EMPTY)},
+                {";?n=v", EnumSet.of(Ambiguous.EMPTY)},
+                {"?n=v", EnumSet.noneOf(Ambiguous.class)},
+                {"#n=v", EnumSet.noneOf(Ambiguous.class)},
+                {"", EnumSet.noneOf(Ambiguous.class)},
+
+                // ambiguous parameter inclusions
+                {"/path/.;/info", EnumSet.of(Ambiguous.PARAM)},
+                {"/path/.;param/info", EnumSet.of(Ambiguous.PARAM)},
+                {"/path/..;/info", EnumSet.of(Ambiguous.PARAM)},
+                {"/path/..;param/info", EnumSet.of(Ambiguous.PARAM)},
+                {".;/info", EnumSet.of(Ambiguous.PARAM)},
+                {".;param/info", EnumSet.of(Ambiguous.PARAM)},
+                {"..;/info", EnumSet.of(Ambiguous.PARAM)},
+                {"..;param/info", EnumSet.of(Ambiguous.PARAM)},
+
+                // ambiguous segment separators
+                {"/path/%2f/info", EnumSet.of(Ambiguous.SEPARATOR)},
+                {"%2f/info", EnumSet.of(Ambiguous.SEPARATOR)},
+                {"%2F/info", EnumSet.of(Ambiguous.SEPARATOR)},
+                {"/path/%2f../info", EnumSet.of(Ambiguous.SEPARATOR)},
+
+                // ambiguous encoding
+                {"/path/%25/info", EnumSet.of(Ambiguous.ENCODING)},
+                {"%25/info", EnumSet.of(Ambiguous.ENCODING)},
+                {"/path/%25../info", EnumSet.of(Ambiguous.ENCODING)},
+
+                // combinations
+                {"/path/%2f/..;/info", EnumSet.of(Ambiguous.SEPARATOR, Ambiguous.PARAM)},
+                {"/path/%2f/..;/%2e/info", EnumSet.of(Ambiguous.SEPARATOR, Ambiguous.PARAM, Ambiguous.SEGMENT)},
             }).map(Arguments::of);
     }
 
     @ParameterizedTest
-    @MethodSource("emptySegmentTests")
-    public void testEmptySegment(String input, EnumSet<Ambiguous> expected)
+    @MethodSource("pathFromQueryTests")
+    public void testPathFromQuery(String input, EnumSet<Ambiguous> expected)
     {
-        HttpURI uri = HttpURI.from("GET", input);
+        // If expected is null then it is a bad URI and should throw.
+        if (expected == null)
+        {
+            assertThrows(Throwable.class, () -> HttpURI.build().pathQuery(input));
+            return;
+        }
+
+        HttpURI uri = HttpURI.build().pathQuery(input);
         assertThat(uri.isAmbiguous(), is(!expected.isEmpty()));
         assertThat(uri.hasAmbiguousEmptySegment(), is(expected.contains(Ambiguous.EMPTY)));
         assertThat(uri.hasAmbiguousSegment(), is(expected.contains(Ambiguous.SEGMENT)));
