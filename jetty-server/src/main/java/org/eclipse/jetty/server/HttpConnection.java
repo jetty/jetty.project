@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.http.BadMessageException;
@@ -35,6 +34,8 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -56,12 +57,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private final HttpConfiguration _config;
     private final Connector _connector;
     private final ByteBufferPool _bufferPool;
+    private final RetainableByteBufferPool _retainableByteBufferPool;
     private final HttpInput _input;
     private final HttpGenerator _generator;
     private final HttpChannelOverHttp _channel;
     private final HttpParser _parser;
-    private final AtomicInteger _contentBufferReferences = new AtomicInteger();
-    private volatile ByteBuffer _requestBuffer = null;
+    private volatile RetainableByteBuffer _retainableByteBuffer;
     private final AsyncReadCallback _asyncReadCallback = new AsyncReadCallback();
     private final SendCallback _sendCallback = new SendCallback();
     private final boolean _recordHttpComplianceViolations;
@@ -96,6 +97,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _config = config;
         _connector = connector;
         _bufferPool = _connector.getByteBufferPool();
+        _retainableByteBufferPool = RetainableByteBufferPool.findOrAdapt(connector, _bufferPool);
         _generator = newHttpGenerator();
         _channel = newHttpChannel();
         _input = _channel.getRequest().getHttpInput();
@@ -198,10 +200,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     @Override
     public ByteBuffer onUpgradeFrom()
     {
-        if (BufferUtil.hasContent(_requestBuffer))
+        if (!isRequestBufferEmpty())
         {
-            ByteBuffer unconsumed = ByteBuffer.allocateDirect(_requestBuffer.remaining());
-            unconsumed.put(_requestBuffer);
+            ByteBuffer unconsumed = ByteBuffer.allocateDirect(_retainableByteBuffer.remaining());
+            unconsumed.put(_retainableByteBuffer.getBuffer());
             unconsumed.flip();
             releaseRequestBuffer();
             return unconsumed;
@@ -225,36 +227,34 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     void releaseRequestBuffer()
     {
-        if (_requestBuffer != null && !_requestBuffer.hasRemaining())
+        if (_retainableByteBuffer != null && !_retainableByteBuffer.hasRemaining())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("releaseRequestBuffer {}", this);
-            ByteBuffer buffer = _requestBuffer;
-            _requestBuffer = null;
-            _bufferPool.release(buffer);
+            if (_retainableByteBuffer.release())
+                _retainableByteBuffer = null;
+            else
+                throw new IllegalStateException("unreleased buffer " + _retainableByteBuffer);
         }
     }
 
-    public ByteBuffer getRequestBuffer()
+    private ByteBuffer getRequestBuffer()
     {
-        if (_requestBuffer == null)
-        {
-            boolean useDirectByteBuffers = isUseInputDirectByteBuffers();
-            _requestBuffer = _bufferPool.acquire(getInputBufferSize(), useDirectByteBuffers);
-        }
-        return _requestBuffer;
+        if (_retainableByteBuffer == null)
+            _retainableByteBuffer = _retainableByteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+        return _retainableByteBuffer.getBuffer();
     }
 
     public boolean isRequestBufferEmpty()
     {
-        return BufferUtil.isEmpty(_requestBuffer);
+        return _retainableByteBuffer == null || _retainableByteBuffer.isEmpty();
     }
 
     @Override
     public void onFillable()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} onFillable enter {} {}", this, _channel.getState(), BufferUtil.toDetailString(_requestBuffer));
+            LOG.debug("{} onFillable enter {} {}", this, _channel.getState(), _retainableByteBuffer);
 
         HttpConnection last = setCurrentConnection(this);
         try
@@ -300,17 +300,26 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
         catch (Throwable x)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} caught exception {}", this, _channel.getState(), x);
-            BufferUtil.clear(_requestBuffer);
-            releaseRequestBuffer();
-            getEndPoint().close(x);
+            try
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} caught exception {}", this, _channel.getState(), x);
+                if (_retainableByteBuffer != null)
+                {
+                    _retainableByteBuffer.clear();
+                    releaseRequestBuffer();
+                }
+            }
+            finally
+            {
+                getEndPoint().close(x);
+            }
         }
         finally
         {
             setCurrentConnection(last);
             if (LOG.isDebugEnabled())
-                LOG.debug("{} onFillable exit {} {}", this, _channel.getState(), BufferUtil.toDetailString(_requestBuffer));
+                LOG.debug("{} onFillable exit {} {}", this, _channel.getState(), _retainableByteBuffer);
         }
     }
 
@@ -338,22 +347,22 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     private int fillRequestBuffer()
     {
-        if (_contentBufferReferences.get() > 0)
+        if (_retainableByteBuffer != null && _retainableByteBuffer.isRetained())
             throw new IllegalStateException("fill with unconsumed content on " + this);
 
-        if (BufferUtil.isEmpty(_requestBuffer))
+        if (isRequestBufferEmpty())
         {
             // Get a buffer
             // We are not in a race here for the request buffer as we have not yet received a request,
             // so there are not an possible legal threads calling #parseContent or #completed.
-            _requestBuffer = getRequestBuffer();
+            ByteBuffer requestBuffer = getRequestBuffer();
 
             // fill
             try
             {
-                int filled = getEndPoint().fill(_requestBuffer);
+                int filled = getEndPoint().fill(requestBuffer);
                 if (filled == 0) // Do a retry on fill 0 (optimization for SSL connections)
-                    filled = getEndPoint().fill(_requestBuffer);
+                    filled = getEndPoint().fill(requestBuffer);
 
                 if (filled > 0)
                     bytesIn.add(filled);
@@ -361,7 +370,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     _parser.atEOF();
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} filled {} {}", this, filled, BufferUtil.toDetailString(_requestBuffer));
+                    LOG.debug("{} filled {} {}", this, filled, _retainableByteBuffer);
 
                 return filled;
             }
@@ -379,15 +388,15 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private boolean parseRequestBuffer()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} parse {}", this, BufferUtil.toDetailString(_requestBuffer));
+            LOG.debug("{} parse {}", this, _retainableByteBuffer);
 
-        boolean handle = _parser.parseNext(_requestBuffer == null ? BufferUtil.EMPTY_BUFFER : _requestBuffer);
+        boolean handle = _parser.parseNext(_retainableByteBuffer == null ? BufferUtil.EMPTY_BUFFER : _retainableByteBuffer.getBuffer());
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} parsed {} {}", this, handle, _parser);
 
         // recycle buffer ?
-        if (_contentBufferReferences.get() == 0)
+        if (_retainableByteBuffer != null && !_retainableByteBuffer.isRetained())
             releaseRequestBuffer();
 
         return handle;
@@ -406,15 +415,17 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _channel.recycle();
         _parser.reset();
         _generator.reset();
-        if (_contentBufferReferences.get() == 0)
+        if (_retainableByteBuffer != null)
         {
-            releaseRequestBuffer();
-        }
-        else
-        {
-            LOG.warn("{} lingering content references?!?!", this);
-            _requestBuffer = null; // Not returned to pool!
-            _contentBufferReferences.set(0);
+            if (!_retainableByteBuffer.isRetained())
+            {
+                releaseRequestBuffer();
+            }
+            else
+            {
+                LOG.warn("{} lingering content references?!?!", this);
+                _retainableByteBuffer = null; // Not returned to pool!
+            }
         }
         return true;
     }
@@ -472,7 +483,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             if (_parser.isStart())
             {
                 // if the buffer is empty
-                if (BufferUtil.isEmpty(_requestBuffer))
+                if (isRequestBufferEmpty())
                 {
                     // look for more data
                     fillInterested();
@@ -629,21 +640,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         public Content(ByteBuffer content)
         {
             super(content);
-            _contentBufferReferences.incrementAndGet();
+            _retainableByteBuffer.retain();
         }
 
         @Override
         public void succeeded()
         {
-            int counter = _contentBufferReferences.decrementAndGet();
-            if (counter == 0)
-                releaseRequestBuffer();
-            // TODO: this should do something (warn? fail?) if _contentBufferReferences goes below 0
-            if (counter < 0)
-            {
-                LOG.warn("Content reference counting went below zero: {}", counter);
-                _contentBufferReferences.incrementAndGet();
-            }
+            _retainableByteBuffer.release();
         }
 
         @Override

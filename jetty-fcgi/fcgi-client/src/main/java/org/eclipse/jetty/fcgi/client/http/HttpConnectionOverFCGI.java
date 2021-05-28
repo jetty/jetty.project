@@ -44,9 +44,9 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -71,6 +71,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     private final ClientParser parser;
     private RetainableByteBuffer networkBuffer;
     private Object attachment;
+    private final RetainableByteBufferPool retainableByteBufferPool;
 
     public HttpConnectionOverFCGI(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
     {
@@ -81,6 +82,9 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         this.delegate = new Delegate(destination);
         this.parser = new ClientParser(new ResponseListener());
         requests.addLast(0);
+
+        HttpClient client = destination.getHttpClient();
+        this.retainableByteBufferPool = RetainableByteBufferPool.findOrAdapt(client, client.getByteBufferPool());
     }
 
     public HttpDestination getHttpDestination()
@@ -135,8 +139,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     private RetainableByteBuffer newNetworkBuffer()
     {
         HttpClient client = destination.getHttpClient();
-        ByteBufferPool bufferPool = client.getByteBufferPool();
-        return new RetainableByteBuffer(bufferPool, client.getResponseBufferSize(), client.isUseInputDirectByteBuffers());
+        return retainableByteBufferPool.acquire(client.getResponseBufferSize(), client.isUseInputDirectByteBuffers());
     }
 
     private void releaseNetworkBuffer()
@@ -161,7 +164,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
                 if (parse(networkBuffer.getBuffer()))
                     return;
 
-                if (networkBuffer.getReferences() > 1)
+                if (networkBuffer.isRetained())
                     reacquireNetworkBuffer();
 
                 // The networkBuffer may have been reacquired.
