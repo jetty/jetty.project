@@ -217,8 +217,12 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                     path = request.getPath();
                 }
                 Request newRequest = client.copyRequest(request, requestURI);
-                // Disable the timeout so that only the one from the initial request applies.
-                newRequest.timeout(0, TimeUnit.MILLISECONDS);
+
+                // Adjust the timeout.
+                long timeoutAt = request.getTimeoutAt();
+                if (timeoutAt < Long.MAX_VALUE)
+                    newRequest.timeout(timeoutAt - System.nanoTime(), TimeUnit.MILLISECONDS);
+
                 if (path != null)
                     newRequest.path(path);
 

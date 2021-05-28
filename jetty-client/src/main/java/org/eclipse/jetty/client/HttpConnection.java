@@ -22,6 +22,7 @@ import java.net.CookieStore;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -35,16 +36,19 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 public abstract class HttpConnection implements Connection, Attachable
 {
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
 
     private final HttpDestination destination;
+    private final RequestTimeouts requestTimeouts;
     private Object attachment;
     private int idleTimeoutGuard;
     private long idleTimeoutStamp;
@@ -52,6 +56,7 @@ public abstract class HttpConnection implements Connection, Attachable
     protected HttpConnection(HttpDestination destination)
     {
         this.destination = destination;
+        this.requestTimeouts = new RequestTimeouts(destination.getHttpClient().getScheduler());
         this.idleTimeoutStamp = System.nanoTime();
     }
 
@@ -64,6 +69,8 @@ public abstract class HttpConnection implements Connection, Attachable
     {
         return destination;
     }
+
+    protected abstract Iterator<HttpChannel> getHttpChannels();
 
     @Override
     public void send(Request request, Response.CompleteListener listener)
@@ -230,6 +237,7 @@ public abstract class HttpConnection implements Connection, Attachable
             SendFailure result;
             if (channel.associate(exchange))
             {
+                requestTimeouts.schedule(channel);
                 channel.send();
                 result = null;
             }
@@ -292,9 +300,68 @@ public abstract class HttpConnection implements Connection, Attachable
         return attachment;
     }
 
+    protected void destroy()
+    {
+        requestTimeouts.destroy();
+    }
+
     @Override
     public String toString()
     {
         return String.format("%s@%h", getClass().getSimpleName(), this);
+    }
+
+    private class RequestTimeouts extends CyclicTimeouts<HttpChannel>
+    {
+        private RequestTimeouts(Scheduler scheduler)
+        {
+            super(scheduler);
+        }
+
+        @Override
+        protected Iterator<HttpChannel> iterator()
+        {
+            return getHttpChannels();
+        }
+
+        @Override
+        protected boolean onExpired(HttpChannel channel)
+        {
+            HttpExchange exchange = channel.getHttpExchange();
+            if (exchange != null)
+            {
+                HttpRequest request = exchange.getRequest();
+                request.abort(new TimeoutException("Total timeout " + request.getTimeout() + " ms elapsed"));
+            }
+            return false;
+        }
+    }
+
+    protected static final class IteratorWrapper<T> implements Iterator<T>
+    {
+        private final Iterator<? extends T> iterator;
+
+        public IteratorWrapper(Iterator<? extends T> iterator)
+        {
+            this.iterator = iterator;
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return iterator.hasNext();
+        }
+
+        @Override
+        public T next()
+        {
+            return iterator.next();
+        }
+
+        @Override
+        public void remove()
+        {
+            iterator.remove();
+        }
     }
 }

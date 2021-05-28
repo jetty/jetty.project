@@ -22,10 +22,11 @@ import java.util.List;
 
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class HttpExchange
+public class HttpExchange implements CyclicTimeouts.Expirable
 {
     private static final Logger LOG = Log.getLogger(HttpExchange.class);
 
@@ -84,6 +85,12 @@ public class HttpExchange
         {
             return responseFailure;
         }
+    }
+
+    @Override
+    public long getExpireNanoTime()
+    {
+        return request.getTimeoutAt();
     }
 
     /**

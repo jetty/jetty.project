@@ -111,8 +111,8 @@ public class HttpRedirector
      */
     public Result redirect(Request request, Response response) throws InterruptedException, ExecutionException
     {
-        final AtomicReference<Result> resultRef = new AtomicReference<>();
-        final CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<Result> resultRef = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
         Request redirect = redirect(request, response, new BufferingResponseListener()
         {
             @Override
@@ -307,13 +307,16 @@ public class HttpRedirector
         }
     }
 
-    private Request sendRedirect(final HttpRequest httpRequest, Response response, Response.CompleteListener listener, URI location, String method)
+    private Request sendRedirect(HttpRequest httpRequest, Response response, Response.CompleteListener listener, URI location, String method)
     {
         try
         {
             Request redirect = client.copyRequest(httpRequest, location);
-            // Disable the timeout so that only the one from the initial request applies.
-            redirect.timeout(0, TimeUnit.MILLISECONDS);
+
+            // Adjust the timeout.
+            long timeoutAt = httpRequest.getTimeoutAt();
+            if (timeoutAt < Long.MAX_VALUE)
+                redirect.timeout(timeoutAt - System.nanoTime(), TimeUnit.MILLISECONDS);
 
             // Use given method
             redirect.method(method);

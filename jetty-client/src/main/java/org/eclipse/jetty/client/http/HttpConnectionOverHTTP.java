@@ -20,11 +20,14 @@ package org.eclipse.jetty.client.http;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 
+import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
@@ -244,6 +247,12 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         }
 
         @Override
+        protected Iterator<HttpChannel> getHttpChannels()
+        {
+            return Collections.<HttpChannel>singleton(channel).iterator();
+        }
+
+        @Override
         protected SendFailure send(HttpExchange exchange)
         {
             Request request = exchange.getRequest();
@@ -264,6 +273,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         public void close()
         {
             HttpConnectionOverHTTP.this.close();
+            destroy();
         }
 
         @Override

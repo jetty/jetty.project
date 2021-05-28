@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http2.client.http;
 
 import java.nio.channels.AsynchronousCloseException;
+import java.util.Iterator;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -71,6 +72,12 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     public void setRecycleHttpChannels(boolean recycleHttpChannels)
     {
         this.recycleHttpChannels = recycleHttpChannels;
+    }
+
+    @Override
+    protected Iterator<HttpChannel> getHttpChannels()
+    {
+        return activeChannels.iterator();
     }
 
     @Override
@@ -133,6 +140,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     public void close()
     {
         close(new AsynchronousCloseException());
+        destroy();
     }
 
     protected void close(Throwable failure)
