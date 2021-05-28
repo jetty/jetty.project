@@ -37,6 +37,7 @@ import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.parser.WindowRateControl;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -279,7 +280,9 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         parser.setMaxFrameLength(getMaxFrameLength());
         parser.setMaxSettingsKeys(getMaxSettingsKeys());
 
-        HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), connector.getExecutor(),
+        RetainableByteBufferPool retainableByteBufferPool = RetainableByteBufferPool.findOrAdapt(connector, connector.getByteBufferPool());
+
+        HTTP2Connection connection = new HTTP2ServerConnection(retainableByteBufferPool, connector.getExecutor(),
             endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
         connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
         connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
