@@ -26,6 +26,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.NullByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -83,7 +84,7 @@ public class MessageInputStream extends InputStream implements MessageAppender
     {
         this.timeoutMs = timeoutMs;
         this.session = session;
-        this.bufferPool = (session instanceof WebSocketSession) ? ((WebSocketSession)session).getBufferPool() : null;
+        this.bufferPool = (session instanceof WebSocketSession) ? ((WebSocketSession)session).getBufferPool() : new NullByteBufferPool();
     }
 
     @Override
@@ -155,8 +156,19 @@ public class MessageInputStream extends InputStream implements MessageAppender
             if (remainingContent)
                 LOG.warn("MessageInputStream closed without fully consuming content {}", session);
 
-            state = State.CLOSED;
+
+            // Release any buffers taken from the pool.
+            if (activeBuffer != null && activeBuffer != EOF)
+                bufferPool.release(activeBuffer);
+
+            for (ByteBuffer buffer : buffers)
+            {
+                bufferPool.release(buffer);
+            }
+
+            activeBuffer = null;
             buffers.clear();
+            state = State.CLOSED;
             buffers.add(EOF);
         }
     }
@@ -207,7 +219,7 @@ public class MessageInputStream extends InputStream implements MessageAppender
             }
 
             // grab a fresh buffer
-            while (activeBuffer == null || !activeBuffer.hasRemaining())
+            while (activeBuffer == null)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Waiting {} ms to read", timeoutMs);
@@ -246,6 +258,10 @@ public class MessageInputStream extends InputStream implements MessageAppender
                 SuspendToken resume = null;
                 synchronized (this)
                 {
+                    // Release buffer back to pool.
+                    bufferPool.release(activeBuffer);
+                    activeBuffer = null;
+
                     switch (state)
                     {
                         case CLOSED:
@@ -309,11 +325,6 @@ public class MessageInputStream extends InputStream implements MessageAppender
 
     private ByteBuffer acquire(int capacity, boolean direct)
     {
-        ByteBuffer buffer;
-        if (bufferPool != null)
-            buffer = bufferPool.acquire(capacity, direct);
-        else
-            buffer = direct ? BufferUtil.allocateDirect(capacity) : BufferUtil.allocate(capacity);
-        return buffer;
+        return bufferPool.acquire(capacity, direct);
     }
 }
