@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.ToIntFunction;
 import javax.net.ssl.SSLEngine;
@@ -104,7 +105,10 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         WAIT_FOR_FILL // Waiting for a fill to happen
     }
 
+    private final AtomicReference<HandshakeState> _handshake = new AtomicReference<>(HandshakeState.INITIAL);
     private final List<SslHandshakeListener> handshakeListeners = new ArrayList<>();
+    private final AtomicLong _bytesIn = new AtomicLong();
+    private final AtomicLong _bytesOut = new AtomicLong();
     private final ByteBufferPool _bufferPool;
     private final SSLEngine _sslEngine;
     private final DecryptedEndPoint _decryptedEndPoint;
@@ -119,7 +123,6 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     private boolean _requireCloseMessage;
     private FlushState _flushState = FlushState.IDLE;
     private FillState _fillState = FillState.IDLE;
-    private AtomicReference<HandshakeState> _handshake = new AtomicReference<>(HandshakeState.INITIAL);
     private boolean _underflown;
 
     private abstract class RunnableTask implements Runnable, Invocable
@@ -196,6 +199,18 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         this._decryptedEndPoint = newDecryptedEndPoint();
         this._encryptedDirectBuffers = useDirectBuffersForEncryption;
         this._decryptedDirectBuffers = useDirectBuffersForDecryption;
+    }
+
+    @Override
+    public long getBytesIn()
+    {
+        return _bytesIn.get();
+    }
+
+    @Override
+    public long getBytesOut()
+    {
+        return _bytesOut.get();
     }
 
     public void addHandshakeListener(SslHandshakeListener listener)
@@ -675,6 +690,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
 
                             // Let's try reading some encrypted data... even if we have some already.
                             int netFilled = networkFill(_encryptedInput);
+                            if (netFilled > 0)
+                                _bytesIn.addAndGet(netFilled);
                             if (LOG.isDebugEnabled())
                                 LOG.debug("net filled={}", netFilled);
 
@@ -997,8 +1014,19 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     }
 
                     // finish of any previous flushes
-                    if (BufferUtil.hasContent(_encryptedOutput) && !networkFlush(_encryptedOutput))
-                        return false;
+                    if (_encryptedOutput != null)
+                    {
+                        int remaining = _encryptedOutput.remaining();
+                        if (remaining > 0)
+                        {
+                            boolean flushed = networkFlush(_encryptedOutput);
+                            int written = remaining - _encryptedOutput.remaining();
+                            if (written > 0)
+                                _bytesOut.addAndGet(written);
+                            if (!flushed)
+                                return false;
+                        }
+                    }
 
                     boolean isEmpty = BufferUtil.isEmpty(appOuts);
 
@@ -1076,8 +1104,17 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
 
                             // if we have net bytes, let's try to flush them
                             boolean flushed = true;
-                            if (BufferUtil.hasContent(_encryptedOutput))
-                                flushed = networkFlush(_encryptedOutput);
+                            if (_encryptedOutput != null)
+                            {
+                                int remaining = _encryptedOutput.remaining();
+                                if (remaining > 0)
+                                {
+                                    flushed = networkFlush(_encryptedOutput);
+                                    int written = remaining - _encryptedOutput.remaining();
+                                    if (written > 0)
+                                        _bytesOut.addAndGet(written);
+                                }
+                            }
 
                             if (LOG.isDebugEnabled())
                                 LOG.debug("net flushed={}, ac={}", flushed, isEmpty);
