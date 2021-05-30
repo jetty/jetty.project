@@ -1010,7 +1010,9 @@ public class HttpClientTLSTest
     @Test
     public void testBytesInBytesOut() throws Exception
     {
-        CountDownLatch latch = new CountDownLatch(2);
+        // Two connections will be closed: SslConnection and HttpConnection.
+        // Two on the server, two on the client.
+        CountDownLatch latch = new CountDownLatch(4);
         SslContextFactory serverTLSFactory = createServerSslContextFactory();
         startServer(serverTLSFactory, new EmptyServerHandler());
         ConnectionStatistics serverStats = new ConnectionStatistics()
