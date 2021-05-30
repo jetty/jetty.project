@@ -336,32 +336,4 @@ public abstract class HttpConnection implements Connection, Attachable
             return false;
         }
     }
-
-    protected static final class IteratorWrapper<T> implements Iterator<T>
-    {
-        private final Iterator<? extends T> iterator;
-
-        public IteratorWrapper(Iterator<? extends T> iterator)
-        {
-            this.iterator = iterator;
-        }
-
-        @Override
-        public boolean hasNext()
-        {
-            return iterator.hasNext();
-        }
-
-        @Override
-        public T next()
-        {
-            return iterator.next();
-        }
-
-        @Override
-        public void remove()
-        {
-            iterator.remove();
-        }
-    }
 }
