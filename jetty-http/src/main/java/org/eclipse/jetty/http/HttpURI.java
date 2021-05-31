@@ -50,10 +50,29 @@ public interface HttpURI
 {
     enum Ambiguous
     {
+        /**
+         * URI contains ambiguous path segments e.g. <code>/foo/%2e%2e/bar</code>
+         */
         SEGMENT,
+
+        /**
+         * URI contains ambiguous empty segments e.g. <code>//</code>
+         */
         EMPTY,
+
+        /**
+         * URI contains ambiguous path separator within a URI segment e.g. <code>/foo/b%2fr</code>
+         */
         SEPARATOR,
+
+        /**
+         * URI contains ambiguous path encoding within a URI segment e.g. <code>/%2557EB-INF</code>
+         */
         ENCODING,
+
+        /**
+         * URI contains ambiguous path parameters within a URI segment e.g. <code>/foo/..;/bar</code>
+         */
         PARAM
     }
 
