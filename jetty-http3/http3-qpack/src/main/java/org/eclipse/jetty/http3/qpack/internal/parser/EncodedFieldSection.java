@@ -24,9 +24,14 @@ import org.eclipse.jetty.http3.qpack.internal.QpackContext;
 import org.eclipse.jetty.http3.qpack.internal.metadata.MetaDataBuilder;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerParser;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitStringParser;
+import org.eclipse.jetty.util.BufferUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class EncodedFieldSection
 {
+    public static final Logger LOG = LoggerFactory.getLogger(EncodedFieldSection.class);
+
     private final NBitIntegerParser _integerParser = new NBitIntegerParser();
     private final NBitStringParser _stringParser = new NBitStringParser();
     private final List<EncodedField> _encodedFields = new ArrayList<>();
@@ -46,15 +51,15 @@ public class EncodedFieldSection
             EncodedField encodedField;
             byte firstByte = content.get(content.position());
             if ((firstByte & 0x80) != 0)
-                encodedField = parseIndexedFieldLine(content);
+                encodedField = parseIndexedField(content);
             else if ((firstByte & 0x40) != 0)
-                encodedField = parseLiteralFieldLineWithNameReference(content);
+                encodedField = parseNameReference(content);
             else if ((firstByte & 0x20) != 0)
-                encodedField = parseLiteralFieldLineWithLiteralName(content);
+                encodedField = parseLiteralField(content);
             else if ((firstByte & 0x10) != 0)
-                encodedField = parseIndexFieldLineWithPostBaseIndex(content);
+                encodedField = parseIndexedFieldPostBase(content);
             else
-                encodedField = parseLiteralFieldLineWithPostBaseNameReference(content);
+                encodedField = parseNameReferencePostBase(content);
 
             _encodedFields.add(encodedField);
         }
@@ -84,7 +89,7 @@ public class EncodedFieldSection
         return metaDataBuilder.build();
     }
 
-    private EncodedField parseIndexedFieldLine(ByteBuffer buffer) throws QpackException
+    private EncodedField parseIndexedField(ByteBuffer buffer) throws QpackException
     {
         byte firstByte = buffer.get(buffer.position());
         boolean dynamicTable = (firstByte & 0x40) == 0;
@@ -95,8 +100,20 @@ public class EncodedFieldSection
         return new IndexedField(dynamicTable, index);
     }
 
-    private EncodedField parseLiteralFieldLineWithNameReference(ByteBuffer buffer) throws QpackException
+    private EncodedField parseIndexedFieldPostBase(ByteBuffer buffer) throws QpackException
     {
+        _integerParser.setPrefix(4);
+        int index = _integerParser.decode(buffer);
+        if (index < 0)
+            throw new QpackException.CompressionException("Invalid Index");
+
+        return new PostBaseIndexedField(index);
+    }
+
+    private EncodedField parseNameReference(ByteBuffer buffer) throws QpackException
+    {
+        LOG.info("parseLiteralFieldLineWithNameReference: " + BufferUtil.toDetailString(buffer));
+
         byte firstByte = buffer.get(buffer.position());
         boolean allowEncoding = (firstByte & 0x20) != 0;
         boolean dynamicTable = (firstByte & 0x10) == 0;
@@ -114,7 +131,25 @@ public class EncodedFieldSection
         return new IndexedNameField(allowEncoding, dynamicTable, nameIndex, value);
     }
 
-    private EncodedField parseLiteralFieldLineWithLiteralName(ByteBuffer buffer) throws QpackException
+    private EncodedField parseNameReferencePostBase(ByteBuffer buffer) throws QpackException
+    {
+        byte firstByte = buffer.get(buffer.position());
+        boolean allowEncoding = (firstByte & 0x08) != 0;
+
+        _integerParser.setPrefix(3);
+        int nameIndex = _integerParser.decode(buffer);
+        if (nameIndex < 0)
+            throw new QpackException.CompressionException("Invalid Index");
+
+        _stringParser.setPrefix(8);
+        String value = _stringParser.decode(buffer);
+        if (value == null)
+            throw new QpackException.CompressionException("Invalid Value");
+
+        return new PostBaseIndexedNameField(allowEncoding, nameIndex, value);
+    }
+
+    private EncodedField parseLiteralField(ByteBuffer buffer) throws QpackException
     {
         byte firstByte = buffer.get(buffer.position());
         boolean allowEncoding = (firstByte & 0x10) != 0;
@@ -130,34 +165,6 @@ public class EncodedFieldSection
             throw new QpackException.CompressionException("Invalid Value");
 
         return new LiteralField(allowEncoding, name, value);
-    }
-
-    private EncodedField parseLiteralFieldLineWithPostBaseNameReference(ByteBuffer buffer) throws QpackException
-    {
-        byte firstByte = buffer.get(buffer.position());
-        boolean allowEncoding = (firstByte & 0x08) != 0;
-
-        _integerParser.setPrefix(4);
-        int nameIndex = _integerParser.decode(buffer);
-        if (nameIndex < 0)
-            throw new QpackException.CompressionException("Invalid Index");
-
-        _stringParser.setPrefix(8);
-        String value = _stringParser.decode(buffer);
-        if (value == null)
-            throw new QpackException.CompressionException("Invalid Value");
-
-        return new PostBaseIndexedNameField(allowEncoding, nameIndex, value);
-    }
-
-    private EncodedField parseIndexFieldLineWithPostBaseIndex(ByteBuffer buffer) throws QpackException
-    {
-        _integerParser.setPrefix(4);
-        int index = _integerParser.decode(buffer);
-        if (index < 0)
-            throw new QpackException.CompressionException("Invalid Index");
-
-        return new PostBaseIndexedField(index);
     }
 
     public interface EncodedField

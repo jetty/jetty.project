@@ -38,8 +38,6 @@ public class QpackContext
     public QpackContext()
     {
         _dynamicTable = new DynamicTable();
-        if (LOG.isDebugEnabled())
-            LOG.debug(String.format("HdrTbl[%x] created", hashCode()));
     }
 
     public DynamicTable getDynamicTable()
