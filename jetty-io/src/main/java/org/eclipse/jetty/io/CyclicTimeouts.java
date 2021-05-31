@@ -56,14 +56,7 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
 
     public CyclicTimeouts(Scheduler scheduler)
     {
-        cyclicTimeout = new CyclicTimeout(scheduler)
-        {
-            @Override
-            public void onTimeoutExpired()
-            {
-                CyclicTimeouts.this.onTimeoutExpired();
-            }
-        };
+        cyclicTimeout = new Timeouts(scheduler);
     }
 
     /**
@@ -73,6 +66,9 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
 
     /**
      * <p>Invoked during the iteration when the given entity is expired.</p>
+     * <p>This method may be invoked multiple times, and even concurrently,
+     * for the same expirable entity and therefore the expiration of the
+     * entity, if any, should be an idempotent action.</p>
      *
      * @param expirable the entity that is expired
      * @return whether the entity should be removed from the iterator via {@link Iterator#remove()}
@@ -82,7 +78,7 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
     private void onTimeoutExpired()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} timeouts check", this);
+            LOG.debug("Timeouts check for {}", this);
 
         long now = System.nanoTime();
         long earliest = Long.MAX_VALUE;
@@ -92,18 +88,29 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
         // be seen during the iteration below.
         earliestTimeout.set(earliest);
 
+        Iterator<T> iterator = iterator();
+        if (iterator == null)
+            return;
+
         // Scan the entities to abort expired entities
         // and to find the entity that expires the earliest.
-        Iterator<T> iterator = iterator();
         while (iterator.hasNext())
         {
             T expirable = iterator.next();
             long expiresAt = expirable.getExpireNanoTime();
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Entity {} expires in {} ms for {}", expirable, TimeUnit.NANOSECONDS.toMillis(expiresAt - now), this);
+
             if (expiresAt == -1)
                 continue;
+
             if (expiresAt <= now)
             {
-                if (onExpired(expirable))
+                boolean remove = onExpired(expirable);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Entity {} expired, remove={} for {}", expirable, remove, this);
+                if (remove)
                     iterator.remove();
                 continue;
             }
@@ -132,13 +139,19 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
         // When the timeout expires, scan the entities for the next
         // earliest entity that may expire, and reschedule a new timeout.
         long prevEarliest = earliestTimeout.getAndUpdate(t -> Math.min(t, expiresAt));
-        if (expiresAt < prevEarliest)
+        long expires = expiresAt;
+        while (expires < prevEarliest)
         {
             // A new entity expires earlier than previous entities, schedule it.
-            long delay = Math.max(0, expiresAt - System.nanoTime());
+            long delay = Math.max(0, expires - System.nanoTime());
             if (LOG.isDebugEnabled())
-                LOG.debug("{} scheduling timeout in {} ms", this, TimeUnit.NANOSECONDS.toMillis(delay));
-            cyclicTimeout.schedule(delay, TimeUnit.NANOSECONDS);
+                LOG.debug("Scheduling timeout in {} ms for {}", TimeUnit.NANOSECONDS.toMillis(delay), this);
+            schedule(cyclicTimeout, delay, TimeUnit.NANOSECONDS);
+
+            // If we lost a race and overwrote a schedule() with an earlier time, then that earlier time
+            // is remembered by earliestTimeout, in which case we will loop and set it again ourselves.
+            prevEarliest = expires;
+            expires = earliestTimeout.get();
         }
     }
 
@@ -146,6 +159,11 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
     public void destroy()
     {
         cyclicTimeout.destroy();
+    }
+
+    boolean schedule(CyclicTimeout cyclicTimeout, long delay, TimeUnit unit)
+    {
+        return cyclicTimeout.schedule(delay, unit);
     }
 
     /**
@@ -163,5 +181,19 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
          * @return the expiration time in nanoseconds, or {@link Long#MAX_VALUE} if this entity does not expire
          */
         public long getExpireNanoTime();
+    }
+
+    private class Timeouts extends CyclicTimeout
+    {
+        private Timeouts(Scheduler scheduler)
+        {
+            super(scheduler);
+        }
+
+        @Override
+        public void onTimeoutExpired()
+        {
+            CyclicTimeouts.this.onTimeoutExpired();
+        }
     }
 }
