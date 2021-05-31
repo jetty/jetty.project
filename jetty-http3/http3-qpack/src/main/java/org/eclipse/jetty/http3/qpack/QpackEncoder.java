@@ -164,12 +164,15 @@ public class QpackEncoder implements Dumpable
         }
 
         dynamicTable.add(new Entry(field));
-        _handler.onInstruction(new LiteralNameEntryInstruction(huffman, field.getName(), huffman, field.getValue()));
+        _handler.onInstruction(new LiteralNameEntryInstruction(field, huffman));
         return true;
     }
 
     public void encode(ByteBuffer buffer, int streamId, MetaData metadata) throws QpackException
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Encoding: streamId={}, metadata={}", streamId, metadata);
+
         // Verify that we can encode without errors.
         if (metadata.getFields() != null)
         {
@@ -292,7 +295,7 @@ public class QpackEncoder implements Dumpable
             {
                 Entry newEntry = new Entry(field);
                 dynamicTable.add(newEntry);
-                _handler.onInstruction(new LiteralNameEntryInstruction(huffman, field.getName(), huffman, field.getValue()));
+                _handler.onInstruction(new LiteralNameEntryInstruction(field, huffman));
 
                 // Should we reference this entry and risk blocking.
                 if (referenceEntry(newEntry, streamInfo))
@@ -305,6 +308,9 @@ public class QpackEncoder implements Dumpable
 
     void insertCountIncrement(int increment) throws QpackException
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("InsertCountIncrement: increment={}", increment);
+
         int insertCount = _context.getDynamicTable().getInsertCount();
         if (_knownInsertCount + increment > insertCount)
             throw new QpackException.StreamException("KnownInsertCount incremented over InsertCount");
@@ -313,6 +319,9 @@ public class QpackEncoder implements Dumpable
 
     void sectionAcknowledgement(int streamId) throws QpackException
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("SectionAcknowledgement: streamId={}", streamId);
+
         StreamInfo streamInfo = _streamInfoMap.get(streamId);
         if (streamInfo == null)
             throw new QpackException.StreamException("No StreamInfo for " + streamId);
@@ -329,6 +338,9 @@ public class QpackEncoder implements Dumpable
 
     void streamCancellation(int streamId) throws QpackException
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("StreamCancellation: streamId={}", streamId);
+
         StreamInfo streamInfo = _streamInfoMap.remove(streamId);
         if (streamInfo == null)
             throw new QpackException.StreamException("No StreamInfo for " + streamId);

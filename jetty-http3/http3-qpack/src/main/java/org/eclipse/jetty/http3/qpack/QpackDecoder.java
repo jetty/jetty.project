@@ -166,7 +166,7 @@ public class QpackDecoder implements Dumpable
     void insert(int nameIndex, boolean isDynamicTableIndex, String value) throws QpackException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Insert Name Reference: nameIndex={}, dynamic={}, value={}", nameIndex, isDynamicTableIndex, value);
+            LOG.debug("InsertNameReference: nameIndex={}, dynamic={}, value={}", nameIndex, isDynamicTableIndex, value);
 
         StaticTable staticTable = QpackContext.getStaticTable();
         DynamicTable dynamicTable = _context.getDynamicTable();
@@ -182,7 +182,7 @@ public class QpackDecoder implements Dumpable
     void insert(String name, String value) throws QpackException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Insert Literal Entry: name={}, value={}", name, value);
+            LOG.debug("InsertLiteralEntry: name={}, value={}", name, value);
 
         Entry entry = new Entry(new HttpField(name, value));
 

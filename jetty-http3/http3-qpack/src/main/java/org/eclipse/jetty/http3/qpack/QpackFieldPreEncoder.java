@@ -69,10 +69,8 @@ public class QpackFieldPreEncoder implements HttpFieldPreEncoder
 
         // Use a base of zero as we only reference the static table.
         int base = 0;
-        ByteBuffer buffer = BufferUtil.allocate(encodableEntry.getRequiredSize(base));
-        BufferUtil.clearToFill(buffer);
-        encodableEntry.encode(buffer, base);
-        BufferUtil.flipToFlush(buffer, 0);
-        return BufferUtil.toArray(buffer);
+        byte[] preEncodedBytes = new byte[encodableEntry.getRequiredSize(base)];
+        encodableEntry.encode(ByteBuffer.wrap(preEncodedBytes), base);
+        return preEncodedBytes;
     }
 }

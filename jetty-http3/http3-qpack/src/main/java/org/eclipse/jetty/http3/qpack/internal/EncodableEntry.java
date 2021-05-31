@@ -135,29 +135,28 @@ public abstract class EncodableEntry
         public void encode(ByteBuffer buffer, int base)
         {
             // TODO: when should this be set?
-            // TODO: this is different for the Post-Base index case.
-            byte allowIntermediary = 0x00;
+            boolean allowIntermediary = false;
 
             // Encode the prefix.
             boolean isStatic = _nameEntry.isStatic();
             if (isStatic)
             {
                 // Literal Field Line with Static Name Reference.
-                buffer.put((byte)(0x40 | allowIntermediary | 0x10));
+                buffer.put((byte)(0x40 | 0x10 | (allowIntermediary ? 0x20 : 0x00)));
                 int relativeIndex =  _nameEntry.getIndex();
                 NBitIntegerEncoder.encode(buffer, 4, relativeIndex);
             }
             else if (_nameEntry.getIndex() < base)
             {
                 // Literal Field Line with Dynamic Name Reference.
-                buffer.put((byte)(0x40 | allowIntermediary));
+                buffer.put((byte)(0x40 | (allowIntermediary ? 0x20 : 0x00)));
                 int relativeIndex = base - (_nameEntry.getIndex() + 1);
                 NBitIntegerEncoder.encode(buffer, 4, relativeIndex);
             }
             else
             {
                 // Literal Field Line with Post-Base Name Reference.
-                buffer.put(allowIntermediary);
+                buffer.put((byte)(allowIntermediary ? 0x08 : 0x00));
                 int relativeIndex = _nameEntry.getIndex() - base;
                 NBitIntegerEncoder.encode(buffer, 3, relativeIndex);
             }

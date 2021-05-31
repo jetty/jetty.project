@@ -15,6 +15,7 @@ package org.eclipse.jetty.http3.qpack.internal.instruction;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.http3.qpack.internal.util.HuffmanEncoder;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
@@ -28,12 +29,17 @@ public class LiteralNameEntryInstruction implements Instruction
     private final String _name;
     private final String _value;
 
-    public LiteralNameEntryInstruction(boolean huffmanName, String name, boolean huffmanValue, String value)
+    public LiteralNameEntryInstruction(HttpField httpField, boolean huffman)
+    {
+        this(httpField, huffman, huffman);
+    }
+
+    public LiteralNameEntryInstruction(HttpField httpField, boolean huffmanName, boolean huffmanValue)
     {
         _huffmanName = huffmanName;
         _huffmanValue = huffmanValue;
-        _name = name;
-        _value = value;
+        _name = httpField.getName();
+        _value = httpField.getValue();
     }
 
     public String getName()
