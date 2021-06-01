@@ -248,17 +248,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return _retainableByteBuffer == null || _retainableByteBuffer.isEmpty();
     }
 
-    private String toDetailString()
-    {
-        ByteBuffer buffer = _retainableByteBuffer == null ? null : _retainableByteBuffer.getBuffer();
-        return BufferUtil.toDetailString(buffer);
-    }
-
     @Override
     public void onFillable()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} onFillable enter {} {}", this, _channel.getState(), toDetailString());
+            LOG.debug("{} onFillable enter {} {}", this, _channel.getState(), _retainableByteBuffer);
 
         HttpConnection last = setCurrentConnection(this);
         try
@@ -313,7 +307,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             setCurrentConnection(last);
             if (LOG.isDebugEnabled())
-                LOG.debug("{} onFillable exit {} {}", this, _channel.getState(), toDetailString());
+                LOG.debug("{} onFillable exit {} {}", this, _channel.getState(), _retainableByteBuffer);
         }
     }
 
@@ -364,7 +358,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     _parser.atEOF();
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} filled {} {}", this, filled, toDetailString());
+                    LOG.debug("{} filled {} {}", this, filled, _retainableByteBuffer);
 
                 return filled;
             }
@@ -382,7 +376,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private boolean parseRequestBuffer()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} parse {}", this, toDetailString());
+            LOG.debug("{} parse {}", this, _retainableByteBuffer);
 
         boolean handle = _parser.parseNext(_retainableByteBuffer == null ? BufferUtil.EMPTY_BUFFER : _retainableByteBuffer.getBuffer());
 
