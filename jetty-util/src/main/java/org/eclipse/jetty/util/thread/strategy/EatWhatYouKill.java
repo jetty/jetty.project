@@ -53,9 +53,7 @@ import org.eclipse.jetty.util.thread.TryExecutor;
  * the task and immediately continue production. When operating in this pattern, the
  * sub-strategy is called ProduceExecuteConsume (PEC).</p>
  * <p>The EatWhatYouKill strategy is named after a hunting proverb, in the
- * sense that one should kill(produce) only to eat(consume).
- * The use of this phrase is not an endorsement of hunting nor killing of
- * wildlife for food or sport.</p>
+ * sense that one should kill(produce) only to eat(consume).</p>
  */
 @ManagedObject("eat what you kill execution strategy")
 public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrategy, Runnable
