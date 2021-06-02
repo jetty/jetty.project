@@ -14,8 +14,8 @@
         <Set name="mapName" property="jetty.session.hazelcast.mapName"/>
         <Set name="hazelcastInstanceName" property="jetty.session.hazelcast.hazelcastInstanceName"/>
         <Set name="useQueries" property="jetty.session.hazelcast.useQueries"/>
-        <Set name="gracePeriodSec"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
-        <Set name="savePeriodSec"><Property name="jetty.session.savePeriod.seconds" default="0" /></Set>
+        <Set name="gracePeriodSec" property="jetty.session.gracePeriod.seconds"/>
+        <Set name="savePeriodSec" property="jetty.session.savePeriod.seconds"/>
         <Set name="configurationLocation"><Property name="jetty.session.hazelcast.configurationLocation" default="" /></Set>
       </New>
     </Arg>
