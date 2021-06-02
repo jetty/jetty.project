@@ -1496,7 +1496,6 @@ public class RequestTest
         assertEquals("value", cookies.get(0).getValue());
     }
 
-    @Disabled("No longer relevant")
     @Test
     public void testCookieLeak() throws Exception
     {
@@ -1517,23 +1516,32 @@ public class RequestTest
         String request = "POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Cookie: other=cookie\r\n" +
-            "\r\n" +
-            "POST / HTTP/1.1\r\n" +
+            "\r\n";
+
+        _connector.getResponse(request);
+        assertEquals("cookie", cookie[0]);
+        assertNull(cookie[1]);
+
+        request = "POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Cookie: name=value\r\n" +
             "Connection: close\r\n" +
             "\r\n";
 
         _connector.getResponse(request);
-
         assertEquals("value", cookie[0]);
         assertNull(cookie[1]);
 
         request = "POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Cookie: name=value\r\n" +
-            "\r\n" +
-            "POST / HTTP/1.1\r\n" +
+            "\r\n";
+
+        _connector.getResponse(request);
+        assertEquals("value", cookie[0]);
+        assertNull(cookie[1]);
+
+        request = "POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Cookie: \r\n" +
             "Connection: close\r\n" +
@@ -1547,8 +1555,14 @@ public class RequestTest
             "Host: whatever\r\n" +
             "Cookie: name=value\r\n" +
             "Cookie: other=cookie\r\n" +
-            "\r\n" +
-            "POST / HTTP/1.1\r\n" +
+            "\r\n";
+
+        _connector.getResponse(request);
+        assertEquals("value", cookie[0]);
+        assertEquals("cookie", cookie[1]);
+        assertNull(cookie[2]);
+
+        request = "POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Cookie: name=value\r\n" +
             "Cookie:\r\n" +
@@ -1556,7 +1570,6 @@ public class RequestTest
             "\r\n";
 
         _connector.getResponse(request);
-
         assertEquals("value", cookie[0]);
         assertNull(cookie[1]);
     }
