@@ -16,8 +16,10 @@ package org.eclipse.jetty.websocket.server.config;
 import java.util.Set;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
+import javax.servlet.annotation.HandlesTypes;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
@@ -28,6 +30,7 @@ import org.slf4j.LoggerFactory;
 /**
  * ServletContext configuration for Jetty Native WebSockets API.
  */
+@HandlesTypes({WebSocket.class})
 public class JettyWebSocketServletContainerInitializer implements ServletContainerInitializer
 {
     private static final Logger LOG = LoggerFactory.getLogger(JettyWebSocketServletContainerInitializer.class);
