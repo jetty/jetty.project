@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled
+@Disabled(value = "ServerWithJMX uses registry on fixed port 1999 which can be already in-use")
 public class ServerWithJMXTest extends AbstractEmbeddedTest
 {
     private Server server;
