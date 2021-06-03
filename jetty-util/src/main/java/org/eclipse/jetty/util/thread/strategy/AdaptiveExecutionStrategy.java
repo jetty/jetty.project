@@ -60,11 +60,23 @@ import org.slf4j.LoggerFactory;
  *     <dt>EPC</dt><dd>If the producing thread is not {@link Invocable.InvocationType#NON_BLOCKING}
  *     and a pending producer thread is available, either because there is already a pending producer
  *     or one is successfully started with {@link TryExecutor#tryExecute(Runnable)}.</dd>
- *     <dt>PIC</dt><dd>If the produced task has used the {@link Invocable} API to indicate that
- *     it is {@link Invocable.InvocationType#EITHER}.</dd>
+ *     <dt>PIC</dt><dd>If the produced task has used the {@link Invocable#getInvocationType()} API to
+ *     indicate that it is {@link Invocable.InvocationType#EITHER}.</dd>
  *     <dt>PEC</dt><dd>Otherwise.</dd>
  * </dl>
- *
+ * <p>Because of the preference for {@code PC} mode, on a multicore machine with many
+ * many {@link Invocable.InvocationType#NON_BLOCKING} tasks, multiple instances of the strategy may be
+ * required to keep all CPUs on the system busy.</p>
+ * <p>Since the producing thread may be invoked with {@link Invocable#invokeNonBlocking(Runnable)
+ * this allows {@link AdaptiveExecutionStrategy}s to be efficiently and safely chain: so that a task
+ * produced by one execution strategy may become itself become a producer in a second execution strategy
+ * (e.g. an IO selector may use an execution strategy to handle multiple connections and each
+ * connection may use a execution strategy to handle multiplexed channels/streams within the connection).
+ * If a task containing another execution strategy identifies as {@link Invocable.InvocationType#EITHER}
+ * then the first strategy may invoke it as {@link Invocable.InvocationType#NON_BLOCKING} when it has
+ * no pending producer threads available. This avoids thread starvation as the production on the second
+ * strategy can always be executed, but without t he risk that it may block the last available producer
+ * for the first strategy.</p>
  * <p>This strategy was previously named EatWhatYouKill (EWYK) because its preference to for
  * a producer to directly consume a task was similar to the hunting proverb, in the sense that one
  * should eat(consume) what they kill(produce).</p>
