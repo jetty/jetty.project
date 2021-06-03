@@ -326,7 +326,7 @@ public class HttpRedirector
                 }
                 else
                 {
-                    TimeoutException failure = new TimeoutException("Total timeout " + httpRequest.getTimeout() + " ms elapsed");
+                    TimeoutException failure = new TimeoutException("Total timeout " + httpRequest.getConversation().getTimeout() + " ms elapsed");
                     fail(httpRequest, failure, response);
                     return null;
                 }

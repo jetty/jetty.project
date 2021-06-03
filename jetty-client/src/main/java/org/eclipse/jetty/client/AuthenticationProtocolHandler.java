@@ -231,7 +231,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                     }
                     else
                     {
-                        TimeoutException failure = new TimeoutException("Total timeout " + request.getTimeout() + " ms elapsed");
+                        TimeoutException failure = new TimeoutException("Total timeout " + request.getConversation().getTimeout() + " ms elapsed");
                         forwardFailureComplete(request, failure, response, failure);
                         return;
                     }
