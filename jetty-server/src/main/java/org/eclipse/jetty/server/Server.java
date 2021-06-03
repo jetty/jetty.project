@@ -78,7 +78,7 @@ public class Server extends HandlerWrapper implements Attributes
     private final ThreadPool _threadPool;
     private final List<Connector> _connectors = new CopyOnWriteArrayList<>();
     private SessionIdManager _sessionIdManager;
-    private boolean _stopAtShutdown = true;
+    private boolean _stopAtShutdown;
     private boolean _dumpAfterStart;
     private boolean _dumpBeforeStop;
     private ErrorHandler _errorHandler;
