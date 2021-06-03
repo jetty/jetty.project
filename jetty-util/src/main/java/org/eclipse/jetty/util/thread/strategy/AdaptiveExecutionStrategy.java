@@ -33,38 +33,42 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>An adaptive execution strategy that uses the {@link Invocable} status
- * of both the task and the current execution to select an optimal strategy
- * that prioritizes executing the task immediately in the current thread
- * if can be done so without thread starvation issues.</p>
+ * of both the task and the current thread to select an optimal strategy
+ * that prioritizes executing the task immediately in the current
+ * producing thread if it can be done so without thread starvation issues.</p>
  *
- * <p>If a produced task has used the {@link Invocable} API to indicate that
- * it is {@link Invocable.InvocationType#NON_BLOCKING},
- * then the task will always be run directly and production resumed afterwards.
- * When operating in this pattern, the sub-strategy is called ProduceConsume (PC).</p>
+ * This strategy selects between the following sub-strategies:
+ * <dl>
+ *     <dt>ProduceConsume(PC)</dt>
+ *     <dd>The producing thread consumes the task by executing it directly and then
+ *     continues to produce.</dd>
+ *     <dt>ProduceInvokeConsume(PIC)</dt>
+ *     <dd>The producing thread consumes the task by invoking it with {@link Invocable#invokeNonBlocking(Runnable)}
+ *     and then continues to produce.</dd>
+ *     <dt>ProduceExecuteConsume(PEC)</dt>
+ *     <dd>The producing thread dispatches the task to a thread pool to be executed and then immediately resumes
+ *     producing.</dd>
+ *     <dt>ExecuteProduceConsume(EPC)</dt>
+ *     <dd>The producing thread consumes the task by executing it directly (as in PC mode) but then races with
+ *     a pending producer thread to take over production.
+ *     </dd>
+ * </dl>
+ * The sub-strategy is selected as follows:
+ * <dl>
+ *     <dt>PC</dt><dd>If the produced task has used the {@link Invocable} API to indicate that
+ *     it is {@link Invocable.InvocationType#NON_BLOCKING}.</dd>
+ *     <dt>EPC</dt><dd>If the producing thread is not {@link Invocable.InvocationType#NON_BLOCKING}
+ *     and a pending producer thread is available, either because there is already a pending producer
+ *     or one is successfully started with {@link TryExecutor#tryExecute(Runnable)}.</dd>
+ *     <dt>PIC</dt><dd>If the produced task has used the {@link Invocable} API to indicate that
+ *     it is {@link Invocable.InvocationType#EITHER}.</dd>
+ *     <dt>PEC</dt><dd>Otherwise.</dd>
+ * </dl>
  *
- * <p>If the producing thread has indicated that it is itself
- * {@link Invocable.InvocationType#NON_BLOCKING}, then produced tasks that
- * are {@link Invocable.InvocationType#EITHER}, are invoked directly as
- * {@link Invocable.InvocationType#NON_BLOCKING} and then production resumed.
- * This sub-strategy is called ProduceInvokeConsume (PIC).</p>
+ * <p>This strategy was previously named EatWhatYouKill (EWYK) because its preference to for
+ * a producer to directly consume a task was similar to the hunting proverb, in the sense that one
+ * eat(consume) what they kill(produce).</p>
  *
- * <p>For all other tasks produced by a {@link Invocable.InvocationType#NON_BLOCKING}
- * thread, the task is dispatched for execution by a thread pool and the current
- * producing thread immediately continues production.
- * This sub-strategy is called ProduceExecuteConsume (PEC).</p>
- *
- * <p>If the producing thread may block, then for produced task that also may block,
- * the strategy may attempts to dispatch another producing thread via a {@link TryExecutor}.
- * If either there is already a producer thread pending or the call
- * to {@link TryExecutor#tryExecute(Runnable)} succeeds, then the task
- * is executed directly and the pending producer will take over production.
- * This sub-strategy is called Execute Produce Consume (EPC), but was previously
- * named EatWhatYouKill (EWYK) after a hunting proverb, in the sense that one
- * should kill(produce) only to eat(consume).</p>
- *
- * <p>If there is no pending producer thread available and the produce task
- * is {@link Invocable.InvocationType#EITHER}, then the PIC sub-strategy is
- * used. Otherwise the PEC sub-strategy is used.</p>
  */
 @ManagedObject("Adaptive execution strategy")
 public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements ExecutionStrategy, Runnable
@@ -219,86 +223,24 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         }
 
         Mode mode;
-        if (nonBlocking)
+        Invocable.InvocationType taskType = Invocable.getInvocationType(task);
+        if (taskType == Invocable.InvocationType.NON_BLOCKING)
         {
-            // The calling thread cannot block, so we only have a choice between PC and PEC modes,
-            // based on the invocation type of the task
-            switch (Invocable.getInvocationType(task))
-            {
-                case NON_BLOCKING:
-                    mode = Mode.PRODUCE_CONSUME;
-                    break;
-
-                case EITHER:
-                    mode = Mode.PRODUCE_INVOKE_CONSUME;
-                    break;
-
-                default:
-                    mode = Mode.PRODUCE_EXECUTE_CONSUME;
-                    break;
-            }
+            mode = Mode.PRODUCE_CONSUME;
+        }
+        else if (!nonBlocking && (_pending || _tryExecutor.tryExecute(this)))
+        {
+            _pending = true;
+            _state = State.IDLE;
+            mode = Mode.EXECUTE_PRODUCE_CONSUME;
+        }
+        else if (taskType == Invocable.InvocationType.EITHER)
+        {
+            mode = Mode.PRODUCE_INVOKE_CONSUME;
         }
         else
         {
-            // The calling thread can block, so we can choose between PC, PEC and EPC modes,
-            // based on the invocation type of the task and if a reserved thread is available
-            switch (Invocable.getInvocationType(task))
-            {
-                case NON_BLOCKING:
-                    mode = Mode.PRODUCE_CONSUME;
-                    break;
-
-                case BLOCKING:
-                    // The task is blocking, so PC is not an option. Thus we choose
-                    // between EPC and PEC based on the availability of a reserved thread.
-                    try (AutoLock l = _lock.lock())
-                    {
-                        if (_pending)
-                        {
-                            _state = State.IDLE;
-                            mode = Mode.EXECUTE_PRODUCE_CONSUME;
-                        }
-                        else if (_tryExecutor.tryExecute(this))
-                        {
-                            _pending = true;
-                            _state = State.IDLE;
-                            mode = Mode.EXECUTE_PRODUCE_CONSUME;
-                        }
-                        else
-                        {
-                            mode = Mode.PRODUCE_EXECUTE_CONSUME;
-                        }
-                    }
-                    break;
-
-                case EITHER:
-                    // The task may be non blocking, so PC is an option. Thus we choose
-                    // between EPC and PC based on the availability of a reserved thread.
-                    try (AutoLock l = _lock.lock())
-                    {
-                        if (_pending)
-                        {
-                            _state = State.IDLE;
-                            mode = Mode.EXECUTE_PRODUCE_CONSUME;
-                        }
-                        else if (_tryExecutor.tryExecute(this))
-                        {
-                            _pending = true;
-                            _state = State.IDLE;
-                            mode = Mode.EXECUTE_PRODUCE_CONSUME;
-                        }
-                        else
-                        {
-                            // PC mode, but we must consume with non-blocking invocation
-                            // as we may be the last thread and we cannot block
-                            mode = Mode.PRODUCE_INVOKE_CONSUME;
-                        }
-                    }
-                    break;
-
-                default:
-                    throw new IllegalStateException(toString());
-            }
+            mode = Mode.PRODUCE_EXECUTE_CONSUME;
         }
 
         if (LOG.isDebugEnabled())
