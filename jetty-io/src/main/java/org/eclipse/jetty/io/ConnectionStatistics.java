@@ -40,6 +40,11 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
  * or ConnectionFactory (for the server) or to HttpClient (for the client)
  * will trigger the tracking of the connection statistics for all
  * connections managed by the server or by the client.</p>
+ * <p>The statistics for a connection are gathered when the connection
+ * is closed.</p>
+ * <p>ConnectionStatistics instances must be {@link #start() started}
+ * to collect statistics, either as part of starting the whole component
+ * tree, or explicitly if the component tree has already been started.</p>
  */
 @ManagedObject("Tracks statistics on connections")
 public class ConnectionStatistics extends AbstractLifeCycle implements Connection.Listener, Dumpable
@@ -65,7 +70,17 @@ public class ConnectionStatistics extends AbstractLifeCycle implements Connectio
     {
         if (!isStarted())
             return;
+        onTotalOpened(connection);
+        onConnectionOpened(connection);
+    }
+
+    protected void onTotalOpened(Connection connection)
+    {
         _stats.incrementCount();
+    }
+
+    protected void onConnectionOpened(Connection connection)
+    {
         _statsMap.computeIfAbsent(connection.getClass().getName(), Stats::new).incrementCount();
     }
 
@@ -74,7 +89,17 @@ public class ConnectionStatistics extends AbstractLifeCycle implements Connectio
     {
         if (!isStarted())
             return;
+        onTotalClosed(connection);
+        onConnectionClosed(connection);
+    }
+
+    protected void onTotalClosed(Connection connection)
+    {
         onClosed(_stats, connection);
+    }
+
+    protected void onConnectionClosed(Connection connection)
+    {
         Stats stats = _statsMap.get(connection.getClass().getName());
         if (stats != null)
             onClosed(stats, connection);
