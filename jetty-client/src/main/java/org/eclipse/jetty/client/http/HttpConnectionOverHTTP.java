@@ -15,6 +15,8 @@ package org.eclipse.jetty.client.http;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -22,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 
+import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpConversation;
@@ -267,6 +270,12 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         }
 
         @Override
+        protected Iterator<HttpChannel> getHttpChannels()
+        {
+            return Collections.<HttpChannel>singleton(channel).iterator();
+        }
+
+        @Override
         public SendFailure send(HttpExchange exchange)
         {
             HttpRequest request = exchange.getRequest();
@@ -322,6 +331,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         public void close()
         {
             HttpConnectionOverHTTP.this.close();
+            destroy();
         }
 
         @Override
