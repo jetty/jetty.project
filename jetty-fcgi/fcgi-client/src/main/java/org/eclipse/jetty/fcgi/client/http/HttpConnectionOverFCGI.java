@@ -21,6 +21,7 @@ package org.eclipse.jetty.fcgi.client.http;
 import java.io.EOFException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
@@ -374,6 +375,12 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
         }
 
         @Override
+        protected Iterator<HttpChannel> getHttpChannels()
+        {
+            return new IteratorWrapper<>(activeChannels.values().iterator());
+        }
+
+        @Override
         protected SendFailure send(HttpExchange exchange)
         {
             Request request = exchange.getRequest();
@@ -391,6 +398,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
         public void close()
         {
             HttpConnectionOverFCGI.this.close();
+            destroy();
         }
 
         protected void close(Throwable failure)
@@ -509,6 +517,34 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Channel not found for request {}", request);
+        }
+    }
+
+    private static final class IteratorWrapper<T> implements Iterator<T>
+    {
+        private final Iterator<? extends T> iterator;
+
+        private IteratorWrapper(Iterator<? extends T> iterator)
+        {
+            this.iterator = iterator;
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return iterator.hasNext();
+        }
+
+        @Override
+        public T next()
+        {
+            return iterator.next();
+        }
+
+        @Override
+        public void remove()
+        {
+            iterator.remove();
         }
     }
 }
