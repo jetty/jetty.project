@@ -55,8 +55,8 @@ import org.slf4j.LoggerFactory;
  * </dl>
  * The sub-strategy is selected as follows:
  * <dl>
- *     <dt>PC</dt><dd>If the produced task has used the {@link Invocable} API to indicate that
- *     it is {@link Invocable.InvocationType#NON_BLOCKING}.</dd>
+ *     <dt>PC</dt><dd>If the produced task has been invoked with {@link Invocable#invokeNonBlocking(Runnable)
+ *     to indicate that it is {@link Invocable.InvocationType#NON_BLOCKING}.</dd>
  *     <dt>EPC</dt><dd>If the producing thread is not {@link Invocable.InvocationType#NON_BLOCKING}
  *     and a pending producer thread is available, either because there is already a pending producer
  *     or one is successfully started with {@link TryExecutor#tryExecute(Runnable)}.</dd>
