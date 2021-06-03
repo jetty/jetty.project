@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -211,8 +212,25 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                     path = request.getPath();
                 }
                 Request newRequest = client.copyRequest(request, requestURI);
-                // Disable the timeout so that only the one from the initial request applies.
-                newRequest.timeout(0, TimeUnit.MILLISECONDS);
+
+                // Adjust the timeout of the new request, taking into account the
+                // timeout of the previous request and the time already elapsed.
+                long timeoutAt = request.getTimeoutAt();
+                if (timeoutAt < Long.MAX_VALUE)
+                {
+                    long newTimeout = timeoutAt - System.nanoTime();
+                    if (newTimeout > 0)
+                    {
+                        newRequest.timeout(newTimeout, TimeUnit.NANOSECONDS);
+                    }
+                    else
+                    {
+                        TimeoutException failure = new TimeoutException("Total timeout " + request.getConversation().getTimeout() + " ms elapsed");
+                        forwardFailureComplete(request, failure, response, failure);
+                        return;
+                    }
+                }
+
                 if (path != null)
                     newRequest.path(path);
 
