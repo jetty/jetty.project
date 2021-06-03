@@ -67,7 +67,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>This strategy was previously named EatWhatYouKill (EWYK) because its preference to for
  * a producer to directly consume a task was similar to the hunting proverb, in the sense that one
- * eat(consume) what they kill(produce).</p>
+ * should eat(consume) what they kill(produce).</p>
  *
  */
 @ManagedObject("Adaptive execution strategy")
