@@ -43,10 +43,13 @@ import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.io.ssl.SslConnection;
@@ -1002,5 +1005,50 @@ public class HttpClientTLSTest
 
             assertEquals(HttpStatus.OK_200, response3.getStatus());
         }
+    }
+
+    @Test
+    public void testBytesInBytesOut() throws Exception
+    {
+        // Two connections will be closed: SslConnection and HttpConnection.
+        // Two on the server, two on the client.
+        CountDownLatch latch = new CountDownLatch(4);
+        SslContextFactory serverTLSFactory = createServerSslContextFactory();
+        startServer(serverTLSFactory, new EmptyServerHandler());
+        ConnectionStatistics serverStats = new ConnectionStatistics()
+        {
+            @Override
+            public void onClosed(Connection connection)
+            {
+                super.onClosed(connection);
+                latch.countDown();
+            }
+        };
+        connector.addManaged(serverStats);
+
+        SslContextFactory clientTLSFactory = createClientSslContextFactory();
+        startClient(clientTLSFactory);
+        ConnectionStatistics clientStats = new ConnectionStatistics()
+        {
+            @Override
+            public void onClosed(Connection connection)
+            {
+                super.onClosed(connection);
+                latch.countDown();
+            }
+        };
+        client.addManaged(clientStats);
+
+        ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())
+            .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
+            .send();
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        assertThat(clientStats.getSentBytes(), Matchers.greaterThan(0L));
+        assertEquals(clientStats.getSentBytes(), serverStats.getReceivedBytes());
+        assertThat(clientStats.getReceivedBytes(), Matchers.greaterThan(0L));
+        assertEquals(clientStats.getReceivedBytes(), serverStats.getSentBytes());
     }
 }
