@@ -325,6 +325,12 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         return client;
     }
 
+    @Override
+    public ClassLoader getClassLoader()
+    {
+        return client.getClassLoader();
+    }
+
     public EndpointMetadata getClientEndpointMetadata(Class<?> endpoint, EndpointConfig config)
     {
         synchronized (endpointClientMetadataCache)

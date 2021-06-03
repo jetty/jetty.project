@@ -76,6 +76,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     private final Supplier<DecoratedObjectFactory> objectFactorySupplier;
 
     // WebSocket Specifics
+    private final ClassLoader classloader;
     private final WebSocketPolicy policy;
     private final WebSocketExtensionFactory extensionRegistry;
     private final SessionTracker sessionTracker = new SessionTracker();
@@ -112,6 +113,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public WebSocketClient(HttpClient httpClient, DecoratedObjectFactory decoratedObjectFactory)
     {
+        this.classloader = Thread.currentThread().getContextClassLoader();
         this.httpClient = Objects.requireNonNull(httpClient, "HttpClient");
 
         addBean(httpClient);
@@ -262,6 +264,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public WebSocketClient(final WebSocketContainerScope scope, EventDriverFactory eventDriverFactory, SessionFactory sessionFactory, HttpClient httpClient)
     {
+        this.classloader = Thread.currentThread().getContextClassLoader();
         this.httpClient = httpClient == null ? HttpClientProvider.get(scope) : httpClient;
         addBean(this.httpClient);
 
@@ -384,6 +387,12 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         }
 
         return wsReq.sendAsync();
+    }
+
+    @Override
+    public ClassLoader getClassLoader()
+    {
+        return classloader;
     }
 
     public void setEventDriverFactory(EventDriverFactory eventDriverFactory)

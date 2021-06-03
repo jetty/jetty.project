@@ -73,12 +73,12 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     private final WebSocketPolicy policy;
     private final AtomicBoolean onCloseCalled = new AtomicBoolean(false);
     private final RemoteEndpointFactory remoteEndpointFactory;
-    private ClassLoader classLoader;
+    private final ClassLoader classLoader;
     private ExtensionFactory extensionFactory;
     private String protocolVersion;
-    private Map<String, String[]> parameterMap = new HashMap<>();
+    private final Map<String, String[]> parameterMap = new HashMap<>();
     private RemoteEndpoint remote;
-    private IncomingFrames incomingHandler;
+    private final IncomingFrames incomingHandler;
     private OutgoingFrames outgoingHandler;
     private UpgradeRequest upgradeRequest;
     private UpgradeResponse upgradeResponse;
@@ -98,7 +98,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         Objects.requireNonNull(containerScope, "Container Scope cannot be null");
         Objects.requireNonNull(requestURI, "Request URI cannot be null");
 
-        this.classLoader = Thread.currentThread().getContextClassLoader();
+        this.classLoader = containerScope.getClassLoader();
         this.containerScope = containerScope;
         this.requestURI = requestURI;
         this.websocket = websocket;
