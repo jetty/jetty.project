@@ -14,7 +14,7 @@ logging
 log4j
 
 [files]
-maven://org.slf4j/jcl-over-slf4j/%{slf4j.version}|jcl-over-slf4j-${slf4j.version}.jar
+maven://org.slf4j/jcl-over-slf4j/${slf4j.version}|jcl-over-slf4j-${slf4j.version}.jar
 
 [lib]
 lib/logging/log4j-to-slf4j-${slf4j.version}.jar
