@@ -12,9 +12,9 @@
     <New id="sessionDataStoreFactory" class="org.eclipse.jetty.gcloud.session.GCloudSessionDataStoreFactory">
        <Set name="gracePeriodSec" property="jetty.session.gracePeriod.seconds"/>
        <Set name="savePeriodSec" property="jetty.session.savePeriod.seconds"/>
-       <Set name="maxRetries"><Property name="jetty.session.gcloud.maxRetries" default="5"/></Set>
-       <Set name="backoffMs"><Property name="jetty.session.gcloud.backoffMs" default="1000"/></Set>
-       <Set name="namespace"><Property name="jetty.session.gcloud.namespace" default=""/></Set>  
+       <Set name="maxRetries" property="jetty.session.gcloud.maxRetries"/>
+       <Set name="backoffMs" property="jetty.session.gcloud.backoffMs"/>
+       <Set name="namespace" property="jetty.session.gcloud.namespace"/>  
        <Set name="entityDataModel">
           <New class="org.eclipse.jetty.gcloud.session.GCloudSessionDataStore$EntityDataModel">
               <Set name="kind">
