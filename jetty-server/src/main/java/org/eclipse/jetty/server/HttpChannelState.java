@@ -681,7 +681,7 @@ public class HttpChannelState
         }
         finally
         {
-            synchronized (this)
+            try (AutoLock l = lock())
             {
                 _onTimeoutThread = null;
             }

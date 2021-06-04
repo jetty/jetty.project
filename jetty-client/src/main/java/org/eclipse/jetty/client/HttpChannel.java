@@ -14,28 +14,26 @@
 package org.eclipse.jetty.client;
 
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class HttpChannel
+public abstract class HttpChannel implements CyclicTimeouts.Expirable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
 
     private final AutoLock _lock = new AutoLock();
     private final HttpDestination _destination;
-    private final TimeoutCompleteListener _totalTimeout;
     private HttpExchange _exchange;
 
     protected HttpChannel(HttpDestination destination)
     {
         _destination = destination;
-        _totalTimeout = new TimeoutCompleteListener(destination.getHttpClient().getScheduler());
     }
 
     public void destroy()
     {
-        _totalTimeout.destroy();
     }
 
     public HttpDestination getHttpDestination()
@@ -106,6 +104,13 @@ public abstract class HttpChannel
         }
     }
 
+    @Override
+    public long getExpireNanoTime()
+    {
+        HttpExchange exchange = getHttpExchange();
+        return exchange != null ? exchange.getExpireNanoTime() : Long.MAX_VALUE;
+    }
+
     protected abstract HttpSender getHttpSender();
 
     protected abstract HttpReceiver getHttpReceiver();
@@ -114,15 +119,7 @@ public abstract class HttpChannel
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange != null)
-        {
-            long timeoutAt = exchange.getExpireNanoTime();
-            if (timeoutAt != Long.MAX_VALUE)
-            {
-                exchange.getResponseListeners().add(_totalTimeout);
-                _totalTimeout.schedule(exchange.getRequest(), timeoutAt);
-            }
             send(exchange);
-        }
     }
 
     public abstract void send(HttpExchange exchange);

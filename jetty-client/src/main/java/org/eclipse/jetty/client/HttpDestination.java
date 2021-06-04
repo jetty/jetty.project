@@ -525,7 +525,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     /**
      * <p>Enforces the total timeout for for exchanges that are still in the queue.</p>
      * <p>The total timeout for exchanges that are not in the destination queue
-     * is enforced in {@link HttpChannel} by {@link TimeoutCompleteListener}.</p>
+     * is enforced in {@link HttpConnection}.</p>
      */
     private class RequestTimeouts extends CyclicTimeouts<HttpExchange>
     {

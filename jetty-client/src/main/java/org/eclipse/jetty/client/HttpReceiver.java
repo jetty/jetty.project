@@ -471,9 +471,9 @@ public abstract class HttpReceiver
             boolean ordered = getHttpDestination().getHttpClient().isStrictEventOrdering();
             if (!ordered)
                 channel.exchangeTerminated(exchange, result);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Request/Response {}: {}", failure == null ? "succeeded" : "failed", result);
             List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Request/Response {}: {}, notifying {}", failure == null ? "succeeded" : "failed", result, listeners);
             ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
             notifier.notifyComplete(listeners, result);
             if (ordered)
