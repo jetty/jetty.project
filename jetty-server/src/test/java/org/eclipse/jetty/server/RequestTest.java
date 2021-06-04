@@ -1499,79 +1499,77 @@ public class RequestTest
     @Test
     public void testCookieLeak() throws Exception
     {
-        final String[] cookie = new String[10];
+        CookieRequestTester tester = new CookieRequestTester();
+        _handler._checker = tester;
 
-        _handler._checker = (request, response) ->
-        {
-            Arrays.fill(cookie, null);
-
-            Cookie[] cookies = request.getCookies();
-            for (int i = 0; cookies != null && i < cookies.length; i++)
-            {
-                cookie[i] = cookies[i].getValue();
-            }
-            return true;
-        };
-
-        String request = "POST / HTTP/1.1\r\n" +
+        String[] cookies = new String[10];
+        tester.setCookieArray(cookies);
+        LocalEndPoint endp = _connector.connect();
+        endp.addInput("POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Cookie: other=cookie\r\n" +
-            "\r\n";
+            "\r\n");
+        endp.getResponse();
+        assertEquals("cookie", cookies[0]);
+        assertNull(cookies[1]);
 
-        _connector.getResponse(request);
-        assertEquals("cookie", cookie[0]);
-        assertNull(cookie[1]);
-
-        request = "POST / HTTP/1.1\r\n" +
+        cookies = new String[10];
+        tester.setCookieArray(cookies);
+        endp.addInput("POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Cookie: name=value\r\n" +
             "Connection: close\r\n" +
-            "\r\n";
+            "\r\n");
+        endp.getResponse();
+        assertEquals("value", cookies[0]);
+        assertNull(cookies[1]);
 
-        _connector.getResponse(request);
-        assertEquals("value", cookie[0]);
-        assertNull(cookie[1]);
-
-        request = "POST / HTTP/1.1\r\n" +
+        endp = _connector.connect();
+        cookies = new String[10];
+        tester.setCookieArray(cookies);
+        endp.addInput("POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Cookie: name=value\r\n" +
-            "\r\n";
+            "\r\n");
+        endp.getResponse();
+        assertEquals("value", cookies[0]);
+        assertNull(cookies[1]);
 
-        _connector.getResponse(request);
-        assertEquals("value", cookie[0]);
-        assertNull(cookie[1]);
-
-        request = "POST / HTTP/1.1\r\n" +
+        cookies = new String[10];
+        tester.setCookieArray(cookies);
+        endp.addInput("POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Cookie: \r\n" +
             "Connection: close\r\n" +
-            "\r\n";
+            "\r\n");
+        endp.getResponse();
+        assertNull(cookies[0]);
+        assertNull(cookies[1]);
 
-        _connector.getResponse(request);
-        assertNull(cookie[0]);
-        assertNull(cookie[1]);
-
-        request = "POST / HTTP/1.1\r\n" +
+        endp = _connector.connect();
+        cookies = new String[10];
+        tester.setCookieArray(cookies);
+        endp.addInput("POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Cookie: name=value\r\n" +
             "Cookie: other=cookie\r\n" +
-            "\r\n";
+            "\r\n");
+        endp.getResponse();
+        assertEquals("value", cookies[0]);
+        assertEquals("cookie", cookies[1]);
+        assertNull(cookies[2]);
 
-        _connector.getResponse(request);
-        assertEquals("value", cookie[0]);
-        assertEquals("cookie", cookie[1]);
-        assertNull(cookie[2]);
-
-        request = "POST / HTTP/1.1\r\n" +
+        cookies = new String[10];
+        tester.setCookieArray(cookies);
+        endp.addInput("POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Cookie: name=value\r\n" +
             "Cookie:\r\n" +
             "Connection: close\r\n" +
-            "\r\n";
-
-        _connector.getResponse(request);
-        assertEquals("value", cookie[0]);
-        assertNull(cookie[1]);
+            "\r\n");
+        endp.getResponse();
+        assertEquals("value", cookies[0]);
+        assertNull(cookies[1]);
     }
 
     @Test
@@ -1960,6 +1958,29 @@ public class RequestTest
         boolean check(HttpServletRequest request, HttpServletResponse response) throws IOException;
     }
 
+    private static class CookieRequestTester implements RequestTester
+    {
+        private String[] _cookieValues;
+
+        public void setCookieArray(String[] cookieValues)
+        {
+            _cookieValues = cookieValues;
+        }
+
+        @Override
+        public boolean check(HttpServletRequest request, HttpServletResponse response) throws IOException
+        {
+            Arrays.fill(_cookieValues, null);
+
+            Cookie[] cookies = request.getCookies();
+            for (int i = 0; cookies != null && i < cookies.length; i++)
+            {
+                _cookieValues[i] = cookies[i].getValue();
+            }
+            return true;
+        }
+    }
+    
     private static class TestRequest extends Request
     {
         public static final String TEST_SESSION_ID = "abc123";
