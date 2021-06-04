@@ -152,9 +152,7 @@ import static java.lang.invoke.MethodType.methodType;
  *
  * <tr>
  * <td valign="top">%H</td>
- * <td>Returns the name and version of the protocol the request uses in the form
- * protocol/majorVersion.minorVersion, for example, HTTP/1.1. For HTTP servlets,
- * the value returned is the same as the value of the CGI variable SERVER_PROTOCOL.</td>
+ * <td>The name and version of the request protocol, such as "HTTP/1.1".</td>
  * </tr>
  *
  * <tr>
