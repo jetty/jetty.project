@@ -35,9 +35,8 @@ import org.eclipse.jetty.websocket.api.Session;
  * <li><code>public void methodName(Reader reader)</code></li>
  * <li><code>public void methodName({@link Session} session, Reader reader)</code></li>
  * </ol>
- * Note: that the {@link Reader} in this case will always use UTF-8 encoding/charset (this is dictated by the RFC 6455 spec for Text Messages. If you need to
- * use a non-UTF-8 encoding/charset, you are instructed to use the binary messaging techniques.
- * <p>
+ * <p>Note: that the {@link Reader} in this case will always use UTF-8 encoding/charset (this is dictated by the RFC 6455 spec for Text Messages. If you need to
+ * use a non-UTF-8 encoding/charset, you are instructed to use the binary messaging techniques.</p><br>
  * <u>Binary Message Versions</u>
  * <ol>
  * <li><code>public void methodName(ByteBuffer message)</code></li>
@@ -47,6 +46,16 @@ import org.eclipse.jetty.websocket.api.Session;
  * <li><code>public void methodName(InputStream stream)</code></li>
  * <li><code>public void methodName({@link Session} session, InputStream stream)</code></li>
  * </ol>
+ * <u>Partial Message Variations</u>
+ * <p>These are used to receive partial messages without aggregating them into a complete WebSocket message. Instead the a boolean
+ * argument is supplied to indicate whether this is the last segment of data of the message. This can be done most efficiently
+ * for the {@link java.nio.ByteBuffer} type as no copying needs to occur to get the data into this format.</p>
+ * <ol>
+ * <li><code>public void methodName(ByteBuffer payload, boolean last)</code></li>
+ * <li><code>public void methodName(byte payload, boolean last)</code></li>
+ * <li><code>public void methodName(String payload, boolean last)</code></li>
+ * </ol>
+ * <p>Note: Similar to the signatures above these can all be used with an optional first {@link Session} parameter.</p>
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

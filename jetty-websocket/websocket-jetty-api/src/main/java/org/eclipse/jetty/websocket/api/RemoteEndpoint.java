@@ -104,7 +104,7 @@ public interface RemoteEndpoint
      * @param isLast true if this is the last piece of the partial bytes
      * @param callback callback to notify of success or failure of the write operation
      */
-    void sendPartialString(String fragment, boolean isLast, WriteCallback callback) throws IOException;
+    void sendPartialString(String fragment, boolean isLast, WriteCallback callback);
 
     /**
      * Send a Ping message containing the given application data to the remote endpoint, blocking until all of the
