@@ -243,19 +243,29 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         {
             mode = Mode.PRODUCE_CONSUME;
         }
-        else if (!nonBlocking && (_pending || _tryExecutor.tryExecute(this)))
+        else if (!nonBlocking)
         {
-            _pending = true;
-            _state = State.IDLE;
-            mode = Mode.EXECUTE_PRODUCE_CONSUME;
-        }
-        else if (taskType == Invocable.InvocationType.EITHER)
-        {
-            mode = Mode.PRODUCE_INVOKE_CONSUME;
+            try (AutoLock l = _lock.lock())
+            {
+                if (_pending || _tryExecutor.tryExecute(this))
+                {
+                    _pending = true;
+                    _state = State.IDLE;
+                    mode = Mode.EXECUTE_PRODUCE_CONSUME;
+                }
+                else
+                {
+                    mode = taskType == Invocable.InvocationType.EITHER
+                        ? Mode.PRODUCE_INVOKE_CONSUME
+                        : Mode.PRODUCE_EXECUTE_CONSUME;
+                }
+            }
         }
         else
         {
-            mode = Mode.PRODUCE_EXECUTE_CONSUME;
+            mode = taskType == Invocable.InvocationType.EITHER
+                ? Mode.PRODUCE_INVOKE_CONSUME
+                : Mode.PRODUCE_EXECUTE_CONSUME;
         }
 
         if (LOG.isDebugEnabled())
