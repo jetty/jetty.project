@@ -39,8 +39,17 @@ public class RetainableByteBuffer implements Retainable
     public RetainableByteBuffer(ByteBufferPool pool, int size, boolean direct)
     {
         this.pool = pool;
-        this.buffer = pool.acquire(size, direct);
-        this.references = new AtomicInteger(1);
+        if (pool != null)
+        {
+            this.buffer = pool.acquire(size, direct);
+            this.references = new AtomicInteger(1);
+        }
+        else
+        {
+            this.buffer = direct ? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size);
+            BufferUtil.clear(this.buffer);
+            this.references = new AtomicInteger(0);
+        }
     }
 
     public ByteBuffer getBuffer()
@@ -59,7 +68,7 @@ public class RetainableByteBuffer implements Retainable
         while (true)
         {
             int r = references.get();
-            if (r == 0)
+            if (r == 0 && pool != null)
                 throw new IllegalStateException("released " + this);
             if (references.compareAndSet(r, r + 1))
                 break;
@@ -70,7 +79,10 @@ public class RetainableByteBuffer implements Retainable
     {
         int ref = references.decrementAndGet();
         if (ref == 0)
-            pool.release(buffer);
+            if (pool != null)
+                pool.release(buffer);
+            else
+                BufferUtil.clear(buffer);
         else if (ref < 0)
             throw new IllegalStateException("already released " + this);
         return ref;
