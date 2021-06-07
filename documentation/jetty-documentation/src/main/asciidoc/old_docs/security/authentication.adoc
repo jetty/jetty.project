@@ -26,7 +26,7 @@ Authorization::
 
 Jetty server supports several standard authentication mechanisms: http://en.wikipedia.org/wiki/Basic_access_authentication[BASIC]; http://en.wikipedia.org/wiki/Digest_authentication[DIGEST]; http://en.wikipedia.org/wiki/Form-based_authentication[FORM]; CLIENT-CERT; and other mechanisms can be plugged in using the extensible http://docs.oracle.com/cd/E19462-01/819-6717/gcszc/index.html[JASPI] or http://en.wikipedia.org/wiki/SPNEGO[SPNEGO] mechanisms.
 
-Internally, configuring an authentication mechanism is done by setting an instance of a the link:{JDURL}/org/eclipse/jetty/security/Authenticator.html[Authenticator] interface onto the link:{JDURL}/org/eclipse/jetty/security/SecurityHandler.html[SecurityHandler] of the context, but in most cases it is done by declaring a `<login-config>` element in the standard web.xml descriptor or via annotations.
+Internally, configuring an authentication mechanism is done by setting an instance of the link:{JDURL}/org/eclipse/jetty/security/Authenticator.html[Authenticator] interface onto the link:{JDURL}/org/eclipse/jetty/security/SecurityHandler.html[SecurityHandler] of the context, but in most cases it is done by declaring a `<login-config>` element in the standard web.xml descriptor or via annotations.
 
 Below is an example taken from the link:{GITBROWSEURL}/tests/test-webapps/test-jetty-webapp/src/main/webapp/WEB-INF/web.xml?h=release-9[jetty-test-webapp web.xml] that configures BASIC authentication:
 
