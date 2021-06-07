@@ -90,6 +90,18 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
         return getMemory(false);
     }
 
+    @ManagedAttribute("The maximum bytes retained by direct ByteBuffers")
+    public long getMaxDirectMemory()
+    {
+        return _maxDirectMemory;
+    }
+
+    @ManagedAttribute("The maximum bytes retained by heap ByteBuffers")
+    public long getMaxHeapMemory()
+    {
+        return _maxHeapMemory;
+    }
+
     public long getMemory(boolean direct)
     {
         AtomicLong memory = direct ? _directMemory : _heapMemory;
