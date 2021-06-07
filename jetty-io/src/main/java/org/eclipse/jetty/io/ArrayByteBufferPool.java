@@ -14,8 +14,11 @@
 package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.IntFunction;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -38,6 +41,8 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
     private final int _minCapacity;
     private final ByteBufferPool.Bucket[] _direct;
     private final ByteBufferPool.Bucket[] _indirect;
+    private final LongAdder _newDirectByteBuffersCount = new LongAdder();
+    private final LongAdder _newIndirectByteBuffersCount = new LongAdder();
 
     /**
      * Creates a new ArrayByteBufferPool with a default configuration.
@@ -98,6 +103,52 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
         int length = maxCapacity / factor;
         _direct = new ByteBufferPool.Bucket[length];
         _indirect = new ByteBufferPool.Bucket[length];
+    }
+
+    @Override
+    public ByteBuffer newByteBuffer(int capacity, boolean direct)
+    {
+        if (direct)
+            _newDirectByteBuffersCount.increment();
+        else
+            _newIndirectByteBuffersCount.increment();
+        return super.newByteBuffer(capacity, direct);
+    }
+
+    @ManagedAttribute("The number of times a new direct byte buffer got allocated")
+    public long getNewDirectByteBuffersCount()
+    {
+        return _newDirectByteBuffersCount.sum();
+    }
+
+    @ManagedAttribute("The number of times a new indirect byte buffer got allocated")
+    public long getNewIndirectByteBuffersCount()
+    {
+        return _newIndirectByteBuffersCount.sum();
+    }
+
+    @ManagedAttribute("direct buffers buckets")
+    public List<String> getDirect()
+    {
+        List<String> set = new ArrayList<>();
+        for (Bucket bucket : _direct)
+        {
+            if (bucket != null)
+                set.add(bucket.toString());
+        }
+        return set;
+    }
+
+    @ManagedAttribute("indirect buffers buckets")
+    public List<String> getIndirect()
+    {
+        List<String> set = new ArrayList<>();
+        for (Bucket bucket : _indirect)
+        {
+            if (bucket != null)
+                set.add(bucket.toString());
+        }
+        return set;
     }
 
     @Override
