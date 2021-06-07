@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.websocket.tests;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -59,7 +60,14 @@ public class AnnotatedPartialListenerTest
         @Override
         public void onWebSocketPartialText(String payload, boolean fin)
         {
-            session.getRemote().sendPartialString(payload, fin, WriteCallback.NOOP);
+            try
+            {
+                session.getRemote().sendPartialString(payload, fin, WriteCallback.NOOP);
+            }
+            catch (IOException e)
+            {
+                throw new IllegalStateException(e);
+            }
         }
     }
 

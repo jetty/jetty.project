@@ -103,8 +103,9 @@ public interface RemoteEndpoint
      * @param fragment the text being sent
      * @param isLast true if this is the last piece of the partial bytes
      * @param callback callback to notify of success or failure of the write operation
+     * @throws IOException this never throws IOException, it was a mistake to have this in the signature.
      */
-    void sendPartialString(String fragment, boolean isLast, WriteCallback callback);
+    void sendPartialString(String fragment, boolean isLast, WriteCallback callback) throws IOException;
 
     /**
      * Send a Ping message containing the given application data to the remote endpoint, blocking until all of the
