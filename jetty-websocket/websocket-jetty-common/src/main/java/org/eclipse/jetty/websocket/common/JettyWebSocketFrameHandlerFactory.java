@@ -53,7 +53,6 @@ import org.eclipse.jetty.websocket.core.internal.messages.ByteArrayMessageSink;
 import org.eclipse.jetty.websocket.core.internal.messages.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.core.internal.messages.InputStreamMessageSink;
 import org.eclipse.jetty.websocket.core.internal.messages.MessageSink;
-import org.eclipse.jetty.websocket.core.internal.messages.PartialByteArrayMessageSink;
 import org.eclipse.jetty.websocket.core.internal.messages.PartialByteBufferMessageSink;
 import org.eclipse.jetty.websocket.core.internal.messages.PartialStringMessageSink;
 import org.eclipse.jetty.websocket.core.internal.messages.ReaderMessageSink;
@@ -443,15 +442,6 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                     // Partial ByteBuffer Message
                     assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
                     metadata.setBinaryHandle(PartialByteBufferMessageSink.class, methodHandle, onMsg);
-                    continue;
-                }
-
-                methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, binaryPartialArrayCallingArgs);
-                if (methodHandle != null)
-                {
-                    // Partial byte array Message
-                    assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
-                    metadata.setBinaryHandle(PartialByteArrayMessageSink.class, methodHandle, onMsg);
                     continue;
                 }
 

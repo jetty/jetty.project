@@ -30,6 +30,7 @@ import org.eclipse.jetty.websocket.api.WebSocketPartialListener;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.api.exceptions.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.junit.jupiter.api.AfterEach;
@@ -38,6 +39,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class AnnotatedPartialListenerTest
 {
@@ -114,23 +116,30 @@ public class AnnotatedPartialListenerTest
     }
 
     @WebSocket
-    public static class PartialByteArrayListener
+    public static class InvalidDoubleBinaryListener
     {
-        public BlockingQueue<MessageSegment> messages = new LinkedBlockingQueue<>();
-
-        public static class MessageSegment
+        @OnWebSocketMessage
+        public void onMessage(ByteBuffer bytes, boolean last)
         {
-            public byte[] bytes;
-            public boolean last;
         }
 
         @OnWebSocketMessage
-        public void onMessage(byte[] bytes, boolean last)
+        public void onMessage(ByteBuffer bytes)
         {
-            MessageSegment messageSegment = new MessageSegment();
-            messageSegment.bytes = bytes;
-            messageSegment.last = last;
-            messages.add(messageSegment);
+        }
+    }
+
+    @WebSocket
+    public static class InvalidDoubleTextListener
+    {
+        @OnWebSocketMessage
+        public void onMessage(String content, boolean last)
+        {
+        }
+
+        @OnWebSocketMessage
+        public void onMessage(String content)
+        {
         }
     }
 
@@ -220,28 +229,12 @@ public class AnnotatedPartialListenerTest
     }
 
     @Test
-    public void testAnnotatedPartialByteArray() throws Exception
+    public void testDoubleOnMessageAnnotation()
     {
-        PartialByteArrayListener endpoint = new PartialByteArrayListener();
-        try (Session session = client.connect(endpoint, serverUri).get(5, TimeUnit.SECONDS))
-        {
-            session.getRemote().sendPartialBytes(BufferUtil.toBuffer("hell"), false);
-            session.getRemote().sendPartialBytes(BufferUtil.toBuffer("o w"), false);
-            session.getRemote().sendPartialBytes(BufferUtil.toBuffer("orld"), true);
-        }
+        InvalidDoubleBinaryListener doubleBinaryListener = new InvalidDoubleBinaryListener();
+        assertThrows(InvalidWebSocketException.class, () -> client.connect(doubleBinaryListener, serverUri));
 
-        PartialByteArrayListener.MessageSegment segment;
-
-        segment = Objects.requireNonNull(endpoint.messages.poll(5, TimeUnit.SECONDS));
-        assertThat(segment.bytes, is("hell".getBytes()));
-        assertThat(segment.last, is(false));
-
-        segment = Objects.requireNonNull(endpoint.messages.poll(5, TimeUnit.SECONDS));
-        assertThat(segment.bytes, is("o w".getBytes()));
-        assertThat(segment.last, is(false));
-
-        segment = Objects.requireNonNull(endpoint.messages.poll(5, TimeUnit.SECONDS));
-        assertThat(segment.bytes, is("orld".getBytes()));
-        assertThat(segment.last, is(true));
+        InvalidDoubleTextListener doubleTextListener = new InvalidDoubleTextListener();
+        assertThrows(InvalidWebSocketException.class, () -> client.connect(doubleTextListener, serverUri));
     }
 }
