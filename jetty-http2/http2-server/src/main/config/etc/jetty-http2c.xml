@@ -6,10 +6,10 @@
     <Arg>
       <New class="org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory">
         <Arg name="config"><Ref refid="httpConfig"/></Arg>
-        <Set name="maxConcurrentStreams"><Property name="jetty.http2c.maxConcurrentStreams" default="1024"/></Set>
-        <Set name="initialStreamRecvWindow"><Property name="jetty.http2c.initialStreamRecvWindow" default="65535"/></Set>
+        <Set name="maxConcurrentStreams" property="jetty.http2c.maxConcurrentStreams"/>
+        <Set name="initialStreamRecvWindow" property="jetty.http2c.initialStreamRecvWindow"/>
         <Set name="initialSessionRecvWindow" property="jetty.http2.initialSessionRecvWindow"/>
-        <Set name="maxSettingsKeys"><Property name="jetty.http2.maxSettingsKeys" default="64"/></Set>
+        <Set name="maxSettingsKeys" property="jetty.http2.maxSettingsKeys"/>
         <Set name="rateControlFactory">
           <New class="org.eclipse.jetty.http2.parser.WindowRateControl$Factory">
             <Arg type="int"><Property name="jetty.http2.rateControl.maxEventsPerSecond" default="20"/></Arg>

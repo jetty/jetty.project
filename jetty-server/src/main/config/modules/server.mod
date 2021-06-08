@@ -63,7 +63,7 @@ etc/jetty.xml
 # jetty.httpConfig.compliance=RFC7230
 
 ## URI Compliance: SAFE, STRICT
-# jetty.httpConfig.uriCompliance=SAFE
+# jetty.httpConfig.uriCompliance=DEFAULT
 
 ## Cookie compliance mode for parsing request Cookie headers: RFC2965, RFC6265
 # jetty.httpConfig.requestCookieCompliance=RFC6265
