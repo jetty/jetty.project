@@ -18,7 +18,7 @@ import java.util.concurrent.Executor;
 /**
  * @deprecated This class has been renamed to {@link AdaptiveExecutionStrategy}
  */
-@Deprecated
+@Deprecated(forRemoval = true)
 public class EatWhatYouKill extends AdaptiveExecutionStrategy
 {
     public EatWhatYouKill(Producer producer, Executor executor)

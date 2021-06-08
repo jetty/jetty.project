@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  * that prioritizes executing the task immediately in the current
  * producing thread if it can be done so without thread starvation issues.</p>
  *
- * This strategy selects between the following sub-strategies:
+ * <p>This strategy selects between the following sub-strategies:</p>
  * <dl>
  *     <dt>ProduceConsume(PC)</dt>
  *     <dd>The producing thread consumes the task by executing it directly and then
@@ -53,16 +53,20 @@ import org.slf4j.LoggerFactory;
  *     a pending producer thread to take over production.
  *     </dd>
  * </dl>
- * The sub-strategy is selected as follows:
+ * <p>The sub-strategy is selected as follows:</p>
  * <dl>
- *     <dt>PC</dt><dd>If the produced task has been invoked with {@link Invocable#invokeNonBlocking(Runnable)}
+ *     <dt>PC</dt>
+ *     <dd>If the produced task has been invoked with {@link Invocable#invokeNonBlocking(Runnable)}
  *     to indicate that it is {@link Invocable.InvocationType#NON_BLOCKING}.</dd>
- *     <dt>EPC</dt><dd>If the producing thread is not {@link Invocable.InvocationType#NON_BLOCKING}
+ *     <dt>EPC</dt>
+ *     <dd>If the producing thread is not {@link Invocable.InvocationType#NON_BLOCKING}
  *     and a pending producer thread is available, either because there is already a pending producer
  *     or one is successfully started with {@link TryExecutor#tryExecute(Runnable)}.</dd>
- *     <dt>PIC</dt><dd>If the produced task has used the {@link Invocable#getInvocationType()} API to
+ *     <dt>PIC</dt>
+ *     <dd>If the produced task has used the {@link Invocable#getInvocationType()} API to
  *     indicate that it is {@link Invocable.InvocationType#EITHER}.</dd>
- *     <dt>PEC</dt><dd>Otherwise.</dd>
+ *     <dt>PEC</dt>
+ *     <dd>Otherwise.</dd>
  * </dl>
  *
  * <p>Because of the preference for {@code PC} mode, on a multicore machine with many
@@ -70,19 +74,19 @@ import org.slf4j.LoggerFactory;
  * required to keep all CPUs on the system busy.</p>
  *
  * <p>Since the producing thread may be invoked with {@link Invocable#invokeNonBlocking(Runnable)}
- * this allows {@link AdaptiveExecutionStrategy}s to be efficiently and safely chained: so that a task
+ * this allows {@link AdaptiveExecutionStrategy}s to be efficiently and safely chained: a task
  * produced by one execution strategy may become itself be a producer in a second execution strategy
  * (e.g. an IO selector may use an execution strategy to handle multiple connections and each
- * connection may use a execution strategy to handle multiplexed channels/streams within the connection).
- * A task containing another {@link AdaptiveExecutionStrategy} should identify as
+ * connection may use a execution strategy to handle multiplexed channels/streams within the connection).</p>
+ * <p>A task containing another {@link AdaptiveExecutionStrategy} should identify as
  * {@link Invocable.InvocationType#EITHER} so when there are no pending producers threads available to
  * the first strategy, then it may invoke the second as {@link Invocable.InvocationType#NON_BLOCKING}.
  * This avoids starvation as the production on the second strategy can always be executed,
  * but without the risk that it may block the last available producer for the first strategy.</p>
  *
- * <p>This strategy was previously named EatWhatYouKill (EWYK) because its preference to for
- * a producer to directly consume a task was similar to the hunting proverb, in the sense that one
- * should eat(consume) what they kill(produce).</p>
+ * <p>This strategy was previously named EatWhatYouKill (EWYK) because its preference for a
+ * producer to directly consume the tasks that it produces is similar to a hunting proverb
+ * that says that a hunter should eat (i.e. consume) what they kill (i.e. produced).</p>
  *
  */
 @ManagedObject("Adaptive execution strategy")
@@ -241,37 +245,48 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         Invocable.InvocationType taskType = Invocable.getInvocationType(task);
         if (taskType == Invocable.InvocationType.NON_BLOCKING)
         {
+            // The produced task will never block, so we directly consume the task with PC
+            // and then resume production.
             mode = Mode.PRODUCE_CONSUME;
         }
-        else if (!nonBlocking)
+        else
         {
-            try (AutoLock l = _lock.lock())
+            // The produced task might block. Is this producing thread allowed to block?
+            boolean mayBlock = !nonBlocking;
+
+            // only if this thread may block do we need to take the lock so we can
+            // atomically check/mutate the state and pending status.
+            try (AutoLock l = mayBlock ? _lock.lock() : AutoLock.NO_LOCK)
             {
-                if (_pending || _tryExecutor.tryExecute(this))
+                if (mayBlock && (_pending || _tryExecutor.tryExecute(this)))
                 {
+                    // This producing thread may block and there is a pending producer available
+                    // so we use EPC: the producer will directly consume the task and then
+                    // race with the pending producer to take over production.
                     _pending = true;
                     _state = State.IDLE;
                     mode = Mode.EXECUTE_PRODUCE_CONSUME;
                 }
+                else if (taskType == Invocable.InvocationType.EITHER)
+                {
+                    // Either this thread is not allowed to not block or there were no pending
+                    // producer threads available. But we are able to invoke the task non blocking
+                    // so we use PIC to directly consume the task and then resume production.
+                    mode = Mode.PRODUCE_INVOKE_CONSUME;
+                }
                 else
                 {
-                    mode = taskType == Invocable.InvocationType.EITHER
-                        ? Mode.PRODUCE_INVOKE_CONSUME
-                        : Mode.PRODUCE_EXECUTE_CONSUME;
+                    // Otherwise we use PEC: this thread continues to produce and the task is
+                    // consumed by the executor
+                    mode = Mode.PRODUCE_EXECUTE_CONSUME;
                 }
             }
-        }
-        else
-        {
-            mode = taskType == Invocable.InvocationType.EITHER
-                ? Mode.PRODUCE_INVOKE_CONSUME
-                : Mode.PRODUCE_EXECUTE_CONSUME;
         }
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} m={} t={}/{}", this, mode, task, Invocable.getInvocationType(task));
 
-        // Consume or execute task
+        // Consume and/or execute task according to the selected mode.
         switch (mode)
         {
             case PRODUCE_CONSUME:
@@ -293,12 +308,14 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                 _epcMode.increment();
                 runTask(task);
 
-                // Try to produce again?
+                // Race the pending producer to produce again
                 try (AutoLock l = _lock.lock())
                 {
                     if (_state == State.IDLE)
                     {
                         // We beat the pending producer, so we will become the producer instead
+                        // The pending produce will become a noop if it arrives whilst we are producing,
+                        // or it may take over if we subsequently do another EPC consumption
                         _state = State.PRODUCING;
                         return true;
                     }
