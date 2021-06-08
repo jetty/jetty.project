@@ -51,27 +51,27 @@ public interface HttpURI
     enum Ambiguous
     {
         /**
-         * URI contains ambiguous path segments e.g. <code>/foo/%2e%2e/bar</code>
+         * URI contains ambiguous path segments e.g. {@code /foo/%2e%2e/bar}
          */
         SEGMENT,
 
         /**
-         * URI contains ambiguous empty segments e.g. <code>//</code>
+         * URI contains ambiguous empty segments e.g. {@code //}
          */
         EMPTY,
 
         /**
-         * URI contains ambiguous path separator within a URI segment e.g. <code>/foo/b%2fr</code>
+         * URI contains ambiguous path separator within a URI segment e.g. {@code /foo/b%2fr}
          */
         SEPARATOR,
 
         /**
-         * URI contains ambiguous path encoding within a URI segment e.g. <code>/%2557EB-INF</code>
+         * URI contains ambiguous path encoding within a URI segment e.g. {@code /%2557EB-INF}
          */
         ENCODING,
 
         /**
-         * URI contains ambiguous path parameters within a URI segment e.g. <code>/foo/..;/bar</code>
+         * URI contains ambiguous path parameters within a URI segment e.g. {@code /foo/..;/bar}
          */
         PARAM
     }
@@ -480,12 +480,12 @@ public interface HttpURI
          */
         private static final Index<Boolean> __ambiguousSegments = new Index.Builder<Boolean>()
             .caseSensitive(false)
-            .with("%2e", Boolean.TRUE)    // Is real dot segment not removed by normalisation.
-            .with("%2e%2e", Boolean.TRUE) // Is real dot dot segment not removed by normalisation.
-            .with(".%2e", Boolean.TRUE)   // Is real dot dot segment not removed by normalisation.
-            .with("%2e.", Boolean.TRUE)   // Is real dot dot segment not removed by normalisation.
-            .with("..", Boolean.FALSE)    // If followed by a parameter is not removed by dot dot normalisation.
-            .with(".", Boolean.FALSE)     // If followed by a parameter is not removed by dot normalisation.
+            .with("%2e", Boolean.TRUE)
+            .with("%2e%2e", Boolean.TRUE)
+            .with(".%2e", Boolean.TRUE)
+            .with("%2e.", Boolean.TRUE)
+            .with("..", Boolean.FALSE)
+            .with(".", Boolean.FALSE)
             .build();
 
         private String _scheme;
@@ -1328,24 +1328,24 @@ public interface HttpURI
          */
         private void checkSegment(String uri, int segment, int end, boolean param)
         {
-            // We had a non last empty segment meaning it was ambiguous.
+            // If we have previously seen an empty segment, then it was not the last segment and was thus ambiguous.
             if (_emptySegment)
                 _ambiguous.add(Ambiguous.EMPTY);
 
             if (end == segment)
             {
-                // Empty segments are only ambiguous if followed by a '#', '?' or end of string.
+                // Empty segments are not ambiguous if followed by a '#', '?' or end of string.
                 if (end >= uri.length() || ("#?".indexOf(uri.charAt(end)) >= 0))
                     return;
 
-                // If the first segment is empty then it is ambiguous.
+                // If this empty segment is the first segment then it is ambiguous.
                 if (segment == 0)
                 {
                     _ambiguous.add(Ambiguous.EMPTY);
                     return;
                 }
 
-                // Otherwise only a non last empty segment is ambiguous.
+                // Otherwise remember we have seen an empty segment, which is check if we see a subsequent segment.
                 if (!_emptySegment)
                 {
                     _emptySegment = true;

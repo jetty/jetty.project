@@ -481,6 +481,8 @@ public class HttpURITest
                 {"/foo/;param", "/foo/", EnumSet.noneOf(Ambiguous.class)},
                 {"/foo/;param/bar", "/foo//bar", EnumSet.of(Ambiguous.EMPTY)},
                 {"/foo//bar", "/foo//bar", EnumSet.of(Ambiguous.EMPTY)},
+                {"/foo//bar//", "/foo//bar//", EnumSet.of(Ambiguous.EMPTY)},
+                {"//foo//bar//", "//foo//bar//", EnumSet.of(Ambiguous.EMPTY)},
                 {"/foo//../bar", "/foo/bar", EnumSet.of(Ambiguous.EMPTY)},
                 {"/foo///../../../bar", "/bar", EnumSet.of(Ambiguous.EMPTY)},
                 {"/foo/./../bar", "/bar", EnumSet.noneOf(Ambiguous.class)},
