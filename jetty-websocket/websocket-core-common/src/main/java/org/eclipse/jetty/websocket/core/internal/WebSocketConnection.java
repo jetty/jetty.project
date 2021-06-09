@@ -27,6 +27,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -52,6 +53,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     private final AutoLock lock = new AutoLock();
     private final ByteBufferPool bufferPool;
+    private final RetainableByteBufferPool retainableByteBufferPool;
     private final Generator generator;
     private final Parser parser;
     private final WebSocketCoreSession coreSession;
@@ -79,7 +81,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                                ByteBufferPool bufferPool,
                                WebSocketCoreSession coreSession)
     {
-        this(endp, executor, scheduler, bufferPool, coreSession, null);
+        this(endp, executor, scheduler, bufferPool, null, coreSession, null);
     }
 
     /**
@@ -102,6 +104,31 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                                WebSocketCoreSession coreSession,
                                Random randomMask)
     {
+        this(endp, executor, scheduler, bufferPool, null, coreSession, randomMask);
+    }
+
+    /**
+     * Create a WSConnection.
+     * <p>
+     * It is assumed that the WebSocket Upgrade Handshake has already
+     * completed successfully before creating this connection.
+     * </p>
+     * @param endp The endpoint ever which Websockot is sent/received
+     * @param executor A thread executor to use for WS callbacks.
+     * @param scheduler A scheduler to use for timeouts
+     * @param bufferPool A pool of buffers to use.
+     * @param retainableByteBufferPool A pool of retainable buffers to use.
+     * @param coreSession The WC core session to which frames are delivered.
+     * @param randomMask A Random used to mask frames. If null then SecureRandom will be created if needed.
+     */
+    public WebSocketConnection(EndPoint endp,
+                               Executor executor,
+                               Scheduler scheduler,
+                               ByteBufferPool bufferPool,
+                               RetainableByteBufferPool retainableByteBufferPool,
+                               WebSocketCoreSession coreSession,
+                               Random randomMask)
+    {
         super(endp, executor);
 
         Objects.requireNonNull(endp, "EndPoint");
@@ -110,6 +137,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         Objects.requireNonNull(bufferPool, "ByteBufferPool");
 
         this.bufferPool = bufferPool;
+        this.retainableByteBufferPool = retainableByteBufferPool;
         this.coreSession = coreSession;
         this.generator = new Generator();
         this.parser = new Parser(bufferPool, coreSession);
@@ -283,7 +311,10 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     private RetainableByteBuffer newNetworkBuffer(int capacity)
     {
-        return new RetainableByteBuffer(bufferPool, capacity, isUseInputDirectByteBuffers());
+        if (retainableByteBufferPool == null)
+            return new RetainableByteBuffer(bufferPool, capacity, isUseInputDirectByteBuffers());
+        else
+            return retainableByteBufferPool.acquire(capacity, isUseInputDirectByteBuffers());
     }
 
     private void releaseNetworkBuffer()

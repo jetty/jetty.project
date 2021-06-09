@@ -27,6 +27,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -50,6 +51,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     private final HTTP2Producer producer = new HTTP2Producer();
     private final AtomicLong bytesIn = new AtomicLong();
     private final ByteBufferPool byteBufferPool;
+    private final RetainableByteBufferPool retainableByteBufferPool;
     private final Parser parser;
     private final ISession session;
     private final int bufferSize;
@@ -59,8 +61,14 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
     public HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
     {
+        this(byteBufferPool, null, executor, endPoint, parser, session, bufferSize);
+    }
+
+    public HTTP2Connection(ByteBufferPool byteBufferPool, RetainableByteBufferPool retainableByteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
+    {
         super(endPoint, executor);
         this.byteBufferPool = byteBufferPool;
+        this.retainableByteBufferPool = retainableByteBufferPool;
         this.parser = parser;
         this.session = session;
         this.bufferSize = bufferSize;
@@ -425,7 +433,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     {
         private NetworkBuffer()
         {
-            super(byteBufferPool, bufferSize, isUseInputDirectByteBuffers());
+            super(retainableByteBufferPool == null ? byteBufferPool : null, bufferSize, isUseInputDirectByteBuffers());
         }
 
         private void put(ByteBuffer source)
