@@ -32,9 +32,11 @@ import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AbstractEndPoint;
+import org.eclipse.jetty.io.AdapterMemoryPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.MemoryPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.WriteFlusher;
@@ -109,7 +111,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     private final AtomicLong _bytesIn = new AtomicLong();
     private final AtomicLong _bytesOut = new AtomicLong();
     private final ByteBufferPool _bufferPool;
-    private final RetainableByteBufferPool _retainableBufferPool;
+    private final MemoryPool<RetainableByteBuffer> _retainableBufferPool;
     private final SSLEngine _sslEngine;
     private final DecryptedEndPoint _decryptedEndPoint;
     private ByteBuffer _decryptedInput;
@@ -194,13 +196,15 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         this(null, byteBufferPool, executor, endPoint, sslEngine, useDirectBuffersForEncryption, useDirectBuffersForDecryption);
     }
 
-    public SslConnection(RetainableByteBufferPool retainableByteBufferPool, ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine,
+    public SslConnection(MemoryPool<RetainableByteBuffer> retainableByteBufferPool, ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine,
                          boolean useDirectBuffersForEncryption, boolean useDirectBuffersForDecryption)
     {
         // This connection does not execute calls to onFillable(), so they will be called by the selector thread.
         // onFillable() does not block and will only wakeup another thread to do the actual reading and handling.
         super(endPoint, executor);
         this._bufferPool = byteBufferPool;
+        if (retainableByteBufferPool == null)
+            retainableByteBufferPool = new AdapterMemoryPool(byteBufferPool);
         this._retainableBufferPool = retainableByteBufferPool;
         this._sslEngine = sslEngine;
         this._decryptedEndPoint = newDecryptedEndPoint();
@@ -336,12 +340,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     private void acquireEncryptedInput()
     {
         if (_encryptedInput == null)
-        {
-            if (_retainableBufferPool == null)
-                _encryptedInput = new RetainableByteBuffer(_bufferPool, getPacketBufferSize(), _encryptedDirectBuffers);
-            else
-                _encryptedInput = _retainableBufferPool.acquire(getPacketBufferSize(), _encryptedDirectBuffers);
-        }
+            _encryptedInput = _retainableBufferPool.acquire(getPacketBufferSize(), _encryptedDirectBuffers);
     }
 
     private void acquireEncryptedOutput()

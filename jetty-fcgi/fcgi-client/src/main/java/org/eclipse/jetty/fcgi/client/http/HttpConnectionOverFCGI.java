@@ -44,8 +44,10 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.AdapterMemoryPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.MemoryPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.Attachable;
@@ -72,6 +74,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     private final ClientParser parser;
     private RetainableByteBuffer networkBuffer;
     private Object attachment;
+    private final MemoryPool<RetainableByteBuffer> retainableByteBufferPool;
 
     public HttpConnectionOverFCGI(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
     {
@@ -82,6 +85,12 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         this.delegate = new Delegate(destination);
         this.parser = new ClientParser(new ResponseListener());
         requests.addLast(0);
+
+        HttpClient client = destination.getHttpClient();
+        MemoryPool<RetainableByteBuffer> retainableByteBufferPool = client.getBean(RetainableByteBufferPool.class);
+        if (retainableByteBufferPool == null)
+            retainableByteBufferPool = new AdapterMemoryPool(client.getByteBufferPool());
+        this.retainableByteBufferPool = retainableByteBufferPool;
     }
 
     public HttpDestination getHttpDestination()
@@ -136,16 +145,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     private RetainableByteBuffer newNetworkBuffer()
     {
         HttpClient client = destination.getHttpClient();
-        RetainableByteBufferPool retainableByteBufferPool = client.getBean(RetainableByteBufferPool.class);
-        if (retainableByteBufferPool == null)
-        {
-            ByteBufferPool bufferPool = client.getByteBufferPool();
-            return new RetainableByteBuffer(bufferPool, client.getResponseBufferSize(), client.isUseInputDirectByteBuffers());
-        }
-        else
-        {
-            return retainableByteBufferPool.acquire(client.getResponseBufferSize(), client.isUseInputDirectByteBuffers());
-        }
+        return retainableByteBufferPool.acquire(client.getResponseBufferSize(), client.isUseInputDirectByteBuffers());
     }
 
     private void releaseNetworkBuffer()

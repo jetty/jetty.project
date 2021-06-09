@@ -26,8 +26,8 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.MemoryPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -53,7 +53,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     private final AutoLock lock = new AutoLock();
     private final ByteBufferPool bufferPool;
-    private final RetainableByteBufferPool retainableByteBufferPool;
+    private final MemoryPool<RetainableByteBuffer> retainableByteBufferPool;
     private final Generator generator;
     private final Parser parser;
     private final WebSocketCoreSession coreSession;
@@ -79,7 +79,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                                Executor executor,
                                Scheduler scheduler,
                                ByteBufferPool bufferPool,
-                               RetainableByteBufferPool retainableByteBufferPool,
+                               MemoryPool<RetainableByteBuffer> retainableByteBufferPool,
                                WebSocketCoreSession coreSession)
     {
         this(endp, executor, scheduler, bufferPool, retainableByteBufferPool, coreSession, null);
@@ -103,7 +103,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                                Executor executor,
                                Scheduler scheduler,
                                ByteBufferPool bufferPool,
-                               RetainableByteBufferPool retainableByteBufferPool,
+                               MemoryPool<RetainableByteBuffer> retainableByteBufferPool,
                                WebSocketCoreSession coreSession,
                                Random randomMask)
     {
@@ -113,6 +113,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         Objects.requireNonNull(coreSession, "Session");
         Objects.requireNonNull(executor, "Executor");
         Objects.requireNonNull(bufferPool, "ByteBufferPool");
+        Objects.requireNonNull(retainableByteBufferPool, "MemoryPool<RetainableByteBuffer>");
 
         this.bufferPool = bufferPool;
         this.retainableByteBufferPool = retainableByteBufferPool;

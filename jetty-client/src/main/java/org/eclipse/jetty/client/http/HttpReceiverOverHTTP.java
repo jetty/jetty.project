@@ -29,8 +29,10 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.AdapterMemoryPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.MemoryPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -44,6 +46,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
     private final LongAdder inMessages = new LongAdder();
     private final HttpParser parser;
+    private final MemoryPool<RetainableByteBuffer> retainableByteBufferPool;
     private RetainableByteBuffer networkBuffer;
     private boolean shutdown;
     private boolean complete;
@@ -62,6 +65,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             parser.setHeaderCacheSize(httpTransport.getHeaderCacheSize());
             parser.setHeaderCacheCaseSensitive(httpTransport.isHeaderCacheCaseSensitive());
         }
+
+        MemoryPool<RetainableByteBuffer> retainableByteBufferPool = httpClient.getBean(RetainableByteBufferPool.class);
+        if (retainableByteBufferPool == null)
+            retainableByteBufferPool = new AdapterMemoryPool(httpClient.getByteBufferPool());
+        this.retainableByteBufferPool = retainableByteBufferPool;
     }
 
     @Override
@@ -113,16 +121,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     {
         HttpClient client = getHttpDestination().getHttpClient();
         boolean direct = client.isUseInputDirectByteBuffers();
-        RetainableByteBufferPool retainableByteBufferPool = client.getBean(RetainableByteBufferPool.class);
-        if (retainableByteBufferPool == null)
-        {
-            ByteBufferPool bufferPool = client.getByteBufferPool();
-            return new RetainableByteBuffer(bufferPool, client.getResponseBufferSize(), direct);
-        }
-        else
-        {
-            return retainableByteBufferPool.acquire(client.getResponseBufferSize(), direct);
-        }
+        return retainableByteBufferPool.acquire(client.getResponseBufferSize(), direct);
     }
 
     private void releaseNetworkBuffer()

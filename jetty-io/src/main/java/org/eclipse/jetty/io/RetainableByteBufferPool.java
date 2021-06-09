@@ -22,7 +22,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 @ManagedObject
-public class RetainableByteBufferPool
+public class RetainableByteBufferPool implements MemoryPool<RetainableByteBuffer>
 {
     private final Pool<RetainableByteBuffer>[] _direct;
     private final Pool<RetainableByteBuffer>[] _indirect;
@@ -57,6 +57,7 @@ public class RetainableByteBufferPool
         _indirect = indirectArray;
     }
 
+    @Override
     public RetainableByteBuffer acquire(int size, boolean direct)
     {
         int capacity = (bucketFor(size) + 1) * _factor;
@@ -84,6 +85,7 @@ public class RetainableByteBufferPool
         return buffer;
     }
 
+    @Override
     public void release(RetainableByteBuffer buffer)
     {
         if (buffer == null)

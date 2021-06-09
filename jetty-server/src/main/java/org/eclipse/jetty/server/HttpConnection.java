@@ -30,10 +30,12 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.AdapterMemoryPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.MemoryPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.WriteFlusher;
@@ -57,7 +59,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private final HttpConfiguration _config;
     private final Connector _connector;
     private final ByteBufferPool _bufferPool;
-    private final RetainableByteBufferPool _retainableBufferPool;
+    private final MemoryPool<RetainableByteBuffer> _retainableByteBufferPool;
     private final HttpInput _input;
     private final HttpGenerator _generator;
     private final HttpChannelOverHttp _channel;
@@ -97,7 +99,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _config = config;
         _connector = connector;
         _bufferPool = _connector.getByteBufferPool();
-        _retainableBufferPool = connector.getBean(RetainableByteBufferPool.class);
+        MemoryPool<RetainableByteBuffer> retainableByteBufferPool = connector.getBean(RetainableByteBufferPool.class);
+        if (retainableByteBufferPool == null)
+            retainableByteBufferPool = new AdapterMemoryPool(_bufferPool);
+        _retainableByteBufferPool = retainableByteBufferPool;
         _generator = newHttpGenerator();
         _channel = newHttpChannel();
         _input = _channel.getRequest().getHttpInput();
@@ -239,12 +244,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     public ByteBuffer getRequestBuffer()
     {
         if (_retainableByteBuffer == null)
-        {
-            if (_retainableBufferPool == null)
-                _retainableByteBuffer = new RetainableByteBuffer(_bufferPool, getInputBufferSize(), isUseInputDirectByteBuffers());
-            else
-                _retainableByteBuffer = _retainableBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
-        }
+            _retainableByteBuffer = _retainableByteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
         return _retainableByteBuffer.getBuffer();
     }
 

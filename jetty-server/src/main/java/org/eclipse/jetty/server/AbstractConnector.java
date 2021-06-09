@@ -146,7 +146,6 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private final Executor _executor;
     private final Scheduler _scheduler;
     private final ByteBufferPool _byteBufferPool;
-    private final RetainableByteBufferPool _retainableByteBufferPool;
     private final Thread[] _acceptors;
     private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<EndPoint> _immutableEndPoints = Collections.unmodifiableSet(_endpoints);
@@ -191,8 +190,8 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         _byteBufferPool = pool != null ? pool : new ArrayByteBufferPool();
         addBean(_byteBufferPool);
         RetainableByteBufferPool retainableByteBufferPool = _server.getBean(RetainableByteBufferPool.class);
-        _retainableByteBufferPool = retainableByteBufferPool != null ? retainableByteBufferPool : new RetainableByteBufferPool();
-        addBean(_retainableByteBufferPool);
+        retainableByteBufferPool = retainableByteBufferPool != null ? retainableByteBufferPool : new RetainableByteBufferPool();
+        addBean(retainableByteBufferPool);
 
         addEventListener(new Container.Listener()
         {

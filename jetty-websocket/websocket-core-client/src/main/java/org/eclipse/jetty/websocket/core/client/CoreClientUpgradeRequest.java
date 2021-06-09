@@ -37,8 +37,11 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.AdapterMemoryPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.MemoryPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.MultiException;
@@ -448,7 +451,9 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
 
         HttpClient httpClient = wsClient.getHttpClient();
         ByteBufferPool bufferPool = wsClient.getWebSocketComponents().getBufferPool();
-        RetainableByteBufferPool retainableByteBufferPool = wsClient.getWebSocketComponents().getBean(RetainableByteBufferPool.class);
+        MemoryPool<RetainableByteBuffer> retainableByteBufferPool = wsClient.getWebSocketComponents().getBean(RetainableByteBufferPool.class);
+        if (retainableByteBufferPool == null)
+            retainableByteBufferPool = new AdapterMemoryPool(bufferPool);
         WebSocketConnection wsConnection = new WebSocketConnection(endPoint, httpClient.getExecutor(), httpClient.getScheduler(), bufferPool, retainableByteBufferPool, coreSession);
         wsClient.getEventListeners().forEach(wsConnection::addEventListener);
         coreSession.setWebSocketConnection(wsConnection);
