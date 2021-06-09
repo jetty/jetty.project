@@ -23,8 +23,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.AdapterMemoryPool;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MemoryPool;
@@ -59,12 +57,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     private boolean useInputDirectByteBuffers;
     private boolean useOutputDirectByteBuffers;
 
-    public HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
-    {
-        this(new AdapterMemoryPool(byteBufferPool), executor, endPoint, parser, session, bufferSize);
-    }
-
-    public HTTP2Connection(MemoryPool<RetainableByteBuffer> retainableByteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
+    protected HTTP2Connection(MemoryPool<RetainableByteBuffer> retainableByteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
     {
         super(endPoint, executor);
         this.retainableByteBufferPool = retainableByteBufferPool;
