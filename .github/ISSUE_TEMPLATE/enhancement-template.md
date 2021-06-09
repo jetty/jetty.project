@@ -1,7 +1,7 @@
 ---
 name: Enhancement
 about: Suggest enhancement or make a feature request
-title: 'Enhancement: '
+title: ''
 assignees: ''
 labels: Enhancement
 
