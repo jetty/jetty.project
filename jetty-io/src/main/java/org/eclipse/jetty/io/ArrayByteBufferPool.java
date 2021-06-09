@@ -14,11 +14,8 @@
 package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.function.IntFunction;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -101,30 +98,6 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
         int length = maxCapacity / factor;
         _direct = new ByteBufferPool.Bucket[length];
         _indirect = new ByteBufferPool.Bucket[length];
-    }
-
-    @ManagedAttribute("direct buffers buckets")
-    public List<String> getDirect()
-    {
-        List<String> set = new ArrayList<>();
-        for (Bucket bucket : _direct)
-        {
-            if (bucket != null)
-                set.add(bucket.toString());
-        }
-        return set;
-    }
-
-    @ManagedAttribute("indirect buffers buckets")
-    public List<String> getIndirect()
-    {
-        List<String> set = new ArrayList<>();
-        for (Bucket bucket : _indirect)
-        {
-            if (bucket != null)
-                set.add(bucket.toString());
-        }
-        return set;
     }
 
     @Override
