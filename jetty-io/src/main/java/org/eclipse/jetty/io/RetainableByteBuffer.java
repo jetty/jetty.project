@@ -16,6 +16,7 @@ package org.eclipse.jetty.io;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Retainable;
 
@@ -25,11 +26,12 @@ import org.eclipse.jetty.util.Retainable;
  * initially 1, incremented with {@link #retain()} and decremented with {@link #release()}. The buffer
  * is released to the pool when the reference count is decremented to 0.</p>
  */
-public class RetainableByteBuffer implements Retainable
+public class RetainableByteBuffer implements Retainable, Attachable
 {
     private final ByteBufferPool pool;
     private final ByteBuffer buffer;
     private final AtomicInteger references;
+    private Object attachment;
 
     public RetainableByteBuffer(ByteBufferPool pool, int size)
     {
@@ -52,6 +54,23 @@ public class RetainableByteBuffer implements Retainable
         }
     }
 
+    public int capacity()
+    {
+        return buffer.capacity();
+    }
+
+    @Override
+    public Object getAttachment()
+    {
+        return attachment;
+    }
+
+    @Override
+    public void setAttachment(Object attachment)
+    {
+        this.attachment = attachment;
+    }
+
     public ByteBuffer getBuffer()
     {
         return buffer;
@@ -60,6 +79,11 @@ public class RetainableByteBuffer implements Retainable
     public int getReferences()
     {
         return references.get();
+    }
+
+    public boolean isDirect()
+    {
+        return buffer.isDirect();
     }
 
     @Override
