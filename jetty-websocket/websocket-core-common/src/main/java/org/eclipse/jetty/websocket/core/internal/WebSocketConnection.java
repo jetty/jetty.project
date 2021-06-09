@@ -90,21 +90,15 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
      * It is assumed that the WebSocket Upgrade Handshake has already
      * completed successfully before creating this connection.
      * </p>
-     * @param endp The endpoint ever which Websockot is sent/received
-     * @param executor A thread executor to use for WS callbacks.
-     * @param scheduler A scheduler to use for timeouts
-     * @param bufferPool A pool of buffers to use.
-     * @param coreSession The WC core session to which frames are delivered.
-     * @param randomMask A Random used to mask frames. If null then SecureRandom will be created if needed.
      */
     public WebSocketConnection(EndPoint endp,
                                Executor executor,
                                Scheduler scheduler,
                                ByteBufferPool bufferPool,
-                               WebSocketCoreSession coreSession,
-                               Random randomMask)
+                               RetainableByteBufferPool retainableByteBufferPool,
+                               WebSocketCoreSession coreSession)
     {
-        this(endp, executor, scheduler, bufferPool, null, coreSession, randomMask);
+        this(endp, executor, scheduler, bufferPool, retainableByteBufferPool, coreSession, null);
     }
 
     /**
