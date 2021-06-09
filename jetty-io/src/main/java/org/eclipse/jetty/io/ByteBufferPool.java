@@ -20,9 +20,9 @@ package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -154,7 +154,7 @@ public interface ByteBufferPool
 
     class Bucket
     {
-        private final Deque<ByteBuffer> _queue = new ConcurrentLinkedDeque<>();
+        private final Queue<ByteBuffer> _queue = new ConcurrentLinkedQueue<>();
         private final ByteBufferPool _pool;
         private final int _capacity;
         private final int _maxSize;
@@ -232,7 +232,7 @@ public interface ByteBufferPool
 
         private void queueOffer(ByteBuffer buffer)
         {
-            _queue.offerFirst(buffer);
+            _queue.offer(buffer);
         }
 
         private ByteBuffer queuePoll()
