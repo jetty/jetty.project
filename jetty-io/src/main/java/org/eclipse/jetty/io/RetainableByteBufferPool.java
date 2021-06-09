@@ -136,7 +136,7 @@ public class RetainableByteBufferPool implements MemoryPool<RetainableByteBuffer
 
     private Pool<RetainableByteBuffer> newBucket()
     {
-        return new Pool<>(Pool.StrategyType.THREAD_ID, _maxBucketSize);
+        return new Pool<>(Pool.StrategyType.THREAD_ID, _maxBucketSize, true);
     }
 
     @ManagedAttribute("The number of pooled direct ByteBuffers")
