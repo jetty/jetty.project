@@ -22,6 +22,19 @@
         <Set name="excludedMimeTypes" property="jetty.gzip.excludedMimeTypeList"/>
         <Set name="includedPaths" property="jetty.gzip.includedPathList"/>
         <Set name="excludedPaths" property="jetty.gzip.excludedPathList"/>
+        <Set name="inflaterPool">
+            <New class="org.eclipse.jetty.util.compression.InflaterPool">
+                <Arg type="int"><Property name="jetty.gzip.inflaterPool.capacity" deprecated="jetty.gzip.inflaterPoolCapacity" default="1024"/></Arg>
+                <Arg type="boolean"><Property name="jetty.gzip.inflaterPool.noWrap" default="true"/></Arg>
+            </New>
+        </Set>
+        <Set name="deflaterPool">
+            <New class="org.eclipse.jetty.util.compression.DeflaterPool">
+                <Arg type="int"><Property name="jetty.gzip.deflaterPool.capacity" deprecated="jetty.gzip.deflaterPoolCapacity" default="1024"/></Arg>
+                <Arg type="int"><Property name="jetty.gzip.deflaterPool.compression" deprecated="jetty.gzip.compression" default="-1"/></Arg>
+                <Arg type="boolean"><Property name="jetty.gzip.deflaterPool.noWrap" default="true"/></Arg>
+            </New>
+        </Set>
 
 <!--
         <Set name="includedMethods">
