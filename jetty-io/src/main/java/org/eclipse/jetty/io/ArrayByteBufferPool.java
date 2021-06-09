@@ -41,8 +41,6 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
     private final int _minCapacity;
     private final ByteBufferPool.Bucket[] _direct;
     private final ByteBufferPool.Bucket[] _indirect;
-    private final LongAdder _newDirectByteBuffersCount = new LongAdder();
-    private final LongAdder _newIndirectByteBuffersCount = new LongAdder();
 
     /**
      * Creates a new ArrayByteBufferPool with a default configuration.
@@ -103,28 +101,6 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
         int length = maxCapacity / factor;
         _direct = new ByteBufferPool.Bucket[length];
         _indirect = new ByteBufferPool.Bucket[length];
-    }
-
-    @Override
-    public ByteBuffer newByteBuffer(int capacity, boolean direct)
-    {
-        if (direct)
-            _newDirectByteBuffersCount.increment();
-        else
-            _newIndirectByteBuffersCount.increment();
-        return super.newByteBuffer(capacity, direct);
-    }
-
-    @ManagedAttribute("The number of times a new direct byte buffer got allocated")
-    public long getNewDirectByteBuffersCount()
-    {
-        return _newDirectByteBuffersCount.sum();
-    }
-
-    @ManagedAttribute("The number of times a new indirect byte buffer got allocated")
-    public long getNewIndirectByteBuffersCount()
-    {
-        return _newIndirectByteBuffersCount.sum();
     }
 
     @ManagedAttribute("direct buffers buckets")
