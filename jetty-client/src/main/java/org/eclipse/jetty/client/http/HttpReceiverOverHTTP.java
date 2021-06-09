@@ -32,6 +32,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
@@ -111,9 +112,17 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     private RetainableByteBuffer newNetworkBuffer()
     {
         HttpClient client = getHttpDestination().getHttpClient();
-        ByteBufferPool bufferPool = client.getByteBufferPool();
         boolean direct = client.isUseInputDirectByteBuffers();
-        return new RetainableByteBuffer(bufferPool, client.getResponseBufferSize(), direct);
+        RetainableByteBufferPool retainableByteBufferPool = client.getBean(RetainableByteBufferPool.class);
+        if (retainableByteBufferPool == null)
+        {
+            ByteBufferPool bufferPool = client.getByteBufferPool();
+            return new RetainableByteBuffer(bufferPool, client.getResponseBufferSize(), direct);
+        }
+        else
+        {
+            return retainableByteBufferPool.acquire(client.getResponseBufferSize(), direct);
+        }
     }
 
     private void releaseNetworkBuffer()

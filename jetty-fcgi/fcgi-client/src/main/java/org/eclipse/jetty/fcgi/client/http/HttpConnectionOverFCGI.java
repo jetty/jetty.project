@@ -47,6 +47,7 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -135,8 +136,16 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     private RetainableByteBuffer newNetworkBuffer()
     {
         HttpClient client = destination.getHttpClient();
-        ByteBufferPool bufferPool = client.getByteBufferPool();
-        return new RetainableByteBuffer(bufferPool, client.getResponseBufferSize(), client.isUseInputDirectByteBuffers());
+        RetainableByteBufferPool retainableByteBufferPool = client.getBean(RetainableByteBufferPool.class);
+        if (retainableByteBufferPool == null)
+        {
+            ByteBufferPool bufferPool = client.getByteBufferPool();
+            return new RetainableByteBuffer(bufferPool, client.getResponseBufferSize(), client.isUseInputDirectByteBuffers());
+        }
+        else
+        {
+            return retainableByteBufferPool.acquire(client.getResponseBufferSize(), client.isUseInputDirectByteBuffers());
+        }
     }
 
     private void releaseNetworkBuffer()
