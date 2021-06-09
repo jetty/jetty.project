@@ -290,10 +290,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     private RetainableByteBuffer newNetworkBuffer(int capacity)
     {
-        if (retainableByteBufferPool == null)
-            return new RetainableByteBuffer(bufferPool, capacity, isUseInputDirectByteBuffers());
-        else
-            return retainableByteBufferPool.acquire(capacity, isUseInputDirectByteBuffers());
+        return retainableByteBufferPool.acquire(capacity, isUseInputDirectByteBuffers());
     }
 
     private void releaseNetworkBuffer()
