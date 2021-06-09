@@ -37,23 +37,14 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  * The client certificates available in the request will be verified against the configured {@link SslContextFactory} instance
  * </p>
  */
-public class SslClientCertAuthenticator
-    extends LoginAuthenticator
+public class SslClientCertAuthenticator extends LoginAuthenticator
 {
-
-    /**
-     * Set to true if SSL certificate validation is not required
-     * per default it's true as this is the goal of this implementation
-     */
+    private final SslContextFactory sslContextFactory;
     private boolean validateCerts = true;
-
-    private SslContextFactory sslContextFactory;
 
     public SslClientCertAuthenticator(SslContextFactory sslContextFactory)
     {
-        super();
-        Objects.nonNull(sslContextFactory);
-        this.sslContextFactory = sslContextFactory;
+        this.sslContextFactory = Objects.requireNonNull(sslContextFactory);
     }
 
     @Override
@@ -135,7 +126,7 @@ public class SslClientCertAuthenticator
     }
 
     /**
-     * @return true if SSL certificate has to be validated
+     * @return true if SSL certificate has to be validated.
      */
     public boolean isValidateCerts()
     {
@@ -143,11 +134,10 @@ public class SslClientCertAuthenticator
     }
 
     /**
-     * @param validateCerts true if SSL certificates have to be validated
+     * @param validateCerts true if SSL certificates have to be validated.
      */
     public void setValidateCerts(boolean validateCerts)
     {
-        validateCerts = validateCerts;
+        this.validateCerts = validateCerts;
     }
-
 }
