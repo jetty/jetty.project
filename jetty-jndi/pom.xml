@@ -31,7 +31,7 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Import-Package>javax.mail.*;resolution:=optional,*</Import-Package>
+            <Import-Package>${osgi.common.import.packages},javax.mail.*;resolution:=optional,*</Import-Package>
           </instructions>
         </configuration>
       </plugin>
