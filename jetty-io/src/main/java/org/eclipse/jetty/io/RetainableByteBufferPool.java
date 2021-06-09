@@ -62,13 +62,13 @@ public class RetainableByteBufferPool
         int capacity = (bucketFor(size) + 1) * _factor;
         Pool<RetainableByteBuffer> bucket = bucketFor(size, direct, this::newBucket);
         if (bucket == null)
-            return new RetainableByteBuffer(null, capacity, direct);
+            return new RetainableByteBuffer(capacity, direct);
         Pool<RetainableByteBuffer>.Entry entry = bucket.acquire();
 
         RetainableByteBuffer buffer;
         if (entry == null)
         {
-            buffer = new RetainableByteBuffer(null, capacity, direct);
+            buffer = new RetainableByteBuffer(capacity, direct);
             Pool<RetainableByteBuffer>.Entry reservedEntry = bucket.reserve();
             if (reservedEntry != null)
             {
