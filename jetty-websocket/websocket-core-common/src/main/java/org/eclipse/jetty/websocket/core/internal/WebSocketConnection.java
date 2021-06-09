@@ -79,22 +79,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                                Executor executor,
                                Scheduler scheduler,
                                ByteBufferPool bufferPool,
-                               WebSocketCoreSession coreSession)
-    {
-        this(endp, executor, scheduler, bufferPool, null, coreSession, null);
-    }
-
-    /**
-     * Create a WSConnection.
-     * <p>
-     * It is assumed that the WebSocket Upgrade Handshake has already
-     * completed successfully before creating this connection.
-     * </p>
-     */
-    public WebSocketConnection(EndPoint endp,
-                               Executor executor,
-                               Scheduler scheduler,
-                               ByteBufferPool bufferPool,
                                RetainableByteBufferPool retainableByteBufferPool,
                                WebSocketCoreSession coreSession)
     {
