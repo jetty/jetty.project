@@ -1,4 +1,18 @@
-jetty-11.0.4-SNAPSHOT
+jetty-11.0.5-SNAPSHOT
+
+jetty-11.0.4 - 04 June 2021
+ + 5379 Better handling for wrong SNI
+ + 5931 SslConnection should implement getBytesIn()/getBytesOut()
+ + 6112 Jetty logging service file leaking to web applications
+ + 6114 Jetty Deploy scan / symlink behavior is broken
+ + 6118 Display a warning when Hazelcast configuration does not contain Jetty
+   session serializer
+ + 6276 Support non-standard domains in SNI and X509
+ + 6305 Optimise `ContextHandler.isProtectedTarget`
+ + 6323 HttpClient gets stuck/never calls onComplete() when multiple requests
+   with timeouts are sent
+ + 6347 session-store-gcloud module broken logging dependency
+ + 6354 org.slfj osgi dependency imports packages at 2.0
 
 jetty-11.0.3 - 20 May 2021
  + 3764 DeprecationWarning Decorator
@@ -52,7 +66,6 @@ jetty-10.0.3 - 20 May 2021
  + 6099 Cipher preference may break SNI if certificates have different key
    types
  + 6105 HttpConnection.getBytesIn() incorrect for requests with chunked content
-
  + 6106 WebSocket/CDI integration is broken in Jetty 10
  + 6132 Ambiguous segment in URI in DELETE
    /a/projects/foo/branches/refs%2Fheads%2Ftest request after upgrade from
@@ -91,7 +104,6 @@ jetty-9.4.41.v20210516 - 16 May 2021
  + 6263 Review URI encoding in ConcatServlet & WelcomeFilter
  + 6277 Better handle exceptions thrown from session destroy listener
  + 6280 Copy ServletHolder class/instance properly during startWebapp
-
 
 jetty-11.0.2 - 26 March 2021
  + 4275 Path Normalization/Traversal - Context Matching
@@ -343,7 +355,7 @@ jetty-11.0.0.beta1 - 10 July 2020
    SETTINGS Frame.
  + 4903 Give better errors for non public Websocket Endpoints
  + 4904 WebsocketClient creates more connections than needed
- + 4907
+ + 4907 
    org.eclipse.jetty.websocket.tests.SuspendResumeTest#testSuspendAfterClose
  + 4920 Restore ability to delete sessions on stop
  + 4921 Quickstart run improperly runs dynamically added context initializers
@@ -729,7 +741,6 @@ jetty-10.0.0.beta1 - 10 July 2020
    (example jakarta.xml.ws-api_2.3.2.jar)
  + 5000 NPE from Server.dump of FilterMapping
  + 5018 WebSocketClient upgrade request timeout not configurable
-
 
 jetty-9.4.32.v20200930 - 30 September 2020
  + 2796 HTTP/2 max local stream count exceeded when request fails
@@ -4395,7 +4406,7 @@ jetty-9.1.2.v20140210 - 10 February 2014
  + 423421 remove org.slf4j and org.ow2.asm from jetty-all artifact
  + 424171 Old javax.activation jar interferes with email sending
  + 424562 JDBCSessionManager.setNodeIdInSessionId(true) does not work
- + 425275
+ + 425275 
    org.eclipse.jetty.osgi.annotations.AnnotationConfiguration.BundleParserTask.getStatistic()
    returns null when debug is enabled.
  + 425638 Fixed monitor module/xml typos
@@ -4698,7 +4709,7 @@ jetty-9.0.6.v20130930 - 30 September 2013
    in the value
  + 415192 <jsp-file> maps to JspPropertyGroupServlet instead of JspServlet
  + 415194 Deployer gives management of context to context collection
- + 415302
+ + 415302 
  + 415330 Avoid multiple callbacks at EOF
  + 415401 Add initalizeDefaults call to SpringConfigurationProcessor
  + 415548 migrate ProxyHTTPToSPDYTest to use HttpClient to avoid intermittent
@@ -4838,7 +4849,7 @@ jetty-9.1.0.M0 - 16 September 2013
  + 415131 Avoid autoboxing on debug
  + 415192 <jsp-file> maps to JspPropertyGroupServlet instead of JspServlet
  + 415194 Deployer gives management of context to context collection
- + 415302
+ + 415302 
  + 415314 Jetty should not commit response on output if <
    Response.setBufferSize() bytes are written
  + 415330 Avoid multiple callbacks at EOF
@@ -12017,3 +12028,4 @@ jetty-1.0 - 01 January 1998
  + Won the Australian Java Programming Contest!
  + HTTP Server
  + Issue tracking application
+
