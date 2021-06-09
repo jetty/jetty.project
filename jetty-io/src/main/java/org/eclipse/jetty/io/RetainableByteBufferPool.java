@@ -13,10 +13,13 @@
 
 package org.eclipse.jetty.io;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -63,18 +66,25 @@ public class RetainableByteBufferPool implements MemoryPool<RetainableByteBuffer
         int capacity = (bucketFor(size) + 1) * _factor;
         Pool<RetainableByteBuffer> bucket = bucketFor(size, direct, this::newBucket);
         if (bucket == null)
-            return new RetainableByteBuffer(capacity, direct);
+            return newRetainableByteBuffer(capacity, direct, byteBuffer -> {});
         Pool<RetainableByteBuffer>.Entry entry = bucket.acquire();
 
         RetainableByteBuffer buffer;
         if (entry == null)
         {
-            buffer = new RetainableByteBuffer(capacity, direct);
             Pool<RetainableByteBuffer>.Entry reservedEntry = bucket.reserve();
             if (reservedEntry != null)
             {
-                buffer.setAttachment(reservedEntry);
+                buffer = newRetainableByteBuffer(capacity, direct, byteBuffer ->
+                {
+                    BufferUtil.clear(byteBuffer);
+                    reservedEntry.release();
+                });
                 reservedEntry.enable(buffer, true);
+            }
+            else
+            {
+                buffer = newRetainableByteBuffer(capacity, direct, byteBuffer -> {});
             }
         }
         else
@@ -83,6 +93,13 @@ public class RetainableByteBufferPool implements MemoryPool<RetainableByteBuffer
             buffer.retain();
         }
         return buffer;
+    }
+
+    private RetainableByteBuffer newRetainableByteBuffer(int capacity, boolean direct, Consumer<ByteBuffer> releaser)
+    {
+        ByteBuffer buffer = direct ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity);
+        BufferUtil.clear(buffer);
+        return new RetainableByteBuffer(buffer, releaser);
     }
 
     @Override

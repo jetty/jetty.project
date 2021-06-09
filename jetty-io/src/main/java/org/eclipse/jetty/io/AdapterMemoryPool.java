@@ -13,19 +13,25 @@
 
 package org.eclipse.jetty.io;
 
+import java.nio.ByteBuffer;
+import java.util.function.Consumer;
+
 public class AdapterMemoryPool implements MemoryPool<RetainableByteBuffer>
 {
     private final ByteBufferPool byteBufferPool;
+    private final Consumer<ByteBuffer> releaser;
 
     public AdapterMemoryPool(ByteBufferPool byteBufferPool)
     {
         this.byteBufferPool = byteBufferPool;
+        this.releaser = byteBufferPool::release;
     }
 
     @Override
     public RetainableByteBuffer acquire(int size, boolean direct)
     {
-        return new RetainableByteBuffer(byteBufferPool, size, direct);
+        ByteBuffer byteBuffer = byteBufferPool.acquire(size, direct);
+        return new RetainableByteBuffer(byteBuffer, releaser);
     }
 
     @Override

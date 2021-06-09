@@ -15,10 +15,9 @@ package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
-import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.Retainable;
 
 /**
@@ -27,50 +26,22 @@ import org.eclipse.jetty.util.Retainable;
  * initially 1, incremented with {@link #retain()} and decremented with {@link #release()}. The buffer
  * is released to the pool when the reference count is decremented to 0.</p>
  */
-public class RetainableByteBuffer implements Retainable, Attachable
+public class RetainableByteBuffer implements Retainable
 {
-    private final ByteBufferPool pool;
     private final ByteBuffer buffer;
     private final AtomicInteger references;
-    private Pool<RetainableByteBuffer>.Entry entry;
+    private final Consumer<ByteBuffer> releaser;
 
-    protected RetainableByteBuffer(int size, boolean direct)
+    RetainableByteBuffer(ByteBuffer buffer, Consumer<ByteBuffer> releaser)
     {
-        this(null, size, direct);
-    }
-
-    RetainableByteBuffer(ByteBufferPool pool, int size, boolean direct)
-    {
-        this.pool = pool;
-        if (pool != null)
-        {
-            this.buffer = pool.acquire(size, direct);
-        }
-        else
-        {
-            this.buffer = direct ? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size);
-            BufferUtil.clear(this.buffer);
-        }
+        this.releaser = releaser;
+        this.buffer = buffer;
         this.references = new AtomicInteger(1);
     }
 
     public int capacity()
     {
         return buffer.capacity();
-    }
-
-    @Override
-    public Object getAttachment()
-    {
-        return entry;
-    }
-
-    @Override
-    public void setAttachment(Object attachment)
-    {
-        @SuppressWarnings("unchecked")
-        Pool<RetainableByteBuffer>.Entry entry = (Pool<RetainableByteBuffer>.Entry)attachment;
-        this.entry = entry;
     }
 
     public ByteBuffer getBuffer()
@@ -91,30 +62,14 @@ public class RetainableByteBuffer implements Retainable, Attachable
     @Override
     public void retain()
     {
-        while (true)
-        {
-            int r = references.get();
-            if (r == 0 && pool != null)
-                throw new IllegalStateException("released " + this);
-            if (references.compareAndSet(r, r + 1))
-                break;
-        }
+        references.incrementAndGet();
     }
 
     public int release()
     {
         int ref = references.decrementAndGet();
         if (ref == 0)
-            if (pool != null)
-            {
-                pool.release(buffer);
-            }
-            else
-            {
-                BufferUtil.clear(buffer);
-                if (entry != null)
-                    entry.release();
-            }
+            releaser.accept(buffer);
         else if (ref < 0)
             throw new IllegalStateException("already released " + this);
         return ref;
