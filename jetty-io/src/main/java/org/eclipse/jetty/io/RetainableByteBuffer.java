@@ -34,12 +34,12 @@ public class RetainableByteBuffer implements Retainable, Attachable
     private final AtomicInteger references;
     private Pool<RetainableByteBuffer>.Entry entry;
 
-    RetainableByteBuffer(int size, boolean direct)
+    protected RetainableByteBuffer(int size, boolean direct)
     {
         this(null, size, direct);
     }
 
-    public RetainableByteBuffer(ByteBufferPool pool, int size, boolean direct)
+    RetainableByteBuffer(ByteBufferPool pool, int size, boolean direct)
     {
         this.pool = pool;
         if (pool != null)

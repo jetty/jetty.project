@@ -23,12 +23,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.AdapterMemoryPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MemoryPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -51,7 +51,6 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     private final Queue<Runnable> tasks = new ArrayDeque<>();
     private final HTTP2Producer producer = new HTTP2Producer();
     private final AtomicLong bytesIn = new AtomicLong();
-    private final ByteBufferPool byteBufferPool;
     private final MemoryPool<RetainableByteBuffer> retainableByteBufferPool;
     private final Parser parser;
     private final ISession session;
@@ -62,13 +61,12 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
     public HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
     {
-        this(byteBufferPool, null, executor, endPoint, parser, session, bufferSize);
+        this(new AdapterMemoryPool(byteBufferPool), executor, endPoint, parser, session, bufferSize);
     }
 
-    public HTTP2Connection(ByteBufferPool byteBufferPool, MemoryPool<RetainableByteBuffer> retainableByteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
+    public HTTP2Connection(MemoryPool<RetainableByteBuffer> retainableByteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
     {
         super(endPoint, executor);
-        this.byteBufferPool = byteBufferPool;
         this.retainableByteBufferPool = retainableByteBufferPool;
         this.parser = parser;
         this.session = session;
@@ -430,16 +428,44 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         }
     }
 
-    private class NetworkBuffer extends RetainableByteBuffer implements Callback
+    private class NetworkBuffer implements Callback
     {
+
+        private final RetainableByteBuffer delegate;
+
         private NetworkBuffer()
         {
-            super(retainableByteBufferPool == null ? byteBufferPool : null, bufferSize, isUseInputDirectByteBuffers());
+            delegate = retainableByteBufferPool.acquire(bufferSize, isUseInputDirectByteBuffers());
+        }
+
+        public ByteBuffer getBuffer()
+        {
+            return delegate.getBuffer();
+        }
+
+        public int getReferences()
+        {
+            return delegate.getReferences();
+        }
+
+        public boolean hasRemaining()
+        {
+            return delegate.hasRemaining();
+        }
+
+        public int release()
+        {
+            return delegate.release();
+        }
+
+        public void retain()
+        {
+            delegate.retain();
         }
 
         private void put(ByteBuffer source)
         {
-            BufferUtil.append(getBuffer(), source);
+            BufferUtil.append(delegate.getBuffer(), source);
         }
 
         @Override
@@ -456,7 +482,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
         private void completed(Throwable failure)
         {
-            if (release() == 0)
+            if (delegate.release() == 0)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Released retained {}", this, failure);
