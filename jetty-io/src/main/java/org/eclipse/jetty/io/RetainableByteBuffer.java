@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.Retainable;
 
 /**
@@ -31,12 +32,7 @@ public class RetainableByteBuffer implements Retainable, Attachable
     private final ByteBufferPool pool;
     private final ByteBuffer buffer;
     private final AtomicInteger references;
-    private Object attachment;
-
-    public RetainableByteBuffer(ByteBufferPool pool, int size)
-    {
-        this(pool, size, false);
-    }
+    private Pool<RetainableByteBuffer>.Entry entry;
 
     public RetainableByteBuffer(ByteBufferPool pool, int size, boolean direct)
     {
@@ -44,14 +40,13 @@ public class RetainableByteBuffer implements Retainable, Attachable
         if (pool != null)
         {
             this.buffer = pool.acquire(size, direct);
-            this.references = new AtomicInteger(1);
         }
         else
         {
             this.buffer = direct ? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size);
             BufferUtil.clear(this.buffer);
-            this.references = new AtomicInteger(0);
         }
+        this.references = new AtomicInteger(1);
     }
 
     public int capacity()
@@ -62,13 +57,15 @@ public class RetainableByteBuffer implements Retainable, Attachable
     @Override
     public Object getAttachment()
     {
-        return attachment;
+        return entry;
     }
 
     @Override
     public void setAttachment(Object attachment)
     {
-        this.attachment = attachment;
+        @SuppressWarnings("unchecked")
+        Pool<RetainableByteBuffer>.Entry entry = (Pool<RetainableByteBuffer>.Entry)attachment;
+        this.entry = entry;
     }
 
     public ByteBuffer getBuffer()
@@ -104,9 +101,15 @@ public class RetainableByteBuffer implements Retainable, Attachable
         int ref = references.decrementAndGet();
         if (ref == 0)
             if (pool != null)
+            {
                 pool.release(buffer);
+            }
             else
+            {
                 BufferUtil.clear(buffer);
+                if (entry != null)
+                    entry.release();
+            }
         else if (ref < 0)
             throw new IllegalStateException("already released " + this);
         return ref;

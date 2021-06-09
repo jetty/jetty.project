@@ -20,29 +20,25 @@ import java.util.function.Supplier;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @ManagedObject
 public class RetainableByteBufferPool
 {
-    private static final Logger LOG = LoggerFactory.getLogger(RetainableByteBufferPool.class);
-
     private final Pool<RetainableByteBuffer>[] _direct;
     private final Pool<RetainableByteBuffer>[] _indirect;
     private final int _factor;
-    private final int _maxQueueLength;
+    private final int _maxBucketSize;
     private final int _minCapacity;
 
     public RetainableByteBufferPool()
     {
-        this(1024, 1024, 65536, Integer.MAX_VALUE);
+        this(0, 1024, 65536, Integer.MAX_VALUE);
     }
 
-    public RetainableByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxQueueLength)
+    public RetainableByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize)
     {
         _factor = factor <= 0 ? 1024 : factor;
-        _maxQueueLength = maxQueueLength;
+        _maxBucketSize = maxBucketSize;
         if (minCapacity <= 0)
             minCapacity = 0;
         _minCapacity = minCapacity;
@@ -64,14 +60,27 @@ public class RetainableByteBufferPool
     public RetainableByteBuffer acquire(int size, boolean direct)
     {
         int capacity = (bucketFor(size) + 1) * _factor;
-        Pool<RetainableByteBuffer> bucket = bucketFor(capacity, direct, null);
+        Pool<RetainableByteBuffer> bucket = bucketFor(size, direct, this::newBucket);
         if (bucket == null)
-            return newRetainableByteBuffer(capacity, direct);
+            return new RetainableByteBuffer(null, capacity, direct);
         Pool<RetainableByteBuffer>.Entry entry = bucket.acquire();
+
+        RetainableByteBuffer buffer;
         if (entry == null)
-            return newRetainableByteBuffer(capacity, direct);
-        RetainableByteBuffer buffer = entry.getPooled();
-        buffer.retain();
+        {
+            buffer = new RetainableByteBuffer(null, capacity, direct);
+            Pool<RetainableByteBuffer>.Entry reservedEntry = bucket.reserve();
+            if (reservedEntry != null)
+            {
+                buffer.setAttachment(reservedEntry);
+                reservedEntry.enable(buffer, true);
+            }
+        }
+        else
+        {
+            buffer = entry.getPooled();
+            buffer.retain();
+        }
         return buffer;
     }
 
@@ -79,45 +88,7 @@ public class RetainableByteBufferPool
     {
         if (buffer == null)
             return;
-
-        int capacity = buffer.capacity();
-        // Validate that this buffer is from this pool.
-        if ((capacity % _factor) != 0)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("RetainableByteBuffer {} does not belong to this pool, discarding it", buffer);
-            return;
-        }
-
-        Object attachment = buffer.getAttachment();
-        if (attachment != null && !(attachment instanceof Pool.Entry))
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("RetainableByteBuffer {} does not belong to this pool, discarding it", buffer);
-            return;
-        }
-
         buffer.release();
-
-        @SuppressWarnings("unchecked")
-        Pool<RetainableByteBuffer>.Entry entry = (Pool<RetainableByteBuffer>.Entry)attachment;
-        if (entry != null)
-        {
-            entry.release();
-        }
-        else
-        {
-            Pool<RetainableByteBuffer> bucket = bucketFor(capacity, buffer.isDirect(), this::newBucket);
-            if (bucket != null)
-            {
-                Pool<RetainableByteBuffer>.Entry reservedEntry = bucket.reserve();
-                if (reservedEntry != null)
-                {
-                    buffer.setAttachment(reservedEntry);
-                    reservedEntry.enable(buffer, false);
-                }
-            }
-        }
     }
 
     private Pool<RetainableByteBuffer> bucketFor(int capacity, boolean direct, Supplier<Pool<RetainableByteBuffer>> newBucket)
@@ -146,14 +117,7 @@ public class RetainableByteBufferPool
 
     private Pool<RetainableByteBuffer> newBucket()
     {
-        return new Pool<>(Pool.StrategyType.THREAD_ID, _maxQueueLength);
-    }
-
-    private RetainableByteBuffer newRetainableByteBuffer(int capacity, boolean direct)
-    {
-        RetainableByteBuffer retainableByteBuffer = new RetainableByteBuffer(null, capacity, direct);
-        retainableByteBuffer.retain();
-        return retainableByteBuffer;
+        return new Pool<>(Pool.StrategyType.THREAD_ID, _maxBucketSize);
     }
 
     @ManagedAttribute("The number of pooled direct ByteBuffers")
