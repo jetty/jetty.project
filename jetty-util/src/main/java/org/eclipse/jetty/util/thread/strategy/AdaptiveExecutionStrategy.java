@@ -254,32 +254,48 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
             // The produced task might block. Is this producing thread allowed to block?
             boolean mayBlock = !nonBlocking;
 
-            // only if this thread may block do we need to take the lock so we can
+            // if this thread may block do we need to take the lock so we can
             // atomically check/mutate the state and pending status.
-            try (AutoLock l = mayBlock ? _lock.lock() : AutoLock.NO_LOCK)
+            if (mayBlock)
             {
-                if (mayBlock && (_pending || _tryExecutor.tryExecute(this)))
+                try (AutoLock l = _lock.lock())
                 {
-                    // This producing thread may block and there is a pending producer available
-                    // so we use EPC: the producer will directly consume the task and then
-                    // race with the pending producer to take over production.
-                    _pending = true;
-                    _state = State.IDLE;
-                    mode = Mode.EXECUTE_PRODUCE_CONSUME;
+                    if (_pending || _tryExecutor.tryExecute(this))
+                    {
+                        // This producing thread may block and there is a pending producer available
+                        // so we use EPC: the producer will directly consume the task and then
+                        // race with the pending producer to take over production.
+                        _pending = true;
+                        _state = State.IDLE;
+                        mode = Mode.EXECUTE_PRODUCE_CONSUME;
+                    }
+                    else if (taskType == Invocable.InvocationType.EITHER)
+                    {
+                        // Either this thread is not allowed to not block or there were no pending
+                        // producer threads available. But we are able to invoke the task non blocking
+                        // so we use PIC to directly consume the task and then resume production.
+                        mode = Mode.PRODUCE_INVOKE_CONSUME;
+                    }
+                    else
+                    {
+                        // Otherwise we use PEC: this thread continues to produce and the task is
+                        // consumed by the executor
+                        mode = Mode.PRODUCE_EXECUTE_CONSUME;
+                    }
                 }
-                else if (taskType == Invocable.InvocationType.EITHER)
-                {
-                    // Either this thread is not allowed to not block or there were no pending
-                    // producer threads available. But we are able to invoke the task non blocking
-                    // so we use PIC to directly consume the task and then resume production.
-                    mode = Mode.PRODUCE_INVOKE_CONSUME;
-                }
-                else
-                {
-                    // Otherwise we use PEC: this thread continues to produce and the task is
-                    // consumed by the executor
-                    mode = Mode.PRODUCE_EXECUTE_CONSUME;
-                }
+            }
+            else if (taskType == Invocable.InvocationType.EITHER)
+            {
+                // Either this thread is not allowed to not block or there were no pending
+                // producer threads available. But we are able to invoke the task non blocking
+                // so we use PIC to directly consume the task and then resume production.
+                mode = Mode.PRODUCE_INVOKE_CONSUME;
+            }
+            else
+            {
+                // Otherwise we use PEC: this thread continues to produce and the task is
+                // consumed by the executor
+                mode = Mode.PRODUCE_EXECUTE_CONSUME;
             }
         }
 

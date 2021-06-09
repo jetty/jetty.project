@@ -34,38 +34,6 @@ public class AutoLock implements AutoCloseable, Serializable
 
     private final ReentrantLock _lock = new ReentrantLock();
 
-    public static final AutoLock NO_LOCK = new AutoLock()
-    {
-        @Override
-        public AutoLock lock()
-        {
-            return this;
-        }
-
-        @Override
-        public boolean isHeldByCurrentThread()
-        {
-            return false;
-        }
-
-        @Override
-        public Condition newCondition()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        boolean isLocked()
-        {
-            return false;
-        }
-
-        @Override
-        public void close()
-        {
-        }
-    };
-
     /**
      * <p>Acquires the lock.</p>
      *
