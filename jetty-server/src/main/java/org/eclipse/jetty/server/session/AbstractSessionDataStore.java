@@ -30,12 +30,15 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractSessionDataStore extends ContainerLifeCycle implements SessionDataStore
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractSessionDataStore.class);
+    
+    public static final int DEFAULT_GRACE_PERIOD_SEC = 60 * 60; //default of 1hr
+    public static final int DEFAULT_SAVE_PERIOD_SEC = 0;
 
     protected SessionContext _context; //context associated with this session data store
-    protected int _gracePeriodSec = 60 * 60; //default of 1hr 
+    protected int _gracePeriodSec = DEFAULT_GRACE_PERIOD_SEC;
     protected long _lastExpiryCheckTime = 0; //last time in ms that getExpired was called
     protected long _lastOrphanSweepTime = 0; //last time in ms that we deleted orphaned sessions
-    protected int _savePeriodSec = 0; //time in sec between saves
+    protected int _savePeriodSec = DEFAULT_SAVE_PERIOD_SEC; //time in sec between saves
     
     /**
      * Small utility class to allow us to

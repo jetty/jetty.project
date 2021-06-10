@@ -8,9 +8,9 @@
   <Call name="insertHandler">
     <Arg>
       <New class="org.eclipse.jetty.rewrite.handler.RewriteHandler">
-	    <Set name="rewriteRequestURI" property="jetty.rewrite.rewriteRequestURI"/>
-	    <Set name="rewritePathInfo" property="jetty.rewrite.rewritePathInfo"/>
-	    <Set name="originalPathAttribute" property="jetty.rewrite.originalPathAttribute"/>
+        <Set name="rewriteRequestURI" property="jetty.rewrite.rewriteRequestURI"/>
+        <Set name="rewritePathInfo" property="jetty.rewrite.rewritePathInfo"/>
+        <Set name="originalPathAttribute"><Property name="jetty.rewrite.originalPathAttribute" default="requestedPath"/></Set>
      
 	    <!-- Set DispatcherTypes  -->
 	    <Set name="dispatcherTypes">

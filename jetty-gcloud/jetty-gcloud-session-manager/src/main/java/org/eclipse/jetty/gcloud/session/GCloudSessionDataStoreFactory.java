@@ -22,9 +22,9 @@ import org.eclipse.jetty.server.session.SessionHandler;
  */
 public class GCloudSessionDataStoreFactory extends AbstractSessionDataStoreFactory
 {
-    private String _namespace;
-    private int _maxRetries;
-    private int _backoffMs;
+    private String _namespace = GCloudSessionDataStore.DEFAULT_NAMESPACE;
+    private int _maxRetries = GCloudSessionDataStore.DEFAULT_MAX_RETRIES;
+    private int _backoffMs = GCloudSessionDataStore.DEFAULT_BACKOFF_MS;
     private GCloudSessionDataStore.EntityDataModel _model;
 
     public GCloudSessionDataStore.EntityDataModel getEntityDataModel()
@@ -80,8 +80,9 @@ public class GCloudSessionDataStoreFactory extends AbstractSessionDataStoreFacto
         ds.setBackoffMs(getBackoffMs());
         ds.setMaxRetries(getMaxRetries());
         ds.setGracePeriodSec(getGracePeriodSec());
-        ds.setNamespace(_namespace);
+        ds.setNamespace(getNamespace());
         ds.setSavePeriodSec(getSavePeriodSec());
+        ds.setEntityDataModel(getEntityDataModel());
         return ds;
     }
 }

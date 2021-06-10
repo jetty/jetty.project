@@ -42,6 +42,7 @@ etc/sessions/gcloud/session-store.xml
 #jetty.session.gcloud.model.createTime=createTime
 #jetty.session.gcloud.model.cookieSetTime=cookieSetTime
 #jetty.session.gcloud.model.lastNode=lastNode
+#jetty.session.gcloud.model.lastSaved=lastSaved
 #jetty.session.gcloud.model.expiry=expiry
 #jetty.session.gcloud.model.maxInactive=maxInactive
 #jetty.session.gcloud.model.attributes=attributes
