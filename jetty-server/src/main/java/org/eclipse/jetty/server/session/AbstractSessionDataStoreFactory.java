@@ -19,8 +19,8 @@ package org.eclipse.jetty.server.session;
 public abstract class AbstractSessionDataStoreFactory implements SessionDataStoreFactory
 {
 
-    int _gracePeriodSec;
-    int _savePeriodSec;
+    int _gracePeriodSec = AbstractSessionDataStore.DEFAULT_GRACE_PERIOD_SEC;
+    int _savePeriodSec = AbstractSessionDataStore.DEFAULT_SAVE_PERIOD_SEC;
 
     /**
      * @return the gracePeriodSec

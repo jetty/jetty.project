@@ -21,17 +21,23 @@ etc/jetty-gzip.xml
 ## Check whether a file with *.gz extension exists
 # jetty.gzip.checkGzExists=false
 
-## Gzip compression level (-1 for default)
-# jetty.gzip.compressionLevel=-1
-
 ## Inflate request buffer size, or 0 for no request inflation
 # jetty.gzip.inflateBufferSize=0
 
-## Deflater pool max size (-1 for unlimited, 0 for no pooling)
-# jetty.gzip.deflaterPoolCapacity=-1
-
 ## Inflater pool max size (-1 for unlimited, 0 for no pooling)
-# jetty.gzip.inflaterPoolCapacity=-1
+# jetty.gzip.inflaterPool.capacity=1024
+
+## Inflater pool use GZIP compatible compression
+#jetty.gzip.inflaterPool.noWrap=true
+
+## Deflater pool max size (-1 for unlimited, 0 for no pooling)
+# jetty.gzip.deflaterPool.capacity=1024
+
+## Gzip compression level (-1 for default)
+# jetty.gzip.deflaterPool.compressionLevel=-1
+
+## Deflater pool use GZIP compatible compression
+# jetty.gzip.deflaterPool.noWrap=true
 
 ## Set the {@link Deflater} flush mode to use.
 # jetty.gzip.syncFlush=false

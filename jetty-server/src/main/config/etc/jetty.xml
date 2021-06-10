@@ -66,7 +66,7 @@
       <Set name="requestHeaderSize" property="jetty.httpConfig.requestHeaderSize"/>
       <Set name="responseHeaderSize" property="jetty.httpConfig.responseHeaderSize"/>
       <Set name="sendServerVersion" property="jetty.httpConfig.sendServerVersion"/>
-      <Set name="sendDateHeader" property="jetty.httpConfig.sendDateHeader"/>
+      <Set name="sendDateHeader"><Property name="jetty.httpConfig.sendDateHeader" default="false"/></Set>
       <Set name="headerCacheSize" property="jetty.httpConfig.headerCacheSize"/>
       <Set name="delayDispatchUntilContent" property="jetty.httpConfig.delayDispatchUntilContent"/>
       <Set name="maxErrorDispatches" property="jetty.httpConfig.maxErrorDispatches"/>
@@ -105,7 +105,7 @@
     <!-- =========================================================== -->
     <!-- extra server options                                        -->
     <!-- =========================================================== -->
-    <Set name="stopAtShutdown" property="jetty.server.stopAtShutdown"/>
+    <Set name="stopAtShutdown"><Property name="jetty.server.stopAtShutdown" default="true"/></Set>
     <Set name="stopTimeout"><Property name="jetty.server.stopTimeout" default="5000"/></Set>
     <Set name="dumpAfterStart" property="jetty.server.dumpAfterStart"/>
     <Set name="dumpBeforeStop" property="jetty.server.dumpBeforeStop"/>

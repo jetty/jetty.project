@@ -55,6 +55,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     public static final int DEFAULT_MAX_QUERY_RESULTS = 100;
     public static final int DEFAULT_MAX_RETRIES = 5;
     public static final int DEFAULT_BACKOFF_MS = 1000;
+    public static final String DEFAULT_NAMESPACE = "";
 
     protected Datastore _datastore;
     protected KeyFactory _keyFactory;
@@ -65,7 +66,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     protected boolean _indexesPresent = false;
     protected EntityDataModel _model;
     protected boolean _modelProvided;
-    private String _namespace;
+    private String _namespace = DEFAULT_NAMESPACE;
 
     /**
      * EntityDataModel
@@ -431,7 +432,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         _namespace = namespace;
     }
 
-    @ManagedAttribute(value = "gclound namespace", readonly = true)
+    @ManagedAttribute(value = "gcloud namespace", readonly = true)
     public String getNamespace()
     {
         return _namespace;
