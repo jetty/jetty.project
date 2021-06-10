@@ -1328,7 +1328,10 @@ public interface HttpURI
          */
         private void checkSegment(String uri, int segment, int end, boolean param)
         {
-            // If we have previously seen an empty segment, then it was not the last segment and was thus ambiguous.
+            // This method is called once for every segment parsed.
+            // A URI like "/foo/" has two segments: "foo" and an empty segment.
+            // Empty segments are only ambiguous if they are not the last segment
+            // So if this method is called for any segment and we have previously seen an empty segment, then it was ambiguous 
             if (_emptySegment)
                 _ambiguous.add(Ambiguous.EMPTY);
 
