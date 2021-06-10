@@ -1246,6 +1246,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             // check the target.
             if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch))
             {
+                // TODO: remove this once isCompact() has been deprecated for several releases.
                 if (isCompactPath())
                     target = URIUtil.compactPath(target);
                 if (!checkContext(target, baseRequest, response))
@@ -1804,7 +1805,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     /**
      * @return True if URLs are compacted to replace multiple '/'s with a single '/'
+     * @deprecated use {@code CompactPathRule} with {@code RewriteHandler} instead.
      */
+    @Deprecated
     public boolean isCompactPath()
     {
         return _compactPath;
@@ -1813,6 +1816,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /**
      * @param compactPath True if URLs are compacted to replace multiple '/'s with a single '/'
      */
+    @Deprecated
     public void setCompactPath(boolean compactPath)
     {
         _compactPath = compactPath;
