@@ -47,7 +47,6 @@ import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
-import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1750,7 +1749,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     @Test
-    @DisabledOnJre({JRE.JAVA_8, JRE.JAVA_9, JRE.JAVA_10})
     public void testShutdown() throws Exception
     {
         configureServer(new ReadExactHandler());
@@ -1791,7 +1789,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     @Test
-    @DisabledOnJre({JRE.JAVA_8, JRE.JAVA_9, JRE.JAVA_10})
     public void testChunkedShutdown() throws Exception
     {
         configureServer(new ReadExactHandler(4096));
