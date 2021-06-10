@@ -78,6 +78,7 @@ import org.slf4j.LoggerFactory;
  * produced by one execution strategy may become itself be a producer in a second execution strategy
  * (e.g. an IO selector may use an execution strategy to handle multiple connections and each
  * connection may use a execution strategy to handle multiplexed channels/streams within the connection).</p>
+ *
  * <p>A task containing another {@link AdaptiveExecutionStrategy} should identify as
  * {@link Invocable.InvocationType#EITHER} so when there are no pending producers threads available to
  * the first strategy, then it may invoke the second as {@link Invocable.InvocationType#NON_BLOCKING}.
@@ -94,18 +95,35 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
 {
     private static final Logger LOG = LoggerFactory.getLogger(AdaptiveExecutionStrategy.class);
 
+    /**
+     * The state of this strategy
+     */
     private enum State
     {
-        IDLE, PRODUCING, REPRODUCING
+        IDLE,       // No tasks or producers
+        PRODUCING,  // There is an active producing thread
+        REPRODUCING // There is an active producing thread and demand for more production
     }
 
-    /* The modes this strategy can work in */
-    private enum Mode
+    /* The sub-strategies used by this strategy to consume tasks that are produced */
+    private enum SubStrategy
     {
+        /**
+         * Consume produced tasks and resume producing
+         */
         PRODUCE_CONSUME,
-        PRODUCE_INVOKE_CONSUME, // This is PRODUCE_CONSUME an EITHER task with NON_BLOCKING invocation
+        /**
+         * Invoke produced tasks as non blocking and resume producing
+         */
+        PRODUCE_INVOKE_CONSUME,
+        /**
+         * Execute produced tasks and continue producing
+         */
         PRODUCE_EXECUTE_CONSUME,
-        EXECUTE_PRODUCE_CONSUME // Eat What You Kill!
+        /**
+         * Execute a pending producer, consume produced tasks and race pending producer to resume producing.
+         */
+        EXECUTE_PRODUCE_CONSUME
     }
 
     private final AutoLock _lock = new AutoLock();
@@ -120,6 +138,10 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     private State _state = State.IDLE;
     private boolean _pending;
 
+    /**
+     * @param producer The produce of tasks to be consumed.
+     * @param executor The executor to be used for executing producers or consumers, depending on the sub-strategy.
+     */
     public AdaptiveExecutionStrategy(Producer producer, Executor executor)
     {
         _producer = producer;
@@ -168,7 +190,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     }
 
     /**
-     * Try to become the producing thread.
+     * Try to become the producing thread and then produce and consume tasks
      * @param wasPending True if this thread was started as a pending producer
      */
     private void tryProduce(boolean wasPending)
@@ -208,13 +230,40 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
 
         // Determine this threads invocation type once outside of the production loop
         boolean nonBlocking = Invocable.isNonBlockingInvocation();
-
         while (isRunning())
         {
             try
             {
-                // Produce a task and then continue producing only if the strategy used returns true
-                if (doProduce(nonBlocking))
+                Runnable task = produceTask();
+
+                // If we did not produce a task
+                if (task == null)
+                {
+                    // the we need take the lock to atomically determine if we should keep producing
+                    try (AutoLock l = _lock.lock())
+                    {
+                        switch (_state)
+                        {
+                            case PRODUCING:
+                                // This thread was the only producer, so it is now Idle and we return from production
+                                _state = State.IDLE;
+                                return;
+
+                            case REPRODUCING:
+                                // Another thread may have queued a task and tried to produce
+                                // so this thread should continue to produce.
+                                _state = State.PRODUCING;
+                                continue;
+
+                            default:
+                                throw new IllegalStateException(toStringLocked());
+                        }
+                    }
+                }
+
+                // Consume the task according the selected sub-strategy, then
+                // continue producing only if the sub-strategy used returns true
+                if (consumeTask(task, selectSubStrategy(task, nonBlocking)))
                     continue;
                 return;
             }
@@ -226,49 +275,20 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     }
 
     /**
-     * @param nonBlocking True if this thread has been invoked in non-blocking mode
-     * @return true if this thread should keep producing
+     * Select the execution strategy
+     * @param task The task to select the strategy for
+     * @param nonBlocking True if the producing thread cannot block
+     * @return The sub-strategy mode to use for the task
      */
-    private boolean doProduce(boolean nonBlocking)
+    private SubStrategy selectSubStrategy(Runnable task, boolean nonBlocking)
     {
-        Runnable task = produceTask();
-
-        // If we did not produce a task
-        if (task == null)
-        {
-            // the we need take the lock to atomically determine if we should keep producing
-            try (AutoLock l = _lock.lock())
-            {
-                switch (_state)
-                {
-                    case PRODUCING:
-                        // This thread was the only producer, so it is now Idle
-                        _state = State.IDLE;
-                        return false;
-
-                    case REPRODUCING:
-                        // Another thread may have queued a task and tried to produce
-                        // so this thread should try to produce again.
-                        _state = State.PRODUCING;
-                        return true;
-
-                    default:
-                        throw new IllegalStateException(toStringLocked());
-                }
-            }
-        }
-
-        // Determine the execution mode by a function of the tasks invocation type, this threads invocation type
-        // and the availability of a pending producer thread:
-        Mode mode;
         Invocable.InvocationType taskType = Invocable.getInvocationType(task);
         switch (taskType)
         {
             case NON_BLOCKING:
                 // The produced task will not block, so use PC: consume task directly
                 // and then resume production.
-                mode = Mode.PRODUCE_CONSUME;
-                break;
+                return SubStrategy.PRODUCE_CONSUME;
 
             case EITHER:
                 // If this producing thread may block then it can directly consume
@@ -285,15 +305,13 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                             // with the pending producer to resume production.
                             _pending = true;
                             _state = State.IDLE;
-                            mode = Mode.EXECUTE_PRODUCE_CONSUME;
-                            break;
+                            return SubStrategy.EXECUTE_PRODUCE_CONSUME;
                         }
                     }
                 }
 
                 // otherwise use PIC: directly consume the task in non-blocking mode and then resume production.
-                mode = Mode.PRODUCE_INVOKE_CONSUME;
-                break;
+                return SubStrategy.PRODUCE_INVOKE_CONSUME;
 
             case BLOCKING:
                 // If this producing thread may block then it can directly consume
@@ -310,24 +328,30 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                             // with the pending producer to resume production.
                             _pending = true;
                             _state = State.IDLE;
-                            mode = Mode.EXECUTE_PRODUCE_CONSUME;
-                            break;
+                            return SubStrategy.EXECUTE_PRODUCE_CONSUME;
                         }
                     }
                 }
 
                 // Otherwise use PEC: the task is consumed by the executor and this thread continues to produce
-                mode = Mode.PRODUCE_EXECUTE_CONSUME;
-                break;
+                return SubStrategy.PRODUCE_EXECUTE_CONSUME;
 
             default:
                 throw new IllegalStateException();
         }
+    }
 
+    /** Consume a task
+     * @param task The task to consume
+     * @param subStrategy The execution sub-strategy mode to use to consume it
+     * @return True if the sub-strategy requires the caller to continue to produce tasks
+     */
+    private boolean consumeTask(Runnable task, SubStrategy subStrategy)
+    {
         // Consume and/or execute task according to the selected mode.
         if (LOG.isDebugEnabled())
-            LOG.debug("{} m={} t={}/{}", this, mode, task, Invocable.getInvocationType(task));
-        switch (mode)
+            LOG.debug("{} m={} t={}/{}", this, subStrategy, task, Invocable.getInvocationType(task));
+        switch (subStrategy)
         {
             case PRODUCE_CONSUME:
                 _pcMode.increment();
@@ -336,7 +360,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
 
             case PRODUCE_INVOKE_CONSUME:
                 _picMode.increment();
-                invokeTask(task);
+                invokeAsNonBlocking(task);
                 return true;
 
             case PRODUCE_EXECUTE_CONSUME:
@@ -368,6 +392,10 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         }
     }
 
+    /**
+     * Run a Runnable task, logging any thrown exception
+     * @param task The task to run.
+     */
     private void runTask(Runnable task)
     {
         try
@@ -380,7 +408,11 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         }
     }
 
-    private void invokeTask(Runnable task)
+    /**
+     * Invoke a task in non-blocking mode
+     * @param task The task to invoke
+     */
+    private void invokeAsNonBlocking(Runnable task)
     {
         try
         {
@@ -392,6 +424,10 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         }
     }
 
+    /**
+     * Produce a task, logging any Throwable that results
+     * @return A produced task or null if there were no tasks or a Throwable was thrown.
+     */
     private Runnable produceTask()
     {
         try
@@ -405,6 +441,11 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         }
     }
 
+    /**
+     * Execute a task via the {@link Executor} used to construct this strategy.
+     * If the execution is rejected and the task is a Closeable, then it is closed.
+     * @param task The task to execute
+     */
     private void execute(Runnable task)
     {
         try
