@@ -25,7 +25,6 @@ import org.eclipse.jetty.webapp.ClassMatcher.Entry;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
 
@@ -124,7 +123,6 @@ public class ClassMatcherTest
 
     @SuppressWarnings("restriction")
     @Test
-    @DisabledOnJre(JRE.JAVA_8)
     public void testIncludedLocations() throws Exception
     {
         // jar from JVM classloader
@@ -160,7 +158,6 @@ public class ClassMatcherTest
 
     @SuppressWarnings("restriction")
     @Test
-    @DisabledOnJre(JRE.JAVA_8)
     public void testIncludedLocationsOrModule() throws Exception
     {
         // jar from JVM classloader
@@ -199,44 +196,6 @@ public class ClassMatcherTest
 
     @SuppressWarnings("restriction")
     @Test
-    @EnabledOnJre(JRE.JAVA_8)
-    public void testExcludeLocations() throws Exception
-    {
-        // jar from JVM classloader
-        URI locString = TypeUtil.getLocationOfClass(String.class);
-        // System.err.println(locString);
-
-        // a jar from maven repo jar
-        URI locJunit = TypeUtil.getLocationOfClass(Test.class);
-        // System.err.println(locJunit);
-
-        // class file 
-        URI locTest = TypeUtil.getLocationOfClass(ClassMatcherTest.class);
-        // System.err.println(locTest);
-
-        ClassMatcher pattern = new ClassMatcher();
-
-        // include everything
-        pattern.include(".");
-
-        assertThat(pattern.match(String.class), Matchers.is(true));
-        assertThat(pattern.match(Test.class), Matchers.is(true));
-        assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(true));
-
-        // Add directory for both JVM classes
-        pattern.exclude(locString.toString());
-
-        // Add jar for individual class and classes directory
-        pattern.exclude(locJunit.toString(), locTest.toString());
-
-        assertThat(pattern.match(String.class), Matchers.is(false));
-        assertThat(pattern.match(Test.class), Matchers.is(false));
-        assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(false));
-    }
-
-    @SuppressWarnings("restriction")
-    @Test
-    @DisabledOnJre(JRE.JAVA_8)
     public void testExcludeLocationsOrModule() throws Exception
     {
         // jar from JVM classloader

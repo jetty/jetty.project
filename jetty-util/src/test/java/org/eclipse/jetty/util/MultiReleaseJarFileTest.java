@@ -22,7 +22,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.MultiReleaseJarFile.VersionedJarEntry;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -117,7 +116,6 @@ public class MultiReleaseJarFileTest
     }
 
     @Test
-    @DisabledOnJre(JRE.JAVA_8)
     public void testClassLoaderJava9() throws Exception
     {
         try (URLClassLoader loader = new URLClassLoader(new URL[]{example.toURI().toURL()}))
