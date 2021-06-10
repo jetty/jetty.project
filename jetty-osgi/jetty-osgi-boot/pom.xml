@@ -72,7 +72,7 @@
             <Bundle-Activator>org.eclipse.jetty.osgi.boot.JettyBootstrapActivator</Bundle-Activator>
             <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
             <Import-Package>
-              ${osgi.common.import.packages},
+              ${osgi.slf4j.import.packages},
               javax.mail;version="1.4.0";resolution:=optional,
               javax.mail.event;version="1.4.0";resolution:=optional,
               javax.mail.internet;version="1.4.0";resolution:=optional,
