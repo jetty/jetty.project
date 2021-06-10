@@ -86,7 +86,7 @@ jetty-10.0.3 - 20 May 2021
  + 6250 Lazily allocate HTTP2Stream data queue
  + 6251 Use CyclicTimeout for HTTP2Streams
  + 6254 Total timeout not enforced for queued requests
- + 6263 Review URI encoding in ConcatServlet & WelcomeFilter
+ + 6263 Review URI encoding in ConcatServlet & WelcomeFilter (Resolved CVE-2021-28169)
  + 6272 Reduce allocation in HttpClient when notifying content listeners
  + 6277 Better handle exceptions thrown from session destroy listener
  + 6280 Copy ServletHolder class/instance properly during startWebapp
