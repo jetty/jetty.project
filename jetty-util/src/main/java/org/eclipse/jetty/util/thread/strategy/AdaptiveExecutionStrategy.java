@@ -214,7 +214,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
             try
             {
                 // Produce a task and then continue producing only if the strategy used returns true
-                if (!doProduce(nonBlocking))
+                if (doProduce(nonBlocking))
                     continue;
                 return;
             }
