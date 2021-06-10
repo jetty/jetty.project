@@ -186,7 +186,6 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @Test
-    @DisabledOnJre(JRE.JAVA_8)
     public void testSimpleWebAppWithJSPOnModulePath() throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
@@ -226,14 +225,12 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @Test
-    @DisabledOnJre(JRE.JAVA_8)
     public void testSimpleWebAppWithJSPOverH2C() throws Exception
     {
         testSimpleWebAppWithJSPOverHTTP2(false);
     }
 
     @Test
-    @DisabledOnJre(JRE.JAVA_8)
     public void testSimpleWebAppWithJSPOverH2() throws Exception
     {
         testSimpleWebAppWithJSPOverHTTP2(true);
