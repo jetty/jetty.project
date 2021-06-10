@@ -56,7 +56,7 @@ public interface HttpURI
         SEGMENT,
 
         /**
-         * URI contains ambiguous empty segments e.g. {@code //}
+         * URI contains ambiguous empty segments e.g. {@code /foo//bar} or {@code /foo/;param/}, but not {@code /foo/}
          */
         EMPTY,
 
