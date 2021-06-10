@@ -23,7 +23,7 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Import-Package>jakarta.mail.*;resolution:=optional,*</Import-Package>
+            <Import-Package>${osgi.slf4j.import.packages},jakarta.mail.*;resolution:=optional,*</Import-Package>
           </instructions>
         </configuration>
       </plugin>

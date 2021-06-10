@@ -23,7 +23,7 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Import-Package>jakarta.transaction.*;version="2.0.0",*</Import-Package>
+            <Import-Package>${osgi.slf4j.import.packages},jakarta.transaction.*;version="2.0.0",*</Import-Package>
             <Require-Capability>
               osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
             </Require-Capability>

@@ -142,13 +142,36 @@ public class TestOSGiUtil
             res.add(systemProperty("org.ops4j.pax.url.mvn.settings").value(System.getProperty("settingsFilePath")));
         }
 
-        //make src/test/resources/jetty-logging.properties visible to jetty in the osgi container        
+        /*
+         * Jetty 10 uses slf4j 2.0.0 by default, however we want to test with slf4j 1.7.30 for backwards compatibility.
+         * To do that, we need to use slf4j-simple as the logging implementation. We make a simplelogger.properties
+         * file available so that jetty logging can be configured
+         */
+        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").versionAsInProject().noStart());
+        TinyBundle simpleLoggingPropertiesBundle = TinyBundles.bundle();
+        simpleLoggingPropertiesBundle.add("simplelogger.properties", ClassLoader.getSystemResource("simplelogger.properties"));
+        simpleLoggingPropertiesBundle.set(Constants.BUNDLE_SYMBOLICNAME, "simple-logger-properties");
+        simpleLoggingPropertiesBundle.set(Constants.FRAGMENT_HOST, "slf4j-simple");
+        simpleLoggingPropertiesBundle.add(FragmentActivator.class);
+        res.add(CoreOptions.streamBundle(simpleLoggingPropertiesBundle.build()).noStart());
+        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-simple").versionAsInProject().noStart());
+
+        /*
+         * NOTE: when running with slf4j >= 2.0.0, remove the slf4j simple logger above and uncomment the following lines
+
         TinyBundle loggingPropertiesBundle = TinyBundles.bundle();
         loggingPropertiesBundle.add("jetty-logging.properties", ClassLoader.getSystemResource("jetty-logging.properties"));
         loggingPropertiesBundle.set(Constants.BUNDLE_SYMBOLICNAME, "jetty-logging-properties");
         loggingPropertiesBundle.set(Constants.FRAGMENT_HOST, "org.eclipse.jetty.logging");
         loggingPropertiesBundle.add(FragmentActivator.class);
         res.add(CoreOptions.streamBundle(loggingPropertiesBundle.build()).noStart());
+        //Fix missing ServiceLoader in slf4j-api 2.0.0 manifest
+        res.add(wrappedBundle(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").versionAsInProject()
+            .instructions("Require-Capability=osgi.serviceloader;filter:=\"(osgi.serviceloader=org.slf4j.spi.SLF4JServiceProvider)\",osgi.extender;filter:=\"(osgi.extender=osgi.serviceloader.processor)\"")
+            .overwriteManifest(OverwriteMode.MERGE)
+            .start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-slf4j-impl").versionAsInProject().start());
+        */
         res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-jakarta-servlet-api").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.platform").artifactId("org.eclipse.osgi.util").versionAsInProject());
         res.add(mavenBundle().groupId("org.eclipse.platform").artifactId("org.eclipse.osgi.services").versionAsInProject());
@@ -159,19 +182,13 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm-util").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.apache.aries.spifly").artifactId("org.apache.aries.spifly.dynamic.bundle").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.annotation").artifactId("jakarta.annotation-api").versionAsInProject().start());
-        
+
         //remove unused imports and exports from jakarta.transaction-api manifest
         res.add(wrappedBundle(mavenBundle().groupId("jakarta.transaction").artifactId("jakarta.transaction-api").versionAsInProject())
             .instructions("Import-Package=javax.transaction.xa&Export-Package=jakarta.transaction.*;version=\"2.0.0\"")
             .overwriteManifest(OverwriteMode.MERGE)
             .start());
 
-        //the slf4j-api jar does not have support for ServiceLoader in osgi in its manifest, so add it now
-        res.add(wrappedBundle(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").versionAsInProject())
-            .instructions("Require-Capability=osgi.serviceloader;filter:=\"(osgi.serviceloader=org.slf4j.spi.SLF4JServiceProvider)\",osgi.extender;filter:=\"(osgi.extender=osgi.serviceloader.processor)\"")
-            .overwriteManifest(OverwriteMode.MERGE)
-            .start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-slf4j-impl").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-util").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-deploy").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-server").versionAsInProject().start());
@@ -206,7 +223,7 @@ public class TestOSGiUtil
     {
         List<Option> res = new ArrayList<>();
 
-        //jetty jsp bundles  
+        //jetty jsp bundles
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-el").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-jsp").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("apache-jsp").versionAsInProject().start());
@@ -309,6 +326,4 @@ public class TestOSGiUtil
     {
         assertTrue(message + "\nContains: <" + needle + ">\nIn:\n" + haystack, haystack.contains(needle));
     }
-//        }
-//    }
 }

@@ -66,19 +66,18 @@
             compilation time. -->
             <_nouses>true</_nouses>
             <Import-Package>
-                jakarta.servlet;version="[$(version;==;${servlet.api.version}),$(version;+;${servlet.api.version}))",
-                jakarta.servlet.resources;version="[$(version;==;${servlet.api.version}),$(version;+;${servlet.api.version}))",
-                org.osgi.framework,
-                org.osgi.service.cm;version="1.2.0",
-                org.osgi.service.packageadmin,
-                org.osgi.service.startlevel;version="1.0.o",
-                org.osgi.service.url;version="1.0.0",
-                org.osgi.util.tracker;version="1.3.0",
-                org.slf4j;resolution:=optional,
-                org.slf4j.spi;resolution:=optional,
-                org.slf4j.helpers;resolution:=optional,
-                org.xml.sax,
-                org.xml.sax.helpers, *
+              ${osgi.slf4j.import.packages},
+              jakarta.servlet;version="[$(version;==;${servlet.api.version}),$(version;+;${servlet.api.version}))",
+              jakarta.servlet.resources;version="[$(version;==;${servlet.api.version}),$(version;+;${servlet.api.version}))",
+              org.osgi.framework,
+              org.osgi.service.cm;version="1.2.0",
+              org.osgi.service.packageadmin,
+              org.osgi.service.startlevel;version="1.0.0",
+              org.osgi.service.url;version="1.0.0",
+              org.osgi.util.tracker;version="1.3.0",
+              org.xml.sax,
+              org.xml.sax.helpers,
+              *
             </Import-Package>
             <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;==;${parsedVersion.osgiVersion}),$(version;+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
           </instructions>

@@ -30,7 +30,7 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Import-Package>org.objectweb.asm;version="5",*</Import-Package>
+            <Import-Package>${osgi.slf4j.import.packages},org.objectweb.asm;version="5",*</Import-Package>
             <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=jakarta.servlet.ServletContainerInitializer)";resolution:=optional;cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional
             </Require-Capability>
           </instructions>

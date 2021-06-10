@@ -27,8 +27,6 @@ import jakarta.servlet.ServletRequestWrapper;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * TestFilter.
@@ -39,8 +37,6 @@ import org.slf4j.LoggerFactory;
  */
 public class TestFilter implements Filter
 {
-    private static final Logger LOG = LoggerFactory.getLogger(TestFilter.class);
-
     private boolean _remote;
     private ServletContext _context;
     private final Set<String> _allowed = new HashSet<String>();
@@ -54,7 +50,7 @@ public class TestFilter implements Filter
         _allowed.add("/jetty_banner.gif");
         _allowed.add("/remote.html");
 
-        LOG.debug("TestFilter#remote=" + _remote);
+        filterConfig.getServletContext().log("TestFilter#remote=" + _remote);
     }
 
     @Override

@@ -27,8 +27,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 // Simple asynchronous Chat room.
 // This does not handle duplicate usernames or multiple frames/tabs from the same browser
@@ -36,8 +34,6 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("serial")
 public class ChatServlet extends HttpServlet
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ChatServlet.class);
-
     private long asyncTimeout = 10000;
 
     @Override
@@ -63,7 +59,7 @@ public class ChatServlet extends HttpServlet
         @Override
         public void onTimeout(AsyncEvent event) throws IOException
         {
-            LOG.debug("resume request");
+            getServletContext().log("resume request");
             AsyncContext async = _async.get();
             if (async != null && _async.compareAndSet(async, null))
             {
@@ -102,10 +98,10 @@ public class ChatServlet extends HttpServlet
         String message = request.getParameter("message");
         String username = request.getParameter("user");
 
-        LOG.debug("doPost called. join={},message={},username={}", join, message, username);
+        getServletContext().log("doPost called. join=" + join + " message=" + message + " username=" + username);
         if (username == null)
         {
-            LOG.debug("no parameter user set, sending 503");
+            getServletContext().log("no parameter user set, sending 503");
             response.sendError(503, "user==null");
             return;
         }
@@ -125,14 +121,14 @@ public class ChatServlet extends HttpServlet
         {
             synchronized (member)
             {
-                LOG.debug("Queue size: {}", member._queue.size());
+                getServletContext().log("Queue size: " + member._queue.size());
                 if (!member._queue.isEmpty())
                 {
                     sendSingleMessage(response, member);
                 }
                 else
                 {
-                    LOG.debug("starting async");
+                    getServletContext().log("starting async");
                     AsyncContext async = request.startAsync();
                     async.setTimeout(asyncTimeout);
                     async.addListener(member);
@@ -147,7 +143,7 @@ public class ChatServlet extends HttpServlet
         Member member = room.get(username);
         if (member == null)
         {
-            LOG.debug("user: {} in room: {} doesn't exist. Creating new user.", username, room);
+            getServletContext().log("user: " + username + " in room: " + room + " doesn't exist. Creating new user.");
             member = new Member(username);
             room.put(username, member);
         }
@@ -159,7 +155,7 @@ public class ChatServlet extends HttpServlet
         Map<String, Member> room = _rooms.get(path);
         if (room == null)
         {
-            LOG.debug("room: {} doesn't exist. Creating new room.", path);
+            getServletContext().log("room: " + path + " doesn't exist. Creating new room.");
             room = new HashMap<>();
             _rooms.put(path, room);
         }
@@ -192,7 +188,6 @@ public class ChatServlet extends HttpServlet
 
     private void sendMessageToAllMembers(String message, String username, Map<String, Member> room)
     {
-        LOG.debug("Sending message: {} from: {}", message, username);
         for (Member m : room.values())
         {
             synchronized (m)
@@ -202,10 +197,8 @@ public class ChatServlet extends HttpServlet
 
                 // wakeup member if polling
                 AsyncContext async = m._async.get();
-                LOG.debug("Async found: {}", async);
                 if (async != null & m._async.compareAndSet(async, null))
                 {
-                    LOG.debug("dispatch");
                     async.dispatch();
                 }
             }

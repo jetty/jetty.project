@@ -78,6 +78,51 @@ import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
  */
 public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
 {
+    private static final InvokerUtils.Arg[] textCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(String.class).required()
+    };
+
+    private static final InvokerUtils.Arg[] binaryBufferCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(ByteBuffer.class).required()
+    };
+
+    private static final InvokerUtils.Arg[] binaryArrayCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(byte[].class).required(),
+        new InvokerUtils.Arg(int.class), // offset
+        new InvokerUtils.Arg(int.class) // length
+    };
+
+    private static final InvokerUtils.Arg[] inputStreamCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(InputStream.class).required()
+    };
+
+    private static final InvokerUtils.Arg[] readerCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(Reader.class).required()
+    };
+
+    private static final InvokerUtils.Arg[] textPartialCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(String.class).required(),
+        new InvokerUtils.Arg(boolean.class).required()
+    };
+
+    private static final InvokerUtils.Arg[] binaryPartialBufferCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(ByteBuffer.class).required(),
+        new InvokerUtils.Arg(boolean.class).required()
+    };
+
+    private static final InvokerUtils.Arg[] binaryPartialArrayCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(byte[].class).required(),
+        new InvokerUtils.Arg(boolean.class).required()
+    };
+
     private final WebSocketContainer container;
     private final WebSocketComponents components;
     private final Map<Class<?>, JettyWebSocketFrameHandlerMetadata> metadataMap = new ConcurrentHashMap<>();
@@ -333,34 +378,6 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         if (onMessages != null && onMessages.length > 0)
         {
             // The different kind of @OnWebSocketMessage method parameter signatures expected
-
-            InvokerUtils.Arg[] textCallingArgs = new InvokerUtils.Arg[]{
-                new InvokerUtils.Arg(Session.class),
-                new InvokerUtils.Arg(String.class).required()
-            };
-
-            InvokerUtils.Arg[] binaryBufferCallingArgs = new InvokerUtils.Arg[]{
-                new InvokerUtils.Arg(Session.class),
-                new InvokerUtils.Arg(ByteBuffer.class).required()
-            };
-
-            InvokerUtils.Arg[] binaryArrayCallingArgs = new InvokerUtils.Arg[]{
-                new InvokerUtils.Arg(Session.class),
-                new InvokerUtils.Arg(byte[].class).required(),
-                new InvokerUtils.Arg(int.class), // offset
-                new InvokerUtils.Arg(int.class) // length
-            };
-
-            InvokerUtils.Arg[] inputStreamCallingArgs = new InvokerUtils.Arg[]{
-                new InvokerUtils.Arg(Session.class),
-                new InvokerUtils.Arg(InputStream.class).required()
-            };
-
-            InvokerUtils.Arg[] readerCallingArgs = new InvokerUtils.Arg[]{
-                new InvokerUtils.Arg(Session.class),
-                new InvokerUtils.Arg(Reader.class).required()
-            };
-
             for (Method onMsg : onMessages)
             {
                 assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
@@ -409,11 +426,27 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                     metadata.setTextHandler(ReaderMessageSink.class, methodHandle, onMsg);
                     continue;
                 }
-                else
+
+                methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, textPartialCallingArgs);
+                if (methodHandle != null)
                 {
-                    // Not a valid @OnWebSocketMessage declaration signature
-                    throw InvalidSignatureException.build(endpointClass, OnWebSocketMessage.class, onMsg);
+                    // Partial Text Message
+                    assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
+                    metadata.setTextHandler(PartialStringMessageSink.class, methodHandle, onMsg);
+                    continue;
                 }
+
+                methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, binaryPartialBufferCallingArgs);
+                if (methodHandle != null)
+                {
+                    // Partial ByteBuffer Message
+                    assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
+                    metadata.setBinaryHandle(PartialByteBufferMessageSink.class, methodHandle, onMsg);
+                    continue;
+                }
+
+                // Not a valid @OnWebSocketMessage declaration signature
+                throw InvalidSignatureException.build(endpointClass, OnWebSocketMessage.class, onMsg);
             }
         }
 
@@ -498,6 +531,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
      * access to the lookupClasses private methods. This is possible but requires extra configuration
      * to provide private access which is not necessary for the purpose of accessing the public methods.
      * </p>
+     *
      * @param lookupClass the desired lookup class for the new lookup object.
      * @return a lookup object to be used to find methods on the lookupClass.
      */

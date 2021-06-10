@@ -27,9 +27,6 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 
 /**
  * Dump Servlet Request.
@@ -37,8 +34,6 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("serial")
 public class SecureModeServlet extends HttpServlet
 {
-    private static final Logger LOG = LoggerFactory.getLogger(SecureModeServlet.class);
-
     @Override
     public void init(ServletConfig config) throws ServletException
     {
@@ -117,7 +112,7 @@ public class SecureModeServlet extends HttpServlet
         try
         {
             out.println("check ability to log<br/>");
-            LOG.info("testing logging");
+            getServletContext().log("testing logging");
             out.println("status: <b>SUCCESS - expected</b><br/>");
         }
         catch (SecurityException e)

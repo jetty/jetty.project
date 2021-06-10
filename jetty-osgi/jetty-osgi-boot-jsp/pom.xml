@@ -76,6 +76,7 @@
             <Fragment-Host>org.eclipse.jetty.osgi.boot</Fragment-Host>
             <Export-Package>!org.eclipse.jetty.osgi.boot.*</Export-Package>
             <Import-Package>
+              ${osgi.slf4j.import.packages},
               org.eclipse.jdt.*;resolution:=optional,
               org.eclipse.jdt.core.compiler.*;resolution:=optional,
               com.sun.el;resolution:=optional,
@@ -132,7 +133,6 @@
               org.apache.taglibs.standard.tlv;version="2.0";resolution:=optional,
               org.apache.tomcat;version="[10,11)";resolution:=optional,
               org.eclipse.jetty.jsp;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:=optional,
-              org.slf4j.*,
               org.osgi.*,
               org.xml.*;resolution:=optional,
               org.xml.sax.*;resolution:=optional,
