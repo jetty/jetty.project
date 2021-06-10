@@ -327,7 +327,7 @@ public abstract class HttpConnection implements IConnection, Attachable
             if (exchange != null)
             {
                 HttpRequest request = exchange.getRequest();
-                request.abort(new TimeoutException("Total timeout " + request.getTimeout() + " ms elapsed"));
+                request.abort(new TimeoutException("Total timeout " + request.getConversation().getTimeout() + " ms elapsed"));
             }
             return false;
         }
