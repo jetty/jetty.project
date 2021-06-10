@@ -172,40 +172,54 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         tryProduce(false);
     }
 
+    /**
+     * Try to become the producing thread.
+     * @param wasPending True if this thread was started as a pending producer
+     */
     private void tryProduce(boolean wasPending)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} tryProduce {}", this, wasPending);
 
+        // Take the lock to atomically check if this thread can produce
         try (AutoLock l = _lock.lock())
         {
+            // If this thread was the pending producer, there is no longer one pending
             if (wasPending)
                 _pending = false;
 
             switch (_state)
             {
                 case IDLE:
-                    // Enter PRODUCING
+                    // The strategy was IDLE, so this thread can become the producer
                     _state = State.PRODUCING;
                     break;
 
                 case PRODUCING:
-                    // Keep other Thread producing
+                    // The strategy is already producing, so another thread must be the producer
+                    // However, it may be just about to stop being the producer so we set the
+                    // REPRODUCING state to force it to call #doProduce at least once more.
                     _state = State.REPRODUCING;
                     return;
 
-                default:
+                case REPRODUCING:
+                    // Another thread is already producing and will already try another #doProduce
                     return;
+
+                default:
+                    throw new IllegalStateException();
             }
         }
 
+        // Determine this threads invocation type once outside of the production loop
         boolean nonBlocking = Invocable.isNonBlockingInvocation();
 
         while (isRunning())
         {
             try
             {
-                if (doProduce(nonBlocking))
+                // Produce a task and then continue producing only if the strategy used returns true
+                if (!doProduce(nonBlocking))
                     continue;
                 return;
             }
@@ -216,22 +230,30 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         }
     }
 
+    /**
+     * @param nonBlocking True if this thread has been invoked in non-blocking mode
+     * @return true if this thread should keep producing
+     */
     private boolean doProduce(boolean nonBlocking)
     {
         Runnable task = produceTask();
 
+        // If we did not produce a task
         if (task == null)
         {
+            // the we need take the lock to atomically determine if we should keep producing
             try (AutoLock l = _lock.lock())
             {
-                // Could another task just have been queued with a produce call?
                 switch (_state)
                 {
                     case PRODUCING:
+                        // This thread was the only producer, so it is now Idle
                         _state = State.IDLE;
                         return false;
 
                     case REPRODUCING:
+                        // Another thread may have queued a task and tried to produce
+                        // so this thread should try to produce again.
                         _state = State.PRODUCING;
                         return true;
 
@@ -241,31 +263,31 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
             }
         }
 
+        // Determine the execution mode by a function of the tasks invocation type, this threads invocation type
+        // and the availability of a pending producer thread:
         Mode mode;
-        // Switch on the invocation type of the produced task
         Invocable.InvocationType taskType = Invocable.getInvocationType(task);
         switch (taskType)
         {
             case NON_BLOCKING:
-                // The produced task will never block, so we directly consume the task with PC
+                // The produced task will not block, so use PC: consume task directly
                 // and then resume production.
                 mode = Mode.PRODUCE_CONSUME;
                 break;
 
-            case BLOCKING:
             case EITHER:
-            default:
-                // if this thread may block then we need to take the lock so we can
-                // atomically check/mutate the state and pending status.
+                // If this producing thread may block then it can directly consume
+                // the task in blocking mode if a pending producer is available.
                 if (!nonBlocking)
                 {
+                    // We need to take the lock so we can atomically check if a pending producer is available.
                     try (AutoLock l = _lock.lock())
                     {
+                        // If a pending producer is available or one can be started
                         if (_pending || _tryExecutor.tryExecute(this))
                         {
-                            // This producing thread may block and there is a pending producer available
-                            // so we use EPC: the producer will directly consume the task and then
-                            // race with the pending producer to take over production.
+                            // use EPC: directly consume the task and then race
+                            // with the pending producer to resume production.
                             _pending = true;
                             _state = State.IDLE;
                             mode = Mode.EXECUTE_PRODUCE_CONSUME;
@@ -274,27 +296,42 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                     }
                 }
 
-                // To arrive here, either this thread is not allowed to not block
-                // or there were no pending producers available.
+                // otherwise use PIC: directly consume the task in non-blocking mode and then resume production.
+                mode = Mode.PRODUCE_INVOKE_CONSUME;
+                break;
 
-                // if the task can be run non blocking
-                if (taskType == Invocable.InvocationType.EITHER)
+            case BLOCKING:
+                // If this producing thread may block then it can directly consume
+                // the blocking task if a pending producer is available.
+                if (!nonBlocking)
                 {
-                    // Use PIC to directly consume the task and then resume production.
-                    mode = Mode.PRODUCE_INVOKE_CONSUME;
-                    break;
+                    // We need to take the lock so we can atomically check if a pending producer is available.
+                    try (AutoLock l = _lock.lock())
+                    {
+                        // If a pending producer is available or one can be started
+                        if (_pending || _tryExecutor.tryExecute(this))
+                        {
+                            // use EPC: directly consume the task and then race
+                            // with the pending producer to resume production.
+                            _pending = true;
+                            _state = State.IDLE;
+                            mode = Mode.EXECUTE_PRODUCE_CONSUME;
+                            break;
+                        }
+                    }
                 }
 
-                // Otherwise we use PEC: this thread continues to produce and the task is
-                // consumed by the executor
+                // Otherwise use PEC: the task is consumed by the executor and this thread continues to produce
                 mode = Mode.PRODUCE_EXECUTE_CONSUME;
                 break;
+
+            default:
+                throw new IllegalStateException();
         }
 
+        // Consume and/or execute task according to the selected mode.
         if (LOG.isDebugEnabled())
             LOG.debug("{} m={} t={}/{}", this, mode, task, Invocable.getInvocationType(task));
-
-        // Consume and/or execute task according to the selected mode.
         switch (mode)
         {
             case PRODUCE_CONSUME:
@@ -328,6 +365,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                         return true;
                     }
                 }
+                // The pending producer is now producing, so this thread no longer produces
                 return false;
 
             default:
