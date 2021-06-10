@@ -21,6 +21,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WebSocketPartialListener;
 
 /**
  * Annotation for tagging methods to receive Binary or Text Message events.
@@ -48,7 +49,8 @@ import org.eclipse.jetty.websocket.api.Session;
  * </ol>
  * <u>Partial Message Variations</u>
  * <p>These are used to receive partial messages without aggregating them into a complete WebSocket message. Instead the a boolean
- * argument is supplied to indicate whether this is the last segment of data of the message.</p>
+ * argument is supplied to indicate whether this is the last segment of data of the message. See {@link WebSocketPartialListener}
+ * interface for more details on partial messages.</p>
  * <ol>
  * <li>{@code public void methodName(ByteBuffer payload, boolean last)}</li>
  * <li>{@code public void methodName(String payload, boolean last)}</li>
