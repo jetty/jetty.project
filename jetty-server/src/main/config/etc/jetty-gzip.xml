@@ -31,7 +31,7 @@
         <Set name="deflaterPool">
             <New class="org.eclipse.jetty.util.compression.DeflaterPool">
                 <Arg type="int"><Property name="jetty.gzip.deflaterPool.capacity" deprecated="jetty.gzip.deflaterPoolCapacity" default="1024"/></Arg>
-                <Arg type="int"><Property name="jetty.gzip.deflaterPool.compression" deprecated="jetty.gzip.compression" default="-1"/></Arg>
+                <Arg type="int"><Property name="jetty.gzip.deflaterPool.compressionLevel" deprecated="jetty.gzip.compressionLevel" default="-1"/></Arg>
                 <Arg type="boolean"><Property name="jetty.gzip.deflaterPool.noWrap" default="true"/></Arg>
             </New>
         </Set>
