@@ -90,7 +90,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 @ManagedObject("Adaptive execution strategy")
-public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements ExecutionStrategy, Runnable
+public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements ExecutionStrategy
 {
     private static final Logger LOG = LoggerFactory.getLogger(AdaptiveExecutionStrategy.class);
 
@@ -116,6 +116,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     private final Producer _producer;
     private final Executor _executor;
     private final TryExecutor _tryExecutor;
+    private final Runnable _runPendingProducer = () -> tryProduce(true);
     private State _state = State.IDLE;
     private boolean _pending;
 
@@ -157,13 +158,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         if (LOG.isDebugEnabled())
             LOG.debug("{} dispatch {}", this, execute);
         if (execute)
-            _executor.execute(this);
-    }
-
-    @Override
-    public void run()
-    {
-        tryProduce(true);
+            _executor.execute(_runPendingProducer);
     }
 
     @Override
@@ -284,7 +279,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                     try (AutoLock l = _lock.lock())
                     {
                         // If a pending producer is available or one can be started
-                        if (_pending || _tryExecutor.tryExecute(this))
+                        if (_pending || _tryExecutor.tryExecute(_runPendingProducer))
                         {
                             // use EPC: directly consume the task and then race
                             // with the pending producer to resume production.
@@ -309,7 +304,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                     try (AutoLock l = _lock.lock())
                     {
                         // If a pending producer is available or one can be started
-                        if (_pending || _tryExecutor.tryExecute(this))
+                        if (_pending || _tryExecutor.tryExecute(_runPendingProducer))
                         {
                             // use EPC: directly consume the task and then race
                             // with the pending producer to resume production.
