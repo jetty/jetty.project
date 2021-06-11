@@ -364,6 +364,32 @@ public class XmlConfigurationTest
     }
 
     @Test
+    public void testSetWithWrongNameAndProperty() throws Exception
+    {
+        XmlConfiguration configuration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"WrongName\" property=\"prop\" id=\"test\"/></Configure>");
+        configuration.getProperties().put("prop", "This is a property value");
+        TestConfiguration tc = new TestConfiguration();
+        tc.setTestString("default");
+
+        NoSuchMethodException e = assertThrows(NoSuchMethodException.class, () -> configuration.configure(tc));
+        assertThat(e.getMessage(), containsString("setWrongName"));
+        assertEquals("default", tc.getTestString());
+    }
+    @Test
+
+    public void testSetWithWrongNameAndNullProperty() throws Exception
+    {
+        XmlConfiguration configuration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"WrongName\" property=\"prop\" id=\"test\"/></Configure>");
+        configuration.getProperties().remove("prop");
+        TestConfiguration tc = new TestConfiguration();
+        tc.setTestString("default");
+
+        NoSuchMethodException e = assertThrows(NoSuchMethodException.class, () -> configuration.configure(tc));
+        assertThat(e.getMessage(), containsString("setWrongName"));
+        assertEquals("default", tc.getTestString());
+    }
+
+    @Test
     public void testMeaningfullSetException() throws Exception
     {
         XmlConfiguration configuration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"PropertyTest\"><Property name=\"null\"/></Set></Configure>");

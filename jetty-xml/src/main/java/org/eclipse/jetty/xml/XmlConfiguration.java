@@ -516,9 +516,17 @@ public class XmlConfiguration
         private void set(Object obj, XmlParser.Node node) throws Exception
         {
             String attr = node.getAttribute("name");
+            String name = "set" + attr.substring(0, 1).toUpperCase(Locale.ENGLISH) + attr.substring(1);
             String id = node.getAttribute("id");
             String property = node.getAttribute("property");
             String propertyValue = null;
+
+            Class<?> oClass = nodeClass(node);
+            if (oClass != null)
+                obj = null;
+            else
+                oClass = obj.getClass();
+
             // Look for a property value
             if (property != null)
             {
@@ -526,20 +534,19 @@ public class XmlConfiguration
                 propertyValue = properties.get(property);
                 // If no property value, then do not set
                 if (propertyValue == null)
+                {
+                    // check that there is at least one setter that could have matched
+                    if (Arrays.stream(oClass.getMethods()).noneMatch(m -> m.getName().equals(name)))
+                        throw new NoSuchMethodException(String.format("No '%s' on %s", name, oClass.getName()));
+                    // otherwise it is a noop
                     return;
+                }
             }
 
-            String name = "set" + attr.substring(0, 1).toUpperCase(Locale.ENGLISH) + attr.substring(1);
             Object value = value(obj, node);
             if (value == null)
                 value = propertyValue;
             Object[] arg = {value};
-
-            Class<?> oClass = nodeClass(node);
-            if (oClass != null)
-                obj = null;
-            else
-                oClass = obj.getClass();
 
             Class<?>[] vClass = {Object.class};
             if (value != null)
