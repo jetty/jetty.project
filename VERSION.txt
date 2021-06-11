@@ -1,3 +1,5 @@
+jetty-10.0.6-SNAPSHOT
+
 jetty-10.0.5 - 11 June 2021
  + 4772 Jetty WebSocket API onMessage annotation does not support partial
    messages.
