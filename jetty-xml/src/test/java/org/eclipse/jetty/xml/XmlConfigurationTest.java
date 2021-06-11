@@ -328,6 +328,30 @@ public class XmlConfigurationTest
     }
 
     @Test
+    public void testSetFieldWithProperty() throws Exception
+    {
+        XmlConfiguration configuration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"testField1\" property=\"prop\" id=\"test\"/></Configure>");
+        configuration.getProperties().put("prop", "42");
+        TestConfiguration tc = new TestConfiguration();
+        tc.testField1 = -1;
+        configuration.configure(tc);
+        assertEquals(42, tc.testField1);
+        assertEquals(configuration.getIdMap().get("test"), "42");
+    }
+
+    @Test
+    public void testNotSetFieldWithNullProperty() throws Exception
+    {
+        XmlConfiguration configuration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"testField1\" property=\"prop\" id=\"test\"/></Configure>");
+        configuration.getProperties().remove("prop");
+        TestConfiguration tc = new TestConfiguration();
+        tc.testField1 = -1;
+        configuration.configure(tc);
+        assertEquals(-1, tc.testField1);
+        assertEquals(configuration.getIdMap().get("test"), null);
+    }
+
+    @Test
     public void testSetWithNullProperty() throws Exception
     {
         XmlConfiguration configuration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"TestString\" property=\"prop\" id=\"test\"/></Configure>");
@@ -386,6 +410,7 @@ public class XmlConfigurationTest
 
         NoSuchMethodException e = assertThrows(NoSuchMethodException.class, () -> configuration.configure(tc));
         assertThat(e.getMessage(), containsString("setWrongName"));
+        assertThat(e.getSuppressed()[0], instanceOf(NoSuchFieldException.class));
         assertEquals("default", tc.getTestString());
     }
 
