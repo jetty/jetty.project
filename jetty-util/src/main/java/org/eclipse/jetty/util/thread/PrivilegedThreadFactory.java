@@ -21,6 +21,7 @@ package org.eclipse.jetty.util.thread;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.function.Supplier;
+import javax.security.auth.Subject;
 
 /**
  * Convenience class to ensure that a new Thread is created
@@ -44,12 +45,24 @@ class PrivilegedThreadFactory
      */
     static <T extends Thread> T newThread(Supplier<T> newThreadSupplier)
     {
+        // doPriviliged resets the subject
+        // We need to save the subject, and run a subjext.doAs from inside
+        // doPrivileged to restore it.
+        // see https://www.ibm.com/docs/en/was-zos/8.5.5?topic=service-java-authentication-authorization-authorization
+        Subject subject = Subject.getSubject(AccessController.getContext());
         return AccessController.doPrivileged(new PrivilegedAction<T>()
         {
             @Override
             public T run()
             {
-                return newThreadSupplier.get();
+                return Subject.doAs(subject, new PrivilegedAction<T>()
+                {
+                    @Override
+                    public T run()
+                    {
+                        return newThreadSupplier.get();
+                    }
+                });
             }
         });
     }
