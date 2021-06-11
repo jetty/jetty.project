@@ -143,7 +143,7 @@ public class TestOSGiUtil
         }
 
         /*
-         * Jetty 10 uses slf4j 2.0.0 by default, however we want to test with slf4j 1.7.30 for backwards compatibility.
+         * Jetty 11 uses slf4j 2.0.0 by default, however we want to test with slf4j 1.7.30 for backwards compatibility.
          * To do that, we need to use slf4j-simple as the logging implementation. We make a simplelogger.properties
          * file available so that jetty logging can be configured
          */
