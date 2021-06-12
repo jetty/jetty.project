@@ -375,8 +375,8 @@ public class XmlConfigurationTest
         assertThat(e.getMessage(), containsString("setWrongName"));
         assertEquals("default", tc.getTestString());
     }
+    
     @Test
-
     public void testSetWithWrongNameAndNullProperty() throws Exception
     {
         XmlConfiguration configuration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"WrongName\" property=\"prop\" id=\"test\"/></Configure>");
