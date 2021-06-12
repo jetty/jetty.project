@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-alpn-parent</artifactId>
-    <version>10.0.4-SNAPSHOT</version>
+    <version>10.0.5-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -52,7 +52,7 @@
         <configuration>
           <instructions>
             <Bundle-Description>Conscrypt Client ALPN</Bundle-Description>
-            <Import-Package>org.conscrypt;version="${conscrypt.version}",*</Import-Package>
+            <Import-Package>${osgi.slf4j.import.packages},org.conscrypt;version="${conscrypt.version}",*</Import-Package>
             <Export-Package>*</Export-Package>
             <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
             <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.io.ssl.ALPNProcessor$Client</Provide-Capability>

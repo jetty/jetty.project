@@ -18,6 +18,7 @@
               <Set name="monitoredDirName"><SystemProperty name="jetty.home" />/webapps</Set>
               <Set name="scanInterval">1</Set>
               <Set name="tempDir"><Property name="jetty.home" default="target" />/workish</Set>
+              <Set name="useRealPaths">false</Set>
              </New>
             </Item>
           </Array>

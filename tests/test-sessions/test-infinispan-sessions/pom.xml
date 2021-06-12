@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-sessions-parent</artifactId>
-    <version>10.0.4-SNAPSHOT</version>
+    <version>10.0.5-SNAPSHOT</version>
   </parent>
   <artifactId>test-infinispan-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: Infinispan</name>
@@ -32,6 +32,7 @@
           <includes>
             <include>**/*.java</include>
           </includes>
+          <argLine>--add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.util.concurrent=ALL-UNNAMED</argLine>
           <systemPropertyVariables>
             <infinispan.docker.image.version>${infinispan.docker.image.version}</infinispan.docker.image.version>
             <infinispan.docker.image.name>${infinispan.docker.image.name}</infinispan.docker.image.name>
@@ -177,4 +178,25 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+  <profiles>
+    <profile>
+      <id>jdk16</id>
+      <activation>
+        <jdk>[16,)</jdk>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-surefire-plugin</artifactId>
+              <configuration>
+                <argLine>--add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.util.concurrent=ALL-UNNAMED</argLine>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+  </profiles>
 </project>

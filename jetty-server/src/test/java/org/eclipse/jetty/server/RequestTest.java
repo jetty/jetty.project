@@ -1014,75 +1014,6 @@ public class RequestTest
     }
 
     @Test
-    @Disabled("See issue #1175")
-    public void testMultiPartFormDataReadInputThenParams() throws Exception
-    {
-        final File tmpdir = MavenTestingUtils.getTargetTestingDir("multipart");
-        FS.ensureEmpty(tmpdir);
-
-        Handler handler = new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
-            {
-                if (baseRequest.getDispatcherType() != DispatcherType.REQUEST)
-                    return;
-
-                // Fake a @MultiPartConfig'd servlet endpoint
-                MultipartConfigElement multipartConfig = new MultipartConfigElement(tmpdir.getAbsolutePath());
-                request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, multipartConfig);
-
-                // Normal processing
-                baseRequest.setHandled(true);
-
-                // Fake the commons-fileupload behavior
-                int length = request.getContentLength();
-                InputStream in = request.getInputStream();
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                IO.copy(in, out, length); // KEY STEP (Don't Change!) commons-fileupload does not read to EOF
-
-                // Record what happened as servlet response headers
-                response.setIntHeader("x-request-content-length", request.getContentLength());
-                response.setIntHeader("x-request-content-read", out.size());
-                String foo = request.getParameter("foo"); // uri query parameter
-                String bar = request.getParameter("bar"); // form-data content parameter
-                response.setHeader("x-foo", foo == null ? "null" : foo);
-                response.setHeader("x-bar", bar == null ? "null" : bar);
-            }
-        };
-
-        _server.stop();
-        _server.setHandler(handler);
-        _server.start();
-
-        String multipart = "--AaBbCc\r\n" +
-            "content-disposition: form-data; name=\"bar\"\r\n" +
-            "\r\n" +
-            "BarContent\r\n" +
-            "--AaBbCc\r\n" +
-            "content-disposition: form-data; name=\"stuff\"\r\n" +
-            "Content-Type: text/plain;charset=ISO-8859-1\r\n" +
-            "\r\n" +
-            "000000000000000000000000000000000000000000000000000\r\n" +
-            "--AaBbCc--\r\n";
-
-        String request = "POST /?foo=FooUri HTTP/1.1\r\n" +
-            "Host: whatever\r\n" +
-            "Content-Type: multipart/form-data; boundary=\"AaBbCc\"\r\n" +
-            "Content-Length: " + multipart.getBytes().length + "\r\n" +
-            "Connection: close\r\n" +
-            "\r\n" +
-            multipart;
-
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
-
-        // It should always be possible to read query string
-        assertThat("response.x-foo", response.get("x-foo"), is("FooUri"));
-        // Not possible to read request content parameters?
-        assertThat("response.x-bar", response.get("x-bar"), is("null")); // TODO: should this work?
-    }
-
-    @Test
     public void testPartialRead() throws Exception
     {
         Handler handler = new AbstractHandler()
@@ -1496,69 +1427,80 @@ public class RequestTest
         assertEquals("value", cookies.get(0).getValue());
     }
 
-    @Disabled("No longer relevant")
     @Test
     public void testCookieLeak() throws Exception
     {
-        final String[] cookie = new String[10];
+        CookieRequestTester tester = new CookieRequestTester();
+        _handler._checker = tester;
 
-        _handler._checker = (request, response) ->
-        {
-            Arrays.fill(cookie, null);
-
-            Cookie[] cookies = request.getCookies();
-            for (int i = 0; cookies != null && i < cookies.length; i++)
-            {
-                cookie[i] = cookies[i].getValue();
-            }
-            return true;
-        };
-
-        String request = "POST / HTTP/1.1\r\n" +
+        String[] cookies = new String[10];
+        tester.setCookieArray(cookies);
+        LocalEndPoint endp = _connector.connect();
+        endp.addInput("POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Cookie: other=cookie\r\n" +
-            "\r\n" +
-            "POST / HTTP/1.1\r\n" +
+            "\r\n");
+        endp.getResponse();
+        assertEquals("cookie", cookies[0]);
+        assertNull(cookies[1]);
+
+        cookies = new String[10];
+        tester.setCookieArray(cookies);
+        endp.addInput("POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Cookie: name=value\r\n" +
             "Connection: close\r\n" +
-            "\r\n";
+            "\r\n");
+        endp.getResponse();
+        assertEquals("value", cookies[0]);
+        assertNull(cookies[1]);
 
-        _connector.getResponse(request);
-
-        assertEquals("value", cookie[0]);
-        assertNull(cookie[1]);
-
-        request = "POST / HTTP/1.1\r\n" +
+        endp = _connector.connect();
+        cookies = new String[10];
+        tester.setCookieArray(cookies);
+        endp.addInput("POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Cookie: name=value\r\n" +
-            "\r\n" +
-            "POST / HTTP/1.1\r\n" +
+            "\r\n");
+        endp.getResponse();
+        assertEquals("value", cookies[0]);
+        assertNull(cookies[1]);
+
+        cookies = new String[10];
+        tester.setCookieArray(cookies);
+        endp.addInput("POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Cookie: \r\n" +
             "Connection: close\r\n" +
-            "\r\n";
+            "\r\n");
+        endp.getResponse();
+        assertNull(cookies[0]);
+        assertNull(cookies[1]);
 
-        _connector.getResponse(request);
-        assertNull(cookie[0]);
-        assertNull(cookie[1]);
-
-        request = "POST / HTTP/1.1\r\n" +
+        endp = _connector.connect();
+        cookies = new String[10];
+        tester.setCookieArray(cookies);
+        endp.addInput("POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Cookie: name=value\r\n" +
             "Cookie: other=cookie\r\n" +
-            "\r\n" +
-            "POST / HTTP/1.1\r\n" +
+            "\r\n");
+        endp.getResponse();
+        assertEquals("value", cookies[0]);
+        assertEquals("cookie", cookies[1]);
+        assertNull(cookies[2]);
+
+        cookies = new String[10];
+        tester.setCookieArray(cookies);
+        endp.addInput("POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Cookie: name=value\r\n" +
             "Cookie:\r\n" +
             "Connection: close\r\n" +
-            "\r\n";
-
-        _connector.getResponse(request);
-
-        assertEquals("value", cookie[0]);
-        assertNull(cookie[1]);
+            "\r\n");
+        endp.getResponse();
+        assertEquals("value", cookies[0]);
+        assertNull(cookies[1]);
     }
 
     @Test
@@ -1790,6 +1732,23 @@ public class RequestTest
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
     }
+
+    @Test
+    public void testAmbiguousDoubleSlash() throws Exception
+    {
+        _handler._checker = (request, response) -> true;
+        String request = "GET /ambiguous/doubleSlash// HTTP/1.0\r\n" +
+            "Host: whatever\r\n" +
+            "\r\n";
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+    }
     
     @Test
     public void testPushBuilder()
@@ -1947,6 +1906,29 @@ public class RequestTest
         boolean check(HttpServletRequest request, HttpServletResponse response) throws IOException;
     }
 
+    private static class CookieRequestTester implements RequestTester
+    {
+        private String[] _cookieValues;
+
+        public void setCookieArray(String[] cookieValues)
+        {
+            _cookieValues = cookieValues;
+        }
+
+        @Override
+        public boolean check(HttpServletRequest request, HttpServletResponse response) throws IOException
+        {
+            Arrays.fill(_cookieValues, null);
+
+            Cookie[] cookies = request.getCookies();
+            for (int i = 0; cookies != null && i < cookies.length; i++)
+            {
+                _cookieValues[i] = cookies[i].getValue();
+            }
+            return true;
+        }
+    }
+    
     private static class TestRequest extends Request
     {
         public static final String TEST_SESSION_ID = "abc123";

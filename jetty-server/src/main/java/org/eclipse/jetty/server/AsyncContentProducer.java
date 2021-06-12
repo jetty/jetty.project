@@ -33,7 +33,7 @@ class AsyncContentProducer implements ContentProducer
     private static final Throwable UNCONSUMED_CONTENT_EXCEPTION = new IOException("Unconsumed content")
     {
         @Override
-        public synchronized Throwable fillInStackTrace()
+        public Throwable fillInStackTrace()
         {
             return this;
         }

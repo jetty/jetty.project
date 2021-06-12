@@ -21,10 +21,15 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.io.CyclicTimeout;
+import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @deprecated Do not use it, use {@link CyclicTimeouts} instead.
+ */
+@Deprecated
 public class TimeoutCompleteListener extends CyclicTimeout implements Response.CompleteListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(TimeoutCompleteListener.class);

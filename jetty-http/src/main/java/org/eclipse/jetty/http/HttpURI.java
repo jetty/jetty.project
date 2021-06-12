@@ -50,9 +50,29 @@ public interface HttpURI
 {
     enum Ambiguous
     {
+        /**
+         * URI contains ambiguous path segments e.g. {@code /foo/%2e%2e/bar}
+         */
         SEGMENT,
+
+        /**
+         * URI contains ambiguous empty segments e.g. {@code /foo//bar} or {@code /foo/;param/}, but not {@code /foo/}
+         */
+        EMPTY,
+
+        /**
+         * URI contains ambiguous path separator within a URI segment e.g. {@code /foo/b%2fr}
+         */
         SEPARATOR,
+
+        /**
+         * URI contains ambiguous path encoding within a URI segment e.g. {@code /%2557EB-INF}
+         */
         ENCODING,
+
+        /**
+         * URI contains ambiguous path parameters within a URI segment e.g. {@code /foo/..;/bar}
+         */
         PARAM
     }
 
@@ -149,6 +169,11 @@ public interface HttpURI
      * @return True if the URI has a possibly ambiguous segment like '..;' or '%2e%2e'
      */
     boolean hasAmbiguousSegment();
+
+    /**
+     * @return True if the URI empty segment that is ambiguous like '//' or '/;param/'.
+     */
+    boolean hasAmbiguousEmptySegment();
 
     /**
      * @return True if the URI has a possibly ambiguous separator of %2f
@@ -377,13 +402,19 @@ public interface HttpURI
         @Override
         public boolean hasAmbiguousSegment()
         {
-            return _ambiguous.contains(Mutable.Ambiguous.SEGMENT);
+            return _ambiguous.contains(Ambiguous.SEGMENT);
+        }
+
+        @Override
+        public boolean hasAmbiguousEmptySegment()
+        {
+            return _ambiguous.contains(Ambiguous.EMPTY);
         }
 
         @Override
         public boolean hasAmbiguousSeparator()
         {
-            return _ambiguous.contains(Mutable.Ambiguous.SEPARATOR);
+            return _ambiguous.contains(Ambiguous.SEPARATOR);
         }
 
         @Override
@@ -468,6 +499,7 @@ public interface HttpURI
         private String _uri;
         private String _decodedPath;
         private final EnumSet<Ambiguous> _ambiguous = EnumSet.noneOf(Ambiguous.class);
+        private boolean _emptySegment;
 
         private Mutable()
         {
@@ -728,6 +760,12 @@ public interface HttpURI
         }
 
         @Override
+        public boolean hasAmbiguousEmptySegment()
+        {
+            return _ambiguous.contains(Ambiguous.EMPTY);
+        }
+
+        @Override
         public boolean hasAmbiguousSeparator()
         {
             return _ambiguous.contains(Mutable.Ambiguous.SEPARATOR);
@@ -904,6 +942,7 @@ public interface HttpURI
             boolean dot = false; // set to true if the path containers . or .. segments
             int escapedTwo = 0; // state of parsing a %2<x>
             int end = uri.length();
+            _emptySegment = false;
             for (int i = 0; i < end; i++)
             {
                 char c = uri.charAt(i);
@@ -919,16 +958,21 @@ public interface HttpURI
                                 state = State.HOST_OR_PATH;
                                 break;
                             case ';':
+                                checkSegment(uri, segment, i, true);
                                 mark = i + 1;
                                 state = State.PARAM;
                                 break;
                             case '?':
                                 // assume empty path (if seen at start)
+                                checkSegment(uri, segment, i, false);
                                 _path = "";
                                 mark = i + 1;
                                 state = State.QUERY;
                                 break;
                             case '#':
+                                // assume empty path (if seen at start)
+                                checkSegment(uri, segment, i, false);
+                                _path = "";
                                 mark = i + 1;
                                 state = State.FRAGMENT;
                                 break;
@@ -1130,7 +1174,9 @@ public interface HttpURI
                                 state = State.FRAGMENT;
                                 break;
                             case '/':
-                                checkSegment(uri, segment, i, false);
+                                // There is no leading segment when parsing only a path that starts with slash.
+                                if (i != 0)
+                                    checkSegment(uri, segment, i, false);
                                 segment = i + 1;
                                 break;
                             case '.':
@@ -1218,6 +1264,9 @@ public interface HttpURI
             switch (state)
             {
                 case START:
+                    _path = "";
+                    checkSegment(uri, segment, end, false);
+                    break;
                 case ASTERISK:
                     break;
                 case SCHEME_OR_PATH:
@@ -1279,13 +1328,45 @@ public interface HttpURI
          */
         private void checkSegment(String uri, int segment, int end, boolean param)
         {
-            if (!_ambiguous.contains(Ambiguous.SEGMENT))
+            // This method is called once for every segment parsed.
+            // A URI like "/foo/" has two segments: "foo" and an empty segment.
+            // Empty segments are only ambiguous if they are not the last segment
+            // So if this method is called for any segment and we have previously seen an empty segment, then it was ambiguous 
+            if (_emptySegment)
+                _ambiguous.add(Ambiguous.EMPTY);
+
+            if (end == segment)
             {
-                Boolean ambiguous = __ambiguousSegments.get(uri, segment, end - segment);
-                if (ambiguous == Boolean.TRUE)
-                    _ambiguous.add(Ambiguous.SEGMENT);
-                else if (param && ambiguous == Boolean.FALSE)
-                    _ambiguous.add(Ambiguous.PARAM);
+                // Empty segments are not ambiguous if followed by a '#', '?' or end of string.
+                if (end >= uri.length() || ("#?".indexOf(uri.charAt(end)) >= 0))
+                    return;
+
+                // If this empty segment is the first segment then it is ambiguous.
+                if (segment == 0)
+                {
+                    _ambiguous.add(Ambiguous.EMPTY);
+                    return;
+                }
+
+                // Otherwise remember we have seen an empty segment, which is check if we see a subsequent segment.
+                if (!_emptySegment)
+                {
+                    _emptySegment = true;
+                    return;
+                }
+            }
+
+            // Look for segment in the ambiguous segment index.
+            Boolean ambiguous = __ambiguousSegments.get(uri, segment, end - segment);
+            if (ambiguous == Boolean.TRUE)
+            {
+                // The segment is always ambiguous.
+                _ambiguous.add(Ambiguous.SEGMENT);
+            }
+            else if (param && ambiguous == Boolean.FALSE)
+            {
+                // The segment is ambiguous only when followed by a parameter.
+                _ambiguous.add(Ambiguous.PARAM);
             }
         }
     }

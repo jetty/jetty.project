@@ -375,7 +375,7 @@ public class WebAppProvider extends ScanningAppProvider
             {
                 //if a .xml file exists for it, then redeploy that instead
                 File xml = new File(parent, xmlname);
-                super.fileChanged(xml.getCanonicalPath());
+                super.fileChanged(xml.getPath());
                 return;
             }
 
@@ -384,7 +384,7 @@ public class WebAppProvider extends ScanningAppProvider
             {
                 //if a .XML file exists for it, then redeploy that instead
                 File xml = new File(parent, xmlname);
-                super.fileChanged(xml.getCanonicalPath());
+                super.fileChanged(xml.getPath());
                 return;
             }
 

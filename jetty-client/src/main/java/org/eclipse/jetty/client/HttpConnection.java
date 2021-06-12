@@ -17,6 +17,7 @@ import java.net.CookieStore;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -30,9 +31,11 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +45,7 @@ public abstract class HttpConnection implements IConnection, Attachable
 
     private final AutoLock lock = new AutoLock();
     private final HttpDestination destination;
+    private final RequestTimeouts requestTimeouts;
     private Object attachment;
     private int idleTimeoutGuard;
     private long idleTimeoutStamp;
@@ -49,6 +53,7 @@ public abstract class HttpConnection implements IConnection, Attachable
     protected HttpConnection(HttpDestination destination)
     {
         this.destination = destination;
+        this.requestTimeouts = new RequestTimeouts(destination.getHttpClient().getScheduler());
         this.idleTimeoutStamp = System.nanoTime();
     }
 
@@ -61,6 +66,8 @@ public abstract class HttpConnection implements IConnection, Attachable
     {
         return destination;
     }
+
+    protected abstract Iterator<HttpChannel> getHttpChannels();
 
     @Override
     public void send(Request request, Response.CompleteListener listener)
@@ -99,6 +106,7 @@ public abstract class HttpConnection implements IConnection, Attachable
             SendFailure result;
             if (channel.associate(exchange))
             {
+                requestTimeouts.schedule(channel);
                 channel.send();
                 result = null;
             }
@@ -228,16 +236,6 @@ public abstract class HttpConnection implements IConnection, Attachable
         return builder;
     }
 
-    private void applyProxyAuthentication(Request request, ProxyConfiguration.Proxy proxy)
-    {
-        if (proxy != null)
-        {
-            Authentication.Result result = getHttpClient().getAuthenticationStore().findAuthenticationResult(proxy.getURI());
-            if (result != null)
-                result.apply(request);
-        }
-    }
-
     private void applyRequestAuthentication(Request request)
     {
         AuthenticationStore authenticationStore = getHttpClient().getAuthenticationStore();
@@ -250,6 +248,16 @@ public abstract class HttpConnection implements IConnection, Attachable
                 if (result != null)
                     result.apply(request);
             }
+        }
+    }
+
+    private void applyProxyAuthentication(Request request, ProxyConfiguration.Proxy proxy)
+    {
+        if (proxy != null)
+        {
+            Authentication.Result result = getHttpClient().getAuthenticationStore().findAuthenticationResult(proxy.getURI());
+            if (result != null)
+                result.apply(request);
         }
     }
 
@@ -288,9 +296,40 @@ public abstract class HttpConnection implements IConnection, Attachable
         return attachment;
     }
 
+    protected void destroy()
+    {
+        requestTimeouts.destroy();
+    }
+
     @Override
     public String toString()
     {
         return String.format("%s@%h", getClass().getSimpleName(), this);
+    }
+
+    private class RequestTimeouts extends CyclicTimeouts<HttpChannel>
+    {
+        private RequestTimeouts(Scheduler scheduler)
+        {
+            super(scheduler);
+        }
+
+        @Override
+        protected Iterator<HttpChannel> iterator()
+        {
+            return getHttpChannels();
+        }
+
+        @Override
+        protected boolean onExpired(HttpChannel channel)
+        {
+            HttpExchange exchange = channel.getHttpExchange();
+            if (exchange != null)
+            {
+                HttpRequest request = exchange.getRequest();
+                request.abort(new TimeoutException("Total timeout " + request.getTimeout() + " ms elapsed"));
+            }
+            return false;
+        }
     }
 }

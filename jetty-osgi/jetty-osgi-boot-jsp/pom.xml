@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>10.0.4-SNAPSHOT</version>
+    <version>10.0.5-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-osgi-boot-jsp</artifactId>
@@ -56,7 +56,9 @@
             <Bundle-Classpath />
             <Fragment-Host>org.eclipse.jetty.osgi.boot</Fragment-Host>
             <Export-Package>!org.eclipse.jetty.osgi.boot.*</Export-Package>
-            <Import-Package>org.eclipse.jdt.*;resolution:=optional,
+            <Import-Package>
+                ${osgi.slf4j.import.packages},
+                org.eclipse.jdt.*;resolution:=optional,
                 org.eclipse.jdt.core.compiler.*;resolution:=optional,
                 com.sun.el;resolution:=optional,
                 com.sun.el.lang;resolution:=optional,

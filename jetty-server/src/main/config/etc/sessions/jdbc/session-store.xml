@@ -8,8 +8,8 @@
   <Call name="addBean">
     <Arg>
       <New id="sessionDataStoreFactory" class="org.eclipse.jetty.server.session.JDBCSessionDataStoreFactory">
-        <Set name="gracePeriodSec"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
-        <Set name="savePeriodSec"><Property name="jetty.session.savePeriod.seconds" default="0" /></Set>
+        <Set name="gracePeriodSec" property="jetty.session.gracePeriod.seconds"/>
+        <Set name="savePeriodSec" property="jetty.session.savePeriod.seconds"/>
         <Set name="databaseAdaptor">
           <Ref refid="databaseAdaptor" />
         </Set>

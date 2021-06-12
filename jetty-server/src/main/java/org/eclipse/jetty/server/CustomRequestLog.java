@@ -152,7 +152,7 @@ import static java.lang.invoke.MethodType.methodType;
  *
  * <tr>
  * <td valign="top">%H</td>
- * <td>The request protocol.</td>
+ * <td>The name and version of the request protocol, such as "HTTP/1.1".</td>
  * </tr>
  *
  * <tr>
