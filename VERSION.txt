@@ -1,4 +1,13 @@
-jetty-11.0.5-SNAPSHOT
+jetty-11.0.6-SNAPSHOT
+
+jetty-11.0.5 - 11 June 2021
+ + 4772 Jetty WebSocket API onMessage annotation does not support partial
+   messages.
+ + 6302 Treat empty path segments are ambiguous.
+ + 6329 Regression on graceful shutdown default in Jetty 10
+ + 6354 org.slf4j dependency imports osgi packages at 2.0
+ + 6379 Reduce contention in all `ByteBufferPool` implementations
+ + 6392 Review accidental xml config changes
 
 jetty-11.0.4 - 04 June 2021
  + 5379 Better handling for wrong SNI
@@ -86,7 +95,8 @@ jetty-10.0.3 - 20 May 2021
  + 6250 Lazily allocate HTTP2Stream data queue
  + 6251 Use CyclicTimeout for HTTP2Streams
  + 6254 Total timeout not enforced for queued requests
- + 6263 Review URI encoding in ConcatServlet & WelcomeFilter (Resolved CVE-2021-28169)
+ + 6263 Review URI encoding in ConcatServlet & WelcomeFilter (Resolved
+   CVE-2021-28169)
  + 6272 Reduce allocation in HttpClient when notifying content listeners
  + 6277 Better handle exceptions thrown from session destroy listener
  + 6280 Copy ServletHolder class/instance properly during startWebapp
