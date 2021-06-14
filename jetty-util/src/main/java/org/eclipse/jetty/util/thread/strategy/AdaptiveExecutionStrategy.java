@@ -213,7 +213,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                     break;
 
                 case PRODUCING:
-                    // The strategy is already producing, so another thread must be the producer
+                    // The strategy is already producing, so another thread must be the producer.
                     // However, it may be just about to stop being the producer so we set the
                     // REPRODUCING state to force it to call #doProduce at least once more.
                     _state = State.REPRODUCING;
@@ -278,7 +278,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
      * Select the execution strategy.
      * @param task The task to select the strategy for.
      * @param nonBlocking True if the producing thread cannot block.
-     * @return The sub-strategy mode to use for the task.
+     * @return The sub-strategy to use for the task.
      */
     private SubStrategy selectSubStrategy(Runnable task, boolean nonBlocking)
     {
@@ -341,7 +341,8 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         }
     }
 
-    /** Consume a task with a sub-strategy.
+    /**
+     * Consume a task with a sub-strategy.
      * @param task The task to consume.
      * @param subStrategy The execution sub-strategy mode to use to consume it.
      * @return True if the sub-strategy requires the caller to continue to produce tasks.
@@ -350,7 +351,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     {
         // Consume and/or execute task according to the selected mode.
         if (LOG.isDebugEnabled())
-            LOG.debug("{} m={} t={}/{}", this, subStrategy, task, Invocable.getInvocationType(task));
+            LOG.debug("{} ss={} t={}/{} {}", this, subStrategy, task, Invocable.getInvocationType(task));
         switch (subStrategy)
         {
             case PRODUCE_CONSUME:
@@ -393,7 +394,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     }
 
     /**
-     * Run a Runnable task, logging any thrown exception.
+     * Runs a Runnable task, logging any thrown exception.
      * @param task The task to run.
      */
     private void runTask(Runnable task)
