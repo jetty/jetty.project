@@ -19,12 +19,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.security.auth.Subject;
-import javax.security.auth.message.AuthException;
-import javax.security.auth.message.config.AuthConfigFactory;
-import javax.security.auth.message.config.AuthConfigProvider;
-import javax.security.auth.message.config.RegistrationListener;
-import javax.security.auth.message.config.ServerAuthConfig;
 
+import jakarta.security.auth.message.AuthException;
+import jakarta.security.auth.message.config.AuthConfigFactory;
+import jakarta.security.auth.message.config.AuthConfigProvider;
+import jakarta.security.auth.message.config.RegistrationListener;
+import jakarta.security.auth.message.config.ServerAuthConfig;
 import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
@@ -35,11 +35,22 @@ import org.eclipse.jetty.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Jaspi Authenticator Factory.
+ * 
+ * To initialize either
+ * <ul>
+ * <li>invoke {@link AuthConfigFactory#setFactory(AuthConfigFactory)}</li>
+ * <li>set {@link AuthConfigFactory#DEFAULT_FACTORY_SECURITY_PROPERTY} to an
+ * appropriate implementation</li>
+ * </ul>
+ *
+ */
 public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(JaspiAuthenticatorFactory.class);
 
-    private static String MESSAGE_LAYER = "HTTP";
+    private static String MESSAGE_LAYER = "HttpServlet";
 
     private Subject _serviceSubject;
     private String _serverName;
@@ -77,13 +88,14 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
     }
 
     @Override
-    public Authenticator getAuthenticator(Server server, ServletContext context, AuthConfiguration configuration, IdentityService identityService, LoginService loginService)
+    public Authenticator getAuthenticator(Server server, ServletContext context, AuthConfiguration configuration,
+            IdentityService identityService, LoginService loginService)
     {
         Authenticator authenticator = null;
         try
         {
             AuthConfigFactory authConfigFactory = AuthConfigFactory.getFactory();
-            RegistrationListener listener = (layer, appContext) ->
+            RegistrationListener listener = (layer, appContext) -> 
             {
             };
 
@@ -95,12 +107,14 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
                 contextPath = "/";
             String appContext = serverName + " " + contextPath;
 
-            AuthConfigProvider authConfigProvider = authConfigFactory.getConfigProvider(MESSAGE_LAYER, appContext, listener);
+            AuthConfigProvider authConfigProvider = authConfigFactory.getConfigProvider(MESSAGE_LAYER, appContext,
+                    listener);
 
             if (authConfigProvider != null)
             {
                 ServletCallbackHandler servletCallbackHandler = new ServletCallbackHandler(loginService);
-                ServerAuthConfig serverAuthConfig = authConfigProvider.getServerAuthConfig(MESSAGE_LAYER, appContext, servletCallbackHandler);
+                ServerAuthConfig serverAuthConfig = authConfigProvider.getServerAuthConfig(MESSAGE_LAYER, appContext,
+                        servletCallbackHandler);
                 if (serverAuthConfig != null)
                 {
                     Map map = new HashMap();
@@ -109,10 +123,10 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
                         map.put(key, configuration.getInitParameter(key));
                     }
                     authenticator = new JaspiAuthenticator(serverAuthConfig, map, servletCallbackHandler,
-                        serviceSubject, true, identityService);
+                            serviceSubject, true, identityService);
                 }
             }
-        }
+        } 
         catch (AuthException e)
         {
             LOG.warn("Failed to get ServerAuthConfig", e);
@@ -121,10 +135,9 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
     }
 
     /**
-     * Find a service Subject.
-     * If {@link #setServiceSubject(Subject)} has not been used to
-     * set a subject, then the {@link Server#getBeans(Class)} method is
-     * used to look for a Subject.
+     * Find a service Subject. If {@link #setServiceSubject(Subject)} has not been
+     * used to set a subject, then the {@link Server#getBeans(Class)} method is used
+     * to look for a Subject.
      *
      * @param server the server to pull the Subject from
      * @return the subject
@@ -140,13 +153,13 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
     }
 
     /**
-     * Find a servername.
-     * If {@link #setServerName(String)} has not been called, then
-     * use the name of the a principal in the service subject.
-     * If not found, return "server".
+     * Find a servername. If {@link #setServerName(String)} has not been called,
+     * then use the name of the a principal in the service subject. If not found,
+     * return "server".
      *
      * @param server the server to find the name of
-     * @return the server name from the service Subject (or default value if not found in subject or principals)
+     * @return the server name from the service Subject (or default value if not
+     *         found in subject or principals)
      */
     protected String findServerName(Server server)
     {

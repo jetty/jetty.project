@@ -20,7 +20,7 @@ module org.eclipse.jetty.security.jaspi
     exports org.eclipse.jetty.security.jaspi.callback;
     exports org.eclipse.jetty.security.jaspi.modules;
 
-    requires javax.security.auth.message;
+    requires transitive jakarta.security.auth.message;
     requires jetty.servlet.api;
     requires transitive org.eclipse.jetty.security;
     requires org.slf4j;

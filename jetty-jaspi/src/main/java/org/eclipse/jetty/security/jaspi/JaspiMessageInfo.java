@@ -17,8 +17,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import javax.security.auth.message.MessageInfo;
 
+import jakarta.security.auth.message.MessageInfo;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 

@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import jakarta.security.auth.message.config.AuthConfigFactory;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -39,7 +40,9 @@ import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.util.security.Password;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -86,10 +89,31 @@ public class JaspiTest
         }
     }
 
+    @BeforeAll
+    public static void beforeAll() throws Exception
+    {
+        AuthConfigFactory factory = new BasicAuthConfigFactory();
+        
+        factory.registerConfigProvider("org.eclipse.jetty.security.jaspi.BasicAuthModule",  
+                Map.of("AppContextIDs", "server /ctx", "org.eclipse.jetty.security.jaspi.modules.RealmName", "TestRealm"),
+                "HttpServlet", "server /ctx", "a test provider");
+
+        factory.registerConfigProvider("org.eclipse.jetty.security.jaspi.HttpHeaderAuthModule",
+                Map.of("AppContextIDs", "server /other"),
+                "HttpServlet", "server /other", "another test provider");
+        
+        AuthConfigFactory.setFactory(factory);
+    }
+
+    @AfterAll
+    public static void afterAll() throws Exception
+    {
+        AuthConfigFactory.setFactory(null);
+    }
+
     @BeforeEach
     public void before() throws Exception
     {
-        System.setProperty("org.apache.geronimo.jaspic.configurationFile", "src/test/resources/jaspi.xml");
         _server = new Server();
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
@@ -98,8 +122,8 @@ public class JaspiTest
         _server.setHandler(contexts);
 
         TestLoginService loginService = new TestLoginService("TestRealm");
-        loginService.putUser("user", new Password("password"), new String[]{"users"});
-        loginService.putUser("admin", new Password("secret"), new String[]{"users", "admins"});
+        loginService.putUser("user", new Password("password"), new String[] {"users"});
+        loginService.putUser("admin", new Password("secret"), new String[] {"users", "admins"});
         _server.addBean(loginService);
 
         ContextHandler context = new ContextHandler();
@@ -159,9 +183,8 @@ public class JaspiTest
     @Test
     public void testConstraintWrongAuth() throws Exception
     {
-        String response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n" +
-            "Authorization: Basic " + Base64.getEncoder().encodeToString("user:wrong".getBytes(ISO_8859_1)) +
-            "\n\n");
+        String response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n" + "Authorization: Basic " +
+                Base64.getEncoder().encodeToString("user:wrong".getBytes(ISO_8859_1)) + "\n\n");
         assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
         assertThat(response, Matchers.containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
     }
@@ -169,9 +192,8 @@ public class JaspiTest
     @Test
     public void testConstraintAuth() throws Exception
     {
-        String response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n" +
-            "Authorization: Basic " + Base64.getEncoder().encodeToString("user:password".getBytes(ISO_8859_1)) +
-            "\n\n");
+        String response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n" + "Authorization: Basic " +
+                Base64.getEncoder().encodeToString("user:password".getBytes(ISO_8859_1)) + "\n\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
     }
 
@@ -185,8 +207,7 @@ public class JaspiTest
     @Test
     public void testOtherAuth() throws Exception
     {
-        String response = _connector.getResponse("GET /other/test HTTP/1.0\n" +
-            "X-Forwarded-User: user\n\n");
+        String response = _connector.getResponse("GET /other/test HTTP/1.0\n" + "X-Forwarded-User: user\n\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
     }
 
@@ -194,7 +215,8 @@ public class JaspiTest
     {
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             response.setStatus(200);

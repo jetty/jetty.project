@@ -18,11 +18,11 @@ import java.util.Map;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.UnsupportedCallbackException;
-import javax.security.auth.message.AuthException;
-import javax.security.auth.message.AuthStatus;
-import javax.security.auth.message.MessageInfo;
-import javax.security.auth.message.MessagePolicy;
 
+import jakarta.security.auth.message.AuthException;
+import jakarta.security.auth.message.AuthStatus;
+import jakarta.security.auth.message.MessageInfo;
+import jakarta.security.auth.message.MessagePolicy;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
@@ -51,10 +51,10 @@ public class BasicAuthModule extends BaseAuthModule
 
     @Override
     public void initialize(MessagePolicy requestPolicy, MessagePolicy responsePolicy,
-                           CallbackHandler handler, Map options)
+                           CallbackHandler callbackHandler, Map options)
         throws AuthException
     {
-        super.initialize(requestPolicy, responsePolicy, handler, options);
+        super.initialize(requestPolicy, responsePolicy, callbackHandler, options);
         realmName = (String)options.get(REALM_KEY);
     }
 

@@ -15,59 +15,67 @@ package org.eclipse.jetty.security.jaspi;
 
 import java.util.Map;
 import javax.security.auth.Subject;
-import javax.security.auth.message.AuthException;
-import javax.security.auth.message.MessageInfo;
-import javax.security.auth.message.config.ServerAuthConfig;
-import javax.security.auth.message.config.ServerAuthContext;
+import javax.security.auth.callback.CallbackHandler;
+
+import jakarta.security.auth.message.AuthException;
+import jakarta.security.auth.message.MessageInfo;
+import jakarta.security.auth.message.config.ServerAuthConfig;
+import jakarta.security.auth.message.config.ServerAuthContext;
+import jakarta.security.auth.message.module.ServerAuthModule;
 
 public class SimpleAuthConfig implements ServerAuthConfig
 {
-    public static final String HTTP_SERVLET = "HttpServlet";
 
-    private final String _appContext;
+    private final String messageLayer;
+    private final String appContext;
+    private final CallbackHandler callbackHandler;
+    private final Map<String, String> providerProperties;
+    private final ServerAuthModule serverAuthModule;
 
-    private final ServerAuthContext _serverAuthContext;
-
-    public SimpleAuthConfig(String appContext, ServerAuthContext serverAuthContext)
+    public SimpleAuthConfig(String messageLayer, String appContext, CallbackHandler callbackHandler, Map<String, String> providerProperties,
+            ServerAuthModule serverAuthModule) 
     {
-        this._appContext = appContext;
-        this._serverAuthContext = serverAuthContext;
+        this.messageLayer = messageLayer;
+        this.appContext = appContext;
+        this.callbackHandler = callbackHandler;
+        this.providerProperties = providerProperties;
+        this.serverAuthModule = serverAuthModule;
     }
 
     @Override
-    public ServerAuthContext getAuthContext(String authContextID, Subject serviceSubject, Map properties) throws AuthException
+    public ServerAuthContext getAuthContext(String authContextID, Subject serviceSubject,
+            @SuppressWarnings("rawtypes") Map properties) throws AuthException
     {
-        return _serverAuthContext;
-    }
-
-    // supposed to be of form host-name<space>context-path
-    @Override
-    public String getAppContext()
-    {
-        return _appContext;
-    }
-
-    // not used yet
-    @Override
-    public String getAuthContextID(MessageInfo messageInfo) throws IllegalArgumentException
-    {
-        return null;
+        return new SimpleServerAuthContext(callbackHandler, serverAuthModule, providerProperties);
     }
 
     @Override
     public String getMessageLayer()
     {
-        return HTTP_SERVLET;
+        return messageLayer;
     }
 
     @Override
-    public boolean isProtected()
+    public String getAppContext()
     {
-        return true;
+        return appContext;
+    }
+
+    @Override
+    public String getAuthContextID(MessageInfo messageInfo)
+    {
+        return appContext;
     }
 
     @Override
     public void refresh()
     {
+        // NOOP
+    }
+
+    @Override
+    public boolean isProtected()
+    {
+        return false;
     }
 }
