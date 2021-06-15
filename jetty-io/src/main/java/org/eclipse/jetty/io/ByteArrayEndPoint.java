@@ -15,6 +15,9 @@ package org.eclipse.jetty.io;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.Charset;
@@ -35,7 +38,20 @@ import org.slf4j.LoggerFactory;
  */
 public class ByteArrayEndPoint extends AbstractEndPoint
 {
+    private static SocketAddress noSocketAddress()
+    {
+        try
+        {
+            return new InetSocketAddress(InetAddress.getByName("0.0.0.0"), 0);
+        }
+        catch (Throwable x)
+        {
+            throw new RuntimeIOException(x);
+        }
+    }
+
     private static final Logger LOG = LoggerFactory.getLogger(ByteArrayEndPoint.class);
+    private static final SocketAddress NO_SOCKET_ADDRESS = noSocketAddress();
     private static final int MAX_BUFFER_SIZE = Integer.MAX_VALUE - 1024;
     private static final ByteBuffer EOF = BufferUtil.allocate(0);
 
@@ -94,6 +110,18 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         _out = output == null ? BufferUtil.allocate(_outputSize) : output;
         setIdleTimeout(idleTimeoutMs);
         onOpen();
+    }
+
+    @Override
+    public SocketAddress getLocalSocketAddress()
+    {
+        return NO_SOCKET_ADDRESS;
+    }
+
+    @Override
+    public SocketAddress getRemoteSocketAddress()
+    {
+        return NO_SOCKET_ADDRESS;
     }
 
     @Override
