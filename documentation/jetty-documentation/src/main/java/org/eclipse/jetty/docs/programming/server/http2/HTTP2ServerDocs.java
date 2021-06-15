@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.docs.programming.server.http2;
 
-import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
@@ -82,7 +82,7 @@ public class HTTP2ServerDocs
             @Override
             public void onAccept(Session session)
             {
-                InetSocketAddress remoteAddress = session.getRemoteAddress();
+                SocketAddress remoteAddress = session.getRemoteSocketAddress();
                 System.getLogger("http2").log(INFO, "Connection from {0}", remoteAddress);
             }
         };

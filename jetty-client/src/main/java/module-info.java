@@ -18,7 +18,6 @@ module org.eclipse.jetty.client
     exports org.eclipse.jetty.client.dynamic;
     exports org.eclipse.jetty.client.http;
     exports org.eclipse.jetty.client.jmx to org.eclipse.jetty.jmx;
-    exports org.eclipse.jetty.client.proxy;
     exports org.eclipse.jetty.client.util;
 
     requires org.eclipse.jetty.alpn.client;

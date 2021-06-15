@@ -256,8 +256,8 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         return String.format("%s@%x(l:%s <-> r:%s,closed=%b)=>%s",
             getClass().getSimpleName(),
             hashCode(),
-            getEndPoint().getLocalAddress(),
-            getEndPoint().getRemoteAddress(),
+            getEndPoint().getLocalSocketAddress(),
+            getEndPoint().getRemoteSocketAddress(),
             closed.get(),
             channel);
     }

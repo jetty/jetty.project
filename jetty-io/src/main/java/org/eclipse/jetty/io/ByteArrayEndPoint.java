@@ -15,10 +15,6 @@ package org.eclipse.jetty.io;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.Charset;
@@ -39,29 +35,8 @@ import org.slf4j.LoggerFactory;
  */
 public class ByteArrayEndPoint extends AbstractEndPoint
 {
-    static final Logger LOG = LoggerFactory.getLogger(ByteArrayEndPoint.class);
-    static final InetAddress NOIP;
-    static final InetSocketAddress NOIPPORT;
+    private static final Logger LOG = LoggerFactory.getLogger(ByteArrayEndPoint.class);
     private static final int MAX_BUFFER_SIZE = Integer.MAX_VALUE - 1024;
-
-    static
-    {
-        InetAddress noip = null;
-        try
-        {
-            noip = Inet4Address.getByName("0.0.0.0");
-        }
-        catch (UnknownHostException e)
-        {
-            LOG.warn("Unable to get IPv4 no-ip reference for 0.0.0.0", e);
-        }
-        finally
-        {
-            NOIP = noip;
-            NOIPPORT = new InetSocketAddress(NOIP, 0);
-        }
-    }
-
     private static final ByteBuffer EOF = BufferUtil.allocate(0);
 
     private final Runnable _runFillable = () -> getFillInterest().fillable();
@@ -139,18 +114,6 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         {
             _hasOutput.signalAll();
         }
-    }
-
-    @Override
-    public InetSocketAddress getLocalAddress()
-    {
-        return NOIPPORT;
-    }
-
-    @Override
-    public InetSocketAddress getRemoteAddress()
-    {
-        return NOIPPORT;
     }
 
     @Override

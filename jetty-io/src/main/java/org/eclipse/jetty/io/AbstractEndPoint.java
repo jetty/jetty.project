@@ -14,6 +14,8 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -53,6 +55,36 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     protected AbstractEndPoint(Scheduler scheduler)
     {
         super(scheduler);
+    }
+
+    @Override
+    public InetSocketAddress getLocalAddress()
+    {
+        SocketAddress local = getLocalSocketAddress();
+        if (local instanceof InetSocketAddress)
+            return (InetSocketAddress)local;
+        return null;
+    }
+
+    @Override
+    public SocketAddress getLocalSocketAddress()
+    {
+        return null;
+    }
+
+    @Override
+    public InetSocketAddress getRemoteAddress()
+    {
+        SocketAddress remote = getRemoteSocketAddress();
+        if (remote instanceof InetSocketAddress)
+            return (InetSocketAddress)remote;
+        return null;
+    }
+
+    @Override
+    public SocketAddress getRemoteSocketAddress()
+    {
+        return null;
     }
 
     protected final void shutdownInput()
@@ -470,8 +502,8 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         return String.format("%s@%h{l=%s,r=%s,%s,fill=%s,flush=%s,to=%d/%d}",
             name,
             this,
-            getLocalAddress(),
-            getRemoteAddress(),
+            getLocalSocketAddress(),
+            getRemoteSocketAddress(),
             _state.get(),
             _fillInterest.toStateString(),
             _writeFlusher.toStateString(),
