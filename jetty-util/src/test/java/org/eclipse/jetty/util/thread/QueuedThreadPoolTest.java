@@ -150,7 +150,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             try
             {
                 _run.countDown();
-                if (_waitMs > 0 )
+                if (_waitMs > 0)
                     _stopping.await(_waitMs, TimeUnit.MILLISECONDS);
                 else
                     _stopping.await();
@@ -440,7 +440,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
     }
 
     @ParameterizedTest
-    @ValueSource(ints={500,0})
+    @ValueSource(ints = {500, 0})
     public void testLifeCycleStop(int stopTimeout) throws Exception
     {
         QueuedThreadPool tp = new QueuedThreadPool();
