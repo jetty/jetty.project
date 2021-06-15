@@ -16,6 +16,10 @@ package org.eclipse.jetty.io;
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
+/**
+ * An adapter class which exposes a {@link ByteBufferPool} as a
+ * {@link MemoryPool} of {@link RetainableByteBuffer}.
+ */
 public class AdapterMemoryPool implements MemoryPool<RetainableByteBuffer>
 {
     private final ByteBufferPool byteBufferPool;

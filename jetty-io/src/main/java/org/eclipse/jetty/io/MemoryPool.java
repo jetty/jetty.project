@@ -13,9 +13,23 @@
 
 package org.eclipse.jetty.io;
 
+/**
+ * A pool of memory buffers.
+ * @param <T> The memory buffer type.
+ */
 public interface MemoryPool<T>
 {
+    /**
+     * Acquire a memory buffer from the pool.
+     * @param size The size of the buffer. The returned buffer will have at least this capacity.
+     * @param direct true if a direct memory buffer is needed, false otherwise.
+     * @return a memory buffer.
+     */
     T acquire(int size, boolean direct);
 
+    /**
+     * Release a previously acquired memory buffer to the pool.
+     * @param buffer the memory buffer to release.
+     */
     void release(T buffer);
 }

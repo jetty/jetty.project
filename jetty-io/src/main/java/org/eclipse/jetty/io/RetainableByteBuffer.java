@@ -22,7 +22,7 @@ import org.eclipse.jetty.util.Retainable;
 
 /**
  * A Retainable ByteBuffer.
- * <p>Acquires a ByteBuffer from a {@link ByteBufferPool} and maintains a reference count that is
+ * <p>A ByteBuffer which maintains a reference count that is
  * initially 1, incremented with {@link #retain()} and decremented with {@link #release()}. The buffer
  * is released to the pool when the reference count is decremented to 0.</p>
  */
