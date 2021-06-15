@@ -105,23 +105,23 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         REPRODUCING // There is an active producing thread and demand for more production.
     }
 
-    /* The sub-strategies used by this strategy to consume tasks that are produced. */
+    /* The sub-strategies used by the strategy to consume tasks that are produced. */
     private enum SubStrategy
     {
         /**
-         * Consume produced tasks and resume producing.
+         * Consumes produced tasks and resume producing.
          */
         PRODUCE_CONSUME,
         /**
-         * Invoke produced tasks as non blocking and resume producing.
+         * Invokes produced tasks as non blocking and resume producing.
          */
         PRODUCE_INVOKE_CONSUME,
         /**
-         * Execute produced tasks and continue producing.
+         * Executes produced tasks and continue producing.
          */
         PRODUCE_EXECUTE_CONSUME,
         /**
-         * Execute a pending producer, consume produced tasks and race pending producer to resume producing.
+         * Executes a pending producer, consumes produced tasks and races pending producer to resume producing.
          */
         EXECUTE_PRODUCE_CONSUME
     }
@@ -190,18 +190,18 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     }
 
     /**
-     * Try to become the producing thread and then produce and consume tasks.
-     * @param wasPending True if this thread was started as a pending producer.
+     * Tries to become the producing thread and then produces and consumes tasks.
+     * @param wasPending True if the calling thread was started as a pending producer.
      */
     private void tryProduce(boolean wasPending)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} tryProduce {}", this, wasPending);
 
-        // Take the lock to atomically check if this thread can produce.
+        // Takes the lock to atomically check if the thread can produce.
         try (AutoLock l = _lock.lock())
         {
-            // If this thread was the pending producer, there is no longer one pending.
+            // If the calling thread was the pending producer, there is no longer one pending.
             if (wasPending)
                 _pending = false;
 
@@ -228,7 +228,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
             }
         }
 
-        // Determine this threads invocation type once outside of the production loop.
+        // Determine the threads invocation type once outside of the production loop.
         boolean nonBlocking = Invocable.isNonBlockingInvocation();
         while (isRunning())
         {
@@ -245,13 +245,13 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                         switch (_state)
                         {
                             case PRODUCING:
-                                // This thread was the only producer, so it is now Idle and we return from production.
+                                // The calling thread was the only producer, so it is now Idle and we return from production.
                                 _state = State.IDLE;
                                 return;
 
                             case REPRODUCING:
                                 // Another thread may have queued a task and tried to produce
-                                // so this thread should continue to produce.
+                                // so the calling thread should continue to produce.
                                 _state = State.PRODUCING;
                                 continue;
 
@@ -291,18 +291,19 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                 return SubStrategy.PRODUCE_CONSUME;
 
             case EITHER:
-                // If this producing thread may block then it can directly consume
-                // the task in blocking mode if a pending producer is available.
+                // The produced task may be run either as blocking or non blocking.
+
+                // If the calling producing thread may also block
                 if (!nonBlocking)
                 {
-                    // Take the lock so we can atomically check if a pending producer is available.
+                    // Take the lock to atomically check if a pending producer is available.
                     try (AutoLock l = _lock.lock())
                     {
                         // If a pending producer is available or one can be started
                         if (_pending || _tryExecutor.tryExecute(_runPendingProducer))
                         {
-                            // use EPC: directly consume the task and then race
-                            // with the pending producer to resume production.
+                            // use EPC: The producer directly consumes the task, which may block
+                            // and then races with the pending producer to resume production.
                             _pending = true;
                             _state = State.IDLE;
                             return SubStrategy.EXECUTE_PRODUCE_CONSUME;
@@ -310,22 +311,24 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                     }
                 }
 
-                // otherwise use PIC: directly consume the task in non-blocking mode and then resume production.
+                // otherwise use PIC: The producer consumers the task in non-blocking mode
+                // and then resumes production.
                 return SubStrategy.PRODUCE_INVOKE_CONSUME;
 
             case BLOCKING:
-                // If this producing thread may block then it can directly consume
-                // the blocking task if a pending producer is available.
+                // The produced task may block.
+
+                // If the calling producing thread may also block
                 if (!nonBlocking)
                 {
-                    // Take the lock so we can atomically check if a pending producer is available.
+                    // Take the lock to atomically check if a pending producer is available.
                     try (AutoLock l = _lock.lock())
                     {
                         // If a pending producer is available or one can be started
                         if (_pending || _tryExecutor.tryExecute(_runPendingProducer))
                         {
-                            // use EPC: directly consume the task and then race
-                            // with the pending producer to resume production.
+                            // use EPC: The producer directly consumes the task, which may block
+                            // and then races with the pending producer to resume production.
                             _pending = true;
                             _state = State.IDLE;
                             return SubStrategy.EXECUTE_PRODUCE_CONSUME;
@@ -333,7 +336,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                     }
                 }
 
-                // Otherwise use PEC: the task is consumed by the executor and this thread continues to produce.
+                // Otherwise use PEC: the task is consumed by the executor and the producer continues to produce.
                 return SubStrategy.PRODUCE_EXECUTE_CONSUME;
 
             default:
