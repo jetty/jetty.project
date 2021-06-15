@@ -440,7 +440,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {500, 0})
+    @ValueSource(ints = {800, 0})
     public void testLifeCycleStop(int stopTimeout) throws Exception
     {
         QueuedThreadPool tp = new QueuedThreadPool();
@@ -458,7 +458,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
 
         // Run job0 and job1
         RunningJob job0 = new RunningJob();
-        RunningJob job1 = new RunningJob(stopTimeout / 2);
+        RunningJob job1 = new RunningJob(200);
         tp.execute(job0);
         tp.execute(job1);
 
@@ -484,8 +484,9 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertTrue(job0._stopped.await(200, TimeUnit.MILLISECONDS));
         assertTrue(job1._stopped.await(200, TimeUnit.MILLISECONDS));
 
-        // first job stopped by interrupt, second job stopped naturally if there was a timeout
+        // first job stopped by interrupt
         assertTrue(job0.wasInterrupted());
+        // second job stops naturally if there was a timeout, else it is interrupted
         assertEquals(stopTimeout == 0, job1.wasInterrupted());
 
         // Verify RunningJobs in the queue have not been run
