@@ -88,25 +88,17 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
 
         // Validate websocket URI
         if (!requestURI.isAbsolute())
-        {
             throw new IllegalArgumentException("WebSocket URI must be absolute");
-        }
 
         if (StringUtil.isBlank(requestURI.getScheme()))
-        {
             throw new IllegalArgumentException("WebSocket URI must include a scheme");
-        }
 
         String scheme = requestURI.getScheme();
         if (!HttpScheme.WS.is(scheme) && !HttpScheme.WSS.is(scheme))
-        {
             throw new IllegalArgumentException("WebSocket URI scheme only supports [ws] and [wss], not [" + scheme + "]");
-        }
 
         if (requestURI.getHost() == null)
-        {
             throw new IllegalArgumentException("Invalid WebSocket URI: host not present");
-        }
 
         this.wsClient = webSocketClient;
         this.futureCoreSession = new CompletableFuture<>();
@@ -437,7 +429,7 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
         Negotiated negotiated = new Negotiated(
             request.getURI(),
             negotiatedSubProtocol,
-            HttpScheme.HTTPS.is(request.getScheme()), // TODO better than this?
+            HttpClient.isSchemeSecure(request.getScheme()),
             extensionStack,
             WebSocketConstants.SPEC_VERSION_STRING);
 
