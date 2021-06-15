@@ -50,6 +50,10 @@ public final class ClientUpgradeRequest implements UpgradeRequest
         this.host = null;
     }
 
+    /**
+     * @deprecated use the no-args constructor instead.
+     * @see ClientUpgradeRequest#ClientUpgradeRequest()
+     */
     @Deprecated
     public ClientUpgradeRequest(URI uri)
     {

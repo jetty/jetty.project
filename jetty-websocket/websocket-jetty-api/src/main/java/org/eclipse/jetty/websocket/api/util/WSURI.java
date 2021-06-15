@@ -103,6 +103,9 @@ public final class WSURI
     {
         Objects.requireNonNull(inputUri, "Input URI must not be null");
         String httpScheme = inputUri.getScheme();
+        if (httpScheme == null)
+            throw new URISyntaxException(inputUri.toString(), "Undefined HTTP scheme");
+
         if ("ws".equalsIgnoreCase(httpScheme) || "wss".equalsIgnoreCase(httpScheme))
             return inputUri;
 
