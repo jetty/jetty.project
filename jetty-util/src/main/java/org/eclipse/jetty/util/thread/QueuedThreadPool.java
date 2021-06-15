@@ -234,30 +234,29 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         // If stop timeout try to gracefully stop
         long timeout = getStopTimeout();
         BlockingQueue<Runnable> jobs = getQueue();
+
+        // Fill the job queue with noop jobs to wakeup idle threads.
+        for (int i = 0; i < threads; ++i)
+            jobs.offer(NOOP);
+
+        // If we have a timeout, try to let jobs complete naturally for half our stop time
+        if (timeout > 0)
+            joinThreads(System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) / 2);
+        Thread.yield();
+
+        // If we still have threads running, get a bit more aggressive
+        // interrupt remaining threads
+        for (Thread thread : _threads)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Interrupting {}", thread);
+            thread.interrupt();
+        }
+
+        // If we have a timeout, wait again for the other half of our stop time
         if (timeout > 0)
         {
-            // Fill the job queue with noop jobs to wakeup idle threads.
-            for (int i = 0; i < threads; ++i)
-            {
-                jobs.offer(NOOP);
-            }
-
-            // try to let jobs complete naturally for half our stop time
             joinThreads(System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) / 2);
-
-            // If we still have threads running, get a bit more aggressive
-
-            // interrupt remaining threads
-            for (Thread thread : _threads)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Interrupting {}", thread);
-                thread.interrupt();
-            }
-
-            // wait again for the other half of our stop time
-            joinThreads(System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) / 2);
-
             Thread.yield();
             if (LOG.isDebugEnabled())
             {
