@@ -51,8 +51,7 @@ public final class ClientUpgradeRequest implements UpgradeRequest
     }
 
     /**
-     * @deprecated use the no-args constructor instead.
-     * @see ClientUpgradeRequest#ClientUpgradeRequest()
+     * @deprecated use {@link #ClientUpgradeRequest()} instead.
      */
     @Deprecated
     public ClientUpgradeRequest(URI uri)
