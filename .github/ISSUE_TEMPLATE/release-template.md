@@ -27,7 +27,8 @@ This release process will produce releases:
 - [ ] Assign issue to "build manager", who will stage the releases.
    + [ ] Ensure `VERSION.txt` additions for each release will be meaningful, descriptive, correct text.
    + [ ] Stage 9.4 release with Java 11.
-   + [ ] Stage 10/11 release(s) with Java 16. 
+   + [ ] Stage 10 release with Java 16.
+   + [ ] Stage 11 release with Java 16.
    + [ ] Edit a draft release (for each Jetty release) in GitHub (https://github.com/eclipse/jetty.project/releases). Content is generated with the "changelog tool".
 - [ ] Assign issue to "test manager", who will oversee the testing of the staged releases.
    + [ ] Add [testing tick list](https://github.com/eclipse/jetty.project/blob/jetty-10.0.x/.github/test-ticklist.md) to the target [project(s)](https://github.com/eclipse/jetty.project/projects).
