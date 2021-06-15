@@ -572,8 +572,6 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 EndPoint endPoint = getEndPoint();
                 if (_local)
                 {
-                    if (_family != Family.UNSPEC)
-                        throw new IllegalStateException();
                     _buffer.position(_buffer.position() + _length);
                     proxyEndPoint = new ProxyEndPoint(endPoint, endPoint.getLocalSocketAddress(), endPoint.getRemoteSocketAddress());
                 }
