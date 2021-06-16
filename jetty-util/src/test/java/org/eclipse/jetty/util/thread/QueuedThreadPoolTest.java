@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.log.Log;
@@ -33,12 +34,15 @@ import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.core.StringContains.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -110,21 +114,34 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         final CountDownLatch _stopped = new CountDownLatch(1);
         final String _name;
         final boolean _fail;
+        final int _waitMs;
+        final AtomicBoolean _interrupted = new AtomicBoolean();
 
         RunningJob()
         {
-            this(null, false);
+            this(null, false, -1);
         }
 
         public RunningJob(String name)
         {
-            this(name, false);
+            this(name, false, -1);
+        }
+
+        public RunningJob(int waitMs)
+        {
+            this(null, false, waitMs);
         }
 
         public RunningJob(String name, boolean fail)
         {
+            this(name, fail, -1);
+        }
+
+        public RunningJob(String name, boolean fail, int waitMs)
+        {
             _name = name;
             _fail = fail;
+            _waitMs = waitMs;
         }
 
         @Override
@@ -133,9 +150,16 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             try
             {
                 _run.countDown();
-                _stopping.await();
+                if (_waitMs > 0)
+                    _stopping.await(_waitMs, TimeUnit.MILLISECONDS);
+                else
+                    _stopping.await();
                 if (_fail)
                     throw new IllegalStateException("Testing!");
+            }
+            catch (InterruptedException e)
+            {
+                _interrupted.set(true);
             }
             catch (IllegalStateException e)
             {
@@ -158,6 +182,11 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
                 _stopping.countDown();
             if (!_stopped.await(10, TimeUnit.SECONDS))
                 throw new IllegalStateException();
+        }
+
+        public boolean wasInterrupted()
+        {
+            return _interrupted.get();
         }
 
         @Override
@@ -410,15 +439,16 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         tp.stop();
     }
 
-    @Test
-    public void testLifeCycleStop() throws Exception
+    @ParameterizedTest
+    @ValueSource(ints = {800, 0})
+    public void testLifeCycleStop(int stopTimeout) throws Exception
     {
         QueuedThreadPool tp = new QueuedThreadPool();
         tp.setName("TestPool");
         tp.setMinThreads(1);
         tp.setMaxThreads(2);
         tp.setIdleTimeout(900);
-        tp.setStopTimeout(500);
+        tp.setStopTimeout(stopTimeout);
         tp.setThreadsPriority(Thread.NORM_PRIORITY - 1);
         tp.start();
 
@@ -428,7 +458,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
 
         // Run job0 and job1
         RunningJob job0 = new RunningJob();
-        RunningJob job1 = new RunningJob();
+        RunningJob job1 = new RunningJob(200);
         tp.execute(job0);
         tp.execute(job1);
 
@@ -450,9 +480,14 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         tp.stop();
         assertThat(tp.getQueue().size(), is(0));
 
-        // First 2 jobs closed by InterruptedException
+        // First 2 jobs are stopped
         assertTrue(job0._stopped.await(200, TimeUnit.MILLISECONDS));
         assertTrue(job1._stopped.await(200, TimeUnit.MILLISECONDS));
+
+        // first job stopped by interrupt
+        assertTrue(job0.wasInterrupted());
+        // second job stops naturally if there was a timeout, else it is interrupted
+        assertEquals(stopTimeout == 0, job1.wasInterrupted());
 
         // Verify RunningJobs in the queue have not been run
         assertFalse(job2._run.await(200, TimeUnit.MILLISECONDS));

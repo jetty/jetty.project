@@ -326,6 +326,9 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                 catch (InterruptedException e)
                 {
                     LOG.ignore(e);
+                    // If the wait was interrupted, then STOP if we are not running
+                    if (!isRunning())
+                        return STOP;
                 }
             }
         }

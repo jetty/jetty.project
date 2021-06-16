@@ -234,30 +234,29 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         // If stop timeout try to gracefully stop
         long timeout = getStopTimeout();
         BlockingQueue<Runnable> jobs = getQueue();
+
+        // Fill the job queue with noop jobs to wakeup idle threads.
+        for (int i = 0; i < threads; ++i)
+            jobs.offer(NOOP);
+
+        // If we have a timeout, try to let jobs complete naturally for half our stop time
+        if (timeout > 0)
+            joinThreads(System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) / 2);
+        Thread.yield();
+
+        // If we still have threads running, get a bit more aggressive
+        // interrupt remaining threads
+        for (Thread thread : _threads)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Interrupting {}", thread);
+            thread.interrupt();
+        }
+
+        // If we have a timeout, wait again for the other half of our stop time
         if (timeout > 0)
         {
-            // Fill the job queue with noop jobs to wakeup idle threads.
-            for (int i = 0; i < threads; ++i)
-            {
-                jobs.offer(NOOP);
-            }
-
-            // try to let jobs complete naturally for half our stop time
             joinThreads(System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) / 2);
-
-            // If we still have threads running, get a bit more aggressive
-
-            // interrupt remaining threads
-            for (Thread thread : _threads)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Interrupting {}", thread);
-                thread.interrupt();
-            }
-
-            // wait again for the other half of our stop time
-            joinThreads(System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) / 2);
-
             Thread.yield();
             if (LOG.isDebugEnabled())
             {
@@ -296,7 +295,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 }
             }
             else if (job != NOOP)
+            {
                 LOG.warn("Stopped without executing or closing {}", job);
+            }
         }
 
         if (_budget != null)
@@ -979,25 +980,19 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             if (LOG.isDebugEnabled())
                 LOG.debug("Runner started for {}", QueuedThreadPool.this);
 
+            // We always start idle so the idle count is not adjust when we enter the loop below
+            // with no job.  The actual thread and idle counts have already been adjusted accounting
+            // for this newly started thread in #execute(Runnable)
             boolean idle = true;
             try
             {
                 Runnable job = null;
                 while (true)
                 {
-                    // If we had a job,
-                    if (job != null)
-                    {
-                        // signal that we are idle again
-                        if (!addCounts(0, 1))
-                            break;
-                        idle = true;
-                    }
-                    // else check we are still running
-                    else if (_counts.getHi() == Integer.MIN_VALUE)
-                    {
+                    // Adjust the idle count and check we are still running
+                    if (!addCounts(0, job == null ? 0 : 1))
                         break;
-                    }
+                    idle = true;
 
                     try
                     {
@@ -1028,6 +1023,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                                 continue;
                         }
 
+                        // The actual idle count was already adjusted in #execute(Runnable)
+                        // Here we just remember we are not idle so that we don't adjust again
+                        // in finally below if we exit loop after running this job
                         idle = false;
 
                         // run job
