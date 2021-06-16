@@ -515,25 +515,11 @@ public class XmlConfiguration
          */
         private void set(Object obj, XmlParser.Node node) throws Exception
         {
-            String attr = node.getAttribute("name");
+            String name = node.getAttribute("name");
+            String setter = "set" + name.substring(0, 1).toUpperCase(Locale.ENGLISH) + name.substring(1);
             String id = node.getAttribute("id");
             String property = node.getAttribute("property");
             String propertyValue = null;
-            // Look for a property value
-            if (property != null)
-            {
-                Map<String, String> properties = _configuration.getProperties();
-                propertyValue = properties.get(property);
-                // If no property value, then do not set
-                if (propertyValue == null)
-                    return;
-            }
-
-            String name = "set" + attr.substring(0, 1).toUpperCase(Locale.ENGLISH) + attr.substring(1);
-            Object value = value(obj, node);
-            if (value == null)
-                value = propertyValue;
-            Object[] arg = {value};
 
             Class<?> oClass = nodeClass(node);
             if (oClass != null)
@@ -541,12 +527,38 @@ public class XmlConfiguration
             else
                 oClass = obj.getClass();
 
+            // Look for a property value
+            if (property != null)
+            {
+                Map<String, String> properties = _configuration.getProperties();
+                propertyValue = properties.get(property);
+                // If no property value, then do not set
+                if (propertyValue == null)
+                {
+                    // check that there is at least one setter or field that could have matched
+                    if (Arrays.stream(oClass.getMethods()).noneMatch(m -> m.getName().equals(setter)) &&
+                        Arrays.stream(oClass.getFields()).filter(f -> Modifier.isPublic(f.getModifiers())).noneMatch(f -> f.getName().equals(name)))
+                    {
+                        NoSuchMethodException e = new NoSuchMethodException(String.format("No method '%s' on %s", setter, oClass.getName()));
+                        e.addSuppressed(new NoSuchFieldException(String.format("No field '%s' on %s", name, oClass.getName())));
+                        throw e;
+                    }
+                    // otherwise it is a noop
+                    return;
+                }
+            }
+
+            Object value = value(obj, node);
+            if (value == null)
+                value = propertyValue;
+            Object[] arg = {value};
+
             Class<?>[] vClass = {Object.class};
             if (value != null)
                 vClass[0] = value.getClass();
 
             if (LOG.isDebugEnabled())
-                LOG.debug("XML {}.{} ({})", (obj != null ? obj.toString() : oClass.getName()), name, value);
+                LOG.debug("XML {}.{} ({})", (obj != null ? obj.toString() : oClass.getName()), setter, value);
 
             MultiException me = new MultiException();
 
@@ -557,7 +569,7 @@ public class XmlConfiguration
                 // Try for trivial match
                 try
                 {
-                    Method set = oClass.getMethod(name, vClass);
+                    Method set = oClass.getMethod(setter, vClass);
                     invokeMethod(set, obj, arg);
                     return;
                 }
@@ -572,7 +584,7 @@ public class XmlConfiguration
                 {
                     Field type = vClass[0].getField("TYPE");
                     vClass[0] = (Class<?>)type.get(null);
-                    Method set = oClass.getMethod(name, vClass);
+                    Method set = oClass.getMethod(setter, vClass);
                     invokeMethod(set, obj, arg);
                     return;
                 }
@@ -585,7 +597,7 @@ public class XmlConfiguration
                 // Try a field
                 try
                 {
-                    Field field = oClass.getField(attr);
+                    Field field = oClass.getField(name);
                     if (Modifier.isPublic(field.getModifiers()))
                     {
                         try
@@ -622,18 +634,18 @@ public class XmlConfiguration
                 // Search for a match by trying all the set methods
                 Method[] sets = oClass.getMethods();
                 Method set = null;
-                for (Method setter : sets)
+                for (Method s : sets)
                 {
-                    if (setter.getParameterCount() != 1)
+                    if (s.getParameterCount() != 1)
                         continue;
-                    Class<?>[] paramTypes = setter.getParameterTypes();
-                    if (name.equals(setter.getName()))
+                    Class<?>[] paramTypes = s.getParameterTypes();
+                    if (setter.equals(s.getName()))
                     {
                         types = types == null ? paramTypes[0].getName() : (types + "," + paramTypes[0].getName());
                         // lets try it
                         try
                         {
-                            set = setter;
+                            set = s;
                             invokeMethod(set, obj, arg);
                             return;
                         }
@@ -650,7 +662,7 @@ public class XmlConfiguration
                                 if (paramTypes[0].isAssignableFrom(c))
                                 {
                                     setValue = convertArrayToCollection(value, c);
-                                    invokeMethod(setter, obj, setValue);
+                                    invokeMethod(s, obj, setValue);
                                     return;
                                 }
                             }
@@ -703,7 +715,7 @@ public class XmlConfiguration
             }
 
             // No Joy
-            String message = oClass + "." + name + "(" + vClass[0] + ")";
+            String message = oClass + "." + setter + "(" + vClass[0] + ")";
             if (types != null)
                 message += ". Found setters for " + types;
             NoSuchMethodException failure = new NoSuchMethodException(message);

@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
-import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
+import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
 import org.eclipse.jetty.util.thread.strategy.ProduceConsume;
 import org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -45,13 +45,13 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
 
 @State(Scope.Benchmark)
-public class EWYKBenchmark
+public class AdaptiveExecutionStrategyBenchmark
 {
     static TestServer server;
     static ReservedThreadExecutor reserved;
     static Path directory;
 
-    @Param({"PC", "PEC", "EWYK"})
+    @Param({"PC", "PEC", "AES"})
     public static String strategyName;
 
     @Param({"true", "false"})
@@ -64,12 +64,12 @@ public class EWYKBenchmark
     public static void setupServer() throws Exception
     {
         // Make a test directory
-        directory = Files.createTempDirectory("ewyk");
+        directory = Files.createTempDirectory("AES");
 
         // Make some test files
         for (int i = 0; i < 75; i++)
         {
-            File.createTempFile("ewyk_benchmark", i + ".txt", directory.toFile());
+            File.createTempFile("AES_benchmark", i + ".txt", directory.toFile());
         }
 
         server = new TestServer(directory.toFile());
@@ -110,8 +110,8 @@ public class EWYKBenchmark
                     strategy = new ProduceExecuteConsume(connection, server);
                     break;
 
-                case "EWYK":
-                    strategy = new EatWhatYouKill(connection, server);
+                case "AES":
+                    strategy = new AdaptiveExecutionStrategy(connection, server);
                     break;
 
                 default:
@@ -172,7 +172,7 @@ public class EWYKBenchmark
     public static void main(String[] args) throws RunnerException
     {
         Options opt = new OptionsBuilder()
-            .include(EWYKBenchmark.class.getSimpleName())
+            .include(AdaptiveExecutionStrategyBenchmark.class.getSimpleName())
             .warmupIterations(2)
             .measurementIterations(3)
             .forks(1)

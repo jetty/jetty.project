@@ -44,7 +44,7 @@ public class ExecutionStrategyTest
         return Stream.of(
             ProduceExecuteConsume.class,
             ExecuteProduceConsume.class,
-            EatWhatYouKill.class
+            AdaptiveExecutionStrategy.class
         ).map(Arguments::of);
     }
 
