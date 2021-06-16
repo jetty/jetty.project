@@ -33,17 +33,13 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
-import org.eclipse.jetty.util.thread.TryExecutor;
-import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
+import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class HTTP2Connection extends AbstractConnection implements WriteFlusher.Listener, Connection.UpgradeTo
 {
     protected static final Logger LOG = LoggerFactory.getLogger(HTTP2Connection.class);
-
-    // TODO remove this once we are sure EWYK is OK for http2
-    private static final boolean PEC_MODE = Boolean.getBoolean("org.eclipse.jetty.http2.PEC_MODE");
 
     private final AutoLock lock = new AutoLock();
     private final Queue<Runnable> tasks = new ArrayDeque<>();
@@ -64,9 +60,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         this.parser = parser;
         this.session = session;
         this.bufferSize = bufferSize;
-        if (PEC_MODE)
-            executor = new TryExecutor.NoTryExecutor(executor);
-        this.strategy = new EatWhatYouKill(producer, executor);
+        this.strategy = new AdaptiveExecutionStrategy(producer, executor);
         LifeCycle.start(strategy);
         parser.init(ParserListener::new);
     }
