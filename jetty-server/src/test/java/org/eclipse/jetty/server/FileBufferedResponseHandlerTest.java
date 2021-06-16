@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.servlet.ServletException;
@@ -63,6 +64,7 @@ public class FileBufferedResponseHandlerTest
 {
     private static final Logger LOG = Log.getLogger(FileBufferedResponseHandlerTest.class);
 
+    private final CountDownLatch _disposeLatch = new CountDownLatch(1);
     private Server _server;
     private LocalConnector _localConnector;
     private ServerConnector _serverConnector;
@@ -86,7 +88,22 @@ public class FileBufferedResponseHandlerTest
         _serverConnector = new ServerConnector(_server, new HttpConnectionFactory(config));
         _server.addConnector(_serverConnector);
 
-        _bufferedHandler = new FileBufferedResponseHandler();
+        _bufferedHandler = new FileBufferedResponseHandler()
+        {
+            @Override
+            protected BufferedInterceptor newBufferedInterceptor(HttpChannel httpChannel, HttpOutput.Interceptor interceptor)
+            {
+                return new FileBufferedInterceptor(httpChannel, interceptor)
+                {
+                    @Override
+                    protected void dispose()
+                    {
+                        super.dispose();
+                        _disposeLatch.countDown();
+                    }
+                };
+            }
+        };
         _bufferedHandler.setTempDir(_testDir);
         _bufferedHandler.getPathIncludeExclude().include("/include/*");
         _bufferedHandler.getPathIncludeExclude().exclude("*.exclude");
@@ -157,6 +174,8 @@ public class FileBufferedResponseHandlerTest
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(responseContent, containsString("Committed: false"));
         assertThat(responseContent, containsString("NumFiles: 1"));
+
+        assertTrue(_disposeLatch.await(5, TimeUnit.SECONDS));
         assertThat(getNumFiles(), is(0));
     }
 
@@ -249,6 +268,8 @@ public class FileBufferedResponseHandlerTest
         assertThat(responseContent, containsString("NumFilesBeforeFlush: 0"));
         assertThat(responseContent, containsString("Committed: false"));
         assertThat(responseContent, containsString("NumFiles: 1"));
+
+        assertTrue(_disposeLatch.await(5, TimeUnit.SECONDS));
         assertThat(getNumFiles(), is(0));
     }
 
@@ -279,6 +300,8 @@ public class FileBufferedResponseHandlerTest
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(responseContent, not(containsString("writtenAfterClose")));
         assertThat(responseContent, containsString("NumFiles: 1"));
+
+        assertTrue(_disposeLatch.await(5, TimeUnit.SECONDS));
         assertThat(getNumFiles(), is(0));
     }
 
@@ -339,6 +362,8 @@ public class FileBufferedResponseHandlerTest
         // The flush should not create the file unless there is content to write.
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(responseContent, containsString("NumFiles: 0"));
+
+        assertTrue(_disposeLatch.await(5, TimeUnit.SECONDS));
         assertThat(getNumFiles(), is(0));
     }
 
@@ -378,6 +403,8 @@ public class FileBufferedResponseHandlerTest
         assertThat(responseContent, containsString("NumFilesBeforeReset: 1"));
         assertThat(responseContent, containsString("NumFilesAfterReset: 0"));
         assertThat(responseContent, containsString("NumFilesAfterWrite: 1"));
+
+        assertTrue(_disposeLatch.await(5, TimeUnit.SECONDS));
         assertThat(getNumFiles(), is(0));
     }
 
@@ -451,6 +478,8 @@ public class FileBufferedResponseHandlerTest
         assertThat(response.get("NumFiles"), is("1"));
         assertThat(response.get("FileSize"), is(Long.toString(fileSize)));
         assertThat(received.get(), is(fileSize));
+
+        assertTrue(_disposeLatch.await(5, TimeUnit.SECONDS));
         assertThat(getNumFiles(), is(0));
     }
 
@@ -531,6 +560,7 @@ public class FileBufferedResponseHandlerTest
         assertThat(error.getMessage(), containsString("intentionally throwing from interceptor"));
 
         // All files were deleted.
+        assertTrue(_disposeLatch.await(5, TimeUnit.SECONDS));
         assertThat(getNumFiles(), is(0));
     }
 
@@ -579,6 +609,7 @@ public class FileBufferedResponseHandlerTest
         assertThat(error, instanceOf(NoSuchFileException.class));
 
         // No files were created.
+        assertTrue(_disposeLatch.await(5, TimeUnit.SECONDS));
         assertThat(getNumFiles(), is(0));
     }
 
