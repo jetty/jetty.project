@@ -53,8 +53,8 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 
@@ -67,13 +67,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 /**
- * HttpServer Tester.
+ * HttpServer Tester for SSL based ServerConnector
  */
-public class SelectChannelServerSslTest extends HttpServerTestBase
+public class ServerConnectorSslServerTest extends HttpServerTestBase
 {
     private SSLContext _sslContext;
 
-    public SelectChannelServerSslTest()
+    public ServerConnectorSslServerTest()
     {
         _scheme = "https";
     }
@@ -234,16 +234,15 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
 
     @Override
     @Test
-    @Disabled("Override and ignore this test as SSLSocket.shutdownOutput() is not supported, " +
-        "but shutdownOutput() is needed by the test.")
     public void testInterruptedRequest()
     {
+        Assumptions.assumeFalse(_serverURI.getScheme().equals("https"), "SSLSocket.shutdownOutput() is not supported, but shutdownOutput() is needed by the test");
     }
 
     @Override
-    @Disabled
-    public void testAvailable() throws Exception
+    public void testAvailable()
     {
+        Assumptions.assumeFalse(_serverURI.getScheme().equals("https"), "SSLSocket available() is not supported");
     }
 
     @Test
