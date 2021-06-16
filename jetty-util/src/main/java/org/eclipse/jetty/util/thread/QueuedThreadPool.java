@@ -295,7 +295,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 }
             }
             else if (job != NOOP)
+            {
                 LOG.warn("Stopped without executing or closing {}", job);
+            }
         }
 
         if (_budget != null)
