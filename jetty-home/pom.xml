@@ -403,33 +403,6 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-jaspi-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
-              <includeArtifactIds>javax.security.auth.message</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/jaspi</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-jaspi-src-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
-              <includeArtifactIds>javax.security.auth.message</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/jaspi</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
             <id>unpack-config-deps</id>
             <phase>generate-resources</phase>
             <goals>
@@ -534,11 +507,6 @@
   </build>
   <dependencies>
     <!-- Orbit Deps -->
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.security.auth.message</artifactId>
-    </dependency>
-
     <dependency>
       <groupId>jakarta.mail</groupId>
       <artifactId>jakarta.mail-api</artifactId>
