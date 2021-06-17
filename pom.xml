@@ -1048,9 +1048,14 @@
         <version>${websocket.api.version}</version>
       </dependency>
       <dependency>
+        <groupId>jakarta.ws.rs</groupId>
+        <artifactId>jakarta.ws.rs-api</artifactId>
+        <version>3.0.0</version>
+      </dependency>
+      <dependency>
         <groupId>jakarta.activation</groupId>
         <artifactId>jakarta.activation-api</artifactId>
-        <version>2.0.1</version>
+        <version>2.0.0</version>
       </dependency>
       <dependency>
         <groupId>jakarta.annotation</groupId>
