@@ -14,7 +14,7 @@
 package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.Arrays;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -25,10 +25,9 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject
 public class RetainableByteBufferPool implements MemoryPool<RetainableByteBuffer>
 {
-    private final AtomicReferenceArray<Pool<RetainableByteBuffer>> _direct;
-    private final AtomicReferenceArray<Pool<RetainableByteBuffer>> _indirect;
+    private final Pool<RetainableByteBuffer>[] _direct;
+    private final Pool<RetainableByteBuffer>[] _indirect;
     private final int _factor;
-    private final int _maxBucketSize;
     private final int _minCapacity;
 
     public RetainableByteBufferPool()
@@ -39,7 +38,6 @@ public class RetainableByteBufferPool implements MemoryPool<RetainableByteBuffer
     public RetainableByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize)
     {
         _factor = factor <= 0 ? 1024 : factor;
-        _maxBucketSize = maxBucketSize;
         if (minCapacity <= 0)
             minCapacity = 0;
         _minCapacity = minCapacity;
@@ -50,8 +48,17 @@ public class RetainableByteBufferPool implements MemoryPool<RetainableByteBuffer
 
         int length = maxCapacity / _factor;
 
-        _direct = new AtomicReferenceArray<>(length);
-        _indirect = new AtomicReferenceArray<>(length);
+        @SuppressWarnings("unchecked")
+        Pool<RetainableByteBuffer>[] directArray = new Pool[length];
+        @SuppressWarnings("unchecked")
+        Pool<RetainableByteBuffer>[] indirectArray = new Pool[length];
+        for (int i = 0; i < directArray.length; i++)
+        {
+            directArray[i] = new Pool<>(Pool.StrategyType.THREAD_ID, maxBucketSize, true);
+            indirectArray[i] = new Pool<>(Pool.StrategyType.THREAD_ID, maxBucketSize, true);
+        }
+        _direct = directArray;
+        _indirect = indirectArray;
     }
 
     @Override
@@ -109,17 +116,10 @@ public class RetainableByteBufferPool implements MemoryPool<RetainableByteBuffer
         if (capacity < _minCapacity)
             return null;
         int idx = bucketIndexFor(capacity);
-        AtomicReferenceArray<Pool<RetainableByteBuffer>> buckets = direct ? _direct : _indirect;
-        if (idx >= buckets.length())
+        Pool<RetainableByteBuffer>[] buckets = direct ? _direct : _indirect;
+        if (idx >= buckets.length)
             return null;
-        Pool<RetainableByteBuffer> bucket = buckets.get(idx);
-        if (bucket == null)
-        {
-            bucket = new Pool<>(Pool.StrategyType.THREAD_ID, _maxBucketSize, true);
-            if (!buckets.compareAndSet(idx, null, bucket))
-                bucket = buckets.get(idx);
-        }
-        return bucket;
+        return buckets[idx];
     }
 
     private int bucketIndexFor(int capacity)
@@ -141,14 +141,7 @@ public class RetainableByteBufferPool implements MemoryPool<RetainableByteBuffer
 
     private long getByteBufferCount(boolean direct)
     {
-        long total = 0L;
-        AtomicReferenceArray<Pool<RetainableByteBuffer>> buckets = direct ? _direct : _indirect;
-        for (int i = 0; i < buckets.length(); i++)
-        {
-            Pool<RetainableByteBuffer> bucket = buckets.getOpaque(i);
-            if (bucket != null)
-                total += bucket.size();
-        }
-        return total;
+        Pool<RetainableByteBuffer>[] buckets = direct ? _direct : _indirect;
+        return Arrays.stream(buckets).mapToLong(Pool::size).sum();
     }
 }
