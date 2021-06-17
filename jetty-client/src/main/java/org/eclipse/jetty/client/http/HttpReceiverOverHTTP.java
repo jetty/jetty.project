@@ -29,12 +29,9 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.AdapterMemoryPool;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MemoryPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
@@ -66,10 +63,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             parser.setHeaderCacheCaseSensitive(httpTransport.isHeaderCacheCaseSensitive());
         }
 
-        MemoryPool<RetainableByteBuffer> retainableByteBufferPool = httpClient.getBean(RetainableByteBufferPool.class);
-        if (retainableByteBufferPool == null)
-            retainableByteBufferPool = new AdapterMemoryPool(httpClient.getByteBufferPool());
-        this.retainableByteBufferPool = retainableByteBufferPool;
+        this.retainableByteBufferPool = MemoryPool.findOrAdapt(httpClient, httpClient.getByteBufferPool());
     }
 
     @Override

@@ -19,13 +19,11 @@ import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.AdapterMemoryPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MemoryPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.util.annotation.Name;
@@ -166,9 +164,7 @@ public class SslConnectionFactory extends AbstractConnectionFactory implements C
     protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
     {
         ByteBufferPool byteBufferPool = connector.getByteBufferPool();
-        MemoryPool<RetainableByteBuffer> retainableByteBufferPool = connector.getBean(RetainableByteBufferPool.class);
-        if (retainableByteBufferPool == null)
-            retainableByteBufferPool = new AdapterMemoryPool(byteBufferPool);
+        MemoryPool<RetainableByteBuffer> retainableByteBufferPool = MemoryPool.findOrAdapt(connector, byteBufferPool);
         return new SslConnection(retainableByteBufferPool, byteBufferPool, connector.getExecutor(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption());
     }
 

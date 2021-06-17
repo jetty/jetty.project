@@ -30,14 +30,12 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.AdapterMemoryPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.MemoryPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -99,10 +97,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _config = config;
         _connector = connector;
         _bufferPool = _connector.getByteBufferPool();
-        MemoryPool<RetainableByteBuffer> retainableByteBufferPool = connector.getBean(RetainableByteBufferPool.class);
-        if (retainableByteBufferPool == null)
-            retainableByteBufferPool = new AdapterMemoryPool(_bufferPool);
-        _retainableByteBufferPool = retainableByteBufferPool;
+        _retainableByteBufferPool = MemoryPool.findOrAdapt(connector, _bufferPool);;
         _generator = newHttpGenerator();
         _channel = newHttpChannel();
         _input = _channel.getRequest().getHttpInput();

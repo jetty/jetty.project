@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.io;
 
+import org.eclipse.jetty.util.component.Container;
+
 /**
  * A Pool of objects representing memory that can be acquired based on size and direction. The held instances may be the memory
  * component itself (e.g.: {@link java.nio.ByteBuffer}) or an abstraction providing access to the memory component.
@@ -33,4 +35,19 @@ public interface MemoryPool<T>
      * @param buffer the memory buffer to release.
      */
     void release(T buffer);
+
+    /**
+     * Find a {@link MemoryPool} of {@link RetainableByteBuffer} implementation in the given container, or wrap the given
+     * {@link ByteBufferPool} with an adapter.
+     * @param container the container to search for an existing memory pool.
+     * @param byteBufferPool the {@link ByteBufferPool} to wrap if no memory pool was found in the container.
+     * @return the memory pool found or the wrapped one.
+     */
+    static MemoryPool<RetainableByteBuffer> findOrAdapt(Container container, ByteBufferPool byteBufferPool)
+    {
+        MemoryPool<RetainableByteBuffer> retainableByteBufferPool = container.getBean(RetainableByteBufferPool.class);
+        if (retainableByteBufferPool == null)
+            retainableByteBufferPool = new AdapterMemoryPool(byteBufferPool);
+        return retainableByteBufferPool;
+    }
 }
