@@ -14,6 +14,7 @@
 package org.eclipse.jetty.client;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.Map;
 
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -69,8 +70,24 @@ public interface HttpClientTransport extends ClientConnectionFactory
      *
      * @param address the address to connect to
      * @param context the context information to establish the connection
+     * @deprecated use {@link #connect(SocketAddress, Map)} instead.
      */
+    @Deprecated
     public void connect(InetSocketAddress address, Map<String, Object> context);
+
+    /**
+     * Establishes a physical connection to the given {@code address}.
+     *
+     * @param address the address to connect to
+     * @param context the context information to establish the connection
+     */
+    public default void connect(SocketAddress address, Map<String, Object> context)
+    {
+        if (address instanceof InetSocketAddress)
+            connect((InetSocketAddress)address, context);
+        else
+            throw new UnsupportedOperationException("Unsupported SocketAddress " + address);
+    }
 
     /**
      * @return the factory for ConnectionPool instances

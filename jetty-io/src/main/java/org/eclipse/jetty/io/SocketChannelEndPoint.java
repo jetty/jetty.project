@@ -15,8 +15,8 @@ package org.eclipse.jetty.io;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
@@ -159,15 +159,29 @@ public class SocketChannelEndPoint extends AbstractEndPoint implements ManagedSe
     }
 
     @Override
-    public InetSocketAddress getLocalAddress()
+    public SocketAddress getLocalSocketAddress()
     {
-        return (InetSocketAddress)_channel.socket().getLocalSocketAddress();
+        try
+        {
+            return _channel.getLocalAddress();
+        }
+        catch (IOException x)
+        {
+            return null;
+        }
     }
 
     @Override
-    public InetSocketAddress getRemoteAddress()
+    public SocketAddress getRemoteSocketAddress()
     {
-        return (InetSocketAddress)_channel.socket().getRemoteSocketAddress();
+        try
+        {
+            return _channel.getRemoteAddress();
+        }
+        catch (IOException e)
+        {
+            return null;
+        }
     }
 
     @Override
@@ -185,9 +199,10 @@ public class SocketChannelEndPoint extends AbstractEndPoint implements ManagedSe
             if (!socket.isOutputShutdown())
                 socket.shutdownOutput();
         }
-        catch (IOException e)
+        catch (Throwable x)
         {
-            LOG.debug("Could not shutdown output for {}", _channel, e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Could not shutdown output for {}", _channel, x);
         }
     }
 

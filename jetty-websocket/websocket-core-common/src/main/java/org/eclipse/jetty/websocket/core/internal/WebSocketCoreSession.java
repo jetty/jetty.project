@@ -175,12 +175,12 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
 
     public SocketAddress getLocalAddress()
     {
-        return getConnection().getEndPoint().getLocalAddress();
+        return getConnection().getEndPoint().getLocalSocketAddress();
     }
 
     public SocketAddress getRemoteAddress()
     {
-        return getConnection().getEndPoint().getRemoteAddress();
+        return getConnection().getEndPoint().getRemoteSocketAddress();
     }
 
     @Override

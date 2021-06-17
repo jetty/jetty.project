@@ -17,12 +17,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.PrintWriter;
-import java.net.Inet4Address;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.net.URLEncoder;
-import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,8 +47,8 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
@@ -90,25 +88,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class ResponseTest
 {
-    static final InetSocketAddress LOCALADDRESS;
-
-    static
-    {
-        InetAddress ip = null;
-        try
-        {
-            ip = Inet4Address.getByName("127.0.0.42");
-        }
-        catch (UnknownHostException e)
-        {
-            e.printStackTrace();
-        }
-        finally
-        {
-            LOCALADDRESS = new InetSocketAddress(ip, 8888);
-        }
-    }
-
     private Server _server;
     private HttpChannel _channel;
     private ByteBuffer _content = BufferUtil.allocate(16 * 1024);
@@ -126,15 +105,16 @@ public class ResponseTest
         _server.setHandler(new DumpHandler());
         _server.start();
 
-        AbstractEndPoint endp = new ByteArrayEndPoint(scheduler, 5000)
+        SocketAddress local = InetSocketAddress.createUnresolved("myhost", 8888);
+        EndPoint endPoint = new ByteArrayEndPoint(scheduler, 5000)
         {
             @Override
-            public InetSocketAddress getLocalAddress()
+            public SocketAddress getLocalSocketAddress()
             {
-                return LOCALADDRESS;
+                return local;
             }
         };
-        _channel = new HttpChannel(connector, new HttpConfiguration(), endp, new HttpTransport()
+        _channel = new HttpChannel(connector, new HttpConfiguration(), endPoint, new HttpTransport()
         {
             private Throwable _channelError;
 
