@@ -60,6 +60,11 @@ public class TestJettyOSGiAnnotationParser
         options.add(TestOSGiUtil.optionalRemoteDebug());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.coreJettyDependencies());
+        //The jetty-alpn-client jars aren't used by this test, but as
+        //TestOSGiUtil.coreJettyDependencies deploys the jetty-client,
+        //we need them deployed to satisfy the dependency.
+        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
+        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
 
         //get a reference to a pre-prepared module-info
         Path path = Paths.get("src", "test", "resources", "module-info.clazz");
@@ -76,6 +81,8 @@ public class TestJettyOSGiAnnotationParser
     @Test
     public void testParse() throws Exception
     {
+        if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
+            TestOSGiUtil.diagnoseBundles(bundleContext);
         
         //test the osgi annotation parser ignore the module-info.class file in the fake bundle
         //Get a reference to the deployed fake bundle
