@@ -16,6 +16,7 @@ package org.eclipse.jetty.io;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
@@ -100,16 +101,38 @@ public interface EndPoint extends Closeable
     }
 
     /**
-     * @return The local Inet address to which this {@code EndPoint} is bound, or {@code null}
-     * if this {@code EndPoint} does not represent a network connection.
+     * @return The local InetSocketAddress to which this {@code EndPoint} is bound, or {@code null}
+     * if this {@code EndPoint} is not bound to a Socket address.
+     * @deprecated use {@link #getLocalSocketAddress()} instead
      */
+    @Deprecated
     InetSocketAddress getLocalAddress();
 
     /**
-     * @return The remote Inet address to which this {@code EndPoint} is bound, or {@code null}
-     * if this {@code EndPoint} does not represent a network connection.
+     * @return the local SocketAddress to which this {@code EndPoint} is bound or {@code null}
+     * if this {@code EndPoint} is not bound to a Socket address.
      */
+    default SocketAddress getLocalSocketAddress()
+    {
+        return getLocalAddress();
+    }
+
+    /**
+     * @return The remote InetSocketAddress to which this {@code EndPoint} is connected, or {@code null}
+     * if this {@code EndPoint} is not connected to a Socket address.
+     * @deprecated use {@link #getRemoteSocketAddress()} instead.
+     */
+    @Deprecated
     InetSocketAddress getRemoteAddress();
+
+    /**
+     * @return The remote SocketAddress to which this {@code EndPoint} is connected, or {@code null}
+     * if this {@code EndPoint} is not connected to a Socket address.
+     */
+    default SocketAddress getRemoteSocketAddress()
+    {
+        return getRemoteAddress();
+    }
 
     /**
      * @return whether this EndPoint is open

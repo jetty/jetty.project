@@ -15,6 +15,7 @@ package org.eclipse.jetty.http2.client.http;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.List;
 import java.util.Map;
 
@@ -118,7 +119,7 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
     }
 
     @Override
-    public void connect(InetSocketAddress address, Map<String, Object> context)
+    public void connect(SocketAddress address, Map<String, Object> context)
     {
         HttpClient httpClient = getHttpClient();
         client.setConnectTimeout(httpClient.getConnectTimeout());
@@ -131,9 +132,20 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         connect(address, destination.getClientConnectionFactory(), listenerPromise, listenerPromise, context);
     }
 
-    protected void connect(InetSocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+    @Override
+    public void connect(InetSocketAddress address, Map<String, Object> context)
+    {
+        connect((SocketAddress)address, context);
+    }
+
+    protected void connect(SocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
     {
         getHTTP2Client().connect(address, factory, listener, promise, context);
+    }
+
+    protected void connect(InetSocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+    {
+        connect((SocketAddress)address, factory, listener, promise, context);
     }
 
     @Override
@@ -144,7 +156,7 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         ClientConnectionFactory factory = connectionFactory;
         HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
         ProxyConfiguration.Proxy proxy = destination.getProxy();
-        boolean ssl = proxy == null ? HttpScheme.HTTPS.is(destination.getScheme()) : proxy.isSecure();
+        boolean ssl = proxy == null ? destination.isSecure() : proxy.isSecure();
         if (ssl && isUseALPN())
             factory = new ALPNClientConnectionFactory(client.getExecutor(), factory, client.getProtocols());
         return factory.newConnection(endPoint, context);

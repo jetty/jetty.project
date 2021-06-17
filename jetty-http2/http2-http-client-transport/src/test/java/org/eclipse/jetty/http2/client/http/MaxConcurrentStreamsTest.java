@@ -14,7 +14,7 @@
 package org.eclipse.jetty.http2.client.http;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -179,7 +179,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         client = new HttpClient(new HttpClientTransportOverHTTP2(new HTTP2Client())
         {
             @Override
-            protected void connect(InetSocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+            protected void connect(SocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
             {
                 super.connect(address, factory, new Wrapper(listener)
                 {

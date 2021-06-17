@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.EventListener;
@@ -183,7 +184,7 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
      * {@link TransientListeners} as an {@link AbstractConnector}
      * provided listener</p>
      * <p>Transient listeners are removed after every request cycle</p>
-     * @param listener
+     * @param listener the listener to add
      * @return true if the listener was added.
      */
     @Deprecated
@@ -313,12 +314,18 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     public InetSocketAddress getLocalAddress()
     {
-        return _endPoint.getLocalAddress();
+        SocketAddress local = _endPoint.getLocalSocketAddress();
+        if (local instanceof InetSocketAddress)
+            return (InetSocketAddress)local;
+        return null;
     }
 
     public InetSocketAddress getRemoteAddress()
     {
-        return _endPoint.getRemoteAddress();
+        SocketAddress remote = _endPoint.getRemoteSocketAddress();
+        if (remote instanceof InetSocketAddress)
+            return (InetSocketAddress)remote;
+        return null;
     }
 
     /**
