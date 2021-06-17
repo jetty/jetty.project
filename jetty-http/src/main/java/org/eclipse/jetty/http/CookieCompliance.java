@@ -18,6 +18,10 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.unmodifiableSet;
 import static java.util.EnumSet.allOf;
@@ -29,6 +33,8 @@ import static java.util.EnumSet.noneOf;
  */
 public class CookieCompliance implements ComplianceViolation.Mode
 {
+    private static final Logger LOG = LoggerFactory.getLogger(CookieCompliance.class);
+
     public enum Violation implements ComplianceViolation
     {
         /**
@@ -80,6 +86,7 @@ public class CookieCompliance implements ComplianceViolation.Mode
     public static final CookieCompliance RFC2965 = new CookieCompliance("RFC2965", allOf(Violation.class));
 
     private static final List<CookieCompliance> KNOWN_MODES = Arrays.asList(RFC6265, RFC2965);
+    private static final AtomicInteger __custom = new AtomicInteger();
 
     public static CookieCompliance valueOf(String name)
     {
@@ -89,6 +96,71 @@ public class CookieCompliance implements ComplianceViolation.Mode
                 return compliance;
         }
         return null;
+    }
+
+    /**
+     * Create compliance set from string.
+     * <p>
+     * Format: &lt;BASE&gt;[,[-]&lt;violation&gt;]...
+     * </p>
+     * <p>BASE is one of:</p>
+     * <dl>
+     * <dt>0</dt><dd>No {@link CookieCompliance.Violation}s</dd>
+     * <dt>*</dt><dd>All {@link CookieCompliance.Violation}s</dd>
+     * <dt>&lt;name&gt;</dt><dd>The name of a static instance of CookieCompliance (e.g. {@link CookieCompliance#RFC6265}).
+     * </dl>
+     * <p>
+     * The remainder of the list can contain then names of {@link CookieCompliance.Violation}s to include them in the mode, or prefixed
+     * with a '-' to exclude them from the mode.  Examples are:
+     * </p>
+     * <dl>
+     * <dt>{@code 0,RESERVED_NAMES_NOT_DOLLAR_PREFIXED}</dt><dd>Only allow {@link CookieCompliance.Violation#RESERVED_NAMES_NOT_DOLLAR_PREFIXED}</dd>
+     * <dt>{@code *,-RESERVED_NAMES_NOT_DOLLAR_PREFIXED}</dt><dd>Allow all violations, except {@link CookieCompliance.Violation#RESERVED_NAMES_NOT_DOLLAR_PREFIXED}</dd>
+     * <dt>{@code RFC2965,RESERVED_NAMES_NOT_DOLLAR_PREFIXED}</dt><dd>Same as RFC2965, but allows {@link CookieCompliance.Violation#RESERVED_NAMES_NOT_DOLLAR_PREFIXED}</dd>
+     * </dl>
+     *
+     * @param spec A string describing the compliance
+     * @return the compliance from the string spec
+     */
+    public static CookieCompliance from(String spec)
+    {
+        Set<Violation> violations;
+        String[] elements = spec.split("\\s*,\\s*");
+        switch (elements[0])
+        {
+            case "0":
+                violations = noneOf(Violation.class);
+                break;
+
+            case "*":
+                violations = allOf(Violation.class);
+                break;
+
+            default:
+            {
+                CookieCompliance mode = valueOf(elements[0]);
+                violations = (mode == null) ? noneOf(Violation.class) : copyOf(mode.getAllowed());
+                break;
+            }
+        }
+
+        for (int i = 1; i < elements.length; i++)
+        {
+            String element = elements[i];
+            boolean exclude = element.startsWith("-");
+            if (exclude)
+                element = element.substring(1);
+            Violation section = Violation.valueOf(element);
+            if (exclude)
+                violations.remove(section);
+            else
+                violations.add(section);
+        }
+
+        CookieCompliance compliance = new CookieCompliance("CUSTOM" + __custom.getAndIncrement(), violations);
+        if (LOG.isDebugEnabled())
+            LOG.debug("CookieCompliance from {}->{}", spec, compliance);
+        return compliance;
     }
 
     private final String _name;

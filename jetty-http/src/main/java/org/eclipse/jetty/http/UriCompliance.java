@@ -178,20 +178,20 @@ public final class UriCompliance implements ComplianceViolation.Mode
      * <dl>
      * <dt>0</dt><dd>No {@link Violation}s</dd>
      * <dt>*</dt><dd>All {@link Violation}s</dd>
-     * <dt>&lt;name&gt;</dt><dd>The name of a static instance of {@link UriCompliance} (e.g. {@link UriCompliance#RFC3986}).
+     * <dt>&lt;name&gt;</dt><dd>The name of a static instance of UriCompliance (e.g. {@link UriCompliance#RFC3986}).
      * </dl>
      * <p>
      * The remainder of the list can contain then names of {@link Violation}s to include them in the mode, or prefixed
-     * with a '-' to exclude thm from the mode.  Examples are:
+     * with a '-' to exclude them from the mode.  Examples are:
      * </p>
      * <dl>
-     * <dt><code>0,AMBIGUOUS_PATH_PARAMETER</code></dt><dd>Only allow {@link Violation#AMBIGUOUS_PATH_PARAMETER}</dd>
-     * <dt><code>*,-AMBIGUOUS_PATH_PARAMETER</code></dt><dd>Only all except {@link Violation#AMBIGUOUS_PATH_PARAMETER}</dd>
-     * <dt><code>RFC3986,AMBIGUOUS_PATH_PARAMETER</code></dt><dd>Same as RFC3986 plus {@link Violation#AMBIGUOUS_PATH_PARAMETER}</dd>
+     * <dt>{@code 0,AMBIGUOUS_PATH_PARAMETER}</dt><dd>Only allow {@link Violation#AMBIGUOUS_PATH_PARAMETER}</dd>
+     * <dt>{@code *,-AMBIGUOUS_PATH_PARAMETER}</dt><dd>Only all except {@link Violation#AMBIGUOUS_PATH_PARAMETER}</dd>
+     * <dt>{@code RFC3986,AMBIGUOUS_PATH_PARAMETER}</dt><dd>Same as RFC3986 plus {@link Violation#AMBIGUOUS_PATH_PARAMETER}</dd>
      * </dl>
      *
-     * @param spec A string in the format of a comma separated list starting with one of the following strings:
-     * @return the compliance from the string spec
+     * @param spec A string describing the compliance
+     * @return the UriCompliance instance derived from the string description
      */
     public static UriCompliance from(String spec)
     {

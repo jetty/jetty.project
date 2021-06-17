@@ -25,6 +25,7 @@ lib/jetty-io-${jetty.version}.jar
 etc/jetty.xml
 
 [ini-template]
+# tag::documentation-http-config[]
 ### Common HTTP configuration
 ## Scheme to use to build URIs for secure redirects
 # jetty.httpConfig.secureScheme=https
@@ -77,7 +78,9 @@ etc/jetty.xml
 ## Whether to use direct ByteBuffers for reading or writing
 # jetty.httpConfig.useInputDirectByteBuffers=true
 # jetty.httpConfig.useOutputDirectByteBuffers=true
+# end::documentation-http-config[]
 
+# tag::documentation-server-config[]
 ### Server configuration
 ## Whether ctrl+c on the console gracefully stops the Jetty server
 # jetty.server.stopAtShutdown=true
@@ -90,9 +93,16 @@ etc/jetty.xml
 
 ## Dump the state of the Jetty server, components, and webapps before shutdown
 # jetty.server.dumpBeforeStop=false
+# end::documentation-server-config[]
 
-## Scheduler Configuration
+# tag::documentation-scheduler-config[]
+### Server Scheduler Configuration
+## The scheduler thread name, defaults to "Scheduler-{hashCode()}" if blank.
 # jetty.scheduler.name=
-# jetty.scheduler.deamon=false
-# jetty.scheduler.threads=-1
 
+## Whether the server scheduler threads are daemon.
+# jetty.scheduler.deamon=false
+
+## The number of server scheduler threads.
+# jetty.scheduler.threads=1
+# end::documentation-scheduler-config[]

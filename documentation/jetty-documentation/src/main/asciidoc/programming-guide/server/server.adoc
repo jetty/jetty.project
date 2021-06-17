@@ -28,6 +28,7 @@ The Jetty server-side libraries provide:
 * WebSocket support, for applications that want to embed a WebSocket server, via the xref:pg-server-websocket[WebSocket libraries]
 * FCGI support, to delegate requests to python or similar scripting languages.
 
+include::compliance/server-compliance.adoc[]
 include::http/server-http.adoc[]
 include::http2/server-http2.adoc[]
 include::sessions/sessions.adoc[]

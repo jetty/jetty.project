@@ -204,11 +204,11 @@ public final class HttpCompliance implements ComplianceViolation.Mode
      * </dl>
      * <p>
      * The remainder of the list can contain then names of {@link Violation}s to include them in the mode, or prefixed
-     * with a '-' to exclude thm from the mode.
+     * with a '-' to exclude them from the mode.
      * </p>
      *
-     * @param spec A string in the format of a comma separated list starting with one of the following strings:
-     * @return the compliance from the string spec
+     * @param spec A string describing the compliance
+     * @return the HttpCompliance instance derived from the string description
      */
     public static HttpCompliance from(String spec)
     {
