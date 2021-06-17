@@ -71,7 +71,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
         return new FileBufferedInterceptor(httpChannel, interceptor);
     }
 
-    protected class FileBufferedInterceptor implements BufferedResponseHandler.BufferedInterceptor
+    class FileBufferedInterceptor implements BufferedResponseHandler.BufferedInterceptor
     {
         private static final int MAX_MAPPED_BUFFER_SIZE = Integer.MAX_VALUE / 2;
 
