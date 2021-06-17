@@ -209,7 +209,7 @@ public class BufferedResponseHandler extends HandlerWrapper
     {
     }
 
-    protected class ArrayBufferedInterceptor implements BufferedInterceptor
+    class ArrayBufferedInterceptor implements BufferedInterceptor
     {
         private final Interceptor _next;
         private final HttpChannel _channel;
