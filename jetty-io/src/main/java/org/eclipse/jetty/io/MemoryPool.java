@@ -14,7 +14,8 @@
 package org.eclipse.jetty.io;
 
 /**
- * A pool of memory buffers.
+ * A Pool of objects representing memory that can be acquired based on size and direction. The held instances may be the memory
+ * component itself (e.g.: {@link java.nio.ByteBuffer}) or an abstraction providing access to the memory component.
  * @param <T> The memory buffer type.
  */
 public interface MemoryPool<T>
