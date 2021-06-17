@@ -79,7 +79,8 @@
                   osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional
                 </Require-Capability>
                 <Provide-Capability>
-                  osgi.serviceloader;osgi.serviceloader=javax.websocket.ContainerProvider
+                    osgi.serviceloader;osgi.serviceloader=javax.websocket.ContainerProvider,
+                    osgi.serviceloader;osgi.serviceloader=javax.servlet.ServletContainerInitializer
                 </Provide-Capability>
               </instructions>
             </configuration>
