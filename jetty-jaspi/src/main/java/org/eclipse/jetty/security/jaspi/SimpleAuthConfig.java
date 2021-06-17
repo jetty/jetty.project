@@ -26,45 +26,53 @@ import jakarta.security.auth.message.module.ServerAuthModule;
 public class SimpleAuthConfig implements ServerAuthConfig
 {
 
-    private final String messageLayer;
-    private final String appContext;
-    private final CallbackHandler callbackHandler;
-    private final Map<String, String> providerProperties;
-    private final ServerAuthModule serverAuthModule;
+    private final String _messageLayer;
+    private final String _appContext;
+    private final CallbackHandler _callbackHandler;
+    private final Map<String, String> _providerProperties;
+    private final ServerAuthModule _serverAuthModule;
 
     public SimpleAuthConfig(String messageLayer, String appContext, CallbackHandler callbackHandler, Map<String, String> providerProperties,
             ServerAuthModule serverAuthModule) 
     {
-        this.messageLayer = messageLayer;
-        this.appContext = appContext;
-        this.callbackHandler = callbackHandler;
-        this.providerProperties = providerProperties;
-        this.serverAuthModule = serverAuthModule;
+        this._messageLayer = messageLayer;
+        this._appContext = appContext;
+        this._callbackHandler = callbackHandler;
+        this._providerProperties = providerProperties;
+        this._serverAuthModule = serverAuthModule;
     }
 
     @Override
     public ServerAuthContext getAuthContext(String authContextID, Subject serviceSubject,
             @SuppressWarnings("rawtypes") Map properties) throws AuthException
     {
-        return new SimpleServerAuthContext(callbackHandler, serverAuthModule, providerProperties);
+        return new SimpleServerAuthContext(_callbackHandler, _serverAuthModule, _providerProperties);
+    }
+
+    // supposed to be of form host-name<space>context-path
+    @Override
+    public String getAppContext()
+    {
+        return _appContext;
+    }
+    
+    // not used yet
+    @Override
+    public String getAuthContextID(MessageInfo messageInfo)
+    {
+        return null;
     }
 
     @Override
     public String getMessageLayer()
     {
-        return messageLayer;
+        return _messageLayer;
     }
 
     @Override
-    public String getAppContext()
+    public boolean isProtected()
     {
-        return appContext;
-    }
-
-    @Override
-    public String getAuthContextID(MessageInfo messageInfo)
-    {
-        return appContext;
+        return true;
     }
 
     @Override
@@ -73,9 +81,4 @@ public class SimpleAuthConfig implements ServerAuthConfig
         // NOOP
     }
 
-    @Override
-    public boolean isProtected()
-    {
-        return false;
-    }
 }

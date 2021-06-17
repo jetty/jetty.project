@@ -65,24 +65,21 @@
     <dependency>
       <groupId>jakarta.authentication</groupId>
       <artifactId>jakarta.authentication-api</artifactId>
-      <version>2.0.0</version>
     </dependency>
     <dependency>
       <groupId>org.glassfish.jaxb</groupId>
       <artifactId>jaxb-runtime</artifactId>
-      <scope>test</scope>
       <version>3.0.1</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>jakarta.xml.bind</groupId>
       <artifactId>jakarta.xml.bind-api</artifactId>
       <scope>test</scope>
-      <version>3.0.1</version>
     </dependency>
     <dependency>
       <groupId>jakarta.activation</groupId>
       <artifactId>jakarta.activation-api</artifactId>
-      <version>2.0.1</version>
       <scope>test</scope>
     </dependency>
 

@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 public class JaspiAuthConfigProvider implements AuthConfigProvider
 {
 
-    private static final Logger log = LoggerFactory.getLogger(JaspiAuthConfigProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JaspiAuthConfigProvider.class);
 
     private Map<String, String> providerProperties;
     private ServerAuthModule serverAuthModule;
@@ -78,7 +78,7 @@ public class JaspiAuthConfigProvider implements AuthConfigProvider
     public JaspiAuthConfigProvider(Map<String, String> properties, String serverAuthModuleClassName)
     {
         Objects.requireNonNull(serverAuthModuleClassName);
-        log.trace("Instantiated with: {}", serverAuthModuleClassName);
+        LOG.debug("Instantiated with: {}", serverAuthModuleClassName);
 
         this.serverAuthModule = createServerAuthModule(serverAuthModuleClassName);
         this.providerProperties = properties == null ? Collections.emptyMap() : Map.copyOf(properties);
@@ -89,7 +89,7 @@ public class JaspiAuthConfigProvider implements AuthConfigProvider
     {
         this.serverAuthModule = Objects.requireNonNull(serverAuthModule);
         this.providerProperties = Collections.emptyMap();
-        log.trace("Instantiated with: {}", serverAuthModule.getClass().getName());
+        LOG.debug("Instantiated with: {}", serverAuthModule.getClass().getName());
     }
 
     /**
@@ -110,7 +110,7 @@ public class JaspiAuthConfigProvider implements AuthConfigProvider
     public ServerAuthConfig getServerAuthConfig(String layer, String appContext, CallbackHandler handler)
             throws AuthException
     {
-        log.trace("getServerAuthConfig");
+        LOG.debug("getServerAuthConfig");
         return new SimpleAuthConfig(layer, appContext, handler, providerProperties, serverAuthModule);
     }
 
