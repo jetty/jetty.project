@@ -506,7 +506,6 @@
     </plugins>
   </build>
   <dependencies>
-    <!-- Orbit Deps -->
     <dependency>
       <groupId>jakarta.mail</groupId>
       <artifactId>jakarta.mail-api</artifactId>

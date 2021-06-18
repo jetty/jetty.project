@@ -95,11 +95,11 @@ public class JaspiTest
         AuthConfigFactory factory = new BasicAuthConfigFactory();
         
         factory.registerConfigProvider("org.eclipse.jetty.security.jaspi.BasicAuthModule",  
-                Map.of("AppContextIDs", "server /ctx", "org.eclipse.jetty.security.jaspi.modules.RealmName", "TestRealm"),
+                Map.of("AppContextID", "server /ctx", "org.eclipse.jetty.security.jaspi.modules.RealmName", "TestRealm"),
                 "HttpServlet", "server /ctx", "a test provider");
 
         factory.registerConfigProvider("org.eclipse.jetty.security.jaspi.HttpHeaderAuthModule",
-                Map.of("AppContextIDs", "server /other"),
+                Map.of("AppContextID", "server /other"),
                 "HttpServlet", "server /other", "another test provider");
         
         AuthConfigFactory.setFactory(factory);
