@@ -30,13 +30,19 @@ See also the xref:og-protocols[protocols section] for more information about the
 [[og-module-server-http-config]]
 ====== HTTP Configuration Properties
 
-The module properties to configure generic HTTP properties that apply to both HTTP/1.1 and HTTP/2 are:
+The module properties to configure generic HTTP properties are listed below. Mostly they frequently apply to both HTTP/1 and HTTP/2, but some parameters are version specific:
 
 ----
 include::{JETTY_HOME}/modules/server.mod[tags=documentation-http-config]
 ----
 
 Among the configurable properties, the most relevant are:
+
+`jetty.httpConfig.headerCacheSize`::
+The header cache is used when parsing HTTP/1 to more efficiently handle fields that are repeated in every request on a connection.  If the server does not receive persistent connection or infrequent repeated fields, then there may be a performance gain in reducing the cache size. If large fields are frequently repeated, then a large cache may be beneficial.
+
+`jetty.httpConfig.delayDispatchUntilContent`::
+It is not uncommon for the network packets containing a request header to arrive before packets that contain the data of any request body. In such cases it may be beneficial for overall performance to delay dispatching the request to be handled until the first data packet arrives, as this may avoid blocking the handling thread.  However, if minimum latency for receiving the request without content is important, then this parameter can be set to false.
 
 `jetty.httpConfig.sendServerVersion`::
 Whether you want to send the `Server` header in every HTTP response:
@@ -47,6 +53,42 @@ HTTP/1.1 200 OK
 Content-Length: 0
 Server: Jetty({version})
 ----
+
+[[og-module-server-config]]
+====== Server Configuration Properties
+
+The module properties to configure the Jetty server are:
+
+----
+include::{JETTY_HOME}/modules/server.mod[tags=documentation-server-config]
+----
+
+Among the configurable properties, the most relevant are:
+
+`jetty.server.dumpAfterStart`::
+Whether to perform a `Server.dump()` operation after the `Server` has started.
+The output of the dump operation is sent to `System.err`.
+See also the xref:og-troubleshooting-dump[Jetty Server Dump] section for more information.
+
+`jetty.server.dumpBeforeStop`::
+Whether to perform a `Server.dump()` operation before the `Server` stops.
+The output of the dump operation is sent to `System.err`.
+See also the xref:og-troubleshooting-dump[Jetty Server Dump] section for more information.
+
+`jetty.server.stopAtShutdown`::
+Whether to call `Server.stop()` through a JVM shutdown hook when the JVM exits.
+
+[[og-module-server-compliance]]
+====== Server Compliance Properties
+
+The Jetty server strives to keep up with the latest link:https://en.wikipedia.org/wiki/Request_for_Comments[IETF RFC]s for compliance with internet specifications, which are periodically updated. When possible, Jetty will support backwards compatibility by providing compliance modes that can be configured to allow violations of the current specifications that may have been allowed in obsoleted specifications.
+The module properties to configure the Jetty server compliance are:
+
+----
+include::{JETTY_HOME}/modules/server.mod[tags=documentation-server-compliance]
+----
+
+Among the configurable properties, the most relevant are:
 
 `jetty.httpConfig.compliance`::
 Configures the compliance to HTTP specifications.
@@ -82,29 +124,6 @@ For example, `jetty.httpConfig.requestCookieCompliance=RFC6265,-RESERVED_NAMES_N
 +
 For more information about `CookieCompliance` see also xref:pg-server-compliance-cookie[this section].
 
-[[og-module-server-config]]
-====== Server Configuration Properties
-
-The module properties to configure the Jetty server are:
-
-----
-include::{JETTY_HOME}/modules/server.mod[tags=documentation-server-config]
-----
-
-Among the configurable properties, the most relevant are:
-
-`jetty.server.dumpAfterStart`::
-Whether to perform a `Server.dump()` operation after the `Server` has started.
-The output of the dump operation is sent to `System.err`.
-See also the xref:og-troubleshooting-dump[Jetty Server Dump] section for more information.
-
-`jetty.server.dumpBeforeStop`::
-Whether to perform a `Server.dump()` operation before the `Server` stops.
-The output of the dump operation is sent to `System.err`.
-See also the xref:og-troubleshooting-dump[Jetty Server Dump] section for more information.
-
-`jetty.server.stopAtShutdown`::
-Whether to call `Server.stop()` through a JVM shutdown hook when the JVM exits.
 
 [[og-module-scheduler-config]]
 ====== Server Scheduler Configuration Properties

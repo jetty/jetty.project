@@ -60,6 +60,15 @@ etc/jetty.xml
 ## Maximum number of error dispatches to prevent looping
 # jetty.httpConfig.maxErrorDispatches=10
 
+## Relative Redirect Locations allowed
+# jetty.httpConfig.relativeRedirectAllowed=false
+
+## Whether to use direct ByteBuffers for reading or writing
+# jetty.httpConfig.useInputDirectByteBuffers=true
+# jetty.httpConfig.useOutputDirectByteBuffers=true
+# end::documentation-http-config[]
+
+# tag::documentation-server-compliance[]
 ## HTTP Compliance: RFC7230, RFC7230_LEGACY, RFC2616, RFC2616_LEGACY, LEGACY
 # jetty.httpConfig.compliance=RFC7230
 
@@ -71,14 +80,7 @@ etc/jetty.xml
 
 ## Cookie compliance mode for generating response Set-Cookie: RFC2965, RFC6265
 # jetty.httpConfig.responseCookieCompliance=RFC6265
-
-## Relative Redirect Locations allowed
-# jetty.httpConfig.relativeRedirectAllowed=false
-
-## Whether to use direct ByteBuffers for reading or writing
-# jetty.httpConfig.useInputDirectByteBuffers=true
-# jetty.httpConfig.useOutputDirectByteBuffers=true
-# end::documentation-http-config[]
+# end::documentation-server-compliance[]
 
 # tag::documentation-server-config[]
 ### Server configuration
