@@ -35,19 +35,4 @@ public interface MemoryPool<T>
      * @param buffer the memory buffer to release.
      */
     void release(T buffer);
-
-    /**
-     * Find a {@link MemoryPool} of {@link RetainableByteBuffer} implementation in the given container, or wrap the given
-     * {@link ByteBufferPool} with an adapter.
-     * @param container the container to search for an existing memory pool.
-     * @param byteBufferPool the {@link ByteBufferPool} to wrap if no memory pool was found in the container.
-     * @return the memory pool found or the wrapped one.
-     */
-    static MemoryPool<RetainableByteBuffer> findOrAdapt(Container container, ByteBufferPool byteBufferPool)
-    {
-        MemoryPool<RetainableByteBuffer> retainableByteBufferPool = container.getBean(RetainableByteBufferPool.class);
-        if (retainableByteBufferPool == null)
-            retainableByteBufferPool = new AdapterMemoryPool(byteBufferPool);
-        return retainableByteBufferPool;
-    }
 }

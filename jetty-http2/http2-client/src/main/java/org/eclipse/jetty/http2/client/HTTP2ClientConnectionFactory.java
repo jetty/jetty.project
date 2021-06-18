@@ -33,6 +33,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MemoryPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -69,7 +70,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         parser.setMaxFrameLength(client.getMaxFrameLength());
         parser.setMaxSettingsKeys(client.getMaxSettingsKeys());
 
-        MemoryPool<RetainableByteBuffer> retainableByteBufferPool = MemoryPool.findOrAdapt(client, byteBufferPool);
+        MemoryPool<RetainableByteBuffer> retainableByteBufferPool = RetainableByteBufferPool.findOrAdapt(client, byteBufferPool);
 
         HTTP2ClientConnection connection = new HTTP2ClientConnection(client, retainableByteBufferPool, executor, endPoint,
             parser, session, client.getInputBufferSize(), promise, listener);
