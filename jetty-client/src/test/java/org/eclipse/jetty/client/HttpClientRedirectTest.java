@@ -731,14 +731,16 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         String addr1 = getInetHostAddress(host1);
         String addr2 = getInetHostAddress(host2);
 
-        if (LOG.isDebugEnabled())
+        boolean ret = (addr1.equals(addr2));
+
+        if (ret)
         {
-            LOG.debug("DNS Hijacking Lookup: host1={} ({}), host2={} ({})",
+            LOG.warn("DNS Hijacking detected (these should not return the same host address): host1={} ({}), host2={} ({})",
                 host1, addr1,
                 host2, addr2);
         }
 
-        return (addr1.equals(addr2));
+        return ret;
     }
 
     private static String getInetHostAddress(String hostname)
