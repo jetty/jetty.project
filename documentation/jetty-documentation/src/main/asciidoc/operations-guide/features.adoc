@@ -20,7 +20,6 @@ Protocols::
 * xref:og-protocols-http[HTTP/1.1 Support]
 * xref:og-protocols-http2[HTTP/2 Support]
 * xref:og-protocols-websocket[WebSocket Support]
-* xref:og-server-compliance[RFC Compliance Modes]
 
 Technologies::
 * xref:og-annotations[Servlet Annotations]
