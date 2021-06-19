@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<Configure>
+  <!-- 
+       Example code to configure ServerAuthModules to be used by Jakarta Authentication 
+       using the programmatic Authentication API (registerConfigProvider)
+  -->
+  
+  <!-- 
+  <Ref refid="jaspiAuthConfigFactory">
+	<Call name="registerConfigProvider">
+          <Arg type="String">org.eclipse.jetty.security.jaspi.BasicAuthModule</Arg>
+          <Arg>
+              <Map>
+                  <Entry>
+                      <Item>AppContextID</Item>
+                      <Item>server /other</Item>
+                  </Entry>
+                  <Entry>
+                      <Item>org.eclipse.jetty.security.jaspi.modules.RealmName</Item>
+                      <Item>TestRealm</Item>
+                  </Entry>
+              </Map>
+          </Arg>
+          <Arg type="String">HttpServlet</Arg>
+          <Arg type="String">server /ctx</Arg>
+          <Arg type="String">a test provider</Arg>
+	</Call>
+	<Call name="registerConfigProvider">
+            <Arg type="String">org.eclipse.jetty.security.jaspi.HttpHeaderAuthModule</Arg>
+            <Arg>
+                <Map>
+                    <Entry>
+                        <Item>AppContextID</Item>
+                        <Item>server /other</Item>
+                    </Entry>
+                </Map>
+            </Arg>
+            <Arg type="String">HttpServlet</Arg>
+            <Arg type="String">server /other</Arg>
+            <Arg type="String">another test provider</Arg>
+	</Call>
+  </Ref>
+  -->
+</Configure>

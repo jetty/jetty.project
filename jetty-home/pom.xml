@@ -403,6 +403,33 @@
             </configuration>
           </execution>
           <execution>
+            <id>copy-jaspi-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>jakarta.authentication</includeGroupIds>
+              <includeArtifactIds>jakarta.authentication-api</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/jaspi</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-jaspi-src-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>jakarta.authentication</includeGroupIds>
+              <includeArtifactIds>jakarta.authentication-api</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <classifier>sources</classifier>
+              <outputDirectory>${source-assembly-directory}/lib/jaspi</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>unpack-config-deps</id>
             <phase>generate-resources</phase>
             <goals>
@@ -513,6 +540,10 @@
     <dependency>
       <groupId>jakarta.annotation</groupId>
       <artifactId>jakarta.annotation-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.authentication</groupId>
+      <artifactId>jakarta.authentication-api</artifactId>
     </dependency>
     <dependency>
       <groupId>jakarta.transaction</groupId>
