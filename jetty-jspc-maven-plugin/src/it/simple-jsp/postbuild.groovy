@@ -8,4 +8,11 @@ assert webfrag.text.contains("<url-pattern>/foo.jsp</url-pattern>")
 
 // cannot use such parsing as it is not real xml
 //def rootXml = new XmlSlurper().parse(new File(basedir, 'target/webfrag.xml'))
+// so fake it
+def rootXml = new XmlSlurper().parseText("<root>"+webfrag.text+"</root>")
 
+assert rootXml.servlet.'servlet-name'.text() == "org.apache.jsp.foo_jsp"
+assert rootXml.servlet.'servlet-class'.text() == "org.apache.jsp.foo_jsp"
+
+assert rootXml.'servlet-mapping'.'servlet-name'.text() == "org.apache.jsp.foo_jsp"
+assert rootXml.'servlet-mapping'.'url-pattern'.text() == "/foo.jsp"
