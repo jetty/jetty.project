@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.io;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -21,6 +24,51 @@ import static org.hamcrest.core.Is.is;
 
 public class DefaultRetainableByteBufferPoolTest
 {
+    @Test
+    public void testMaxBucketSize()
+    {
+        DefaultRetainableByteBufferPool pool = new DefaultRetainableByteBufferPool(0, 10, 20, 2);
+
+        pool.acquire(1, true);  // pooled
+        pool.acquire(1, true);  // pooled
+        pool.acquire(1, true);  // not pooled, bucket is full
+
+        assertThat(pool.getDirectByteBufferCount(), is(2L));
+        assertThat(pool.getDirectMemory(), is(20L));
+
+        pool.acquire(11, true);  // pooled
+        pool.acquire(11, true);  // pooled
+        pool.acquire(11, true);  // not pooled, bucket is full
+
+        assertThat(pool.getDirectByteBufferCount(), is(4L));
+        assertThat(pool.getDirectMemory(), is(60L));
+    }
+
+    @Test
+    public void testBufferReleaseRepools()
+    {
+        DefaultRetainableByteBufferPool pool = new DefaultRetainableByteBufferPool(0, 10, 20, 1);
+
+        List<RetainableByteBuffer> all = new ArrayList<>();
+
+        all.add(pool.acquire(1, true));  // pooled
+        all.add(pool.acquire(1, true));  // not pooled, bucket is full
+        all.add(pool.acquire(11, true));  // pooled
+        all.add(pool.acquire(11, true));  // not pooled, bucket is full
+
+        assertThat(pool.getDirectByteBufferCount(), is(2L));
+        assertThat(pool.getDirectMemory(), is(30L));
+        assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
+        assertThat(pool.getAvailableDirectMemory(), is(0L));
+
+        all.forEach(RetainableByteBuffer::release);
+
+        assertThat(pool.getDirectByteBufferCount(), is(2L));
+        assertThat(pool.getDirectMemory(), is(30L));
+        assertThat(pool.getAvailableDirectByteBufferCount(), is(2L));
+        assertThat(pool.getAvailableDirectMemory(), is(30L));
+    }
+
     @Test
     public void testFactorAndCapacity()
     {
@@ -33,6 +81,8 @@ public class DefaultRetainableByteBufferPoolTest
 
         assertThat(pool.getDirectByteBufferCount(), is(2L));
         assertThat(pool.getDirectMemory(), is(30L));
+        assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
+        assertThat(pool.getAvailableDirectMemory(), is(0L));
     }
 
     @Test
@@ -45,11 +95,15 @@ public class DefaultRetainableByteBufferPoolTest
 
         assertThat(pool.getDirectByteBufferCount(), is(2L));
         assertThat(pool.getDirectMemory(), is(2048L));
+        assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
+        assertThat(pool.getAvailableDirectMemory(), is(0L));
 
         pool.clear();
 
         assertThat(pool.getDirectByteBufferCount(), is(0L));
         assertThat(pool.getDirectMemory(), is(0L));
+        assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
+        assertThat(pool.getAvailableDirectMemory(), is(0L));
     }
 
     @Test

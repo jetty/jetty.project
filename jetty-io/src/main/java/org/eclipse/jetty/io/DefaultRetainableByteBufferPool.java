@@ -16,6 +16,8 @@ package org.eclipse.jetty.io;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.function.ToLongFunction;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Pool;
@@ -139,6 +141,24 @@ public class DefaultRetainableByteBufferPool implements RetainableByteBufferPool
         return Arrays.stream(buckets).mapToLong(Pool::size).sum();
     }
 
+    @ManagedAttribute("The number of pooled direct ByteBuffers that are available")
+    public long getAvailableDirectByteBufferCount()
+    {
+        return getAvailableByteBufferCount(true);
+    }
+
+    @ManagedAttribute("The number of pooled heap ByteBuffers that are available")
+    public long getAvailableHeapByteBufferCount()
+    {
+        return getAvailableByteBufferCount(false);
+    }
+
+    private long getAvailableByteBufferCount(boolean direct)
+    {
+        Pool<RetainableByteBuffer>[] buckets = direct ? _direct : _indirect;
+        return Arrays.stream(buckets).mapToLong(pool -> pool.values().stream().filter(Pool.Entry::isIdle).count()).sum();
+    }
+
     @ManagedAttribute("The bytes retained by direct ByteBuffers")
     public long getDirectMemory()
     {
@@ -160,6 +180,31 @@ public class DefaultRetainableByteBufferPool implements RetainableByteBufferPool
             Pool<RetainableByteBuffer> bucket = buckets[i];
             long capacity = (i + 1L) * _factor;
             total += bucket.size() * capacity;
+        }
+        return total;
+    }
+
+    @ManagedAttribute("The available bytes retained by direct ByteBuffers")
+    public long getAvailableDirectMemory()
+    {
+        return getAvailableMemory(true);
+    }
+
+    @ManagedAttribute("The available bytes retained by heap ByteBuffers")
+    public long getAvailableHeapMemory()
+    {
+        return getAvailableMemory(false);
+    }
+
+    private long getAvailableMemory(boolean direct)
+    {
+        Pool<RetainableByteBuffer>[] buckets = direct ? _direct : _indirect;
+        long total = 0L;
+        for (int i = 0; i < buckets.length; i++)
+        {
+            Pool<RetainableByteBuffer> bucket = buckets[i];
+            long capacity = (i + 1L) * _factor;
+            total += bucket.values().stream().filter(Pool.Entry::isIdle).count() * capacity;
         }
         return total;
     }
