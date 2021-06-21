@@ -21,6 +21,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.Container;
 
 @ManagedObject
@@ -136,6 +137,49 @@ public class DefaultRetainableByteBufferPool implements RetainableByteBufferPool
     {
         Pool<RetainableByteBuffer>[] buckets = direct ? _direct : _indirect;
         return Arrays.stream(buckets).mapToLong(Pool::size).sum();
+    }
+
+    @ManagedAttribute("The bytes retained by direct ByteBuffers")
+    public long getDirectMemory()
+    {
+        return getMemory(true);
+    }
+
+    @ManagedAttribute("The bytes retained by heap ByteBuffers")
+    public long getHeapMemory()
+    {
+        return getMemory(false);
+    }
+
+    private long getMemory(boolean direct)
+    {
+        Pool<RetainableByteBuffer>[] buckets = direct ? _direct : _indirect;
+        long total = 0L;
+        for (int i = 0; i < buckets.length; i++)
+        {
+            Pool<RetainableByteBuffer> bucket = buckets[i];
+            long capacity = (i + 1L) * _factor;
+            total += bucket.size() * capacity;
+        }
+        return total;
+    }
+
+    @ManagedOperation(value = "Clears this RetainableByteBufferPool", impact = "ACTION")
+    public void clear()
+    {
+        clearArray(_direct);
+        clearArray(_indirect);
+    }
+
+    private void clearArray(Pool<RetainableByteBuffer>[] poolArray)
+    {
+        for (Pool<RetainableByteBuffer> retainableByteBufferPool : poolArray)
+        {
+            for (Pool<RetainableByteBuffer>.Entry entry : retainableByteBufferPool.values())
+            {
+                retainableByteBufferPool.remove(entry);
+            }
+        }
     }
 
     /**

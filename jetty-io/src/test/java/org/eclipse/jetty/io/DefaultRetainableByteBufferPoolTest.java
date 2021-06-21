@@ -22,11 +22,42 @@ import static org.hamcrest.core.Is.is;
 public class DefaultRetainableByteBufferPoolTest
 {
     @Test
+    public void testFactorAndCapacity()
+    {
+        DefaultRetainableByteBufferPool pool = new DefaultRetainableByteBufferPool(10, 10, 20, Integer.MAX_VALUE);
+
+        pool.acquire(1, true);  // not pooled, < minCapacity
+        pool.acquire(10, true); // pooled
+        pool.acquire(20, true); // pooled
+        pool.acquire(30, true); // not pooled, > maxCapacity
+
+        assertThat(pool.getDirectByteBufferCount(), is(2L));
+        assertThat(pool.getDirectMemory(), is(30L));
+    }
+
+    @Test
+    public void testClearUnlinksLeakedBuffers()
+    {
+        DefaultRetainableByteBufferPool pool = new DefaultRetainableByteBufferPool();
+
+        pool.acquire(10, true);
+        pool.acquire(10, true);
+
+        assertThat(pool.getDirectByteBufferCount(), is(2L));
+        assertThat(pool.getDirectMemory(), is(2048L));
+
+        pool.clear();
+
+        assertThat(pool.getDirectByteBufferCount(), is(0L));
+        assertThat(pool.getDirectMemory(), is(0L));
+    }
+
+    @Test
     public void testAcquireRelease()
     {
         DefaultRetainableByteBufferPool pool = new DefaultRetainableByteBufferPool();
 
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 3; i++)
         {
             {
                 RetainableByteBuffer buffer = pool.acquire(10, true);
@@ -55,5 +86,14 @@ public class DefaultRetainableByteBufferPoolTest
 
         assertThat(pool.getDirectByteBufferCount(), is(4L));
         assertThat(pool.getHeapByteBufferCount(), is(1L));
+        assertThat(pool.getDirectMemory(), is(52224L));
+        assertThat(pool.getHeapMemory(), is(32768L));
+
+        pool.clear();
+
+        assertThat(pool.getDirectByteBufferCount(), is(0L));
+        assertThat(pool.getHeapByteBufferCount(), is(0L));
+        assertThat(pool.getDirectMemory(), is(0L));
+        assertThat(pool.getHeapMemory(), is(0L));
     }
 }
