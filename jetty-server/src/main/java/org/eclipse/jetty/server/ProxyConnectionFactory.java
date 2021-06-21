@@ -18,6 +18,7 @@ import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
@@ -335,21 +336,23 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 String dstPort = _fields[5];
                 // If UNKNOWN, we must ignore the information sent, so use the EndPoint's.
                 boolean unknown = "UNKNOWN".equalsIgnoreCase(_fields[1]);
+                EndPoint proxyEndPoint;
                 if (unknown)
                 {
-                    srcIP = getEndPoint().getRemoteAddress().getAddress().getHostAddress();
-                    srcPort = String.valueOf(getEndPoint().getRemoteAddress().getPort());
-                    dstIP = getEndPoint().getLocalAddress().getAddress().getHostAddress();
-                    dstPort = String.valueOf(getEndPoint().getLocalAddress().getPort());
+                    EndPoint endPoint = getEndPoint();
+                    proxyEndPoint = new ProxyEndPoint(endPoint, endPoint.getLocalSocketAddress(), endPoint.getRemoteSocketAddress());
                 }
-                InetSocketAddress remote = new InetSocketAddress(srcIP, Integer.parseInt(srcPort));
-                InetSocketAddress local = new InetSocketAddress(dstIP, Integer.parseInt(dstPort));
+                else
+                {
+                    SocketAddress remote = new InetSocketAddress(srcIP, Integer.parseInt(srcPort));
+                    SocketAddress local = new InetSocketAddress(dstIP, Integer.parseInt(dstPort));
+                    proxyEndPoint = new ProxyEndPoint(getEndPoint(), local, remote);
+                }
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Proxy v1 next protocol '{}' for {} r={} l={}", _next, getEndPoint(), remote, local);
+                    LOG.debug("Proxy v1 next protocol '{}' for {} -> {}", _next, getEndPoint(), proxyEndPoint);
 
-                EndPoint endPoint = new ProxyEndPoint(getEndPoint(), remote, local);
-                upgradeToConnectionFactory(_next, _connector, endPoint);
+                upgradeToConnectionFactory(_next, _connector, proxyEndPoint);
             }
         }
     }
@@ -565,49 +568,49 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     LOG.debug("Proxy v2 body {} from {} for {}", _next, BufferUtil.toHexSummary(_buffer), this);
 
                 // Do we need to wrap the endpoint?
+                ProxyEndPoint proxyEndPoint;
                 EndPoint endPoint = getEndPoint();
-                if (!_local)
+                if (_local)
                 {
-                    InetAddress src;
-                    InetAddress dst;
-                    int sp;
-                    int dp;
-
+                    _buffer.position(_buffer.position() + _length);
+                    proxyEndPoint = new ProxyEndPoint(endPoint, endPoint.getLocalSocketAddress(), endPoint.getRemoteSocketAddress());
+                }
+                else
+                {
+                    SocketAddress local;
+                    SocketAddress remote;
                     switch (_family)
                     {
                         case INET:
                         {
                             byte[] addr = new byte[4];
                             _buffer.get(addr);
-                            src = Inet4Address.getByAddress(addr);
+                            InetAddress src = Inet4Address.getByAddress(addr);
                             _buffer.get(addr);
-                            dst = Inet4Address.getByAddress(addr);
-                            sp = _buffer.getChar();
-                            dp = _buffer.getChar();
+                            InetAddress dst = Inet4Address.getByAddress(addr);
+                            int sp = _buffer.getChar();
+                            int dp = _buffer.getChar();
+                            local = new InetSocketAddress(dst, dp);
+                            remote = new InetSocketAddress(src, sp);
                             break;
                         }
-
                         case INET6:
                         {
                             byte[] addr = new byte[16];
                             _buffer.get(addr);
-                            src = Inet6Address.getByAddress(addr);
+                            InetAddress src = Inet6Address.getByAddress(addr);
                             _buffer.get(addr);
-                            dst = Inet6Address.getByAddress(addr);
-                            sp = _buffer.getChar();
-                            dp = _buffer.getChar();
+                            InetAddress dst = Inet6Address.getByAddress(addr);
+                            int sp = _buffer.getChar();
+                            int dp = _buffer.getChar();
+                            local = new InetSocketAddress(dst, dp);
+                            remote = new InetSocketAddress(src, sp);
                             break;
                         }
-
                         default:
                             throw new IllegalStateException();
                     }
-
-                    // Extract Addresses
-                    InetSocketAddress remote = new InetSocketAddress(src, sp);
-                    InetSocketAddress local = new InetSocketAddress(dst, dp);
-                    ProxyEndPoint proxyEndPoint = new ProxyEndPoint(endPoint, remote, local);
-                    endPoint = proxyEndPoint;
+                    proxyEndPoint = new ProxyEndPoint(endPoint, local, remote);
 
                     // Any additional info?
                     while (_buffer.remaining() > nonProxyRemaining)
@@ -648,16 +651,12 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     }
 
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Proxy v2 {} {}", getEndPoint(), proxyEndPoint.toString());
-                }
-                else
-                {
-                    _buffer.position(_buffer.position() + _length);
+                        LOG.debug("Proxy v2 {} {}", endPoint, proxyEndPoint);
                 }
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("Proxy v2 parsing dynamic packet part is now done, upgrading to {}", _nextProtocol);
-                upgradeToConnectionFactory(_next, _connector, endPoint);
+                upgradeToConnectionFactory(_next, _connector, proxyEndPoint);
             }
 
             private void parseHeader() throws IOException
@@ -751,15 +750,21 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         private static final int PP2_SUBTYPE_SSL_VERSION = 0x21;
 
         private final EndPoint _endPoint;
-        private final InetSocketAddress _remote;
-        private final InetSocketAddress _local;
+        private final SocketAddress _local;
+        private final SocketAddress _remote;
         private Map<Integer, byte[]> _tlvs;
 
+        @Deprecated
         public ProxyEndPoint(EndPoint endPoint, InetSocketAddress remote, InetSocketAddress local)
         {
+            this(endPoint, (SocketAddress)local, remote);
+        }
+
+        public ProxyEndPoint(EndPoint endPoint, SocketAddress local, SocketAddress remote)
+        {
             _endPoint = endPoint;
-            _remote = remote;
             _local = local;
+            _remote = remote;
         }
 
         public EndPoint unwrap()
@@ -848,11 +853,29 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         @Override
         public InetSocketAddress getLocalAddress()
         {
+            SocketAddress local = getLocalSocketAddress();
+            if (local instanceof InetSocketAddress)
+                return (InetSocketAddress)local;
+            return null;
+        }
+
+        @Override
+        public SocketAddress getLocalSocketAddress()
+        {
             return _local;
         }
 
         @Override
         public InetSocketAddress getRemoteAddress()
+        {
+            SocketAddress remote = getRemoteSocketAddress();
+            if (remote instanceof InetSocketAddress)
+                return (InetSocketAddress)remote;
+            return null;
+        }
+
+        @Override
+        public SocketAddress getRemoteSocketAddress()
         {
             return _remote;
         }

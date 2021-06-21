@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  * <li>{@link org.eclipse.jetty.security.authentication.DigestAuthenticator}</li>
  * <li>{@link org.eclipse.jetty.security.authentication.FormAuthenticator}</li>
  * <li>{@link org.eclipse.jetty.security.authentication.ClientCertAuthenticator}</li>
- * <li>{@link SslClientCertAuthenticator}</li>
+ * <li>{@link org.eclipse.jetty.security.authentication.SslClientCertAuthenticator}</li>
  * </ul>
  * All authenticators derived from {@link org.eclipse.jetty.security.authentication.LoginAuthenticator} are
  * wrapped with a {@link org.eclipse.jetty.security.authentication.DeferredAuthentication}

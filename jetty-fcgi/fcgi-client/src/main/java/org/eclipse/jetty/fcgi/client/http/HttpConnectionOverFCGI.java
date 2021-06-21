@@ -356,8 +356,8 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         return String.format("%s@%x[l:%s<->r:%s]",
             getClass().getSimpleName(),
             hashCode(),
-            getEndPoint().getLocalAddress(),
-            getEndPoint().getRemoteAddress());
+            getEndPoint().getLocalSocketAddress(),
+            getEndPoint().getRemoteSocketAddress());
     }
 
     private class Delegate extends HttpConnection

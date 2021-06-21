@@ -15,6 +15,7 @@ package org.eclipse.jetty.http2;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
@@ -902,13 +903,31 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     @Override
     public InetSocketAddress getLocalAddress()
     {
-        return endPoint.getLocalAddress();
+        SocketAddress local = getLocalSocketAddress();
+        if (local instanceof InetSocketAddress)
+            return (InetSocketAddress)local;
+        return null;
+    }
+
+    @Override
+    public SocketAddress getLocalSocketAddress()
+    {
+        return endPoint.getLocalSocketAddress();
     }
 
     @Override
     public InetSocketAddress getRemoteAddress()
     {
-        return endPoint.getRemoteAddress();
+        SocketAddress remote = getRemoteSocketAddress();
+        if (remote instanceof InetSocketAddress)
+            return (InetSocketAddress)remote;
+        return null;
+    }
+
+    @Override
+    public SocketAddress getRemoteSocketAddress()
+    {
+        return endPoint.getRemoteSocketAddress();
     }
 
     @ManagedAttribute(value = "The flow control send window", readonly = true)
@@ -1190,8 +1209,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         return String.format("%s@%x{local:%s,remote:%s,sendWindow=%s,recvWindow=%s,%s}",
             getClass().getSimpleName(),
             hashCode(),
-            getEndPoint().getLocalAddress(),
-            getEndPoint().getRemoteAddress(),
+            getEndPoint().getLocalSocketAddress(),
+            getEndPoint().getRemoteSocketAddress(),
             sendWindow,
             recvWindow,
             streamsState
