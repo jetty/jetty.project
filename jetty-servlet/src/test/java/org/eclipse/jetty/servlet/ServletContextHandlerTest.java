@@ -728,8 +728,8 @@ public class ServletContextHandlerTest
      * Address spec "3.5. Request Path Elements" with respect to Servlet Path.
      */
     @ParameterizedTest
-    @ValueSource(strings = {"/*", "/", ""})
-    public void testGetServletPathEmpty(String inputServletPath) throws Exception
+    @ValueSource(strings = {"/*", ""})
+    public void testGetServletPathEmpty(String pathSpec) throws Exception
     {
         ServletContextHandler contextHandler = new ServletContextHandler();
         contextHandler.setContextPath("");
@@ -742,7 +742,7 @@ public class ServletContextHandlerTest
                 resp.setCharacterEncoding("utf-8");
                 resp.getWriter().printf("getServletPath()=[%s]", req.getServletPath());
             }
-        }), inputServletPath);
+        }), pathSpec);
         _server.setHandler(contextHandler);
         _server.start();
 
