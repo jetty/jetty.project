@@ -33,7 +33,7 @@
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <hazelcast.version>4.1</hazelcast.version>
     <conscrypt.version>2.5.1</conscrypt.version>
-    <asm.version>9.0</asm.version>
+    <asm.version>9.1</asm.version>
     <jmh.version>1.26</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <tycho-version>2.1.0</tycho-version>
