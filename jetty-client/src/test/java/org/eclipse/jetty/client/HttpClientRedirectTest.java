@@ -506,14 +506,16 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             }
         });
 
-        assertThrows(TimeoutException.class, () ->
+        long timeout = 1000;
+        TimeoutException timeoutException = assertThrows(TimeoutException.class, () ->
         {
             client.setMaxRedirects(-1);
             client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scenario.getScheme())
-                .timeout(1, TimeUnit.SECONDS)
+                .timeout(timeout, TimeUnit.MILLISECONDS)
                 .send();
         });
+        assertThat(timeoutException.getMessage(), Matchers.containsString(String.valueOf(timeout)));
     }
 
     @ParameterizedTest

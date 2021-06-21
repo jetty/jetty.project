@@ -544,7 +544,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         protected boolean onExpired(HttpExchange exchange)
         {
             HttpRequest request = exchange.getRequest();
-            request.abort(new TimeoutException("Total timeout " + request.getTimeout() + " ms elapsed"));
+            request.abort(new TimeoutException("Total timeout " + request.getConversation().getTimeout() + " ms elapsed"));
             return false;
         }
     }

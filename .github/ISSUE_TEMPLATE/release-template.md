@@ -1,6 +1,6 @@
 ---
-name: Release Process
-about: COMMITTER ONLY: Managing the Jetty release process
+name: 'Release Process'
+about: 'COMMITTER ONLY: Managing the Jetty release process'
 title: 'Jetty Releases 9.4.x, 10.0.y, 11.0.y'
 assignees: ''
 labels: Build
@@ -50,4 +50,3 @@ This release process will produce releases:
     + [ ] Docker maintainer.
     + [ ] Jenkins maintainer.
     + [ ] Other maintainers.
-
