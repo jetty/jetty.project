@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.BufferUtil;
  * if they are released, they may be recycled and reused, otherwise they will be garbage
  * collected as usual.</p>
  */
-public interface ByteBufferPool extends MemoryPool<ByteBuffer>
+public interface ByteBufferPool
 {
     /**
      * <p>Requests a {@link ByteBuffer} of the given size.</p>

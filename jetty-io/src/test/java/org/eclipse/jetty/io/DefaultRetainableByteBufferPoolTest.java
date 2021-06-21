@@ -19,12 +19,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.core.Is.is;
 
-public class RetainableByteBufferPoolTest
+public class DefaultRetainableByteBufferPoolTest
 {
     @Test
     public void testAcquireRelease()
     {
-        RetainableByteBufferPool pool = new RetainableByteBufferPool();
+        DefaultRetainableByteBufferPool pool = new DefaultRetainableByteBufferPool();
 
         for (int i = 0; i < 10; i++)
         {

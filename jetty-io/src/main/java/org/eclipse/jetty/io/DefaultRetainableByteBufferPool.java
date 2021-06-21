@@ -24,19 +24,19 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Container;
 
 @ManagedObject
-public class RetainableByteBufferPool implements MemoryPool<RetainableByteBuffer>
+public class DefaultRetainableByteBufferPool implements MemoryPool<RetainableByteBuffer>
 {
     private final Pool<RetainableByteBuffer>[] _direct;
     private final Pool<RetainableByteBuffer>[] _indirect;
     private final int _factor;
     private final int _minCapacity;
 
-    public RetainableByteBufferPool()
+    public DefaultRetainableByteBufferPool()
     {
         this(0, 1024, 65536, Integer.MAX_VALUE);
     }
 
-    public RetainableByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize)
+    public DefaultRetainableByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize)
     {
         _factor = factor <= 0 ? 1024 : factor;
         if (minCapacity <= 0)
@@ -155,7 +155,7 @@ public class RetainableByteBufferPool implements MemoryPool<RetainableByteBuffer
      */
     public static MemoryPool<RetainableByteBuffer> findOrAdapt(Container container, ByteBufferPool byteBufferPool)
     {
-        MemoryPool<RetainableByteBuffer> retainableByteBufferPool = container == null ? null : container.getBean(RetainableByteBufferPool.class);
+        MemoryPool<RetainableByteBuffer> retainableByteBufferPool = container == null ? null : container.getBean(DefaultRetainableByteBufferPool.class);
         if (retainableByteBufferPool == null)
             retainableByteBufferPool = new AdapterMemoryPool(byteBufferPool);
         return retainableByteBufferPool;
