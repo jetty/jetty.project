@@ -16,8 +16,6 @@ package org.eclipse.jetty.io;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.function.ToLongFunction;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Pool;
@@ -238,7 +236,7 @@ public class DefaultRetainableByteBufferPool implements RetainableByteBufferPool
     {
         RetainableByteBufferPool retainableByteBufferPool = container == null ? null : container.getBean(RetainableByteBufferPool.class);
         if (retainableByteBufferPool == null)
-            retainableByteBufferPool = new AdapterMemoryPool(byteBufferPool);
+            retainableByteBufferPool = new ByteBufferToRetainableByteBufferAdapterPool(byteBufferPool);
         return retainableByteBufferPool;
     }
 
@@ -246,12 +244,12 @@ public class DefaultRetainableByteBufferPool implements RetainableByteBufferPool
      * An adapter class which exposes a {@link ByteBufferPool} as a
      * {@link RetainableByteBufferPool}.
      */
-    private static class AdapterMemoryPool implements RetainableByteBufferPool
+    private static class ByteBufferToRetainableByteBufferAdapterPool implements RetainableByteBufferPool
     {
         private final ByteBufferPool byteBufferPool;
         private final Consumer<ByteBuffer> releaser;
 
-        public AdapterMemoryPool(ByteBufferPool byteBufferPool)
+        public ByteBufferToRetainableByteBufferAdapterPool(ByteBufferPool byteBufferPool)
         {
             this.byteBufferPool = byteBufferPool;
             this.releaser = byteBufferPool::release;
