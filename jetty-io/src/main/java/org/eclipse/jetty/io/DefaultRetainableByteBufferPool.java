@@ -24,7 +24,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Container;
 
 @ManagedObject
-public class DefaultRetainableByteBufferPool implements MemoryPool<RetainableByteBuffer>
+public class DefaultRetainableByteBufferPool implements RetainableByteBufferPool
 {
     private final Pool<RetainableByteBuffer>[] _direct;
     private final Pool<RetainableByteBuffer>[] _indirect;
@@ -104,14 +104,6 @@ public class DefaultRetainableByteBufferPool implements MemoryPool<RetainableByt
         return new RetainableByteBuffer(buffer, releaser);
     }
 
-    @Override
-    public void release(RetainableByteBuffer buffer)
-    {
-        if (buffer == null)
-            return;
-        buffer.release();
-    }
-
     private Pool<RetainableByteBuffer> bucketFor(int capacity, boolean direct)
     {
         if (capacity < _minCapacity)
@@ -147,15 +139,15 @@ public class DefaultRetainableByteBufferPool implements MemoryPool<RetainableByt
     }
 
     /**
-     * Find a {@link MemoryPool} of {@link RetainableByteBuffer} implementation in the given container, or wrap the given
+     * Find a {@link RetainableByteBufferPool} implementation in the given container, or wrap the given
      * {@link ByteBufferPool} with an adapter.
      * @param container the container to search for an existing memory pool.
      * @param byteBufferPool the {@link ByteBufferPool} to wrap if no memory pool was found in the container.
-     * @return the memory pool found or the wrapped one.
+     * @return the {@link RetainableByteBufferPool} found or the wrapped one.
      */
-    public static MemoryPool<RetainableByteBuffer> findOrAdapt(Container container, ByteBufferPool byteBufferPool)
+    public static RetainableByteBufferPool findOrAdapt(Container container, ByteBufferPool byteBufferPool)
     {
-        MemoryPool<RetainableByteBuffer> retainableByteBufferPool = container == null ? null : container.getBean(DefaultRetainableByteBufferPool.class);
+        RetainableByteBufferPool retainableByteBufferPool = container == null ? null : container.getBean(DefaultRetainableByteBufferPool.class);
         if (retainableByteBufferPool == null)
             retainableByteBufferPool = new AdapterMemoryPool(byteBufferPool);
         return retainableByteBufferPool;
@@ -163,9 +155,9 @@ public class DefaultRetainableByteBufferPool implements MemoryPool<RetainableByt
 
     /**
      * An adapter class which exposes a {@link ByteBufferPool} as a
-     * {@link MemoryPool} of {@link RetainableByteBuffer}.
+     * {@link RetainableByteBufferPool}.
      */
-    private static class AdapterMemoryPool implements MemoryPool<RetainableByteBuffer>
+    private static class AdapterMemoryPool implements RetainableByteBufferPool
     {
         private final ByteBufferPool byteBufferPool;
         private final Consumer<ByteBuffer> releaser;
@@ -181,12 +173,6 @@ public class DefaultRetainableByteBufferPool implements MemoryPool<RetainableByt
         {
             ByteBuffer byteBuffer = byteBufferPool.acquire(size, direct);
             return new RetainableByteBuffer(byteBuffer, releaser);
-        }
-
-        @Override
-        public void release(RetainableByteBuffer buffer)
-        {
-            buffer.release();
         }
     }
 }

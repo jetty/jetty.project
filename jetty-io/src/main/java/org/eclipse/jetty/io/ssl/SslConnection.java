@@ -35,7 +35,7 @@ import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.MemoryPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.DefaultRetainableByteBufferPool;
 import org.eclipse.jetty.io.WriteFlusher;
@@ -110,7 +110,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     private final AtomicLong _bytesIn = new AtomicLong();
     private final AtomicLong _bytesOut = new AtomicLong();
     private final ByteBufferPool _bufferPool;
-    private final MemoryPool<RetainableByteBuffer> _retainableByteBufferPool;
+    private final RetainableByteBufferPool _retainableByteBufferPool;
     private final SSLEngine _sslEngine;
     private final DecryptedEndPoint _decryptedEndPoint;
     private ByteBuffer _decryptedInput;
@@ -195,7 +195,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         this(DefaultRetainableByteBufferPool.findOrAdapt(null, byteBufferPool), byteBufferPool, executor, endPoint, sslEngine, useDirectBuffersForEncryption, useDirectBuffersForDecryption);
     }
 
-    public SslConnection(MemoryPool<RetainableByteBuffer> retainableByteBufferPool, ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine,
+    public SslConnection(RetainableByteBufferPool retainableByteBufferPool, ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine,
                          boolean useDirectBuffersForEncryption, boolean useDirectBuffersForDecryption)
     {
         // This connection does not execute calls to onFillable(), so they will be called by the selector thread.

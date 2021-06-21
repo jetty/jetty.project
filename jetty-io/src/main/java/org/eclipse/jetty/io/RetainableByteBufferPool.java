@@ -13,14 +13,12 @@
 
 package org.eclipse.jetty.io;
 
-import org.eclipse.jetty.util.component.Container;
-
 /**
- * A Pool of objects representing memory that can be acquired based on size and direction. The held instances may be the memory
- * component itself (e.g.: {@link java.nio.ByteBuffer}) or an abstraction providing access to the memory component.
- * @param <T> The memory buffer type.
+ * <p>A {@link RetainableByteBuffer} pool.</p>
+ * <p>Acquired buffers <b>must</b> be released by calling {@link RetainableByteBuffer#release()} otherwise the memory they hold will
+ * be leaked.</p>
  */
-public interface MemoryPool<T>
+public interface RetainableByteBufferPool
 {
     /**
      * Acquire a memory buffer from the pool.
@@ -28,11 +26,5 @@ public interface MemoryPool<T>
      * @param direct true if a direct memory buffer is needed, false otherwise.
      * @return a memory buffer.
      */
-    T acquire(int size, boolean direct);
-
-    /**
-     * Release a previously acquired memory buffer to the pool.
-     * @param buffer the memory buffer to release.
-     */
-    void release(T buffer);
+    RetainableByteBuffer acquire(int size, boolean direct);
 }

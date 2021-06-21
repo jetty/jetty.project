@@ -30,7 +30,7 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.MemoryPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.DefaultRetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -44,7 +44,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
     private final LongAdder inMessages = new LongAdder();
     private final HttpParser parser;
-    private final MemoryPool<RetainableByteBuffer> retainableByteBufferPool;
+    private final RetainableByteBufferPool retainableByteBufferPool;
     private RetainableByteBuffer networkBuffer;
     private boolean shutdown;
     private boolean complete;

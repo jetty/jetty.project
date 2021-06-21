@@ -45,7 +45,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.MemoryPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.DefaultRetainableByteBufferPool;
 import org.eclipse.jetty.util.Attachable;
@@ -72,7 +72,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     private final ClientParser parser;
     private RetainableByteBuffer networkBuffer;
     private Object attachment;
-    private final MemoryPool<RetainableByteBuffer> retainableByteBufferPool;
+    private final RetainableByteBufferPool retainableByteBufferPool;
 
     public HttpConnectionOverFCGI(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
     {

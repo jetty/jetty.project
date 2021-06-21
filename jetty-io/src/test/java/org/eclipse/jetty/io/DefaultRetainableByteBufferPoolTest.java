@@ -33,23 +33,23 @@ public class DefaultRetainableByteBufferPoolTest
                 assertThat(buffer, is(notNullValue()));
                 RetainableByteBuffer buffer2 = pool.acquire(10, true);
                 assertThat(buffer2, is(notNullValue()));
-                pool.release(buffer);
-                pool.release(buffer2);
+                buffer.release();
+                buffer2.release();
             }
             {
                 RetainableByteBuffer buffer = pool.acquire(16385, true);
                 assertThat(buffer, is(notNullValue()));
-                pool.release(buffer);
+                buffer.release();
             }
             {
                 RetainableByteBuffer buffer = pool.acquire(32768, true);
                 assertThat(buffer, is(notNullValue()));
-                pool.release(buffer);
+                buffer.release();
             }
             {
                 RetainableByteBuffer buffer = pool.acquire(32768, false);
                 assertThat(buffer, is(notNullValue()));
-                pool.release(buffer);
+                buffer.release();
             }
         }
 
