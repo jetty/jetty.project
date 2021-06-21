@@ -66,9 +66,6 @@
             compilation time. -->
             <_nouses>true</_nouses>
             <Import-Package>
-              ${osgi.slf4j.import.packages},
-              jakarta.servlet;version="[$(version;==;${servlet.api.version}),$(version;+;${servlet.api.version}))",
-              jakarta.servlet.resources;version="[$(version;==;${servlet.api.version}),$(version;+;${servlet.api.version}))",
               org.osgi.framework,
               org.osgi.service.cm;version="1.2.0",
               org.osgi.service.packageadmin,
