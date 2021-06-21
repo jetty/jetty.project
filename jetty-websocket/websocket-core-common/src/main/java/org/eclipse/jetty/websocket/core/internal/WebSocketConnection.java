@@ -113,7 +113,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         Objects.requireNonNull(coreSession, "Session");
         Objects.requireNonNull(executor, "Executor");
         Objects.requireNonNull(bufferPool, "ByteBufferPool");
-        Objects.requireNonNull(retainableByteBufferPool, "MemoryPool<RetainableByteBuffer>");
+        Objects.requireNonNull(retainableByteBufferPool, "RetainableByteBufferPool");
 
         this.bufferPool = bufferPool;
         this.retainableByteBufferPool = retainableByteBufferPool;
