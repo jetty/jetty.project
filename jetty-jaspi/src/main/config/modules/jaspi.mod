@@ -3,15 +3,19 @@
 [description]
 Enables JASPI authentication for deployed web applications.
 
-[depend]
+[tags]
 security
 
-[xml]
-etc/jaspi/jetty-jaspi.xml
+[depend]
+security
+auth-config-factory
 
 [lib]
 lib/jetty-jaspi-${jetty.version}.jar
 lib/jaspi/*.jar
+
+[xml]
+etc/jaspi-authmoduleconfig.xml
 
 [files]
 basehome:modules/jaspi/jaspi-authmoduleconfig.xml|etc/jaspi-authmoduleconfig.xml
