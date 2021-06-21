@@ -50,4 +50,3 @@ This release process will produce releases:
     + [ ] Docker maintainer.
     + [ ] Jenkins maintainer.
     + [ ] Other maintainers.
-
