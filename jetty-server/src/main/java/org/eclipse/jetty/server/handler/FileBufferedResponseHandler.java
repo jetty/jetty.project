@@ -71,7 +71,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
         return new FileBufferedInterceptor(httpChannel, interceptor);
     }
 
-    private class FileBufferedInterceptor implements BufferedResponseHandler.BufferedInterceptor
+    class FileBufferedInterceptor implements BufferedResponseHandler.BufferedInterceptor
     {
         private static final int MAX_MAPPED_BUFFER_SIZE = Integer.MAX_VALUE / 2;
 
@@ -100,7 +100,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
             BufferedInterceptor.super.resetBuffer();
         }
 
-        private void dispose()
+        protected void dispose()
         {
             IO.close(_fileOutputStream);
             _fileOutputStream = null;
