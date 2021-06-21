@@ -147,7 +147,7 @@ public class DefaultRetainableByteBufferPool implements RetainableByteBufferPool
      */
     public static RetainableByteBufferPool findOrAdapt(Container container, ByteBufferPool byteBufferPool)
     {
-        RetainableByteBufferPool retainableByteBufferPool = container == null ? null : container.getBean(DefaultRetainableByteBufferPool.class);
+        RetainableByteBufferPool retainableByteBufferPool = container == null ? null : container.getBean(RetainableByteBufferPool.class);
         if (retainableByteBufferPool == null)
             retainableByteBufferPool = new AdapterMemoryPool(byteBufferPool);
         return retainableByteBufferPool;

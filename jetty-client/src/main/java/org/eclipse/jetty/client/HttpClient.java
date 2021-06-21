@@ -59,6 +59,7 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.DefaultRetainableByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Jetty;
@@ -194,17 +195,17 @@ public class HttpClient extends ContainerLifeCycle
             threadPool.setName(name);
             setExecutor(threadPool);
         }
+        int maxBucketSize = executor instanceof ThreadPool.SizedThreadPool
+            ? ((ThreadPool.SizedThreadPool)executor).getMaxThreads() / 2
+            : ProcessorUtils.availableProcessors() * 2;
         ByteBufferPool byteBufferPool = getByteBufferPool();
         if (byteBufferPool == null)
-            setByteBufferPool(new MappedByteBufferPool(2048,
-                executor instanceof ThreadPool.SizedThreadPool
-                    ? ((ThreadPool.SizedThreadPool)executor).getMaxThreads() / 2
-                    : ProcessorUtils.availableProcessors() * 2));
+            setByteBufferPool(new MappedByteBufferPool(2048, maxBucketSize));
+        if (getBean(RetainableByteBufferPool.class) == null)
+            addBean(new DefaultRetainableByteBufferPool(0, 2048, 65536, maxBucketSize));
         Scheduler scheduler = getScheduler();
         if (scheduler == null)
             setScheduler(new ScheduledExecutorScheduler(name + "-scheduler", false));
-        if (getBean(DefaultRetainableByteBufferPool.class) == null)
-            addBean(new DefaultRetainableByteBufferPool(0, 2048, 65536, ProcessorUtils.availableProcessors() * 2));
 
         if (resolver == null)
             setSocketAddressResolver(new SocketAddressResolver.Async(getExecutor(), getScheduler(), getAddressResolutionTimeout()));
