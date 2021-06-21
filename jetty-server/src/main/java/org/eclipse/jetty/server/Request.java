@@ -1386,7 +1386,11 @@ public class Request implements HttpServletRequest
         // INCLUDE dispatch, in which case this method returns the servletPath of the source servlet,
         // which we recover from the IncludeAttributes wrapper.
         ServletPathMapping mapping = findServletPathMapping();
-        return mapping == null ? "" : mapping.getServletPath();
+        // per Servlet spec 3.5, mapping servlet paths of "/*", "/", and "" should return ""
+        if ((mapping == null) || mapping.getServletPath() == null || (mapping.getServletPath().equals("")) || mapping.getServletPath().equals("/") || (mapping.getServletPath().equals("/*")))
+            return "";
+        else
+            return mapping.getServletPath();
     }
 
     public ServletResponse getServletResponse()
