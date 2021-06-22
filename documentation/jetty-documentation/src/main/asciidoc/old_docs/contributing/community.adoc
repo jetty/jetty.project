@@ -15,8 +15,9 @@
 === Community
 
 Developers and users alike are welcome to engage the Jetty community.
-We all have day jobs here so don't just ask questions on IRC and frustrated if no one answers right away.
-Stick around to hear an answer, one is likely coming at some point!
+We all have day jobs here so don't just ask questions and get frustrated if 
+no one answers right away. Stick around to hear an answer, one is likely coming 
+at some point!
 
 [[community-mailing-lists]]
 ==== Mailing Lists
