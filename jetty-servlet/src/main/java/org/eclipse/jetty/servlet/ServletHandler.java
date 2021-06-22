@@ -1522,8 +1522,10 @@ public class ServletHandler extends ScopedHandler
                 switch (pathSpec.getGroup())
                 {
                     case EXACT:
-                    case ROOT:
                         _servletPathMapping = new ServletPathMapping(_pathSpec, _servletHolder.getName(), _pathSpec.getPrefix());
+                        break;
+                    case ROOT:
+                        _servletPathMapping = new ServletPathMapping(_pathSpec, _servletHolder.getName(), "/");
                         break;
                     default:
                         _servletPathMapping = null;
