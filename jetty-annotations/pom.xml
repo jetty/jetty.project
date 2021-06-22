@@ -31,8 +31,11 @@
         <configuration>
           <instructions>
             <Import-Package>${osgi.slf4j.import.packages},org.objectweb.asm;version="[$(version;==;${asm.version}),$(version;+;${asm.version}))",*</Import-Package>
-            <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=javax.servlet.ServletContainerInitializer)";resolution:=optional;cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional
+            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)", osgi.serviceloader; filter:="(osgi.serviceloader=javax.servlet.ServletContainerInitializer)";resolution:=optional;cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional
             </Require-Capability>
+            <Provide-Capability>
+              osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.webapp.Configuration
+            </Provide-Capability>
           </instructions>
         </configuration>
       </plugin>
