@@ -103,7 +103,7 @@ etc/jetty.xml
 # jetty.scheduler.name=
 
 ## Whether the server scheduler threads are daemon.
-# jetty.scheduler.deamon=false
+# jetty.scheduler.daemon=false
 
 ## The number of server scheduler threads.
 # jetty.scheduler.threads=1

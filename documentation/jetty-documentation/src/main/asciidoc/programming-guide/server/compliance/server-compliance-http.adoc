@@ -25,10 +25,7 @@ In 1995, when Jetty was first implemented, there were no RFC specification of HT
 In addition to these evolving requirements, some earlier version of Jetty did not completely or strictly implement the RFC at the time (for example, case-insensitive HTTP methods).
 Therefore, upgrading to a newer Jetty version may cause runtime behavior differences that may break your applications.
 
-The link:{JDURL}/org/eclipse/jetty/http/HttpCompliance.Violation.html[`HttpCompliance.Violation`] enumeration contains the RFC violations that can be allowed to support legacy Jetty runtime behaviors.
-
-The `HttpCompliance.Violation` enumeration defines the RFC requirements that may be optionally enforced by Jetty.
-These possible violations are grouped into modes by the link:{JDURL}/org/eclipse/jetty/http/HttpCompliance.html[`HttpCompliance`] class, which also defines several named modes that support common deployed sets of violations (with the default being link:{JDURL}/org/eclipse/jetty/http/HttpCompliance.html#RFC7230[`HttpCompliance.RFC7230`]).
+The link:{JDURL}/org/eclipse/jetty/http/HttpCompliance.Violation.html[`HttpCompliance.Violation`] enumeration defines the RFC requirements that may be optionally enforced by Jetty, to support legacy deployments. These possible violations are grouped into modes by the link:{JDURL}/org/eclipse/jetty/http/HttpCompliance.html[`HttpCompliance`] class, which also defines several named modes that support common deployed sets of violations (with the default being link:{JDURL}/org/eclipse/jetty/http/HttpCompliance.html#RFC7230[`HttpCompliance.RFC7230`]).
 
 For example:
 
