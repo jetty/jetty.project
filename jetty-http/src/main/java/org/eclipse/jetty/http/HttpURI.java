@@ -173,6 +173,11 @@ public interface HttpURI
     boolean isAmbiguous();
 
     /**
+     * @return True if the URI has any Violations.
+     */
+    boolean hasViolations();
+
+    /**
      * @return True if the URI has a possibly ambiguous segment like '..;' or '%2e%2e'
      */
     boolean hasAmbiguousSegment();
@@ -406,6 +411,12 @@ public interface HttpURI
         public boolean isAmbiguous()
         {
             return !_violations.isEmpty() && !(_violations.size() == 1 && _violations.contains(Violation.UTF16));
+        }
+
+        @Override
+        public boolean hasViolations()
+        {
+            return !_violations.isEmpty();
         }
 
         @Override
@@ -772,6 +783,12 @@ public interface HttpURI
         public boolean isAmbiguous()
         {
             return !_violations.isEmpty() && !(_violations.size() == 1 && _violations.contains(Violation.UTF16));
+        }
+
+        @Override
+        public boolean hasViolations()
+        {
+            return !_violations.isEmpty();
         }
 
         @Override
