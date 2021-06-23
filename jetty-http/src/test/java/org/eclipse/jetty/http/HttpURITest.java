@@ -447,7 +447,7 @@ public class HttpURITest
             HttpURI uri = HttpURI.from(input);
             assertThat(uri.getDecodedPath(), is(decodedPath));
             EnumSet<Violation> ambiguous = EnumSet.copyOf(expected);
-            ambiguous.retainAll(HttpURI.AMBIGUOUS);
+            ambiguous.retainAll(EnumSet.complementOf(EnumSet.of(Violation.UTF16)));
 
             assertThat(uri.isAmbiguous(), is(!ambiguous.isEmpty()));
             assertThat(uri.hasAmbiguousSegment(), is(ambiguous.contains(Violation.SEGMENT)));

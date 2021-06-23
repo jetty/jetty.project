@@ -81,8 +81,6 @@ public interface HttpURI
         UTF16
     }
 
-    EnumSet<Violation> AMBIGUOUS = EnumSet.complementOf(EnumSet.of(Violation.UTF16));
-
     static Mutable build()
     {
         return new Mutable();
