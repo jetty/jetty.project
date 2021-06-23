@@ -562,6 +562,7 @@ public class ConnectionPoolTest
         {
             AbstractConnectionPool connectionPool = (AbstractConnectionPool)factory.factory.newConnectionPool(destination);
             connectionPool.setMaxUsageCount(maxUsageCount);
+            connectionPool.setMaxDuration(0); // Disable max duration expiry as it may expire the connection between the 1st and 2nd request.
             return connectionPool;
         });
         client.setMaxConnectionsPerDestination(1);
