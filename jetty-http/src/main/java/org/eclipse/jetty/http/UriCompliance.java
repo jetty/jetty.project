@@ -69,7 +69,11 @@ public final class UriCompliance implements ComplianceViolation.Mode
         /**
          * Allow Non canonical ambiguous paths. eg <code>/foo/x%2f%2e%2e%/bar</code> provided to applications as <code>/foo/x/../bar</code>
          */
-        NON_CANONICAL_AMBIGUOUS_PATHS("https://tools.ietf.org/html/rfc3986#section-3.3", "Non canonical ambiguous paths");
+        NON_CANONICAL_AMBIGUOUS_PATHS("https://tools.ietf.org/html/rfc3986#section-3.3", "Non canonical ambiguous paths"),
+        /**
+         * Allow UTF-16 encoding eg <code>/foo%u2192bar</code>.
+         */
+        UTF16_ENCODINGS("https://www.w3.org/International/iri-edit/draft-duerst-iri.html#anchor29", "UTF16 encoding");
 
         private final String _url;
         private final String _description;
@@ -109,9 +113,15 @@ public final class UriCompliance implements ComplianceViolation.Mode
 
     /**
      * LEGACY compliance mode that models Jetty-9.4 behavior by allowing {@link Violation#AMBIGUOUS_PATH_SEGMENT},
-     * {@link Violation#AMBIGUOUS_EMPTY_SEGMENT}, {@link Violation#AMBIGUOUS_PATH_SEPARATOR} and {@link Violation#AMBIGUOUS_PATH_ENCODING}.
+     * {@link Violation#AMBIGUOUS_EMPTY_SEGMENT}, {@link Violation#AMBIGUOUS_PATH_SEPARATOR}, {@link Violation#AMBIGUOUS_PATH_ENCODING}
+     * and {@link Violation#UTF16_ENCODINGS}
      */
-    public static final UriCompliance LEGACY = new UriCompliance("LEGACY", of(Violation.AMBIGUOUS_PATH_SEGMENT, Violation.AMBIGUOUS_PATH_SEPARATOR, Violation.AMBIGUOUS_PATH_ENCODING, Violation.AMBIGUOUS_EMPTY_SEGMENT));
+    public static final UriCompliance LEGACY = new UriCompliance("LEGACY",
+        of(Violation.AMBIGUOUS_PATH_SEGMENT,
+            Violation.AMBIGUOUS_PATH_SEPARATOR,
+            Violation.AMBIGUOUS_PATH_ENCODING,
+            Violation.AMBIGUOUS_EMPTY_SEGMENT,
+            Violation.UTF16_ENCODINGS));
 
     /**
      * Compliance mode that exactly follows RFC3986, including allowing all additional ambiguous URI Violations,
