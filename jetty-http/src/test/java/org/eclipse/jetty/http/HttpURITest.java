@@ -331,6 +331,12 @@ public class HttpURITest
                 {"//host/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
                 {"/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
 
+                // Scheme & host containing unusual valid characters
+                {"ht..tp://host/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+                {"ht1.2+..-3.4tp://127.0.0.1:8080/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+                {"http://h%2est/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+                {"http://h..est/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+
                 // legal non ambiguous relative paths
                 {"http://host/../path/info", null, EnumSet.noneOf(Violation.class)},
                 {"http://host/path/../info", "/info", EnumSet.noneOf(Violation.class)},

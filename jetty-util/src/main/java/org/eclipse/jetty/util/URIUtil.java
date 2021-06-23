@@ -470,7 +470,7 @@ public class URIUtil
                             char u = path.charAt(i + 1);
                             if (u == 'u')
                             {
-                                // UTF16 encoding is only supported with UriCompliance.Violation.UTF16_ENCODINGS
+                                // UTF16 encoding is only supported with UriCompliance.Violation.UTF16_ENCODINGS.
                                 builder.append((char)(0xffff & TypeUtil.parseInt(path, i + 2, 4, 16)));
                                 i += 5;
                             }
@@ -557,8 +557,7 @@ public class URIUtil
                         char u = path.charAt(i + 1);
                         if (u == 'u')
                         {
-                            // TODO remove %u encoding support in jetty-10
-                            // This is wrong. This is a codepoint not a char
+                            // UTF16 encoding is only supported with UriCompliance.Violation.UTF16_ENCODINGS.
                             builder.append((char)(0xffff & TypeUtil.parseInt(path, i + 2, 4, 16)));
                             i += 5;
                         }

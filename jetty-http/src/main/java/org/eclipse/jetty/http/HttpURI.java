@@ -986,7 +986,7 @@ public interface HttpURI
             boolean encodedUtf16 = false; // Is the current encoding for UTF16?
             int encodedCharacters = 0; // partial state of parsing a % encoded character<x>
             int encodedValue = 0; // the partial encoded value
-            boolean dot = false; // set to true if the path containers . or .. segments
+            boolean dot = false; // set to true if the path contains . or .. segments
             int end = uri.length();
             _emptySegment = false;
             for (int i = 0; i < end; i++)
@@ -1079,7 +1079,7 @@ public interface HttpURI
                                 state = State.QUERY;
                                 break;
                             case '%':
-                                // must have be in an encoded path
+                                // must have been in an encoded path
                                 encodedPath = true;
                                 encodedCharacters = 2;
                                 encodedValue = 0;
