@@ -40,7 +40,8 @@ public final class UriCompliance implements ComplianceViolation.Mode
 
     /**
      * These are URI compliance "violations", which may be allowed by the compliance mode. These are actual
-     * violations of the RFC, as they represent additional requirements in excess of the strict compliance of rfc3986.
+     * violations of the RFC, as they represent additional requirements in excess of the strict compliance of
+     * <a href="https://datatracker.ietf.org/doc/html/rfc3986">RFC 3986</a>.
      * A compliance mode that contains one or more of these Violations, allows request to violate the corresponding
      * additional requirement.
      */
@@ -104,10 +105,9 @@ public final class UriCompliance implements ComplianceViolation.Mode
     }
 
     /**
-     * The default compliance mode that extends RFC3986 compliance with additional violations to avoid most ambiguous URIs.
-     * This mode does allow {@link Violation#AMBIGUOUS_PATH_SEPARATOR}, but disallows
-     * {@link Violation#AMBIGUOUS_PATH_PARAMETER}, {@link Violation#AMBIGUOUS_PATH_SEGMENT} and {@link Violation#AMBIGUOUS_PATH_ENCODING}.
-     * Ambiguous paths are not allowed by {@link Violation#NON_CANONICAL_AMBIGUOUS_PATHS}.
+     * The default compliance mode that extends <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a> compliance with
+     * additional violations to avoid most ambiguous URIs.
+     * This mode does allow {@link Violation#AMBIGUOUS_PATH_SEPARATOR}, but disallows all out {@link Violation}s.
      */
     public static final UriCompliance DEFAULT = new UriCompliance("DEFAULT", of(Violation.AMBIGUOUS_PATH_SEPARATOR));
 
@@ -124,10 +124,17 @@ public final class UriCompliance implements ComplianceViolation.Mode
             Violation.UTF16_ENCODINGS));
 
     /**
-     * Compliance mode that exactly follows RFC3986, including allowing all additional ambiguous URI Violations,
+     * Compliance mode that exactly follows <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a>,
+     * including allowing all additional ambiguous URI Violations,
      * except {@link Violation#NON_CANONICAL_AMBIGUOUS_PATHS}, thus ambiguous paths are canonicalized for safety.
      */
     public static final UriCompliance RFC3986 = new UriCompliance("RFC3986", complementOf(of(Violation.NON_CANONICAL_AMBIGUOUS_PATHS)));
+
+    /**
+     * Compliance mode that follows <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a>
+     * plus it does not allow any ambiguous URI {@link Violation}s.
+     */
+    public static final UriCompliance RFC3986_UNAMBIGUOUS = new UriCompliance("RFC3986_UNAMBIGUOUS", noneOf(Violation.class));
 
     /**
      * Compliance mode that allows all URI Violations, including allowing ambiguous paths in non canonicalized form.
@@ -181,20 +188,20 @@ public final class UriCompliance implements ComplianceViolation.Mode
      * <dl>
      * <dt>0</dt><dd>No {@link Violation}s</dd>
      * <dt>*</dt><dd>All {@link Violation}s</dd>
-     * <dt>&lt;name&gt;</dt><dd>The name of a static instance of {@link UriCompliance} (e.g. {@link UriCompliance#RFC3986}).
+     * <dt>&lt;name&gt;</dt><dd>The name of a static instance of UriCompliance (e.g. {@link UriCompliance#RFC3986}).
      * </dl>
      * <p>
      * The remainder of the list can contain then names of {@link Violation}s to include them in the mode, or prefixed
-     * with a '-' to exclude thm from the mode.  Examples are:
+     * with a '-' to exclude them from the mode.  Examples are:
      * </p>
      * <dl>
-     * <dt><code>0,AMBIGUOUS_PATH_PARAMETER</code></dt><dd>Only allow {@link Violation#AMBIGUOUS_PATH_PARAMETER}</dd>
-     * <dt><code>*,-AMBIGUOUS_PATH_PARAMETER</code></dt><dd>Only all except {@link Violation#AMBIGUOUS_PATH_PARAMETER}</dd>
-     * <dt><code>RFC3986,AMBIGUOUS_PATH_PARAMETER</code></dt><dd>Same as RFC3986 plus {@link Violation#AMBIGUOUS_PATH_PARAMETER}</dd>
+     * <dt>{@code 0,AMBIGUOUS_PATH_PARAMETER}</dt><dd>Only allow {@link Violation#AMBIGUOUS_PATH_PARAMETER}</dd>
+     * <dt>{@code *,-AMBIGUOUS_PATH_PARAMETER}</dt><dd>Only all except {@link Violation#AMBIGUOUS_PATH_PARAMETER}</dd>
+     * <dt>{@code RFC3986,AMBIGUOUS_PATH_PARAMETER}</dt><dd>Same as RFC3986 plus {@link Violation#AMBIGUOUS_PATH_PARAMETER}</dd>
      * </dl>
      *
-     * @param spec A string in the format of a comma separated list starting with one of the following strings:
-     * @return the compliance from the string spec
+     * @param spec A string describing the compliance
+     * @return the UriCompliance instance derived from the string description
      */
     public static UriCompliance from(String spec)
     {
