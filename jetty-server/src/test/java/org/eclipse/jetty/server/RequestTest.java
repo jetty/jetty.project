@@ -1838,6 +1838,24 @@ public class RequestTest
     }
 
     @Test
+    public void testEncoding() throws Exception
+    {
+        _handler._checker = (request, response) -> "/foo/bar".equals(request.getPathInfo());
+        String request = "GET /f%6f%6F/b%u0061r HTTP/1.0\r\n" +
+            "Host: whatever\r\n" +
+            "\r\n";
+
+        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC7230);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+
+        HttpCompliance.CUSTOM0.sections().clear();
+        HttpCompliance.CUSTOM0.sections().addAll(HttpCompliance.RFC7230.sections());
+        HttpCompliance.CUSTOM0.sections().add(HttpComplianceSection.NO_UTF16_ENCODINGS);
+        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.CUSTOM0);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+    }
+
+    @Test
     public void testAmbiguousParameters() throws Exception
     {
         _handler._checker = (request, response) -> true;
@@ -1893,6 +1911,70 @@ public class RequestTest
 
         _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+    }
+
+    public void setComplianceModes(HttpComplianceSection... complianceSections)
+    {
+        setComplianceModes(null, complianceSections);
+    }
+
+    public void setComplianceModes(HttpCompliance compliance, HttpComplianceSection... additionalSections)
+    {
+        HttpCompliance.CUSTOM0.sections().clear();
+        if (compliance != null)
+            HttpCompliance.CUSTOM0.sections().addAll(compliance.sections());
+        HttpCompliance.CUSTOM0.sections().addAll(Arrays.asList(additionalSections));
+        _connector.getBean(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.CUSTOM0);
+    }
+
+    @Test
+    public void testAmbiguousPaths() throws Exception
+    {
+        _handler._checker = (request, response) ->
+        {
+            response.getOutputStream().println("servletPath=" + request.getServletPath());
+            response.getOutputStream().println("pathInfo=" + request.getPathInfo());
+            return true;
+        };
+        String request = "GET /unnormal/.././path/ambiguous%2f%2e%2e/%2e;/info HTTP/1.0\r\n" +
+            "Host: whatever\r\n" +
+            "\r\n";
+
+        setComplianceModes(HttpCompliance.RFC7230);
+        assertThat(_connector.getResponse(request), Matchers.allOf(
+            startsWith("HTTP/1.1 200"),
+            containsString("pathInfo=/path/info")));
+
+        setComplianceModes(HttpComplianceSection.NO_AMBIGUOUS_PATH_SEGMENTS);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+    }
+
+    @Test
+    public void testAmbiguousEncoding() throws Exception
+    {
+        _handler._checker = (request, response) -> true;
+        String request = "GET /ambiguous/encoded/%25/path HTTP/1.0\r\n" +
+            "Host: whatever\r\n" +
+            "\r\n";
+
+        setComplianceModes(HttpCompliance.RFC7230);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+        setComplianceModes(HttpCompliance.RFC7230, HttpComplianceSection.NO_AMBIGUOUS_PATH_ENCODING);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+    }
+
+    @Test
+    public void testAmbiguousDoubleSlash() throws Exception
+    {
+        _handler._checker = (request, response) -> true;
+        String request = "GET /ambiguous/doubleSlash// HTTP/1.0\r\n" +
+            "Host: whatever\r\n" +
+            "\r\n";
+
+        setComplianceModes(HttpCompliance.RFC7230);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+        setComplianceModes(HttpCompliance.RFC7230, HttpComplianceSection.NO_AMBIGUOUS_EMPTY_SEGMENT);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
     }
 
     private static long getFileCount(Path path)

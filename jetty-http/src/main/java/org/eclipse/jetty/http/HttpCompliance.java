@@ -132,7 +132,10 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
                     HttpComplianceSection.NO_FIELD_FOLDING,
                     HttpComplianceSection.NO_HTTP_0_9,
                     HttpComplianceSection.NO_AMBIGUOUS_PATH_SEGMENTS,
-                    HttpComplianceSection.NO_AMBIGUOUS_PATH_SEPARATORS));
+                    HttpComplianceSection.NO_AMBIGUOUS_PATH_SEPARATORS,
+                    HttpComplianceSection.NO_UTF16_ENCODINGS,
+                    HttpComplianceSection.NO_AMBIGUOUS_EMPTY_SEGMENT,
+                    HttpComplianceSection.NO_AMBIGUOUS_PATH_ENCODING));
                 break;
 
             case "*":
@@ -140,7 +143,10 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
                 i++;
                 sections = EnumSet.complementOf(EnumSet.of(
                     HttpComplianceSection.NO_AMBIGUOUS_PATH_SEGMENTS,
-                    HttpComplianceSection.NO_AMBIGUOUS_PATH_SEPARATORS));
+                    HttpComplianceSection.NO_AMBIGUOUS_PATH_SEPARATORS,
+                    HttpComplianceSection.NO_UTF16_ENCODINGS,
+                    HttpComplianceSection.NO_AMBIGUOUS_EMPTY_SEGMENT,
+                    HttpComplianceSection.NO_AMBIGUOUS_PATH_ENCODING));
                 break;
 
             default:
