@@ -1824,22 +1824,32 @@ public class Request implements HttpServletRequest
 
         setMethod(request.getMethod());
         HttpURI uri = request.getURI();
-
-        boolean ambiguous = uri.isAmbiguous();
-        if (ambiguous)
+        boolean ambiguous = false;
+        if (uri.hasViolations())
         {
-            // replaced in jetty-10 with URICompliance from the HttpConfiguration
+            // Replaced in jetty-10 with URICompliance from the HttpConfiguration.
             Connection connection = _channel == null ? null : _channel.getConnection();
             HttpCompliance compliance = connection instanceof HttpConnection
                 ? ((HttpConnection)connection).getHttpCompliance()
                 : _channel != null ? _channel.getConnector().getBean(HttpCompliance.class) : null;
 
-            if (uri.hasAmbiguousSegment() && (compliance == null || compliance.sections().contains(HttpComplianceSection.NO_AMBIGUOUS_PATH_SEGMENTS)))
-                throw new BadMessageException("Ambiguous segment in URI");
-            if (uri.hasAmbiguousSeparator() && (compliance == null || compliance.sections().contains(HttpComplianceSection.NO_AMBIGUOUS_PATH_SEPARATORS)))
-                throw new BadMessageException("Ambiguous separator in URI");
-            if (uri.hasAmbiguousParameter() && (compliance == null || compliance.sections().contains(HttpComplianceSection.NO_AMBIGUOUS_PATH_PARAMETERS)))
-                throw new BadMessageException("Ambiguous path parameter in URI");
+            if (uri.hasUtf16Encoding() && (compliance == null || compliance.sections().contains(HttpComplianceSection.NO_UTF16_ENCODINGS)))
+                throw new BadMessageException("UTF16 % encoding not supported");
+
+            ambiguous = uri.isAmbiguous();
+            if (ambiguous)
+            {
+                if (uri.hasAmbiguousSegment() && (compliance == null || compliance.sections().contains(HttpComplianceSection.NO_AMBIGUOUS_PATH_SEGMENTS)))
+                    throw new BadMessageException("Ambiguous segment in URI");
+                if (uri.hasAmbiguousEmptySegment() && (compliance == null || compliance.sections().contains(HttpComplianceSection.NO_AMBIGUOUS_EMPTY_SEGMENT)))
+                    throw new BadMessageException("Ambiguous empty segment in URI");
+                if (uri.hasAmbiguousSeparator() && (compliance == null || compliance.sections().contains(HttpComplianceSection.NO_AMBIGUOUS_PATH_SEPARATORS)))
+                    throw new BadMessageException("Ambiguous separator in URI");
+                if (uri.hasAmbiguousParameter() && (compliance == null || compliance.sections().contains(HttpComplianceSection.NO_AMBIGUOUS_PATH_PARAMETERS)))
+                    throw new BadMessageException("Ambiguous path parameter in URI");
+                if (uri.hasAmbiguousEncoding() && (compliance == null || compliance.sections().contains(HttpComplianceSection.NO_AMBIGUOUS_PATH_ENCODING)))
+                    throw new BadMessageException("Ambiguous path encoding in URI");
+            }
         }
 
         _originalURI = uri.isAbsolute() && request.getHttpVersion() != HttpVersion.HTTP_2 ? uri.toString() : uri.getPathQuery();

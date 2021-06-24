@@ -271,18 +271,25 @@ public class WebAppContextTest
         server.start();
         assertThat(HttpTester.parseResponse(connector.getResponse("GET /test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.OK_200));
         assertThat(HttpTester.parseResponse(connector.getResponse("GET /%2e/%2e/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.OK_200));
+        assertThat(HttpTester.parseResponse(connector.getResponse("GET /%u002e/%u002e/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.OK_200));
         assertThat(HttpTester.parseResponse(connector.getResponse("GET /foo/%2e%2e/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.OK_200));
+        assertThat(HttpTester.parseResponse(connector.getResponse("GET /foo/%u002e%u002e/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.OK_200));
 
         assertThat(HttpTester.parseResponse(connector.getResponse("GET /WEB-INF HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
         assertThat(HttpTester.parseResponse(connector.getResponse("GET /WEB-INF/ HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
         assertThat(HttpTester.parseResponse(connector.getResponse("GET /WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
         assertThat(HttpTester.parseResponse(connector.getResponse("GET /web-inf/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
         assertThat(HttpTester.parseResponse(connector.getResponse("GET /%2e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
+        assertThat(HttpTester.parseResponse(connector.getResponse("GET /%u002e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
         assertThat(HttpTester.parseResponse(connector.getResponse("GET /%2e/%2e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
+        assertThat(HttpTester.parseResponse(connector.getResponse("GET /%u002e/%u002e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
         assertThat(HttpTester.parseResponse(connector.getResponse("GET /foo/%2e%2e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
+        assertThat(HttpTester.parseResponse(connector.getResponse("GET /foo/%u002e%u002e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
         assertThat(HttpTester.parseResponse(connector.getResponse("GET /%2E/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
+        assertThat(HttpTester.parseResponse(connector.getResponse("GET /%u002E/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
         assertThat(HttpTester.parseResponse(connector.getResponse("GET //WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
         assertThat(HttpTester.parseResponse(connector.getResponse("GET /WEB-INF%2ftest.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
+        assertThat(HttpTester.parseResponse(connector.getResponse("GET /WEB-INF%u002ftest.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
     }
 
     @Test
