@@ -653,6 +653,7 @@ public interface HttpURI
             _fragment = null;
             _uri = null;
             _decodedPath = null;
+            _emptySegment = false;
             _violations.clear();
             return this;
         }
