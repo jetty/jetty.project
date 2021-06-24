@@ -1693,24 +1693,21 @@ public class Request implements HttpServletRequest
         {
             ambiguous = uri.isAmbiguous();
             compliance = _channel == null || _channel.getHttpConfiguration() == null ? null : _channel.getHttpConfiguration().getUriCompliance();
-            if (compliance != null)
-            {
-                if (!compliance.allows(UriCompliance.Violation.UTF16_ENCODINGS) && uri.hasUtf16Encoding())
-                    throw new BadMessageException("UTF16 % encoding not supported");
+            if (uri.hasUtf16Encoding() && (compliance == null || !compliance.allows(UriCompliance.Violation.UTF16_ENCODINGS)))
+                throw new BadMessageException("UTF16 % encoding not supported");
 
-                if (ambiguous)
-                {
-                    if (uri.hasAmbiguousSegment() && !compliance.allows(UriCompliance.Violation.AMBIGUOUS_PATH_SEGMENT))
-                        throw new BadMessageException("Ambiguous segment in URI");
-                    if (uri.hasAmbiguousEmptySegment() && !compliance.allows(UriCompliance.Violation.AMBIGUOUS_EMPTY_SEGMENT))
-                        throw new BadMessageException("Ambiguous empty segment in URI");
-                    if (uri.hasAmbiguousSeparator() && !compliance.allows(UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR))
-                        throw new BadMessageException("Ambiguous segment in URI");
-                    if (uri.hasAmbiguousParameter() && !compliance.allows(UriCompliance.Violation.AMBIGUOUS_PATH_PARAMETER))
-                        throw new BadMessageException("Ambiguous path parameter in URI");
-                    if (uri.hasAmbiguousEncoding() && !compliance.allows(UriCompliance.Violation.AMBIGUOUS_PATH_ENCODING))
-                        throw new BadMessageException("Ambiguous path encoding in URI");
-                }
+            if (ambiguous)
+            {
+                if (uri.hasAmbiguousSegment() && (compliance == null || !compliance.allows(UriCompliance.Violation.AMBIGUOUS_PATH_SEGMENT)))
+                    throw new BadMessageException("Ambiguous segment in URI");
+                if (uri.hasAmbiguousEmptySegment() && (compliance == null || !compliance.allows(UriCompliance.Violation.AMBIGUOUS_EMPTY_SEGMENT)))
+                    throw new BadMessageException("Ambiguous empty segment in URI");
+                if (uri.hasAmbiguousSeparator() && (compliance == null || !compliance.allows(UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR)))
+                    throw new BadMessageException("Ambiguous segment in URI");
+                if (uri.hasAmbiguousParameter() && (compliance == null || !compliance.allows(UriCompliance.Violation.AMBIGUOUS_PATH_PARAMETER)))
+                    throw new BadMessageException("Ambiguous path parameter in URI");
+                if (uri.hasAmbiguousEncoding() && (compliance == null || !compliance.allows(UriCompliance.Violation.AMBIGUOUS_PATH_ENCODING)))
+                    throw new BadMessageException("Ambiguous path encoding in URI");
             }
         }
 
