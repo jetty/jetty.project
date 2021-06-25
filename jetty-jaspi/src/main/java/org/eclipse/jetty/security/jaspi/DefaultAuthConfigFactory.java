@@ -24,11 +24,11 @@ import jakarta.security.auth.message.config.RegistrationListener;
 /** 
  * A very basic {@link AuthConfigFactory} that allows for registering providers programmatically.
  */
-public class BasicAuthConfigFactory extends AuthConfigFactory
+public class DefaultAuthConfigFactory extends AuthConfigFactory
 {
     private final Map<String, AuthConfigProvider> providers = new LinkedHashMap<>();
     
-    public BasicAuthConfigFactory()
+    public DefaultAuthConfigFactory()
     {
     }
     

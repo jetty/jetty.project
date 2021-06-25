@@ -92,7 +92,7 @@ public class JaspiTest
     @BeforeAll
     public static void beforeAll() throws Exception
     {
-        AuthConfigFactory factory = new BasicAuthConfigFactory();
+        AuthConfigFactory factory = new DefaultAuthConfigFactory();
         
         factory.registerConfigProvider("org.eclipse.jetty.security.jaspi.BasicAuthModule",  
                 Map.of("AppContextID", "server /ctx", "org.eclipse.jetty.security.jaspi.modules.RealmName", "TestRealm"),
