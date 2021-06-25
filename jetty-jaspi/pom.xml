@@ -71,6 +71,5 @@
       <artifactId>jakarta.activation-api</artifactId>
       <scope>test</scope>
     </dependency>
-
   </dependencies>
 </project>
