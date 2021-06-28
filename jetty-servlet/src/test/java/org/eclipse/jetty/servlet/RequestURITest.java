@@ -74,7 +74,8 @@ public class RequestURITest
         ret.add(Arguments.of("/hello%u0025world", "/hello%u0025world", null));
         ret.add(Arguments.of("/hello-euro-%E2%82%AC", "/hello-euro-%E2%82%AC", null));
         ret.add(Arguments.of("/hello-euro?%E2%82%AC", "/hello-euro", "%E2%82%AC"));
-        // test the ascii control characters (just for completeness)
+        // Test the ascii control characters (just for completeness).
+        // Zero is not allowed in UTF-8 sequences so start from 1.
         for (int i = 0x1; i < 0x1f; i++)
         {
             String raw = String.format("/hello%%%02Xworld", i);
@@ -198,7 +199,6 @@ public class RequestURITest
             // Read the response.
             String response = readResponse(client);
 
-            // TODO: is HTTP/1.1 response appropriate for an HTTP/1.0 request?
             assertThat(response, Matchers.containsString("HTTP/1.1 200 OK"));
             assertThat(response, Matchers.containsString("RequestURI: " + expectedReqUri));
             assertThat(response, Matchers.containsString("QueryString: " + expectedQuery));
@@ -223,6 +223,47 @@ public class RequestURITest
             assertThat(response, Matchers.containsString("HTTP/1.1 200 OK"));
             assertThat(response, Matchers.containsString("RequestURI: " + expectedReqUri));
             assertThat(response, Matchers.containsString("QueryString: " + expectedQuery));
+        }
+    }
+
+    public static Stream<Arguments> badData()
+    {
+        List<Arguments> ret = new ArrayList<>();
+        ret.add(Arguments.of("/hello\000"));
+        ret.add(Arguments.of("/hello%00"));
+        ret.add(Arguments.of("/hello%u0000"));
+        ret.add(Arguments.of("/hello\000/world"));
+        ret.add(Arguments.of("/hello%00world"));
+        ret.add(Arguments.of("/hello%u0000world"));
+        ret.add(Arguments.of("/hello%GG"));
+        ret.add(Arguments.of("/hello%;/world"));
+        ret.add(Arguments.of("/hello/../../world"));
+        ret.add(Arguments.of("/hello/..;/world"));
+        ret.add(Arguments.of("/hello/..;?/world"));
+        ret.add(Arguments.of("/hello/%#x/../world"));
+        ret.add(Arguments.of("/../hello/world"));
+        ret.add(Arguments.of("/hello%u00u00/world"));
+        ret.add(Arguments.of("hello"));
+
+        return ret.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("badData")
+    public void testGetBadRequestsURIHTTP10(String rawpath) throws Exception
+    {
+        try (Socket client = newSocket(serverURI.getHost(), serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+
+            String request = String.format("GET %s HTTP/1.0\r\n\r\n", rawpath);
+            os.write(request.getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+
+            // Read the response.
+            String response = readResponse(client);
+
+            assertThat(response, Matchers.containsString("HTTP/1.1 400 "));
         }
     }
 }

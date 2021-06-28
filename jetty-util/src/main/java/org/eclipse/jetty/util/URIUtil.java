@@ -537,7 +537,6 @@ public class URIUtil
         {
             throw new IllegalArgumentException("cannot decode URI", e);
         }
-
     }
 
     /* Decode a URI path and strip parameters of ISO-8859-1 path
