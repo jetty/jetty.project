@@ -45,14 +45,14 @@ public final class RedirectUtil
             if (location.startsWith("/"))
             {
                 // absolute in context
-                location = URIUtil.canonicalEncodedPath(location);
+                location = URIUtil.canonicalURI(location);
             }
             else
             {
                 // relative to request
                 String path = request.getRequestURI();
                 String parent = (path.endsWith("/")) ? path : URIUtil.parentPath(path);
-                location = URIUtil.canonicalPath(URIUtil.addEncodedPaths(parent, location));
+                location = URIUtil.canonicalURI(URIUtil.addEncodedPaths(parent, location));
                 if (!location.startsWith("/"))
                     url.append('/');
             }

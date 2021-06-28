@@ -158,6 +158,35 @@ public class Utf8AppendableTest
 
     @ParameterizedTest
     @MethodSource("implementations")
+    public void testInvalidZeroUTF8(Class<Utf8Appendable> impl) throws UnsupportedEncodingException
+    {
+        // From https://datatracker.ietf.org/doc/html/rfc3629#section-10
+        assertThrows(Utf8Appendable.NotUtf8Exception.class, () ->
+        {
+            Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
+            buffer.append((byte)0xC0);
+            buffer.append((byte)0x80);
+        });
+    }
+
+    @ParameterizedTest
+    @MethodSource("implementations")
+    public void testInvalidAlternateDotEncodingUTF8(Class<Utf8Appendable> impl) throws UnsupportedEncodingException
+    {
+        // From https://datatracker.ietf.org/doc/html/rfc3629#section-10
+        assertThrows(Utf8Appendable.NotUtf8Exception.class, () ->
+        {
+            Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
+            buffer.append((byte)0x2f);
+            buffer.append((byte)0xc0);
+            buffer.append((byte)0xae);
+            buffer.append((byte)0x2e);
+            buffer.append((byte)0x2f);
+        });
+    }
+
+    @ParameterizedTest
+    @MethodSource("implementations")
     public void testFastFail1(Class<Utf8Appendable> impl) throws Exception
     {
         byte[] part1 = TypeUtil.fromHexString("cebae1bdb9cf83cebcceb5");

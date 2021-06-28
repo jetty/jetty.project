@@ -555,7 +555,6 @@ public abstract class Resource implements ResourceFactory, Closeable
      */
     public String getListHTML(String base, boolean parent, String query) throws IOException
     {
-        base = URIUtil.canonicalPath(base);
         if (base == null || !isDirectory())
             return null;
 

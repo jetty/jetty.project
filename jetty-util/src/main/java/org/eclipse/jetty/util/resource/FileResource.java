@@ -269,7 +269,6 @@ public class FileResource extends Resource
         throws IOException
     {
         assertValidPath(path);
-        path = org.eclipse.jetty.util.URIUtil.canonicalPath(path);
 
         if (path == null)
             throw new MalformedURLException();

@@ -87,6 +87,11 @@ public class HttpURITest
         uri.parse("http://foo/bar");
         assertThat(uri.getHost(), is("foo"));
         assertThat(uri.getPath(), is("/bar"));
+
+        // We do allow nulls if not encoded.  This can be used for testing 2nd line of defence.
+        uri.parse("http://fo\000/bar");
+        assertThat(uri.getHost(), is("fo\000"));
+        assertThat(uri.getPath(), is("/bar"));
     }
 
     @Test
@@ -316,6 +321,7 @@ public class HttpURITest
                 // encoded paths
                 {"/f%6f%6F/bar", "/foo/bar", EnumSet.noneOf(Violation.class)},
                 {"/f%u006f%u006F/bar", "/foo/bar", EnumSet.of(Violation.UTF16)},
+                {"/f%u0001%u0001/bar", "/f\001\001/bar", EnumSet.of(Violation.UTF16)},
 
                 // illegal paths
                 {"//host/../path/info", null, EnumSet.noneOf(Violation.class)},
@@ -325,32 +331,37 @@ public class HttpURITest
                 {"/path/%2/F/info", null, EnumSet.noneOf(Violation.class)},
                 {"/path/%/info", null, EnumSet.noneOf(Violation.class)},
                 {"/path/%u000X/info", null, EnumSet.noneOf(Violation.class)},
+                {"/path/Fo%u0000/info", null, EnumSet.noneOf(Violation.class)},
+                {"/path/Fo%00/info", null, EnumSet.noneOf(Violation.class)},
+                {"%2e%2e/info", null, EnumSet.noneOf(Violation.class)},
+                {"%u002e%u002e/info", null, EnumSet.noneOf(Violation.class)},
+                {"%2e%2e;/info", null, EnumSet.noneOf(Violation.class)},
+                {"%u002e%u002e;/info", null, EnumSet.noneOf(Violation.class)},
+                {"%2e.", null, EnumSet.noneOf(Violation.class)},
+                {"%u002e.", null, EnumSet.noneOf(Violation.class)},
+                {".%2e", null, EnumSet.noneOf(Violation.class)},
+                {".%u002e", null, EnumSet.noneOf(Violation.class)},
+                {"%2e%2e", null, EnumSet.noneOf(Violation.class)},
+                {"%u002e%u002e", null, EnumSet.noneOf(Violation.class)},
+                {"%2e%u002e", null, EnumSet.noneOf(Violation.class)},
+                {"%u002e%2e", null, EnumSet.noneOf(Violation.class)},
+                {"..;/info", null, EnumSet.noneOf(Violation.class)},
+                {"..;param/info", null, EnumSet.noneOf(Violation.class)},
 
                 // ambiguous dot encodings
-                {"scheme://host/path/%2e/info", "/path/./info", EnumSet.of(Violation.SEGMENT)},
-                {"scheme:/path/%2e/info", "/path/./info", EnumSet.of(Violation.SEGMENT)},
-                {"/path/%2e/info", "/path/./info", EnumSet.of(Violation.SEGMENT)},
-                {"path/%2e/info/", "path/./info/", EnumSet.of(Violation.SEGMENT)},
-                {"/path/%2e%2e/info", "/path/../info", EnumSet.of(Violation.SEGMENT)},
-                {"/path/%2e%2e;/info", "/path/../info", EnumSet.of(Violation.SEGMENT)},
-                {"/path/%2e%2e;param/info", "/path/../info", EnumSet.of(Violation.SEGMENT)},
-                {"/path/%2e%2e;param;other/info;other", "/path/../info", EnumSet.of(Violation.SEGMENT)},
-                {"%2e/info", "./info", EnumSet.of(Violation.SEGMENT)},
-                {"%u002e/info", "./info", EnumSet.of(Violation.SEGMENT, Violation.UTF16)},
-                {"%2e%2e/info", "../info", EnumSet.of(Violation.SEGMENT)},
-                {"%u002e%u002e/info", "../info", EnumSet.of(Violation.SEGMENT, Violation.UTF16)},
-                {"%2e%2e;/info", "../info", EnumSet.of(Violation.SEGMENT)},
-                {"%u002e%u002e;/info", "../info", EnumSet.of(Violation.SEGMENT, Violation.UTF16)},
-                {"%2e", ".", EnumSet.of(Violation.SEGMENT)},
-                {"%u002e", ".", EnumSet.of(Violation.SEGMENT, Violation.UTF16)},
-                {"%2e.", "..", EnumSet.of(Violation.SEGMENT)},
-                {"%u002e.", "..", EnumSet.of(Violation.SEGMENT, Violation.UTF16)},
-                {".%2e", "..", EnumSet.of(Violation.SEGMENT)},
-                {".%u002e", "..", EnumSet.of(Violation.SEGMENT, Violation.UTF16)},
-                {"%2e%2e", "..", EnumSet.of(Violation.SEGMENT)},
-                {"%u002e%u002e", "..", EnumSet.of(Violation.SEGMENT, Violation.UTF16)},
-                {"%2e%u002e", "..", EnumSet.of(Violation.SEGMENT, Violation.UTF16)},
-                {"%u002e%2e", "..", EnumSet.of(Violation.SEGMENT, Violation.UTF16)},
+                {"scheme://host/path/%2e/info", "/path/info", EnumSet.of(Violation.SEGMENT)},
+                {"scheme:/path/%2e/info", "/path/info", EnumSet.of(Violation.SEGMENT)},
+                {"/path/%2e/info", "/path/info", EnumSet.of(Violation.SEGMENT)},
+                {"path/%2e/info/", "path/info/", EnumSet.of(Violation.SEGMENT)},
+                {"/path/%2e%2e/info", "/info", EnumSet.of(Violation.SEGMENT)},
+                {"/path/%2e%2e;/info", "/info", EnumSet.of(Violation.SEGMENT)},
+                {"/path/%2e%2e;param/info", "/info", EnumSet.of(Violation.SEGMENT)},
+                {"/path/%2e%2e;param;other/info;other", "/info", EnumSet.of(Violation.SEGMENT)},
+                {"%2e/info", "info", EnumSet.of(Violation.SEGMENT)},
+                {"%u002e/info", "info", EnumSet.of(Violation.SEGMENT, Violation.UTF16)},
+
+                {"%2e", "", EnumSet.of(Violation.SEGMENT)},
+                {"%u002e", "", EnumSet.of(Violation.SEGMENT, Violation.UTF16)},
 
                 // empty segment treated as ambiguous
                 {"/foo//bar", "/foo//bar", EnumSet.of(Violation.EMPTY)},
@@ -368,20 +379,18 @@ public class HttpURITest
                 {"http:/foo", "/foo", EnumSet.noneOf(Violation.class)},
 
                 // ambiguous parameter inclusions
-                {"/path/.;/info", "/path/./info", EnumSet.of(Violation.PARAM)},
-                {"/path/.;param/info", "/path/./info", EnumSet.of(Violation.PARAM)},
-                {"/path/..;/info", "/path/../info", EnumSet.of(Violation.PARAM)},
-                {"/path/..;param/info", "/path/../info", EnumSet.of(Violation.PARAM)},
-                {".;/info", "./info", EnumSet.of(Violation.PARAM)},
-                {".;param/info", "./info", EnumSet.of(Violation.PARAM)},
-                {"..;/info", "../info", EnumSet.of(Violation.PARAM)},
-                {"..;param/info", "../info", EnumSet.of(Violation.PARAM)},
+                {"/path/.;/info", "/path/info", EnumSet.of(Violation.PARAM)},
+                {"/path/.;param/info", "/path/info", EnumSet.of(Violation.PARAM)},
+                {"/path/..;/info", "/info", EnumSet.of(Violation.PARAM)},
+                {"/path/..;param/info", "/info", EnumSet.of(Violation.PARAM)},
+                {".;/info", "info", EnumSet.of(Violation.PARAM)},
+                {".;param/info", "info", EnumSet.of(Violation.PARAM)},
 
                 // ambiguous segment separators
                 {"/path/%2f/info", "/path///info", EnumSet.of(Violation.SEPARATOR)},
                 {"%2f/info", "//info", EnumSet.of(Violation.SEPARATOR)},
                 {"%2F/info", "//info", EnumSet.of(Violation.SEPARATOR)},
-                {"/path/%2f../info", "/path//../info", EnumSet.of(Violation.SEPARATOR)},
+                {"/path/%2f../info", "/path/info", EnumSet.of(Violation.SEPARATOR)},
 
                 // ambiguous encoding
                 {"/path/%25/info", "/path/%/info", EnumSet.of(Violation.ENCODING)},
@@ -391,9 +400,9 @@ public class HttpURITest
                 {"/path/%u0025../info", "/path/%../info", EnumSet.of(Violation.ENCODING, Violation.UTF16)},
 
                 // combinations
-                {"/path/%2f/..;/info", "/path///../info", EnumSet.of(Violation.SEPARATOR, Violation.PARAM)},
-                {"/path/%u002f/..;/info", "/path///../info", EnumSet.of(Violation.SEPARATOR, Violation.PARAM, Violation.UTF16)},
-                {"/path/%2f/..;/%2e/info", "/path///.././info", EnumSet.of(Violation.SEPARATOR, Violation.PARAM, Violation.SEGMENT)},
+                {"/path/%2f/..;/info", "/path//info", EnumSet.of(Violation.SEPARATOR, Violation.PARAM)},
+                {"/path/%u002f/..;/info", "/path//info", EnumSet.of(Violation.SEPARATOR, Violation.PARAM, Violation.UTF16)},
+                {"/path/%2f/..;/%2e/info", "/path//info", EnumSet.of(Violation.SEPARATOR, Violation.PARAM, Violation.SEGMENT)},
 
                 // Non ascii characters
                 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
@@ -448,21 +457,23 @@ public class HttpURITest
                 {"../path/info", null, null},
                 {"/path/%XX/info", null, null},
                 {"/path/%2/F/info", null, null},
+                {"%2e%2e/info", null, null},
+                {"%2e%2e;/info", null, null},
+                {"%2e.", null, null},
+                {".%2e", null, null},
+                {"%2e%2e", null, null},
+                {"..;/info", null, null},
+                {"..;param/info", null, null},
 
                 // ambiguous dot encodings
-                {"/path/%2e/info", "/path/./info", EnumSet.of(Violation.SEGMENT)},
-                {"path/%2e/info/", "path/./info/", EnumSet.of(Violation.SEGMENT)},
-                {"/path/%2e%2e/info", "/path/../info", EnumSet.of(Violation.SEGMENT)},
-                {"/path/%2e%2e;/info", "/path/../info", EnumSet.of(Violation.SEGMENT)},
-                {"/path/%2e%2e;param/info", "/path/../info", EnumSet.of(Violation.SEGMENT)},
-                {"/path/%2e%2e;param;other/info;other", "/path/../info", EnumSet.of(Violation.SEGMENT)},
-                {"%2e/info", "./info", EnumSet.of(Violation.SEGMENT)},
-                {"%2e%2e/info", "../info", EnumSet.of(Violation.SEGMENT)},
-                {"%2e%2e;/info", "../info", EnumSet.of(Violation.SEGMENT)},
-                {"%2e", ".", EnumSet.of(Violation.SEGMENT)},
-                {"%2e.", "..", EnumSet.of(Violation.SEGMENT)},
-                {".%2e", "..", EnumSet.of(Violation.SEGMENT)},
-                {"%2e%2e", "..", EnumSet.of(Violation.SEGMENT)},
+                {"/path/%2e/info", "/path/info", EnumSet.of(Violation.SEGMENT)},
+                {"path/%2e/info/", "path/info/", EnumSet.of(Violation.SEGMENT)},
+                {"/path/%2e%2e/info", "/info", EnumSet.of(Violation.SEGMENT)},
+                {"/path/%2e%2e;/info", "/info", EnumSet.of(Violation.SEGMENT)},
+                {"/path/%2e%2e;param/info", "/info", EnumSet.of(Violation.SEGMENT)},
+                {"/path/%2e%2e;param;other/info;other", "/info", EnumSet.of(Violation.SEGMENT)},
+                {"%2e/info", "info", EnumSet.of(Violation.SEGMENT)},
+                {"%2e", "", EnumSet.of(Violation.SEGMENT)},
 
                 // empty segment treated as ambiguous
                 {"/", "/", EnumSet.noneOf(Violation.class)},
@@ -496,20 +507,18 @@ public class HttpURITest
                 {"", "", EnumSet.noneOf(Violation.class)},
 
                 // ambiguous parameter inclusions
-                {"/path/.;/info", "/path/./info", EnumSet.of(Violation.PARAM)},
-                {"/path/.;param/info", "/path/./info", EnumSet.of(Violation.PARAM)},
-                {"/path/..;/info", "/path/../info", EnumSet.of(Violation.PARAM)},
-                {"/path/..;param/info", "/path/../info", EnumSet.of(Violation.PARAM)},
-                {".;/info", "./info", EnumSet.of(Violation.PARAM)},
-                {".;param/info", "./info", EnumSet.of(Violation.PARAM)},
-                {"..;/info", "../info", EnumSet.of(Violation.PARAM)},
-                {"..;param/info", "../info", EnumSet.of(Violation.PARAM)},
+                {"/path/.;/info", "/path/info", EnumSet.of(Violation.PARAM)},
+                {"/path/.;param/info", "/path/info", EnumSet.of(Violation.PARAM)},
+                {"/path/..;/info", "/info", EnumSet.of(Violation.PARAM)},
+                {"/path/..;param/info", "/info", EnumSet.of(Violation.PARAM)},
+                {".;/info", "info", EnumSet.of(Violation.PARAM)},
+                {".;param/info", "info", EnumSet.of(Violation.PARAM)},
 
                 // ambiguous segment separators
                 {"/path/%2f/info", "/path///info", EnumSet.of(Violation.SEPARATOR)},
                 {"%2f/info", "//info", EnumSet.of(Violation.SEPARATOR)},
                 {"%2F/info", "//info", EnumSet.of(Violation.SEPARATOR)},
-                {"/path/%2f../info", "/path//../info", EnumSet.of(Violation.SEPARATOR)},
+                {"/path/%2f../info", "/path/info", EnumSet.of(Violation.SEPARATOR)},
 
                 // ambiguous encoding
                 {"/path/%25/info", "/path/%/info", EnumSet.of(Violation.ENCODING)},
@@ -517,9 +526,9 @@ public class HttpURITest
                 {"/path/%25../info", "/path/%../info", EnumSet.of(Violation.ENCODING)},
 
                 // combinations
-                {"/path/%2f/..;/info", "/path///../info", EnumSet.of(Violation.SEPARATOR, Violation.PARAM)},
-                {"/path/%2f/..;/%2e/info", "/path///.././info", EnumSet.of(Violation.SEPARATOR, Violation.PARAM, Violation.SEGMENT)},
-                {"/path/%2f/%25/..;/%2e//info", "/path///%/.././/info", EnumSet.of(Violation.SEPARATOR, Violation.PARAM, Violation.SEGMENT, Violation.ENCODING, Violation.EMPTY)},
+                {"/path/%2f/..;/info", "/path//info", EnumSet.of(Violation.SEPARATOR, Violation.PARAM)},
+                {"/path/%2f/..;/%2e/info", "/path//info", EnumSet.of(Violation.SEPARATOR, Violation.PARAM, Violation.SEGMENT)},
+                {"/path/%2f/%25/..;/%2e//info", "/path////info", EnumSet.of(Violation.SEPARATOR, Violation.PARAM, Violation.SEGMENT, Violation.ENCODING, Violation.EMPTY)},
             }).map(Arguments::of);
     }
 

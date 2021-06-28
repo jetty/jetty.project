@@ -20,6 +20,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
@@ -30,7 +31,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.MultiMap;
@@ -86,7 +89,7 @@ public class Dispatcher implements RequestDispatcher
     @Override
     public void include(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
-        Request baseRequest = Request.getBaseRequest(request);
+        Request baseRequest = Objects.requireNonNull(Request.getBaseRequest(request));
 
         if (!(request instanceof HttpServletRequest))
             request = new ServletRequestHttpWrapper(request);
@@ -106,6 +109,10 @@ public class Dispatcher implements RequestDispatcher
             }
             else
             {
+                Objects.requireNonNull(_uri);
+                // Check any URI violations against the compliance for this request
+                checkUriViolations(_uri, baseRequest);
+
                 IncludeAttributes attr = new IncludeAttributes(old_attr);
 
                 attr._requestURI = _uri.getPath();
@@ -133,7 +140,7 @@ public class Dispatcher implements RequestDispatcher
 
     protected void forward(ServletRequest request, ServletResponse response, DispatcherType dispatch) throws ServletException, IOException
     {
-        Request baseRequest = Request.getBaseRequest(request);
+        Request baseRequest = Objects.requireNonNull(Request.getBaseRequest(request));
         Response baseResponse = baseRequest.getResponse();
         baseResponse.resetForForward();
 
@@ -161,6 +168,10 @@ public class Dispatcher implements RequestDispatcher
             }
             else
             {
+                Objects.requireNonNull(_uri);
+                // Check any URI violations against the compliance for this request
+                checkUriViolations(_uri, baseRequest);
+
                 ForwardAttributes attr = new ForwardAttributes(old_attr);
 
                 //If we have already been forwarded previously, then keep using the established
@@ -184,9 +195,8 @@ public class Dispatcher implements RequestDispatcher
                     attr._servletPath = old_servlet_path;
                 }
 
-                HttpURI uri = new HttpURI(old_uri.getScheme(), old_uri.getHost(), old_uri.getPort(),
-                    _uri.getPath(), _uri.getParam(), _uri.getQuery(), _uri.getFragment());
-
+                // Combine old and new URIs.
+                HttpURI uri = new HttpURI(old_uri, _uri);
                 baseRequest.setHttpURI(uri);
 
                 baseRequest.setContextPath(_contextHandler.getContextPath());
@@ -242,6 +252,21 @@ public class Dispatcher implements RequestDispatcher
             baseRequest.resetParameters();
             baseRequest.setAttributes(old_attr);
             baseRequest.setDispatcherType(old_type);
+        }
+    }
+
+    private static void checkUriViolations(HttpURI uri, Request baseRequest)
+    {
+        if (uri.hasViolations())
+        {
+            HttpChannel channel = baseRequest.getHttpChannel();
+            Connection connection = channel == null ? null : channel.getConnection();
+            HttpCompliance compliance = connection instanceof HttpConnection
+                ? ((HttpConnection)connection).getHttpCompliance()
+                : channel != null ? channel.getConnector().getBean(HttpCompliance.class) : null;
+            String illegalState = HttpCompliance.checkUriCompliance(compliance, uri);
+            if (illegalState != null)
+                throw new IllegalStateException(illegalState);
         }
     }
 

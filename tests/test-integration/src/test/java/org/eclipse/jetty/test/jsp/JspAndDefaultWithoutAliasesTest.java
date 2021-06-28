@@ -27,8 +27,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.NetworkConnector;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -61,13 +65,21 @@ public class JspAndDefaultWithoutAliasesTest
 
         data.add(Arguments.of("/dump.jsp"));
         data.add(Arguments.of("/dump.jsp/"));
-        data.add(Arguments.of("/dump.jsp%00"));
-        data.add(Arguments.of("/dump.jsp%00x"));
-        data.add(Arguments.of("/dump.jsp%00x/dump.jsp"));
-        data.add(Arguments.of("/dump.jsp%00/dump.jsp"));
-        data.add(Arguments.of("/dump.jsp%00/index.html"));
-        data.add(Arguments.of("/dump.jsp%00/"));
-        data.add(Arguments.of("/dump.jsp%00x/"));
+        data.add(Arguments.of("/dump.jsp%1e"));
+        data.add(Arguments.of("/dump.jsp%1ex"));
+        data.add(Arguments.of("/dump.jsp%1ex/dump.jsp"));
+        data.add(Arguments.of("/dump.jsp%1e/dump.jsp"));
+        data.add(Arguments.of("/dump.jsp%1e/index.html"));
+        data.add(Arguments.of("/dump.jsp%1e/"));
+        data.add(Arguments.of("/dump.jsp%1ex/"));
+        // The _00_ is later replaced with a real null character in a customizer
+        data.add(Arguments.of("/dump.jsp_00_"));
+        data.add(Arguments.of("/dump.jsp_00_"));
+        data.add(Arguments.of("/dump.jsp_00_/dump.jsp"));
+        data.add(Arguments.of("/dump.jsp_00_/dump.jsp"));
+        data.add(Arguments.of("/dump.jsp_00_/index.html"));
+        data.add(Arguments.of("/dump.jsp_00_/"));
+        data.add(Arguments.of("/dump.jsp_00_/"));
 
         return data.stream();
     }
@@ -102,6 +114,31 @@ public class JspAndDefaultWithoutAliasesTest
 
         // add context
         server.setHandler(context);
+
+        // Add customizer to convert "_00_" to a real null
+        server.getContainedBeans(HttpConfiguration.class).forEach(config ->
+        {
+            config.addCustomizer(new HttpConfiguration.Customizer()
+            {
+                @Override
+                public void customize(Connector connector, HttpConfiguration channelConfig, Request request)
+                {
+                    HttpURI uri = request.getHttpURI();
+                    if (uri.getPath().contains("_00_"))
+                    {
+                        request.setHttpURI(new HttpURI(
+                            uri.getScheme(),
+                            uri.getHost(),
+                            uri.getPort(),
+                            uri.getPath().replace("_00_", "\000"),
+                            uri.getParam(),
+                            uri.getQuery(),
+                            uri.getFragment()
+                        ));
+                    }
+                }
+            });
+        });
 
         server.start();
 
