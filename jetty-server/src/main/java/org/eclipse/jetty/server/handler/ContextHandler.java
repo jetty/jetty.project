@@ -1926,13 +1926,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         if (_baseResource == null)
             return null;
 
-        // Does the path go above the current scope?
-        path = URIUtil.canonicalPath(path);
-        if (path == null)
-            return null;
-
         try
         {
+            // addPath with accept non-canonical paths that don't go above the root,
+            // but will treat them as aliases. So unless allowed by an AliasChecker
+            // they will be rejected below.
             Resource resource = _baseResource.addPath(path);
 
             if (checkAlias(path, resource))
@@ -2274,6 +2272,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public URL getResource(String path) throws MalformedURLException
         {
+            // This is an API call from the application which may have arbitrary non canonical paths passed
+            // Thus we canonicalize here, to avoid the enforcement of only canonical paths in
+            // ContextHandler.this.getResource(path).
+            path = URIUtil.canonicalPath(path);
             if (path == null)
                 return null;
             Resource resource = ContextHandler.this.getResource(path);

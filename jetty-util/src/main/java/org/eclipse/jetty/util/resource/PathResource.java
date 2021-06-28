@@ -86,8 +86,11 @@ public class PathResource extends Resource
         if (!abs.isAbsolute())
             abs = path.toAbsolutePath();
 
+        // Any normalization difference means it's an alias,
+        // and we don't want to bother further to follow
+        // symlinks as it's an alias anyway.
         Path normal = path.normalize();
-        if (!abs.equals(normal))
+        if (!isSameName(abs, normal))
             return normal;
 
         try
@@ -97,11 +100,8 @@ public class PathResource extends Resource
             if (Files.exists(path))
             {
                 Path real = abs.toRealPath(FOLLOW_LINKS);
-
                 if (!isSameName(abs, real))
-                {
                     return real;
-                }
             }
         }
         catch (IOException e)
@@ -348,20 +348,23 @@ public class PathResource extends Resource
     }
 
     @Override
-    public Resource addPath(final String subpath) throws IOException
+    public Resource addPath(final String subPath) throws IOException
     {
-        if ((subpath == null) || (subpath.length() == 0))
-            throw new MalformedURLException(subpath);
+        // Check that the path is within the root,
+        // but use the original path to create the
+        // resource, to preserve aliasing.
+        if (URIUtil.canonicalPath(subPath) == null)
+            throw new MalformedURLException(subPath);
 
-        if ("/".equals(subpath))
+        if ("/".equals(subPath))
             return this;
 
-        // subpaths are always under PathResource
-        // compensate for input subpaths like "/subdir"
+        // Sub-paths are always under PathResource
+        // compensate for input sub-paths like "/subdir"
         // where default resolve behavior would be
         // to treat that like an absolute path
 
-        return new PathResource(this, subpath);
+        return new PathResource(this, subPath);
     }
 
     private void assertValidPath(Path path)

@@ -36,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class HttpURITest
 {
     @Test
@@ -358,6 +359,7 @@ public class HttpURITest
                 {"/f%6f%6F/bar", "/foo/bar", EnumSet.noneOf(Violation.class)},
                 {"/f%u006f%u006F/bar", "/foo/bar", EnumSet.of(Violation.UTF16)},
                 {"/f%u0001%u0001/bar", "/f\001\001/bar", EnumSet.of(Violation.UTF16)},
+                {"/foo/%u20AC/bar", "/foo/\u20AC/bar", EnumSet.of(Violation.UTF16)},
 
                 // illegal paths
                 {"//host/../path/info", null, EnumSet.noneOf(Violation.class)},
@@ -369,6 +371,9 @@ public class HttpURITest
                 {"/path/%u000X/info", null, EnumSet.noneOf(Violation.class)},
                 {"/path/Fo%u0000/info", null, EnumSet.noneOf(Violation.class)},
                 {"/path/Fo%00/info", null, EnumSet.noneOf(Violation.class)},
+                {"/path/Foo/info%u0000", null, EnumSet.noneOf(Violation.class)},
+                {"/path/Foo/info%00", null, EnumSet.noneOf(Violation.class)},
+                {"/path/%U20AC", null, EnumSet.noneOf(Violation.class)},
                 {"%2e%2e/info", null, EnumSet.noneOf(Violation.class)},
                 {"%u002e%u002e/info", null, EnumSet.noneOf(Violation.class)},
                 {"%2e%2e;/info", null, EnumSet.noneOf(Violation.class)},
@@ -802,5 +807,21 @@ public class HttpURITest
         assertThat("[" + input + "] .query", httpUri.getQuery(), is(javaUri.getRawQuery()));
         assertThat("[" + input + "] .fragment", httpUri.getFragment(), is(javaUri.getFragment()));
         assertThat("[" + input + "] .toString", httpUri.toString(), is(javaUri.toASCIIString()));
+    }
+
+    public static Stream<Arguments> queryData()
+    {
+        return Stream.of(
+            new String[]{"/path?p=%U20AC", "p=%U20AC"},
+            new String[]{"/path?p=%u20AC", "p=%u20AC"}
+        ).map(Arguments::of);
+    }
+
+    @ParameterizedTest
+    @MethodSource("queryData")
+    public void testEncodedQuery(String input, String expectedQuery)
+    {
+        HttpURI httpURI = HttpURI.build(input);
+        assertThat("[" + input + "] .query", httpURI.getQuery(), is(expectedQuery));
     }
 }

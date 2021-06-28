@@ -146,7 +146,9 @@ public class URIUtilCanonicalPathTest
 
         // Check canonicalURI
         if (expectedResult == null)
+        {
             assertThat(URIUtil.canonicalURI(input), nullValue());
+        }
         else
         {
             // mostly encodedURI will be the same
@@ -157,4 +159,22 @@ public class URIUtilCanonicalPathTest
         }
     }
 
+    public static Stream<Arguments> queries()
+    {
+        String[][] data =
+            {
+                {"/ctx/../dir?/../index.html", "/dir?/../index.html"},
+                {"/get-files?file=/etc/passwd", "/get-files?file=/etc/passwd"},
+                {"/get-files?file=../../../../../passwd", "/get-files?file=../../../../../passwd"}
+            };
+        return Stream.of(data).map(Arguments::of);
+    }
+
+    @ParameterizedTest
+    @MethodSource("queries")
+    public void testQuery(String input, String expectedPath)
+    {
+        String actual = URIUtil.canonicalURI(input);
+        assertThat(actual, is(expectedPath));
+    }
 }

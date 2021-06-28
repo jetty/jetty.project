@@ -230,16 +230,23 @@ public class ContextHandlerGetResourceTest
     @Test
     public void testAlias() throws Exception
     {
-        Resource resource = context.getResource("/./index.html");
-        assertNotNull(resource);
-        assertFalse(resource.isAlias());
-
-        resource = context.getResource("/down/../index.html");
-        assertNotNull(resource);
-        assertFalse(resource.isAlias());
-
-        resource = context.getResource("//index.html");
+        String path = "/./index.html";
+        Resource resource = context.getResource(path);
         assertNull(resource);
+        URL resourceURL = context.getServletContext().getResource(path);
+        assertFalse(resourceURL.getPath().contains("/./"));
+
+        path = "/down/../index.html";
+        resource = context.getResource(path);
+        assertNull(resource);
+        resourceURL = context.getServletContext().getResource(path);
+        assertFalse(resourceURL.getPath().contains("/../"));
+
+        path = "//index.html";
+        resource = context.getResource(path);
+        assertNull(resource);
+        resourceURL = context.getServletContext().getResource(path);
+        assertNull(resourceURL);
     }
 
     @ParameterizedTest
