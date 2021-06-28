@@ -28,6 +28,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.nullValue;
@@ -218,24 +220,32 @@ public class ContextHandlerGetResourceTest
     }
 
     @Test
-    public void testNormalize() throws Exception
+    public void testDoesNotExistResource() throws Exception
     {
-        final String path = "/down/.././index.html";
-        Resource resource = context.getResource(path);
-        assertEquals("index.html", resource.getFile().getName());
-        assertEquals(docroot, resource.getFile().getParentFile());
-        assertTrue(resource.exists());
-
-        URL url = context.getServletContext().getResource(path);
-        assertEquals(docroot, new File(url.toURI()).getParentFile());
+        Resource resource = context.getResource("/doesNotExist.html");
+        assertNotNull(resource);
+        assertFalse(resource.exists());
     }
 
     @Test
-    public void testTooNormal() throws Exception
+    public void testAlias() throws Exception
     {
-        final String path = "/down/.././../";
-        Resource resource = context.getResource(path);
+        Resource resource = context.getResource("/./index.html");
+        assertNotNull(resource);
+        assertFalse(resource.isAlias());
+
+        resource = context.getResource("/down/../index.html");
+        assertNotNull(resource);
+        assertFalse(resource.isAlias());
+
+        resource = context.getResource("//index.html");
         assertNull(resource);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/down/.././../", "/../down/"})
+    public void testNormalize(String path) throws Exception
+    {
         URL url = context.getServletContext().getResource(path);
         assertNull(url);
     }

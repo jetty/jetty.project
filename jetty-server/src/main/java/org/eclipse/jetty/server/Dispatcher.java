@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
@@ -26,7 +27,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.MultiMap;
@@ -76,7 +80,7 @@ public class Dispatcher implements RequestDispatcher
     @Override
     public void include(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
-        Request baseRequest = Request.getBaseRequest(request);
+        Request baseRequest = Objects.requireNonNull(Request.getBaseRequest(request));
 
         if (!(request instanceof HttpServletRequest))
             request = new ServletRequestHttpWrapper(request);
@@ -98,6 +102,10 @@ public class Dispatcher implements RequestDispatcher
             }
             else
             {
+                Objects.requireNonNull(_uri);
+                // Check any URI violations against the compliance for this request
+                checkUriViolations(_uri, baseRequest);
+
                 IncludeAttributes attr = new IncludeAttributes(
                     old_attr,
                     baseRequest,
@@ -131,7 +139,7 @@ public class Dispatcher implements RequestDispatcher
 
     protected void forward(ServletRequest request, ServletResponse response, DispatcherType dispatch) throws ServletException, IOException
     {
-        Request baseRequest = Request.getBaseRequest(request);
+        Request baseRequest = Objects.requireNonNull(Request.getBaseRequest(request));
         Response baseResponse = baseRequest.getResponse();
         baseResponse.resetForForward();
 
@@ -159,6 +167,10 @@ public class Dispatcher implements RequestDispatcher
             }
             else
             {
+                Objects.requireNonNull(_uri);
+                // Check any URI violations against the compliance for this request
+                checkUriViolations(_uri, baseRequest);
+
                 // If we have already been forwarded previously, then keep using the established
                 // original value. Otherwise, this is the first forward and we need to establish the values.
                 // Note: the established value on the original request for pathInfo and
@@ -173,11 +185,7 @@ public class Dispatcher implements RequestDispatcher
                         source_mapping,
                         old_uri.getQuery()));
 
-                String query = _uri.getQuery();
-                if (query == null)
-                    query = old_uri.getQuery();
-
-                baseRequest.setHttpURI(HttpURI.build(old_uri, _uri.getPath(), _uri.getParam(), query));
+                baseRequest.setHttpURI(HttpURI.build(old_uri, _uri));
                 baseRequest.setContext(_contextHandler.getServletContext(), _pathInContext);
                 baseRequest.setServletPathMapping(null);
 
@@ -227,6 +235,18 @@ public class Dispatcher implements RequestDispatcher
             baseRequest.resetParameters();
             baseRequest.setAttributes(old_attr);
             baseRequest.setDispatcherType(old_type);
+        }
+    }
+
+    private static void checkUriViolations(HttpURI uri, Request baseRequest)
+    {
+        if (uri.hasViolations())
+        {
+            HttpChannel channel = baseRequest.getHttpChannel();
+            UriCompliance compliance = channel == null || channel.getHttpConfiguration() == null ? null : channel.getHttpConfiguration().getUriCompliance();
+            String illegalState = UriCompliance.checkUriCompliance(compliance, uri);
+            if (illegalState != null)
+                throw new IllegalStateException(illegalState);
         }
     }
 

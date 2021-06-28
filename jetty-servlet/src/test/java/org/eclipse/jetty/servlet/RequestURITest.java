@@ -57,11 +57,13 @@ public class RequestURITest
         ret.add(Arguments.of("/hello?type=wo&rld", "/hello", "type=wo&rld"));
         ret.add(Arguments.of("/hello?type=wo%20rld", "/hello", "type=wo%20rld"));
         ret.add(Arguments.of("/hello?type=wo+rld", "/hello", "type=wo+rld"));
+        ret.add(Arguments.of("/hello?type=/a/../b/", "/hello", "type=/a/../b/"));
         ret.add(Arguments.of("/It%27s%20me%21", "/It%27s%20me%21", null));
         // try some slash encoding (with case preservation tests)
         ret.add(Arguments.of("/hello%2fworld", "/hello%2fworld", null));
         ret.add(Arguments.of("/hello%2Fworld", "/hello%2Fworld", null));
         ret.add(Arguments.of("/%2f%2Fhello%2Fworld", "/%2f%2Fhello%2Fworld", null));
+
         // try some "?" encoding (should not see as query string)
         ret.add(Arguments.of("/hello%3Fworld", "/hello%3Fworld", null));
         // try some strange encodings (should preserve them)
@@ -70,7 +72,7 @@ public class RequestURITest
         ret.add(Arguments.of("/hello-euro-%E2%82%AC", "/hello-euro-%E2%82%AC", null));
         ret.add(Arguments.of("/hello-euro?%E2%82%AC", "/hello-euro", "%E2%82%AC"));
         // test the ascii control characters (just for completeness)
-        for (int i = 0x0; i < 0x1f; i++)
+        for (int i = 0x1; i < 0x1f; i++)
         {
             String raw = String.format("/hello%%%02Xworld", i);
             ret.add(Arguments.of(raw, raw, null));

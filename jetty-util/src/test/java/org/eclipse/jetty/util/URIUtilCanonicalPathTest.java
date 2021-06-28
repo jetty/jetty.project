@@ -22,10 +22,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 public class URIUtilCanonicalPathTest
 {
-    public static Stream<Arguments> data()
+    public static Stream<Arguments> paths()
     {
         String[][] canonical =
             {
@@ -83,6 +84,7 @@ public class URIUtilCanonicalPathTest
                 {"/foo/../bar//", "/bar//"},
                 {"/ctx/../bar/../ctx/all/index.txt", "/ctx/all/index.txt"},
                 {"/down/.././index.html", "/index.html"},
+                {"/aaa/bbb/ccc/..", "/aaa/bbb/"},
 
                 // Path traversal up past root
                 {"..", null},
@@ -95,10 +97,8 @@ public class URIUtilCanonicalPathTest
                 {"a/../..", null},
                 {"/foo/../../bar", null},
 
-                // Query parameter specifics
-                {"/ctx/dir?/../index.html", "/ctx/index.html"},
-                {"/get-files?file=/etc/passwd", "/get-files?file=/etc/passwd"},
-                {"/get-files?file=../../../../../passwd", null},
+                // Encoded ?
+                {"/ctx/dir%3f/../index.html", "/ctx/index.html"},
 
                 // Known windows shell quirks
                 {"file.txt  ", "file.txt  "}, // with spaces
@@ -120,7 +120,6 @@ public class URIUtilCanonicalPathTest
                 {"/%2e%2e/", "/%2e%2e/"},
 
                 // paths with parameters are not elided
-                // canonicalPath() is not responsible for decoding characters
                 {"/foo/.;/bar", "/foo/.;/bar"},
                 {"/foo/..;/bar", "/foo/..;/bar"},
                 {"/foo/..;/..;/bar", "/foo/..;/..;/bar"},
@@ -139,9 +138,23 @@ public class URIUtilCanonicalPathTest
     }
 
     @ParameterizedTest
-    @MethodSource("data")
+    @MethodSource("paths")
     public void testCanonicalPath(String input, String expectedResult)
     {
+        // Check canonicalPath
         assertThat(URIUtil.canonicalPath(input), is(expectedResult));
+
+        // Check canonicalURI
+        if (expectedResult == null)
+            assertThat(URIUtil.canonicalURI(input), nullValue());
+        else
+        {
+            // mostly encodedURI will be the same
+            assertThat(URIUtil.canonicalURI(input), is(expectedResult));
+            // but will terminate on fragments and queries
+            assertThat(URIUtil.canonicalURI(input + "?/foo/../bar/."), is(expectedResult + "?/foo/../bar/."));
+            assertThat(URIUtil.canonicalURI(input + "#/foo/../bar/."), is(expectedResult + "#/foo/../bar/."));
+        }
     }
+
 }

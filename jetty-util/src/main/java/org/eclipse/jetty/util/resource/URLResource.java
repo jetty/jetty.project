@@ -280,9 +280,8 @@ public class URLResource extends Resource
     public Resource addPath(String path)
         throws IOException
     {
-        Objects.requireNonNull(path, "Path may not be null");
-
-        path = URIUtil.canonicalPath(path);
+        if (path == null)
+            throw new MalformedURLException("null path");
 
         return newResource(URIUtil.addEncodedPaths(_url.toExternalForm(), URIUtil.encodePath(path)), _useCaches);
     }

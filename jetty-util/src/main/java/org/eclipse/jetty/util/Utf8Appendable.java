@@ -213,7 +213,6 @@ public abstract class Utf8Appendable
 
     protected void appendByte(byte b) throws IOException
     {
-
         if (b > 0 && _state == UTF8_ACCEPT)
         {
             _appendable.append((char)(b & 0xFF));

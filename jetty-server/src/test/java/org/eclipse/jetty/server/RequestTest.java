@@ -1713,15 +1713,6 @@ public class RequestTest
         assertThat(_connector.getResponse(request), Matchers.allOf(
             startsWith("HTTP/1.1 200"),
             containsString("pathInfo=/path/info")));
-
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.from(EnumSet.of(
-            UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR,
-            UriCompliance.Violation.AMBIGUOUS_PATH_SEGMENT,
-            UriCompliance.Violation.AMBIGUOUS_PATH_PARAMETER,
-            UriCompliance.Violation.NON_CANONICAL_AMBIGUOUS_PATHS)));
-        assertThat(_connector.getResponse(request), Matchers.allOf(
-            startsWith("HTTP/1.1 200"),
-            containsString("pathInfo=/path/ambiguous/.././info")));
     }
 
     @Test

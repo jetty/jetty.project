@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http;
 
 import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
@@ -68,10 +69,6 @@ public final class UriCompliance implements ComplianceViolation.Mode
          */
         AMBIGUOUS_PATH_ENCODING("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path encoding"),
         /**
-         * Allow Non canonical ambiguous paths. eg <code>/foo/x%2f%2e%2e%/bar</code> provided to applications as <code>/foo/x/../bar</code>
-         */
-        NON_CANONICAL_AMBIGUOUS_PATHS("https://tools.ietf.org/html/rfc3986#section-3.3", "Non canonical ambiguous paths"),
-        /**
          * Allow UTF-16 encoding eg <code>/foo%u2192bar</code>.
          */
         UTF16_ENCODINGS("https://www.w3.org/International/iri-edit/draft-duerst-iri.html#anchor29", "UTF16 encoding");
@@ -125,10 +122,9 @@ public final class UriCompliance implements ComplianceViolation.Mode
 
     /**
      * Compliance mode that exactly follows <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a>,
-     * including allowing all additional ambiguous URI Violations,
-     * except {@link Violation#NON_CANONICAL_AMBIGUOUS_PATHS}, thus ambiguous paths are canonicalized for safety.
+     * including allowing all additional ambiguous URI Violations.
      */
-    public static final UriCompliance RFC3986 = new UriCompliance("RFC3986", complementOf(of(Violation.NON_CANONICAL_AMBIGUOUS_PATHS)));
+    public static final UriCompliance RFC3986 = new UriCompliance("RFC3986", allOf(Violation.class));
 
     /**
      * Compliance mode that follows <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a>
@@ -231,6 +227,11 @@ public final class UriCompliance implements ComplianceViolation.Mode
             boolean exclude = element.startsWith("-");
             if (exclude)
                 element = element.substring(1);
+
+            // Ignore removed name. TODO: remove in future release.
+            if (element.equals("NON_CANONICAL_AMBIGUOUS_PATHS"))
+                continue;
+
             Violation section = Violation.valueOf(element);
             if (exclude)
                 violations.remove(section);
@@ -329,5 +330,48 @@ public final class UriCompliance implements ComplianceViolation.Mode
         if (violations == null || violations.isEmpty())
             return EnumSet.noneOf(Violation.class);
         return EnumSet.copyOf(violations);
+    }
+
+    private static final EnumMap<HttpURI.Violation, Violation> __uriViolations = new EnumMap<>(HttpURI.Violation.class);
+
+    static
+    {
+        // create a map from Violation to compliance in a loop, so that any new violations added are detected with ISE
+        for (HttpURI.Violation violation : HttpURI.Violation.values())
+        {
+            switch (violation)
+            {
+                case SEPARATOR:
+                    __uriViolations.put(violation, Violation.AMBIGUOUS_PATH_SEPARATOR);
+                    break;
+                case SEGMENT:
+                    __uriViolations.put(violation, Violation.AMBIGUOUS_PATH_SEGMENT);
+                    break;
+                case PARAM:
+                    __uriViolations.put(violation, Violation.AMBIGUOUS_PATH_PARAMETER);
+                    break;
+                case ENCODING:
+                    __uriViolations.put(violation, Violation.AMBIGUOUS_PATH_ENCODING);
+                    break;
+                case EMPTY:
+                    __uriViolations.put(violation, Violation.AMBIGUOUS_EMPTY_SEGMENT);
+                    break;
+                case UTF16:
+                    __uriViolations.put(violation, Violation.UTF16_ENCODINGS);
+                    break;
+                default:
+                    throw new IllegalStateException();
+            }
+        }
+    }
+
+    public static String checkUriCompliance(UriCompliance compliance, HttpURI uri)
+    {
+        for (HttpURI.Violation violation : HttpURI.Violation.values())
+        {
+            if (uri.hasViolation(violation) && (compliance == null || !compliance.allows(__uriViolations.get(violation))))
+                return violation.getMessage();
+        }
+        return null;
     }
 }

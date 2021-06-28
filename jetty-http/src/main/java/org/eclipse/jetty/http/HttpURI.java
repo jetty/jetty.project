@@ -15,7 +15,10 @@ package org.eclipse.jetty.http;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Set;
 
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Index;
@@ -31,54 +34,92 @@ import org.eclipse.jetty.util.UrlEncoded;
  * via the static methods such as {@link #build()} and {@link #from(String)}.
  *
  * A URI such as
- * <code>http://user@host:port/path;ignored/info;param?query#ignored</code>
- * is split into the following undecoded elements:<ul>
+ * <code>http://user@host:port/path;param1/%2e/info;param2?query#fragment</code>
+ * this class will split it into the following optional elements:<ul>
  * <li>{@link #getScheme()} - http:</li>
  * <li>{@link #getAuthority()} - //name@host:port</li>
  * <li>{@link #getHost()} - host</li>
  * <li>{@link #getPort()} - port</li>
- * <li>{@link #getPath()} - /path/info</li>
- * <li>{@link #getParam()} - param</li>
+ * <li>{@link #getPath()} - /path;param1/%2e/info;param2</li>
+ * <li>{@link #getDecodedPath()} - /path/info</li>
+ * <li>{@link #getParam()} - param2</li>
  * <li>{@link #getQuery()} - query</li>
  * <li>{@link #getFragment()} - fragment</li>
  * </ul>
- * <p>Any parameters will be returned from {@link #getPath()}, but are excluded from the
- * return value of {@link #getDecodedPath()}.   If there are multiple parameters, the
- * {@link #getParam()} method returns only the last one.
- */
+ * <p>The path part of the URI is provided in both raw form ({@link #getPath()}) and
+ * decoded form ({@link #getDecodedPath}), which has: path parameters removed,
+ * percent encoded characters expanded and relative segments resolved.  This approach
+ * is somewhat contrary to <a href="https://tools.ietf.org/html/rfc3986#section-3.3">RFC3986</a>
+ * which no longer defines path parameters (removed after
+ * <a href="https://tools.ietf.org/html/rfc2396#section-3.3">RFC2396</a>) and specifies
+ * that relative segment normalization should take place before percent encoded character
+ * expansion. A literal interpretation of the RFC can result in URI paths with ambiguities
+ * when viewed as strings. For example, a URI of {@code /foo%2f..%2fbar} is technically a single
+ * segment of "/foo/../bar", but could easily be misinterpreted as 3 segments resolving to "/bar"
+ * by a file system.
+ * </p>
+ * <p>
+ * Thus this class avoid and/or detects such ambiguities. Furthermore, by decoding characters and
+ * removing parameters before relative path normalization, ambiguous paths will be resolved in such
+ * a way to be non-standard-but-non-ambiguous to down stream interpretation of the decoded path string.
+ * The violations are recorded and available by API such as {@link #hasViolation(Violation)} so that requests
+ * containing them may be rejected in case the non-standard-but-non-ambiguous interpretations
+ * are not satisfactory for a given compliance configuration.   Implementations that wish to
+ * process ambiguous URI paths must configure the compliance modes to accept them and then perform
+ * their own decoding of {@link #getPath()}.
+ * </p>
+ * <p>
+ * If there are multiple path parameters, only the last one is returned by {@link #getParam()}.
+ * </p>
+ **/
 public interface HttpURI
 {
+    /**
+     * Violations of safe URI interpretations
+     */
     enum Violation
     {
         /**
-         * URI contains ambiguous path segments e.g. {@code /foo/%2e%2e/bar}
+         * Ambiguous path segments e.g. <code>/foo/%2E%2E/bar</code>
          */
-        SEGMENT,
+        SEGMENT("Ambiguous path segments"),
 
         /**
-         * URI contains ambiguous empty segments e.g. {@code /foo//bar} or {@code /foo/;param/}, but not {@code /foo/}
+         * Ambiguous path separator within a URI segment e.g. <code>/foo%2Fbar</code>
          */
-        EMPTY,
+        SEPARATOR("Ambiguous path separator"),
 
         /**
-         * URI contains ambiguous path separator within a URI segment e.g. {@code /foo/b%2fr}
+         * Ambiguous path parameters within a URI segment e.g. <code>/foo/..;/bar</code>
          */
-        SEPARATOR,
+        PARAM("Ambiguous path parameters"),
 
         /**
-         * URI contains ambiguous path encoding within a URI segment e.g. {@code /%2557EB-INF}
+         * Ambiguous double encoding within a URI segment e.g. <code>/%2557EB-INF</code>
          */
-        ENCODING,
+        ENCODING("Ambiguous double encoding"),
 
         /**
-         * URI contains ambiguous path parameters within a URI segment e.g. {@code /foo/..;/bar}
+         * Ambiguous empty segments e.g. <code>/foo//bar</code>
          */
-        PARAM,
+        EMPTY("Ambiguous empty segments"),
 
         /**
-         * Contains UTF16 encodings
+         * Non standard UTF-16 encoding eg <code>/foo%u2192bar</code>.
          */
-        UTF16
+        UTF16("Non standard UTF-16 encoding");
+
+        private final String _message;
+
+        Violation(String message)
+        {
+            _message = message;
+        }
+
+        String getMessage()
+        {
+            return _message;
+        }
     }
 
     static Mutable build()
@@ -135,6 +176,11 @@ public interface HttpURI
         return new Mutable(scheme, host, port, pathQuery).asImmutable();
     }
 
+    static Immutable build(HttpURI schemeHostPort, HttpURI uri)
+    {
+        return new Immutable(schemeHostPort, uri);
+    }
+
     Immutable asImmutable();
 
     String asString();
@@ -147,6 +193,11 @@ public interface HttpURI
 
     String getHost();
 
+    /**
+     * Get a URI path parameter. Multiple and in segment parameters are ignored and only
+     * the last trailing parameter is returned.
+     * @return The last path parameter or null
+     */
     String getParam();
 
     String getPath();
@@ -174,6 +225,17 @@ public interface HttpURI
      * @return True if the URI has any Violations.
      */
     boolean hasViolations();
+
+    /**
+     * @param violation the violation to check.
+     * @return true if the URI has the passed violation.
+     */
+    boolean hasViolation(Violation violation);
+
+    /**
+     * @return Set of violations in the URI.
+     */
+    Collection<Violation> getViolations();
 
     /**
      * @return True if the URI has a possibly ambiguous segment like '..;' or '%2e%2e'
@@ -256,6 +318,22 @@ public interface HttpURI
             _fragment = null;
             _uri = uri;
             _decodedPath = null;
+        }
+
+        private Immutable(HttpURI schemeHostPort, HttpURI uri)
+        {
+            _scheme = schemeHostPort.getScheme();
+            _user = schemeHostPort.getUser();
+            _host = schemeHostPort.getHost();
+            _port = schemeHostPort.getPort();
+            _path = uri.getPath();
+            _param = uri.getParam();
+            _query = uri.getQuery();
+            _fragment = uri.getFragment();
+            _uri = null;
+            _decodedPath = uri.getDecodedPath();
+            if (uri.hasViolations())
+                _violations.addAll(uri.getViolations());
         }
 
         @Override
@@ -415,6 +493,18 @@ public interface HttpURI
         public boolean hasViolations()
         {
             return !_violations.isEmpty();
+        }
+
+        @Override
+        public boolean hasViolation(Violation violation)
+        {
+            return _violations.contains(violation);
+        }
+
+        @Override
+        public Collection<Violation> getViolations()
+        {
+            return Collections.unmodifiableSet(_violations);
         }
 
         @Override
@@ -788,6 +878,18 @@ public interface HttpURI
         public boolean hasViolations()
         {
             return !_violations.isEmpty();
+        }
+
+        @Override
+        public boolean hasViolation(Violation violation)
+        {
+            return _violations.contains(violation);
+        }
+
+        @Override
+        public Collection<Violation> getViolations()
+        {
+            return Collections.unmodifiableSet(_violations);
         }
 
         @Override
@@ -1216,6 +1318,8 @@ public interface HttpURI
                             {
                                 switch (encodedValue)
                                 {
+                                    case 0:
+                                        throw new IllegalArgumentException("Illegal character in path");
                                     case '/':
                                         _violations.add(Violation.SEPARATOR);
                                         break;
@@ -1387,10 +1491,12 @@ public interface HttpURI
             }
             else if (_path != null)
             {
-                String canonical = URIUtil.canonicalPath(_path);
-                if (canonical == null)
-                    throw new BadMessageException("Bad URI");
-                _decodedPath = URIUtil.decodePath(canonical);
+                // The RFC requires this to be canonical before decoding, but this can leave dot segments and dot dot segments
+                // which are not canonicalized and could be used in an attempt to bypass security checks.
+                String decodeNonCanonical = URIUtil.decodePath(_path);
+                _decodedPath = URIUtil.canonicalPath(decodeNonCanonical);
+                if (_decodedPath == null)
+                    throw new IllegalArgumentException("Bad URI");
             }
         }
 

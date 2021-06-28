@@ -16,7 +16,6 @@ package org.eclipse.jetty.rewrite.handler;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Dispatcher;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -62,7 +61,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     {
         _rule.setCode("405");
         _rule.setMessage("foo");
-        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/%00/"));
+        _request.setHttpURI(HttpURI.from("/%01/"));
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
@@ -75,20 +74,8 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     {
         _rule.setCode("405");
         _rule.setMessage("foo");
-        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/jsp/bean1.jsp%00"));
 
-        String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
-
-        assertEquals(405, _response.getStatus());
-        assertEquals("foo", _request.getAttribute(Dispatcher.ERROR_MESSAGE));
-    }
-
-    @Test
-    public void testInvalidShamrock() throws Exception
-    {
-        _rule.setCode("405");
-        _rule.setMessage("foo");
-        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/jsp/shamrock-%00%E2%98%98.jsp"));
+        _request.setHttpURI(HttpURI.from("/jsp/bean1.jsp\000"));
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
