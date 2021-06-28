@@ -34,7 +34,6 @@ import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -1551,14 +1550,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         if (target == null || _protectedTargets == null)
             return false;
 
-        while (target.startsWith("//"))
-        {
+        if (target.startsWith("//"))
             target = URIUtil.compactPath(target);
-        }
 
-        for (int i = 0; i < _protectedTargets.length; i++)
+        for (String t : _protectedTargets)
         {
-            String t = _protectedTargets[i];
             if (StringUtil.startsWithIgnoreCase(target, t))
             {
                 if (target.length() == t.length())
@@ -1946,9 +1942,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         if (_baseResource == null)
             return null;
 
+        // Does the path go above the current scope?
+        path = URIUtil.canonicalPath(path);
+        if (path == null)
+            return null;
+
         try
         {
-            path = URIUtil.canonicalPath(path);
             Resource resource = _baseResource.addPath(path);
 
             if (checkAlias(path, resource))
@@ -1977,9 +1977,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 LOG.debug("Aliased resource: " + resource + "~=" + resource.getAlias());
 
             // alias checks
-            for (Iterator<AliasCheck> i = getAliasChecks().iterator(); i.hasNext(); )
+            for (AliasCheck check : getAliasChecks())
             {
-                AliasCheck check = i.next();
                 if (check.check(path, resource))
                 {
                     if (LOG.isDebugEnabled())
@@ -2032,7 +2031,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         try
         {
-            path = URIUtil.canonicalPath(path);
             Resource resource = getResource(path);
 
             if (resource != null && resource.exists())
@@ -2243,8 +2241,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public RequestDispatcher getRequestDispatcher(String uriInContext)
         {
-            // uriInContext is encoded, potentially with query
-
+            // uriInContext is encoded, potentially with query.
             if (uriInContext == null)
                 return null;
 
@@ -2254,11 +2251,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             try
             {
                 HttpURI uri = new HttpURI(null, null, 0, uriInContext);
-
-                String pathInfo = URIUtil.canonicalPath(uri.getDecodedPath());
-                if (pathInfo == null)
-                    return null;
-
+                String pathInfo = uri.getDecodedPath();
                 String contextPath = getContextPath();
                 if (contextPath != null && contextPath.length() > 0)
                     uri.setPath(URIUtil.addPaths(contextPath, uri.getPath()));
@@ -2306,6 +2299,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public URL getResource(String path) throws MalformedURLException
         {
+            if (path == null)
+                return null;
             Resource resource = ContextHandler.this.getResource(path);
             if (resource != null && resource.exists())
                 return resource.getURI().toURL();
@@ -2342,6 +2337,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public Set<String> getResourcePaths(String path)
         {
+            if (path == null)
+                return null;
             return ContextHandler.this.getResourcePaths(path);
         }
 

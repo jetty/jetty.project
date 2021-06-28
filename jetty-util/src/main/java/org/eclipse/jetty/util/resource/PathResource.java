@@ -64,7 +64,7 @@ public class PathResource extends Resource
     private final URI uri;
     private final boolean belongsToDefaultFileSystem;
 
-    private final Path checkAliasPath()
+    private Path checkAliasPath()
     {
         Path abs = path;
 
@@ -76,7 +76,6 @@ public class PathResource extends Resource
          * we will just use the original URI to construct the
          * alias reference Path.
          */
-
         if (!URIUtil.equalsIgnoreEncodings(uri, path.toUri()))
         {
             try
@@ -93,9 +92,11 @@ public class PathResource extends Resource
         }
 
         if (!abs.isAbsolute())
-        {
             abs = path.toAbsolutePath();
-        }
+
+        Path normal = path.normalize();
+        if (!abs.equals(normal))
+            return normal;
 
         try
         {
@@ -241,8 +242,7 @@ public class PathResource extends Resource
                 LOG.debug("Unable to get real/canonical path for {}", path, e);
         }
 
-        // cleanup any lingering relative path nonsense (like "/./" and "/../")
-        this.path = absPath.normalize();
+        this.path = absPath;
 
         assertValidPath(path);
         this.uri = this.path.toUri();
@@ -262,7 +262,7 @@ public class PathResource extends Resource
         // Calculate the URI and the path separately, so that any aliasing done by
         // FileSystem.getPath(path,childPath) is visible as a difference to the URI
         // obtained via URIUtil.addDecodedPath(uri,childPath)
-
+        // The checkAliasPath normalization checks will only work correctly if the getPath implementation here does not normalize.
         this.path = parent.path.getFileSystem().getPath(parent.path.toString(), childPath);
         if (isDirectory() && !childPath.endsWith("/"))
             childPath += "/";
@@ -363,12 +363,10 @@ public class PathResource extends Resource
     @Override
     public Resource addPath(final String subpath) throws IOException
     {
-        String cpath = URIUtil.canonicalPath(subpath);
-
-        if ((cpath == null) || (cpath.length() == 0))
+        if ((subpath == null) || (subpath.length() == 0))
             throw new MalformedURLException(subpath);
 
-        if ("/".equals(cpath))
+        if ("/".equals(subpath))
             return this;
 
         // subpaths are always under PathResource

@@ -36,22 +36,45 @@ import org.eclipse.jetty.util.UrlEncoded;
 /**
  * Http URI.
  * Parse an HTTP URI from a string or byte array.  Given a URI
- * <code>http://user@host:port/path/info;param?query#fragment</code>
- * this class will split it into the following undecoded optional elements:<ul>
+ * <code>http://user@host:port/path;param1/%2e/info;param2?query#fragment</code>
+ * this class will split it into the following optional elements:<ul>
  * <li>{@link #getScheme()} - http:</li>
  * <li>{@link #getAuthority()} - //name@host:port</li>
  * <li>{@link #getHost()} - host</li>
  * <li>{@link #getPort()} - port</li>
- * <li>{@link #getPath()} - /path/info</li>
- * <li>{@link #getParam()} - param</li>
+ * <li>{@link #getPath()} - /path;param1/%2e/info;param2</li>
+ * <li>{@link #getDecodedPath()} - /path/info</li>
+ * <li>{@link #getParam()} - param2</li>
  * <li>{@link #getQuery()} - query</li>
  * <li>{@link #getFragment()} - fragment</li>
  * </ul>
  *
- * <p>Any parameters will be returned from {@link #getPath()}, but are excluded from the
- * return value of {@link #getDecodedPath()}.   If there are multiple parameters, the
- * {@link #getParam()} method returns only the last one.
- */
+ * <p>The path part of the URI is provided in both raw form ({@link #getPath()}) and
+ * decoded form ({@link #getDecodedPath}), which has: path parameters removed,
+ * percent encoded characters expanded and relative segments resolved.  This approach
+ * is somewhat contrary to <a href="https://tools.ietf.org/html/rfc3986#section-3.3">RFC3986</a>
+ * which no longer defines path parameters (removed after
+ * <a href="https://tools.ietf.org/html/rfc2396#section-3.3">RFC2396</a>) and specifies
+ * that relative segment normalization should take place before percent encoded character
+ * expansion. A literal interpretation of the RFC can result in URI paths with ambiguities
+ * when viewed as strings. For example, a URI of {@code /foo%2f..%2fbar} is technically a single
+ * segment of "/foo/../bar", but could easily be misinterpreted as 3 segments resolving to "/bar"
+ * by a file system.
+ * </p>
+ * <p>
+ * Thus this class avoid and/or detects such ambiguities. Furthermore, by decoding characters and
+ * removing parameters before relative path normalization, ambiguous paths will be resolved in such
+ * a way to be non-standard-but-non-ambiguous to down stream interpretation of the decoded path string.
+ * The violations are recorded and available by API such as {@link #hasViolation(Violation)} so that requests
+ * containing them may be rejected in case the non-standard-but-non-ambiguous interpretations
+ * are not satisfactory for a given compliance configuration.   Implementations that wish to
+ * process ambiguous URI paths must configure the compliance modes to accept them and then perform
+ * their own decoding of {@link #getPath()}.
+ * </p>
+ * <p>
+ * If there are multiple path parameters, only the last one is returned by {@link #getParam()}.
+ * </p>
+ **/
 public class HttpURI
 {
     private enum State
@@ -69,28 +92,49 @@ public class HttpURI
         ASTERISK
     }
 
-    enum Violation
+    /**
+     * Violations of safe URI interpretations
+     */
+    public enum Violation
     {
-        SEGMENT,
-        SEPARATOR,
-        PARAM,
-        ENCODING,
-        EMPTY,
-        UTF16
+        /**
+         * Ambiguous path segments e.g. <code>/foo/%2E%2E/bar</code>
+         */
+        SEGMENT("Ambiguous path segments"),
+        /**
+         * Ambiguous path separator within a URI segment e.g. <code>/foo%2Fbar</code>
+         */
+        SEPARATOR("Ambiguous path separator"),
+        /**
+         * Ambiguous path parameters within a URI segment e.g. <code>/foo/..;/bar</code>
+         */
+        PARAM("Ambiguous path parameters"),
+        /**
+         * Ambiguous double encoding within a URI segment e.g. <code>/%2557EB-INF</code>
+         */
+        ENCODING("Ambiguous double encoding"),
+        /**
+         * Ambiguous empty segments e.g. <code>/foo//bar</code>
+         */
+        EMPTY("Ambiguous empty segments"),
+        /**
+         * Non standard UTF-16 encoding eg <code>/foo%u2192bar</code>.
+         */
+        UTF16("Non standard UTF-16 encoding");
+
+        private final String _message;
+
+        Violation(String message)
+        {
+            _message = message;
+        }
+
+        String getMessage()
+        {
+            return _message;
+        }
     }
 
-    /**
-     * The concept of URI path parameters was originally specified in
-     * <a href="https://tools.ietf.org/html/rfc2396#section-3.3">RFC2396</a>, but that was
-     * obsoleted by
-     * <a href="https://tools.ietf.org/html/rfc3986#section-3.3">RFC3986</a> which removed
-     * a normative definition of path parameters. Specifically it excluded them from the
-     * <a href="https://tools.ietf.org/html/rfc3986#section-5.2.4">Remove Dot Segments</a>
-     * algorithm.  This results in some ambiguity as dot segments can result from later
-     * parameter removal or % encoding expansion, that are not removed from the URI
-     * by {@link URIUtil#canonicalPath(String)}.  Thus this class flags such ambiguous
-     * path segments, so that they may be rejected by the server if so configured.
-     */
     private static final Trie<Boolean> __ambiguousSegments = new ArrayTrie<>();
 
     static
@@ -169,6 +213,22 @@ public class HttpURI
         _user = uri._user;
         _host = uri._host;
         _port = uri._port;
+        _path = uri._path;
+        _param = uri._param;
+        _query = uri._query;
+        _fragment = uri._fragment;
+        _uri = uri._uri;
+        _decodedPath = uri._decodedPath;
+        _violations.addAll(uri._violations);
+        _emptySegment = false;
+    }
+
+    public HttpURI(HttpURI schemeHostPort, HttpURI uri)
+    {
+        _scheme = schemeHostPort._scheme;
+        _user = schemeHostPort._user;
+        _host = schemeHostPort._host;
+        _port = schemeHostPort._port;
         _path = uri._path;
         _param = uri._param;
         _query = uri._query;
@@ -506,6 +566,8 @@ public class HttpURI
                         {
                             switch (encodedValue)
                             {
+                                case 0:
+                                    throw new IllegalArgumentException("Illegal character in path");
                                 case '/':
                                     _violations.add(Violation.SEPARATOR);
                                     break;
@@ -677,10 +739,12 @@ public class HttpURI
         }
         else if (_path != null)
         {
-            String canonical = URIUtil.canonicalPath(_path);
-            if (canonical == null)
-                throw new BadMessageException("Bad URI");
-            _decodedPath = URIUtil.decodePath(canonical);
+            // The RFC requires this to be canonical before decoding, but this can leave dot segments and dot dot segments
+            // which are not canonicalized and could be used in an attempt to bypass security checks.
+            String decodeNonCanonical = URIUtil.decodePath(_path);
+            _decodedPath = URIUtil.canonicalPath(decodeNonCanonical);
+            if (_decodedPath == null)
+                throw new IllegalArgumentException("Bad URI");
         }
     }
 
@@ -794,6 +858,11 @@ public class HttpURI
         return !_violations.isEmpty();
     }
 
+    public boolean hasViolation(Violation violation)
+    {
+        return _violations.contains(violation);
+    }
+
     /**
      * @return True if the URI encodes UTF-16 characters with '%u'.
      */
@@ -839,6 +908,11 @@ public class HttpURI
         return _decodedPath;
     }
 
+    /**
+     * Get a URI path parameter. Multiple and in segment parameters are ignored and only
+     * the last trailing parameter is returned.
+     * @return The last path parameter or null
+     */
     public String getParam()
     {
         return _param;

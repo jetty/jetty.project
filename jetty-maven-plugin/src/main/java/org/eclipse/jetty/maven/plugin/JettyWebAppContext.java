@@ -39,7 +39,6 @@ import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -451,16 +450,12 @@ public class JettyWebAppContext extends WebAppContext
         // If no regular resource exists check for access to /WEB-INF/lib or /WEB-INF/classes
         if ((resource == null || !resource.exists()) && uriInContext != null && _classes != null)
         {
-            String uri = URIUtil.canonicalPath(uriInContext);
-            if (uri == null)
-                return null;
-
             try
             {
                 // Replace /WEB-INF/classes with candidates for the classpath
-                if (uri.startsWith(WEB_INF_CLASSES_PREFIX))
+                if (uriInContext.startsWith(WEB_INF_CLASSES_PREFIX))
                 {
-                    if (uri.equalsIgnoreCase(WEB_INF_CLASSES_PREFIX) || uri.equalsIgnoreCase(WEB_INF_CLASSES_PREFIX + "/"))
+                    if (uriInContext.equalsIgnoreCase(WEB_INF_CLASSES_PREFIX) || uriInContext.equalsIgnoreCase(WEB_INF_CLASSES_PREFIX + "/"))
                     {
                         //exact match for a WEB-INF/classes, so preferentially return the resource matching the web-inf classes
                         //rather than the test classes
@@ -476,7 +471,7 @@ public class JettyWebAppContext extends WebAppContext
                         int i = 0;
                         while (res == null && (i < _webInfClasses.size()))
                         {
-                            String newPath = StringUtil.replace(uri, WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getPath());
+                            String newPath = StringUtil.replace(uriInContext, WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getPath());
                             res = Resource.newResource(newPath);
                             if (!res.exists())
                             {
@@ -487,11 +482,11 @@ public class JettyWebAppContext extends WebAppContext
                         return res;
                     }
                 }
-                else if (uri.startsWith(WEB_INF_LIB_PREFIX))
+                else if (uriInContext.startsWith(WEB_INF_LIB_PREFIX))
                 {
                     // Return the real jar file for all accesses to
                     // /WEB-INF/lib/*.jar
-                    String jarName = StringUtil.strip(uri, WEB_INF_LIB_PREFIX);
+                    String jarName = StringUtil.strip(uriInContext, WEB_INF_LIB_PREFIX);
                     if (jarName.startsWith("/") || jarName.startsWith("\\"))
                         jarName = jarName.substring(1);
                     if (jarName.length() == 0)

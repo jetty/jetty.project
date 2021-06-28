@@ -300,7 +300,8 @@ public class ResourceCollection extends Resource
         {
             return new ResourceCollection(resources.toArray(new Resource[0]));
         }
-        return null;
+
+        throw new MalformedURLException();
     }
 
     @Override

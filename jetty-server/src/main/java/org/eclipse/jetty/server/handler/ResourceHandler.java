@@ -177,7 +177,6 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
 
             if (_baseResource != null)
             {
-                path = URIUtil.canonicalPath(path);
                 r = _baseResource.addPath(path);
 
                 if (r != null && r.isAlias() && (_context == null || !_context.checkAlias(path, r)))

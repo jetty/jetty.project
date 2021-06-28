@@ -272,9 +272,7 @@ public class URLResource extends Resource
         throws IOException
     {
         if (path == null)
-            return null;
-
-        path = URIUtil.canonicalPath(path);
+            throw new MalformedURLException("null path");
 
         return newResource(URIUtil.addEncodedPaths(_url.toExternalForm(), URIUtil.encodePath(path)), _useCaches);
     }

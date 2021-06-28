@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -213,5 +214,47 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
     public EnumSet<HttpComplianceSection> sections()
     {
         return _sections;
+    }
+
+    private static final EnumMap<HttpURI.Violation, HttpComplianceSection> __uriViolations = new EnumMap<>(HttpURI.Violation.class);
+    static
+    {
+        // create a map from Violation to compliance in a loop, so that any new violations added are detected with ISE
+        for (HttpURI.Violation violation : HttpURI.Violation.values())
+        {
+            switch (violation)
+            {
+                case SEPARATOR:
+                    __uriViolations.put(violation, HttpComplianceSection.NO_AMBIGUOUS_PATH_SEPARATORS);
+                    break;
+                case SEGMENT:
+                    __uriViolations.put(violation, HttpComplianceSection.NO_AMBIGUOUS_PATH_SEGMENTS);
+                    break;
+                case PARAM:
+                    __uriViolations.put(violation, HttpComplianceSection.NO_AMBIGUOUS_PATH_PARAMETERS);
+                    break;
+                case ENCODING:
+                    __uriViolations.put(violation, HttpComplianceSection.NO_AMBIGUOUS_PATH_ENCODING);
+                    break;
+                case EMPTY:
+                    __uriViolations.put(violation, HttpComplianceSection.NO_AMBIGUOUS_EMPTY_SEGMENT);
+                    break;
+                case UTF16:
+                    __uriViolations.put(violation, HttpComplianceSection.NO_UTF16_ENCODINGS);
+                    break;
+                default:
+                    throw new IllegalStateException();
+            }
+        }
+    }
+
+    public static String checkUriCompliance(HttpCompliance compliance, HttpURI uri)
+    {
+        for (HttpURI.Violation violation : HttpURI.Violation.values())
+        {
+            if (uri.hasViolation(violation) && (compliance == null || compliance.sections().contains(__uriViolations.get(violation))))
+                return violation.getMessage();
+        }
+        return null;
     }
 }
