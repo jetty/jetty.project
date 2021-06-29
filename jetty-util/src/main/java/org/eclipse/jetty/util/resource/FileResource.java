@@ -270,8 +270,11 @@ public class FileResource extends Resource
     {
         assertValidPath(path);
 
-        if (path == null)
-            throw new MalformedURLException();
+        // Check that the path is within the root,
+        // but use the original path to create the
+        // resource, to preserve aliasing.
+        if (URIUtil.canonicalPath(path) == null)
+            throw new MalformedURLException(path);
 
         if ("/".equals(path))
             return this;

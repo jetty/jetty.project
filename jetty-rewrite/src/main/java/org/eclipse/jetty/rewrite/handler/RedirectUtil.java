@@ -53,12 +53,12 @@ public final class RedirectUtil
                 String path = request.getRequestURI();
                 String parent = (path.endsWith("/")) ? path : URIUtil.parentPath(path);
                 location = URIUtil.canonicalURI(URIUtil.addEncodedPaths(parent, location));
-                if (!location.startsWith("/"))
+                if (location != null && !location.startsWith("/"))
                     url.append('/');
             }
 
             if (location == null)
-                throw new IllegalStateException("path cannot be above root");
+                throw new IllegalStateException("redirect path cannot be above root");
             url.append(location);
 
             location = url.toString();

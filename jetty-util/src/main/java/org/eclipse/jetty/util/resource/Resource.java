@@ -459,10 +459,12 @@ public abstract class Resource implements ResourceFactory, Closeable
      * Returns the resource contained inside the current resource with the
      * given name.
      *
-     * @param path The path segment to add, which is not encoded
+     * @param path The path segment to add, which is not encoded.  The path may be non canonical, but if so then
+     * the resulting Resource will return true from {@link #isAlias()}.
      * @return the Resource for the resolved path within this Resource.
      * @throws IOException if unable to resolve the path
-     * @throws MalformedURLException if the resolution of the path fails because the input path parameter is malformed.
+     * @throws MalformedURLException if the resolution of the path fails because the input path parameter is malformed, or
+     * a relative path attempts to access above the root resource.
      */
     public abstract Resource addPath(String path)
         throws IOException, MalformedURLException;
@@ -555,6 +557,8 @@ public abstract class Resource implements ResourceFactory, Closeable
      */
     public String getListHTML(String base, boolean parent, String query) throws IOException
     {
+        // This method doesn't check aliases, so it is OK to canonicalize here.
+        base = URIUtil.canonicalPath(base);
         if (base == null || !isDirectory())
             return null;
 

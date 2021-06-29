@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SuppressWarnings("unused")
@@ -76,6 +77,12 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     @Test
     public void testInvalidJsp() throws Exception
     {
+        assertThrows(IllegalArgumentException.class, () -> _request.setURIPathQuery("/jsp/bean1.jsp%00"));
+    }
+
+    @Test
+    public void testInvalidJspWithNullByte() throws Exception
+    {
         _rule.setCode("405");
         _rule.setReason("foo");
 
@@ -85,6 +92,12 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
 
         assertEquals(405, _response.getStatus());
         assertEquals("foo", _response.getReason());
+    }
+
+    @Test
+    public void testInvalidShamrock() throws Exception
+    {
+        assertThrows(IllegalArgumentException.class, () -> _request.setURIPathQuery("/jsp/shamrock-%00%E2%98%98.jsp"));
     }
 
     @Test
@@ -110,4 +123,3 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
         //@checkstyle-enable-check : IllegalTokenText
     }
 }
-
