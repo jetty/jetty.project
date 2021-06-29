@@ -785,7 +785,6 @@ public class URIUtil
      * @param uri the encoded URI from the path onwards, which may contain query strings and/or fragments
      * @return the canonical path, or null if path traversal above root.
      * @see #canonicalPath(String)
-     * @see #canonicalURI(String)
      */
     public static String canonicalURI(String uri)
     {
@@ -883,6 +882,17 @@ public class URIUtil
             canonical.append(uri, i, end);
 
         return canonical.toString();
+    }
+
+    /**
+     * @param path the encoded URI from the path onwards, which may contain query strings and/or fragments
+     * @return the canonical path, or null if path traversal above root.
+     * @deprecated Use {@link #canonicalURI(String)}
+     */
+    @Deprecated
+    public static String canonicalEncodedPath(String path)
+    {
+        return canonicalURI(path);
     }
 
     /**

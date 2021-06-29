@@ -18,7 +18,6 @@ import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.Set;
 
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Index;
@@ -178,11 +177,6 @@ public interface HttpURI
         return new Mutable(scheme, host, port, pathQuery).asImmutable();
     }
 
-    static Immutable build(HttpURI schemeHostPort, HttpURI uri)
-    {
-        return new Immutable(schemeHostPort, uri);
-    }
-
     Immutable asImmutable();
 
     String asString();
@@ -320,22 +314,6 @@ public interface HttpURI
             _fragment = null;
             _uri = uri;
             _decodedPath = null;
-        }
-
-        private Immutable(HttpURI schemeHostPort, HttpURI uri)
-        {
-            _scheme = schemeHostPort.getScheme();
-            _user = schemeHostPort.getUser();
-            _host = schemeHostPort.getHost();
-            _port = schemeHostPort.getPort();
-            _path = uri.getPath();
-            _param = uri.getParam();
-            _query = uri.getQuery();
-            _fragment = uri.getFragment();
-            _uri = null;
-            _decodedPath = uri.getDecodedPath();
-            if (uri.hasViolations())
-                _violations.addAll(uri.getViolations());
         }
 
         @Override

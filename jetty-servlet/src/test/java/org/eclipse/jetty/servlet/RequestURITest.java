@@ -71,6 +71,10 @@ public class RequestURITest
         ret.add(Arguments.of("/hello%u0025world", "/hello%u0025world", null));
         ret.add(Arguments.of("/hello-euro-%E2%82%AC", "/hello-euro-%E2%82%AC", null));
         ret.add(Arguments.of("/hello-euro?%E2%82%AC", "/hello-euro", "%E2%82%AC"));
+
+        ret.add(Arguments.of("/hello/..;/world", "/hello/..;/world", null));
+        ret.add(Arguments.of("/hello/..;?/world", "/hello/..;", "/world"));
+
         // Test the ascii control characters (just for completeness).
         // Zero is not allowed in UTF-8 sequences so start from 1.
         for (int i = 0x1; i < 0x1f; i++)
@@ -236,8 +240,6 @@ public class RequestURITest
         ret.add(Arguments.of("/hello%GG"));
         ret.add(Arguments.of("/hello%;/world"));
         ret.add(Arguments.of("/hello/../../world"));
-        ret.add(Arguments.of("/hello/..;/world"));
-        ret.add(Arguments.of("/hello/..;?/world"));
         ret.add(Arguments.of("/hello/%#x/../world"));
         ret.add(Arguments.of("/../hello/world"));
         ret.add(Arguments.of("/hello%u00u00/world"));

@@ -27,10 +27,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.UriCompliance;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.MultiMap;
@@ -185,7 +183,11 @@ public class Dispatcher implements RequestDispatcher
                         source_mapping,
                         old_uri.getQuery()));
 
-                baseRequest.setHttpURI(HttpURI.build(old_uri, _uri));
+                String query = _uri.getQuery();
+                if (query == null)
+                    query = old_uri.getQuery();
+
+                baseRequest.setHttpURI(HttpURI.build(old_uri, _uri.getPath(), _uri.getParam(), query));
                 baseRequest.setContext(_contextHandler.getServletContext(), _pathInContext);
                 baseRequest.setServletPathMapping(null);
 
