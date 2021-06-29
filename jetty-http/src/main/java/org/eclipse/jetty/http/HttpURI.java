@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.UrlEncoded;
  *
  * A URI such as
  * {@code http://user@host:port/path;param1/%2e/info;param2?query#fragment}
- * are split into the following optional elements:<ul>
+ * is split into the following optional elements:<ul>
  * <li>{@link #getScheme()} - http:</li>
  * <li>{@link #getAuthority()} - //name@host:port</li>
  * <li>{@link #getHost()} - host</li>
