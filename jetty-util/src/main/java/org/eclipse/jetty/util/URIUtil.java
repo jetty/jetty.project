@@ -789,7 +789,6 @@ public class URIUtil
      * @param uri the encoded URI from the path onwards, which may contain query strings and/or fragments
      * @return the canonical path, or null if path traversal above root.
      * @see #canonicalPath(String)
-     * @see #canonicalURI(String)
      */
     public static String canonicalURI(String uri)
     {
