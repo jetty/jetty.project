@@ -1,3 +1,5 @@
+jetty-10.0.7-SNAPSHOT
+
 jetty-10.0.6 - 29 June 2021
  + 6375 Always check XML `Set` elements with `property` attribute
  + 6382 HttpClient TimeoutException message reports transient values
