@@ -2131,9 +2131,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return ContextHandler.this;
         }
 
-        /*
-         * @see javax.servlet.ServletContext#getContext(java.lang.String)
-         */
         @Override
         public ServletContext getContext(String uripath)
         {
@@ -2222,9 +2219,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return null;
         }
 
-        /*
-         * @see javax.servlet.ServletContext#getMimeType(java.lang.String)
-         */
         @Override
         public String getMimeType(String file)
         {
@@ -2233,9 +2227,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return _mimeTypes.getMimeByExtension(file);
         }
 
-        /*
-         * @see javax.servlet.ServletContext#getRequestDispatcher(java.lang.String)
-         */
         @Override
         public RequestDispatcher getRequestDispatcher(String uriInContext)
         {
@@ -2248,6 +2239,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
             try
             {
+                // The uriInContext will be canonicalized by HttpURI.
                 HttpURI uri = new HttpURI(null, null, 0, uriInContext);
                 String pathInfo = uri.getDecodedPath();
                 String contextPath = getContextPath();
@@ -2263,12 +2255,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return null;
         }
 
-        /*
-         * @see javax.servlet.ServletContext#getRealPath(java.lang.String)
-         */
         @Override
         public String getRealPath(String path)
         {
+            // This is an API call from the application which may have arbitrary non canonical paths passed
+            // Thus we canonicalize here, to avoid the enforcement of only canonical paths in
+            // ContextHandler.this.getResource(path).
+            path = URIUtil.canonicalPath(path);
             if (path == null)
                 return null;
             if (path.length() == 0)
@@ -2309,9 +2302,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return null;
         }
 
-        /*
-         * @see javax.servlet.ServletContext#getResourceAsStream(java.lang.String)
-         */
         @Override
         public InputStream getResourceAsStream(String path)
         {
@@ -2333,65 +2323,48 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             }
         }
 
-        /*
-         * @see javax.servlet.ServletContext#getResourcePaths(java.lang.String)
-         */
         @Override
         public Set<String> getResourcePaths(String path)
         {
+            // This is an API call from the application which may have arbitrary non canonical paths passed
+            // Thus we canonicalize here, to avoid the enforcement of only canonical paths in
+            // ContextHandler.this.getResource(path).
+            path = URIUtil.canonicalPath(path);
             if (path == null)
                 return null;
             return ContextHandler.this.getResourcePaths(path);
         }
 
-        /*
-         * @see javax.servlet.ServletContext#log(java.lang.Exception, java.lang.String)
-         */
         @Override
         public void log(Exception exception, String msg)
         {
             _logger.warn(msg, exception);
         }
 
-        /*
-         * @see javax.servlet.ServletContext#log(java.lang.String)
-         */
         @Override
         public void log(String msg)
         {
             _logger.info(msg);
         }
 
-        /*
-         * @see javax.servlet.ServletContext#log(java.lang.String, java.lang.Throwable)
-         */
         @Override
         public void log(String message, Throwable throwable)
         {
             _logger.warn(message, throwable);
         }
 
-        /*
-         * @see javax.servlet.ServletContext#getInitParameter(java.lang.String)
-         */
         @Override
         public String getInitParameter(String name)
         {
             return ContextHandler.this.getInitParameter(name);
         }
 
-        /*
-         * @see javax.servlet.ServletContext#getInitParameterNames()
-         */
         @Override
         public Enumeration<String> getInitParameterNames()
         {
             return ContextHandler.this.getInitParameterNames();
         }
 
-        /*
-         * @see javax.servlet.ServletContext#getAttribute(java.lang.String)
-         */
         @Override
         public Object getAttribute(String name)
         {
@@ -2401,9 +2374,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return o;
         }
 
-        /*
-         * @see javax.servlet.ServletContext#getAttributeNames()
-         */
         @Override
         public Enumeration<String> getAttributeNames()
         {
@@ -2422,9 +2392,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return Collections.enumeration(set);
         }
 
-        /*
-         * @see javax.servlet.ServletContext#setAttribute(java.lang.String, java.lang.Object)
-         */
         @Override
         public void setAttribute(String name, Object value)
         {
@@ -2451,9 +2418,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             }
         }
 
-        /*
-         * @see javax.servlet.ServletContext#removeAttribute(java.lang.String)
-         */
         @Override
         public void removeAttribute(String name)
         {
@@ -2470,9 +2434,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             }
         }
 
-        /*
-         * @see javax.servlet.ServletContext#getServletContextName()
-         */
         @Override
         public String getServletContextName()
         {
