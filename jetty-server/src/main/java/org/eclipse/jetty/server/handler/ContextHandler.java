@@ -2222,6 +2222,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             try
             {
                 String contextPath = getContextPath();
+                // uriInContext is canonicalized by HttpURI.
                 HttpURI.Mutable uri = HttpURI.build(uriInContext);
                 String pathInfo = uri.getDecodedPath();
                 if (StringUtil.isEmpty(pathInfo))
@@ -2244,6 +2245,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public String getRealPath(String path)
         {
+            // This is an API call from the application which may have arbitrary non canonical paths passed
+            // Thus we canonicalize here, to avoid the enforcement of only canonical paths in
+            // ContextHandler.this.getResource(path).
+            path = URIUtil.canonicalPath(path);
             if (path == null)
                 return null;
             if (path.length() == 0)
@@ -2308,6 +2313,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public Set<String> getResourcePaths(String path)
         {
+            // This is an API call from the application which may have arbitrary non canonical paths passed
+            // Thus we canonicalize here, to avoid the enforcement of only canonical paths in
+            // ContextHandler.this.getResource(path).
+            path = URIUtil.canonicalPath(path);
             if (path == null)
                 return null;
             return ContextHandler.this.getResourcePaths(path);

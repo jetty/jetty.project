@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http;
 
 import java.util.Arrays;
-import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
@@ -26,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.EnumSet.allOf;
-import static java.util.EnumSet.complementOf;
 import static java.util.EnumSet.noneOf;
 import static java.util.EnumSet.of;
 
@@ -332,45 +330,12 @@ public final class UriCompliance implements ComplianceViolation.Mode
         return EnumSet.copyOf(violations);
     }
 
-    private static final EnumMap<HttpURI.Violation, Violation> __uriViolations = new EnumMap<>(HttpURI.Violation.class);
-
-    static
-    {
-        // create a map from Violation to compliance in a loop, so that any new violations added are detected with ISE
-        for (HttpURI.Violation violation : HttpURI.Violation.values())
-        {
-            switch (violation)
-            {
-                case SEPARATOR:
-                    __uriViolations.put(violation, Violation.AMBIGUOUS_PATH_SEPARATOR);
-                    break;
-                case SEGMENT:
-                    __uriViolations.put(violation, Violation.AMBIGUOUS_PATH_SEGMENT);
-                    break;
-                case PARAM:
-                    __uriViolations.put(violation, Violation.AMBIGUOUS_PATH_PARAMETER);
-                    break;
-                case ENCODING:
-                    __uriViolations.put(violation, Violation.AMBIGUOUS_PATH_ENCODING);
-                    break;
-                case EMPTY:
-                    __uriViolations.put(violation, Violation.AMBIGUOUS_EMPTY_SEGMENT);
-                    break;
-                case UTF16:
-                    __uriViolations.put(violation, Violation.UTF16_ENCODINGS);
-                    break;
-                default:
-                    throw new IllegalStateException();
-            }
-        }
-    }
-
     public static String checkUriCompliance(UriCompliance compliance, HttpURI uri)
     {
-        for (HttpURI.Violation violation : HttpURI.Violation.values())
+        for (UriCompliance.Violation violation : UriCompliance.Violation.values())
         {
-            if (uri.hasViolation(violation) && (compliance == null || !compliance.allows(__uriViolations.get(violation))))
-                return violation.getMessage();
+            if (uri.hasViolation(violation) && (compliance == null || !compliance.allows(violation)))
+                return violation.getDescription();
         }
         return null;
     }
