@@ -49,7 +49,11 @@ public class SimpleAuthConfig implements ServerAuthConfig
         return new SimpleServerAuthContext(_callbackHandler, _serverAuthModule, _providerProperties);
     }
 
-    // supposed to be of form host-name<space>context-path
+    /** 
+     * {@inheritDoc}
+     * 
+     * supposed to be of form (logical) "host-name<space>context-path" 
+     */
     @Override
     public String getAppContext()
     {

@@ -24,7 +24,7 @@ Authorization::
 
 ==== Configuring an Authentication mechanism
 
-Jetty server supports several standard authentication mechanisms: http://en.wikipedia.org/wiki/Basic_access_authentication[BASIC]; http://en.wikipedia.org/wiki/Digest_authentication[DIGEST]; http://en.wikipedia.org/wiki/Form-based_authentication[FORM]; CLIENT-CERT; and other mechanisms can be plugged in using the extensible http://docs.oracle.com/cd/E19462-01/819-6717/gcszc/index.html[JASPI] or http://en.wikipedia.org/wiki/SPNEGO[SPNEGO] mechanisms.
+Jetty server supports several standard authentication mechanisms: http://en.wikipedia.org/wiki/Basic_access_authentication[BASIC]; http://en.wikipedia.org/wiki/Digest_authentication[DIGEST]; http://en.wikipedia.org/wiki/Form-based_authentication[FORM]; CLIENT-CERT; and other mechanisms can be plugged in using the extensible https://jakarta.ee/specifications/authentication/2.0/jakarta-authentication-spec-2.0.pdf[JakartaAuthentication] or http://en.wikipedia.org/wiki/SPNEGO[SPNEGO] mechanisms.
 
 Internally, configuring an authentication mechanism is done by setting an instance of a the link:{JDURL}/org/eclipse/jetty/security/Authenticator.html[Authenticator] interface onto the link:{JDURL}/org/eclipse/jetty/security/SecurityHandler.html[SecurityHandler] of the context, but in most cases it is done by declaring a `<login-config>` element in the standard web.xml descriptor or via annotations.
 
@@ -511,3 +511,56 @@ Below is an example which, like the one above, sets up a server with a `HashLogi
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/SecuredHelloHandler.java[]
 ----
+
+==== Jakarta Authentication (JASPI)
+
+Jetty can utilize portable authentication modules that implements the Jakara Authentication specification. This requires the jetty-jaspi module.
+
+Only modules conforming to the ServerAuthModule interface in the https://jakarta.ee/specifications/authentication/2.0/jakarta-authentication-spec-2.0.pdf[JakartaAuthentication] are supported. These modules must be configured before start-up.  
+
+The following illustrates a jetty module setting up HTTP Basic Authentication using a Jakarta Authentication module that comes packaged with the jetty-jaspi module: `org.eclipse.jetty.security.jaspi.modules.BasicAuthModule`
+
+[source, xml, subs="{sub-order}"]
+----
+<Configure>
+ <Ref refid="jaspiAuthConfigFactory">
+	<Call name="registerConfigProvider">
+          <Arg type="String">org.eclipse.jetty.security.jaspi.modules.BasicAuthModule</Arg>
+          <Arg>
+              <Map>
+                  <Entry>
+                      <!-- 
+                        Application Context Identifier as per spec chapter 3.2 (property key=AppContextID) 
+                       -->
+                      <Item>AppContextID</Item>
+                      <!-- 
+                        Should be of the form "logical-hostname<space>context-path"                       
+                       -->
+                      <Item>server /ctx</Item>
+                  </Entry>
+                  <Entry>
+                      <!-- Realm as utilised by Jetty Security  -->
+                      <Item>org.eclipse.jetty.security.jaspi.modules.RealmName</Item>
+                      <Item>TestRealm</Item>
+                  </Entry>
+              </Map>
+          </Arg>
+          <!-- Message Layer Identifier as per spec chapter 3.1  -->
+          <Arg type="String">HttpServlet</Arg>
+          <!-- 
+            Application Context Identifier as per spec chapter 3.2.  
+            Should be same as the one configured for the provided BasicAuthModule above.  
+          -->
+          <Arg type="String">server /ctx</Arg>
+          <!-- 
+            A friendly description of the provided auth-module. 
+          -->
+          <Arg type="String">A simple provider using HTTP BASIC authentication</Arg>
+	</Call>
+  </Ref>
+</Configure>
+
+----
+
+Given the portability goal of Jakarta Authentication, custom or 3rd party `ServerAuthModule` implementations may be configured instead here.
+

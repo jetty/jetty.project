@@ -39,7 +39,11 @@ import org.eclipse.jetty.security.jaspi.callback.CredentialValidationCallback;
 import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.util.security.Password;
 
-public class BaseAuthModule implements ServerAuthModule, ServerAuthContext
+/**
+ * Simple abstract module implementing a Jakarta Authentication {@link ServerAuthModule} and {@link ServerAuthContext}.
+ * To be used as a building block for building more sophisticated auth modules.
+ */
+public abstract class AbstractAuthModule implements ServerAuthModule, ServerAuthContext
 {
     private static final Class[] SUPPORTED_MESSAGE_TYPES = new Class[]{HttpServletRequest.class, HttpServletResponse.class};
 
@@ -53,11 +57,11 @@ public class BaseAuthModule implements ServerAuthModule, ServerAuthContext
         return SUPPORTED_MESSAGE_TYPES;
     }
 
-    public BaseAuthModule()
+    public AbstractAuthModule()
     {
     }
 
-    public BaseAuthModule(CallbackHandler callbackHandler)
+    public AbstractAuthModule(CallbackHandler callbackHandler)
     {
         this.callbackHandler = callbackHandler;
     }
@@ -90,12 +94,6 @@ public class BaseAuthModule implements ServerAuthModule, ServerAuthContext
     {
         // servlets do not need secured responses
         return AuthStatus.SEND_SUCCESS;
-    }
-
-    @Override
-    public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject, Subject serviceSubject) throws AuthException
-    {
-        return AuthStatus.SEND_FAILURE;
     }
 
     /**

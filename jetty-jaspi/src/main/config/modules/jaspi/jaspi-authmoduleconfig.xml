@@ -1,45 +1,45 @@
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 <Configure>
-  <!-- 
-       Example code to configure ServerAuthModules to be used by Jakarta Authentication 
-       using the programmatic Authentication API (registerConfigProvider)
-  -->
-  
-  <!-- 
-  <Ref refid="jaspiAuthConfigFactory">
+ <!-- 
+    Example configuration of a Basic Authentication Module for the Jakarta Authentication SPI 
+    
+    Input provided below conforms to the Jakarta Authentication 2.0 specification:
+    https://jakarta.ee/specifications/authentication/2.0/jakarta-authentication-spec-2.0.pdf
+ -->
+ <Ref refid="jaspiAuthConfigFactory">
 	<Call name="registerConfigProvider">
-          <Arg type="String">org.eclipse.jetty.security.jaspi.BasicAuthModule</Arg>
+          <Arg type="String">org.eclipse.jetty.security.jaspi.modules.BasicAuthModule</Arg>
           <Arg>
               <Map>
                   <Entry>
+                      <!-- 
+                        Application Context Identifier as per spec chapter 3.2 (property key=AppContextID) 
+                       -->
                       <Item>AppContextID</Item>
-                      <Item>server /other</Item>
+                      <!-- 
+                        Should be of the form "logical-hostname<space>context-path"                       
+                       -->
+                      <Item>server /ctx</Item>
                   </Entry>
                   <Entry>
+                      <!-- Realm as utilised by Jetty Security  -->
                       <Item>org.eclipse.jetty.security.jaspi.modules.RealmName</Item>
                       <Item>TestRealm</Item>
                   </Entry>
               </Map>
           </Arg>
+          <!-- Message Layer Identifier as per spec chapter 3.1  -->
           <Arg type="String">HttpServlet</Arg>
+          <!-- 
+            Application Context Identifier as per spec chapter 3.2.  
+            Should be same as the one configured for the provided BasicAuthModule above.  
+          -->
           <Arg type="String">server /ctx</Arg>
-          <Arg type="String">a test provider</Arg>
-	</Call>
-	<Call name="registerConfigProvider">
-            <Arg type="String">org.eclipse.jetty.security.jaspi.HttpHeaderAuthModule</Arg>
-            <Arg>
-                <Map>
-                    <Entry>
-                        <Item>AppContextID</Item>
-                        <Item>server /other</Item>
-                    </Entry>
-                </Map>
-            </Arg>
-            <Arg type="String">HttpServlet</Arg>
-            <Arg type="String">server /other</Arg>
-            <Arg type="String">another test provider</Arg>
+          <!-- 
+            A friendly description of the provided auth-module. 
+          -->
+          <Arg type="String">A simple provider using HTTP BASIC authentication</Arg>
 	</Call>
   </Ref>
-  -->
 </Configure>

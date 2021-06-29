@@ -26,6 +26,8 @@ import jakarta.security.auth.message.callback.PasswordValidationCallback;
 import jakarta.security.auth.message.callback.PrivateKeyCallback;
 import jakarta.security.auth.message.callback.SecretKeyCallback;
 import jakarta.security.auth.message.callback.TrustStoreCallback;
+import jakarta.security.auth.message.module.ServerAuthModule;
+
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.authentication.LoginCallback;
 import org.eclipse.jetty.security.authentication.LoginCallbackImpl;
@@ -33,7 +35,7 @@ import org.eclipse.jetty.security.jaspi.callback.CredentialValidationCallback;
 import org.eclipse.jetty.server.UserIdentity;
 
 /**
- * Idiot class required by jaspi stupidity
+ * A {@link CallbackHandler} required to pass to {@link ServerAuthModule} implementation for a given context path.
  */
 public class ServletCallbackHandler implements CallbackHandler
 {

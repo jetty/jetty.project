@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.jaspi;
+package org.eclipse.jetty.security.jaspi.modules;
 
 import java.io.IOException;
 import java.util.Map;
@@ -23,15 +23,18 @@ import jakarta.security.auth.message.AuthException;
 import jakarta.security.auth.message.AuthStatus;
 import jakarta.security.auth.message.MessageInfo;
 import jakarta.security.auth.message.MessagePolicy;
+import jakarta.security.auth.message.module.ServerAuthModule;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.security.jaspi.modules.BaseAuthModule;
 import org.eclipse.jetty.util.security.Constraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BasicAuthModule extends BaseAuthModule
+/** 
+ * A {@link ServerAuthModule} implementation of HTTP Basic Authentication.  
+ */
+public class BasicAuthModule extends AbstractAuthModule
 {
     private static final Logger LOG = LoggerFactory.getLogger(BasicAuthModule.class);
 
