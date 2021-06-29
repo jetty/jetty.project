@@ -16,6 +16,7 @@ package org.eclipse.jetty.util.resource;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
@@ -40,6 +41,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ResourceTest
 {
@@ -319,5 +322,20 @@ public class ResourceTest
         Resource rb = Resource.newResource(b);
 
         assertEquals(rb, ra);
+    }
+
+    @Test
+    public void testClimbAboveBase() throws Exception
+    {
+        Resource resource = Resource.newResource("/foo/bar");
+        assertThrows(MalformedURLException.class, () -> resource.addPath(".."));
+
+        Resource same = resource.addPath(".");
+        assertNotNull(same);
+        assertTrue(same.isAlias());
+
+        assertThrows(MalformedURLException.class, () -> resource.addPath("./.."));
+
+        assertThrows(MalformedURLException.class, () -> resource.addPath("./../bar"));
     }
 }

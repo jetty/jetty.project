@@ -504,7 +504,7 @@ public class HttpConnectionTest
     {
         String response = connector.getResponse("GET /ooops/../../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
         checkContains(response, 0, "HTTP/1.1 400 ");
-        checkContains(response, 0, "reason: Bad URI");
+        checkContains(response, 0, "reason: Bad Request");
     }
 
     @Test
@@ -512,7 +512,7 @@ public class HttpConnectionTest
     {
         String response = connector.getResponse("GET ../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
         checkContains(response, 0, "HTTP/1.1 400 ");
-        checkContains(response, 0, "reason: Bad URI");
+        checkContains(response, 0, "reason: Bad Request");
     }
 
     @Test
@@ -520,7 +520,7 @@ public class HttpConnectionTest
     {
         String response = connector.getResponse("GET /../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
         checkContains(response, 0, "HTTP/1.1 400 ");
-        checkContains(response, 0, "reason: Bad URI");
+        checkContains(response, 0, "reason: Bad Request");
     }
 
     @Test
@@ -827,7 +827,7 @@ public class HttpConnectionTest
             "Host: localhost\r\n" +
             "Connection: close\r\n" +
             "\r\n");
-        checkContains(response, 0, "HTTP/1.1 200"); //now fallback to iso-8859-1
+        checkContains(response, 0, "HTTP/1.1 400");
 
         response = connector.getResponse("GET /bad/utf8%c1 HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
