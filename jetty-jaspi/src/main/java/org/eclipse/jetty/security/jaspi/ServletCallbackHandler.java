@@ -65,6 +65,7 @@ public class ServletCallbackHandler implements CallbackHandler
             else if (callback instanceof PasswordValidationCallback)
             {
                 PasswordValidationCallback passwordValidationCallback = (PasswordValidationCallback)callback;
+                @SuppressWarnings("unused")
                 Subject subject = passwordValidationCallback.getSubject();
 
                 UserIdentity user = _loginService.login(passwordValidationCallback.getUsername(), passwordValidationCallback.getPassword(), null);

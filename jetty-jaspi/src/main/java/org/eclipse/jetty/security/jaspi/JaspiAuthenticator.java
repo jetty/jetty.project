@@ -39,8 +39,6 @@ import org.eclipse.jetty.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.UserIdentity;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of Jetty {@link LoginAuthenticator} that is a bridge from Jakarta Authentication to Jetty Security.
@@ -49,8 +47,6 @@ import org.slf4j.LoggerFactory;
  */
 public class JaspiAuthenticator extends LoginAuthenticator
 {
-    private static final Logger LOG = LoggerFactory.getLogger(JaspiAuthenticator.class.getName());
-
     private final ServerAuthConfig _authConfig;
 
     private final Map _authProperties;

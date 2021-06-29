@@ -34,19 +34,19 @@ import org.slf4j.LoggerFactory;
 /** 
  * A {@link ServerAuthModule} implementation of HTTP Basic Authentication.  
  */
-public class BasicAuthModule extends AbstractAuthModule
+public class BasicAuthenticationAuthModule extends AbstractAuthModule
 {
-    private static final Logger LOG = LoggerFactory.getLogger(BasicAuthModule.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BasicAuthenticationAuthModule.class);
 
     private String realmName;
 
     private static final String REALM_KEY = "org.eclipse.jetty.security.jaspi.modules.RealmName";
 
-    public BasicAuthModule()
+    public BasicAuthenticationAuthModule()
     {
     }
 
-    public BasicAuthModule(CallbackHandler callbackHandler, String realmName)
+    public BasicAuthenticationAuthModule(CallbackHandler callbackHandler, String realmName)
     {
         super(callbackHandler);
         this.realmName = realmName;
