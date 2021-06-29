@@ -27,7 +27,6 @@ import jakarta.security.auth.message.callback.PrivateKeyCallback;
 import jakarta.security.auth.message.callback.SecretKeyCallback;
 import jakarta.security.auth.message.callback.TrustStoreCallback;
 import jakarta.security.auth.message.module.ServerAuthModule;
-
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.authentication.LoginCallback;
 import org.eclipse.jetty.security.authentication.LoginCallbackImpl;
