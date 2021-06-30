@@ -1,3 +1,5 @@
+jetty-9.4.44-SNAPSHOT
+
 jetty-9.4.43.v20210629 - 30 June 2021
  + 6379 Reduce contention in all `ByteBufferPool` implementations
  + 6382 HttpClient TimeoutException message reports transient values
