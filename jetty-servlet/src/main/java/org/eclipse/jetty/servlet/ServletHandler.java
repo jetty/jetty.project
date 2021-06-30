@@ -1618,6 +1618,11 @@ public class ServletHandler extends ScopedHandler
             _servletHolder = holder;
         }
 
+        public ServletHolder getServletHolder()
+        {
+            return _servletHolder;
+        }
+
         @Override
         public void doFilter(ServletRequest request, ServletResponse response) throws IOException, ServletException
         {
