@@ -36,13 +36,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Jaspi Authenticator Factory.
+ * Jakarta Authentication (JASPI) Authenticator Factory.
  * 
- * To initialize either
+ * This is used to link a jetty-security {@link Authenticator.Factory} to a Jakarta Authentication {@link AuthConfigFactory}.
+ * <p>
+ * This should be initialized with the provided {@link DefaultAuthConfigFactory} to set up Jakarta Authentication {@link AuthConfigFactory} before use. 
+ * (A different {@link AuthConfigFactory} may also be provided using the same steps below)
+ * <p>
+ * To initialize either:
  * <ul>
  * <li>invoke {@link AuthConfigFactory#setFactory(AuthConfigFactory)}</li>
- * <li>set {@link AuthConfigFactory#DEFAULT_FACTORY_SECURITY_PROPERTY} to an
- * appropriate implementation</li>
+ * <li>Alternatively: set {@link AuthConfigFactory#DEFAULT_FACTORY_SECURITY_PROPERTY}</li>
  * </ul>
  *
  */

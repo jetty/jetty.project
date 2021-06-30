@@ -23,6 +23,12 @@ import jakarta.security.auth.message.config.ServerAuthConfig;
 import jakarta.security.auth.message.config.ServerAuthContext;
 import jakarta.security.auth.message.module.ServerAuthModule;
 
+/**
+ * Simple implementation of the {@link ServerAuthConfig} interface.
+ * 
+ * This implementation wires up the given {@link ServerAuthModule} to the appropriate Jakarta Authentication {@link ServerAuthContext} responsible 
+ * for providing it.
+ */
 public class SimpleAuthConfig implements ServerAuthConfig
 {
 
@@ -42,6 +48,9 @@ public class SimpleAuthConfig implements ServerAuthConfig
         this._serverAuthModule = serverAuthModule;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ServerAuthContext getAuthContext(String authContextID, Subject serviceSubject,
             @SuppressWarnings("rawtypes") Map properties) throws AuthException
@@ -52,7 +61,7 @@ public class SimpleAuthConfig implements ServerAuthConfig
     /** 
      * {@inheritDoc}
      * 
-     * supposed to be of form (logical) "host-name<space>context-path" 
+     * supposed to be of form (logical) "host-name context-path" 
      */
     @Override
     public String getAppContext()

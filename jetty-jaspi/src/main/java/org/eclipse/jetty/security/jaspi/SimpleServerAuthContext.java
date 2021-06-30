@@ -24,8 +24,9 @@ import jakarta.security.auth.message.config.ServerAuthContext;
 import jakarta.security.auth.message.module.ServerAuthModule;
 
 /** 
- * Simple bridge implementation of the Jakarta Authentication {@link ServerAuthContext} ifc, 
- * which will delegate to the provided {@link ServerAuthModule} implementation. 
+ * Simple bridge implementation of the Jakarta Authentication {@link ServerAuthContext} interface.
+ * 
+ * This implementation will only delegate to the provided {@link ServerAuthModule} implementation. 
  */
 public class SimpleServerAuthContext implements ServerAuthContext
 {
