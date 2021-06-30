@@ -25,14 +25,11 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.NullByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.SuspendToken;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
 
 /**
  * Support class for reading a (single) WebSocket BINARY message via a InputStream.
@@ -45,7 +42,6 @@ public class MessageInputStream extends InputStream implements MessageAppender
     private static final ByteBuffer EOF = ByteBuffer.allocate(0).asReadOnlyBuffer();
 
     private final Session session;
-    private final ByteBufferPool bufferPool;
     private final BlockingDeque<ByteBuffer> buffers = new LinkedBlockingDeque<>();
     private final long timeoutMs;
     private ByteBuffer activeBuffer = null;
@@ -84,7 +80,6 @@ public class MessageInputStream extends InputStream implements MessageAppender
     {
         this.timeoutMs = timeoutMs;
         this.session = session;
-        this.bufferPool = (session instanceof WebSocketSession) ? ((WebSocketSession)session).getBufferPool() : new NullByteBufferPool();
     }
 
     @Override
@@ -155,16 +150,6 @@ public class MessageInputStream extends InputStream implements MessageAppender
 
             if (remainingContent)
                 LOG.warn("MessageInputStream closed without fully consuming content {}", session);
-
-
-            // Release any buffers taken from the pool.
-            if (activeBuffer != null && activeBuffer != EOF)
-                bufferPool.release(activeBuffer);
-
-            for (ByteBuffer buffer : buffers)
-            {
-                bufferPool.release(buffer);
-            }
 
             activeBuffer = null;
             buffers.clear();
@@ -258,8 +243,6 @@ public class MessageInputStream extends InputStream implements MessageAppender
                 SuspendToken resume = null;
                 synchronized (this)
                 {
-                    // Release buffer back to pool.
-                    bufferPool.release(activeBuffer);
                     activeBuffer = null;
 
                     switch (state)
@@ -325,6 +308,9 @@ public class MessageInputStream extends InputStream implements MessageAppender
 
     private ByteBuffer acquire(int capacity, boolean direct)
     {
-        return bufferPool.acquire(capacity, direct);
+        if (direct)
+            return BufferUtil.allocateDirect(capacity);
+        else
+            return BufferUtil.allocate(capacity);
     }
 }
