@@ -163,7 +163,8 @@ public class MessageInputStream extends InputStream implements MessageAppender
 
             for (ByteBuffer buffer : buffers)
             {
-                bufferPool.release(buffer);
+                if (buffer != null && buffer != EOF)
+                    bufferPool.release(buffer);
             }
 
             activeBuffer = null;
@@ -259,7 +260,8 @@ public class MessageInputStream extends InputStream implements MessageAppender
                 synchronized (this)
                 {
                     // Release buffer back to pool.
-                    bufferPool.release(activeBuffer);
+                    if (activeBuffer != null && activeBuffer != EOF)
+                        bufferPool.release(activeBuffer);
                     activeBuffer = null;
 
                     switch (state)
