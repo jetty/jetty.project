@@ -33,6 +33,7 @@ This release process will produce releases:
 - [ ] Assign issue to "test manager", who will oversee the testing of the staged releases.
    + [ ] Add [testing tick list](https://github.com/eclipse/jetty.project/blob/jetty-10.0.x/.github/test-ticklist.md) to the target [project(s)](https://github.com/eclipse/jetty.project/projects).
    + [ ] Testing tick lists complete in all target project(s).
+   + [ ] Notify interested parties and invite testing of the staged release(s).
    + [ ] Assign issue back to "release manager".
 - [ ] Collect release votes from committers.
 - [ ] Promote staged releases.
