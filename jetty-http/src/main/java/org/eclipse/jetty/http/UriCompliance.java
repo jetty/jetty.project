@@ -159,7 +159,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
 
     public static UriCompliance valueOf(String name)
     {
-        for (UriCompliance compliance : Arrays.asList(DEFAULT, LEGACY, RFC3986, STRICT, SAFE))
+        for (UriCompliance compliance : Arrays.asList(DEFAULT, LEGACY, RFC3986, RFC3986_UNAMBIGUOUS, UNSAFE, SAFE, STRICT))
         {
             if (compliance.getName().equals(name))
                 return compliance;
