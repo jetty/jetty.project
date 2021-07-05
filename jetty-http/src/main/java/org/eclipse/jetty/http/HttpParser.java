@@ -15,6 +15,7 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -246,6 +247,7 @@ public class HttpParser
     private final StringBuilder _string = new StringBuilder();
     private int _headerCacheSize = 1024;
     private boolean _headerCacheCaseSensitive;
+    private List<HttpField> _cacheableFields;
 
     private static HttpCompliance compliance()
     {
@@ -746,6 +748,7 @@ public class HttpParser
                             break;
 
                         case LF:
+                            checkHeaderCache();
                             setState(State.HEADER);
                             _responseHandler.startResponse(_version, _responseStatus, null);
                             break;
@@ -851,6 +854,7 @@ public class HttpParser
                         case LF:
                             if (_responseHandler != null)
                             {
+                                checkHeaderCache();
                                 setState(State.HEADER);
                                 _responseHandler.startResponse(_version, _responseStatus, null);
                             }
@@ -881,7 +885,7 @@ public class HttpParser
                                 _version = HttpVersion.CACHE.get(takeString());
                             }
                             checkVersion();
-
+                            checkHeaderCache();
                             setState(State.HEADER);
 
                             _requestHandler.startRequest(_methodString, _uri.toString(), _version);
@@ -905,6 +909,7 @@ public class HttpParser
                     {
                         case LF:
                             String reason = takeString();
+                            checkHeaderCache();
                             setState(State.HEADER);
                             _responseHandler.startResponse(_version, _responseStatus, reason);
                             continue;
@@ -935,6 +940,21 @@ public class HttpParser
         }
 
         return handle;
+    }
+
+    private void checkHeaderCache()
+    {
+        if (_fieldCache == null && _cacheableFields != null)
+        {
+            _fieldCache = Index.buildCaseSensitiveMutableVisibleAsciiAlphabet(getHeaderCacheSize());
+            for (HttpField f : _cacheableFields)
+            {
+                if (!_fieldCache.put(f))
+                    break;
+            }
+            _cacheableFields.clear();
+            _cacheableFields = null;
+        }
     }
 
     private void checkVersion()
@@ -1026,7 +1046,7 @@ public class HttpParser
                             _field = new HostPortHttpField(_header,
                                 CASE_SENSITIVE_FIELD_NAME.isAllowedBy(_complianceMode) ? _headerString : _header.asString(),
                                 _valueString);
-                            addToFieldCache = true;
+                            addToFieldCache = getHeaderCacheSize() > 0;
                         }
                         break;
 
@@ -1046,7 +1066,7 @@ public class HttpParser
                     case COOKIE:
                     case CACHE_CONTROL:
                     case USER_AGENT:
-                        addToFieldCache = _field == null;
+                        addToFieldCache = _field == null && getHeaderCacheSize() > 0 && _valueString.length() < getHeaderCacheSize();
                         break;
 
                     default:
@@ -1054,14 +1074,18 @@ public class HttpParser
                 }
 
                 // Cache field?
-                if (addToFieldCache && _header != null && _valueString != null)
+                if (addToFieldCache && _fieldCache != NO_CACHE && _header != null && _valueString != null)
                 {
-                    if (_fieldCache == null)
-                        _fieldCache = Index.buildCaseSensitiveMutableVisibleAsciiAlphabet(getHeaderCacheSize());
-
                     if (_field == null)
                         _field = new HttpField(_header, caseInsensitiveHeader(_headerString, _header.asString()), _valueString);
-                    if (_field.getValue().length() < getHeaderCacheSize() && !_fieldCache.put(_field))
+
+                    if (_fieldCache == null)
+                    {
+                        if (_cacheableFields == null)
+                            _cacheableFields = new ArrayList<>();
+                        _cacheableFields.add(_field);
+                    }
+                    else if (!_fieldCache.put(_field))
                     {
                         _fieldCache.clear();
                         _fieldCache.put(_field);
