@@ -1935,6 +1935,7 @@ public class HttpParser
 
     public Index<HttpField> getFieldCache()
     {
+        checkHeaderCache();
         return _fieldCache;
     }
 
