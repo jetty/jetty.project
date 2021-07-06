@@ -257,6 +257,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         catch (RejectedExecutionException e)
         {
             LOG.ignore(e);
+            _pending.decrementAndGet();
         }
     }
 
