@@ -401,7 +401,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if (uriInContext == null || !uriInContext.startsWith(URIUtil.SLASH))
             throw new MalformedURLException(uriInContext);
 
-        IOException ioe = null;
+        MalformedURLException mue = null;
         Resource resource = null;
         int loop = 0;
         while (uriInContext != null && loop++ < 100)
@@ -414,16 +414,16 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
                 uriInContext = getResourceAlias(uriInContext);
             }
-            catch (IOException e)
+            catch (MalformedURLException e)
             {
                 LOG.trace("IGNORED", e);
-                if (ioe == null)
-                    ioe = e;
+                if (mue == null)
+                    mue = e;
             }
         }
 
-        if (ioe instanceof MalformedURLException)
-            throw (MalformedURLException)ioe;
+        if (mue != null)
+            throw mue;
 
         return resource;
     }
@@ -1439,6 +1439,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         @Override
         public URL getResource(String path) throws MalformedURLException
         {
+            if (path == null)
+                return null;
+
             Resource resource = WebAppContext.this.getResource(path);
             if (resource == null || !resource.exists())
                 return null;

@@ -471,6 +471,7 @@ public class URIUtil
                             if (u == 'u')
                             {
                                 // UTF16 encoding is only supported with UriCompliance.Violation.UTF16_ENCODINGS.
+                                // This is wrong. This is a codepoint not a char
                                 builder.append((char)(0xffff & TypeUtil.parseInt(path, i + 2, 4, 16)));
                                 i += 5;
                             }
@@ -532,7 +533,6 @@ public class URIUtil
         {
             throw new IllegalArgumentException("cannot decode URI", e);
         }
-
     }
 
     /* Decode a URI path and strip parameters of ISO-8859-1 path
@@ -776,143 +776,138 @@ public class URIUtil
     }
 
     /**
-     * Convert an encoded path to a canonical form.
+     * Convert a partial URI to a canonical form.
      * <p>
-     * All instances of "." and ".." are factored out.
+     * All segments of "." and ".." are factored out.
      * Null is returned if the path tries to .. above its root.
      * </p>
      *
-     * @param path the path to convert, decoded, with path separators '/' and no queries.
+     * @param uri the encoded URI from the path onwards, which may contain query strings and/or fragments
      * @return the canonical path, or null if path traversal above root.
+     * @see #canonicalPath(String)
      */
-    public static String canonicalPath(String path)
+    public static String canonicalURI(String uri)
     {
-        // See https://tools.ietf.org/html/rfc3986#section-5.2.4
+        if (uri == null || uri.isEmpty())
+            return uri;
 
-        if (path == null || path.isEmpty())
-            return path;
-
-        int end = path.length();
+        boolean slash = true;
+        int end = uri.length();
         int i = 0;
-        int dots = 0;
 
+        // Initially just loop looking if we may need to normalize
         loop: while (i < end)
         {
-            char c = path.charAt(i);
+            char c = uri.charAt(i);
             switch (c)
             {
                 case '/':
-                    dots = 0;
+                    slash = true;
                     break;
 
                 case '.':
-                    if (dots == 0)
-                    {
-                        dots = 1;
+                    if (slash)
                         break loop;
-                    }
-                    dots = -1;
+                    slash = false;
                     break;
 
+                case '?':
+                case '#':
+                    // Nothing to normalize so return original path
+                    return uri;
+
                 default:
-                    dots = -1;
+                    slash = false;
             }
 
             i++;
         }
 
+        // Nothing to normalize so return original path
         if (i == end)
-            return path;
+            return uri;
 
-        StringBuilder canonical = new StringBuilder(path.length());
-        canonical.append(path, 0, i);
+        // We probably need to normalize, so copy to path so far into builder
+        StringBuilder canonical = new StringBuilder(uri.length());
+        canonical.append(uri, 0, i);
 
+        // Loop looking for single and double dot segments
+        int dots = 1;
         i++;
-        while (i <= end)
+        loop : while (i < end)
         {
-            char c = i < end ? path.charAt(i) : '\0';
+            char c = uri.charAt(i);
             switch (c)
             {
-                case '\0':
-                    if (dots == 2)
-                    {
-                        if (canonical.length() < 2)
-                            return null;
-                        canonical.setLength(canonical.length() - 1);
-                        canonical.setLength(canonical.lastIndexOf("/") + 1);
-                    }
-                    break;
-
                 case '/':
-                    switch (dots)
-                    {
-                        case 1:
-                            break;
-
-                        case 2:
-                            if (canonical.length() < 2)
-                                return null;
-                            canonical.setLength(canonical.length() - 1);
-                            canonical.setLength(canonical.lastIndexOf("/") + 1);
-                            break;
-
-                        default:
-                            canonical.append(c);
-                    }
+                    if (doDotsSlash(canonical, dots))
+                        return null;
+                    slash = true;
                     dots = 0;
                     break;
 
+                case '?':
+                case '#':
+                    // finish normalization at a query
+                    break loop;
+
                 case '.':
-                    switch (dots)
-                    {
-                        case 0:
-                            dots = 1;
-                            break;
-                        case 1:
-                            dots = 2;
-                            break;
-                        case 2:
-                            canonical.append("...");
-                            dots = -1;
-                            break;
-                        default:
-                            canonical.append('.');
-                    }
+                    // Count dots only if they are leading in the segment
+                    if (dots > 0)
+                        dots++;
+                    else if (slash)
+                        dots = 1;
+                    else
+                        canonical.append('.');
+                    slash = false;
                     break;
 
                 default:
-                    switch (dots)
-                    {
-                        case 1:
-                            canonical.append('.');
-                            break;
-                        case 2:
-                            canonical.append("..");
-                            break;
-                        default:
-                    }
+                    // Add leading dots to the path
+                    while (dots-- > 0)
+                        canonical.append('.');
                     canonical.append(c);
-                    dots = -1;
+                    dots = 0;
+                    slash = false;
             }
-
             i++;
         }
+
+        // process any remaining dots
+        if (doDots(canonical, dots))
+            return null;
+
+        // append any query
+        if (i < end)
+            canonical.append(uri, i, end);
+
         return canonical.toString();
     }
 
     /**
-     * Convert a path to a cananonical form.
+     * @param path the encoded URI from the path onwards, which may contain query strings and/or fragments
+     * @return the canonical path, or null if path traversal above root.
+     * @deprecated Use {@link #canonicalURI(String)}
+     */
+    @Deprecated
+    public static String canonicalEncodedPath(String path)
+    {
+        return canonicalURI(path);
+    }
+
+    /**
+     * Convert a decoded URI path to a canonical form.
      * <p>
-     * All instances of "." and ".." are factored out.
-     * </p>
-     * <p>
+     * All segments of "." and ".." are factored out.
      * Null is returned if the path tries to .. above its root.
      * </p>
      *
-     * @param path the path to convert (expects URI/URL form, encoded, and with path separators '/')
+     * @param path the decoded URI path to convert. Any special characters (e.g. '?', "#") are assumed to be part of
+     * the path segments.
      * @return the canonical path, or null if path traversal above root.
+     * @see #canonicalURI(String)
      */
-    public static String canonicalEncodedPath(String path)
+    public static String canonicalPath(String path)
     {
         if (path == null || path.isEmpty())
             return path;
@@ -921,8 +916,8 @@ public class URIUtil
         int end = path.length();
         int i = 0;
 
-        loop:
-        while (i < end)
+        // Initially just loop looking if we may need to normalize
+        loop: while (i < end)
         {
             char c = path.charAt(i);
             switch (c)
@@ -937,9 +932,6 @@ public class URIUtil
                     slash = false;
                     break;
 
-                case '?':
-                    return path;
-
                 default:
                     slash = false;
             }
@@ -947,56 +939,31 @@ public class URIUtil
             i++;
         }
 
+        // Nothing to normalize so return original path
         if (i == end)
             return path;
 
+        // We probably need to normalize, so copy to path so far into builder
         StringBuilder canonical = new StringBuilder(path.length());
         canonical.append(path, 0, i);
 
+        // Loop looking for single and double dot segments
         int dots = 1;
         i++;
-        while (i <= end)
+        while (i < end)
         {
-            char c = i < end ? path.charAt(i) : '\0';
+            char c = path.charAt(i);
             switch (c)
             {
-                case '\0':
                 case '/':
-                case '?':
-                    switch (dots)
-                    {
-                        case 0:
-                            if (c != '\0')
-                                canonical.append(c);
-                            break;
-
-                        case 1:
-                            if (c == '?')
-                                canonical.append(c);
-                            break;
-
-                        case 2:
-                            if (canonical.length() < 2)
-                                return null;
-                            canonical.setLength(canonical.length() - 1);
-                            canonical.setLength(canonical.lastIndexOf("/") + 1);
-                            if (c == '?')
-                                canonical.append(c);
-                            break;
-                        default:
-                            while (dots-- > 0)
-                            {
-                                canonical.append('.');
-                            }
-                            if (c != '\0')
-                                canonical.append(c);
-                    }
-
+                    if (doDotsSlash(canonical, dots))
+                        return null;
                     slash = true;
                     dots = 0;
                     break;
 
                 case '.':
+                    // Count dots only if they are leading in the segment
                     if (dots > 0)
                         dots++;
                     else if (slash)
@@ -1007,18 +974,64 @@ public class URIUtil
                     break;
 
                 default:
+                    // Add leading dots to the path
                     while (dots-- > 0)
-                    {
                         canonical.append('.');
-                    }
                     canonical.append(c);
                     dots = 0;
                     slash = false;
             }
-
             i++;
         }
+
+        // process any remaining dots
+        if (doDots(canonical, dots))
+            return null;
+
         return canonical.toString();
+    }
+
+    private static boolean doDots(StringBuilder canonical, int dots)
+    {
+        switch (dots)
+        {
+            case 0:
+            case 1:
+                break;
+            case 2:
+                if (canonical.length() < 2)
+                    return true;
+                canonical.setLength(canonical.length() - 1);
+                canonical.setLength(canonical.lastIndexOf("/") + 1);
+                break;
+            default:
+                while (dots-- > 0)
+                    canonical.append('.');
+        }
+        return false;
+    }
+
+    private static boolean doDotsSlash(StringBuilder canonical, int dots)
+    {
+        switch (dots)
+        {
+            case 0:
+                canonical.append('/');
+                break;
+            case 1:
+                break;
+            case 2:
+                if (canonical.length() < 2)
+                    return true;
+                canonical.setLength(canonical.length() - 1);
+                canonical.setLength(canonical.lastIndexOf("/") + 1);
+                break;
+            default:
+                while (dots-- > 0)
+                    canonical.append('.');
+                canonical.append('/');
+        }
+        return false;
     }
 
     /**

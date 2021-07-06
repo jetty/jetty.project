@@ -156,7 +156,6 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
 
         if (_baseResource != null)
         {
-            path = URIUtil.canonicalPath(path);
             r = _baseResource.addPath(path);
 
             if (r.isAlias() && (_context == null || !_context.checkAlias(path, r)))
@@ -169,8 +168,6 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         else if (_context != null)
         {
             r = _context.getResource(path);
-            if (r != null)
-                return r;
         }
 
         if ((r == null || !r.exists()) && path.endsWith("/jetty-dir.css"))

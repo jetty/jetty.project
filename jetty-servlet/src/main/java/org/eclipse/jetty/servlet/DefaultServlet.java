@@ -14,7 +14,6 @@
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -420,8 +419,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             }
             else
             {
-                URL u = _servletContext.getResource(pathInContext);
-                r = _contextHandler.newResource(u);
+                return null;
             }
 
             if (LOG.isDebugEnabled())

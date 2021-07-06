@@ -39,20 +39,20 @@ public final class RedirectUtil
             if (location.startsWith("/"))
             {
                 // absolute in context
-                location = URIUtil.canonicalEncodedPath(location);
+                location = URIUtil.canonicalURI(location);
             }
             else
             {
                 // relative to request
                 String path = request.getRequestURI();
                 String parent = (path.endsWith("/")) ? path : URIUtil.parentPath(path);
-                location = URIUtil.canonicalPath(URIUtil.addEncodedPaths(parent, location));
-                if (!location.startsWith("/"))
+                location = URIUtil.canonicalURI(URIUtil.addEncodedPaths(parent, location));
+                if (location != null && !location.startsWith("/"))
                     url.append('/');
             }
 
             if (location == null)
-                throw new IllegalStateException("path cannot be above root");
+                throw new IllegalStateException("redirect path cannot be above root");
             url.append(location);
 
             location = url.toString();

@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.http;
 
-import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.EnumSet.allOf;
-import static java.util.EnumSet.complementOf;
 import static java.util.EnumSet.noneOf;
 import static java.util.EnumSet.of;
 
@@ -67,10 +66,6 @@ public final class UriCompliance implements ComplianceViolation.Mode
          * Allow ambiguous path encoding within a URI segment e.g. <code>/%2557EB-INF</code>
          */
         AMBIGUOUS_PATH_ENCODING("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path encoding"),
-        /**
-         * Allow Non canonical ambiguous paths. eg <code>/foo/x%2f%2e%2e%/bar</code> provided to applications as <code>/foo/x/../bar</code>
-         */
-        NON_CANONICAL_AMBIGUOUS_PATHS("https://tools.ietf.org/html/rfc3986#section-3.3", "Non canonical ambiguous paths"),
         /**
          * Allow UTF-16 encoding eg <code>/foo%u2192bar</code>.
          */
@@ -125,10 +120,9 @@ public final class UriCompliance implements ComplianceViolation.Mode
 
     /**
      * Compliance mode that exactly follows <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a>,
-     * including allowing all additional ambiguous URI Violations,
-     * except {@link Violation#NON_CANONICAL_AMBIGUOUS_PATHS}, thus ambiguous paths are canonicalized for safety.
+     * including allowing all additional ambiguous URI Violations.
      */
-    public static final UriCompliance RFC3986 = new UriCompliance("RFC3986", complementOf(of(Violation.NON_CANONICAL_AMBIGUOUS_PATHS)));
+    public static final UriCompliance RFC3986 = new UriCompliance("RFC3986", allOf(Violation.class));
 
     /**
      * Compliance mode that follows <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a>
@@ -156,10 +150,11 @@ public final class UriCompliance implements ComplianceViolation.Mode
     public static final UriCompliance STRICT = new UriCompliance("STRICT", RFC3986.getAllowed());
 
     private static final AtomicInteger __custom = new AtomicInteger();
+    private static final List<UriCompliance> KNOWN_MODES = List.of(DEFAULT, LEGACY, RFC3986, RFC3986_UNAMBIGUOUS, UNSAFE, SAFE, STRICT);
 
     public static UriCompliance valueOf(String name)
     {
-        for (UriCompliance compliance : Arrays.asList(DEFAULT, LEGACY, RFC3986, STRICT, SAFE))
+        for (UriCompliance compliance : KNOWN_MODES)
         {
             if (compliance.getName().equals(name))
                 return compliance;
@@ -231,6 +226,11 @@ public final class UriCompliance implements ComplianceViolation.Mode
             boolean exclude = element.startsWith("-");
             if (exclude)
                 element = element.substring(1);
+
+            // Ignore removed name. TODO: remove in future release.
+            if (element.equals("NON_CANONICAL_AMBIGUOUS_PATHS"))
+                continue;
+
             Violation section = Violation.valueOf(element);
             if (exclude)
                 violations.remove(section);
@@ -329,5 +329,15 @@ public final class UriCompliance implements ComplianceViolation.Mode
         if (violations == null || violations.isEmpty())
             return EnumSet.noneOf(Violation.class);
         return EnumSet.copyOf(violations);
+    }
+
+    public static String checkUriCompliance(UriCompliance compliance, HttpURI uri)
+    {
+        for (UriCompliance.Violation violation : UriCompliance.Violation.values())
+        {
+            if (uri.hasViolation(violation) && (compliance == null || !compliance.allows(violation)))
+                return violation.getDescription();
+        }
+        return null;
     }
 }

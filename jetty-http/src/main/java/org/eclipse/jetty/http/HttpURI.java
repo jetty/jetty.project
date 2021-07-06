@@ -15,8 +15,11 @@ package org.eclipse.jetty.http;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 
+import org.eclipse.jetty.http.UriCompliance.Violation;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
@@ -31,56 +34,48 @@ import org.eclipse.jetty.util.UrlEncoded;
  * via the static methods such as {@link #build()} and {@link #from(String)}.
  *
  * A URI such as
- * <code>http://user@host:port/path;ignored/info;param?query#ignored</code>
- * is split into the following undecoded elements:<ul>
+ * {@code http://user@host:port/path;param1/%2e/info;param2?query#fragment}
+ * is split into the following optional elements:<ul>
  * <li>{@link #getScheme()} - http:</li>
  * <li>{@link #getAuthority()} - //name@host:port</li>
  * <li>{@link #getHost()} - host</li>
  * <li>{@link #getPort()} - port</li>
- * <li>{@link #getPath()} - /path/info</li>
- * <li>{@link #getParam()} - param</li>
+ * <li>{@link #getPath()} - /path;param1/%2e/info;param2</li>
+ * <li>{@link #getDecodedPath()} - /path/info</li>
+ * <li>{@link #getParam()} - param2</li>
  * <li>{@link #getQuery()} - query</li>
  * <li>{@link #getFragment()} - fragment</li>
  * </ul>
- * <p>Any parameters will be returned from {@link #getPath()}, but are excluded from the
- * return value of {@link #getDecodedPath()}.   If there are multiple parameters, the
- * {@link #getParam()} method returns only the last one.
- */
+ * <p>The path part of the URI is provided in both raw form ({@link #getPath()}) and
+ * decoded form ({@link #getDecodedPath}), which has: path parameters removed,
+ * percent encoded characters expanded and relative segments resolved.  This approach
+ * is somewhat contrary to <a href="https://tools.ietf.org/html/rfc3986#section-3.3">RFC3986</a>
+ * which no longer defines path parameters (removed after
+ * <a href="https://tools.ietf.org/html/rfc2396#section-3.3">RFC2396</a>) and specifies
+ * that relative segment normalization should take place before percent encoded character
+ * expansion. A literal interpretation of the RFC can result in URI paths with ambiguities
+ * when viewed as strings. For example, a URI of {@code /foo%2f..%2fbar} is technically a single
+ * segment of "/foo/../bar", but could easily be misinterpreted as 3 segments resolving to "/bar"
+ * by a file system.
+ * </p>
+ * <p>
+ * Thus this class avoid and/or detects such ambiguities. Furthermore, by decoding characters and
+ * removing parameters before relative path normalization, ambiguous paths will be resolved in such
+ * a way to be non-standard-but-non-ambiguous to down stream interpretation of the decoded path string.
+ * The violations are recorded and available by API such as {@link #hasAmbiguousSegment()} so that requests
+ * containing them may be rejected in case the non-standard-but-non-ambiguous interpretations
+ * are not satisfactory for a given compliance configuration.
+ * </p>
+ * <p>
+ * Implementations that wish to process ambiguous URI paths must configure the compliance modes
+ * to accept them and then perform their own decoding of {@link #getPath()}.
+ * </p>
+ * <p>
+ * If there are multiple path parameters, only the last one is returned by {@link #getParam()}.
+ * </p>
+ **/
 public interface HttpURI
 {
-    enum Violation
-    {
-        /**
-         * URI contains ambiguous path segments e.g. {@code /foo/%2e%2e/bar}
-         */
-        SEGMENT,
-
-        /**
-         * URI contains ambiguous empty segments e.g. {@code /foo//bar} or {@code /foo/;param/}, but not {@code /foo/}
-         */
-        EMPTY,
-
-        /**
-         * URI contains ambiguous path separator within a URI segment e.g. {@code /foo/b%2fr}
-         */
-        SEPARATOR,
-
-        /**
-         * URI contains ambiguous path encoding within a URI segment e.g. {@code /%2557EB-INF}
-         */
-        ENCODING,
-
-        /**
-         * URI contains ambiguous path parameters within a URI segment e.g. {@code /foo/..;/bar}
-         */
-        PARAM,
-
-        /**
-         * Contains UTF16 encodings
-         */
-        UTF16
-    }
-
     static Mutable build()
     {
         return new Mutable();
@@ -147,6 +142,11 @@ public interface HttpURI
 
     String getHost();
 
+    /**
+     * Get a URI path parameter. Multiple and in segment parameters are ignored and only
+     * the last trailing parameter is returned.
+     * @return The last path parameter or null
+     */
     String getParam();
 
     String getPath();
@@ -166,41 +166,73 @@ public interface HttpURI
     boolean isAbsolute();
 
     /**
-     * @return True if the URI has either an {@link #hasAmbiguousParameter()}, {@link #hasAmbiguousSegment()} or {@link #hasAmbiguousSeparator()}.
+     * @return True if the URI has any ambiguous {@link Violation}s.
      */
     boolean isAmbiguous();
 
     /**
-     * @return True if the URI has any Violations.
+     * @return True if the URI has any {@link Violation}s.
      */
     boolean hasViolations();
 
     /**
+     * @param violation the violation to check.
+     * @return true if the URI has the passed violation.
+     */
+    boolean hasViolation(Violation violation);
+
+    /**
+     * @return Set of violations in the URI.
+     */
+    Collection<Violation> getViolations();
+
+    /**
      * @return True if the URI has a possibly ambiguous segment like '..;' or '%2e%2e'
      */
-    boolean hasAmbiguousSegment();
+    default boolean hasAmbiguousSegment()
+    {
+        return hasViolation(Violation.AMBIGUOUS_PATH_SEGMENT);
+    }
 
     /**
      * @return True if the URI empty segment that is ambiguous like '//' or '/;param/'.
      */
-    boolean hasAmbiguousEmptySegment();
+    default boolean hasAmbiguousEmptySegment()
+    {
+        return hasViolation(Violation.AMBIGUOUS_EMPTY_SEGMENT);
+    }
 
     /**
      * @return True if the URI has a possibly ambiguous separator of %2f
      */
-    boolean hasAmbiguousSeparator();
+    default boolean hasAmbiguousSeparator()
+    {
+        return hasViolation(Violation.AMBIGUOUS_PATH_SEPARATOR);
+    }
 
     /**
      * @return True if the URI has a possibly ambiguous path parameter like '..;'
      */
-    boolean hasAmbiguousParameter();
+    default boolean hasAmbiguousParameter()
+    {
+        return hasViolation(Violation.AMBIGUOUS_PATH_PARAMETER);
+    }
 
     /**
      * @return True if the URI has an encoded '%' character.
      */
-    boolean hasAmbiguousEncoding();
+    default boolean hasAmbiguousEncoding()
+    {
+        return hasViolation(Violation.AMBIGUOUS_PATH_ENCODING);
+    }
 
-    boolean hasUtf16Encoding();
+    /**
+     * @return True if the URI has UTF16 '%u' encodings.
+     */
+    default boolean hasUtf16Encoding()
+    {
+        return hasViolation(Violation.UTF16_ENCODINGS);
+    }
 
     default URI toURI()
     {
@@ -408,7 +440,7 @@ public interface HttpURI
         @Override
         public boolean isAmbiguous()
         {
-            return !_violations.isEmpty() && !(_violations.size() == 1 && _violations.contains(Violation.UTF16));
+            return !_violations.isEmpty() && !(_violations.size() == 1 && _violations.contains(Violation.UTF16_ENCODINGS));
         }
 
         @Override
@@ -418,39 +450,15 @@ public interface HttpURI
         }
 
         @Override
-        public boolean hasAmbiguousSegment()
+        public boolean hasViolation(Violation violation)
         {
-            return _violations.contains(Violation.SEGMENT);
+            return _violations.contains(violation);
         }
 
         @Override
-        public boolean hasAmbiguousEmptySegment()
+        public Collection<Violation> getViolations()
         {
-            return _violations.contains(Violation.EMPTY);
-        }
-
-        @Override
-        public boolean hasAmbiguousSeparator()
-        {
-            return _violations.contains(Violation.SEPARATOR);
-        }
-
-        @Override
-        public boolean hasAmbiguousParameter()
-        {
-            return _violations.contains(Violation.PARAM);
-        }
-
-        @Override
-        public boolean hasAmbiguousEncoding()
-        {
-            return _violations.contains(Violation.ENCODING);
-        }
-
-        @Override
-        public boolean hasUtf16Encoding()
-        {
-            return _violations.contains(Violation.UTF16);
+            return Collections.unmodifiableCollection(_violations);
         }
 
         @Override
@@ -781,7 +789,7 @@ public interface HttpURI
         @Override
         public boolean isAmbiguous()
         {
-            return !_violations.isEmpty() && !(_violations.size() == 1 && _violations.contains(Violation.UTF16));
+            return !_violations.isEmpty() && !(_violations.size() == 1 && _violations.contains(Violation.UTF16_ENCODINGS));
         }
 
         @Override
@@ -791,39 +799,15 @@ public interface HttpURI
         }
 
         @Override
-        public boolean hasAmbiguousSegment()
+        public boolean hasViolation(Violation violation)
         {
-            return _violations.contains(Violation.SEGMENT);
+            return _violations.contains(violation);
         }
 
         @Override
-        public boolean hasAmbiguousEmptySegment()
+        public Collection<Violation> getViolations()
         {
-            return _violations.contains(Violation.EMPTY);
-        }
-
-        @Override
-        public boolean hasAmbiguousSeparator()
-        {
-            return _violations.contains(Violation.SEPARATOR);
-        }
-
-        @Override
-        public boolean hasAmbiguousParameter()
-        {
-            return _violations.contains(Violation.PARAM);
-        }
-
-        @Override
-        public boolean hasAmbiguousEncoding()
-        {
-            return _violations.contains(Violation.ENCODING);
-        }
-
-        @Override
-        public boolean hasUtf16Encoding()
-        {
-            return _violations.contains(Violation.UTF16);
+            return Collections.unmodifiableCollection(_violations);
         }
 
         public Mutable normalize()
@@ -928,9 +912,9 @@ public interface HttpURI
             _uri = null;
             _decodedPath = uri.getDecodedPath();
             if (uri.hasAmbiguousSeparator())
-                _violations.add(Violation.SEPARATOR);
+                _violations.add(Violation.AMBIGUOUS_PATH_SEPARATOR);
             if (uri.hasAmbiguousSegment())
-                _violations.add(Violation.SEGMENT);
+                _violations.add(Violation.AMBIGUOUS_PATH_SEGMENT);
             return this;
         }
 
@@ -1205,7 +1189,7 @@ public interface HttpURI
                         {
                             if (encodedCharacters == 2 && c == 'u' && !encodedUtf16)
                             {
-                                _violations.add(Violation.UTF16);
+                                _violations.add(Violation.UTF16_ENCODINGS);
                                 encodedUtf16 = true;
                                 encodedCharacters = 4;
                                 continue;
@@ -1216,11 +1200,15 @@ public interface HttpURI
                             {
                                 switch (encodedValue)
                                 {
+                                    case 0:
+                                        // Byte 0 cannot be present in a UTF-8 sequence in any position
+                                        // other than as the NUL ASCII byte which we do not wish to allow.
+                                        throw new IllegalArgumentException("Illegal character in path");
                                     case '/':
-                                        _violations.add(Violation.SEPARATOR);
+                                        _violations.add(Violation.AMBIGUOUS_PATH_SEPARATOR);
                                         break;
                                     case '%':
-                                        _violations.add(Violation.ENCODING);
+                                        _violations.add(Violation.AMBIGUOUS_PATH_ENCODING);
                                         break;
                                     default:
                                         break;
@@ -1301,26 +1289,11 @@ public interface HttpURI
                     }
                     case QUERY:
                     {
-                        switch (c)
+                        if (c == '#')
                         {
-                            case '%':
-                                encodedCharacters = 2;
-                                break;
-                            case 'u':
-                            case 'U':
-                                if (encodedCharacters == 1)
-                                    _violations.add(Violation.UTF16);
-                                encodedCharacters = 0;
-                                break;
-                            case '#':
-                                _query = uri.substring(mark, i);
-                                mark = i + 1;
-                                state = State.FRAGMENT;
-                                encodedCharacters = 0;
-                                break;
-                            default:
-                                encodedCharacters = 0;
-                                break;
+                            _query = uri.substring(mark, i);
+                            mark = i + 1;
+                            state = State.FRAGMENT;
                         }
                         break;
                     }
@@ -1335,7 +1308,9 @@ public interface HttpURI
                         break;
                     }
                     default:
+                    {
                         throw new IllegalStateException(state.toString());
+                    }
                 }
             }
 
@@ -1387,10 +1362,12 @@ public interface HttpURI
             }
             else if (_path != null)
             {
-                String canonical = URIUtil.canonicalPath(_path);
-                if (canonical == null)
-                    throw new BadMessageException("Bad URI");
-                _decodedPath = URIUtil.decodePath(canonical);
+                // The RFC requires this to be canonical before decoding, but this can leave dot segments and dot dot segments
+                // which are not canonicalized and could be used in an attempt to bypass security checks.
+                String decodedNonCanonical = URIUtil.decodePath(_path);
+                _decodedPath = URIUtil.canonicalPath(decodedNonCanonical);
+                if (_decodedPath == null)
+                    throw new IllegalArgumentException("Bad URI");
             }
         }
 
@@ -1409,9 +1386,10 @@ public interface HttpURI
             // This method is called once for every segment parsed.
             // A URI like "/foo/" has two segments: "foo" and an empty segment.
             // Empty segments are only ambiguous if they are not the last segment
-            // So if this method is called for any segment and we have previously seen an empty segment, then it was ambiguous 
+            // So if this method is called for any segment and we have previously
+            // seen an empty segment, then it was ambiguous.
             if (_emptySegment)
-                _violations.add(Violation.EMPTY);
+                _violations.add(Violation.AMBIGUOUS_EMPTY_SEGMENT);
 
             if (end == segment)
             {
@@ -1422,7 +1400,7 @@ public interface HttpURI
                 // If this empty segment is the first segment then it is ambiguous.
                 if (segment == 0)
                 {
-                    _violations.add(Violation.EMPTY);
+                    _violations.add(Violation.AMBIGUOUS_EMPTY_SEGMENT);
                     return;
                 }
 
@@ -1439,12 +1417,12 @@ public interface HttpURI
             if (ambiguous == Boolean.TRUE)
             {
                 // The segment is always ambiguous.
-                _violations.add(Violation.SEGMENT);
+                _violations.add(Violation.AMBIGUOUS_PATH_SEGMENT);
             }
             else if (param && ambiguous == Boolean.FALSE)
             {
                 // The segment is ambiguous only when followed by a parameter.
-                _violations.add(Violation.PARAM);
+                _violations.add(Violation.AMBIGUOUS_PATH_PARAMETER);
             }
         }
     }
