@@ -283,16 +283,33 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
 
             try
             {
-                _task.put(task);
-                return true;
+                // TODO The approach below is a defensive strategy for #6495
+                //      It avoids blocking forever on the _task, just in case
+                //      the thread is not running/polling.  However the problem with
+                //      this approach is that if the thread really in not running/polling
+                //      then we replace a block-forever with a thread on the stack that will
+                //      always be popped and then returned without being useful. We could
+                //      not put the thread back on the stack, but then if it does eventually
+                //      start running, it will wait forever in reservedWait.
+
+                // Offer the task to the SynchronousQueue, but without blocking forever
+                if (_task.offer(task))
+                    return true;
+                Thread.yield();
+                if (_task.offer(task))
+                    return true;
+                if (_task.offer(task, 10, TimeUnit.MILLISECONDS))
+                    return true;
+                LOG.warn("RTE offer failed: " + this);
             }
             catch (Throwable e)
             {
                 LOG.ignore(e);
-                _size.getAndIncrement();
-                _stack.offerFirst(this);
-                return false;
             }
+            // We failed to offer the task, so put this thread back on the stack.
+            _size.getAndIncrement();
+            _stack.offerFirst(this);
+            return false;
         }
 
         public void stop()
@@ -326,9 +343,6 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                 catch (InterruptedException e)
                 {
                     LOG.ignore(e);
-                    // If the wait was interrupted, then STOP if we are not running
-                    if (!isRunning())
-                        return STOP;
                 }
             }
         }
@@ -336,7 +350,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         @Override
         public void run()
         {
-            while (isRunning())
+            while (true)
             {
                 // test and increment size BEFORE decrementing pending,
                 // so that we don't have a race starting new pending.
