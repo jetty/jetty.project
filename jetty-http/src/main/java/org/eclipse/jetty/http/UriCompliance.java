@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.http;
 
-import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -150,10 +150,11 @@ public final class UriCompliance implements ComplianceViolation.Mode
     public static final UriCompliance STRICT = new UriCompliance("STRICT", RFC3986.getAllowed());
 
     private static final AtomicInteger __custom = new AtomicInteger();
+    private static final List<UriCompliance> KNOWN_MODES = List.of(DEFAULT, LEGACY, RFC3986, RFC3986_UNAMBIGUOUS, UNSAFE, SAFE, STRICT);
 
     public static UriCompliance valueOf(String name)
     {
-        for (UriCompliance compliance : Arrays.asList(DEFAULT, LEGACY, RFC3986, STRICT, SAFE))
+        for (UriCompliance compliance : KNOWN_MODES)
         {
             if (compliance.getName().equals(name))
                 return compliance;
