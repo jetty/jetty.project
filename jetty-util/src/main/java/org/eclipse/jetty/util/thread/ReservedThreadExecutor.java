@@ -276,6 +276,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     {
         private final SynchronousQueue<Runnable> _task = new SynchronousQueue<>();
         private boolean _starting = true;
+        private boolean _abort;
 
         public boolean offer(Runnable task)
         {
@@ -299,9 +300,17 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                 Thread.yield();
                 if (_task.offer(task))
                     return true;
-                if (_task.offer(task, 10, TimeUnit.MILLISECONDS))
+
+                // Wait an arbitrary 1 seconds for the thread to start
+                if (_task.offer(task, 1, TimeUnit.SECONDS))
                     return true;
+
+                // The reserved thread has not arrived after some time.  It is not usable and we have no
+                // way of stopping it cleanly since we can't offer(STOP). So we will just set the abort flag and
+                // leak the thread and return false.
                 LOG.warn("RTE offer failed: " + this);
+                _abort = true;
+                return false;
             }
             catch (Throwable e)
             {
@@ -327,13 +336,19 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             {
                 try
                 {
-                    Runnable task = _idleTime <= 0 ? _task.take() : _task.poll(_idleTime, _idleTimeUnit);
+                    // Always poll at some period so we can check the abort flagg
+                    Runnable task = _idleTime <= 0 ? _task.poll(30, TimeUnit.SECONDS) : _task.poll(_idleTime, _idleTimeUnit);
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} task={}", this, task);
                     if (task != null)
                         return task;
 
-                    if (_stack.remove(this))
+                    // Have we aborted?
+                    if (_abort)
+                        return STOP;
+
+                    // Have we timed out?
+                    if (_idleTime > 0 && _stack.remove(this))
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("{} IDLE", this);
