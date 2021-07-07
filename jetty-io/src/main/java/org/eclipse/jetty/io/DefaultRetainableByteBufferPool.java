@@ -23,23 +23,36 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.Container;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ManagedObject
 public class DefaultRetainableByteBufferPool implements RetainableByteBufferPool
 {
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultRetainableByteBufferPool.class);
+
     private final Pool<RetainableByteBuffer>[] _direct;
     private final Pool<RetainableByteBuffer>[] _indirect;
     private final int _factor;
     private final int _minCapacity;
+    private final long _maxHeapMemory;
+    private final long _maxDirectMemory;
 
     public DefaultRetainableByteBufferPool()
     {
-        this(0, 1024, 65536, Integer.MAX_VALUE);
+        this(0, 1024, 65536, Integer.MAX_VALUE, -1L, -1L);
     }
 
     public DefaultRetainableByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize)
     {
+        this(minCapacity, factor, maxCapacity, maxBucketSize, -1L, -1L);
+    }
+
+    public DefaultRetainableByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
+    {
         _factor = factor <= 0 ? 1024 : factor;
+        this._maxHeapMemory = maxHeapMemory;
+        this._maxDirectMemory = maxDirectMemory;
         if (minCapacity <= 0)
             minCapacity = 0;
         _minCapacity = minCapacity;
@@ -84,6 +97,7 @@ public class DefaultRetainableByteBufferPool implements RetainableByteBufferPool
                     reservedEntry.release();
                 });
                 reservedEntry.enable(buffer, true);
+                releaseExcessMemory(direct);
             }
             else
             {
@@ -223,6 +237,110 @@ public class DefaultRetainableByteBufferPool implements RetainableByteBufferPool
                 retainableByteBufferPool.remove(entry);
             }
         }
+    }
+
+    private void releaseExcessMemory(boolean direct)
+    {
+        long maxMemory = direct ? _maxDirectMemory : _maxHeapMemory;
+        if (maxMemory > 0)
+        {
+            long excess = getMemory(direct) - maxMemory;
+            if (excess > 0)
+                evict(direct, excess);
+        }
+    }
+
+    /**
+     * This eviction mechanism searches for the RetainableByteBuffers that were released the longest time ago.
+     * @param direct true to search in the direct buffers buckets, false to search in the heap buffers buckets.
+     * @param excess the amount of bytes to evict. At least this much will be removed from the buckets.
+     */
+    private void evict(boolean direct, long excess)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("evicting {} bytes from {} pools", excess, (direct ? "direct" : "heap"));
+        long totalMemoryCleared = 0L;
+        long now = System.nanoTime();
+
+        Pool<RetainableByteBuffer>[] buckets = direct ? _direct : _indirect;
+        @SuppressWarnings("unchecked")
+        Pool<RetainableByteBuffer>.Entry[] oldestEntries = new Pool.Entry[buckets.length];
+
+        for (int i = 0; i < buckets.length; i++)
+        {
+            Pool<RetainableByteBuffer> bucket = buckets[i];
+            oldestEntries[i] = findOldestEntry(now, bucket);
+        }
+
+        while (true)
+        {
+            int oldestEntryBucketIndex = -1;
+            Pool<RetainableByteBuffer>.Entry oldestEntry = null;
+
+            for (int i = 0; i < oldestEntries.length; i++)
+            {
+                Pool<RetainableByteBuffer>.Entry entry = oldestEntries[i];
+                if (entry == null)
+                    continue;
+
+                if (oldestEntry != null)
+                {
+                    long entryAge = now - entry.getPooled().getLastUpdate();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("checking entry of capacity {} and age {} vs entry of capacity {} and age {}", entry.getPooled().capacity(), now - entry.getPooled().getLastUpdate(), oldestEntry.getPooled().capacity(), now - oldestEntry.getPooled().getLastUpdate());
+                    if (entryAge > now - oldestEntry.getPooled().getLastUpdate())
+                    {
+                        oldestEntry = entry;
+                        oldestEntryBucketIndex = i;
+                    }
+                }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("checking entry of capacity {} and age {}", entry.getPooled().capacity(), now - entry.getPooled().getLastUpdate());
+                    oldestEntry = entry;
+                    oldestEntryBucketIndex = i;
+                }
+            }
+
+            if (oldestEntry != null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("removing entry of capacity {} and age {}", oldestEntry.getPooled().capacity(), now - oldestEntry.getPooled().getLastUpdate());
+                oldestEntry.remove();
+                oldestEntries[oldestEntryBucketIndex] = findOldestEntry(now, buckets[oldestEntryBucketIndex]);
+                totalMemoryCleared += oldestEntry.getPooled().capacity();
+                if (totalMemoryCleared >= excess)
+                    break;
+            }
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("found no entry to remove");
+                break;
+            }
+        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("eviction done, cleared {} bytes from {} pools", totalMemoryCleared, (direct ? "direct" : "heap"));
+    }
+
+    private Pool<RetainableByteBuffer>.Entry findOldestEntry(long now, Pool<RetainableByteBuffer> bucket)
+    {
+        Pool<RetainableByteBuffer>.Entry oldestEntry = null;
+        for (Pool<RetainableByteBuffer>.Entry entry : bucket.values())
+        {
+            if (oldestEntry != null)
+            {
+                long entryAge = now - entry.getPooled().getLastUpdate();
+                if (entryAge > now - oldestEntry.getPooled().getLastUpdate())
+                    oldestEntry = entry;
+            }
+            else
+            {
+                oldestEntry = entry;
+            }
+        }
+        return oldestEntry;
     }
 
     /**

@@ -25,6 +25,71 @@ import static org.hamcrest.core.Is.is;
 public class DefaultRetainableByteBufferPoolTest
 {
     @Test
+    public void testSimpleMaxMemoryEviction() throws Exception
+    {
+        DefaultRetainableByteBufferPool pool = new DefaultRetainableByteBufferPool(0, 10, 20, Integer.MAX_VALUE, 30, 30);
+
+        RetainableByteBuffer buf1 = pool.acquire(1, true);
+        Thread.sleep(10);
+        RetainableByteBuffer buf2 = pool.acquire(1, true);
+        Thread.sleep(10);
+        RetainableByteBuffer buf3 = pool.acquire(11, true);
+
+        buf1.release();
+        buf2.release();
+        buf3.release();
+
+        // Make sure buf1 got evicted as it is the oldest one.
+
+        assertThat(pool.getAvailableDirectByteBufferCount(), is(2L));
+        assertThat(pool.getDirectByteBufferCount(), is(2L));
+        assertThat(pool.getDirectMemory(), is(30L));
+
+        RetainableByteBuffer buf4 = pool.acquire(1, true);
+        assertThat(buf4 == buf2, is(true));
+        RetainableByteBuffer buf5 = pool.acquire(11, true);
+        assertThat(buf5 == buf3, is(true));
+    }
+
+    @Test
+    public void testMaxMemoryEviction() throws Exception
+    {
+        DefaultRetainableByteBufferPool pool = new DefaultRetainableByteBufferPool(0, 10, 20, Integer.MAX_VALUE, 30, 30);
+
+        RetainableByteBuffer buf1 = pool.acquire(1, false);
+        Thread.sleep(10);
+        RetainableByteBuffer buf2 = pool.acquire(1, false);
+        Thread.sleep(10);
+        RetainableByteBuffer buf3 = pool.acquire(11, false); // evicts buf1
+        Thread.sleep(10);
+
+        buf3.release();
+        Thread.sleep(10);
+        buf2.release();
+        Thread.sleep(10);
+        buf1.release();
+
+        RetainableByteBuffer buf4 = pool.acquire(1, false); // == buf2
+        RetainableByteBuffer buf5 = pool.acquire(11, false); // == buf3
+        RetainableByteBuffer buf6 = pool.acquire(11, false); // Evicts buf3 as it was the one released the longest ago.
+
+        buf4.release();
+        buf5.release();
+        buf6.release();
+
+        // Make sure buf1 and buf3 got evicted and only buf2 and buf6 are left.
+
+        assertThat(pool.getAvailableHeapByteBufferCount(), is(2L));
+        assertThat(pool.getHeapByteBufferCount(), is(2L));
+        assertThat(pool.getHeapMemory(), is(30L));
+
+        RetainableByteBuffer buf7 = pool.acquire(1, false);
+        assertThat(buf7 == buf2, is(true));
+        RetainableByteBuffer buf8 = pool.acquire(11, false);
+        assertThat(buf8 == buf6, is(true));
+    }
+
+    @Test
     public void testMaxBucketSize()
     {
         DefaultRetainableByteBufferPool pool = new DefaultRetainableByteBufferPool(0, 10, 20, 2);

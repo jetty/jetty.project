@@ -15,6 +15,7 @@ package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -31,6 +32,7 @@ public class RetainableByteBuffer implements Retainable
     private final ByteBuffer buffer;
     private final AtomicInteger references;
     private final Consumer<ByteBuffer> releaser;
+    private final AtomicLong lastUpdate = new AtomicLong(System.nanoTime());
 
     RetainableByteBuffer(ByteBuffer buffer, Consumer<ByteBuffer> releaser)
     {
@@ -47,6 +49,11 @@ public class RetainableByteBuffer implements Retainable
     public ByteBuffer getBuffer()
     {
         return buffer;
+    }
+
+    public long getLastUpdate()
+    {
+        return lastUpdate.getOpaque();
     }
 
     public int getReferences()
@@ -69,7 +76,10 @@ public class RetainableByteBuffer implements Retainable
     {
         int ref = references.decrementAndGet();
         if (ref == 0)
+        {
+            lastUpdate.setOpaque(System.nanoTime());
             releaser.accept(buffer);
+        }
         else if (ref < 0)
             throw new IllegalStateException("already released " + this);
         return ref;
