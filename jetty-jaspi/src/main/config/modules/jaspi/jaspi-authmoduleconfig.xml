@@ -13,16 +13,6 @@
           <Arg>
               <Map>
                   <Entry>
-                      <!-- 
-                        Application Context Identifier as per spec chapter 3.2 (property key=AppContextID) 
-                       -->
-                      <Item>AppContextID</Item>
-                      <!-- 
-                        Should be of the form "logical-hostname<space>context-path"                       
-                       -->
-                      <Item>server /ctx</Item>
-                  </Entry>
-                  <Entry>
                       <!-- Realm as utilised by Jetty Security  -->
                       <Item>org.eclipse.jetty.security.jaspi.modules.RealmName</Item>
                       <Item>TestRealm</Item>
@@ -32,8 +22,15 @@
           <!-- Message Layer Identifier as per spec chapter 3.1  -->
           <Arg type="String">HttpServlet</Arg>
           <!-- 
-            Application Context Identifier as per spec chapter 3.2.  
-            Should be same as the one configured for the provided BasicAuthModule above.  
+            Application Context Identifier as per spec chapter 3.2:
+            
+            AppContextID ::= hostname blank context-path
+            
+            Hostname may be the physical or logical server name.
+            Per the specification this should match the value returned from 
+            getVirtualServerName on the ServletContext corresponding to the web application
+            where this applies. 
+            Likewise, the context-path should match the context path where this applies.  
           -->
           <Arg type="String">server /ctx</Arg>
           <!-- 
