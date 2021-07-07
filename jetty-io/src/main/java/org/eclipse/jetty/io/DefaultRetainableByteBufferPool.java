@@ -15,6 +15,7 @@ package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -37,6 +38,8 @@ public class DefaultRetainableByteBufferPool implements RetainableByteBufferPool
     private final int _minCapacity;
     private final long _maxHeapMemory;
     private final long _maxDirectMemory;
+    private final AtomicLong _currentHeapMemory = new AtomicLong();
+    private final AtomicLong _currentDirectMemory = new AtomicLong();
 
     public DefaultRetainableByteBufferPool()
     {
@@ -97,6 +100,10 @@ public class DefaultRetainableByteBufferPool implements RetainableByteBufferPool
                     reservedEntry.release();
                 });
                 reservedEntry.enable(buffer, true);
+                if (direct)
+                    _currentDirectMemory.addAndGet(buffer.capacity());
+                else
+                    _currentHeapMemory.addAndGet(buffer.capacity());
                 releaseExcessMemory(direct);
             }
             else
@@ -185,15 +192,10 @@ public class DefaultRetainableByteBufferPool implements RetainableByteBufferPool
 
     private long getMemory(boolean direct)
     {
-        Pool<RetainableByteBuffer>[] buckets = direct ? _direct : _indirect;
-        long total = 0L;
-        for (int i = 0; i < buckets.length; i++)
-        {
-            Pool<RetainableByteBuffer> bucket = buckets[i];
-            long capacity = (i + 1L) * _factor;
-            total += bucket.size() * capacity;
-        }
-        return total;
+        if (direct)
+            return _currentDirectMemory.get();
+        else
+            return _currentHeapMemory.get();
     }
 
     @ManagedAttribute("The available bytes retained by direct ByteBuffers")
@@ -224,17 +226,18 @@ public class DefaultRetainableByteBufferPool implements RetainableByteBufferPool
     @ManagedOperation(value = "Clears this RetainableByteBufferPool", impact = "ACTION")
     public void clear()
     {
-        clearArray(_direct);
-        clearArray(_indirect);
+        clearArray(_direct, _currentDirectMemory);
+        clearArray(_indirect, _currentHeapMemory);
     }
 
-    private void clearArray(Pool<RetainableByteBuffer>[] poolArray)
+    private void clearArray(Pool<RetainableByteBuffer>[] poolArray, AtomicLong memoryCounter)
     {
         for (Pool<RetainableByteBuffer> retainableByteBufferPool : poolArray)
         {
             for (Pool<RetainableByteBuffer>.Entry entry : retainableByteBufferPool.values())
             {
-                retainableByteBufferPool.remove(entry);
+                entry.remove();
+                memoryCounter.addAndGet(-entry.getPooled().capacity());
             }
         }
     }
@@ -308,6 +311,10 @@ public class DefaultRetainableByteBufferPool implements RetainableByteBufferPool
                 if (LOG.isDebugEnabled())
                     LOG.debug("removing entry of capacity {} and age {}", oldestEntry.getPooled().capacity(), now - oldestEntry.getPooled().getLastUpdate());
                 oldestEntry.remove();
+                if (direct)
+                    _currentDirectMemory.addAndGet(-oldestEntry.getPooled().capacity());
+                else
+                    _currentHeapMemory.addAndGet(-oldestEntry.getPooled().capacity());
                 oldestEntries[oldestEntryBucketIndex] = findOldestEntry(now, buckets[oldestEntryBucketIndex]);
                 totalMemoryCleared += oldestEntry.getPooled().capacity();
                 if (totalMemoryCleared >= excess)
