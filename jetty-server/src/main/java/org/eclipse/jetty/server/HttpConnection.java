@@ -233,6 +233,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 LOG.debug("releaseRequestBuffer {}", this);
             if (_retainableByteBuffer.release())
                 _retainableByteBuffer = null;
+            else
+                throw new IllegalStateException("unreleased buffer " + _retainableByteBuffer);
         }
     }
 
@@ -300,11 +302,17 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} caught exception {}", this, _channel.getState(), x);
-            // Force the release of the _retainableByteBuffer.
             if (_retainableByteBuffer != null)
             {
-                while (!_retainableByteBuffer.release());
-                _retainableByteBuffer = null;
+                _retainableByteBuffer.clear();
+                try
+                {
+                    releaseRequestBuffer();
+                }
+                catch (Throwable t)
+                {
+                    x.addSuppressed(t);
+                }
             }
             getEndPoint().close(x);
         }

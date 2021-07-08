@@ -22,7 +22,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Retainable;
 
 /**
- * A Retainable ByteBuffer.
  * <p>A pooled ByteBuffer which maintains a reference count that is
  * incremented with {@link #retain()} and decremented with {@link #release()}. The buffer
  * is released to the pool when {@link #release()} is called one more time than {@link #retain()}.</p>
@@ -32,7 +31,7 @@ import org.eclipse.jetty.util.Retainable;
  *     <li>out of pool but not retained; in this case {@link #isRetained()} returns {@code false} and calling {@link #release()} returns {@code true}</li>
  *     <li>out of pool and retained; in this case {@link #isRetained()} returns {@code true} and calling {@link #release()} returns {@code false}</li>
  * </ul>
- * Calling {@link #release()} on a out of pool and retained instance does not re-pool it while that re-pools it on a out of pool but not retained instance.</p>
+ * <p>Calling {@link #release()} on a out of pool and retained instance does not re-pool it while that re-pools it on a out of pool but not retained instance.</p>
  */
 public class RetainableByteBuffer implements Retainable
 {
@@ -77,8 +76,10 @@ public class RetainableByteBuffer implements Retainable
     }
 
     /**
-     * Increments the retained counter of this buffer.
-     * It must be done right after creation and after each un-pooling.
+     * Increments the retained counter of this buffer. It must be done internally by
+     * the pool right after creation and after each un-pooling.
+     * The reason why this method exists on top of {@link #retain()} is to be able to
+     * have some safety checks that must know why the ref counter is being incremented.
      */
     void acquire()
     {
