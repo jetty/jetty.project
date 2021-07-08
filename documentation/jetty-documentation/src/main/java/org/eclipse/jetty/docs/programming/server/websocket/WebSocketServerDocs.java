@@ -78,7 +78,8 @@ public class WebSocketServerDocs
             container.addMapping("/ws/myURI", MyJettyWebSocketEndPoint.class);
 
             // Use JettyWebSocketCreator to have more control on the WebSocket endpoint creation.
-            container.addMapping("/ws/myOtherURI", (upgradeRequest, upgradeResponse) -> {
+            container.addMapping("/ws/myOtherURI", (upgradeRequest, upgradeResponse) ->
+            {
                 // Possibly inspect the upgrade request and modify the upgrade response.
 
                 // Create the new WebSocket endpoint.
@@ -138,7 +139,8 @@ public class WebSocketServerDocs
             factory.setMaxTextMessageSize(1048576);
 
             // Add the WebSocket endpoint.
-            factory.addMapping("/ws/someURI", (upgradeRequest, upgradeResponse) -> {
+            factory.addMapping("/ws/someURI", (upgradeRequest, upgradeResponse) ->
+            {
                 // Possibly inspect the upgrade request and modify the upgrade response.
 
                 // Create the new WebSocket endpoint.
