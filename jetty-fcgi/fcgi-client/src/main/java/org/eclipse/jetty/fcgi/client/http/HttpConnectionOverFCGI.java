@@ -44,7 +44,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.DefaultRetainableByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
@@ -85,7 +84,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         requests.addLast(0);
 
         HttpClient client = destination.getHttpClient();
-        this.retainableByteBufferPool = DefaultRetainableByteBufferPool.findOrAdapt(client, client.getByteBufferPool());
+        this.retainableByteBufferPool = RetainableByteBufferPool.findOrAdapt(client, client.getByteBufferPool());
     }
 
     public HttpDestination getHttpDestination()
