@@ -423,7 +423,6 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
     private class NetworkBuffer implements Callback
     {
-
         private final RetainableByteBuffer delegate;
 
         private NetworkBuffer()
