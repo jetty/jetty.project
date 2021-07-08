@@ -123,7 +123,9 @@ public class DefaultRetainableByteBufferPool implements RetainableByteBufferPool
     {
         ByteBuffer buffer = direct ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity);
         BufferUtil.clear(buffer);
-        return new RetainableByteBuffer(buffer, releaser);
+        RetainableByteBuffer retainableByteBuffer = new RetainableByteBuffer(buffer, releaser);
+        retainableByteBuffer.retain();
+        return retainableByteBuffer;
     }
 
     private Pool<RetainableByteBuffer> bucketFor(int capacity, boolean direct)

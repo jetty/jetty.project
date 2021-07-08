@@ -23,14 +23,21 @@ import org.eclipse.jetty.util.Retainable;
 
 /**
  * A Retainable ByteBuffer.
- * <p>A ByteBuffer which maintains a reference count that is
- * initially 1, incremented with {@link #retain()} and decremented with {@link #release()}. The buffer
- * is released to the pool when the reference count is decremented to 0.</p>
+ * <p>A pooled ByteBuffer which maintains a reference count that is
+ * incremented with {@link #retain()} and decremented with {@link #release()}. The buffer
+ * is released to the pool when {@link #release()} is called one more time than {@link #retain()}.</p>
+ * <p>A {@code RetainableByteBuffer} can either be:
+ * <ul>
+ *     <li>in pool; in this case {@link #isRetained()} returns {@code false} and calling {@link #release()} throws {@link IllegalStateException}</li>
+ *     <li>out of pool but not retained; in this case {@link #isRetained()} returns {@code false} and calling {@link #release()} returns {@code true}</li>
+ *     <li>out of pool and retained; in this case {@link #isRetained()} returns {@code true} and calling {@link #release()} returns {@code false}</li>
+ * </ul>
+ * Calling {@link #release()} on a out of pool and retained instance does not re-pool it while that re-pools it on a out of pool but not retained instance.</p>
  */
 public class RetainableByteBuffer implements Retainable
 {
     private final ByteBuffer buffer;
-    private final AtomicInteger references;
+    private final AtomicInteger references = new AtomicInteger();
     private final Consumer<ByteBuffer> releaser;
     private final AtomicLong lastUpdate = new AtomicLong(System.nanoTime());
 
@@ -38,7 +45,6 @@ public class RetainableByteBuffer implements Retainable
     {
         this.releaser = releaser;
         this.buffer = buffer;
-        this.references = new AtomicInteger(1);
     }
 
     public int capacity()
@@ -56,6 +62,10 @@ public class RetainableByteBuffer implements Retainable
         return lastUpdate.getOpaque();
     }
 
+    /**
+     * Checks if {@link #retain()} has been called at least one more time than {@link #release()}.
+     * @return true if this buffer is retained, false otherwise.
+     */
     public boolean isRetained()
     {
         return references.get() > 1;
@@ -66,12 +76,19 @@ public class RetainableByteBuffer implements Retainable
         return buffer.isDirect();
     }
 
+    /**
+     * Increments the retained counter of this buffer.
+     */
     @Override
     public void retain()
     {
         references.incrementAndGet();
     }
 
+    /**
+     * Decrements the retained counter of this buffer.
+     * @return true if the buffer was re-pooled, false otherwise.
+     */
     public boolean release()
     {
         int ref = references.decrementAndGet();
