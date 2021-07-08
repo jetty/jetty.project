@@ -312,42 +312,4 @@ public class DefaultRetainableByteBufferPool implements RetainableByteBufferPool
         }
         return oldestEntry;
     }
-
-    /**
-     * Find a {@link RetainableByteBufferPool} implementation in the given container, or wrap the given
-     * {@link ByteBufferPool} with an adapter.
-     * @param container the container to search for an existing memory pool.
-     * @param byteBufferPool the {@link ByteBufferPool} to wrap if no memory pool was found in the container.
-     * @return the {@link RetainableByteBufferPool} found or the wrapped one.
-     */
-    public static RetainableByteBufferPool findOrAdapt(Container container, ByteBufferPool byteBufferPool)
-    {
-        RetainableByteBufferPool retainableByteBufferPool = container == null ? null : container.getBean(RetainableByteBufferPool.class);
-        if (retainableByteBufferPool == null)
-            retainableByteBufferPool = new ByteBufferToRetainableByteBufferAdapterPool(byteBufferPool);
-        return retainableByteBufferPool;
-    }
-
-    /**
-     * An adapter class which exposes a {@link ByteBufferPool} as a
-     * {@link RetainableByteBufferPool}.
-     */
-    private static class ByteBufferToRetainableByteBufferAdapterPool implements RetainableByteBufferPool
-    {
-        private final ByteBufferPool byteBufferPool;
-        private final Consumer<ByteBuffer> releaser;
-
-        public ByteBufferToRetainableByteBufferAdapterPool(ByteBufferPool byteBufferPool)
-        {
-            this.byteBufferPool = byteBufferPool;
-            this.releaser = byteBufferPool::release;
-        }
-
-        @Override
-        public RetainableByteBuffer acquire(int size, boolean direct)
-        {
-            ByteBuffer byteBuffer = byteBufferPool.acquire(size, direct);
-            return new RetainableByteBuffer(byteBuffer, releaser);
-        }
-    }
 }
