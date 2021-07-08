@@ -1,0 +1,64 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-jaspi]]
+==== Jakarta Authentication (JASPI)
+
+Jetty can utilize authentication modules that implements the Jakara Authentication (JASPI) specification. This provides an SPI (Service Provider Interface) for pluggable, portable, and standardized authentication modules. Jakarta Authentication compatible modules are portable between servers that support the JASPI specification. This requires the jetty-jaspi module to bridge Jakarta Authentication to the Jetty Security framework.  
+
+Only modules conforming to the "Servlet Container Profile" with the ServerAuthModule interface within the https://jakarta.ee/specifications/authentication/2.0/jakarta-authentication-spec-2.0.pdf[JakartaAuthentication] are supported. These modules must be configured before start-up.  Operations for runtime registering or de-registering authentication modules are not supported. 
+
+A Basic Authentication module compatible with JASPI, is provided for reference. Other modules that are compatible with the ServerAuthModule interface in JASPI may be imported here, including custom and 3rd party.  
+
+The following illustrates a jetty module setting up HTTP Basic Authentication using a Jakarta Authentication module that comes packaged with the jetty-jaspi module: `org.eclipse.jetty.security.jaspi.modules.BasicAuthenticationAuthModule`
+
+[source, xml, subs="{sub-order}"]
+----
+<Configure>
+ <Ref refid="jaspiAuthConfigFactory">
+	<Call name="registerConfigProvider">
+          <Arg type="String">org.eclipse.jetty.security.jaspi.modules.BasicAuthenticationAuthModule</Arg>
+          <Arg>
+              <Map>
+                  <Entry>
+                      <!-- Realm as utilised by Jetty Security  -->
+                      <Item>org.eclipse.jetty.security.jaspi.modules.RealmName</Item>
+                      <Item>TestRealm</Item>
+                  </Entry>
+              </Map>
+          </Arg>
+          <!-- Message Layer Identifier as per spec chapter 3.1  -->
+          <Arg type="String">HttpServlet</Arg>
+          <!-- 
+            Application Context Identifier as per spec chapter 3.2:
+            
+            AppContextID ::= hostname blank context-path
+            
+            Hostname may be the physical or logical server name.
+            Per the specification this should match the value returned from getVirtualServerName 
+            on the ServletContext corresponding to the web application where this applies. 
+            Likewise, the context-path should match the context path where this applies.
+          -->
+          <Arg type="String">server /ctx</Arg>
+          <!-- 
+            A friendly description of the provided auth-module. 
+          -->
+          <Arg type="String">A simple provider using HTTP BASIC authentication</Arg>
+	</Call>
+  </Ref>
+</Configure>
+
+----
+
+Normally, a custom or 3rd party `ServerAuthModule` implementation would be configured here instead.
+
