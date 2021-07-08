@@ -48,7 +48,9 @@ public interface RetainableByteBufferPool
             retainableByteBufferPool = (size, direct) ->
             {
                 ByteBuffer byteBuffer = byteBufferPool.acquire(size, direct);
-                return new RetainableByteBuffer(byteBuffer, byteBufferPool::release);
+                RetainableByteBuffer retainableByteBuffer = new RetainableByteBuffer(byteBuffer, byteBufferPool::release);
+                retainableByteBuffer.retain();
+                return retainableByteBuffer;
             };
         }
         return retainableByteBufferPool;
