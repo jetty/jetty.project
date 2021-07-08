@@ -56,9 +56,9 @@ public class RetainableByteBuffer implements Retainable
         return lastUpdate.getOpaque();
     }
 
-    public int getReferences()
+    public boolean isRetained()
     {
-        return references.get();
+        return references.get() > 1;
     }
 
     public boolean isDirect()
@@ -72,17 +72,21 @@ public class RetainableByteBuffer implements Retainable
         references.incrementAndGet();
     }
 
-    public int release()
+    public boolean release()
     {
         int ref = references.decrementAndGet();
+        if (ref < 0)
+        {
+            references.incrementAndGet();
+            throw new IllegalStateException("already released " + this);
+        }
         if (ref == 0)
         {
             lastUpdate.setOpaque(System.nanoTime());
             releaser.accept(buffer);
+            return true;
         }
-        else if (ref < 0)
-            throw new IllegalStateException("already released " + this);
-        return ref;
+        return false;
     }
 
     public int remaining()
@@ -108,6 +112,6 @@ public class RetainableByteBuffer implements Retainable
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s,r=%d}", getClass().getSimpleName(), hashCode(), BufferUtil.toDetailString(buffer), getReferences());
+        return String.format("%s@%x{%s,r=%d}", getClass().getSimpleName(), hashCode(), BufferUtil.toDetailString(buffer), references.get());
     }
 }

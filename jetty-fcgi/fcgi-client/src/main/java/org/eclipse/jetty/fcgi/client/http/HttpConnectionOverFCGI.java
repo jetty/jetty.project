@@ -165,7 +165,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
                 if (parse(networkBuffer.getBuffer()))
                     return;
 
-                if (networkBuffer.getReferences() > 1)
+                if (networkBuffer.isRetained())
                     reacquireNetworkBuffer();
 
                 // The networkBuffer may have been reacquired.

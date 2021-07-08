@@ -85,7 +85,7 @@ public class DefaultRetainableByteBufferPool implements RetainableByteBufferPool
         int capacity = (bucketIndexFor(size) + 1) * _factor;
         Pool<RetainableByteBuffer> bucket = bucketFor(size, direct);
         if (bucket == null)
-            return newRetainableByteBuffer(capacity, direct, byteBuffer -> {});
+            return newRetainableByteBuffer(size, direct, byteBuffer -> {});
         Pool<RetainableByteBuffer>.Entry entry = bucket.acquire();
 
         RetainableByteBuffer buffer;
@@ -108,7 +108,7 @@ public class DefaultRetainableByteBufferPool implements RetainableByteBufferPool
             }
             else
             {
-                buffer = newRetainableByteBuffer(capacity, direct, byteBuffer -> {});
+                buffer = newRetainableByteBuffer(size, direct, byteBuffer -> {});
             }
         }
         else

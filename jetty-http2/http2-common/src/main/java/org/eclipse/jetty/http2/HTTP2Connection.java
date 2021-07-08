@@ -293,7 +293,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
                             return task;
 
                         // If more references than 1 (ie not just us), don't refill into buffer and risk compaction.
-                        if (networkBuffer.getReferences() > 1)
+                        if (networkBuffer.isRetained())
                             reacquireNetworkBuffer();
                     }
 
@@ -436,9 +436,9 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
             return delegate.getBuffer();
         }
 
-        public int getReferences()
+        public boolean isRetained()
         {
-            return delegate.getReferences();
+            return delegate.isRetained();
         }
 
         public boolean hasRemaining()
@@ -446,7 +446,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
             return delegate.hasRemaining();
         }
 
-        public int release()
+        public boolean release()
         {
             return delegate.release();
         }
@@ -475,7 +475,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
         private void completed(Throwable failure)
         {
-            if (delegate.release() == 0)
+            if (delegate.release())
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Released retained {}", this, failure);

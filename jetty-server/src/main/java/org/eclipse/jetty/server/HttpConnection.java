@@ -232,7 +232,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("releaseRequestBuffer {}", this);
-            if (_retainableByteBuffer.release() == 0)
+            if (_retainableByteBuffer.release())
                 _retainableByteBuffer = null;
         }
     }
@@ -336,7 +336,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     private int fillRequestBuffer()
     {
-        if (_retainableByteBuffer != null && _retainableByteBuffer.getReferences() > 1)
+        if (_retainableByteBuffer != null && _retainableByteBuffer.isRetained())
             throw new IllegalStateException("fill with unconsumed content on " + this);
 
         if (isRequestBufferEmpty())
@@ -385,7 +385,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             LOG.debug("{} parsed {} {}", this, handle, _parser);
 
         // recycle buffer ?
-        if (_retainableByteBuffer != null && _retainableByteBuffer.getReferences() == 1)
+        if (_retainableByteBuffer != null && !_retainableByteBuffer.isRetained())
             releaseRequestBuffer();
 
         return handle;
@@ -404,7 +404,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _channel.recycle();
         _parser.reset();
         _generator.reset();
-        if (_retainableByteBuffer != null && _retainableByteBuffer.getReferences() == 1)
+        if (_retainableByteBuffer != null && !_retainableByteBuffer.isRetained())
         {
             releaseRequestBuffer();
         }

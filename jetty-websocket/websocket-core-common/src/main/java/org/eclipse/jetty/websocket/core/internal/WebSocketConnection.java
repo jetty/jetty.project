@@ -444,7 +444,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 }
 
                 // If more references that 1(us), don't refill into buffer and risk compaction.
-                if (networkBuffer.getReferences() > 1)
+                if (networkBuffer.isRetained())
                     reacquireNetworkBuffer();
 
                 int filled = getEndPoint().fill(networkBuffer.getBuffer()); // TODO check if compact is possible.
