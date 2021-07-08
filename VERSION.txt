@@ -13,6 +13,20 @@ jetty-11.0.6 - 29 June 2021
  + 6451 Request#getServletPath() returns null for ROOT mapping
  + 6464 Wrong files/lib definitions in certain *-capture.mod files?
 
+jetty-10.0.6 - 29 June 2021
+ + 6375 Always check XML `Set` elements with `property` attribute
+ + 6382 HttpClient TimeoutException message reports transient values
+ + 6394 Review osgi manifests within Jetty 10
+ + 6407 Malformed scheme logical expression check in WebSocket
+   ClientUpgradeRequest
+ + 6410 Ensure Jetty IO uses SocketAddress instead of InetSocketAddress
+ + 6418 Bad and/or missing Require-Capability for osgi.serviceloader
+ + 6425 Update to asm 9.1
+ + 6447 Deprecate support for UTF16 encoding in URIs
+ + 6451 Request#getServletPath() returns null for ROOT mapping
+ + 6464 Wrong files/lib definitions in certain *-capture.mod files?
+ + 6473 Improve alias checking in PathResource
+
 jetty-11.0.5 - 11 June 2021
  + 4772 Jetty WebSocket API onMessage annotation does not support partial
    messages.
@@ -401,7 +415,7 @@ jetty-11.0.0.beta1 - 10 July 2020
    SETTINGS Frame.
  + 4903 Give better errors for non public Websocket Endpoints
  + 4904 WebsocketClient creates more connections than needed
- + 4907 
+ + 4907
    org.eclipse.jetty.websocket.tests.SuspendResumeTest#testSuspendAfterClose
  + 4920 Restore ability to delete sessions on stop
  + 4921 Quickstart run improperly runs dynamically added context initializers
