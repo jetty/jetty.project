@@ -236,7 +236,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
     }
 
-    public ByteBuffer getRequestBuffer()
+    private ByteBuffer getRequestBuffer()
     {
         if (_retainableByteBuffer == null)
             _retainableByteBuffer = _retainableByteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
