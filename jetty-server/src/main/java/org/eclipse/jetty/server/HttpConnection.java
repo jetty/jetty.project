@@ -300,7 +300,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} caught exception {}", this, _channel.getState(), x);
-            releaseRequestBuffer();
+            // Force the release of the _retainableByteBuffer.
+            if (_retainableByteBuffer != null)
+            {
+                while (!_retainableByteBuffer.release());
+                _retainableByteBuffer = null;
+            }
             getEndPoint().close(x);
         }
         finally
