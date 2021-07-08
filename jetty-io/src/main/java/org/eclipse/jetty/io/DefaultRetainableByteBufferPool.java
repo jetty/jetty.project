@@ -23,7 +23,6 @@ import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
-import org.eclipse.jetty.util.component.Container;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,7 +113,7 @@ public class DefaultRetainableByteBufferPool implements RetainableByteBufferPool
         else
         {
             buffer = entry.getPooled();
-            buffer.retain();
+            buffer.acquire();
         }
         return buffer;
     }
@@ -124,7 +123,7 @@ public class DefaultRetainableByteBufferPool implements RetainableByteBufferPool
         ByteBuffer buffer = direct ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity);
         BufferUtil.clear(buffer);
         RetainableByteBuffer retainableByteBuffer = new RetainableByteBuffer(buffer, releaser);
-        retainableByteBuffer.retain();
+        retainableByteBuffer.acquire();
         return retainableByteBuffer;
     }
 

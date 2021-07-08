@@ -78,11 +78,28 @@ public class RetainableByteBuffer implements Retainable
 
     /**
      * Increments the retained counter of this buffer.
+     * It must be done right after creation and after each un-pooling.
+     */
+    void acquire()
+    {
+        if (references.getAndIncrement() != 0)
+        {
+            references.decrementAndGet();
+            throw new IllegalStateException("re-pooled while still used " + this);
+        }
+    }
+
+    /**
+     * Increments the retained counter of this buffer.
      */
     @Override
     public void retain()
     {
-        references.incrementAndGet();
+        if (references.getAndIncrement() == 0)
+        {
+            references.decrementAndGet();
+            throw new IllegalStateException("released " + this);
+        }
     }
 
     /**

@@ -247,6 +247,29 @@ public class DefaultRetainableByteBufferPoolTest
     }
 
     @Test
+    public void testRetainAfterRePooledThrows()
+    {
+        DefaultRetainableByteBufferPool pool = new DefaultRetainableByteBufferPool();
+        RetainableByteBuffer buf1 = pool.acquire(10, true);
+        assertThat(pool.getDirectByteBufferCount(), is(1L));
+        assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
+        assertThat(buf1.release(), is(true));
+        assertThrows(IllegalStateException.class, buf1::retain);
+        assertThrows(IllegalStateException.class, buf1::release);
+        assertThat(pool.getDirectByteBufferCount(), is(1L));
+        assertThat(pool.getAvailableDirectByteBufferCount(), is(1L));
+
+        // check that the buffer is still available
+        RetainableByteBuffer buf2 = pool.acquire(10, true);
+        assertThat(pool.getDirectByteBufferCount(), is(1L));
+        assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
+        assertThat(buf2 == buf1, is(true)); // make sure it's not a new instance
+        assertThat(buf1.release(), is(true));
+        assertThat(pool.getDirectByteBufferCount(), is(1L));
+        assertThat(pool.getAvailableDirectByteBufferCount(), is(1L));
+    }
+
+    @Test
     public void testAcquireRelease()
     {
         DefaultRetainableByteBufferPool pool = new DefaultRetainableByteBufferPool();
