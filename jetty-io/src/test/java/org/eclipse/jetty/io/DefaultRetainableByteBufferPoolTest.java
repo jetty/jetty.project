@@ -67,7 +67,7 @@ public class DefaultRetainableByteBufferPoolTest
     }
 
     @Test
-    void testBelowMinCapacityDoesNotPool()
+    public void testBelowMinCapacityDoesNotPool()
     {
         DefaultRetainableByteBufferPool pool = new DefaultRetainableByteBufferPool(10, 10, 20, Integer.MAX_VALUE);
 
@@ -82,7 +82,7 @@ public class DefaultRetainableByteBufferPoolTest
     }
 
     @Test
-    void testOverMaxCapacityDoesNotPool()
+    public void testOverMaxCapacityDoesNotPool()
     {
         DefaultRetainableByteBufferPool pool = new DefaultRetainableByteBufferPool(10, 10, 20, Integer.MAX_VALUE);
 
@@ -132,7 +132,7 @@ public class DefaultRetainableByteBufferPoolTest
     }
 
     @Test
-    void testTooManyReleases()
+    public void testTooManyReleases()
     {
         DefaultRetainableByteBufferPool pool = new DefaultRetainableByteBufferPool(10, 10, 20, Integer.MAX_VALUE);
 
