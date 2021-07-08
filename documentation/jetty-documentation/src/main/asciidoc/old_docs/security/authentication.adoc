@@ -543,9 +543,8 @@ The following illustrates a jetty module setting up HTTP Basic Authentication us
             AppContextID ::= hostname blank context-path
             
             Hostname may be the physical or logical server name.
-            Per the specification this should match the value returned
-            from getVirtualServerName on the ServletContext corresponding to the web application
-            where this applies. 
+            Per the specification this should match the value returned from getVirtualServerName 
+            on the ServletContext corresponding to the web application where this applies. 
             Likewise, the context-path should match the context path where this applies.
           -->
           <Arg type="String">server /ctx</Arg>
