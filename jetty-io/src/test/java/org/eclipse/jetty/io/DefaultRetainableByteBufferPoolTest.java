@@ -227,7 +227,7 @@ public class DefaultRetainableByteBufferPoolTest
             buf1.release();
             buf2.release();
 
-            RetainableByteBuffer buf3 = pool.acquire(16385, true);
+            RetainableByteBuffer buf3 = pool.acquire(16384 + 1, true);
             assertThat(buf3, is(notNullValue()));
             assertThat(buf3.capacity(), is(16384 + 1024));
             buf3.release();
