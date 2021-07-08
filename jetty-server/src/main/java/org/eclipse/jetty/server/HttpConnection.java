@@ -403,14 +403,17 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _channel.recycle();
         _parser.reset();
         _generator.reset();
-        if (_retainableByteBuffer != null && !_retainableByteBuffer.isRetained())
+        if (_retainableByteBuffer != null)
         {
-            releaseRequestBuffer();
-        }
-        else if (_retainableByteBuffer != null)
-        {
-            LOG.warn("{} lingering content references?!?!", this);
-            _retainableByteBuffer = null; // Not returned to pool!
+            if (!_retainableByteBuffer.isRetained())
+            {
+                releaseRequestBuffer();
+            }
+            else
+            {
+                LOG.warn("{} lingering content references?!?!", this);
+                _retainableByteBuffer = null; // Not returned to pool!
+            }
         }
         return true;
     }
