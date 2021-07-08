@@ -19,74 +19,101 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DefaultRetainableByteBufferPoolTest
 {
     @Test
-    public void testSimpleMaxMemoryEviction() throws Exception
+    public void testMaxMemoryEviction()
     {
-        DefaultRetainableByteBufferPool pool = new DefaultRetainableByteBufferPool(0, 10, 20, Integer.MAX_VALUE, 30, 30);
+        DefaultRetainableByteBufferPool pool = new DefaultRetainableByteBufferPool(0, 10, 20, Integer.MAX_VALUE, 40, 40);
 
-        RetainableByteBuffer buf1 = pool.acquire(1, true);
-        Thread.sleep(10);
-        RetainableByteBuffer buf2 = pool.acquire(1, true);
-        Thread.sleep(10);
-        RetainableByteBuffer buf3 = pool.acquire(11, true);
+        RetainableByteBuffer buf1 = pool.acquire(10, true);
+        assertThat(pool.getDirectMemory(), lessThanOrEqualTo(40L));
+        RetainableByteBuffer buf2 = pool.acquire(10, true);
+        assertThat(pool.getDirectMemory(), lessThanOrEqualTo(40L));
+        RetainableByteBuffer buf3 = pool.acquire(20, true);
+        assertThat(pool.getDirectMemory(), lessThanOrEqualTo(40L));
+        RetainableByteBuffer buf4 = pool.acquire(20, true);
+        assertThat(pool.getDirectMemory(), lessThanOrEqualTo(40L));
+
+        assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
+        assertThat(pool.getDirectByteBufferCount(), greaterThan(0L));
+        assertThat(pool.getDirectMemory(), greaterThan(0L));
 
         buf1.release();
         buf2.release();
         buf3.release();
+        buf4.release();
 
-        // Make sure buf1 got evicted as it is the oldest one.
-
-        assertThat(pool.getAvailableDirectByteBufferCount(), is(2L));
-        assertThat(pool.getDirectByteBufferCount(), is(2L));
-        assertThat(pool.getDirectMemory(), is(30L));
-
-        RetainableByteBuffer buf4 = pool.acquire(1, true);
-        assertThat(buf4 == buf2, is(true));
-        RetainableByteBuffer buf5 = pool.acquire(11, true);
-        assertThat(buf5 == buf3, is(true));
+        assertThat(pool.getAvailableDirectByteBufferCount(), greaterThan(0L));
+        assertThat(pool.getAvailableDirectByteBufferCount(), lessThan(4L));
+        assertThat(pool.getDirectByteBufferCount(), greaterThan(0L));
+        assertThat(pool.getDirectByteBufferCount(), lessThan(4L));
+        assertThat(pool.getDirectMemory(), lessThanOrEqualTo(40L));
+        assertThat(pool.getDirectMemory(), greaterThan(0L));
     }
 
     @Test
-    public void testMaxMemoryEviction() throws Exception
+    void testBelowMinCapacityDoesNotPool()
     {
-        DefaultRetainableByteBufferPool pool = new DefaultRetainableByteBufferPool(0, 10, 20, Integer.MAX_VALUE, 30, 30);
+        DefaultRetainableByteBufferPool pool = new DefaultRetainableByteBufferPool(10, 10, 20, Integer.MAX_VALUE);
 
-        RetainableByteBuffer buf1 = pool.acquire(1, false);
-        Thread.sleep(10);
-        RetainableByteBuffer buf2 = pool.acquire(1, false);
-        Thread.sleep(10);
-        RetainableByteBuffer buf3 = pool.acquire(11, false); // evicts buf1
-        Thread.sleep(10);
+        RetainableByteBuffer buf1 = pool.acquire(1, true);
+        assertThat(buf1.capacity(), is(1));
+        assertThat(pool.getDirectByteBufferCount(), is(0L));
+        assertThat(pool.getDirectMemory(), is(0L));
 
-        buf3.release();
-        Thread.sleep(10);
-        buf2.release();
-        Thread.sleep(10);
+        buf1.release();
+        assertThat(pool.getDirectByteBufferCount(), is(0L));
+        assertThat(pool.getDirectMemory(), is(0L));
+    }
+
+    @Test
+    void testOverMaxCapacityDoesNotPool()
+    {
+        DefaultRetainableByteBufferPool pool = new DefaultRetainableByteBufferPool(10, 10, 20, Integer.MAX_VALUE);
+
+        RetainableByteBuffer buf1 = pool.acquire(21, true);
+        assertThat(buf1.capacity(), is(21));
+        assertThat(pool.getDirectByteBufferCount(), is(0L));
+        assertThat(pool.getDirectMemory(), is(0L));
+
+        buf1.release();
+        assertThat(pool.getDirectByteBufferCount(), is(0L));
+        assertThat(pool.getDirectMemory(), is(0L));
+    }
+
+    @Test
+    void testTooManyReleases()
+    {
+        DefaultRetainableByteBufferPool pool = new DefaultRetainableByteBufferPool(10, 10, 20, Integer.MAX_VALUE);
+
+        RetainableByteBuffer buf1 = pool.acquire(10, true);
+
+        assertThat(pool.getDirectMemory(), is(10L));
+        assertThat(pool.getAvailableDirectMemory(), is(0L));
+        assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
+        assertThat(pool.getDirectByteBufferCount(), is(1L));
+
         buf1.release();
 
-        RetainableByteBuffer buf4 = pool.acquire(1, false); // == buf2
-        RetainableByteBuffer buf5 = pool.acquire(11, false); // == buf3
-        RetainableByteBuffer buf6 = pool.acquire(11, false); // Evicts buf3 as it was the one released the longest ago.
+        assertThat(pool.getDirectMemory(), is(10L));
+        assertThat(pool.getAvailableDirectMemory(), is(10L));
+        assertThat(pool.getAvailableDirectByteBufferCount(), is(1L));
+        assertThat(pool.getDirectByteBufferCount(), is(1L));
 
-        buf4.release();
-        buf5.release();
-        buf6.release();
+        assertThrows(IllegalStateException.class, buf1::release);
 
-        // Make sure buf1 and buf3 got evicted and only buf2 and buf6 are left.
-
-        assertThat(pool.getAvailableHeapByteBufferCount(), is(2L));
-        assertThat(pool.getHeapByteBufferCount(), is(2L));
-        assertThat(pool.getHeapMemory(), is(30L));
-
-        RetainableByteBuffer buf7 = pool.acquire(1, false);
-        assertThat(buf7 == buf2, is(true));
-        RetainableByteBuffer buf8 = pool.acquire(11, false);
-        assertThat(buf8 == buf6, is(true));
+        assertThat(pool.getDirectMemory(), is(10L));
+        assertThat(pool.getAvailableDirectMemory(), is(10L));
+        assertThat(pool.getAvailableDirectByteBufferCount(), is(1L));
+        assertThat(pool.getDirectByteBufferCount(), is(1L));
     }
 
     @Test
@@ -178,34 +205,34 @@ public class DefaultRetainableByteBufferPoolTest
 
         for (int i = 0; i < 3; i++)
         {
-            {
-                RetainableByteBuffer buffer = pool.acquire(10, true);
-                assertThat(buffer, is(notNullValue()));
-                RetainableByteBuffer buffer2 = pool.acquire(10, true);
-                assertThat(buffer2, is(notNullValue()));
-                buffer.release();
-                buffer2.release();
-            }
-            {
-                RetainableByteBuffer buffer = pool.acquire(16385, true);
-                assertThat(buffer, is(notNullValue()));
-                buffer.release();
-            }
-            {
-                RetainableByteBuffer buffer = pool.acquire(32768, true);
-                assertThat(buffer, is(notNullValue()));
-                buffer.release();
-            }
-            {
-                RetainableByteBuffer buffer = pool.acquire(32768, false);
-                assertThat(buffer, is(notNullValue()));
-                buffer.release();
-            }
+            RetainableByteBuffer buf1 = pool.acquire(10, true);
+            assertThat(buf1, is(notNullValue()));
+            assertThat(buf1.capacity(), is(1024));
+            RetainableByteBuffer buf2 = pool.acquire(10, true);
+            assertThat(buf2, is(notNullValue()));
+            assertThat(buf2.capacity(), is(1024));
+            buf1.release();
+            buf2.release();
+
+            RetainableByteBuffer buf3 = pool.acquire(16385, true);
+            assertThat(buf3, is(notNullValue()));
+            assertThat(buf3.capacity(), is(16384 + 1024));
+            buf3.release();
+
+            RetainableByteBuffer buf4 = pool.acquire(32768, true);
+            assertThat(buf4, is(notNullValue()));
+            assertThat(buf4.capacity(), is(32768));
+            buf4.release();
+
+            RetainableByteBuffer buf5 = pool.acquire(32768, false);
+            assertThat(buf5, is(notNullValue()));
+            assertThat(buf5.capacity(), is(32768));
+            buf5.release();
         }
 
         assertThat(pool.getDirectByteBufferCount(), is(4L));
         assertThat(pool.getHeapByteBufferCount(), is(1L));
-        assertThat(pool.getDirectMemory(), is(52224L));
+        assertThat(pool.getDirectMemory(), is(1024 + 1024 + 16384 + 1024 + 32768L));
         assertThat(pool.getHeapMemory(), is(32768L));
 
         pool.clear();

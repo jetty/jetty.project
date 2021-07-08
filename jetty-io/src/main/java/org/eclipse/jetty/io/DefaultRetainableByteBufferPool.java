@@ -262,73 +262,34 @@ public class DefaultRetainableByteBufferPool implements RetainableByteBufferPool
     {
         if (LOG.isDebugEnabled())
             LOG.debug("evicting {} bytes from {} pools", excess, (direct ? "direct" : "heap"));
-        long totalMemoryCleared = 0L;
         long now = System.nanoTime();
+        long totalClearedCapacity = 0L;
 
         Pool<RetainableByteBuffer>[] buckets = direct ? _direct : _indirect;
-        @SuppressWarnings("unchecked")
-        Pool<RetainableByteBuffer>.Entry[] oldestEntries = new Pool.Entry[buckets.length];
 
-        for (int i = 0; i < buckets.length; i++)
+        while (totalClearedCapacity < excess)
         {
-            Pool<RetainableByteBuffer> bucket = buckets[i];
-            oldestEntries[i] = findOldestEntry(now, bucket);
-        }
-
-        while (true)
-        {
-            int oldestEntryBucketIndex = -1;
-            Pool<RetainableByteBuffer>.Entry oldestEntry = null;
-
-            for (int i = 0; i < oldestEntries.length; i++)
+            for (Pool<RetainableByteBuffer> bucket : buckets)
             {
-                Pool<RetainableByteBuffer>.Entry entry = oldestEntries[i];
-                if (entry == null)
+                Pool<RetainableByteBuffer>.Entry oldestEntry = findOldestEntry(now, bucket);
+                if (oldestEntry == null)
                     continue;
 
-                if (oldestEntry != null)
+                if (oldestEntry.remove())
                 {
-                    long entryAge = now - entry.getPooled().getLastUpdate();
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("checking entry of capacity {} and age {} vs entry of capacity {} and age {}", entry.getPooled().capacity(), now - entry.getPooled().getLastUpdate(), oldestEntry.getPooled().capacity(), now - oldestEntry.getPooled().getLastUpdate());
-                    if (entryAge > now - oldestEntry.getPooled().getLastUpdate())
-                    {
-                        oldestEntry = entry;
-                        oldestEntryBucketIndex = i;
-                    }
+                    int clearedCapacity = oldestEntry.getPooled().capacity();
+                    if (direct)
+                        _currentDirectMemory.addAndGet(-clearedCapacity);
+                    else
+                        _currentHeapMemory.addAndGet(-clearedCapacity);
+                    totalClearedCapacity += clearedCapacity;
                 }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("checking entry of capacity {} and age {}", entry.getPooled().capacity(), now - entry.getPooled().getLastUpdate());
-                    oldestEntry = entry;
-                    oldestEntryBucketIndex = i;
-                }
-            }
-
-            if (oldestEntry != null)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("removing entry of capacity {} and age {}", oldestEntry.getPooled().capacity(), now - oldestEntry.getPooled().getLastUpdate());
-                oldestEntry.remove();
-                if (direct)
-                    _currentDirectMemory.addAndGet(-oldestEntry.getPooled().capacity());
-                else
-                    _currentHeapMemory.addAndGet(-oldestEntry.getPooled().capacity());
-                oldestEntries[oldestEntryBucketIndex] = findOldestEntry(now, buckets[oldestEntryBucketIndex]);
-                totalMemoryCleared += oldestEntry.getPooled().capacity();
-                if (totalMemoryCleared >= excess)
-                    break;
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("found no entry to remove");
-                break;
+                // else a concurrent thread evicted the same entry -> do not account for its capacity.
             }
         }
+
         if (LOG.isDebugEnabled())
-            LOG.debug("eviction done, cleared {} bytes from {} pools", totalMemoryCleared, (direct ? "direct" : "heap"));
+            LOG.debug("eviction done, cleared {} bytes from {} pools", totalClearedCapacity, (direct ? "direct" : "heap"));
     }
 
     private Pool<RetainableByteBuffer>.Entry findOldestEntry(long now, Pool<RetainableByteBuffer> bucket)
