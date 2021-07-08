@@ -97,6 +97,41 @@ public class DefaultRetainableByteBufferPoolTest
     }
 
     @Test
+    public void testRetain()
+    {
+        DefaultRetainableByteBufferPool pool = new DefaultRetainableByteBufferPool(10, 10, 20, Integer.MAX_VALUE);
+
+        RetainableByteBuffer buf1 = pool.acquire(10, true);
+
+        assertThat(pool.getDirectMemory(), is(10L));
+        assertThat(pool.getAvailableDirectMemory(), is(0L));
+        assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
+        assertThat(pool.getDirectByteBufferCount(), is(1L));
+
+        assertThat(buf1.isRetained(), is(false));
+        buf1.retain();
+        buf1.retain();
+        assertThat(buf1.isRetained(), is(true));
+        assertThat(buf1.release(), is(false));
+        assertThat(buf1.isRetained(), is(true));
+        assertThat(buf1.release(), is(false));
+        assertThat(buf1.isRetained(), is(false));
+
+        assertThat(pool.getDirectMemory(), is(10L));
+        assertThat(pool.getAvailableDirectMemory(), is(0L));
+        assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
+        assertThat(pool.getDirectByteBufferCount(), is(1L));
+
+        assertThat(buf1.release(), is(true));
+        assertThat(buf1.isRetained(), is(false));
+
+        assertThat(pool.getDirectMemory(), is(10L));
+        assertThat(pool.getAvailableDirectMemory(), is(10L));
+        assertThat(pool.getAvailableDirectByteBufferCount(), is(1L));
+        assertThat(pool.getDirectByteBufferCount(), is(1L));
+    }
+
+    @Test
     void testTooManyReleases()
     {
         DefaultRetainableByteBufferPool pool = new DefaultRetainableByteBufferPool(10, 10, 20, Integer.MAX_VALUE);
