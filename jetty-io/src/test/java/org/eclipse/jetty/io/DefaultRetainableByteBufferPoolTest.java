@@ -59,9 +59,9 @@ public class DefaultRetainableByteBufferPoolTest
         buffers.forEach(RetainableByteBuffer::release);
 
         assertThat(pool.getAvailableDirectByteBufferCount(), greaterThan(0L));
-        assertThat(pool.getAvailableDirectByteBufferCount(), lessThan((long) buffers.size()));
+        assertThat(pool.getAvailableDirectByteBufferCount(), lessThan((long)buffers.size()));
         assertThat(pool.getDirectByteBufferCount(), greaterThan(0L));
-        assertThat(pool.getDirectByteBufferCount(), lessThan((long) buffers.size()));
+        assertThat(pool.getDirectByteBufferCount(), lessThan((long)buffers.size()));
         assertThat(pool.getDirectMemory(), lessThanOrEqualTo(40L));
         assertThat(pool.getDirectMemory(), greaterThan(0L));
     }
