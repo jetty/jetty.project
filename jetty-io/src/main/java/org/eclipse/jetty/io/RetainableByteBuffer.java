@@ -83,11 +83,8 @@ public class RetainableByteBuffer implements Retainable
      */
     void acquire()
     {
-        if (references.getAndIncrement() != 0)
-        {
-            references.decrementAndGet();
+        if (references.getAndUpdate(c -> c == 0 ? 1 : c) != 0)
             throw new IllegalStateException("re-pooled while still used " + this);
-        }
     }
 
     /**
@@ -96,11 +93,8 @@ public class RetainableByteBuffer implements Retainable
     @Override
     public void retain()
     {
-        if (references.getAndIncrement() == 0)
-        {
-            references.decrementAndGet();
+        if (references.getAndUpdate(c -> c == 0 ? 0 : c + 1) == 0)
             throw new IllegalStateException("released " + this);
-        }
     }
 
     /**
@@ -109,12 +103,12 @@ public class RetainableByteBuffer implements Retainable
      */
     public boolean release()
     {
-        int ref = references.decrementAndGet();
-        if (ref < 0)
+        int ref = references.updateAndGet(c ->
         {
-            references.incrementAndGet();
-            throw new IllegalStateException("already released " + this);
-        }
+            if (c == 0)
+                throw new IllegalStateException("already released " + this);
+            return c - 1;
+        });
         if (ref == 0)
         {
             lastUpdate.setOpaque(System.nanoTime());
