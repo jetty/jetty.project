@@ -1,1 +1,0 @@
-this is test .txt file and safe to access
