@@ -57,7 +57,7 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.io.DefaultRetainableByteBufferPool;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
@@ -202,7 +202,7 @@ public class HttpClient extends ContainerLifeCycle
         if (byteBufferPool == null)
             setByteBufferPool(new MappedByteBufferPool(2048, maxBucketSize));
         if (getBean(RetainableByteBufferPool.class) == null)
-            addBean(new DefaultRetainableByteBufferPool(0, 2048, 65536, maxBucketSize));
+            addBean(new ArrayRetainableByteBufferPool(0, 2048, 65536, maxBucketSize));
         Scheduler scheduler = getScheduler();
         if (scheduler == null)
             setScheduler(new ScheduledExecutorScheduler(name + "-scheduler", false));

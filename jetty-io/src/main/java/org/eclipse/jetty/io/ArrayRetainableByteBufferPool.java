@@ -27,9 +27,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ManagedObject
-public class DefaultRetainableByteBufferPool implements RetainableByteBufferPool
+public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool
 {
-    private static final Logger LOG = LoggerFactory.getLogger(DefaultRetainableByteBufferPool.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ArrayRetainableByteBufferPool.class);
 
     private final Pool<RetainableByteBuffer>[] _direct;
     private final Pool<RetainableByteBuffer>[] _indirect;
@@ -40,17 +40,17 @@ public class DefaultRetainableByteBufferPool implements RetainableByteBufferPool
     private final AtomicLong _currentHeapMemory = new AtomicLong();
     private final AtomicLong _currentDirectMemory = new AtomicLong();
 
-    public DefaultRetainableByteBufferPool()
+    public ArrayRetainableByteBufferPool()
     {
         this(0, 1024, 65536, Integer.MAX_VALUE, -1L, -1L);
     }
 
-    public DefaultRetainableByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize)
+    public ArrayRetainableByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize)
     {
         this(minCapacity, factor, maxCapacity, maxBucketSize, -1L, -1L);
     }
 
-    public DefaultRetainableByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
+    public ArrayRetainableByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
     {
         _factor = factor <= 0 ? 1024 : factor;
         this._maxHeapMemory = maxHeapMemory;
