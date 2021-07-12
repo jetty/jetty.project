@@ -26,6 +26,8 @@ lib/hazelcast/hazelcast-client-${hazelcast.version}.jar
 
 [ini]
 hazelcast.version?=3.12.10
+jetty.webapp.addSystemClasses+=,org.eclipse.jetty.hazelcast.
+jetty.webapp.addServerClasses+=,-org.eclipse.jetty.hazelcast.
 
 [license]
 Hazelcast is an open source project hosted on Github and released under the Apache 2.0 license.
@@ -34,8 +36,6 @@ http://www.apache.org/licenses/LICENSE-2.0.html
 
 
 [ini-template]
-jetty.webapp.addSystemClasses+=,org.eclipse.jetty.hazelcast.
-jetty.webapp.addServerClasses+=,-org.eclipse.jetty.hazelcast.
 jetty.session.hazelcast.mapName=jetty-distributed-session-map
 jetty.session.hazelcast.hazelcastInstanceName=JETTY_DISTRIBUTED_SESSION_INSTANCE
 jetty.session.hazelcast.onlyClient=true

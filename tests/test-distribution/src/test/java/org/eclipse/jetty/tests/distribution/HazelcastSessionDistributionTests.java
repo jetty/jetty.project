@@ -36,6 +36,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
+import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,8 +132,11 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
         }
     }
 
-    @Test
-    public void testHazelcastRemote() throws Exception
+    @Disabled("not working see https://github.com/hazelcast/hazelcast/issues/18508")
+    /**
+     * This test simulate Hazelcast instance within Jetty a cluster member with an external Hazelcast instance
+     */
+    public void testHazelcastRemoteAndPartOfCluster() throws Exception
     {
 
         Map<String, String> env = new HashMap<>();
@@ -180,15 +185,6 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
             {
                 assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
                 assertEquals(0, run1.getExitValue());
-
-
-                Path jettyBase = distribution.getJettyBase();
-                //session-store-hazelcast-remote.ini
-                // we should not need this
-                File startdDirectory = new File(jettyBase.toFile(), "start.d");
-                Files.copy(Paths.get("src/test/resources/session-store-hazelcast-remote.ini"),
-                           new File(startdDirectory, "session-store-hazelcast-remote.ini").toPath(),
-                           StandardCopyOption.REPLACE_EXISTING);
 
                 File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-session-webapp:war:" + jettyVersion);
                 distribution.installWarFile(war, "test");
