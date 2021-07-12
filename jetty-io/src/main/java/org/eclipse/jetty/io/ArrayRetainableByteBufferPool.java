@@ -119,7 +119,7 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool
             Pool<RetainableByteBuffer>.Entry reservedEntry = bucket.reserve();
             if (reservedEntry != null)
             {
-                buffer = newRetainableByteBuffer(bucket.capacity, direct, byteBuffer ->
+                buffer = newRetainableByteBuffer(bucket._capacity, direct, byteBuffer ->
                 {
                     BufferUtil.clear(byteBuffer);
                     reservedEntry.release();
@@ -335,15 +335,20 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool
 
     private static class Bucket extends Pool<RetainableByteBuffer>
     {
-        private final int capacity;
+        private final int _capacity;
 
         Bucket(int capacity, int size)
         {
             super(Pool.StrategyType.THREAD_ID, size, true);
-            this.capacity = capacity;
+            _capacity = capacity;
         }
     }
 
+    /**
+     * A variant of the {@link ArrayRetainableByteBufferPool} that
+     * uses buckets of buffers that increase in size by a power of
+     * 2 (eg 1k, 2k, 4k, 8k, etc.).
+     */
     public static class LogBuckets extends ArrayRetainableByteBufferPool
     {
         public LogBuckets()
