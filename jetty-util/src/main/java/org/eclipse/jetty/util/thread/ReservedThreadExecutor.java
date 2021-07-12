@@ -256,8 +256,8 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         }
         catch (RejectedExecutionException e)
         {
-            LOG.ignore(e);
             _pending.decrementAndGet();
+            LOG.ignore(e);
         }
     }
 
@@ -277,6 +277,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         private final SynchronousQueue<Runnable> _task = new SynchronousQueue<>();
         private boolean _starting = true;
         private boolean _abort;
+        private Thread _thread;
 
         public boolean offer(Runnable task)
         {
@@ -285,32 +286,34 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
 
             try
             {
-                // TODO The approach below is a defensive strategy for #6495
-                //      It avoids blocking forever on the _task, just in case
-                //      the thread is not running/polling.  
-                //      The problem with this approach is that if after giving up waiting for
-                //      the reserved thread to poll the offered job, then we do not know if
-                //      that thread will never come (and can be discarded) or will arrive
-                //      later (so should be put back on the stack).  We try to get around
-                //      that choice by setting _abort in the reserved thread and discarding
-                //      it, so that if it ever does arrive, then it will at least die rather
-                //      than wait forever.
-
                 // Offer the task to the SynchronousQueue, but without blocking forever
                 if (_task.offer(task))
                     return true;
-                // Yield to allow the reserved thread to arrive and then try again
-                Thread.yield();
-                if (_task.offer(task))
-                    return true;
-                // Wait an arbitrary 1 seconds for the thread to start
-                if (_task.offer(task, 1, TimeUnit.SECONDS))
-                    return true;
 
-                // The reserved thread has not arrived after some time.  It is not usable and we have no
-                // way of stopping it cleanly since we can't offer(STOP). So we will just set the abort flag and
-                // leak the thread and return false.
-                LOG.warn("RTE offer failed: " + this);
+                // Try spinning to allow the reserved thread to arrive and then try again
+                for (int spin = 100; spin-- > 0;)
+                {
+                    Thread.yield(); // Replace with onSpinWait in jetty-10
+                    if (_task.offer(task))
+                        return true;
+                }
+
+                // The reserved thread has not arrived after some time.
+                // Attempt to log this exceptional condition.
+                Thread thread = _thread;
+                if (thread == null)
+                    LOG.warn("ReservedThread.offer failed: " + this);
+                else
+                {
+                    StringBuilder stack = new StringBuilder();
+                    for (StackTraceElement frame : thread.getStackTrace())
+                        stack.append(System.lineSeparator()).append(" at ").append(frame);
+
+                    LOG.warn("ReservedThread.offer failed: " + thread + stack.toString());
+                }
+
+                // The thread is now not usable as we don't know if it will ever arrive or not.
+                // Instead we will just set the abort flag, discard the thread and return false.
                 _abort = true;
                 return false;
             }
@@ -368,6 +371,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         @Override
         public void run()
         {
+            _thread = Thread.currentThread();
             while (true)
             {
                 // test and increment size BEFORE decrementing pending,
