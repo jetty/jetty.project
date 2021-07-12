@@ -57,6 +57,11 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HazelcastSessionDistributionTests.class);
 
+
+    /**
+     *  This simulate the onlyClient option which means the JVM running Jetty is only an Hazelcast client and not part
+     *  of the cluster
+     */
     @Test
     public void testHazelcastRemoteOnlyClient() throws Exception
     {
@@ -89,7 +94,7 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
             String[] args1 = {
                 "--create-startd",
                 "--approve-all-licenses",
-                "--add-to-start=resources,server,http,webapp,deploy,jsp,jmx,servlet,servlets,session-store-hazelcast-remote"
+                "--add-to-start=resources,server,http,webapp,deploy,jmx,servlet,servlets,session-store-hazelcast-remote"
             };
             try (DistributionTester.Run run1 = distribution.start(args1))
             {
@@ -179,7 +184,7 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
             String[] args1 = {
                 "--create-startd",
                 "--approve-all-licenses",
-                "--add-to-start=resources,server,http,webapp,deploy,jsp,jmx,servlet,servlets,session-store-hazelcast-remote"
+                "--add-to-start=resources,server,http,webapp,deploy`,jmx,servlet,servlets,session-store-hazelcast-remote"
             };
             try (DistributionTester.Run run1 = distribution.start(args1))
             {

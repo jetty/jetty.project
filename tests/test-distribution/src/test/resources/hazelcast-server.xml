@@ -42,11 +42,11 @@
     <property name="hazelcast.rest.enabled">true</property>
   </properties>
 
-<!--  <serialization>-->
-<!--    <serializers>-->
-<!--      <serializer type-class="org.eclipse.jetty.server.session.SessionData"-->
-<!--                  class-name="org.eclipse.jetty.hazelcast.session.SessionDataSerializer" />-->
-<!--    </serializers>-->
-<!--  </serialization>-->
+  <serialization>
+    <serializers>
+      <serializer type-class="org.eclipse.jetty.server.session.SessionData"
+                  class-name="org.eclipse.jetty.hazelcast.session.SessionDataSerializer" />
+    </serializers>
+  </serialization>
 
 </hazelcast>
