@@ -287,20 +287,22 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             {
                 // TODO The approach below is a defensive strategy for #6495
                 //      It avoids blocking forever on the _task, just in case
-                //      the thread is not running/polling.  However the problem with
-                //      this approach is that if the thread really in not running/polling
-                //      then we replace a block-forever with a thread on the stack that will
-                //      always be popped and then returned without being useful. We could
-                //      not put the thread back on the stack, but then if it does eventually
-                //      start running, it will wait forever in reservedWait.
+                //      the thread is not running/polling.  
+                //      The problem with this approach is that if after giving up waiting for
+                //      the reserved thread to poll the offered job, then we do not know if
+                //      that thread will never come (and can be discarded) or will arrive
+                //      later (so should be put back on the stack).  We try to get around
+                //      that choice by setting _abort in the reserved thread and discarding
+                //      it, so that if it ever does arrive, then it will at least die rather
+                //      than wait forever.
 
                 // Offer the task to the SynchronousQueue, but without blocking forever
                 if (_task.offer(task))
                     return true;
+                // Yield to allow the reserved thread to arrive and then try again
                 Thread.yield();
                 if (_task.offer(task))
                     return true;
-
                 // Wait an arbitrary 1 seconds for the thread to start
                 if (_task.offer(task, 1, TimeUnit.SECONDS))
                     return true;

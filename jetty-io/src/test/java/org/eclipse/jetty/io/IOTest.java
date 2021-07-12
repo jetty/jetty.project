@@ -550,4 +550,56 @@ public class IOTest
             }
         }
     }
+
+    @Test
+    public void testSymbolicLink(TestInfo testInfo) throws Exception
+    {
+        File dir = MavenTestingUtils.getTargetTestingDir(testInfo.getDisplayName());
+        FS.ensureEmpty(dir);
+        File realFile = new File(dir, "real");
+        Path realPath = realFile.toPath();
+        FS.touch(realFile);
+
+        File linkFile = new File(dir, "link");
+        Path linkPath = linkFile.toPath();
+        Files.createSymbolicLink(linkPath, realPath);
+        Path targPath = linkPath.toRealPath();
+
+        System.err.printf("realPath = %s%n", realPath);
+        System.err.printf("linkPath = %s%n", linkPath);
+        System.err.printf("targPath = %s%n", targPath);
+
+        assertFalse(Files.isSymbolicLink(realPath));
+        assertTrue(Files.isSymbolicLink(linkPath));
+    }
+
+    @Test
+    public void testSymbolicLinkDir(TestInfo testInfo) throws Exception
+    {
+        File dir = MavenTestingUtils.getTargetTestingDir(testInfo.getDisplayName());
+        FS.ensureEmpty(dir);
+
+        File realDirFile = new File(dir, "real");
+        Path realDirPath = realDirFile.toPath();
+        Files.createDirectories(realDirPath);
+
+        File linkDirFile = new File(dir, "link");
+        Path linkDirPath = linkDirFile.toPath();
+        Files.createSymbolicLink(linkDirPath, realDirPath);
+
+        File realFile = new File(realDirFile, "file");
+        Path realPath = realFile.toPath();
+        FS.touch(realFile);
+
+        File linkFile = new File(linkDirFile, "file");
+        Path linkPath = linkFile.toPath();
+        Path targPath = linkPath.toRealPath();
+
+        System.err.printf("realPath = %s%n", realPath);
+        System.err.printf("linkPath = %s%n", linkPath);
+        System.err.printf("targPath = %s%n", targPath);
+
+        assertFalse(Files.isSymbolicLink(realPath));
+        assertFalse(Files.isSymbolicLink(linkPath));
+    }
 }
