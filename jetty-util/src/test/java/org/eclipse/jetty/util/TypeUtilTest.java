@@ -19,12 +19,12 @@ import java.nio.file.Paths;
 import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.JRE;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -187,5 +187,58 @@ public class TypeUtilTest
         // Class from JVM core
         String expectedJavaBase = "/java.base";
         assertThat(TypeUtil.getLocationOfClass(java.lang.ThreadDeath.class).toASCIIString(), containsString(expectedJavaBase));
+    }
+
+    @Test
+    public void testNextPowerOf2()
+    {
+        assertThat(TypeUtil.nextPowerOf2(0), Matchers.is(0));
+        assertThat(TypeUtil.nextPowerOf2(1), Matchers.is(1));
+        assertThat(TypeUtil.nextPowerOf2(2), Matchers.is(2));
+        assertThat(TypeUtil.nextPowerOf2(3), Matchers.is(4));
+        assertThat(TypeUtil.nextPowerOf2(4), Matchers.is(4));
+
+        int value = 4;
+        while (value < Integer.MAX_VALUE / 2)
+        {
+            assertThat(TypeUtil.nextPowerOf2(value - 1), Matchers.is(value));
+            assertThat(TypeUtil.nextPowerOf2(value), Matchers.is(value));
+            assertThat(TypeUtil.nextPowerOf2(value + 1), Matchers.is(value * 2));
+            value = value * 2;
+        }
+
+        assertThat(TypeUtil.nextPowerOf2(Integer.MAX_VALUE / 2), Matchers.is(0x40000000));
+        assertThrows(IllegalArgumentException.class, () -> TypeUtil.nextPowerOf2((Integer.MAX_VALUE / 2) + 1));
+        assertThrows(IllegalArgumentException.class, () -> TypeUtil.nextPowerOf2(Integer.MAX_VALUE));
+        assertThrows(IllegalArgumentException.class, () -> TypeUtil.nextPowerOf2(-1));
+        assertThrows(IllegalArgumentException.class, () -> TypeUtil.nextPowerOf2(Integer.MIN_VALUE));
+    }
+
+    @Test
+    public void testLogNextPowerOf2()
+    {
+        assertThat(TypeUtil.log2NextPowerOf2(0), Matchers.is(0));
+        assertThat(TypeUtil.log2NextPowerOf2(1), Matchers.is(0));
+        assertThat(TypeUtil.log2NextPowerOf2(2), Matchers.is(1));
+        assertThat(TypeUtil.log2NextPowerOf2(3), Matchers.is(2));
+        assertThat(TypeUtil.log2NextPowerOf2(4), Matchers.is(2));
+
+        int value = 4;
+        int power = 2;
+        while (value < Integer.MAX_VALUE / 2)
+        {
+            System.err.printf("v=%d p=%d%n", value, power);
+            assertThat(TypeUtil.log2NextPowerOf2(value - 1), Matchers.is(power));
+            assertThat(TypeUtil.log2NextPowerOf2(value), Matchers.is(power));
+            assertThat(TypeUtil.log2NextPowerOf2(value + 1), Matchers.is(power + 1));
+            value = value * 2;
+            power = power + 1;
+        }
+
+        assertThat(TypeUtil.log2NextPowerOf2(Integer.MAX_VALUE / 2), Matchers.is(30));
+        assertThrows(IllegalArgumentException.class, () -> TypeUtil.log2NextPowerOf2((Integer.MAX_VALUE / 2) + 1));
+        assertThrows(IllegalArgumentException.class, () -> TypeUtil.log2NextPowerOf2(Integer.MAX_VALUE));
+        assertThrows(IllegalArgumentException.class, () -> TypeUtil.log2NextPowerOf2(-1));
+        assertThrows(IllegalArgumentException.class, () -> TypeUtil.log2NextPowerOf2(Integer.MIN_VALUE));
     }
 }

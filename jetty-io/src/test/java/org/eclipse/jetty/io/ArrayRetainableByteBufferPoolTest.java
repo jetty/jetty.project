@@ -16,6 +16,7 @@ package org.eclipse.jetty.io;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -312,5 +313,32 @@ public class ArrayRetainableByteBufferPoolTest
         assertThat(pool.getHeapByteBufferCount(), is(0L));
         assertThat(pool.getDirectMemory(), is(0L));
         assertThat(pool.getHeapMemory(), is(0L));
+    }
+
+    @Test
+    public void testLogBuckets()
+    {
+        ArrayRetainableByteBufferPool pool = new ArrayRetainableByteBufferPool.LogBuckets();
+        assertThat(pool.acquire(1, false).capacity(), is(1));
+        assertThat(pool.acquire(2, false).capacity(), is(2));
+        assertThat(pool.acquire(3, false).capacity(), is(4));
+        assertThat(pool.acquire(4, false).capacity(), is(4));
+
+        int capacity = 4;
+        while (true)
+        {
+            RetainableByteBuffer b = pool.acquire(capacity - 1, false);
+            assertThat(b.capacity(), Matchers.is(capacity));
+            b = pool.acquire(capacity, false);
+            assertThat(b.capacity(), Matchers.is(capacity));
+
+            if (capacity >= pool.getMaxCapacity())
+                break;
+
+            b = pool.acquire(capacity + 1, false);
+            assertThat(b.capacity(), Matchers.is(capacity * 2));
+
+            capacity = capacity * 2;
+        }
     }
 }
