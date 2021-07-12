@@ -16,7 +16,7 @@
 
 Enabling this module allows Jetty to utilize authentication modules that implement the Jakara Authentication (JASPI) specification. JASPI provides an SPI (Service Provider Interface) for pluggable, portable, and standardized authentication modules. Compatible modules are portable between servers that support the JASPI specification. This module provides a bridge from Jakarta Authentication to the Jetty Security framework.  
 
-Only modules conforming to the "Servlet Container Profile" with the ServerAuthModule interface within the https://jakarta.ee/specifications/authentication/2.0/jakarta-authentication-spec-2.0.pdf[JakartaAuthentication] are supported her. These modules must be configured before start-up.  Operations for runtime registering or de-registering authentication modules are not supported. 
+Only modules conforming to the "Servlet Container Profile" with the ServerAuthModule interface within the https://jakarta.ee/specifications/authentication/2.0/jakarta-authentication-spec-2.0.pdf[JakartaAuthentication] are supported. These modules must be configured before start-up.  Operations for runtime registering or de-registering authentication modules are not supported. 
 
 [[og-jaspi-configuration]]
 ==== Configuration
@@ -40,6 +40,17 @@ include::{JETTY_HOME}/modules/jaspi/jaspi-authmoduleconfig.xml[tags=documentatio
 ----
 
 It illustrates setting up HTTP Basic Authentication using a Jakarta Authentication module that comes packaged with jetty: `org.eclipse.jetty.security.jaspi.modules.BasicAuthenticationAuthModule`, and applies it for a context named `/ctx`. Other custom or 3rd party modules that are compatible with the `ServerAuthModule` interface in JASPI may be imported here.
+
+Once the appropriate `ServerAuthModule` is configured, the configuration must be completed by linking it to the webapp. Open the webapp's context.xml and add the following:
+
+[source, xml, subs=verbatim]
+----
+<Get name="securityHandler">
+  <Set name="authenticatorFactory">
+    <New class="org.eclipse.jetty.security.jaspi.JaspiAuthenticatorFactory" />
+  </Set>
+</Get>
+----
 
 
 
