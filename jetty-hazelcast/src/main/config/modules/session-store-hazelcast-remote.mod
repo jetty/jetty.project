@@ -34,6 +34,8 @@ http://www.apache.org/licenses/LICENSE-2.0.html
 
 
 [ini-template]
+jetty.webapp.addSystemClasses+=,org.eclipse.jetty.hazelcast.
+jetty.webapp.addServerClasses+=,-org.eclipse.jetty.hazelcast.
 jetty.session.hazelcast.mapName=jetty-distributed-session-map
 jetty.session.hazelcast.hazelcastInstanceName=JETTY_DISTRIBUTED_SESSION_INSTANCE
 jetty.session.hazelcast.onlyClient=true
