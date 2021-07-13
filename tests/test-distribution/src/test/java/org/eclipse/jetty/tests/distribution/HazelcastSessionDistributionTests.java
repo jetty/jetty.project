@@ -184,7 +184,7 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
             String[] args1 = {
                 "--create-startd",
                 "--approve-all-licenses",
-                "--add-to-start=resources,server,http,webapp,deploy`,jmx,servlet,servlets,session-store-hazelcast-remote"
+                "--add-to-start=resources,server,http,webapp,deploy,jmx,servlet,servlets,session-store-hazelcast-remote"
             };
             try (DistributionTester.Run run1 = distribution.start(args1))
             {
