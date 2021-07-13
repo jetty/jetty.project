@@ -314,7 +314,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                     for (StackTraceElement frame : thread.getStackTrace())
                         stack.append(System.lineSeparator()).append(" at ").append(frame);
 
-                    LOG.warn("ReservedThread.offer failed: {}{}", thread, stack);
+                    LOG.warn("ReservedThread.offer failed: {} {}{}", thread, ReservedThreadExecutor.this, stack);
                 }
 
                 // The thread is now not usable as we don't know if it will ever arrive or not.
