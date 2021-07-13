@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
@@ -25,11 +26,13 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ManagedObject
-public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool
+public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ArrayRetainableByteBufferPool.class);
 
@@ -43,7 +46,6 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool
     private final AtomicLong _currentHeapMemory = new AtomicLong();
     private final AtomicLong _currentDirectMemory = new AtomicLong();
     private final Function<Integer, Integer> _bucketIndexFor;
-    private final Function<Integer, Integer> _bucketCapacity;
 
     public ArrayRetainableByteBufferPool()
     {
@@ -92,7 +94,6 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool
         _direct = directArray;
         _indirect = indirectArray;
         _bucketIndexFor = bucketIndexFor;
-        _bucketCapacity = bucketCapacity;
     }
 
     public int getMinCapacity()
@@ -314,6 +315,28 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool
             LOG.debug("eviction done, cleared {} bytes from {} pools", totalClearedCapacity, (direct ? "direct" : "heap"));
     }
 
+    @Override
+    public String toString()
+    {
+        return String.format("%s{min=%d,max=%d,buckets=%d,heap=%d/%d,direct=%d/%d}",
+            super.toString(),
+            _minCapacity, _maxCapacity,
+            _direct.length,
+            _currentHeapMemory.get(), _maxHeapMemory,
+            _currentDirectMemory.get(), _maxDirectMemory);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        Dumpable.dumpObjects(
+            out,
+            indent,
+            this,
+            DumpableCollection.fromArray("direct", _direct),
+            DumpableCollection.fromArray("indirect", _indirect));
+    }
+
     private Pool<RetainableByteBuffer>.Entry findOldestEntry(long now, Pool<RetainableByteBuffer> bucket)
     {
         Pool<RetainableByteBuffer>.Entry oldestEntry = null;
@@ -341,6 +364,12 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool
         {
             super(Pool.StrategyType.THREAD_ID, size, true);
             _capacity = capacity;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s{capacity=%d}", super.toString(), _capacity);
         }
     }
 

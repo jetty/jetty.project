@@ -340,5 +340,7 @@ public class ArrayRetainableByteBufferPoolTest
 
             capacity = capacity * 2;
         }
+
+        System.err.println(pool.dump());
     }
 }
