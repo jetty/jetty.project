@@ -217,6 +217,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             return false;
 
         ReservedThread thread = _stack.pollFirst();
+        LOG.info("tryExecute got {}", thread);
         if (thread == null)
         {
             if (task != STOP)
@@ -277,12 +278,12 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         private final SynchronousQueue<Runnable> _task = new SynchronousQueue<>();
         private boolean _starting = true;
         private boolean _abort;
-        private Thread _thread;
+        private volatile Thread _thread;
 
         public boolean offer(Runnable task)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} offer {}", this, task);
+                LOG.debug("{} offer task={} {}", this, task, ReservedThreadExecutor.this);
 
             try
             {
@@ -302,14 +303,16 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                 // Attempt to log this exceptional condition.
                 Thread thread = _thread;
                 if (thread == null)
-                    LOG.warn("ReservedThread.offer failed: " + this);
+                {
+                    LOG.warn("ReservedThread.offer failed: {}", ReservedThreadExecutor.this);
+                }
                 else
                 {
                     StringBuilder stack = new StringBuilder();
                     for (StackTraceElement frame : thread.getStackTrace())
                         stack.append(System.lineSeparator()).append(" at ").append(frame);
 
-                    LOG.warn("ReservedThread.offer failed: " + thread + stack);
+                    LOG.warn("ReservedThread.offer failed: {}{}{}", thread, System.lineSeparator(), stack);
                 }
 
                 // The thread is now not usable as we don't know if it will ever arrive or not.
@@ -335,7 +338,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         private Runnable reservedWait()
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} waiting", this);
+                LOG.debug("{} waiting {}", this, ReservedThreadExecutor.this);
 
             while (true)
             {
@@ -344,7 +347,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                     // Always poll at some period so we can check the abort flag
                     Runnable task = _idleTime <= 0 ? _task.poll(30, TimeUnit.SECONDS) : _task.poll(_idleTime, _idleTimeUnit);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} task={}", this, task);
+                        LOG.debug("{} task={} {}", this, task, ReservedThreadExecutor.this);
                     if (task != null)
                         return task;
 
@@ -356,7 +359,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                     if (_idleTime > 0 && _stack.remove(this))
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("{} IDLE", this);
+                            LOG.debug("{} idle {}", this, ReservedThreadExecutor.this);
                         _size.decrementAndGet();
                         return STOP;
                     }
@@ -372,69 +375,76 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         public void run()
         {
             _thread = Thread.currentThread();
-            while (true)
+            try
             {
-                // test and increment size BEFORE decrementing pending,
-                // so that we don't have a race starting new pending.
-                int size = _size.get();
-
-                // Are we stopped?
-                if (size < 0)
-                    return;
-
-                // Are we surplus to capacity?
-                if (size >= _capacity)
+                while (true)
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} size {} > capacity", this, size, _capacity);
+                    // test and increment size BEFORE decrementing pending,
+                    // so that we don't have a race starting new pending.
+                    int size = _size.get();
+
+                    // Are we stopped?
+                    if (size < 0)
+                        return;
+
+                    // Are we surplus to capacity?
+                    if (size >= _capacity)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("{} size {} > capacity", this, size, _capacity);
+                        if (_starting)
+                            _pending.decrementAndGet();
+                        return;
+                    }
+
+                    // If we cannot update size then recalculate
+                    if (!_size.compareAndSet(size, size + 1))
+                        continue;
+
                     if (_starting)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("{} started {}", this, ReservedThreadExecutor.this);
                         _pending.decrementAndGet();
-                    return;
+                        _starting = false;
+                    }
+
+                    // Insert ourselves in the stack. Size is already incremented, but
+                    // that only effects the decision to keep other threads reserved.
+                    _stack.offerFirst(this);
+
+                    // Once added to the stack, we must always wait for a job on the _task Queue
+                    // and never return early, else we may leave a thread blocked offering a _task.
+                    Runnable task = reservedWait();
+
+                    if (task == STOP)
+                        // return on STOP poison pill
+                        break;
+
+                    // Run the task
+                    try
+                    {
+                        task.run();
+                    }
+                    catch (Throwable e)
+                    {
+                        LOG.warn(e);
+                    }
                 }
 
-                // If we cannot update size then recalculate
-                if (!_size.compareAndSet(size, size + 1))
-                    continue;
-
-                if (_starting)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} started", this);
-                    _pending.decrementAndGet();
-                    _starting = false;
-                }
-
-                // Insert ourselves in the stack. Size is already incremented, but
-                // that only effects the decision to keep other threads reserved.
-                _stack.offerFirst(this);
-
-                // Once added to the stack, we must always wait for a job on the _task Queue
-                // and never return early, else we may leave a thread blocked offering a _task.
-                Runnable task = reservedWait();
-
-                if (task == STOP)
-                    // return on STOP poison pill
-                    break;
-
-                // Run the task
-                try
-                {
-                    task.run();
-                }
-                catch (Throwable e)
-                {
-                    LOG.warn(e);
-                }
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} exited {}", this, ReservedThreadExecutor.this);
             }
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} Exited", this);
+            finally
+            {
+                _thread = null;
+            }
         }
 
         @Override
         public String toString()
         {
-            return String.format("%s@%x", ReservedThreadExecutor.this, hashCode());
+            return String.format("%s@%x", getClass().getSimpleName(), hashCode());
         }
     }
 }
