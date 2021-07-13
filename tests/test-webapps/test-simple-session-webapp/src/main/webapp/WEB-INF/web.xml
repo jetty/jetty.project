@@ -8,4 +8,14 @@
 
   <display-name>Very Simple Web Application</display-name>
 
+  <servlet>
+    <servlet-name>SessionTest</servlet-name>
+    <servlet-class>org.eclipse.jetty.test.session.SessionTest</servlet-class>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>SessionTest</servlet-name>
+    <url-pattern>/session</url-pattern>
+  </servlet-mapping>
+
 </web-app>
