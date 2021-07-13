@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * An Executor using preallocated/reserved Threads from a wrapped Executor.
+ * An Executor using pre-allocated/reserved Threads from a wrapped Executor.
  * <p>Calls to {@link #execute(Runnable)} on a {@link ReservedThreadExecutor} will either succeed
  * with a Thread immediately being assigned the Runnable task, or fail if no Thread is
  * available.
@@ -135,7 +135,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         return _pending.get();
     }
 
-    @ManagedAttribute(value = "idletimeout in MS", readonly = true)
+    @ManagedAttribute(value = "idle timeout in MS", readonly = true)
     public long getIdleTimeoutMs()
     {
         if (_idleTimeUnit == null)
@@ -309,7 +309,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                     for (StackTraceElement frame : thread.getStackTrace())
                         stack.append(System.lineSeparator()).append(" at ").append(frame);
 
-                    LOG.warn("ReservedThread.offer failed: " + thread + stack.toString());
+                    LOG.warn("ReservedThread.offer failed: " + thread + stack);
                 }
 
                 // The thread is now not usable as we don't know if it will ever arrive or not.
@@ -341,7 +341,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             {
                 try
                 {
-                    // Always poll at some period so we can check the abort flagg
+                    // Always poll at some period so we can check the abort flag
                     Runnable task = _idleTime <= 0 ? _task.poll(30, TimeUnit.SECONDS) : _task.poll(_idleTime, _idleTimeUnit);
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} task={}", this, task);
