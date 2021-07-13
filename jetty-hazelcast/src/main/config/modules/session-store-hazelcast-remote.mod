@@ -14,7 +14,6 @@ sessions
 
 [files]
 maven://com.hazelcast/hazelcast/${hazelcast.version}|lib/hazelcast/hazelcast-${hazelcast.version}.jar
-maven://com.hazelcast/hazelcast-client/${hazelcast.version}|lib/hazelcast/hazelcast-client-${hazelcast.version}.jar
 
 [xml]
 etc/sessions/hazelcast/remote.xml
@@ -22,10 +21,11 @@ etc/sessions/hazelcast/remote.xml
 [lib]
 lib/jetty-hazelcast-${jetty.version}.jar
 lib/hazelcast/hazelcast-${hazelcast.version}.jar
-lib/hazelcast/hazelcast-client-${hazelcast.version}.jar
 
 [ini]
 hazelcast.version?=4.1
+jetty.webapp.addSystemClasses+=,org.eclipse.jetty.hazelcast.
+jetty.webapp.addServerClasses+=,-org.eclipse.jetty.hazelcast.
 
 [license]
 Hazelcast is an open source project hosted on Github and released under the Apache 2.0 license.
