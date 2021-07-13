@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -316,9 +317,9 @@ public class ArrayRetainableByteBufferPoolTest
     }
 
     @Test
-    public void testLogBuckets()
+    public void testLogBuckets() throws IOException
     {
-        ArrayRetainableByteBufferPool pool = new ArrayRetainableByteBufferPool.LogBuckets();
+        RetainableByteBufferPool.SampledPool pool = new RetainableByteBufferPool.SampledPool(new ArrayRetainableByteBufferPool.LogBuckets());
         assertThat(pool.acquire(1, false).capacity(), is(1));
         assertThat(pool.acquire(2, false).capacity(), is(2));
         assertThat(pool.acquire(3, false).capacity(), is(4));
@@ -332,7 +333,7 @@ public class ArrayRetainableByteBufferPoolTest
             b = pool.acquire(capacity, false);
             assertThat(b.capacity(), Matchers.is(capacity));
 
-            if (capacity >= pool.getMaxCapacity())
+            if (capacity >= ((ArrayRetainableByteBufferPool)pool.getPool()).getMaxCapacity())
                 break;
 
             b = pool.acquire(capacity + 1, false);

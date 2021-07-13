@@ -13,9 +13,14 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Container;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.statistic.SampleStatistic;
 
 /**
  * <p>A {@link RetainableByteBuffer} pool.</p>
@@ -54,5 +59,57 @@ public interface RetainableByteBufferPool
             };
         }
         return retainableByteBufferPool;
+    }
+
+    /**
+     * A Pool wrapper that collects sample statistics on the acquired
+     * buffers.
+     * @see SampleStatistic
+     */
+    @ManagedObject
+    class SampledPool implements RetainableByteBufferPool, Dumpable
+    {
+        private final RetainableByteBufferPool _pool;
+        private final SampleStatistic _heap = new SampleStatistic();
+        private final SampleStatistic _direct = new SampleStatistic();
+
+        public SampledPool(RetainableByteBufferPool pool)
+        {
+            _pool = pool;
+        }
+
+        @ManagedAttribute("Heap acquire samples")
+        public SampleStatistic getHeapSample()
+        {
+            return _heap;
+        }
+
+        @ManagedAttribute("Direct acquire samples")
+        public SampleStatistic getDirectSample()
+        {
+            return _direct;
+        }
+
+        @Override
+        public RetainableByteBuffer acquire(int size, boolean direct)
+        {
+            (direct ? _direct : _heap).record(size);
+            return _pool.acquire(size, direct);
+        }
+
+        @Override
+        public void dump(Appendable out, String indent) throws IOException
+        {
+            Dumpable.dumpObjects(out, indent, this,
+                Dumpable.named("heap", _heap),
+                Dumpable.named("direct", _direct),
+                _pool);
+        }
+
+        @ManagedAttribute("Pool")
+        public RetainableByteBufferPool getPool()
+        {
+            return _pool;
+        }
     }
 }
