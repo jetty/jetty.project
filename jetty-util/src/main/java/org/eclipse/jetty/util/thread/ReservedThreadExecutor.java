@@ -217,7 +217,6 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             return false;
 
         ReservedThread thread = _stack.pollFirst();
-        LOG.info("tryExecute got {}", thread);
         if (thread == null)
         {
             if (task != STOP)
@@ -420,6 +419,9 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                     if (task == STOP)
                         // return on STOP poison pill
                         break;
+
+                    if (task == this)
+                        LOG.info("{} running self {}", this, ReservedThreadExecutor.this);
 
                     // Run the task
                     try
