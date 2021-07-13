@@ -298,6 +298,9 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                         return true;
                 }
 
+                if (_task.offer(task, 1, TimeUnit.SECONDS))
+                    return true;
+
                 // The reserved thread has not arrived after some time.
                 // Attempt to log this exceptional condition.
                 Thread thread = _thread;
@@ -311,7 +314,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                     for (StackTraceElement frame : thread.getStackTrace())
                         stack.append(System.lineSeparator()).append(" at ").append(frame);
 
-                    LOG.warn("ReservedThread.offer failed: {}{}{}", thread, System.lineSeparator(), stack);
+                    LOG.warn("ReservedThread.offer failed: {}{}", thread, stack);
                 }
 
                 // The thread is now not usable as we don't know if it will ever arrive or not.
