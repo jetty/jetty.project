@@ -15,6 +15,7 @@ package org.eclipse.jetty.http2;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
@@ -57,13 +58,31 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
     @Override
     public InetSocketAddress getLocalAddress()
     {
-        return stream.getSession().getLocalAddress();
+        SocketAddress local = getLocalSocketAddress();
+        if (local instanceof InetSocketAddress)
+            return (InetSocketAddress)local;
+        return null;
+    }
+
+    @Override
+    public SocketAddress getLocalSocketAddress()
+    {
+        return stream.getSession().getLocalSocketAddress();
     }
 
     @Override
     public InetSocketAddress getRemoteAddress()
     {
-        return stream.getSession().getRemoteAddress();
+        SocketAddress remote = getRemoteSocketAddress();
+        if (remote instanceof InetSocketAddress)
+            return (InetSocketAddress)remote;
+        return null;
+    }
+
+    @Override
+    public SocketAddress getRemoteSocketAddress()
+    {
+        return stream.getSession().getRemoteSocketAddress();
     }
 
     @Override

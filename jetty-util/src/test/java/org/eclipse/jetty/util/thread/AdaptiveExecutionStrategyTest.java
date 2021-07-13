@@ -20,21 +20,21 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
+import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class EatWhatYouKillTest
+public class AdaptiveExecutionStrategyTest
 {
-    private EatWhatYouKill ewyk;
+    private AdaptiveExecutionStrategy aes;
 
-    private void startEWYK(ExecutionStrategy.Producer producer) throws Exception
+    private void startAES(ExecutionStrategy.Producer producer) throws Exception
     {
         QueuedThreadPool executor = new QueuedThreadPool();
-        ewyk = new EatWhatYouKill(producer, executor);
-        ewyk.start();
+        aes = new AdaptiveExecutionStrategy(producer, executor);
+        aes.start();
         ReservedThreadExecutor tryExecutor = executor.getBean(ReservedThreadExecutor.class);
         // Prime the executor so that there is a reserved thread.
         executor.tryExecute(() ->
@@ -49,19 +49,19 @@ public class EatWhatYouKillTest
     @AfterEach
     public void dispose() throws Exception
     {
-        if (ewyk != null)
-            ewyk.stop();
+        if (aes != null)
+            aes.stop();
     }
 
     @Test
     public void testExceptionThrownByTask() throws Exception
     {
-        try (StacklessLogging ignored = new StacklessLogging(EatWhatYouKill.class))
+        try (StacklessLogging ignored = new StacklessLogging(AdaptiveExecutionStrategy.class))
         {
             AtomicReference<Throwable> detector = new AtomicReference<>();
             CountDownLatch latch = new CountDownLatch(2);
             BlockingQueue<Task> tasks = new LinkedBlockingQueue<>();
-            startEWYK(() ->
+            startAES(() ->
             {
                 boolean proceed = detector.compareAndSet(null, new Throwable());
                 if (proceed)
@@ -88,7 +88,7 @@ public class EatWhatYouKillTest
             });
 
             // Start production in another thread.
-            ewyk.dispatch();
+            aes.dispatch();
 
             tasks.offer(new Task(() ->
             {
@@ -96,7 +96,7 @@ public class EatWhatYouKillTest
                 {
                     // While thread1 runs this task, simulate
                     // that thread2 starts producing.
-                    ewyk.dispatch();
+                    aes.dispatch();
                     // Wait for thread2 to block in produce().
                     latch.await();
                     // Throw to verify that exceptions are handled correctly.
@@ -108,8 +108,8 @@ public class EatWhatYouKillTest
                 }
             }, Invocable.InvocationType.BLOCKING));
 
-            // Wait until EWYK is idle.
-            while (!ewyk.isIdle())
+            // Wait until AES is idle.
+            while (!aes.isIdle())
             {
                 Thread.sleep(10);
             }

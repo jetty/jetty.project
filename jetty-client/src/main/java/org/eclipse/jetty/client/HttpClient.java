@@ -594,7 +594,7 @@ public class HttpClient extends ContainerLifeCycle
                             connect(socketAddresses, nextIndex, context);
                     }
                 });
-                transport.connect(socketAddresses.get(index), context);
+                transport.connect((SocketAddress)socketAddresses.get(index), context);
             }
         });
     }

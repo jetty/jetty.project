@@ -14,7 +14,7 @@
 package org.eclipse.jetty.io.ssl;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -513,15 +513,15 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         }
 
         @Override
-        public InetSocketAddress getLocalAddress()
+        public SocketAddress getLocalSocketAddress()
         {
-            return getEndPoint().getLocalAddress();
+            return getEndPoint().getLocalSocketAddress();
         }
 
         @Override
-        public InetSocketAddress getRemoteAddress()
+        public SocketAddress getRemoteSocketAddress()
         {
-            return getEndPoint().getRemoteAddress();
+            return getEndPoint().getRemoteSocketAddress();
         }
 
         @Override

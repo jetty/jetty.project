@@ -18,3 +18,13 @@ markComment: >
 # Comment to post when closing a stale issue. Set to `false` to disable
 closeComment: >
   This issue has been closed due to it having no activity.
+# Issue/PRs having project assigned will not be marked as stale
+exemptProjects: false
+
+pulls:
+  daysUntilStale: 15
+  daysUntilClose: false
+  markComment: >
+    This pull request has been automatically marked as stale because it has not had
+    recent activity. It will be closed if no further activity occurs. Thank you
+    for your contributions.

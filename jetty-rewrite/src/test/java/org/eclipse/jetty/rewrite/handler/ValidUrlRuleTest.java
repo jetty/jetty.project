@@ -16,11 +16,11 @@ package org.eclipse.jetty.rewrite.handler;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Dispatcher;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SuppressWarnings("unused")
@@ -62,7 +62,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     {
         _rule.setCode("405");
         _rule.setMessage("foo");
-        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/%00/"));
+        _request.setHttpURI(HttpURI.from("/%01/"));
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
@@ -73,9 +73,16 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     @Test
     public void testInvalidJsp() throws Exception
     {
+        assertThrows(IllegalArgumentException.class, () -> HttpURI.build(_request.getHttpURI(), "/jsp/bean1.jsp%00"));
+    }
+
+    @Test
+    public void testInvalidJspWithNullByte() throws Exception
+    {
         _rule.setCode("405");
         _rule.setMessage("foo");
-        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/jsp/bean1.jsp%00"));
+
+        _request.setHttpURI(HttpURI.from("/jsp/bean1.jsp\000"));
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
@@ -86,14 +93,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     @Test
     public void testInvalidShamrock() throws Exception
     {
-        _rule.setCode("405");
-        _rule.setMessage("foo");
-        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/jsp/shamrock-%00%E2%98%98.jsp"));
-
-        String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
-
-        assertEquals(405, _response.getStatus());
-        assertEquals("foo", _request.getAttribute(Dispatcher.ERROR_MESSAGE));
+        assertThrows(IllegalArgumentException.class, () -> HttpURI.build(_request.getHttpURI(), "/jsp/shamrock-%00%E2%98%98.jsp"));
     }
 
     @Test
@@ -119,4 +119,3 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
         //@checkstyle-enable-check : IllegalTokenText
     }
 }
-

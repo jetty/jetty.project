@@ -14,7 +14,6 @@
 package org.eclipse.jetty.unixsocket.common;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 
 import jnr.unixsocket.UnixSocketChannel;
@@ -37,18 +36,6 @@ public class UnixSocketEndPoint extends SocketChannelEndPoint
     public UnixSocketChannel getChannel()
     {
         return (UnixSocketChannel)super.getChannel();
-    }
-
-    @Override
-    public InetSocketAddress getLocalAddress()
-    {
-        return null;
-    }
-
-    @Override
-    public InetSocketAddress getRemoteAddress()
-    {
-        return null;
     }
 
     @Override

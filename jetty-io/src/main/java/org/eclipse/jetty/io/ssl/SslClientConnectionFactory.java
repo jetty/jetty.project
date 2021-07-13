@@ -15,6 +15,7 @@ package org.eclipse.jetty.io.ssl;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executor;
@@ -100,13 +101,21 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
-        InetSocketAddress address = (InetSocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
-        String host = address.getHostString();
-        int port = address.getPort();
-
-        SSLEngine engine = sslContextFactory instanceof SslEngineFactory
-            ? ((SslEngineFactory)sslContextFactory).newSslEngine(host, port, context)
-            : sslContextFactory.newSSLEngine(host, port);
+        SSLEngine engine;
+        SocketAddress remote = (SocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
+        if (remote instanceof InetSocketAddress)
+        {
+            InetSocketAddress inetRemote = (InetSocketAddress)remote;
+            String host = inetRemote.getHostString();
+            int port = inetRemote.getPort();
+            engine = sslContextFactory instanceof SslEngineFactory
+                ? ((SslEngineFactory)sslContextFactory).newSslEngine(host, port, context)
+                : sslContextFactory.newSSLEngine(host, port);
+        }
+        else
+        {
+            engine = sslContextFactory.newSSLEngine();
+        }
         engine.setUseClientMode(true);
         context.put(SSL_ENGINE_CONTEXT_KEY, engine);
 
@@ -176,20 +185,23 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
             HostnameVerifier verifier = sslContextFactory.getHostnameVerifier();
             if (verifier != null)
             {
-                InetSocketAddress address = (InetSocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
-                String host = address.getHostString();
-                try
+                SocketAddress address = (SocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
+                if (address instanceof InetSocketAddress)
                 {
-                    if (!verifier.verify(host, event.getSSLEngine().getSession()))
-                        throw new SSLPeerUnverifiedException("Host name verification failed for host: " + host);
-                }
-                catch (SSLException x)
-                {
-                    throw x;
-                }
-                catch (Throwable x)
-                {
-                    throw (SSLException)new SSLPeerUnverifiedException("Host name verification failed for host: " + host).initCause(x);
+                    String host = ((InetSocketAddress)address).getHostString();
+                    try
+                    {
+                        if (!verifier.verify(host, event.getSSLEngine().getSession()))
+                            throw new SSLPeerUnverifiedException("Host name verification failed for host: " + host);
+                    }
+                    catch (SSLException x)
+                    {
+                        throw x;
+                    }
+                    catch (Throwable x)
+                    {
+                        throw (SSLException)new SSLPeerUnverifiedException("Host name verification failed for host: " + host).initCause(x);
+                    }
                 }
             }
         }

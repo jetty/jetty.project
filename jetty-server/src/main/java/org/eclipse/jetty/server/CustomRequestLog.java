@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -955,13 +956,15 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logLocalHost(StringBuilder b, Request request, Response response)
     {
-        append(b, request.getHttpChannel().getEndPoint().getLocalAddress().getAddress().getHostAddress());
+        InetSocketAddress local = request.getHttpChannel().getLocalAddress();
+        append(b, local == null ? null : local.getAddress().getHostAddress());
     }
 
     @SuppressWarnings("unused")
     private static void logRemoteHost(StringBuilder b, Request request, Response response)
     {
-        append(b, request.getHttpChannel().getEndPoint().getRemoteAddress().getAddress().getHostAddress());
+        InetSocketAddress remote = request.getHttpChannel().getRemoteAddress();
+        append(b, remote == null ? null : remote.getAddress().getHostAddress());
     }
 
     @SuppressWarnings("unused")
@@ -979,13 +982,15 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logLocalPort(StringBuilder b, Request request, Response response)
     {
-        b.append(request.getHttpChannel().getEndPoint().getLocalAddress().getPort());
+        InetSocketAddress local = request.getHttpChannel().getLocalAddress();
+        append(b, local == null ? null : String.valueOf(local.getPort()));
     }
 
     @SuppressWarnings("unused")
     private static void logRemotePort(StringBuilder b, Request request, Response response)
     {
-        b.append(request.getHttpChannel().getEndPoint().getRemoteAddress().getPort());
+        InetSocketAddress remote = request.getHttpChannel().getRemoteAddress();
+        append(b, remote == null ? null : String.valueOf(remote.getPort()));
     }
 
     @SuppressWarnings("unused")

@@ -259,13 +259,13 @@ public interface Index<V>
      * @param <V> The type of the index
      * @return A case sensitive mutable Index tacking visible ASCII alphabet to a max capacity.
      */
-    static <V> Mutable<V> buildCaseSensitiveMutableVisibleAsciiAlphabet(int maxCapacity)
+    static <V> Mutable<V> buildMutableVisibleAsciiAlphabet(boolean caseSensitive, int maxCapacity)
     {
         if (maxCapacity < 0 || maxCapacity > ArrayTrie.MAX_CAPACITY)
-            return new TreeTrie<>(true);
+            return new TreeTrie<>(caseSensitive);
         if (maxCapacity == 0)
-            return EmptyTrie.instance(true);
-        return new ArrayTrie<>(true, maxCapacity);
+            return EmptyTrie.instance(caseSensitive);
+        return new ArrayTrie<>(caseSensitive, maxCapacity);
     }
 
     static <V> Index<V> empty(boolean caseSensitive)

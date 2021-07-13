@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.server;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
@@ -144,7 +146,10 @@ public class SslConnectionFactory extends AbstractConnectionFactory implements C
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
-        SSLEngine engine = _sslContextFactory.newSSLEngine(endPoint.getRemoteAddress());
+        SocketAddress remoteSocketAddress = endPoint.getRemoteSocketAddress();
+        SSLEngine engine = remoteSocketAddress instanceof InetSocketAddress
+            ? _sslContextFactory.newSSLEngine((InetSocketAddress)remoteSocketAddress)
+            : _sslContextFactory.newSSLEngine();
         engine.setUseClientMode(false);
 
         SslConnection sslConnection = newSslConnection(connector, endPoint, engine);

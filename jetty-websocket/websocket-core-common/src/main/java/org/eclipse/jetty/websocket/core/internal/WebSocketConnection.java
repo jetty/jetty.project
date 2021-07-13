@@ -15,6 +15,7 @@ package org.eclipse.jetty.websocket.core.internal;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.Objects;
@@ -149,14 +150,40 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         return parser;
     }
 
+    /**
+     * @return the local InetSocketAddress
+     * @deprecated use {@link #getLocalSocketAddress()} instead
+     */
+    @Deprecated
     public InetSocketAddress getLocalAddress()
     {
-        return getEndPoint().getLocalAddress();
+        SocketAddress local = getLocalSocketAddress();
+        if (local instanceof InetSocketAddress)
+            return (InetSocketAddress)local;
+        return null;
     }
 
+    public SocketAddress getLocalSocketAddress()
+    {
+        return getEndPoint().getLocalSocketAddress();
+    }
+
+    /**
+     * @return the remote InetSocketAddress
+     * @deprecated use {@link #getRemoteSocketAddress()} instead
+     */
+    @Deprecated
     public InetSocketAddress getRemoteAddress()
     {
-        return getEndPoint().getRemoteAddress();
+        SocketAddress remote = getRemoteSocketAddress();
+        if (remote instanceof InetSocketAddress)
+            return (InetSocketAddress)remote;
+        return null;
+    }
+
+    public SocketAddress getRemoteSocketAddress()
+    {
+        return getEndPoint().getRemoteSocketAddress();
     }
 
     public boolean isUseInputDirectByteBuffers()
