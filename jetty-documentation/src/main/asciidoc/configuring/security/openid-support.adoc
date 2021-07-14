@@ -85,24 +85,36 @@ Otherwise you can manually enter the necessary information:
 OpenIdConfiguration openIdConfig = new OpenIdConfiguration(ISSUER, TOKEN_ENDPOINT, AUTH_ENDPOINT, CLIENT_ID, CLIENT_SECRET);
 ----
 
-===== Configuring an `OpenIdLoginService`
-[source, java]
+===== Configuring a `LoginService` and `Authenticator`.
+
+[source, java, subs="{sub-order}"]
 ----
-LoginService loginService = new OpenIdLoginService(openIdConfig);
+// Configure a LoginService with the OpenID configuration.
+OpenIdLoginService loginService = new OpenIdLoginService(openIdConfig);
 securityHandler.setLoginService(loginService);
-----
 
-===== Configuring an `OpenIdAuthenticator` with `OpenIdConfiguration` and Error Page Redirect
-[source, java]
-----
-Authenticator authenticator = new OpenIdAuthenticator(openIdConfig, "/error");
+// Configure an Authenticator with errors to be redirected to the "/error" path.
+OpenIdAuthenticator authenticator = new OpenIdAuthenticator(openIdConfig, "/error");
 securityHandler.setAuthenticator(authenticator);
-servletContextHandler.setSecurityHandler(securityHandler);
 ----
 
-===== Usage
+An IdentityService will be automatically created for the SecurityHandler if a realm name is set, otherwise you will need to manually set an IdentityService on the SecurityHandler.
 
-====== Claims and Access Token
+[source, java, subs="{sub-order}"]
+----
+// Set realm name of SecurityHandler to be the URL of the OpenID provider.
+securityHandler.setRealmName(ISSUER);
+----
+
+[source, java, subs="{sub-order}"]
+----
+// Set an IdentityService on the SecurityHandler.
+securityHandler.setIdentityService(new DefaultIdentityService());
+----
+
+==== Usage
+
+===== Claims and Access Token
 Claims about the user can be found using attributes on the session attribute `"org.eclipse.jetty.security.openid.claims"`, and the full response containing the OAuth 2.0 Access Token can be found with the session attribute `"org.eclipse.jetty.security.openid.response"`.
 
 Example:
