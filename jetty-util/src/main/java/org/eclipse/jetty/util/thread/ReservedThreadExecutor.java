@@ -276,7 +276,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     {
         private final SynchronousQueue<Runnable> _task = new SynchronousQueue<>();
         // How often can the thread miss the offer rendezvous before being taken out of operations
-        private final AtomicInteger _ignoredMisses = new AtomicInteger(10);
+        private final AtomicInteger _reservedLoop = new AtomicInteger(10);
         private boolean _starting = true;
         private volatile Thread _thread;
 
@@ -294,6 +294,13 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                 // TODO the following is defensive code to try to avoid and debug #6495.
                 //      Ultimately it should be removed once more is known about the issue.
 
+                // Was this thread removed by an idle timeout?
+                if (_reservedLoop.get() == Integer.MIN_VALUE)
+                {
+                    LOG.warn("ReservedThread.offer failed #6495 on idle thread: {}", ReservedThreadExecutor.this);
+                    return false;
+                }
+
                 // Try spinning to allow the reserved thread to arrive and then try again
                 for (int spin = 1000; spin-- > 0;)
                 {
@@ -302,15 +309,15 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                         return true;
                 }
 
-                if (_ignoredMisses.decrementAndGet() <= 0)
+                // Spinning failed, so check how many rendezvous we missed
+                if (_reservedLoop.updateAndGet(i -> i > 0 ? i - 1 : i) <= 0)
                 {
                     // The reserved thread has missed too many rendezvous, so we will warn with some detailed info
                     // and take the thread out of service.
-
                     Thread thread = _thread;
                     if (thread == null)
                     {
-                        LOG.warn("ReservedThread.offer failed: {}", ReservedThreadExecutor.this);
+                        LOG.warn("ReservedThread.offer failed #6495: {}", ReservedThreadExecutor.this);
                     }
                     else
                     {
@@ -318,7 +325,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                         for (StackTraceElement frame : thread.getStackTrace())
                             stack.append(System.lineSeparator()).append(" at ").append(frame);
 
-                        LOG.warn("ReservedThread.offer failed: {} {}{}", thread, ReservedThreadExecutor.this, stack);
+                        LOG.warn("ReservedThread.offer failed #6495: {} {}{}", thread, ReservedThreadExecutor.this, stack);
                     }
 
                     return false;
@@ -328,6 +335,14 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             {
                 LOG.ignore(e);
             }
+
+            // Before putting the thread back in the stack, let's check if it was already there
+            if (_stack.contains(this))
+            {
+                LOG.warn("ReservedThread.offer failed #6495 already in stack: {}", ReservedThreadExecutor.this);
+                return false;
+            }
+
             // We failed to offer the task, so put this thread back on the stack in last position to give it time to arrive.
             _size.getAndIncrement();
             _stack.offerLast(this);
@@ -356,12 +371,13 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                         return task;
 
                     // Have we missed rendezvous too many times?
-                    if (_ignoredMisses.get() <= 0)
+                    if (_reservedLoop.get() <= 0)
                         return STOP;
 
                     // Have we timed out?
                     if (_idleTime > 0 && _stack.remove(this))
                     {
+                        _reservedLoop.set(Integer.MIN_VALUE);
                         if (LOG.isDebugEnabled())
                             LOG.debug("{} idle {}", this, ReservedThreadExecutor.this);
                         _size.decrementAndGet();
@@ -412,6 +428,10 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                         _pending.decrementAndGet();
                         _starting = false;
                     }
+
+                    // TODO check for #6495 before putting the thread back in the stack, let's check if it was already there
+                    if (_stack.contains(this))
+                        LOG.warn("ReservedThread.offer failed #6495 already in stack: {}", ReservedThreadExecutor.this);
 
                     // Insert ourselves in the stack. Size is already incremented, but
                     // that only effects the decision to keep other threads reserved.
