@@ -148,7 +148,7 @@ jetty-10.0.3 - 20 May 2021
  + 6263 Review URI encoding in ConcatServlet & WelcomeFilter (Resolved
    CVE-2021-28169)
  + 6272 Reduce allocation in HttpClient when notifying content listeners
- + 6277 Better handle exceptions thrown from session destroy listener
+ + 6277 Better handle exceptions thrown from session destroy listener (Resolved CVE-2021-34428)
  + 6280 Copy ServletHolder class/instance properly during startWebapp
  + 6287 Class loading broken for WebSocketClient used inside webapp
 
