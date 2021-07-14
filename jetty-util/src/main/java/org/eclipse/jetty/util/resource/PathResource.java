@@ -633,6 +633,6 @@ public class PathResource extends Resource
     @Override
     public String toString()
     {
-        return this.uri.toASCIIString();
+        return this.path.toString();
     }
 }

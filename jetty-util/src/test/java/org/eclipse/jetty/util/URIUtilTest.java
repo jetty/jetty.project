@@ -70,6 +70,7 @@ public class URIUtilTest
             Arguments.of("test\u00f6?\u00f6:\u00df", "test%C3%B6%3F%C3%B6:%C3%9F"),
             Arguments.of("test?\u00f6?\u00f6:\u00df", "test%3F%C3%B6%3F%C3%B6:%C3%9F")
         );
+        // @checkstyle-enable-check : AvoidEscapedUnicodeCharactersCheck
     }
 
     @ParameterizedTest(name = "[{index}] {0}")

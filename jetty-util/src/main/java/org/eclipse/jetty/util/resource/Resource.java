@@ -418,11 +418,24 @@ public abstract class Resource implements ResourceFactory, Closeable
     /**
      * Returns the resource contained inside the current resource with the
      * given name, which may or may not exist.
+     * <p>
+     *     Constraints:
+     *     <ul>
+     *         <li>The path is expected to be in URI path-like format.</li>
+     *         <li>The path provided will not be URI decoded by the Resource implementation.</li>
+     *         <li>URI canonicalization will be attempted before being used against the Resource.
+     *             This can result in a normal Resource, perhaps with it being an alias to a different Resource,
+     *             perhaps even rejected with an Exception if there is an attempt to navigate above this Resource.</li>
+     *         <li>The path provided will be given to the Resource implementation for interpretation on how it
+     *             will behave (such as using "a\\b.txt" on a Path based in linux vs windows).</li>
+     *         <li>The path provided is ensured to be relative and belongs within the Resource, attempts to reference a path
+     *             outside of the Resource will result in an exception.</li>
+     *     </ul>
+     * </p>
      *
-     * @param path The path segment to add, which is not encoded.  The path may be non canonical, but if so then
-     * the resulting Resource will return true from {@link #isAlias()}.
+     * @param path the path to add to this Resource to produce a new Resource reference.
      * @return the Resource for the resolved path within this Resource, never null
-     * @throws IOException if unable to resolve the path
+     * @throws IOException if unable to resolve the path due Resource implementation restrictions.
      * @throws MalformedURLException if the resolution of the path fails because the input path parameter is malformed, or
      * a relative path attempts to access above the root resource.
      */
