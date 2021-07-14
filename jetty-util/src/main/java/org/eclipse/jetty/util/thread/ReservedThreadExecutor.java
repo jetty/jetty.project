@@ -328,9 +328,9 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             {
                 LOG.ignore(e);
             }
-            // We failed to offer the task, so put this thread back on the stack.
+            // We failed to offer the task, so put this thread back on the stack in last position to give it time to arrive.
             _size.getAndIncrement();
-            _stack.offerFirst(this);
+            _stack.offerLast(this);
             return false;
         }
 
