@@ -275,8 +275,9 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     private class ReservedThread implements Runnable
     {
         private final SynchronousQueue<Runnable> _task = new SynchronousQueue<>();
+        // How often can the thread miss the offer rendezvous before being taken out of operations
+        private final AtomicInteger _ignoredMisses = new AtomicInteger(10);
         private boolean _starting = true;
-        private boolean _abort;
         private volatile Thread _thread;
 
         public boolean offer(Runnable task)
@@ -290,37 +291,38 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                 if (_task.offer(task))
                     return true;
 
+                // TODO the following is defensive code to try to avoid and debug #6495.
+                //      Ultimately it should be removed once more is known about the issue.
+
                 // Try spinning to allow the reserved thread to arrive and then try again
-                for (int spin = 100; spin-- > 0;)
+                for (int spin = 1000; spin-- > 0;)
                 {
                     Thread.yield(); // Replace with onSpinWait in jetty-10
                     if (_task.offer(task))
                         return true;
                 }
 
-                if (_task.offer(task, 1, TimeUnit.SECONDS))
-                    return true;
-
-                // The reserved thread has not arrived after some time.
-                // Attempt to log this exceptional condition.
-                Thread thread = _thread;
-                if (thread == null)
+                if (_ignoredMisses.decrementAndGet() <= 0)
                 {
-                    LOG.warn("ReservedThread.offer failed: {}", ReservedThreadExecutor.this);
-                }
-                else
-                {
-                    StringBuilder stack = new StringBuilder();
-                    for (StackTraceElement frame : thread.getStackTrace())
-                        stack.append(System.lineSeparator()).append(" at ").append(frame);
+                    // The reserved thread has missed too many rendezvous, so we will warn with some detailed info
+                    // and take the thread out of service.
 
-                    LOG.warn("ReservedThread.offer failed: {} {}{}", thread, ReservedThreadExecutor.this, stack);
-                }
+                    Thread thread = _thread;
+                    if (thread == null)
+                    {
+                        LOG.warn("ReservedThread.offer failed: {}", ReservedThreadExecutor.this);
+                    }
+                    else
+                    {
+                        StringBuilder stack = new StringBuilder();
+                        for (StackTraceElement frame : thread.getStackTrace())
+                            stack.append(System.lineSeparator()).append(" at ").append(frame);
 
-                // The thread is now not usable as we don't know if it will ever arrive or not.
-                // Instead we will just set the abort flag, discard the thread and return false.
-                _abort = true;
-                return false;
+                        LOG.warn("ReservedThread.offer failed: {} {}{}", thread, ReservedThreadExecutor.this, stack);
+                    }
+
+                    return false;
+                }
             }
             catch (Throwable e)
             {
@@ -353,8 +355,8 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                     if (task != null)
                         return task;
 
-                    // Have we aborted?
-                    if (_abort)
+                    // Have we missed rendezvous too many times?
+                    if (_ignoredMisses.get() <= 0)
                         return STOP;
 
                     // Have we timed out?
