@@ -92,36 +92,35 @@ Among the configurable properties, the most relevant are:
 Configures the compliance to HTTP specifications.
 The value could be:
 
-* One of the predefined link:{JDURL}/org/eclipse/jetty/http/HttpCompliance.html[`HttpCompliance`] constants, such as `RFC7230` or `RFC2616`.
+* One of the predefined link:{javadoc-url}/org/eclipse/jetty/http/HttpCompliance.html[`HttpCompliance`] constants, such as `RFC7230` or `RFC2616`.
 For example: `jetty.httpConfig.compliance=RFC2616`.
-* A comma-separated list of violations to allow or forbid, as specified by the link:{JDURL}/org/eclipse/jetty/http/HttpCompliance.html#from(java.lang.String)[`HttpCompliance.from(String)`] method.
+* A comma-separated list of violations to allow or forbid, as specified by the link:{javadoc-url}/org/eclipse/jetty/http/HttpCompliance.html#from(java.lang.String)[`HttpCompliance.from(String)`] method.
 For example, `jetty.httpConfig.compliance=RFC7230,MULTIPLE_CONTENT_LENGTHS` means that the HTTP compliance is that defined by `RFC7230`, but also allows the `HttpCompliance.Violation.MULTIPLE_CONTENT_LENGTHS`, so that requests that have multiple `Content-Length` headers are accepted (they would be rejected when using just `HttpCompliance.RFC7230`).
 +
-For more information about `HttpCompliance` see also xref:pg-server-compliance-http[this section].
+For more information about `HttpCompliance` see also xref:{prog-guide}#pg-server-compliance-http[this section].
 
 `jetty.httpConfig.uriCompliance`::
 Configures the compliance to URI specifications.
 The value could be:
 
-* One of the predefined link:{JDURL}/org/eclipse/jetty/http/UriCompliance.html[`UriCompliance`] constants, such as `DEFAULT` or `RFC3986`.
+* One of the predefined link:{javadoc-url}/org/eclipse/jetty/http/UriCompliance.html[`UriCompliance`] constants, such as `DEFAULT` or `RFC3986`.
 For example: `jetty.httpConfig.compliance=RFC3986`.
-* A comma-separated list of violations to allow or forbid, as specified by the link:{JDURL}/org/eclipse/jetty/http/UriCompliance.html#from(java.lang.String)[`UriCompliance.from(String)`] method.
+* A comma-separated list of violations to allow or forbid, as specified by the link:{javadoc-url}/org/eclipse/jetty/http/UriCompliance.html#from(java.lang.String)[`UriCompliance.from(String)`] method.
 For example, `jetty.httpConfig.uriCompliance=RFC3986,-AMBIGUOUS_PATH_SEPARATOR` means that the URI compliance is that defined by `RFC3986`, but also does not allow the `UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR`, so that requests that have URIs such as `/foo/bar%2Fbaz` (where `%2F` is the URL-encoded `/` character) are rejected (they would be accepted when using just `UriCompliance.RFC3986`).
 +
-For more information about `UriCompliance` see also xref:pg-server-compliance-uri[this section].
+For more information about `UriCompliance` see also xref:{prog-guide}#pg-server-compliance-uri[this section].
 
 `jetty.httpConfig.requestCookieCompliance`::
 `jetty.httpConfig.responseCookieCompliance`::
 Configures the compliance to HTTP cookie specifications.
 The value could be:
 
-* One of the predefined link:{JDURL}/org/eclipse/jetty/http/CookieCompliance.html[`CookieCompliance`] constants, such as `RFC6265`.
+* One of the predefined link:{javadoc-url}/org/eclipse/jetty/http/CookieCompliance.html[`CookieCompliance`] constants, such as `RFC6265`.
 For example: `jetty.httpConfig.compliance=RFC6265`.
-* A comma-separated list of violations to allow or forbid, as specified by the link:{JDURL}/org/eclipse/jetty/http/CookieCompliance.html#from(java.lang.String)[`CookieCompliance.from(String)`] method.
+* A comma-separated list of violations to allow or forbid, as specified by the link:{javadoc-url}/org/eclipse/jetty/http/CookieCompliance.html#from(java.lang.String)[`CookieCompliance.from(String)`] method.
 For example, `jetty.httpConfig.requestCookieCompliance=RFC6265,-RESERVED_NAMES_NOT_DOLLAR_PREFIXED` means that the cookie compliance is that defined by `RFC6265`, but also does not allow the `CookieCompliance.Violation.RESERVED_NAMES_NOT_DOLLAR_PREFIXED`, so that requests that have cookie headers such as `Cookie: $foo=bar` are rejected (they would be accepted when using just `CookieCompliance.RFC6265`).
 +
-For more information about `CookieCompliance` see also xref:pg-server-compliance-cookie[this section].
-
+For more information about `CookieCompliance` see also xref:{prog-guide}#pg-server-compliance-cookie[this section].
 
 [[og-module-scheduler-config]]
 ====== Server Scheduler Configuration Properties

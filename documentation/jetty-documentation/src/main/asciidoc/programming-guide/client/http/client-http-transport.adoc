@@ -97,9 +97,9 @@ The FastCGI transport can be configured in this way:
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=fcgiTransport]
 ----
 
-In order to make requests using the FastCGI transport, you need to have a FastCGI server such as https://en.wikipedia.org/wiki/PHP#PHPFPM[PHP-FPM] (see also http://php.net/manual/en/install.fpm.php).
+In order to make requests using the FastCGI transport, you need to have a FastCGI server such as link:https://en.wikipedia.org/wiki/PHP#PHPFPM[PHP-FPM] (see also link:http://php.net/manual/en/install.fpm.php).
 
-The FastCGI transport is primarily used by Jetty's xref:fastcgi[FastCGI support] to serve PHP pages (WordPress for example).
+The FastCGI transport is primarily used by Jetty's xref:pg-server-fastcgi[FastCGI support] to serve PHP pages (WordPress for example).
 
 [[pg-client-http-transport-dynamic]]
 ===== Dynamic Transport

@@ -57,7 +57,7 @@ Where server applications using the xref:pg-server-http[high-level server librar
 
 The `ServerSessionListener` interface defines a number of methods that are invoked by the implementation upon the occurrence of HTTP/2 events, and that server applications can override to react to those events.
 
-Please refer to the `ServerSessionListener`link:{JDURL}/org/eclipse/jetty/http2/api/server/ServerSessionListener.html[javadocs] for the complete list of events.
+Please refer to the `ServerSessionListener`link:{javadoc-url}/org/eclipse/jetty/http2/api/server/ServerSessionListener.html[javadocs] for the complete list of events.
 
 The first event is the _accept_ event and happens when a client opens a new TCP connection to the server and the server accepts the connection.
 This is the first occasion where server applications have access to the HTTP/2 `Session` object:

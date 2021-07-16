@@ -133,7 +133,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPCli
 
 This makes Jetty HTTP client suitable for HTTP load testing because, for example, you can accurately time every step of the request/response conversation (thus knowing where the request/response time is really spent).
 
-Have a look at the link:{JDURL}/org/eclipse/jetty/client/api/Request.Listener.html[`Request.Listener`] class to know about request events, and to the link:{JDURL}/org/eclipse/jetty/client/api/Response.Listener.html[`Response.Listener`] class to know about response events.
+Have a look at the link:{javadoc-url}/org/eclipse/jetty/client/api/Request.Listener.html[`Request.Listener`] class to know about request events, and to the link:{javadoc-url}/org/eclipse/jetty/client/api/Response.Listener.html[`Response.Listener`] class to know about response events.
 
 [[pg-client-http-content-request]]
 ===== Request Content Handling

@@ -96,7 +96,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http2/HTTP2C
 ----
 
 The `Session.Listener` is notified of session events originated by the server such as receiving a `SETTINGS` frame from the server, or the server closing the connection, or the client timing out the connection due to idleness.
-Please refer to the `Session.Listener` link:{JDURL}/org/eclipse/jetty/http2/api/Session.Listener.html[javadocs] for the complete list of events.
+Please refer to the `Session.Listener` link:{javadoc-url}/org/eclipse/jetty/http2/api/Session.Listener.html[javadocs] for the complete list of events.
 
 Once a `Session` has been established, the communication with the server happens by exchanging _frames_, as specified in the link:https://tools.ietf.org/html/rfc7540#section-4[HTTP/2 specification].
 
@@ -116,7 +116,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http2/HTTP2C
 
 Note how `Session.newStream(...)` takes a `Stream.Listener` parameter.
 This listener is notified of stream events originated by the server such as receiving `HEADERS` or `DATA` frames that are part of the response, discussed in more details in the xref:pg-client-http2-response[section below].
-Please refer to the `Stream.Listener` link:{JDURL}/org/eclipse/jetty/http2/api/Stream.Listener.html[javadocs] for the complete list of events.
+Please refer to the `Stream.Listener` link:{javadoc-url}/org/eclipse/jetty/http2/api/Stream.Listener.html[javadocs] for the complete list of events.
 
 HTTP requests may have content, which is sent using the `Stream` APIs:
 
