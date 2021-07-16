@@ -800,42 +800,4 @@ public class TypeUtil
     {
         return StreamSupport.stream(new ServiceLoaderSpliterator<>(serviceLoader), false);
     }
-
-    /**
-     * Round up to the next power of 2.
-     * @param v An integer &gt; 0 and &lt;= half of {@link Integer#MAX_VALUE}
-     * @return The next power of two that is equal too or larger than the passed integer.
-     */
-    public static int nextPowerOf2(int v)
-    {
-        if (v < 0 || v > (Integer.MAX_VALUE / 2))
-            throw new IllegalArgumentException(Integer.toString(v));
-        
-        // This algorithm is from http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-        // and gives good performance on most architectures.
-        v--;
-        v |= v >> 1;
-        v |= v >> 2;
-        v |= v >> 4;
-        v |= v >> 8;
-        v |= v >> 16;
-        v++;
-        return v;
-    }
-
-    private static final int[] MultiplyDeBruijnBitPosition2 =
-    {
-        0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8, 31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9
-    };
-
-    /**
-     * The log2 of the value rounded up to the next power of 2.
-     * @param v An integer &gt; 0 and &lt;= half of {@link Integer#MAX_VALUE}
-     * @return The log2 of next power of two that is equal too or larger than the passed integer.
-     */
-    public static int log2NextPowerOf2(int v)
-    {
-        // This algorithm is from https://graphics.stanford.edu/~seander/bithacks.html#IntegerLogDeBruijn
-        return MultiplyDeBruijnBitPosition2[(int)((0xFFFFFFFFL & (nextPowerOf2(v) * 0x077CB531L)) >> 27)];
-    }
 }

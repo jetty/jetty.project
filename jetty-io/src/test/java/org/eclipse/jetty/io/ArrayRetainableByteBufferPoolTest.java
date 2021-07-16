@@ -317,9 +317,9 @@ public class ArrayRetainableByteBufferPoolTest
     }
 
     @Test
-    public void testLogBuckets() throws IOException
+    public void testSampledExponentialPool() throws IOException
     {
-        RetainableByteBufferPool.SampledPool pool = new RetainableByteBufferPool.SampledPool(new ArrayRetainableByteBufferPool.LogBuckets());
+        RetainableByteBufferPool.SampledPool pool = new RetainableByteBufferPool.SampledPool(new ArrayRetainableByteBufferPool.ExponentialPool());
         assertThat(pool.acquire(1, false).capacity(), is(1));
         assertThat(pool.acquire(2, false).capacity(), is(2));
         assertThat(pool.acquire(3, false).capacity(), is(4));

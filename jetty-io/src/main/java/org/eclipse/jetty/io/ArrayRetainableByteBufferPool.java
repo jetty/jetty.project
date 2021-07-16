@@ -22,7 +22,6 @@ import java.util.function.Function;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Pool;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -382,19 +381,19 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
      * uses buckets of buffers that increase in size by a power of
      * 2 (eg 1k, 2k, 4k, 8k, etc.).
      */
-    public static class LogBuckets extends ArrayRetainableByteBufferPool
+    public static class ExponentialPool extends ArrayRetainableByteBufferPool
     {
-        public LogBuckets()
+        public ExponentialPool()
         {
             this(0, -1, Integer.MAX_VALUE);
         }
 
-        public LogBuckets(int minCapacity, int maxCapacity, int maxBucketSize)
+        public ExponentialPool(int minCapacity, int maxCapacity, int maxBucketSize)
         {
             this(minCapacity, maxCapacity, maxBucketSize, -1L, -1L);
         }
 
-        public LogBuckets(int minCapacity, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
+        public ExponentialPool(int minCapacity, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
         {
             super(minCapacity,
                 -1,
@@ -402,7 +401,7 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
                 maxBucketSize,
                 maxHeapMemory,
                 maxDirectMemory,
-                TypeUtil::log2NextPowerOf2,
+                c -> 32 - Integer.numberOfLeadingZeros(c - 1),
                 i -> 1 << i);
         }
     }
