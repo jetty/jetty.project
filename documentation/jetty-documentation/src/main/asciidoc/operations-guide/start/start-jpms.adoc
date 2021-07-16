@@ -14,7 +14,7 @@
 [[og-start-start-jpms]]
 ==== Starting Jetty using JPMS
 
-Jetty modules are proper https://en.wikipedia.org/wiki/Java_Platform_Module_System[JPMS] modules: each Jetty module has a `module-info.class` file.
+Jetty modules are proper link:https://en.wikipedia.org/wiki/Java_Platform_Module_System[JPMS] modules: each Jetty module has a `module-info.class` file.
 This makes possible to run Jetty from the module-path, rather than the class-path.
 
 To start Jetty on the module-path rather than the class-path, it is enough to add the `--jpms` option to the command line, for example:

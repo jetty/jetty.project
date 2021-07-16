@@ -49,7 +49,7 @@ This can also be configured by:
 refreshCookieAge::
 Integer, seconds, default is `-1`.
 This controls resetting the session cookie when `SessionCookieConfig.setMaxAge(int)` is non-zero.
-See also xref:pg-server-session-maxAge[setting the max session cookie age with an init parameter].
+See also xref:pg-server-session-handler-maxAge[setting the max session cookie age with an init parameter].
 If the amount of time since the session cookie was last set exceeds this time, the session cookie is regenerated to keep the session cookie valid.
 
 sameSite::
@@ -78,7 +78,6 @@ It can alternatively be configured by:
 
 * setting the `org.eclipse.jetty.servlet.SessionIdPathParameterName` context init parameter
 
-
 sessionTrackingModes::
 `Set<javax.servlet.SessionTrackingMode>`.
 Default is `SessionTrackingMode.COOKIE`, `SessionTrackingMode.URL`.
@@ -97,18 +96,16 @@ This can also be configured by:
 * using the `setSessionTrackingModes(Set<javax.servlet.SessionTrackingMode>)` method
 * using the `javax.servlet.ServletContext.setSessionTrackingModes<Set<javax.servlet.SessionTrackingMode>)` method
 
-
 There are also a few session settings that do not have SessionHandler setters, but can be configured with context init parameters:
 
 [[pg-server-session-handler-maxAge]]
 org.eclipse.jetty.servlet.MaxAge::
 This is the maximum number of seconds that the session cookie will be considered to be valid.
 By default, the cookie has no maximum validity time.
-See also xref:pg-server-session-refreshcookie[refreshing the session cookie].
+See also xref:pg-server-session-handler-refreshcookie[refreshing the session cookie].
 The value can also be configured by:
 
 * calling the `SessionCookieConfig.setMaxAge(int)` method.
-
 
 org.eclipse.jetty.servlet.SessionDomain::
 String, default `null`.
@@ -117,7 +114,6 @@ This can also be configured by:
 
 * using the `javax.servlet.SessionCookieConfig.setDomain(String)` method
 * defining the `<session-config><cookie-config><domain/></cookie-config></session-config>` element in `web.xml`
-
 
 org.eclipse.jetty.servlet.SessionPath::
 String, default `null`.
