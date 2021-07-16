@@ -61,7 +61,6 @@ Normally, whenever the last concurrent request leaves a `Session`, the `SessionD
 If the `savePeriod` is non-zero, the `SessionData` will not be persisted if no session attributes changed, _unless_ the time since the last save exceeds the `savePeriod`.
 Setting a non-zero value can reduce the load on the persistence mechanism, but in a clustered environment runs the risk that other nodes will see the session as expired because it has not been persisted sufficiently recently.
 
-[[pg-server-session-datastore-grace]]
 gracePeriod::
 The `gracePeriod` is an interval defined in seconds. 
 It is an attempt to deal with the non-transactional nature of sessions with regard to finding sessions that have expired.
@@ -73,5 +72,7 @@ Thus, we use the `gracePeriod` to provide a bit of leeway around the moment of e
 * infrequently the `AbstractSessionDataStore` searches for and summarily deletes sessions - from any context - that expired at least 10 ``gracePeriod``s ago
 //end::common-datastore-config[]
 
-NOTE:: The trivial link:{javadoc-url}/org/eclipse/jetty/server/session/NullSessionDataStore.html[NullSessionDataStore] - which does not persist sessions - is the default used by the `SessionHandler`.
-
+[NOTE]
+====
+The trivial link:{javadoc-url}/org/eclipse/jetty/server/session/NullSessionDataStore.html[NullSessionDataStore] - which does not persist sessions - is the default used by the `SessionHandler`.
+====
