@@ -203,7 +203,7 @@ Here's an example of using a context xml file to add in a pattern to match files
     </Call>
 </Configure>
 ----
-<1> Configures a link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`], which is the Jetty component that represents a standard Servlet web application.
+<1> Configures a link:{javadoc-url}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`], which is the Jetty component that represents a standard Servlet web application.
 <2> Specifies a context attribute.
 <3> Specifies the name of the context attribute.
 <4> Adds the additional pattern `+.*/jsf-[^/]*\.jar$+` to those already existing.

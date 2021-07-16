@@ -205,7 +205,7 @@ The Maven artifact coordinates are:
 
 The Jetty Server Libraries provide rules for the most common usages, but you can write your own rules by extending the `org.eclipse.jetty.rewrite.handler.Rule` class.
 
-Please refer to the `jetty-rewrite` module link:{JDURL}/org/eclipse/jetty/rewrite/handler/package-summary.html[javadocs] for the complete list of available rules.
+Please refer to the `jetty-rewrite` module link:{javadoc-url}/org/eclipse/jetty/rewrite/handler/package-summary.html[javadocs] for the complete list of available rules.
 
 You typically want to configure `RewriteHandler` at the server level, although it is possible to configure it on a per-context basis.
 

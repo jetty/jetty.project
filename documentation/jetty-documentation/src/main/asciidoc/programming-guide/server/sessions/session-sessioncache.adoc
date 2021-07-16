@@ -31,7 +31,7 @@ You are responsible for configuring both the `SessionCache` instance and its `Se
 More on ``SessionDataStore``s xref:pg-server-session-datastore[later], in this section we will concentrate on the `SessionCache` and `SessionCacheFactory`.
 
 
-The link:{JDURL}/org/eclipse/jetty/server/session/AbstractSessionCache.html[AbstractSessionCache] provides most of the behaviour of ``SessionCache``s.
+The link:{javadoc-url}/org/eclipse/jetty/server/session/AbstractSessionCache.html[AbstractSessionCache] provides most of the behaviour of ``SessionCache``s.
 If you are implementing a custom `SessionCache` we strongly recommend you extend this base class, as the Servlet Specification has many subtleties and extending the base class ensures that your implementation will take account of them.
 
 Some of the important behaviours of ``SessionCache``s are:
@@ -68,40 +68,40 @@ To prevent his, enable this feature and the `SessionCache` will ensure that if a
 invalidateOnShutdown::
 Some applications want to ensure that all cached sessions are removed when the server shuts down.
 This option will ensure that all cached sessions are invalidated.
-The `AbstractSessionCache` does not implement this behaviour, a subclass must implement the link:{JDURL}/org/eclipse/jetty/server/session/SessionCache.html#shutdown()[SessionCache.shutdown()] method.
+The `AbstractSessionCache` does not implement this behaviour, a subclass must implement the link:{javadoc-url}/org/eclipse/jetty/server/session/SessionCache.html#shutdown()[SessionCache.shutdown()] method.
 
 flushOnResponseCommit::
 This forces a "dirty" session to be written to the `SessionDataStore` just before a response is returned to the client, rather than waiting until the request is finished.
 A "dirty" session is one whose attributes have changed, or it has been freshly created.
 Using this option ensures that all subsequent requests - either to the same or a different node - will see the latest changes to the session.
 
-Jetty provides two `SessionCache` implementations: the link:{JDURL}/org/eclipse/jetty/server/session/DefaultSessionCache.html[DefaultSessionCache] and the link:{JDURL}/org/eclipse/jetty/server/session/NullSessionCache.html[NullSessionCache].
+Jetty provides two `SessionCache` implementations: the link:{javadoc-url}/org/eclipse/jetty/server/session/DefaultSessionCache.html[DefaultSessionCache] and the link:{javadoc-url}/org/eclipse/jetty/server/session/NullSessionCache.html[NullSessionCache].
 
 [[pg-server-session-hash]]
 ===== The DefaultSessionCache
 
-The link:{JDURL}/org/eclipse/jetty/server/session/DefaultSessionCache.html[DefaultSessionCache] retains `Session` objects in memory in a `ConcurrentHashMap`.
+The link:{javadoc-url}/org/eclipse/jetty/server/session/DefaultSessionCache.html[DefaultSessionCache] retains `Session` objects in memory in a `ConcurrentHashMap`.
 It is suitable for non-clustered and clustered deployments.
 For clustered deployments, a sticky load balancer is *strongly* recommended, otherwise you risk indeterminate session state as the session bounces around multiple nodes.
 
-It implements the link:{JDURL}/org/eclipse/jetty/server/session/SessionCache.html#shutdown()[SessionCache.shutdown()] method.
+It implements the link:{javadoc-url}/org/eclipse/jetty/server/session/SessionCache.html#shutdown()[SessionCache.shutdown()] method.
 
 It also provides some statistics on sessions, which are convenient to access either directly in code or remotely via jmx:
 
 current sessions::
-The link:{JDURL}/org/eclipse/jetty/server/session/DefaultSessionCache.html#getSessionsCurrent()[DefaultSessionCache.getSessionsCurrent()] reports the number of sessions in the cache at the time of the method call.
+The link:{javadoc-url}/org/eclipse/jetty/server/session/DefaultSessionCache.html#getSessionsCurrent()[DefaultSessionCache.getSessionsCurrent()] reports the number of sessions in the cache at the time of the method call.
 
 max sessions::
-The link:{JDURL}/org/eclipse/jetty/server/session/DefaultSessionCache.html#getSessionsCurrent()[DefaultSessionCache.getSessionsMax()] reports the highest number of sessions in the cache at the time of the method call.
+The link:{javadoc-url}/org/eclipse/jetty/server/session/DefaultSessionCache.html#getSessionsCurrent()[DefaultSessionCache.getSessionsMax()] reports the highest number of sessions in the cache at the time of the method call.
 
 
 total sessions::
-The link:{JDURL}/org/eclipse/jetty/server/session/DefaultSessionCache.html#getSessionsTotal()[DefaultSessionCache.getSessionsTotal()] reports the cumulative total of the number of sessions in the cache at the time of the method call.
+The link:{javadoc-url}/org/eclipse/jetty/server/session/DefaultSessionCache.html#getSessionsTotal()[DefaultSessionCache.getSessionsTotal()] reports the cumulative total of the number of sessions in the cache at the time of the method call.
 
 reset::
-The link:{JDURL}/org/eclipse/jetty/server/session/DefaultSessionCache.html#resetStats()[DefaultSessionCache.resetStats()] zeros out the statistics counters.
+The link:{javadoc-url}/org/eclipse/jetty/server/session/DefaultSessionCache.html#resetStats()[DefaultSessionCache.resetStats()] zeros out the statistics counters.
 
-If you create a link:{JDURL}/org/eclipse/jetty/server/session/DefaultSessionCacheFactory.html[DefaultSessionFactory] and register it as `Server` bean, a `SessionHandler` will be able to lazily create a `DefaultSessionCache`.
+If you create a link:{javadoc-url}/org/eclipse/jetty/server/session/DefaultSessionCacheFactory.html[DefaultSessionFactory] and register it as `Server` bean, a `SessionHandler` will be able to lazily create a `DefaultSessionCache`.
 The `DefaultSessionCacheFactory` has all of the same configuration setters as a `DefaultSessionCache`.
 Alternatively, if you only have a single `SessionHandler`, or you need to configure a `DefaultSessionCache` differently for every `SessionHandler`, then you could dispense with the `DefaultSessionCacheFactory` and simply instantiate, configure and pass in the `DefaultSessionCache` yourself.
 
@@ -115,12 +115,12 @@ NOTE: If you don't configure any `SessionCache` or `SessionCacheFactory`, the `S
 [[pg-server-session-null]]
 ===== The NullSessionCache
 
-The link:{JDURL}/org/eclipse/jetty/server/session/NullSessionCache.html[NullSessionCache] does not actually cache any objects: each request uses a fresh `Session` object.
+The link:{javadoc-url}/org/eclipse/jetty/server/session/NullSessionCache.html[NullSessionCache] does not actually cache any objects: each request uses a fresh `Session` object.
 It is suitable for clustered deployments without a sticky load balancer and non-clustered deployments when purely minimal support for sessions is needed.
 
 As no sessions are actually cached, of course functions like `invalidateOnShutdown` and all of the eviction strategies have no meaning for the `NullSessionCache`.
 
-There is a link:{JDURL}/org/eclipse/jetty/server/session/NullSessionCacheFactory.html[NullSessionCacheFactory] which you can instantiate, configure and set as a `Server` bean to enable the `SessionHandler` to automatically create new ``NullCache``s as needed.
+There is a link:{javadoc-url}/org/eclipse/jetty/server/session/NullSessionCacheFactory.html[NullSessionCacheFactory] which you can instantiate, configure and set as a `Server` bean to enable the `SessionHandler` to automatically create new ``NullCache``s as needed.
 All of the same configuration options are available on the `NullSessionCacheFactory` as the `NullSessionCache` itself.
 Alternatively, if you only have a single `SessionHandler`, or you need to configure a `NullSessionCache` differently for every `SessionHandler`, then you could dispense with the `NullSessionCacheFactory` and simply instantiate, configure and pass in the `NullSessionCache` yourself.
 
@@ -133,7 +133,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/session/Sess
 [[pg-server-session-customcache]]
 ===== Implementing a Custom SessionCache
 
-As previously mentioned, we highly recommend that you extend the link:{JDURL}/org/eclipse/jetty/server/session/AbstractSessionCache.html[AbstractSessionCache].
+As previously mentioned, we highly recommend that you extend the link:{javadoc-url}/org/eclipse/jetty/server/session/AbstractSessionCache.html[AbstractSessionCache].
 
 ===== Heterogeneous Caching
 

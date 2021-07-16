@@ -245,7 +245,7 @@ The transaction manager is looked up by the application as `java:comp/UserTransa
 
 Jetty does not ship with a JTA manager, but _does_ provide the infrastructure to plug in the JTA manager of your choice.
 
-Use the link:{JDURL}/org/eclipse/jetty/plus/jndi/Transaction.html[org.eclipse.jetty.plus.jndi.Transaction] object in a link:#og-jndi-xml[Jetty XML file] to configure the JTA manager.
+Use the link:{javadoc-url}/org/eclipse/jetty/plus/jndi/Transaction.html[org.eclipse.jetty.plus.jndi.Transaction] object in a link:#og-jndi-xml[Jetty XML file] to configure the JTA manager.
 
 The following example configures the http://www.atomikos.com/[Atomikos] transaction manager:
 

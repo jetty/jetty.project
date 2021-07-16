@@ -150,7 +150,7 @@ You want to do this as soon as you have access to the `Session` object, typicall
 include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=sessionConfigure]
 ----
 
-Please refer to the `Session` link:{JDURL}/org/eclipse/jetty/websocket/api/Session.html[javadocs] for the complete list of configuration APIs.
+Please refer to the `Session` link:{javadoc-url}/org/eclipse/jetty/websocket/api/Session.html[javadocs] for the complete list of configuration APIs.
 
 [[pg-websocket-session-send]]
 ===== Sending Data

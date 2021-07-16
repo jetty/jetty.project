@@ -144,7 +144,7 @@ Currently, the following events are available:
 * `responseEnd`
 * `complete`
 
-Please refer to the `HttpChannel.Listener` link:{JDURL}/org/eclipse/jetty/server/HttpChannel.Listener.html[javadocs] for the complete list of events.
+Please refer to the `HttpChannel.Listener` link:{javadoc-url}/org/eclipse/jetty/server/HttpChannel.Listener.html[javadocs] for the complete list of events.
 
 Server applications can register `HttpChannel.Listener` by adding them as xref:pg-arch-bean[beans] to the `Connector`:
 

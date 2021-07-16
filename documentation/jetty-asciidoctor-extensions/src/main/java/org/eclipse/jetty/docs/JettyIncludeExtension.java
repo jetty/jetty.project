@@ -89,12 +89,13 @@ public class JettyIncludeExtension implements ExtensionRegistry
         {
             try
             {
-                Path jettyDocsPath = Path.of((String)document.getAttribute("project.basedir"));
+                // Document attributes are converted by Asciidoctor to lowercase.
+                Path jettyDocsPath = Path.of((String)document.getAttribute("project-basedir"));
                 Path jettyHome = jettyDocsPath.resolve("../../jetty-home/target/jetty-home").normalize();
 
                 JettyHomeTester jetty = JettyHomeTester.Builder.newInstance()
                     .jettyHome(jettyHome)
-                    .mavenLocalRepository((String)document.getAttribute("maven.local.repo"))
+                    .mavenLocalRepository((String)document.getAttribute("maven-local-repo"))
                     .build();
 
                 String setupModules = (String)attributes.get("setupModules");
@@ -125,7 +126,7 @@ public class JettyIncludeExtension implements ExtensionRegistry
                 try (JettyHomeTester.Run run = jetty.start(args.split(" ")))
                 {
                     run.awaitFor(15, TimeUnit.SECONDS);
-                    String output = captureOutput(attributes, run);
+                    String output = captureOutput(document, attributes, run);
                     reader.push_include(output, "jettyHome_run", target, 1, attributes);
                 }
             }
@@ -136,13 +137,14 @@ public class JettyIncludeExtension implements ExtensionRegistry
             }
         }
 
-        private String captureOutput(Map<String, Object> attributes, JettyHomeTester.Run run)
+        private String captureOutput(Document document, Map<String, Object> attributes, JettyHomeTester.Run run)
         {
             Stream<String> lines = run.getLogs().stream()
-                .map(line -> redactPath(line, System.getProperty("java.home"), "/path/to/java.home"))
-                .map(line -> redactPath(line, run.getConfig().getMavenLocalRepository(), "/path/to/maven.repository"))
-                .map(line -> redactPath(line, run.getConfig().getJettyHome().toString(), "/path/to/jetty.home"))
-                .map(line -> redactPath(line, run.getConfig().getJettyBase().toString(), "/path/to/jetty.base"));
+                .map(line -> redact(line, System.getProperty("java.home"), "/path/to/java.home"))
+                .map(line -> redact(line, run.getConfig().getMavenLocalRepository(), "/path/to/maven.repository"))
+                .map(line -> redact(line, run.getConfig().getJettyHome().toString(), "/path/to/jetty.home"))
+                .map(line -> redact(line, run.getConfig().getJettyBase().toString(), "/path/to/jetty.base"))
+                .map(line -> redact(line, (String)document.getAttribute("project-version"), (String)document.getAttribute("version")));
             lines = replace(lines, (String)attributes.get("replace"));
             lines = delete(lines, (String)attributes.get("delete"));
             lines = denoteLineStart(lines);
@@ -151,9 +153,11 @@ public class JettyIncludeExtension implements ExtensionRegistry
             return lines.collect(Collectors.joining(System.lineSeparator()));
         }
 
-        private String redactPath(String line, String target, String replacement)
+        private String redact(String line, String target, String replacement)
         {
-            return line.replace(target, replacement);
+            if (target != null && replacement != null)
+                return line.replace(target, replacement);
+            return line;
         }
 
         private Stream<String> replace(Stream<String> lines, String replace)
