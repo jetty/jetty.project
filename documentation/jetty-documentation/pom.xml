@@ -44,19 +44,13 @@
             <require>asciidoctor-diagram</require>
           </requires>
           <attributes>
-            <project.basedir>${project.basedir}</project.basedir>
-            <maven.local.repo>${settings.localRepository}</maven.local.repo>
-            <prog_guide>../programming-guide/index.html</prog_guide>
-            <JDURL>https://www.eclipse.org/jetty/javadoc/jetty-10</JDURL>
-            <SRCDIR>${basedir}/..</SRCDIR>
-            <GITBROWSEURL>https://github.com/eclipse/jetty.project/tree/master</GITBROWSEURL>
-            <GITDOCURL>https://github.com/eclipse/jetty.project/tree/jetty-10.0.x-doc-refactor/jetty-documentation/src/main/asciidoc</GITDOCURL>
-            <OPGUIDE>../operations-guide/index.html</OPGUIDE>
-            <GSTARTGUIDE>../gettingstarted-guide/index.html</GSTARTGUIDE>
-            <CONTRIBGUIDE>../contribution-guide/index.html</CONTRIBGUIDE>
-            <MVNCENTRAL>https://repo1.maven.org/maven2</MVNCENTRAL>
-            <VERSION>${project.version}</VERSION>
-            <TIMESTAMP>${maven.build.timestamp}</TIMESTAMP>
+            <project-basedir>${project.basedir}</project-basedir>
+            <project-version>${project.version}</project-version>
+            <maven-local-repo>${settings.localRepository}</maven-local-repo>
+            <version>${project.version}</version>
+            <prog-guide>../programming-guide/index.html</prog-guide>
+            <op-guide>../operations-guide/index.html</op-guide>
+            <javadoc-url>https://www.eclipse.org/jetty/javadoc/jetty-10</javadoc-url>
           </attributes>
         </configuration>
         <executions>

@@ -15,7 +15,7 @@
 ==== HttpClient Configuration
 
 `HttpClient` has a quite large number of configuration parameters.
-Please refer to the `HttpClient` link:{JDURL}/org/eclipse/jetty/client/HttpClient.html[javadocs] for the complete list of configurable parameters.
+Please refer to the `HttpClient` link:{javadoc-url}/org/eclipse/jetty/client/HttpClient.html[javadocs] for the complete list of configurable parameters.
 
 The most common parameters are:
 
@@ -61,7 +61,7 @@ You can enable certificate validation at the application level:
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=tlsAppValidation]
 ----
 
-Please refer to the `SslContextFactory.Client` link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.Client.html[javadocs] for the complete list of configurable parameters.
+Please refer to the `SslContextFactory.Client` link:{javadoc-url}/org/eclipse/jetty/util/ssl/SslContextFactory.Client.html[javadocs] for the complete list of configurable parameters.
 
 [[pg-client-http-configuration-tls-truststore]]
 ====== HttpClient TLS TrustStore Configuration

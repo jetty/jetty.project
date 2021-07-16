@@ -33,9 +33,9 @@ However, if the URI raw path is passed to some other APIs (for example, file sys
 
 In order to avoid ambiguous URIs, Jetty imposes additional URI requirements in excess of what is required by link:https://datatracker.ietf.org/doc/html/rfc3986[RFC 3986] compliance.
 
-These additional requirements may optionally be violated and are defined by the link:{JDURL}/org/eclipse/jetty/http/UriCompliance.Violation.html[`UriCompliance.Violation`] enumeration.
+These additional requirements may optionally be violated and are defined by the link:{javadoc-url}/org/eclipse/jetty/http/UriCompliance.Violation.html[`UriCompliance.Violation`] enumeration.
 
-These violations are then grouped into modes by the link:{JDURL}/org/eclipse/jetty/http/UriCompliance.html[`UriCompliance`] class, which also defines several named modes that support common deployed sets of violations, with the default being link:{JDURL}/org/eclipse/jetty/http/UriCompliance.html#DEFAULT[`UriCompliance.DEFAULT`].
+These violations are then grouped into modes by the link:{javadoc-url}/org/eclipse/jetty/http/UriCompliance.html[`UriCompliance`] class, which also defines several named modes that support common deployed sets of violations, with the default being link:{javadoc-url}/org/eclipse/jetty/http/UriCompliance.html#DEFAULT[`UriCompliance.DEFAULT`].
 
 For example:
 
@@ -44,7 +44,7 @@ For example:
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=uriCompliance]
 ----
 
-If you want to customize the violations that you want to allow, you can create your own mode using the link:{JDURL}/org/eclipse/jetty/http/UriCompliance.html#from(java.lang.String)[`UriCompliance.from(String)`] method:
+If you want to customize the violations that you want to allow, you can create your own mode using the link:{javadoc-url}/org/eclipse/jetty/http/UriCompliance.html#from(java.lang.String)[`UriCompliance.from(String)`] method:
 
 [source,java,indent=0]
 ----

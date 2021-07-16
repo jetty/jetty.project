@@ -157,15 +157,15 @@ Refer to the https://docs.oracle.com/javase/7/docs/api/javax/security/auth/login
 [[og-jaas-loginmodules]]
 ==== Provided LoginModules
 
-* link:{JDURL}/org/eclipse/jetty/jaas/spi/JDBCLoginModule.html[`org.eclipse.jetty.jaas.spi.JDBCLoginModule`]
-* link:{JDURL}/org/eclipse/jetty/jaas/spi/PropertyFileLoginModule.html[`org.eclipse.jetty.jaas.spi.PropertyFileLoginModule`]
-* link:{JDURL}/org/eclipse/jetty/jaas/spi/DataSourceLoginModule.html[`org.eclipse.jetty.jaas.spi.DataSourceLoginModule`]
-* link:{JDURL}/org/eclipse/jetty/jaas/spi/LdapLoginModule.html[`org.eclipse.jetty.jaas.ldap.LdapLoginModule`]
+* link:{javadoc-url}/org/eclipse/jetty/jaas/spi/JDBCLoginModule.html[`org.eclipse.jetty.jaas.spi.JDBCLoginModule`]
+* link:{javadoc-url}/org/eclipse/jetty/jaas/spi/PropertyFileLoginModule.html[`org.eclipse.jetty.jaas.spi.PropertyFileLoginModule`]
+* link:{javadoc-url}/org/eclipse/jetty/jaas/spi/DataSourceLoginModule.html[`org.eclipse.jetty.jaas.spi.DataSourceLoginModule`]
+* link:{javadoc-url}/org/eclipse/jetty/jaas/spi/LdapLoginModule.html[`org.eclipse.jetty.jaas.ldap.LdapLoginModule`]
 
 ____
 [NOTE]
 Passwords can be stored in clear text, obfuscated or checksummed.
-The class link:{JDURL}/org/eclipse/jetty/util/security/Password.html[`org.eclipse.jetty.util.security.Password`] should be used to generate all varieties of passwords,the output from which can be put in to property files or entered into database tables.
+The class link:{javadoc-url}/org/eclipse/jetty/util/security/Password.html[`org.eclipse.jetty.util.security.Password`] should be used to generate all varieties of passwords,the output from which can be put in to property files or entered into database tables.
 ____
 
 ===== JDBCLoginModule

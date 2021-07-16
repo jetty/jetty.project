@@ -26,7 +26,7 @@ There are compliance modes provided for:
 
 Compliance modes can be configured to allow violations from the RFC requirements, or in some cases to allow additional behaviors that Jetty has implemented in excess of the RFC (for example, to allow xref:pg-server-compliance-uri[ambiguous URIs]).
 
-For example, the HTTP RFCs require that request HTTP methods are link:https://datatracker.ietf.org/doc/html/rfc7230#section-3.1.1[case sensitive], however Jetty can allow case-insensitive HTTP methods by including the link:{JDURL}/org/eclipse/jetty/http/HttpCompliance.Violation.html#CASE_INSENSITIVE_METHOD[`HttpCompliance.Violation.CASE_INSENSITIVE_METHOD`] in the link:{JDURL}/org/eclipse/jetty/http/HttpCompliance.html[`HttpCompliance`] set of allowed violations.
+For example, the HTTP RFCs require that request HTTP methods are link:https://datatracker.ietf.org/doc/html/rfc7230#section-3.1.1[case sensitive], however Jetty can allow case-insensitive HTTP methods by including the link:{javadoc-url}/org/eclipse/jetty/http/HttpCompliance.Violation.html#CASE_INSENSITIVE_METHOD[`HttpCompliance.Violation.CASE_INSENSITIVE_METHOD`] in the link:{javadoc-url}/org/eclipse/jetty/http/HttpCompliance.html[`HttpCompliance`] set of allowed violations.
 
 include::server-compliance-http.adoc[]
 include::server-compliance-uri.adoc[]

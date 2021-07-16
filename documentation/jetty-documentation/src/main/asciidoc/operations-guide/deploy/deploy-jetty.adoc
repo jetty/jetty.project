@@ -33,7 +33,7 @@ A simple Jetty context XML file, for example named `wiki.xml` is the following:
   <Set name="war">/opt/myapps/myapp.war</Set> <3>
 </Configure>
 ----
-<1> Configures a link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`], which is the Jetty component that represents a standard Servlet web application.
+<1> Configures a link:{javadoc-url}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`], which is the Jetty component that represents a standard Servlet web application.
 <2> Specifies the web application `contextPath`, which may be different from the `+*.war+` file name.
 <3> Specifies the file system path of the `+*.war+` file.
 

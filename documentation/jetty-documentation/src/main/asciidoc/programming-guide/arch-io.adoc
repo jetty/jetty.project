@@ -19,9 +19,9 @@ Jetty libraries (both client and server) use Java NIO to handle I/O, so that at 
 [[pg-arch-io-selector-manager]]
 ==== Jetty I/O: `SelectorManager`
 
-The core class of Jetty I/O is link:{JDURL}/org/eclipse/jetty/io/SelectorManager.html[`SelectorManager`].
+The core class of Jetty I/O is link:{javadoc-url}/org/eclipse/jetty/io/SelectorManager.html[`SelectorManager`].
 
-`SelectorManager` manages internally a configurable number of link:{JDURL}/org/eclipse/jetty/io/ManagedSelector.html[`ManagedSelector`]s.
+`SelectorManager` manages internally a configurable number of link:{javadoc-url}/org/eclipse/jetty/io/ManagedSelector.html[`ManagedSelector`]s.
 Each `ManagedSelector` wraps an instance of `java.nio.channels.Selector` that in turn manages a number of `java.nio.channels.SocketChannel` instances.
 
 NOTE: TODO: add image
@@ -48,7 +48,7 @@ include::{doc_code}/org/eclipse/jetty/docs/programming/SelectorManagerDocs.java[
 [[pg-arch-io-endpoint-connection]]
 ==== Jetty I/O: `EndPoint` and `Connection`
 
-``SocketChannel``s that are passed to `SelectorManager` are wrapped into two related components: an link:{JDURL}/org/eclipse/jetty/io/EndPoint.html[`EndPoint`] and a link:{JDURL}/org/eclipse/jetty/io/Connection.html[`Connection`].
+``SocketChannel``s that are passed to `SelectorManager` are wrapped into two related components: an link:{javadoc-url}/org/eclipse/jetty/io/EndPoint.html[`EndPoint`] and a link:{javadoc-url}/org/eclipse/jetty/io/Connection.html[`Connection`].
 
 `EndPoint` is the Jetty abstraction for a `SocketChannel`: you can read bytes from an `EndPoint` via `EndPoint.fill(ByteBuffer)`, you can write bytes to an `EndPoint` via `EndPoint.flush(ByteBuffer...)` and `EndPoint.write(Callback, ByteBuffer...)`, you can close an `EndPoint` via `EndPoint.close()`, etc.
 
@@ -60,7 +60,7 @@ Conversely, an HTTP/1.1 client-side `Connection` implementation is responsible t
 
 The writing side for a specific protocol _may_ be implemented in the `Connection` but may also be implemented in other components, although eventually the bytes to be written will be written through the `EndPoint`.
 
-While there is primarily just one implementation of `EndPoint`,link:{JDURL}/org/eclipse/jetty/io/SocketChannelEndPoint.html[`SocketChannelEndPoint`] (used both on the client-side and on the server-side), there are many implementations of `Connection`, typically two for each protocol (one for the client-side and one for the server-side).
+While there is primarily just one implementation of `EndPoint`,link:{javadoc-url}/org/eclipse/jetty/io/SocketChannelEndPoint.html[`SocketChannelEndPoint`] (used both on the client-side and on the server-side), there are many implementations of `Connection`, typically two for each protocol (one for the client-side and one for the server-side).
 
 The `EndPoint` and `Connection` pairs can be chained, for example in case of encrypted communication using the TLS protocol.
 There is an `EndPoint` and `Connection` TLS pair where the `EndPoint` reads the encrypted bytes from the network and the `Connection` decrypts them; next in the chain there is an `EndPoint` and `Connection` pair where the `EndPoint` "reads" decrypted bytes (provided by the previous `Connection`) and the `Connection` deserializes them into specific protocol objects (for example HTTP/2 frame objects).
@@ -73,11 +73,11 @@ NOTE: TODO: add a section on `UpgradeFrom` and `UpgradeTo`?
 
 `SelectorManager` is an abstract class because while it knows how to create concrete `EndPoint` instances, it does not know how to create protocol specific `Connection` instances.
 
-Creating `Connection` instances is performed on the server-side by link:{JDURL}/org/eclipse/jetty/server/ConnectionFactory.html[`ConnectionFactory`]s and on the client-side by link:{JDURL}/org/eclipse/jetty/io/ClientConnectionFactory.html[`ClientConnectionFactory`]s
+Creating `Connection` instances is performed on the server-side by link:{javadoc-url}/org/eclipse/jetty/server/ConnectionFactory.html[`ConnectionFactory`]s and on the client-side by link:{javadoc-url}/org/eclipse/jetty/io/ClientConnectionFactory.html[`ClientConnectionFactory`]s
 
-On the server-side, the component that aggregates a `SelectorManager` with a set of ``ConnectionFactory``s is link:{JDURL}/org/eclipse/jetty/server/ServerConnector.html[`ServerConnector`]s, see xref:pg-server-io-arch[].
+On the server-side, the component that aggregates a `SelectorManager` with a set of ``ConnectionFactory``s is link:{javadoc-url}/org/eclipse/jetty/server/ServerConnector.html[`ServerConnector`]s, see xref:pg-server-io-arch[].
 
-On the client-side, the components that aggregates a `SelectorManager` with a set of ``ClientConnectionFactory``s are link:{JDURL}/org/eclipse/jetty/client/HttpClientTransport.html[`HttpClientTransport`] subclasses, see xref:pg-client-io-arch[].
+On the client-side, the components that aggregates a `SelectorManager` with a set of ``ClientConnectionFactory``s are link:{javadoc-url}/org/eclipse/jetty/client/HttpClientTransport.html[`HttpClientTransport`] subclasses, see xref:pg-client-io-arch[].
 
 [[pg-arch-io-endpoint]]
 ==== Jetty I/O: `EndPoint`

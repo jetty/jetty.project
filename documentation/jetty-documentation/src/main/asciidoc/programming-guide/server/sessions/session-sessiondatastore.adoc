@@ -14,7 +14,7 @@
 [[pg-server-session-datastore]]
 ==== The SessionDataStore
 
-A link:{JDURL}/org/eclipse/jetty/server/session/SessionDataStore.html[SessionDataStore] mediates the storage, retrieval and deletion of `SessionData`.
+A link:{javadoc-url}/org/eclipse/jetty/server/session/SessionDataStore.html[SessionDataStore] mediates the storage, retrieval and deletion of `SessionData`.
 There is one `SessionDataStore` per `SessionCache`.
 The server libraries provide a number of alternative `SessionDataStore` implementations.
 
@@ -43,7 +43,7 @@ AbstractSessionDataStore <|-- MongoSessionDataStore
 SessionDataStore <|-- CachingSessionDataStore
 ----
 
-The link:{JDURL}/org/eclipse/jetty/server/session/AbstractSessionDataStore.html[AbstractSessionDataStore] provides most of the behaviour common to ``SessionDataStore``s:
+The link:{javadoc-url}/org/eclipse/jetty/server/session/AbstractSessionDataStore.html[AbstractSessionDataStore] provides most of the behaviour common to ``SessionDataStore``s:
 
 passivation::
 Supporting passivation means that session data is serialized.
@@ -73,5 +73,5 @@ Thus, we use the `gracePeriod` to provide a bit of leeway around the moment of e
 * infrequently the `AbstractSessionDataStore` searches for and summarily deletes sessions - from any context - that expired at least 10 ``gracePeriod``s ago
 //end::common-datastore-config[]
 
-NOTE:: The trivial link:{JDURL}/org/eclipse/jetty/server/session/NullSessionDataStore.html[NullSessionDataStore] - which does not persist sessions - is the default used by the `SessionHandler`.
+NOTE:: The trivial link:{javadoc-url}/org/eclipse/jetty/server/session/NullSessionDataStore.html[NullSessionDataStore] - which does not persist sessions - is the default used by the `SessionHandler`.
 

@@ -69,7 +69,7 @@ You want to create the `$JETTY_BASE/etc/tls-config.xml` with the following templ
 
 The `tls-config.xml` file references the `sslContextFactory` component (created by the `ssl` Jetty module) that configures the KeyStore and TLS parameters, so that you can now call its APIs via XML, and you will have full flexibility for any advanced configuration you want (see below for few examples).
 
-Refer to the link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html[SslContextFactory javadocs] for the list of methods that you can call through the Jetty XML file.
+Refer to the link:{javadoc-url}/org/eclipse/jetty/util/ssl/SslContextFactory.html[SslContextFactory javadocs] for the list of methods that you can call through the Jetty XML file.
 
 CAUTION: Use module properties whenever possible, and only resort to use a Jetty XML file for advanced configuration that you cannot do using module properties.
 

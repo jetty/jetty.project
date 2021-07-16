@@ -133,7 +133,7 @@ httpConnector::
 Optional.
 NOTE to configure a https connector, you will need to use xml configuration files instead, setting the `jettyXmls` parameter.
 This parameter can only be used to configure a standard http connector.
-If not specified, Jetty will create a link:{JDURL}/org/eclipse/jetty/server/ServerConnector.html[ServerConnector] instance listening on port 8080.
+If not specified, Jetty will create a link:{javadoc-url}/org/eclipse/jetty/server/ServerConnector.html[ServerConnector] instance listening on port 8080.
 You can change this default port number by using the system property `jetty.http.port` on the command line, for example, `mvn -Djetty.http.port=9999 jetty:run`.
 Alternatively, you can use this configuration element to set up the information for the ServerConnector.
 The following are the valid configuration sub-elements:
@@ -168,7 +168,7 @@ There are three other ways to configure the RequestLog:
 See link:#configuring-jetty-request-logs[Configuring Request Logs] for more information.
 server::
 Optional as of Jetty 9.3.1.
-This would configure an instance of the link:{GITBROWSEURL}/jetty-server/src/main/java/org/eclipse/jetty/server/Server.java[`org.eclipse.jetty.server.Server`] for the plugin to use, however it is usually _not_ necessary to configure this, as the plugin will automatically configure one for you.
+This would configure an instance of `org.eclipse.jetty.server.Server` for the plugin to use, however it is usually _not_ necessary to configure this, as the plugin will automatically configure one for you.
 In particular, if you use the `jettyXmls` element, then you generally _don't_ want to define this element, as you are probably using the `jettyXmls` file/s to configure up a Server with a special constructor argument, such as a custom threadpool.
 If you define both a `server` element and use a `jettyXmls` element which points to a config file that has a line like `<Configure id="Server" class="org.eclipse.jetty.server.Server">` then the the xml configuration will override what you configure for the `server` in the `pom.xml`.
 useProvidedScope::
@@ -338,7 +338,7 @@ Here is an example, which turns on scanning for changes every ten seconds, and s
 ===== Configuration
 
 webApp::
-This is an instance of link:{JDURL}/org/eclipse/jetty/maven/plugin/MavenWebAppContext.html[org.eclipse.jetty.maven.plugin.MavenWebAppContext], which is an extension to the class  link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.hml[`org.eclipse.jetty.webapp.WebAppContext`].
+This is an instance of link:{javadoc-url}/org/eclipse/jetty/maven/plugin/MavenWebAppContext.html[org.eclipse.jetty.maven.plugin.MavenWebAppContext], which is an extension to the class  link:{javadoc-url}/org/eclipse/jetty/webapp/WebAppContext.hml[`org.eclipse.jetty.webapp.WebAppContext`].
 You can use any of the setter methods on this object to configure your webapp.
 Here are a few of the most useful ones:
 +
@@ -565,7 +565,7 @@ This goal will generate output from jetty into the `target/jetty-start.out` file
 These configuration parameters are available:
 
 webApp::
-This is an instance of link:{JDURL}/org/eclipse/jetty/maven/plugin/MavenWebAppContext.html[org.eclipse.jetty.maven.plugin.MavenWebAppContext], which is an extension to the class  link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.hml[`org.eclipse.jetty.webapp.WebAppContext`].
+This is an instance of link:{javadoc-url}/org/eclipse/jetty/maven/plugin/MavenWebAppContext.html[org.eclipse.jetty.maven.plugin.MavenWebAppContext], which is an extension to the class  link:{javadoc-url}/org/eclipse/jetty/webapp/WebAppContext.hml[`org.eclipse.jetty.webapp.WebAppContext`].
 You can use any of the setter methods on this object to configure your webapp.
 Here are a few of the most useful ones:
 +
