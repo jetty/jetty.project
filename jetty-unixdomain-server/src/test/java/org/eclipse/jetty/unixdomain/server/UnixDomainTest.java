@@ -16,9 +16,6 @@ package org.eclipse.jetty.unixdomain.server;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.net.StandardProtocolFamily;
-import java.net.UnixDomainSocketAddress;
-import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
@@ -43,22 +40,48 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
+import org.junit.jupiter.api.condition.JRE;
 
 import static org.eclipse.jetty.client.ProxyProtocolClientConnectionFactory.V1;
 import static org.eclipse.jetty.client.ProxyProtocolClientConnectionFactory.V2;
+import static org.eclipse.jetty.io.ClientConnector.SocketChannelWithAddress.Factory.forUnixDomain;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.fail;
 
+@EnabledForJreRange(min = JRE.JAVA_16)
 public class UnixDomainTest
 {
+    private static final Class<?> unixDomainSocketAddressClass = probe();
+
+    private static Class<?> probe()
+    {
+        try
+        {
+            return ClassLoader.getPlatformClassLoader().loadClass("java.net.UnixDomainSocketAddress");
+        }
+        catch (Throwable x)
+        {
+            return null;
+        }
+    }
+
     private ConnectionFactory[] factories = new ConnectionFactory[]{new HttpConnectionFactory()};
     private Server server;
     private Path unixDomainPath;
+
+    @BeforeEach
+    public void prepare()
+    {
+        Assumptions.assumeTrue(unixDomainSocketAddressClass != null);
+    }
 
     private void start(Handler handler) throws Exception
     {
@@ -96,9 +119,9 @@ public class UnixDomainTest
 
                 // Verify the SocketAddresses.
                 SocketAddress local = endPoint.getLocalSocketAddress();
-                assertThat(local, Matchers.instanceOf(UnixDomainSocketAddress.class));
+                assertThat(local, Matchers.instanceOf(unixDomainSocketAddressClass));
                 SocketAddress remote = endPoint.getRemoteSocketAddress();
-                assertThat(remote, Matchers.instanceOf(UnixDomainSocketAddress.class));
+                assertThat(remote, Matchers.instanceOf(unixDomainSocketAddressClass));
 
                 // Verify that other address methods don't throw.
                 local = assertDoesNotThrow(endPoint::getLocalAddress);
@@ -110,15 +133,7 @@ public class UnixDomainTest
             }
         });
 
-        // Java 16 way of implementing the SocketChannelWithAddress.Factory.
-        // See tests below for a Java 11+ version.
-        ClientConnector clientConnector = new ClientConnector((address, context) ->
-        {
-            SocketChannel socketChannel = SocketChannel.open(StandardProtocolFamily.UNIX);
-            UnixDomainSocketAddress socketAddress = UnixDomainSocketAddress.of(unixDomainPath);
-            return new ClientConnector.SocketChannelWithAddress(socketChannel, socketAddress);
-        });
-
+        ClientConnector clientConnector = new ClientConnector(forUnixDomain(unixDomainPath));
         HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(clientConnector));
         httpClient.start();
         try
@@ -155,11 +170,10 @@ public class UnixDomainTest
 
         ClientConnector clientConnector = new ClientConnector((address, context) ->
         {
-            if (address instanceof InetSocketAddress inet && inet.getPort() == fakeProxyPort)
+            if (address instanceof InetSocketAddress)
             {
-                SocketChannel socketChannel = SocketChannel.open(StandardProtocolFamily.UNIX);
-                UnixDomainSocketAddress socketAddress = UnixDomainSocketAddress.of(unixDomainPath);
-                return new ClientConnector.SocketChannelWithAddress(socketChannel, socketAddress);
+                if (((InetSocketAddress)address).getPort() == fakeProxyPort)
+                    return forUnixDomain(unixDomainPath).newSocketChannelWithAddress(address, context);
             }
             throw new IOException("request was not proxied");
         });
@@ -195,27 +209,28 @@ public class UnixDomainTest
                 jettyRequest.setHandled(true);
                 EndPoint endPoint = jettyRequest.getHttpChannel().getEndPoint();
                 assertThat(endPoint, Matchers.instanceOf(ProxyConnectionFactory.ProxyEndPoint.class));
-                assertThat(endPoint.getLocalSocketAddress(), Matchers.instanceOf(UnixDomainSocketAddress.class));
-                assertThat(endPoint.getRemoteSocketAddress(), Matchers.instanceOf(UnixDomainSocketAddress.class));
+                assertThat(endPoint.getLocalSocketAddress(), Matchers.instanceOf(unixDomainSocketAddressClass));
+                assertThat(endPoint.getRemoteSocketAddress(), Matchers.instanceOf(unixDomainSocketAddressClass));
                 if ("/v1".equals(target))
                 {
                     // As PROXYv1 does not support UNIX, the wrapped EndPoint data is used.
-                    assertThat(((UnixDomainSocketAddress)endPoint.getLocalSocketAddress()).getPath(), Matchers.equalTo(unixDomainPath));
+                    Path localPath = toUnixDomainPath(endPoint.getLocalSocketAddress());
+                    assertThat(localPath, Matchers.equalTo(unixDomainPath));
                 }
                 else if ("/v2".equals(target))
                 {
-                    assertThat(((UnixDomainSocketAddress)endPoint.getLocalSocketAddress()).getPath().toString(), Matchers.equalTo(dstAddr));
-                    assertThat(((UnixDomainSocketAddress)endPoint.getRemoteSocketAddress()).getPath().toString(), Matchers.equalTo(srcAddr));
+                    assertThat(toUnixDomainPath(endPoint.getLocalSocketAddress()).toString(), Matchers.equalTo(dstAddr));
+                    assertThat(toUnixDomainPath(endPoint.getRemoteSocketAddress()).toString(), Matchers.equalTo(srcAddr));
                 }
                 else
                 {
-                    fail("Invalid PROXY protocol version " + target);
+                    Assertions.fail("Invalid PROXY protocol version " + target);
                 }
             }
         });
 
         // Java 11+ portable way to implement SocketChannelWithAddress.Factory.
-        ClientConnector clientConnector = new ClientConnector(ClientConnector.SocketChannelWithAddress.Factory.forUnixDomain(unixDomainPath));
+        ClientConnector clientConnector = new ClientConnector(forUnixDomain(unixDomainPath));
 
         HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(clientConnector));
         httpClient.start();
@@ -244,6 +259,20 @@ public class UnixDomainTest
         finally
         {
             httpClient.stop();
+        }
+    }
+
+    private static Path toUnixDomainPath(SocketAddress address)
+    {
+        try
+        {
+            Assertions.assertNotNull(unixDomainSocketAddressClass);
+            return (Path)unixDomainSocketAddressClass.getMethod("getPath").invoke(address);
+        }
+        catch (Throwable x)
+        {
+            Assertions.fail(x);
+            throw new AssertionError();
         }
     }
 }
