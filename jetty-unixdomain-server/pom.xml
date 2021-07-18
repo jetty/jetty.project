@@ -16,19 +16,6 @@
     <spotbugs.onlyAnalyze>org.eclipse.jetty.unixdomain.*</spotbugs.onlyAnalyze>
   </properties>
 
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>16</source>
-          <target>16</target>
-          <release>16</release>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
