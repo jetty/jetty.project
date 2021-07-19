@@ -29,11 +29,15 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.TypeUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ProxyProtocolTest
@@ -44,7 +48,8 @@ public class ProxyProtocolTest
     private void start(Handler handler) throws Exception
     {
         server = new Server();
-        connector = new ServerConnector(server, new ProxyConnectionFactory(), new HttpConnectionFactory());
+        DetectorConnectionFactory optionalSsl = new DetectorConnectionFactory(new SslConnectionFactory());
+        connector = new ServerConnector(server, new ProxyConnectionFactory(), optionalSsl, new HttpConnectionFactory());
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();
@@ -55,6 +60,45 @@ public class ProxyProtocolTest
     {
         if (server != null)
             server.stop();
+    }
+
+    @Test
+    public void testNoProxyJustHttp() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                if (target.startsWith("/foo/"))
+                {
+                    response.setContentType("text/plain");
+                    response.setCharacterEncoding("utf-8");
+                    response.getWriter().println("from [/foo/]");
+                    baseRequest.setHandled(true);
+                }
+            }
+        });
+
+        try (Socket socket = new Socket("localhost", connector.getLocalPort()))
+        {
+            try (OutputStream output = socket.getOutputStream();
+                 InputStream input = socket.getInputStream())
+            {
+                String request1 =
+                    "GET /foo/zed HTTP/1.1\r\n" +
+                        "Host: localhost\r\n" +
+                        "Connection: close\r\n" +
+                        "\r\n";
+
+                output.write(request1.getBytes(StandardCharsets.UTF_8));
+                output.flush();
+
+                HttpTester.Response response = HttpTester.parseResponse(input);
+                assertThat("status", response.getStatus(), is(200));
+                assertThat("Content", response.getContent(), containsString("from [/foo/]"));
+            }
+        }
     }
 
     @Test
