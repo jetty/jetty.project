@@ -108,9 +108,7 @@ public abstract class AbstractAuthModule implements ServerAuthModule, ServerAuth
         return Boolean.parseBoolean(mandatory);
     }
 
-    protected boolean login(Subject clientSubject, String credentials,
-                            String authMethod, MessageInfo messageInfo)
-        throws IOException, UnsupportedCallbackException
+    protected boolean login(Subject clientSubject, String credentials, String authMethod, MessageInfo messageInfo) throws IOException, UnsupportedCallbackException
     {
         credentials = credentials.substring(credentials.indexOf(' ') + 1);
         credentials = new String(Base64.getDecoder().decode(credentials), StandardCharsets.ISO_8859_1);
@@ -120,10 +118,7 @@ public abstract class AbstractAuthModule implements ServerAuthModule, ServerAuth
         return login(clientSubject, userName, new Password(password), authMethod, messageInfo);
     }
 
-    protected boolean login(Subject clientSubject, String username,
-                            Credential credential, String authMethod,
-                            MessageInfo messageInfo)
-        throws IOException, UnsupportedCallbackException
+    protected boolean login(Subject clientSubject, String username, Credential credential, String authMethod, MessageInfo messageInfo) throws IOException, UnsupportedCallbackException
     {
         CredentialValidationCallback credValidationCallback = new CredentialValidationCallback(clientSubject, username, credential);
         callbackHandler.handle(new Callback[]{credValidationCallback});

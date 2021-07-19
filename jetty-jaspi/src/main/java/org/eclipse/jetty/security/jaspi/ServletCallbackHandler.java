@@ -38,9 +38,8 @@ import org.eclipse.jetty.server.UserIdentity;
 public class ServletCallbackHandler implements CallbackHandler
 {
     private final LoginService _loginService;
-
-    private final ThreadLocal<CallerPrincipalCallback> _callerPrincipals = new ThreadLocal<CallerPrincipalCallback>();
-    private final ThreadLocal<GroupPrincipalCallback> _groupPrincipals = new ThreadLocal<GroupPrincipalCallback>();
+    private final ThreadLocal<CallerPrincipalCallback> _callerPrincipals = new ThreadLocal<>();
+    private final ThreadLocal<GroupPrincipalCallback> _groupPrincipals = new ThreadLocal<>();
 
     public ServletCallbackHandler(LoginService loginService)
     {

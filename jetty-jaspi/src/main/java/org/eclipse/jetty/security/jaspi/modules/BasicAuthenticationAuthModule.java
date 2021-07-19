@@ -53,18 +53,14 @@ public class BasicAuthenticationAuthModule extends AbstractAuthModule
     }
 
     @Override
-    public void initialize(MessagePolicy requestPolicy, MessagePolicy responsePolicy,
-                           CallbackHandler callbackHandler, Map options)
-        throws AuthException
+    public void initialize(MessagePolicy requestPolicy, MessagePolicy responsePolicy, CallbackHandler callbackHandler, Map options) throws AuthException
     {
         super.initialize(requestPolicy, responsePolicy, callbackHandler, options);
         realmName = (String)options.get(REALM_KEY);
     }
 
     @Override
-    public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject,
-                                      Subject serviceSubject)
-        throws AuthException
+    public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject, Subject serviceSubject) throws AuthException
     {
         HttpServletRequest request = (HttpServletRequest)messageInfo.getRequestMessage();
         HttpServletResponse response = (HttpServletResponse)messageInfo.getResponseMessage();
@@ -90,11 +86,7 @@ public class BasicAuthenticationAuthModule extends AbstractAuthModule
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             return AuthStatus.SEND_CONTINUE;
         }
-        catch (IOException e)
-        {
-            throw new AuthException(e.getMessage());
-        }
-        catch (UnsupportedCallbackException e)
+        catch (IOException | UnsupportedCallbackException e)
         {
             throw new AuthException(e.getMessage());
         }
