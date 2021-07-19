@@ -124,17 +124,23 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
 
     /**
      * Find a servername. If {@link #setServerName(String)} has not been called,
-     * then use the name of the a principal in the service subject. If not found,
-     * return "server".
+     * then use the virtualServerName of the context. 
+     * If this is also null, then use the name of the a principal in the service subject. 
+     * If none are found, return "server".
+     * @param context 
      *
      * @param server the server to find the name of
      * @return the server name from the service Subject (or default value if not
      *         found in subject or principals)
      */
-    protected String findServerName(Server server)
-    {
+    protected String findServerName(ServletContext context, Server server)
+    {   
         if (_serverName != null)
             return _serverName;
+        
+        String virtualServerName = context.getVirtualServerName();
+        if(virtualServerName != null)
+            return virtualServerName;
 
         Subject subject = findServiceSubject(server);
         if (subject != null)

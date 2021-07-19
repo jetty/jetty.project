@@ -531,7 +531,7 @@ The following illustrates a jetty module setting up HTTP Basic Authentication us
                   <Entry>
                       <!-- Realm as utilised by Jetty Security  -->
                       <Item>org.eclipse.jetty.security.jaspi.modules.RealmName</Item>
-                      <Item>TestRealm</Item>
+                      <Item>Test Realm</Item>
                   </Entry>
               </Map>
           </Arg>
@@ -543,9 +543,16 @@ The following illustrates a jetty module setting up HTTP Basic Authentication us
             AppContextID ::= hostname blank context-path
             
             Hostname may be the physical or logical server name.
-            Per the specification this should match the value returned from getVirtualServerName 
-            on the ServletContext corresponding to the web application where this applies. 
-            Likewise, the context-path should match the context path where this applies.
+            Per the specification this need to match the value returned from 
+            getVirtualServerName on the ServletContext corresponding to the web application
+            where this applies. The algorithm applied here will use the 
+            _serverName on the configured JaspiAuthenticatorFactory (if set) and try to match it
+            against the "server" part (in the "server /ctx" example).Next it will try to match 
+            the ServletContext#getVirtualServerName to the "server". 
+            If neither are set, it will try to match the first Subject's principal name, else fallback to
+            the default value "server".
+
+            The context-path should match the context path where this applies. 
           -->
           <Arg type="String">server /ctx</Arg>
           <!-- 

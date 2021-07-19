@@ -40,17 +40,3 @@ include::{JETTY_HOME}/modules/jaspi/jaspi-authmoduleconfig.xml[tags=documentatio
 ----
 
 It illustrates setting up HTTP Basic Authentication using a Jakarta Authentication module that comes packaged with jetty: `org.eclipse.jetty.security.jaspi.modules.BasicAuthenticationAuthModule`, and applies it for a context named `/ctx`. Other custom or 3rd party modules that are compatible with the `ServerAuthModule` interface in JASPI may be imported here.
-
-Once the appropriate `ServerAuthModule` is configured, the configuration must be completed by linking it to the webapp. Open the webapp's context.xml and add the following:
-
-[source, xml, subs=verbatim]
-----
-<Get name="securityHandler">
-  <Set name="authenticatorFactory">
-    <New class="org.eclipse.jetty.security.jaspi.JaspiAuthenticatorFactory" />
-  </Set>
-</Get>
-----
-
-
-
