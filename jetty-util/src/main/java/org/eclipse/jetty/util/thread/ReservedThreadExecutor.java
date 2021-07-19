@@ -287,20 +287,17 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
 
             try
             {
+                if (task instanceof ReservedThread)
+                    LOG.warn("#6495 {} offering reserved {}", this, ReservedThreadExecutor.this);
+
                 // Offer the task to the SynchronousQueue, but without blocking forever
                 if (_task.offer(task))
                     return true;
 
                 // TODO #6495 the following is defensive code to try to avoid and debug the issue.
                 //      Ultimately it should be removed once more is known about the issue.
-
-                // Try spinning to allow the reserved thread to arrive and then try again
-                for (int spin = 1000; spin-- > 0;)
-                {
-                    Thread.yield(); // Replace with onSpinWait in jetty-10
-                    if (_task.offer(task))
-                        return true;
-                }
+                if (_task.offer(task, 1, TimeUnit.SECONDS))
+                    return true;
 
                 // Was this thread removed by an idle timeout?
                 if (_reservedLoop.get() == Integer.MIN_VALUE)
@@ -453,9 +450,6 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                     if (task == STOP)
                         // return on STOP poison pill
                         break;
-
-                    if (task == this)
-                        LOG.info("{} running self {}", this, ReservedThreadExecutor.this);
 
                     // Run the task
                     try
