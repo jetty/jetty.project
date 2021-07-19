@@ -13,58 +13,70 @@
 
 package org.eclipse.jetty.security.jaspi;
 
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-import javax.security.auth.AuthPermission;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import jakarta.security.auth.message.config.AuthConfigFactory;
 import jakarta.security.auth.message.config.AuthConfigProvider;
 import jakarta.security.auth.message.config.RegistrationListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** 
  * A very basic {@link AuthConfigFactory} that allows for registering providers programmatically.
  */
 public class DefaultAuthConfigFactory extends AuthConfigFactory
 {
-    private final Map<String, AuthConfigProvider> providers = new LinkedHashMap<>();
-    
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultAuthConfigFactory.class);
+    private final Map<String, DefaultRegistrationContext> _registrations = new ConcurrentHashMap<>();
+
     public DefaultAuthConfigFactory()
     {
     }
-    
+
     @Override
     public AuthConfigProvider getConfigProvider(String layer, String appContext, RegistrationListener listener)
     {
-        String key = getKey(layer, appContext);
-        return providers.get(key);
+        DefaultRegistrationContext registrationContext = _registrations.get(getKey(layer, appContext));
+        if (registrationContext == null)
+            registrationContext = _registrations.get(getKey(null, appContext));
+        if (registrationContext == null)
+            registrationContext = _registrations.get(getKey(layer, null));
+        if (registrationContext == null)
+            registrationContext = _registrations.get(getKey(null, null));
+        if (registrationContext == null)
+            return null;
+
+        if (listener != null)
+            registrationContext.addListener(listener);
+        return registrationContext.getProvider();
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
-    public String registerConfigProvider(String className, Map properties, String layer, String appContext,
-            String description)
+    public String registerConfigProvider(String className, Map properties, String layer, String appContext, String description)
     {
         SecurityManager sm = System.getSecurityManager();
-        if (sm != null) 
-        {
-            sm.checkPermission(new AuthPermission("registerAuthConfigProvider"));
-        }
+        if (sm != null)
+            sm.checkPermission(AuthConfigFactory.providerRegistrationSecurityPermission);
+
         String key = getKey(layer, appContext);
-        providers.put(key, new JaspiAuthConfigProvider(properties, className));
+        AuthConfigProvider configProvider = createConfigProvider(className, properties);
+        _registrations.put(key, new DefaultRegistrationContext(configProvider, layer, appContext, description, true));
         return key;
     }
 
     @Override
-    public String registerConfigProvider(AuthConfigProvider provider, String layer, String appContext,
-            String description)
+    public String registerConfigProvider(AuthConfigProvider provider, String layer, String appContext, String description)
     {
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) 
-        {
-            sm.checkPermission(new AuthPermission("registerAuthConfigProvider"));
-        }
+            sm.checkPermission(AuthConfigFactory.providerRegistrationSecurityPermission);
+
         String key = getKey(layer, appContext);
-        providers.put(key, provider);
+        _registrations.put(key, new DefaultRegistrationContext(provider, layer, appContext, description, false));
         return key;
     }
 
@@ -73,39 +85,156 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     {
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) 
-        {
-            sm.checkPermission(new AuthPermission("removeAuthRegistration"));
-        }
-        return providers.remove(registrationID) != null;
+            sm.checkPermission(AuthConfigFactory.providerRegistrationSecurityPermission);
+
+        DefaultRegistrationContext registrationContext = _registrations.remove(registrationID);
+        if (registrationContext == null)
+            return false;
+
+        registrationContext.notifyListeners();
+        return true;
     }
 
     @Override
     public String[] detachListener(RegistrationListener listener, String layer, String appContext)
     {
-        throw new UnsupportedOperationException("Not implemented");
+        SecurityManager sm = System.getSecurityManager();
+        if (sm != null)
+            sm.checkPermission(AuthConfigFactory.providerRegistrationSecurityPermission);
+
+        List<String> registrationIds = new ArrayList<>();
+        for (DefaultRegistrationContext registration : _registrations.values())
+        {
+            if ((layer == null || layer.equals(registration.getMessageLayer())) && (appContext == null || appContext.equals(registration.getAppContext())))
+            {
+                if (registration.removeListener(listener))
+                    registrationIds.add(getKey(registration.getMessageLayer(), registration.getAppContext()));
+            }
+        }
+
+        return registrationIds.toArray(new String[0]);
     }
 
     @Override
     public String[] getRegistrationIDs(AuthConfigProvider provider)
     {
-        return providers.keySet().toArray(new String[]{});
+        List<String> registrationIds = new ArrayList<>();
+        for (DefaultRegistrationContext registration : _registrations.values())
+        {
+            if (provider == registration.getProvider())
+                registrationIds.add(getKey(registration.getMessageLayer(), registration.getAppContext()));
+        }
+
+        return registrationIds.toArray(new String[0]);
     }
 
     @Override
     public RegistrationContext getRegistrationContext(String registrationID)
     {
-        throw new UnsupportedOperationException("Not implemented");
+        return _registrations.get(registrationID);
     }
 
     @Override
     public void refresh()
     {
-        throw new UnsupportedOperationException("Not implemented");
+        SecurityManager sm = System.getSecurityManager();
+        if (sm != null)
+            sm.checkPermission(AuthConfigFactory.providerRegistrationSecurityPermission);
+
+        // TODO: maybe we should re-construct providers created from classname.
     }
 
-    private String getKey(String layer, String appContext)
+    private static String getKey(String layer, String appContext)
     {
         return layer + "/" + appContext;
     }
 
+    @SuppressWarnings("rawtypes")
+    private AuthConfigProvider createConfigProvider(String className, Map properties)
+    {
+        try
+        {
+            // Javadoc specifies all AuthConfigProvider implementations must have this constructor.
+            return (AuthConfigProvider)Class.forName(className)
+                .getConstructor(Map.class, AuthConfigFactory.class)
+                .newInstance(properties, this);
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new SecurityException(e);
+        }
+    }
+
+    private static class DefaultRegistrationContext implements RegistrationContext
+    {
+        private final String _layer;
+        private final String _appContext;
+        private final boolean _persistent;
+        private final AuthConfigProvider _provider;
+        private final String _description;
+        private final List<RegistrationListener> _listeners = new CopyOnWriteArrayList<>();
+
+        public DefaultRegistrationContext(AuthConfigProvider provider, String layer, String appContext, String description, boolean persistent)
+        {
+            _provider = provider;
+            _layer = layer;
+            _appContext = appContext;
+            _description = description;
+            _persistent = persistent;
+        }
+
+        public AuthConfigProvider getProvider()
+        {
+            return _provider;
+        }
+
+        @Override
+        public String getMessageLayer()
+        {
+            return _layer;
+        }
+
+        @Override
+        public String getAppContext()
+        {
+            return _appContext;
+        }
+
+        @Override
+        public String getDescription()
+        {
+            return _description;
+        }
+
+        @Override
+        public boolean isPersistent()
+        {
+            return false;
+        }
+
+        public void addListener(RegistrationListener listener)
+        {
+            _listeners.add(listener);
+        }
+
+        public void notifyListeners()
+        {
+            for (RegistrationListener listener : _listeners)
+            {
+                try
+                {
+                    listener.notify(_layer, _appContext);
+                }
+                catch (Throwable t)
+                {
+                    LOG.warn("Error from RegistrationListener", t);
+                }
+            }
+        }
+
+        public boolean removeListener(RegistrationListener listener)
+        {
+            return _listeners.remove(listener);
+        }
+    }
 }
