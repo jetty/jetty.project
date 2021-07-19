@@ -139,7 +139,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
             return _serverName;
         
         String virtualServerName = context.getVirtualServerName();
-        if(virtualServerName != null)
+        if (virtualServerName != null)
             return virtualServerName;
 
         Subject subject = findServiceSubject(server);
