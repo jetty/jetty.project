@@ -1,5 +1,5 @@
 [description]
-Enables support for Java 16 Unix-Domain server sockets.
+Enables support for clear-text HTTP/1.1 over Java 16 Unix-Domain server sockets.
 
 [tag]
 connector
@@ -12,7 +12,7 @@ server
 lib/jetty-unixdomain-server-*.jar
 
 [xml]
-etc/jetty-unixdomain.xml
+etc/jetty-unixdomain-http.xml
 
 [ini-template]
 # tag::documentation[]

@@ -426,8 +426,7 @@ public class ClientConnector extends ContainerLifeCycle
                     try
                     {
                         ProtocolFamily family = Enum.valueOf(StandardProtocolFamily.class, "UNIX");
-                        Class<?> channelClass = Class.forName("java.nio.channels.SocketChannel");
-                        SocketChannel socketChannel = (SocketChannel)channelClass.getMethod("open", ProtocolFamily.class).invoke(null, family);
+                        SocketChannel socketChannel = (SocketChannel)SocketChannel.class.getMethod("open", ProtocolFamily.class).invoke(null, family);
                         Class<?> addressClass = Class.forName("java.net.UnixDomainSocketAddress");
                         SocketAddress socketAddress = (SocketAddress)addressClass.getMethod("of", Path.class).invoke(null, path);
                         return new SocketChannelWithAddress(socketChannel, socketAddress);
@@ -451,7 +450,7 @@ public class ClientConnector extends ContainerLifeCycle
              * destination socket address given as input.</p>
              * <p>The return type is a pair/record holding the socket channel and the
              * socket address, with the socket channel not yet connected.
-             * The implementation of this methos must not call
+             * The implementation of this methods must not call
              * {@link SocketChannel#connect(SocketAddress)}, as this is done later,
              * after configuring the socket, by the {@link ClientConnector} implementation.</p>
              *

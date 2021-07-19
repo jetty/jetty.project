@@ -165,13 +165,13 @@ public class HTTPServerDocs
         int selectors = 1;
 
         // Create a ServerConnector instance.
-        ServerConnector connector = new ServerConnector(server, 1, 1, new HttpConnectionFactory());
+        ServerConnector connector = new ServerConnector(server, acceptors, selectors, new HttpConnectionFactory());
 
-        // Configure IP parameters.
+        // Configure TCP/IP parameters.
 
-        // The IP port to listen to.
+        // The port to listen to.
         connector.setPort(8080);
-        // The IP address to bind to.
+        // The address to bind to.
         connector.setHost("127.0.0.1");
 
         // The TCP accept queue size.
@@ -194,7 +194,7 @@ public class HTTPServerDocs
         int selectors = 1;
 
         // Create a ServerConnector instance.
-        UnixDomainServerConnector connector = new UnixDomainServerConnector(server, 1, 1, new HttpConnectionFactory());
+        UnixDomainServerConnector connector = new UnixDomainServerConnector(server, acceptors, selectors, new HttpConnectionFactory());
 
         // Configure Unix-Domain parameters.
 

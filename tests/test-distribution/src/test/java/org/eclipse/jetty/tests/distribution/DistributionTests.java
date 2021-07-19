@@ -919,7 +919,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
-        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=unixdomain"))
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=unixdomain-http"))
         {
             assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
