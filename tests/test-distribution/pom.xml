@@ -11,6 +11,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.tests.distribution</bundle-symbolic-name>
+    <distribution.debug.port>-1</distribution.debug.port>
   </properties>
 
   <dependencies>
@@ -96,6 +97,13 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>test-simple-session-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
       <artifactId>test-weld-cdi-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
@@ -167,6 +175,11 @@
       <scope>test</scope>
       <type>war</type>
     </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -178,6 +191,8 @@
           <systemPropertyVariables>
             <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
             <jettyVersion>${project.version}</jettyVersion>
+            <hazelcast.version>${hazelcast.version}</hazelcast.version>
+            <distribution.debug.port>$(distribution.debug.port}</distribution.debug.port>
           </systemPropertyVariables>
         </configuration>
       </plugin>
