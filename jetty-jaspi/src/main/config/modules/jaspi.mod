@@ -15,8 +15,8 @@ lib/jetty-jaspi-${jetty.version}.jar
 lib/jaspi/*.jar
 
 [xml]
-etc/jaspi-authmoduleconfig.xml
+etc/jaspi/jaspi-authmoduleconfig.xml
 
 [files]
-basehome:modules/jaspi/jaspi-authmoduleconfig.xml|etc/jaspi-authmoduleconfig.xml
+basehome:modules/jaspi/jaspi-authmoduleconfig.xml|etc/jaspi/jaspi-authmoduleconfig.xml
 
