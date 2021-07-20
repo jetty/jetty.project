@@ -78,9 +78,7 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
             bucketCapacity = i -> (i + 1) * f;
 
         int length = bucketIndexFor.apply(maxCapacity) + 1;
-        @SuppressWarnings("unchecked")
         Bucket[] directArray = new Bucket[length];
-        @SuppressWarnings("unchecked")
         Bucket[] indirectArray = new Bucket[length];
         for (int i = 0; i < directArray.length; i++)
         {
@@ -372,37 +370,39 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
         @Override
         public String toString()
         {
-            return String.format("%s{capacity=%d}", super.toString(), _capacity);
-        }
-    }
+            int entries = 0;
+            int inUse = 0;
+            long used = 0;
+            long capacity = 0;
+            for (Entry entry : values())
+            {
+                entries++;
+                if (entry.isInUse())
+                {
+                    inUse++;
 
-    /**
-     * A variant of the {@link ArrayRetainableByteBufferPool} that
-     * uses buckets of buffers that increase in size by a power of
-     * 2 (eg 1k, 2k, 4k, 8k, etc.).
-     */
-    public static class ExponentialPool extends ArrayRetainableByteBufferPool
-    {
-        public ExponentialPool()
-        {
-            this(0, -1, Integer.MAX_VALUE);
-        }
+                    // Looking at the buffer indexes is intrinsically a race. There will be some bad samples.
+                    ByteBuffer buffer = entry.getPooled().getBuffer();
+                    int pos = buffer.position();
+                    int lim = buffer.limit();
 
-        public ExponentialPool(int minCapacity, int maxCapacity, int maxBucketSize)
-        {
-            this(minCapacity, maxCapacity, maxBucketSize, -1L, -1L);
-        }
+                    // We can't tell the difference between empty and totally full buffers due to fill/flush mode
+                    // So we only sample usage when either pos or lim is not maximized
+                    if (pos > 0 || lim < buffer.capacity())
+                    {
+                        // If limit is not capacity, then flush mode, otherwise fill mode
+                        used += (lim < buffer.capacity()) ? lim : pos;
+                        capacity += buffer.capacity();
+                    }
+                }
+            }
 
-        public ExponentialPool(int minCapacity, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
-        {
-            super(minCapacity,
-                -1,
-                maxCapacity,
-                maxBucketSize,
-                maxHeapMemory,
-                maxDirectMemory,
-                c -> 32 - Integer.numberOfLeadingZeros(c - 1),
-                i -> 1 << i);
+            return String.format("%s{capacity=%d,inuse=%d(%d%%),used=%d%%}",
+                super.toString(),
+                _capacity,
+                inUse,
+                entries > 0 ? (inUse * 100) / entries : 0,
+                capacity > 0 ? (used * 100) / capacity : 0);
         }
     }
 }
