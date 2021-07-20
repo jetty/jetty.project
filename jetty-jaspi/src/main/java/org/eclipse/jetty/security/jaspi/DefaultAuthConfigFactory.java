@@ -50,6 +50,7 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
         if (registrationContext == null)
             return null;
 
+        // TODO: according to the javadoc you're supposed to register listener even if there is no context available.
         if (listener != null)
             registrationContext.addListener(listener);
         return registrationContext.getProvider();
@@ -64,7 +65,10 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
 
         String key = getKey(layer, appContext);
         AuthConfigProvider configProvider = createConfigProvider(className, properties);
-        _registrations.put(key, new DefaultRegistrationContext(configProvider, layer, appContext, description, true));
+        DefaultRegistrationContext context = new DefaultRegistrationContext(configProvider, layer, appContext, description, true);
+        DefaultRegistrationContext oldContext = _registrations.put(key, context);
+        if (oldContext != null)
+            oldContext.notifyListeners();
         return key;
     }
 
@@ -76,7 +80,10 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
             sm.checkPermission(AuthConfigFactory.providerRegistrationSecurityPermission);
 
         String key = getKey(layer, appContext);
-        _registrations.put(key, new DefaultRegistrationContext(provider, layer, appContext, description, false));
+        DefaultRegistrationContext context = new DefaultRegistrationContext(provider, layer, appContext, description, false);
+        DefaultRegistrationContext oldContext = _registrations.put(key, context);
+        if (oldContext != null)
+            oldContext.notifyListeners();
         return key;
     }
 
@@ -154,10 +161,11 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     {
         try
         {
-            // Javadoc specifies all AuthConfigProvider implementations must have this constructor.
+            // Javadoc specifies all AuthConfigProvider implementations must have this constructor, and that
+            // to construct this we must pass a null value for the factory argument of the constructor.
             return (AuthConfigProvider)Class.forName(className)
                 .getConstructor(Map.class, AuthConfigFactory.class)
-                .newInstance(properties, this);
+                .newInstance(properties, null);
         }
         catch (ReflectiveOperationException e)
         {

@@ -14,17 +14,11 @@
 package org.eclipse.jetty.security.jaspi;
 
 import java.security.Principal;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import javax.security.auth.Subject;
 
-import jakarta.security.auth.message.AuthException;
 import jakarta.security.auth.message.config.AuthConfigFactory;
-import jakarta.security.auth.message.config.AuthConfigProvider;
-import jakarta.security.auth.message.config.RegistrationListener;
-import jakarta.security.auth.message.config.ServerAuthConfig;
 import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
@@ -32,6 +26,7 @@ import org.eclipse.jetty.security.DefaultAuthenticatorFactory;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,8 +48,7 @@ import org.slf4j.LoggerFactory;
 public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(JaspiAuthenticatorFactory.class);
-
-    private static String MESSAGE_LAYER = "HttpServlet";
+    public static final String MESSAGE_LAYER = "HttpServlet";
 
     private Subject _serviceSubject;
     private String _serverName;
@@ -92,50 +86,13 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
     }
 
     @Override
-    public Authenticator getAuthenticator(Server server, ServletContext context, AuthConfiguration configuration,
-            IdentityService identityService, LoginService loginService)
+    public Authenticator getAuthenticator(Server server, ServletContext context, AuthConfiguration configuration, IdentityService identityService, LoginService loginService)
     {
-        Authenticator authenticator = null;
-        try
-        {
-            AuthConfigFactory authConfigFactory = AuthConfigFactory.getFactory();
-            RegistrationListener listener = (layer, appContext) -> 
-            {
-            };
-
-            Subject serviceSubject = findServiceSubject(server);
-            String serverName = findServerName(server);
-
-            String contextPath = context.getContextPath();
-            if (contextPath == null || contextPath.length() == 0)
-                contextPath = "/";
-            String appContext = serverName + " " + contextPath;
-
-            AuthConfigProvider authConfigProvider = authConfigFactory.getConfigProvider(MESSAGE_LAYER, appContext,
-                    listener);
-
-            if (authConfigProvider != null)
-            {
-                ServletCallbackHandler servletCallbackHandler = new ServletCallbackHandler(loginService);
-                ServerAuthConfig serverAuthConfig = authConfigProvider.getServerAuthConfig(MESSAGE_LAYER, appContext,
-                        servletCallbackHandler);
-                if (serverAuthConfig != null)
-                {
-                    Map map = new HashMap();
-                    for (String key : configuration.getInitParameterNames())
-                    {
-                        map.put(key, configuration.getInitParameter(key));
-                    }
-                    authenticator = new JaspiAuthenticator(serverAuthConfig, map, servletCallbackHandler,
-                            serviceSubject, true, identityService);
-                }
-            }
-        } 
-        catch (AuthException e)
-        {
-            LOG.warn("Failed to get ServerAuthConfig", e);
-        }
-        return authenticator;
+        String serverName = findServerName(server);
+        Subject serviceSubject = findServiceSubject(server);
+        String contextPath = StringUtil.isEmpty(context.getContextPath()) ? "/" : context.getContextPath();
+        String appContext = serverName + " " + contextPath;
+        return new JaspiAuthenticator(serviceSubject, appContext, true);
     }
 
     /**
