@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 /** 
  * A {@link ServerAuthModule} implementation of HTTP Basic Authentication.  
  */
-public class BasicAuthenticationAuthModule extends AbstractAuthModule
+public class BasicAuthenticationAuthModule extends BaseAuthModule
 {
     private static final Logger LOG = LoggerFactory.getLogger(BasicAuthenticationAuthModule.class);
 

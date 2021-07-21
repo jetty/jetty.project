@@ -19,6 +19,7 @@ module org.eclipse.jetty.security.jaspi
     exports org.eclipse.jetty.security.jaspi;
     exports org.eclipse.jetty.security.jaspi.callback;
     exports org.eclipse.jetty.security.jaspi.modules;
+    exports org.eclipse.jetty.security.jaspi.provider;
 
     requires transitive jakarta.security.auth.message;
     requires jetty.servlet.api;

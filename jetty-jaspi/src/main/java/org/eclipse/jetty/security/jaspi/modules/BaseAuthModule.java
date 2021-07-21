@@ -43,7 +43,7 @@ import org.eclipse.jetty.util.security.Password;
  * Simple abstract module implementing a Jakarta Authentication {@link ServerAuthModule} and {@link ServerAuthContext}.
  * To be used as a building block for building more sophisticated auth modules.
  */
-public abstract class AbstractAuthModule implements ServerAuthModule, ServerAuthContext
+public abstract class BaseAuthModule implements ServerAuthModule, ServerAuthContext
 {
     private static final Class[] SUPPORTED_MESSAGE_TYPES = new Class[]{HttpServletRequest.class, HttpServletResponse.class};
 
@@ -57,11 +57,11 @@ public abstract class AbstractAuthModule implements ServerAuthModule, ServerAuth
         return SUPPORTED_MESSAGE_TYPES;
     }
 
-    public AbstractAuthModule()
+    public BaseAuthModule()
     {
     }
 
-    public AbstractAuthModule(CallbackHandler callbackHandler)
+    public BaseAuthModule(CallbackHandler callbackHandler)
     {
         this.callbackHandler = callbackHandler;
     }
