@@ -55,7 +55,7 @@ public class JaspiTest
     Server _server;
     LocalConnector _connector;
 
-    public class TestLoginService extends AbstractLoginService
+    public static class TestLoginService extends AbstractLoginService
     {
         protected Map<String, UserPrincipal> _users = new HashMap<>();
         protected Map<String, List<RolePrincipal>> _roles = new HashMap<>();
@@ -93,15 +93,18 @@ public class JaspiTest
     public static void beforeAll() throws Exception
     {
         AuthConfigFactory factory = new DefaultAuthConfigFactory();
-        
-        factory.registerConfigProvider("org.eclipse.jetty.security.jaspi.modules.BasicAuthenticationAuthModule",  
-                Map.of("AppContextID", "server /ctx", "org.eclipse.jetty.security.jaspi.modules.RealmName", "TestRealm"),
-                "HttpServlet", "server /ctx", "a test provider");
 
-        factory.registerConfigProvider("org.eclipse.jetty.security.jaspi.HttpHeaderAuthModule",
-                Map.of("AppContextID", "server /other"),
-                "HttpServlet", "server /other", "another test provider");
-        
+        factory.registerConfigProvider("org.eclipse.jetty.security.jaspi.provider.JaspiAuthConfigProvider",
+            Map.of("ServerAuthModule", "org.eclipse.jetty.security.jaspi.modules.BasicAuthenticationAuthModule",
+                "AppContextID", "server /ctx",
+                "org.eclipse.jetty.security.jaspi.modules.RealmName", "TestRealm"),
+            "HttpServlet", "server /ctx", "a test provider");
+
+        factory.registerConfigProvider("org.eclipse.jetty.security.jaspi.provider.JaspiAuthConfigProvider",
+            Map.of("ServerAuthModule", "org.eclipse.jetty.security.jaspi.HttpHeaderAuthModule",
+                "AppContextID", "server /other"),
+            "HttpServlet", "server /other", "another test provider");
+
         AuthConfigFactory.setFactory(factory);
     }
 
