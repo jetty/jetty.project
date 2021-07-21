@@ -180,6 +180,16 @@
       <artifactId>testcontainers</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>mariadb</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mariadb.jdbc</groupId>
+      <artifactId>mariadb-java-client</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -192,7 +202,9 @@
             <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
             <jettyVersion>${project.version}</jettyVersion>
             <hazelcast.version>${hazelcast.version}</hazelcast.version>
+            <mariadb.docker.version>${mariadb.docker.version}</mariadb.docker.version>
             <distribution.debug.port>$(distribution.debug.port}</distribution.debug.port>
+            <mariadb.version>${mariadb.version}</mariadb.version>
           </systemPropertyVariables>
         </configuration>
       </plugin>
