@@ -37,7 +37,6 @@
     <module>test-cdi-common-webapp</module>
     <module>test-weld-cdi-webapp</module>
     <module>test-owb-cdi-webapp</module>
-    <module>test-jaspi-webapp</module>
     <module>test-websocket-webapp</module>
     <module>test-bad-websocket-webapp</module>
     <module>test-websocket-client-webapp</module>

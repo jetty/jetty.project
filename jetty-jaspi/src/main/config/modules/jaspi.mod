@@ -18,5 +18,5 @@ lib/jaspi/*.jar
 etc/jaspi/jaspi-authmoduleconfig.xml
 
 [files]
-basehome:modules/jaspi/jaspi-authmoduleconfig.xml|etc/jaspi/jaspi-authmoduleconfig.xml
+basehome:etc/jaspi/jaspi-authmoduleconfig.xml|etc/jaspi/jaspi-authmoduleconfig.xml
 
