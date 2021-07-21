@@ -256,6 +256,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         }
         catch (RejectedExecutionException e)
         {
+            _pending.decrementAndGet();
             LOG.ignore(e);
         }
     }
@@ -283,8 +284,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
 
             try
             {
-                _task.put(task);
-                return true;
+                return _task.offer(task, 1, TimeUnit.SECONDS);
             }
             catch (Throwable e)
             {
@@ -336,63 +336,75 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         @Override
         public void run()
         {
-            while (isRunning())
+            try
             {
-                // test and increment size BEFORE decrementing pending,
-                // so that we don't have a race starting new pending.
-                int size = _size.get();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} Entering", this);
 
-                // Are we stopped?
-                if (size < 0)
-                    return;
-
-                // Are we surplus to capacity?
-                if (size >= _capacity)
+                while (isRunning())
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} size {} > capacity", this, size, _capacity);
+                    // test and increment size BEFORE decrementing pending,
+                    // so that we don't have a race starting new pending.
+                    int size = _size.get();
+
+                    // Are we stopped?
+                    if (size < 0)
+                        return;
+
+                    // Are we surplus to capacity?
+                    if (size >= _capacity)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("{} size {} >= capacity", this, size, _capacity);
+                        if (_starting)
+                            _pending.decrementAndGet();
+                        return;
+                    }
+
+                    // If we cannot update size then recalculate
+                    if (!_size.compareAndSet(size, size + 1))
+                        continue;
+
                     if (_starting)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("{} started", this);
                         _pending.decrementAndGet();
-                    return;
-                }
+                        _starting = false;
+                    }
 
-                // If we cannot update size then recalculate
-                if (!_size.compareAndSet(size, size + 1))
-                    continue;
+                    // Insert ourselves in the stack. Size is already incremented, but
+                    // that only effects the decision to keep other threads reserved.
+                    _stack.offerFirst(this);
 
-                if (_starting)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} started", this);
-                    _pending.decrementAndGet();
-                    _starting = false;
-                }
+                    // Once added to the stack, we must always wait for a job on the _task Queue
+                    // and never return early, else we may leave a thread blocked offering a _task.
+                    Runnable task = reservedWait();
 
-                // Insert ourselves in the stack. Size is already incremented, but
-                // that only effects the decision to keep other threads reserved.
-                _stack.offerFirst(this);
+                    if (task == STOP)
+                        // return on STOP poison pill
+                        break;
 
-                // Once added to the stack, we must always wait for a job on the _task Queue
-                // and never return early, else we may leave a thread blocked offering a _task.
-                Runnable task = reservedWait();
-
-                if (task == STOP)
-                    // return on STOP poison pill
-                    break;
-
-                // Run the task
-                try
-                {
-                    task.run();
-                }
-                catch (Throwable e)
-                {
-                    LOG.warn(e);
+                    // Run the task
+                    try
+                    {
+                        task.run();
+                    }
+                    catch (Throwable e)
+                    {
+                        LOG.warn(e);
+                    }
                 }
             }
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} Exited", this);
+            catch (Throwable x)
+            {
+                LOG.warn(x);
+            }
+            finally
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} Exited", this);
+            }
         }
 
         @Override
