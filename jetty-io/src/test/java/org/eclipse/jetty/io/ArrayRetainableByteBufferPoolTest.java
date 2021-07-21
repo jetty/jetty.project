@@ -346,7 +346,7 @@ public class ArrayRetainableByteBufferPoolTest
         }
 
         b3.release();
-        b4.getBuffer().limit(b4.getBuffer().capacity()-2);
+        b4.getBuffer().limit(b4.getBuffer().capacity() - 2);
         assertThat(pool.dump(), containsString("[size=4 closed=false]{capacity=4,inuse=3(75%),used=16%"));
     }
 
