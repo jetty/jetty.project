@@ -372,37 +372,18 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
         {
             int entries = 0;
             int inUse = 0;
-            long used = 0;
-            long capacity = 0;
             for (Entry entry : values())
             {
                 entries++;
                 if (entry.isInUse())
-                {
                     inUse++;
-
-                    // Looking at the buffer indexes is intrinsically a race. There will be some bad samples.
-                    ByteBuffer buffer = entry.getPooled().getBuffer();
-                    int pos = buffer.position();
-                    int lim = buffer.limit();
-
-                    // We can't tell the difference between empty and totally full buffers due to fill/flush mode
-                    // So we only sample usage when either pos or lim is not maximized
-                    if (pos > 0 || lim < buffer.capacity())
-                    {
-                        // If limit is not capacity, then flush mode, otherwise fill mode
-                        used += (lim < buffer.capacity()) ? lim : pos;
-                        capacity += buffer.capacity();
-                    }
-                }
             }
 
-            return String.format("%s{capacity=%d,inuse=%d(%d%%),used=%d%%}",
+            return String.format("%s{capacity=%d,inuse=%d(%d%%)}",
                 super.toString(),
                 _capacity,
                 inUse,
-                entries > 0 ? (inUse * 100) / entries : 0,
-                capacity > 0 ? (used * 100) / capacity : 0);
+                entries > 0 ? (inUse * 100) / entries : 0);
         }
     }
 }
