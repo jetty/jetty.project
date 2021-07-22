@@ -1468,7 +1468,7 @@
     <profile>
       <id>jdk17</id>
       <activation>
-        <jdk>[1.7,)</jdk>
+        <jdk>[17,)</jdk>
       </activation>
       <properties>
         <!-- disable plugins known not to work with JDK 17 (yet) -->
