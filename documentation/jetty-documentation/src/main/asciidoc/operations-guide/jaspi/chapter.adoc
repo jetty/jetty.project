@@ -35,8 +35,9 @@ include::{JETTY_HOME}/modules/jaspi.mod[]
 
 When you enable the `jaspi` module, the example configuration file `jaspi-authmoduleconfig.xml` is copied into your `${jetty.base}/etc` directory:
 
+[source, xml, subs="{sub-order}"]
 ----
-include::{JETTY_HOME}/modules/jaspi/jaspi-authmoduleconfig.xml[tags=documentation]
+include::{SRCDIR}/jetty-jaspi/src/main/config/etc/jaspi/jaspi-demo.xml[tags=documentation]
 ----
 
 It illustrates setting up HTTP Basic Authentication using a Jakarta Authentication module that comes packaged with jetty: `org.eclipse.jetty.security.jaspi.modules.BasicAuthenticationAuthModule`, and applies it for a context named `/ctx`. Other custom or 3rd party modules that are compatible with the `ServerAuthModule` interface in JASPI may be imported here.
