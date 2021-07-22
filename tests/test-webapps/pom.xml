@@ -32,6 +32,7 @@
   <modules>
     <module>test-webapp-rfc2616</module>
     <module>test-http2-webapp</module>
+    <module>test-simple-session-webapp</module>
     <module>test-felix-webapp</module>
     <module>test-cdi-common-webapp</module>
     <module>test-weld-cdi-webapp</module>
