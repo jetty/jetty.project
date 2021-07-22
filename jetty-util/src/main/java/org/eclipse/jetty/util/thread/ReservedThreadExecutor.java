@@ -25,6 +25,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -63,8 +64,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     private final Executor _executor;
     private final int _capacity;
     private final ConcurrentLinkedDeque<ReservedThread> _stack;
-    private final AtomicInteger _size = new AtomicInteger();
-    private final AtomicInteger _pending = new AtomicInteger();
+    private final AtomicBiInteger _count = new AtomicBiInteger(); // hi=pending; lo=size;
 
     private ThreadPoolBudget.Lease _lease;
     private long _idleTime = 1L;
@@ -126,13 +126,13 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     @ManagedAttribute(value = "available reserved threads", readonly = true)
     public int getAvailable()
     {
-        return _stack.size();
+        return _count.getLo();
     }
 
     @ManagedAttribute(value = "pending reserved threads", readonly = true)
     public int getPending()
     {
-        return _pending.get();
+        return _count.getHi();
     }
 
     @ManagedAttribute(value = "idle timeout in MS", readonly = true)
@@ -161,7 +161,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     public void doStart() throws Exception
     {
         _lease = ThreadPoolBudget.leaseFrom(getExecutor(), this, _capacity);
-        _size.set(0);
+        _count.set(0, 0);
         super.doStart();
     }
 
@@ -175,10 +175,13 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
 
         while (true)
         {
-            int size = _size.get();
             // If no reserved threads left try setting size to -1 to
             // atomically prevent other threads adding themselves to stack.
-            if (size == 0 && _size.compareAndSet(size, -1))
+            if (_count.compareAndSetLo(0, -1))
+                break;
+
+            // Are we already stopped?
+            if (_count.getLo() < 0)
                 break;
 
             ReservedThread thread = _stack.pollFirst();
@@ -190,7 +193,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                 continue;
             }
 
-            _size.decrementAndGet();
+            _count.add(0, -1);
             thread.stop();
         }
     }
@@ -224,7 +227,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             return false;
         }
 
-        int size = _size.decrementAndGet();
+        int size = _count.addAndGetLo(-1);
         if (!thread.offer(task))
             return false;
 
@@ -236,28 +239,28 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
 
     private void startReservedThread()
     {
-        try
+        while (true)
         {
-            while (true)
+            long count = _count.get();
+            int pending = AtomicBiInteger.getHi(count);
+            int size = AtomicBiInteger.getLo(count);
+            if (pending + size >= _capacity)
+                return;
+
+            if (!_count.compareAndSet(count, pending + 1, size))
+                continue;
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} startReservedThread p={}", this, pending + 1);
+            try
             {
-                // Not atomic, but there is a re-check in ReservedThread.run().
-                int pending = _pending.get();
-                int size = _size.get();
-                if (pending + size >= _capacity)
-                    return;
-                if (_pending.compareAndSet(pending, pending + 1))
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} startReservedThread p={}", this, pending + 1);
-                    _executor.execute(new ReservedThread());
-                    return;
-                }
+                _executor.execute(new ReservedThread());
             }
-        }
-        catch (RejectedExecutionException e)
-        {
-            _pending.decrementAndGet();
-            LOG.ignore(e);
+            catch (RejectedExecutionException e)
+            {
+                _count.add(-1, 0);
+                LOG.ignore(e);
+            }
+            return;
         }
     }
 
@@ -267,18 +270,26 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         return String.format("%s@%x{s=%d/%d,p=%d}",
             getClass().getSimpleName(),
             hashCode(),
-            _size.get(),
+            _count.getLo(),
             _capacity,
-            _pending.get());
+            _count.getHi());
     }
 
     private class ReservedThread implements Runnable
     {
+        private static final int MAX_CONSECUTIVE_MISSES = 10;
         private final SynchronousQueue<Runnable> _task = new SynchronousQueue<>();
-        // How often can the thread miss the offer rendezvous before being taken out of operations
-        private final AtomicInteger _reservedLoop = new AtomicInteger(10);
-        private boolean _starting = true;
-        private volatile Thread _thread;
+
+        // Reserved Thread state is an integer that is either one of the special values
+        // below; 0 for running normally or a small positive value that counts the number
+        // of consecutive offer misses.
+        private static final int PENDING = Integer.MAX_VALUE;
+        private static final int RUNNING = 0;
+        private static final int STOPPED = -1;
+        private static final int MISSED_OUT = -2;
+        private static final int IDLED_OUT = -3;
+        private final AtomicInteger _state = new AtomicInteger(PENDING);
+        private Thread _thread;
 
         public boolean offer(Runnable task)
         {
@@ -287,60 +298,46 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
 
             try
             {
-                if (task instanceof ReservedThread)
-                    LOG.warn("#6495 {} offering reserved {}", this, ReservedThreadExecutor.this);
-
-                // Offer the task to the SynchronousQueue, but without blocking forever
+                // Offer the task to the SynchronousQueue, but without blocking or even yielding.
+                // The intent of RTE is to support EPC strategy, thus if we block or even yield here then we give
+                // an opportunity for the caller to switch CPUs, defeating the intent of EPC.
                 if (_task.offer(task))
                     return true;
 
-                // TODO #6495 the following is defensive code to try to avoid and debug the issue.
-                //      Ultimately it should be removed once more is known about the issue.
-                if (_task.offer(task, 1, TimeUnit.SECONDS))
-                    return true;
-
-                // Was this thread removed by an idle timeout?
-                if (_reservedLoop.get() == Integer.MIN_VALUE)
+                // check state and potential reason for the miss
+                while (true)
                 {
-                    LOG.warn("ReservedThread.offer failed #6495 on idle thread: {}", ReservedThreadExecutor.this);
-                    return false;
-                }
-
-                // Spinning failed, so check how many rendezvous we missed
-                if (_reservedLoop.updateAndGet(i -> i > 0 ? i - 1 : i) <= 0)
-                {
-                    // The reserved thread has missed too many rendezvous, so we will warn with some detailed info
-                    // and take the thread out of service.
-                    Thread thread = _thread;
-                    if (thread == null)
+                    int state = _state.get();
+                    // Are we not in a state that should have been offered to?
+                    if (state < 0 || state == PENDING)
                     {
-                        LOG.warn("ReservedThread.offer failed #6495: {}", ReservedThreadExecutor.this);
+                        LOG.warn("ReservedThread.offered to: {}", this);
+                        return false;
                     }
-                    else
-                    {
-                        StringBuilder stack = new StringBuilder();
-                        for (StackTraceElement frame : thread.getStackTrace())
-                            stack.append(System.lineSeparator()).append(" at ").append(frame);
 
-                        LOG.warn("ReservedThread.offer failed #6495: {} {}{}", thread, ReservedThreadExecutor.this, stack);
+                    // Have we missed too often?
+                    if (state >= MAX_CONSECUTIVE_MISSES)
+                    {
+                        if (_state.compareAndSet(state, MISSED_OUT))
+                            continue;
+                        LOG.warn("ReservedThread.offer max missed: {}", this);
+                        return false;
                     }
-                    return false;
+
+                    // increment the misses
+                    if (_state.compareAndSet(state, state + 1))
+                        break;
                 }
             }
             catch (Throwable e)
             {
-                LOG.ignore(e);
-            }
-
-            // Before putting the thread back in the stack, let's check if it was already there
-            if (_stack.contains(this))
-            {
-                LOG.warn("ReservedThread.offer failed #6495 already in stack: {}", ReservedThreadExecutor.this);
-                return false;
+                LOG.warn(e);
             }
 
             // We failed to offer the task, so put this thread back on the stack in last position to give it time to arrive.
-            _size.getAndIncrement();
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} offer missed {}", this, task, ReservedThreadExecutor.this);
+            _count.add(0, -1);
             _stack.offerLast(this);
             return false;
         }
@@ -366,27 +363,19 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                     if (task != null)
                         return task;
 
-                    // TODO #6495 Have we missed rendezvous too many times?
-                    if (_reservedLoop.get() <= 0)
+                    // Check non running states?
+                    int state = _state.get();
+                    if (state < 0)
                         return STOP;
 
-                    // Have we timed out?
+                    // Have we idled out?
                     if (_idleTime > 0 && _stack.remove(this))
                     {
-                        // TODO #6495 checking if race with remove and take from stack
-                        Thread.yield();
-                        task = _task.poll(10, TimeUnit.MILLISECONDS);
-                        if (task != null)
-                        {
-                            LOG.warn("ReservedThread.wait failed #6495 offer after remove: {}", ReservedThreadExecutor.this);
-                            return task;
-                        }
-
-                        // Signal idle death in reserved loop
-                        _reservedLoop.set(Integer.MIN_VALUE);
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("{} idle {}", this, ReservedThreadExecutor.this);
-                        _size.decrementAndGet();
+                        if (!_state.compareAndSet(state, IDLED_OUT))
+                            LOG.warn("Bad idle state: {} in {}", this, ReservedThreadExecutor.this);
+                        else if (LOG.isDebugEnabled())
+                            LOG.debug("Idle {} in {}", this, ReservedThreadExecutor.this);
+                        _count.add(0, -1);
                         return STOP;
                     }
                 }
@@ -405,50 +394,44 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             {
                 while (true)
                 {
-                    // test and increment size BEFORE decrementing pending,
-                    // so that we don't have a race starting new pending.
-                    int size = _size.get();
+                    boolean exit = false;
+                    long count = _count.get();
 
-                    // Are we stopped?
-                    if (size < 0)
-                        return;
+                    // check the state
+                    int state = _state.get();
+                    if (state < 0)
+                        break;
 
-                    // Are we surplus to capacity?
-                    if (size >= _capacity)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("{} size {} > capacity", this, size, _capacity);
-                        if (_starting)
-                            _pending.decrementAndGet();
-                        return;
-                    }
+                    // reduce pending if this thread was pending
+                    int pending = AtomicBiInteger.getHi(count) - (state == PENDING ? 1 : 0);
 
-                    // If we cannot update size then recalculate
-                    if (!_size.compareAndSet(size, size + 1))
+                    // increment size if not stopped nor surplus to capacity?
+                    int size = AtomicBiInteger.getLo(count);
+                    if (size >= 0 && size < _capacity)
+                        size++;
+                    else
+                        exit = true;
+
+                    // Update count for pending and size
+                    if (!_count.compareAndSet(count, pending, size))
                         continue;
+                    // Update state (clearing pending and resetting consecutive miss count)
+                    if (!_state.compareAndSet(state, RUNNING))
+                        throw new IllegalStateException("Bad State: " + this);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} was={} exit={} size={}+{} capacity={}", this, state, exit, pending, size, _capacity);
+                    if (exit)
+                        break;
 
-                    if (_starting)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("{} started {}", this, ReservedThreadExecutor.this);
-                        _pending.decrementAndGet();
-                        _starting = false;
-                    }
-
-                    // TODO check for #6495 before putting the thread back in the stack, let's check if it was already there
-                    if (_stack.contains(this))
-                        LOG.warn("ReservedThread.run #6495 already in stack: {}", ReservedThreadExecutor.this);
-
-                    // Insert ourselves in the stack. Size is already incremented, but
-                    // that only effects the decision to keep other threads reserved.
+                    // Insert ourselves in the stack.
                     _stack.offerFirst(this);
 
                     // Once added to the stack, we must always wait for a job on the _task Queue
                     // and never return early, else we may leave a thread blocked offering a _task.
                     Runnable task = reservedWait();
 
+                    // Is the task the STOP poison pill?
                     if (task == STOP)
-                        // return on STOP poison pill
                         break;
 
                     // Run the task
@@ -458,15 +441,17 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                     }
                     catch (Throwable e)
                     {
-                        LOG.warn(e);
+                        LOG.warn("Unable to run task", e);
                     }
                 }
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} exited {}", this, ReservedThreadExecutor.this);
             }
             finally
             {
+                int state = _state.get();
+                if ((state < 0 && state != IDLED_OUT) || !_state.compareAndSet(state, STOPPED))
+                    LOG.warn("{} exited {}", this, ReservedThreadExecutor.this);
+                else if (LOG.isDebugEnabled())
+                    LOG.debug("{} exited {}", this, ReservedThreadExecutor.this);
                 _thread = null;
             }
         }
@@ -474,7 +459,31 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         @Override
         public String toString()
         {
-            return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+            String s;
+            int state = _state.get();
+            switch (state)
+            {
+                case PENDING:
+                    s = "PENDING";
+                    break;
+                case RUNNING:
+                    s = "RUNNING";
+                    break;
+                case IDLED_OUT:
+                    s = "IDLED_OUT";
+                    break;
+                case MISSED_OUT:
+                    s = "MISSED_OUT";
+                    break;
+                default:
+                    s = "MISSED_" + state;
+                    break;
+            }
+            return String.format("%s@%x{%s,thread=%s}",
+                getClass().getSimpleName(),
+                hashCode(),
+                s,
+                _thread);
         }
     }
 }
