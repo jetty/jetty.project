@@ -175,13 +175,13 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
 
         while (true)
         {
-            // If no reserved threads left try setting size to -1 to
+            // If no reserved threads left try setting size to MAX_VALUE to
             // atomically prevent other threads adding themselves to stack.
-            if (_count.compareAndSetLo(0, -1))
+            if (_count.compareAndSetLo(0, Integer.MAX_VALUE))
                 break;
 
             // Are we already stopped?
-            if (_count.getLo() < 0)
+            if (_count.getLo() == Integer.MAX_VALUE)
                 break;
 
             ReservedThread thread = _stack.pollFirst();
@@ -244,7 +244,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             long count = _count.get();
             int pending = AtomicBiInteger.getHi(count);
             int size = AtomicBiInteger.getLo(count);
-            if (pending + size >= _capacity)
+            if (size == Integer.MAX_VALUE || pending + size >= _capacity)
                 return;
 
             if (!_count.compareAndSet(count, pending + 1, size))
@@ -337,7 +337,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             // We failed to offer the task, so put this thread back on the stack in last position to give it time to arrive.
             if (LOG.isDebugEnabled())
                 LOG.debug("{} offer missed {}", this, task, ReservedThreadExecutor.this);
-            _count.add(0, -1);
+            _count.add(0, 1);
             _stack.offerLast(this);
             return false;
         }
@@ -407,7 +407,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
 
                     // increment size if not stopped nor surplus to capacity?
                     int size = AtomicBiInteger.getLo(count);
-                    if (size >= 0 && size < _capacity)
+                    if (size < _capacity)
                         size++;
                     else
                         exit = true;
