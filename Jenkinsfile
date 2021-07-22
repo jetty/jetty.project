@@ -37,6 +37,7 @@ pipeline {
           }
         }
 
+        // TODO: Remove once JDK17 (non-ea) has been released
         stage("Build / Test - JDK16") {
           agent { node { label 'linux' } }
           steps {
