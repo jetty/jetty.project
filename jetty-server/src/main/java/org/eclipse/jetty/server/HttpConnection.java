@@ -316,6 +316,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
      */
     protected boolean fillAndParseForContent()
     {
+        // Defensive check to avoid an infinite select/wakeup/fillAndParseForContent/wait loop
+        // in case the parser was mistakenly closed and the connection was not aborted.
+        if (_parser.isClose() || _parser.isClosed())
+            throw new IllegalStateException("Parser is closed: " + _parser);
+
         boolean handled = false;
         while (_parser.inContentState())
         {
