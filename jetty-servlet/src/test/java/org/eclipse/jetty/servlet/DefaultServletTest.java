@@ -52,13 +52,12 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
-import org.eclipse.jetty.server.SameFileAliasChecker;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -1097,8 +1096,6 @@ public class DefaultServletTest
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
 
-            context.addAliasCheck(new AllowSymLinkAliasChecker());
-
             rawResponse = connector.getResponse("GET /context/dir/link.txt HTTP/1.0\r\n\r\n");
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
@@ -2070,7 +2067,7 @@ public class DefaultServletTest
         FS.ensureEmpty(docRoot);
 
         context.addServlet(DefaultServlet.class, "/");
-        context.addAliasCheck(new SameFileAliasChecker());
+        context.addAliasCheck(new AllowedResourceAliasChecker(context, true));
 
         // Create file with UTF-8 NFC format
         String filename = "swedish-" + new String(TypeUtil.fromHexString("C3A5"), UTF_8) + ".txt";
@@ -2110,7 +2107,7 @@ public class DefaultServletTest
         FS.ensureEmpty(docRoot);
 
         context.addServlet(DefaultServlet.class, "/");
-        context.addAliasCheck(new SameFileAliasChecker());
+        context.addAliasCheck(new AllowedResourceAliasChecker(context, true));
 
         // Create file with UTF-8 NFD format
         String filename = "swedish-a" + new String(TypeUtil.fromHexString("CC8A"), UTF_8) + ".txt";

@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
@@ -184,7 +185,7 @@ public class AllowSymLinkAliasCheckerTest
         fileResourceContext.setBaseResource(new PathResource(rootPath));
 
         fileResourceContext.clearAliasChecks();
-        fileResourceContext.addAliasCheck(new AllowSymLinkAliasChecker());
+        fileResourceContext.addAliasCheck(new SymlinkAllowedResourceAliasChecker(fileResourceContext));
 
         server.setHandler(fileResourceContext);
         server.start();

@@ -44,7 +44,9 @@ import org.eclipse.jetty.util.resource.Resource;
  * or Linux on XFS) the the actual file could be stored using UTF-16,
  * but be accessed using NFD UTF-8 or NFC UTF-8 for the same file.
  * </p>
+ * @deprecated use {@link org.eclipse.jetty.server.AllowedResourceAliasChecker} instead.
  */
+@Deprecated
 public class SameFileAliasChecker implements AliasCheck
 {
     private static final Logger LOG = Log.getLogger(SameFileAliasChecker.class);
