@@ -18,17 +18,17 @@
 
 package org.eclipse.jetty.server;
 
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.Resource;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * This will approve an alias to any resource which is not a protected target.
@@ -82,8 +82,8 @@ public class AllowedResourceAliasChecker implements ContextHandler.AliasCheck
 
     private boolean isProtectedPath(Path path, boolean followLinks) throws IOException
     {
-        String basePath = followLinks ? _contextHandler.getBaseResource().getFile().toPath().toRealPath().toString() :
-                _contextHandler.getBaseResource().getFile().toPath().toRealPath(LinkOption.NOFOLLOW_LINKS).toString();
+        String basePath = followLinks ? _contextHandler.getBaseResource().getFile().toPath().toRealPath().toString()
+            : _contextHandler.getBaseResource().getFile().toPath().toRealPath(LinkOption.NOFOLLOW_LINKS).toString();
         String targetPath = path.toString();
 
         if (!targetPath.startsWith(basePath))
@@ -123,5 +123,11 @@ public class AllowedResourceAliasChecker implements ContextHandler.AliasCheck
         }
 
         return false;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{checkSymlinkTargets=%s}", AllowedResourceAliasChecker.class.getSimpleName(), hashCode(), _checkSymlinkTargets);
     }
 }
