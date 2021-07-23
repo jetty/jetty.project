@@ -19,10 +19,13 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.URLDecoder;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.UnresolvedAddressException;
 import java.nio.charset.StandardCharsets;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -42,8 +45,10 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.toolchain.test.IO;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -57,6 +62,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientRedirectTest extends AbstractHttpClientServerTest
 {
+    private static final Logger LOG = Log.getLogger(HttpClientRedirectTest.class);
+
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
     public void test303(Scenario scenario) throws Exception
@@ -292,24 +299,26 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    @Disabled
     public void testRedirectFailed(Scenario scenario) throws Exception
     {
-        // TODO this test is failing with timout after an ISP upgrade??  DNS dependent?
+        // Skip this test if DNS Hijacking is detected
+        Assumptions.assumeFalse(detectDnsHijacking());
+
         start(scenario, new RedirectHandler());
 
-        try
-        {
-            client.newRequest("localhost", connector.getLocalPort())
+        ExecutionException e = assertThrows(ExecutionException.class,
+            () -> client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scenario.getScheme())
                 .path("/303/doesNotExist/done")
                 .timeout(5, TimeUnit.SECONDS)
-                .send();
-        }
-        catch (ExecutionException x)
-        {
-            assertThat(x.getCause(), Matchers.instanceOf(UnresolvedAddressException.class));
-        }
+                .send());
+
+        assertThat("Cause", e.getCause(), Matchers.anyOf(
+            // Exception seen on some updates of OpenJDK 8
+            Matchers.instanceOf(UnresolvedAddressException.class),
+            // Exception seen on OpenJDK 11+
+            Matchers.instanceOf(UnknownHostException.class))
+        );
     }
 
     @ParameterizedTest
@@ -715,5 +724,49 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
                 IO.copy(request.getInputStream(), response.getOutputStream());
             }
         }
+    }
+
+    public static boolean detectDnsHijacking()
+    {
+        String host1 = randomHostname();
+        String host2 = randomHostname();
+        String addr1 = getInetHostAddress(host1);
+        String addr2 = getInetHostAddress(host2);
+
+        boolean ret = (addr1.equals(addr2));
+
+        if (ret)
+        {
+            LOG.warn("DNS Hijacking detected (these should not return the same host address): host1={} ({}), host2={} ({})",
+                host1, addr1,
+                host2, addr2);
+        }
+
+        return ret;
+    }
+
+    private static String getInetHostAddress(String hostname)
+    {
+        try
+        {
+            InetAddress addr = InetAddress.getByName(hostname);
+            return addr.getHostAddress();
+        }
+        catch (Throwable t)
+        {
+            return "<unknown:" + hostname + ">";
+        }
+    }
+
+    private static String randomHostname()
+    {
+        String digits = "0123456789abcdefghijklmnopqrstuvwxyz";
+        Random random = new Random();
+        char[] host = new char[7 + random.nextInt(8)];
+        for (int i = 0; i < host.length; ++i)
+        {
+            host[i] = digits.charAt(random.nextInt(digits.length()));
+        }
+        return new String(host) + ".tld.";
     }
 }
