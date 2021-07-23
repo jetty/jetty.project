@@ -13,10 +13,15 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
@@ -38,6 +43,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.w3c.dom.Document;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
@@ -561,7 +567,7 @@ public class ErrorHandlerTest
         }
     }
 
-    private String assertContent(HttpTester.Response response)
+    private String assertContent(HttpTester.Response response) throws Exception
     {
         String contentType = response.get(HttpHeader.CONTENT_TYPE);
         String content = response.getContent();
@@ -572,6 +578,17 @@ public class ErrorHandlerTest
             assertThat(content, not(containsString("<glossary>")));
             assertThat(content, not(containsString("<!DOCTYPE>")));
             assertThat(content, not(containsString("&euro;")));
+
+            // we expect that our generated output conforms to text/xhtml is well formed
+            DocumentBuilderFactory xmlDocumentBuilderFactory = DocumentBuilderFactory.newInstance();
+            xmlDocumentBuilderFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            DocumentBuilder db = xmlDocumentBuilderFactory.newDocumentBuilder();
+            try (ByteArrayInputStream inputStream = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)))
+            {
+                // We consider this content to be XML well formed if these 2 lines do not throw an Exception
+                Document doc = db.parse(inputStream);
+                doc.getDocumentElement().normalize();
+            }
         }
         else if (contentType.contains("text/json"))
         {

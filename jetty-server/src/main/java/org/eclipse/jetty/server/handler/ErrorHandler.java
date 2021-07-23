@@ -386,7 +386,7 @@ public class ErrorHandler extends AbstractHandler
             writeErrorPageStacks(request, writer);
 
         Request.getBaseRequest(request).getHttpChannel().getHttpConfiguration()
-            .writePoweredBy(writer, "<hr>", "<hr/>\n");
+            .writePoweredBy(writer, "<hr/>", "<hr/>\n");
     }
 
     protected void writeErrorPageMessage(HttpServletRequest request, Writer writer, int code, String message, String uri)
