@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.util.thread;
 
+import java.io.IOException;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.SynchronousQueue;
@@ -28,7 +31,9 @@ import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -43,7 +48,7 @@ import org.eclipse.jetty.util.log.Logger;
  * whenever it has been idle for that period.
  */
 @ManagedObject("A pool for reserved threads")
-public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExecutor
+public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExecutor, Dumpable
 {
     private static final Logger LOG = Log.getLogger(ReservedThreadExecutor.class);
     private static final Runnable STOP = new Runnable()
@@ -62,6 +67,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
 
     private final Executor _executor;
     private final int _capacity;
+    private final Queue<ReservedThread> _threads = new ConcurrentLinkedQueue<>();
     private final SynchronousQueue<Runnable> _queue = new SynchronousQueue<>();
     private final AtomicBiInteger _count = new AtomicBiInteger(); // hi=pending; lo=size;
 
@@ -187,7 +193,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
                 _count.add(0, -1);
         }
 
-        getBeans(ReservedThread.class).forEach(this::removeBean);
+        _threads.clear();
     }
 
     @Override
@@ -236,7 +242,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
             try
             {
                 ReservedThread thread = new ReservedThread();
-                addBean(thread);
+                _threads.add(thread);
                 _executor.execute(thread);
             }
             catch (RejectedExecutionException e)
@@ -246,6 +252,13 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
             }
             return;
         }
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        Dumpable.dumpObjects(out, indent, this,
+            new DumpableCollection("reserved", _threads));
     }
 
     @Override
@@ -262,9 +275,9 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
     private enum State
     {
         PENDING,
-        POLLING,
+        RESERVED,
         RUNNING,
-        IDLED_OUT,
+        IDLED,
         STOPPED
     }
 
@@ -292,7 +305,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
                     // Have we idled out?
                     if (_idleTime > 0)
                     {
-                        if (!_state.compareAndSet(State.POLLING, State.IDLED_OUT))
+                        if (!_state.compareAndSet(State.RESERVED, State.IDLED))
                             LOG.warn("Bad idle state: {} in {}", this, ReservedThreadExecutor.this);
                         else if (LOG.isDebugEnabled())
                             LOG.debug("Idle {} in {}", this, ReservedThreadExecutor.this);
@@ -325,23 +338,35 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
                     int pending = AtomicBiInteger.getHi(count) - (state == State.PENDING ? 1 : 0);
                     int size = AtomicBiInteger.getLo(count);
 
-                    // Exit if excess capacity or it has been too long since we hit zero reserved threads?
-                    if (size >= _capacity ||
-                        size > 0 && _idleTime > 0 && _idleTimeUnit.toNanos(_idleTime) < (_lastZero - System.nanoTime()) && _state.compareAndSet(state, State.IDLED_OUT))
+                    // Exit if excess capacity
+                    if (size >= _capacity)
+                    {
                         exit = true;
+                    }
+                    // or it has been too long since we hit zero reserved threads (and thus have too many reserved threads)?
+                    else if (size > 0 && _idleTime > 0 &&
+                        _idleTimeUnit.toNanos(_idleTime) < (_lastZero - System.nanoTime()) &&
+                        _state.compareAndSet(state, State.IDLED))
+                    {
+                        _lastZero = System.nanoTime(); // reset lastZero to slow shrinkage
+                        exit = true;
+                    }
                     else
+                    {
                         size++;
+                    }
 
                     // Update count for pending and size
                     if (!_count.compareAndSet(count, pending, size))
                         continue;
-                    // Update state (clearing pending and resetting consecutive miss count)
-                    if (!_state.compareAndSet(state, State.POLLING))
-                        throw new IllegalStateException("Bad State: " + this);
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} was={} exit={} size={}+{} capacity={}", this, state, exit, pending, size, _capacity);
                     if (exit)
                         break;
+
+                    // Update state (clearing pending and resetting consecutive miss count)
+                    if (!_state.compareAndSet(state, State.RESERVED))
+                        throw new IllegalStateException("Bad State: " + this);
 
                     // Once added to the stack, we must always wait for a job on the _task Queue
                     // and never return early, else we may leave a thread blocked offering a _task.
@@ -350,14 +375,14 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
                     // Is the task the STOP poison pill?
                     if (task == STOP)
                     {
-                        _state.compareAndSet(State.POLLING, State.STOPPED);
+                        _state.compareAndSet(State.RESERVED, State.STOPPED);
                         break;
                     }
 
                     // Run the task
                     try
                     {
-                        _state.compareAndSet(State.POLLING, State.RUNNING);
+                        _state.compareAndSet(State.RESERVED, State.RUNNING);
                         task.run();
                     }
                     catch (Throwable e)
@@ -370,7 +395,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} exited {}", this, ReservedThreadExecutor.this);
-                removeBean(this);
+                _threads.remove(this);
                 _thread = null;
             }
         }
