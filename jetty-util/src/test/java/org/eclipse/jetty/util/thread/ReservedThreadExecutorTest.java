@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -295,7 +294,6 @@ public class ReservedThreadExecutorTest
         }
     }
 
-    @Disabled
     @Test
     public void stressTest() throws Exception
     {
@@ -361,6 +359,6 @@ public class ReservedThreadExecutorTest
         pool.stop();
 
         assertThat(usedReserved.get() + usedPool.get(), is(LOOPS));
-        System.err.printf("reserved=%d pool=%d total=%d%n", usedReserved.get(), usedPool.get(), LOOPS);
+        // System.err.printf("reserved=%d pool=%d total=%d%n", usedReserved.get(), usedPool.get(), LOOPS);
     }
 }
