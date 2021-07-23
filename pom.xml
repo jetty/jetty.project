@@ -40,8 +40,8 @@
     <junit.version>5.7.0</junit.version>
     <maven.version>3.6.3</maven.version>
     <maven.resolver.version>1.6.1</maven.resolver.version>
-    <weld.version>3.1.5.Final</weld.version>
-    <jboss.logging.version>3.4.1.Final</jboss.logging.version>
+    <weld.version>3.1.8.Final</weld.version>
+    <jboss.logging.version>3.4.2.Final</jboss.logging.version>
     <jetty.perf-helper.version>1.0.6</jetty.perf-helper.version>
     <ant.version>1.10.9</ant.version>
     <unix.socket.tmp></unix.socket.tmp>
@@ -1464,6 +1464,17 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+    <profile>
+      <id>jdk17</id>
+      <activation>
+        <jdk>[17,)</jdk>
+      </activation>
+      <properties>
+        <!-- disable plugins known not to work with JDK 17 (yet) -->
+        <spotbugs.skip>true</spotbugs.skip>
+        <jacoco.skip>true</jacoco.skip>
+      </properties>
     </profile>
     <profile>
       <id>update-version</id>
