@@ -185,6 +185,8 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
             if (_queue.offer(STOP))
                 _count.add(0, -1);
         }
+
+        getBeans(ReservedThread.class).forEach(this::removeBean);
     }
 
     @Override

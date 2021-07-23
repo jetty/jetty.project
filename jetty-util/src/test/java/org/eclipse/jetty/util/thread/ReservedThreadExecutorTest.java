@@ -186,6 +186,35 @@ public class ReservedThreadExecutorTest
     }
 
     @Test
+    public void testBusyShrink() throws Exception
+    {
+        final long IDLE = 1000;
+
+        _reservedExecutor.stop();
+        _reservedExecutor.setIdleTimeout(IDLE, TimeUnit.MILLISECONDS);
+        _reservedExecutor.start();
+        assertThat(_reservedExecutor.getAvailable(), is(0));
+
+        assertThat(_reservedExecutor.tryExecute(NOOP), is(false));
+        assertThat(_reservedExecutor.tryExecute(NOOP), is(false));
+
+        _executor.startThread();
+        _executor.startThread();
+
+        waitForAvailable(2);
+
+        int available = _reservedExecutor.getAvailable();
+        assertThat(available, is(2));
+
+        for (int i = 10; i-- > 0;)
+        {
+            assertThat(_reservedExecutor.tryExecute(NOOP), is(true));
+            Thread.sleep(200);
+        }
+        assertThat(_reservedExecutor.getAvailable(), is(1));
+    }
+
+    @Test
     public void testReservedIdleTimeoutWithOneReservedThread() throws Exception
     {
         long idleTimeout = 500;
