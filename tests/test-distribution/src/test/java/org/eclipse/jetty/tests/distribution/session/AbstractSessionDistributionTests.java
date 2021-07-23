@@ -39,6 +39,8 @@ public abstract class AbstractSessionDistributionTests extends AbstractJettyHome
 
     protected JettyHomeTester jettyHomeTester;
 
+    private static final int START_TIMEOUT = Integer.getInteger("home.start.timeout", 10);
+
     @BeforeEach
     public void prepareJettyHomeTester() throws Exception
     {
@@ -76,7 +78,7 @@ public abstract class AbstractSessionDistributionTests extends AbstractJettyHome
 
             try (JettyHomeTester.Run run2 = jettyHomeTester.start(argsStart))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 100000000, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/session?action=CREATE");
@@ -90,7 +92,7 @@ public abstract class AbstractSessionDistributionTests extends AbstractJettyHome
 
             try (JettyHomeTester.Run run2 = jettyHomeTester.start(argsStart))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 100000000, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/session?action=READ");
                 assertEquals(HttpStatus.OK_200, response.getStatus());

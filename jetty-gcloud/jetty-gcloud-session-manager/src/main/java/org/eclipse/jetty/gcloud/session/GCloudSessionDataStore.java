@@ -67,6 +67,8 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     protected EntityDataModel _model;
     protected boolean _modelProvided;
     private String _namespace = DEFAULT_NAMESPACE;
+    private String _host;
+    private String _projectId;
 
     /**
      * EntityDataModel
@@ -455,15 +457,61 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         return _maxRetries;
     }
 
+    public void setHost(String host)
+    {
+        _host = host;
+    }
+
+    @ManagedAttribute(value = "gcloud host", readonly = true)
+    public String getHost()
+    {
+        return _host;
+    }
+
+    public void setProjectId(String projectId)
+    {
+        _projectId = projectId;
+    }
+
+    @ManagedAttribute(value = "gcloud project Id", readonly = true)
+    public String getProjectId()
+    {
+        return _projectId;
+    }
+
     @Override
     protected void doStart() throws Exception
     {
         if (!_dsProvided)
         {
+            boolean defaultInstance = true;
+            DatastoreOptions.Builder builder = DatastoreOptions.newBuilder();
             if (!StringUtil.isBlank(getNamespace()))
-                _datastore = DatastoreOptions.newBuilder().setNamespace(getNamespace()).build().getService();
-            else
+            {
+                defaultInstance = false;
+                builder.setNamespace(getNamespace());
+            }
+
+            if (!StringUtil.isBlank(getHost()))
+            {
+                defaultInstance = false;
+                builder.setHost(getHost());
+            }
+
+            if (!StringUtil.isBlank(getProjectId()))
+            {
+                defaultInstance = false;
+                builder.setProjectId(getProjectId());
+            }
+
+            if (defaultInstance)
+            {
                 _datastore = DatastoreOptions.getDefaultInstance().getService();
+            }
+            else
+            {
+                _datastore = builder.build().getService();
+            }
         }
 
         if (_model == null)

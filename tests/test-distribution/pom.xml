@@ -12,6 +12,7 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}.tests.distribution</bundle-symbolic-name>
     <distribution.debug.port>-1</distribution.debug.port>
+    <home.start.timeout>10</home.start.timeout>
   </properties>
 
   <dependencies>
@@ -186,6 +187,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>gcloud</artifactId>
+      <version>${testcontainers.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.mariadb.jdbc</groupId>
       <artifactId>mariadb-java-client</artifactId>
       <scope>test</scope>
@@ -204,6 +211,7 @@
             <hazelcast.version>${hazelcast.version}</hazelcast.version>
             <mariadb.docker.version>${mariadb.docker.version}</mariadb.docker.version>
             <distribution.debug.port>$(distribution.debug.port}</distribution.debug.port>
+            <home.start.timeout>${home.start.timeout}</home.start.timeout>
             <mariadb.version>${mariadb.version}</mariadb.version>
           </systemPropertyVariables>
         </configuration>

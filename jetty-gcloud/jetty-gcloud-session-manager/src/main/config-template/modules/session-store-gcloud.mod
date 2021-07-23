@@ -33,6 +33,8 @@ etc/sessions/gcloud/session-store.xml
 #jetty.session.gcloud.maxRetries=5
 #jetty.session.gcloud.backoffMs=1000
 #jetty.session.gcloud.namespace=
+#jetty.session.gcloud.host=
+#jetty.session.gcloud.projectId=
 #jetty.session.gcloud.model.kind=GCloudSession
 #jetty.session.gcloud.model.id=id
 #jetty.session.gcloud.model.contextPath=contextPath
