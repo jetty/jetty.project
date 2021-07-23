@@ -325,41 +325,42 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             {
                 while (true)
                 {
-                    boolean exit = false;
+                    State next = State.RESERVED;
                     long count = _count.get();
 
                     // reduce pending if this thread was pending
                     int pending = AtomicBiInteger.getHi(count) - (_state == State.PENDING ? 1 : 0);
                     int size = AtomicBiInteger.getLo(count);
 
-                    // Exit if excess capacity
                     if (size >= _capacity)
                     {
-                        exit = true;
+                        // This thread is excess to capacity
+                        next = State.STOPPED;
                     }
-                    // or it has been too long since we hit zero reserved threads (and thus have too many reserved threads)?
                     else if (size > 0 && _idleTime > 0 && _idleTimeUnit.toNanos(_idleTime) < (System.nanoTime() - _lastZero))
                     {
-                        _state = State.IDLE;
+                        // it has been too long since we hit zero reserved threads, so are likely"busy" idle
                         _lastZero = System.nanoTime(); // reset lastZero to slow shrinkage
-                        exit = true;
+                        next = State.IDLE;
                     }
                     else
                     {
+                        // We will become a reserved thread if we can update the count below.
                         size++;
                     }
 
                     // Update count for pending and size
                     if (!_count.compareAndSet(count, pending, size))
                         continue;
+
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} was={} exit={} size={}+{} capacity={}", this, _state, exit, pending, size, _capacity);
-                    if (exit)
+                        LOG.debug("{} was={} next={} size={}+{} capacity={}", this, _state, next, pending, size, _capacity);
+                    _state = next;
+                    if (next != State.RESERVED)
                         break;
 
                     // Once added to the stack, we must always wait for a job on the _task Queue
                     // and never return early, else we may leave a thread blocked offering a _task.
-                    _state = State.RESERVED;
                     Runnable task = reservedWait();
 
                     // Is the task the STOP poison pill?
