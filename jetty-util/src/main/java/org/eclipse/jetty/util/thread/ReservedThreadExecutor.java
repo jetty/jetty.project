@@ -68,6 +68,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
     private ThreadPoolBudget.Lease _lease;
     private long _idleTime = 1L;
     private TimeUnit _idleTimeUnit = TimeUnit.MINUTES;
+    private volatile long _lastZero = Long.MAX_VALUE;
 
     /**
      * @param executor The executor to use to obtain threads
@@ -226,6 +227,8 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
             if (size == Integer.MAX_VALUE || pending + size >= _capacity)
                 return;
 
+            if (size == 0)
+                _lastZero = System.nanoTime();
             if (!_count.compareAndSet(count, pending + 1, size))
                 continue;
             if (LOG.isDebugEnabled())
@@ -320,13 +323,14 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
 
                     // reduce pending if this thread was pending
                     int pending = AtomicBiInteger.getHi(count) - (state == State.PENDING ? 1 : 0);
-
-                    // increment size if not stopped nor surplus to capacity?
                     int size = AtomicBiInteger.getLo(count);
-                    if (size < _capacity)
-                        size++;
-                    else
+
+                    // Exit if excess capacity or it has been too long since we hit zero reserved threads?
+                    if (size >= _capacity ||
+                        size > 0 && _idleTime > 0 && _idleTimeUnit.toNanos(_idleTime) < (_lastZero - System.nanoTime()) && _state.compareAndSet(state, State.IDLED_OUT))
                         exit = true;
+                    else
+                        size++;
 
                     // Update count for pending and size
                     if (!_count.compareAndSet(count, pending, size))
