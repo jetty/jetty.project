@@ -31,6 +31,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -67,7 +68,9 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         parser.setMaxFrameLength(client.getMaxFrameLength());
         parser.setMaxSettingsKeys(client.getMaxSettingsKeys());
 
-        HTTP2ClientConnection connection = new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint,
+        RetainableByteBufferPool retainableByteBufferPool = RetainableByteBufferPool.findOrAdapt(client, byteBufferPool);
+
+        HTTP2ClientConnection connection = new HTTP2ClientConnection(client, retainableByteBufferPool, executor, endPoint,
             parser, session, client.getInputBufferSize(), promise, listener);
         connection.setUseInputDirectByteBuffers(client.isUseInputDirectByteBuffers());
         connection.setUseOutputDirectByteBuffers(client.isUseOutputDirectByteBuffers());
@@ -81,9 +84,9 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         private final Promise<Session> promise;
         private final Session.Listener listener;
 
-        private HTTP2ClientConnection(HTTP2Client client, ByteBufferPool byteBufferPool, Executor executor, EndPoint endpoint, Parser parser, ISession session, int bufferSize, Promise<Session> promise, Session.Listener listener)
+        private HTTP2ClientConnection(HTTP2Client client, RetainableByteBufferPool retainableByteBufferPool, Executor executor, EndPoint endpoint, Parser parser, ISession session, int bufferSize, Promise<Session> promise, Session.Listener listener)
         {
-            super(byteBufferPool, executor, endpoint, parser, session, bufferSize);
+            super(retainableByteBufferPool, executor, endpoint, parser, session, bufferSize);
             this.client = client;
             this.promise = promise;
             this.listener = listener;

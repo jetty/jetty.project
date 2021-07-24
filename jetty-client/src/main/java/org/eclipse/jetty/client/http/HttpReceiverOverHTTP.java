@@ -29,9 +29,9 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
@@ -43,6 +43,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
     private final LongAdder inMessages = new LongAdder();
     private final HttpParser parser;
+    private final RetainableByteBufferPool retainableByteBufferPool;
     private RetainableByteBuffer networkBuffer;
     private boolean shutdown;
     private boolean complete;
@@ -61,6 +62,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             parser.setHeaderCacheSize(httpTransport.getHeaderCacheSize());
             parser.setHeaderCacheCaseSensitive(httpTransport.isHeaderCacheCaseSensitive());
         }
+
+        this.retainableByteBufferPool = RetainableByteBufferPool.findOrAdapt(httpClient, httpClient.getByteBufferPool());
     }
 
     @Override
@@ -111,9 +114,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     private RetainableByteBuffer newNetworkBuffer()
     {
         HttpClient client = getHttpDestination().getHttpClient();
-        ByteBufferPool bufferPool = client.getByteBufferPool();
         boolean direct = client.isUseInputDirectByteBuffers();
-        return new RetainableByteBuffer(bufferPool, client.getResponseBufferSize(), direct);
+        return retainableByteBufferPool.acquire(client.getResponseBufferSize(), direct);
     }
 
     private void releaseNetworkBuffer()
@@ -166,7 +168,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                     return;
                 }
 
-                if (networkBuffer.getReferences() > 1)
+                if (networkBuffer.isRetained())
                     reacquireNetworkBuffer();
 
                 // The networkBuffer may have been reacquired.
