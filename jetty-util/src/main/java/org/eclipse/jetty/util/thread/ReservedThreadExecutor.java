@@ -36,6 +36,9 @@ import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+import static org.eclipse.jetty.util.AtomicBiInteger.getHi;
+import static org.eclipse.jetty.util.AtomicBiInteger.getLo;
+
 /**
  * An Executor using pre-allocated/reserved Threads from a wrapped Executor.
  * <p>Calls to {@link #execute(Runnable)} on a {@link ReservedThreadExecutor} will either succeed
@@ -176,22 +179,9 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             _lease.close();
 
         super.doStop();
-
-        while (true)
-        {
-            // If no reserved threads left try setting size to MAX_VALUE to
-            // atomically prevent other threads adding themselves to stack.
-            if (_count.compareAndSetLo(0, Integer.MAX_VALUE))
-                break;
-
-            // Are we already stopped?
-            if (_count.getLo() == Integer.MAX_VALUE)
-                break;
-
-            if (_queue.offer(STOP))
-                _count.add(0, -1);
-        }
-
+        _count.set(0, -1);
+        for (int i = _threads.size(); i-- > 0;)
+            _queue.offer(STOP);
         _threads.clear();
     }
 
@@ -216,7 +206,16 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             return false;
 
         boolean offered = _queue.offer(task);
-        int size = offered ? _count.addAndGetLo(-1) : _count.getLo();
+        int size;
+        while (true)
+        {
+            long count = _count.get();
+            size = getLo(count);
+            if (size < 0 || !offered)
+                break;
+            if (_count.compareAndSet(count, getHi(count), --size))
+                break;
+        }
         if (size == 0 && task != STOP)
             startReservedThread();
         return offered;
@@ -227,22 +226,22 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         while (true)
         {
             long count = _count.get();
-            int pending = AtomicBiInteger.getHi(count);
-            int size = AtomicBiInteger.getLo(count);
-            if (size == Integer.MAX_VALUE || pending + size >= _capacity)
+            int pending = getHi(count);
+            int size = getLo(count);
+            if (size < 0 || pending + size >= _capacity)
                 return;
-
             if (size == 0)
                 _lastZero = System.nanoTime();
             if (!_count.compareAndSet(count, pending + 1, size))
                 continue;
+
             if (LOG.isDebugEnabled())
                 LOG.debug("{} startReservedThread p={}", this, pending + 1);
             try
             {
                 ReservedThread thread = new ReservedThread();
-                _threads.add(thread);
                 _executor.execute(thread);
+                _threads.add(thread);
             }
             catch (RejectedExecutionException e)
             {
@@ -295,12 +294,16 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             {
                 try
                 {
-                    // Always poll at some period so we can check the abort flag
+                    // Always poll at some period as safety to ensure we don't poll forever.
                     Runnable task = _idleTime <= 0 ? _queue.poll(30, TimeUnit.SECONDS) : _queue.poll(_idleTime, _idleTimeUnit);
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} task={} {}", this, task, ReservedThreadExecutor.this);
                     if (task != null)
                         return task;
+
+                    // Has the RTE stopped?
+                    if (_count.getLo() < 0)
+                        return STOP;
 
                     // Have we idled out?
                     if (_idleTime > 0)
@@ -325,27 +328,28 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             {
                 while (true)
                 {
-                    State next = State.RESERVED;
                     long count = _count.get();
 
                     // reduce pending if this thread was pending
-                    int pending = AtomicBiInteger.getHi(count) - (_state == State.PENDING ? 1 : 0);
-                    int size = AtomicBiInteger.getLo(count);
+                    int pending = getHi(count) - (_state == State.PENDING ? 1 : 0);
+                    int size = getLo(count);
 
-                    if (size >= _capacity)
+                    State next;
+                    if (size < 0 || size >= _capacity)
                     {
-                        // This thread is excess to capacity
+                        // The executor has stopped or this thread is excess to capacity
                         next = State.STOPPED;
                     }
                     else if (size > 0 && _idleTime > 0 && _idleTimeUnit.toNanos(_idleTime) < (System.nanoTime() - _lastZero))
                     {
-                        // it has been too long since we hit zero reserved threads, so are likely"busy" idle
+                        // it has been too long since we hit zero reserved threads, so are "busy" idle
                         _lastZero = System.nanoTime(); // reset lastZero to slow shrinkage
                         next = State.IDLE;
                     }
                     else
                     {
                         // We will become a reserved thread if we can update the count below.
+                        next = State.RESERVED;
                         size++;
                     }
 
@@ -359,8 +363,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                     if (next != State.RESERVED)
                         break;
 
-                    // Once added to the stack, we must always wait for a job on the _task Queue
-                    // and never return early, else we may leave a thread blocked offering a _task.
+                    // We are reserved whilst we are waiting for an offered _task.
                     Runnable task = reservedWait();
 
                     // Is the task the STOP poison pill?
