@@ -30,6 +30,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -304,7 +305,7 @@ public class ReservedThreadExecutorTest
         reserved.setIdleTimeout(0, null);
         reserved.start();
 
-        final int LOOPS = 1000000;
+        final int LOOPS = 2000000;
         final AtomicInteger executions = new AtomicInteger(LOOPS);
         final CountDownLatch executed = new CountDownLatch(executions.get());
         final AtomicInteger usedReserved = new AtomicInteger(0);
@@ -358,6 +359,7 @@ public class ReservedThreadExecutorTest
         reserved.stop();
         pool.stop();
 
+        assertThat(usedReserved.get(), greaterThan(0));
         assertThat(usedReserved.get() + usedPool.get(), is(LOOPS));
         // System.err.printf("reserved=%d pool=%d total=%d%n", usedReserved.get(), usedPool.get(), LOOPS);
     }

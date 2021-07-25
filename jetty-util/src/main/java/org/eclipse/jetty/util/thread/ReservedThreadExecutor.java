@@ -19,8 +19,8 @@
 package org.eclipse.jetty.util.thread;
 
 import java.io.IOException;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.SynchronousQueue;
@@ -69,7 +69,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
 
     private final Executor _executor;
     private final int _capacity;
-    private final Queue<ReservedThread> _threads = new ConcurrentLinkedQueue<>();
+    private final Set<ReservedThread> _threads = ConcurrentHashMap.newKeySet();
     private final SynchronousQueue<Runnable> _queue = new SynchronousQueue<>(false);
     private final AtomicBiInteger _count = new AtomicBiInteger(); // hi=pending; lo=size;
 
@@ -283,7 +283,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     {
         // The state and thread are kept only for dumping
         private volatile State _state = State.PENDING;
-        private Thread _thread;
+        private volatile Thread _thread;
 
         private Runnable reservedWait()
         {
