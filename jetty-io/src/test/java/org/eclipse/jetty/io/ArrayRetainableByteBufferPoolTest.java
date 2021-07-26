@@ -13,12 +13,15 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
@@ -312,5 +315,68 @@ public class ArrayRetainableByteBufferPoolTest
         assertThat(pool.getHeapByteBufferCount(), is(0L));
         assertThat(pool.getDirectMemory(), is(0L));
         assertThat(pool.getHeapMemory(), is(0L));
+    }
+
+    @Test
+    public void testExponentialPool() throws IOException
+    {
+        ArrayRetainableByteBufferPool pool = new ExponentialPool();
+        assertThat(pool.acquire(1, false).capacity(), is(1));
+        assertThat(pool.acquire(2, false).capacity(), is(2));
+        RetainableByteBuffer b3 = pool.acquire(3, false);
+        assertThat(b3.capacity(), is(4));
+        RetainableByteBuffer b4 = pool.acquire(4, false);
+        assertThat(b4.capacity(), is(4));
+
+        int capacity = 4;
+        while (true)
+        {
+            RetainableByteBuffer b = pool.acquire(capacity - 1, false);
+            assertThat(b.capacity(), Matchers.is(capacity));
+            b = pool.acquire(capacity, false);
+            assertThat(b.capacity(), Matchers.is(capacity));
+
+            if (capacity >= pool.getMaxCapacity())
+                break;
+
+            b = pool.acquire(capacity + 1, false);
+            assertThat(b.capacity(), Matchers.is(capacity * 2));
+
+            capacity = capacity * 2;
+        }
+
+        b3.release();
+        b4.getBuffer().limit(b4.getBuffer().capacity() - 2);
+        assertThat(pool.dump(), containsString("[size=4 closed=false]{capacity=4,inuse=3(75%)"));
+    }
+
+    /**
+     * A variant of the {@link ArrayRetainableByteBufferPool} that
+     * uses buckets of buffers that increase in size by a power of
+     * 2 (eg 1k, 2k, 4k, 8k, etc.).
+     */
+    public static class ExponentialPool extends ArrayRetainableByteBufferPool
+    {
+        public ExponentialPool()
+        {
+            this(0, -1, Integer.MAX_VALUE);
+        }
+
+        public ExponentialPool(int minCapacity, int maxCapacity, int maxBucketSize)
+        {
+            this(minCapacity, maxCapacity, maxBucketSize, -1L, -1L);
+        }
+
+        public ExponentialPool(int minCapacity, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
+        {
+            super(minCapacity,
+                -1,
+                maxCapacity,
+                maxBucketSize,
+                maxHeapMemory,
+                maxDirectMemory,
+                c -> 32 - Integer.numberOfLeadingZeros(c - 1),
+                i -> 1 << i);
+        }
     }
 }
