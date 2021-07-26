@@ -47,8 +47,8 @@
     <junit.version>5.7.2</junit.version>
     <maven.version>3.6.3</maven.version>
     <maven.resolver.version>1.6.1</maven.resolver.version>
-    <weld.version>4.0.0.Beta5</weld.version>
-    <jboss.logging.version>3.4.1.Final</jboss.logging.version>
+    <weld.version>4.0.2.Final</weld.version>
+    <jboss.logging.version>3.4.2.Final</jboss.logging.version>
     <jetty.perf-helper.version>1.0.6</jetty.perf-helper.version>
     <ant.version>1.10.9</ant.version>
     <unix.socket.tmp></unix.socket.tmp>
