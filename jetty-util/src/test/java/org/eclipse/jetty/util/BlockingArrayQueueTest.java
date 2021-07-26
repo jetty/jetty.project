@@ -32,9 +32,11 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -166,12 +168,12 @@ public class BlockingArrayQueueTest
     }
 
     @Test
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testTake() throws Exception
     {
         final String[] data = new String[4];
 
         final BlockingArrayQueue<String> queue = new BlockingArrayQueue<>();
+        CyclicBarrier barrier = new CyclicBarrier(2);
 
         Thread thread = new Thread()
         {
@@ -182,7 +184,7 @@ public class BlockingArrayQueueTest
                 {
                     data[0] = queue.take();
                     data[1] = queue.take();
-                    Thread.sleep(1000);
+                    barrier.await(5, TimeUnit.SECONDS); // Wait until the main thread already called offer().
                     data[2] = queue.take();
                     data[3] = queue.poll(100, TimeUnit.MILLISECONDS);
                 }
@@ -196,17 +198,19 @@ public class BlockingArrayQueueTest
 
         thread.start();
 
-        Thread.sleep(1000);
+        // Wait until the spawned thread is blocked in queue.take().
+        await().atMost(5, TimeUnit.SECONDS).until(() -> thread.getState() == Thread.State.WAITING);
 
         queue.offer("zero");
         queue.offer("one");
         queue.offer("two");
+        barrier.await(5, TimeUnit.SECONDS); // Notify the spawned thread that offer() was called.
         thread.join();
 
         assertEquals("zero", data[0]);
         assertEquals("one", data[1]);
         assertEquals("two", data[2]);
-        assertEquals(null, data[3]);
+        assertNull(data[3]);
     }
 
     @Test
