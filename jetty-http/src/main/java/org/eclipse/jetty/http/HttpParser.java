@@ -144,6 +144,7 @@ public class HttpParser
 
     private static final EnumSet<State> __idleStates = EnumSet.of(State.START, State.END, State.CLOSE, State.CLOSED);
     private static final EnumSet<State> __completeStates = EnumSet.of(State.END, State.CLOSE, State.CLOSED);
+    private static final EnumSet<State> __terminatedStates = EnumSet.of(State.CLOSE, State.CLOSED);
 
     private final boolean debug = LOG.isDebugEnabled(); // Cache debug to help branch prediction
     private final HttpHandler _handler;
@@ -434,6 +435,11 @@ public class HttpParser
     public boolean isComplete()
     {
         return __completeStates.contains(_state);
+    }
+
+    public boolean isTerminated()
+    {
+        return __terminatedStates.contains(_state);
     }
 
     public boolean isState(State state)
@@ -1570,7 +1576,7 @@ public class HttpParser
                 if (debug && whiteSpace > 0)
                     LOG.debug("Discarded {} CR or LF characters", whiteSpace);
             }
-            else if (isClose() || isClosed())
+            else if (isTerminated())
             {
                 BufferUtil.clear(buffer);
             }
