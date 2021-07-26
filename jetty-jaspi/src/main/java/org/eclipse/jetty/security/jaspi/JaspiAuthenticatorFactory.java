@@ -92,7 +92,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
         if (factory == null)
             return null;
 
-        String serverName = findServerName(server);
+        String serverName = findServerName(context, server);
         Subject serviceSubject = findServiceSubject(server);
         String contextPath = StringUtil.isEmpty(context.getContextPath()) ? "/" : context.getContextPath();
         String appContext = serverName + " " + contextPath;

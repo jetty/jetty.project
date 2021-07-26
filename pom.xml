@@ -1048,19 +1048,14 @@
         <version>${websocket.api.version}</version>
       </dependency>
       <dependency>
-        <groupId>jakarta.ws.rs</groupId>
-        <artifactId>jakarta.ws.rs-api</artifactId>
-        <version>3.0.0</version>
+        <groupId>jakarta.annotation</groupId>
+        <artifactId>jakarta.annotation-api</artifactId>
+        <version>${annotation-api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.activation</groupId>
         <artifactId>jakarta.activation-api</artifactId>
         <version>2.0.0</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.annotation</groupId>
-        <artifactId>jakarta.annotation-api</artifactId>
-        <version>${annotation-api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.authentication</groupId>
@@ -1071,11 +1066,6 @@
         <groupId>jakarta.inject</groupId>
         <artifactId>jakarta.inject-api</artifactId>
         <version>${inject-api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.xml.bind</groupId>
-        <artifactId>jakarta.xml.bind-api</artifactId>
-        <version>3.0.0</version>
       </dependency>
       <dependency>
         <groupId>org.ow2.asm</groupId>
