@@ -90,7 +90,14 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
                 LOG.debug("needContent has content immediately available: {}", _content);
             return true;
         }
-        _httpConnection.parseAndFillForContent();
+        try
+        {
+            _httpConnection.parseAndFillForContent();
+        }
+        catch (Throwable x)
+        {
+            _content = new HttpInput.ErrorContent(x);
+        }
         if (_content != null)
         {
             if (LOG.isDebugEnabled())
@@ -111,7 +118,14 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("produceContent has no content, parsing and filling");
-            _httpConnection.parseAndFillForContent();
+            try
+            {
+                _httpConnection.parseAndFillForContent();
+            }
+            catch (Throwable x)
+            {
+                _content = new HttpInput.ErrorContent(x);
+            }
         }
         HttpInput.Content result = _content;
         if (result != null && !result.isSpecial())
