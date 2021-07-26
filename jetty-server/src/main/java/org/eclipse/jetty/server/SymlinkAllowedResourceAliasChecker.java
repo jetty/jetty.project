@@ -33,7 +33,6 @@ import org.eclipse.jetty.util.resource.Resource;
 public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChecker
 {
     private static final Logger LOG = Log.getLogger(SymlinkAllowedResourceAliasChecker.class);
-    private final ContextHandler _contextHandler;
 
     /**
      * @param contextHandler the context handler to use.
@@ -41,7 +40,6 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
     public SymlinkAllowedResourceAliasChecker(ContextHandler contextHandler)
     {
         super(contextHandler, false);
-        _contextHandler = contextHandler;
     }
 
     @Override
