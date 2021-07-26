@@ -13,11 +13,14 @@
 
 package org.eclipse.jetty.util;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Objects;
 import java.util.Random;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
@@ -27,9 +30,11 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
+import static org.eclipse.jetty.util.BlockingArrayQueueTest.Await.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -161,12 +166,12 @@ public class BlockingArrayQueueTest
     }
 
     @Test
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testTake() throws Exception
     {
         final String[] data = new String[4];
 
         final BlockingArrayQueue<String> queue = new BlockingArrayQueue<>();
+        CyclicBarrier barrier = new CyclicBarrier(2);
 
         Thread thread = new Thread()
         {
@@ -177,7 +182,7 @@ public class BlockingArrayQueueTest
                 {
                     data[0] = queue.take();
                     data[1] = queue.take();
-                    Thread.sleep(1000);
+                    barrier.await(5, TimeUnit.SECONDS); // Wait until the main thread already called offer().
                     data[2] = queue.take();
                     data[3] = queue.poll(100, TimeUnit.MILLISECONDS);
                 }
@@ -191,17 +196,19 @@ public class BlockingArrayQueueTest
 
         thread.start();
 
-        Thread.sleep(1000);
+        // Wait until the spawned thread is blocked in queue.take().
+        await().atMost(5, TimeUnit.SECONDS).until(() -> thread.getState() == Thread.State.WAITING);
 
         queue.offer("zero");
         queue.offer("one");
         queue.offer("two");
+        barrier.await(5, TimeUnit.SECONDS); // Notify the spawned thread that offer() was called.
         thread.join();
 
         assertEquals("zero", data[0]);
         assertEquals("one", data[1]);
         assertEquals("two", data[2]);
-        assertEquals(null, data[3]);
+        assertNull(data[3]);
     }
 
     @Test
@@ -524,5 +531,36 @@ public class BlockingArrayQueueTest
         assertThat(to, Matchers.contains("one", "two", "three", "four", "five", "six"));
         assertThat(queue.size(), Matchers.is(0));
         assertThat(queue, Matchers.empty());
+    }
+
+    static class Await
+    {
+        private Duration duration;
+
+        public static Await await()
+        {
+            return new Await();
+        }
+
+        public Await atMost(long time, TimeUnit unit)
+        {
+            duration = Duration.ofMillis(unit.toMillis(time));
+            return this;
+        }
+
+        public void until(Callable<Boolean> condition) throws Exception
+        {
+            Objects.requireNonNull(duration);
+            long start = System.nanoTime();
+
+            while (true)
+            {
+                if (condition.call())
+                    return;
+                if (duration.minus(Duration.ofNanos(System.nanoTime() - start)).isNegative())
+                    throw new AssertionError("Duration expired");
+                Thread.sleep(10);
+            }
+        }
     }
 }
