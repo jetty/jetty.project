@@ -274,7 +274,7 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @Test
-    @DisabledOnOs(OS.WINDOWS)  // jnr not supported on windows
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "jnr not supported on windows")
     public void testUnixSocket() throws Exception
     {
         Path tmpSockFile;
