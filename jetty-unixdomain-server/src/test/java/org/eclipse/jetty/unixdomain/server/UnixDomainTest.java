@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.unixdomain.server;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -49,7 +47,6 @@ import org.junit.jupiter.api.condition.JRE;
 
 import static org.eclipse.jetty.client.ProxyProtocolClientConnectionFactory.V1;
 import static org.eclipse.jetty.client.ProxyProtocolClientConnectionFactory.V2;
-import static org.eclipse.jetty.io.ClientConnector.SocketChannelWithAddress.Factory.forUnixDomain;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -133,7 +130,7 @@ public class UnixDomainTest
             }
         });
 
-        ClientConnector clientConnector = new ClientConnector(forUnixDomain(unixDomainPath));
+        ClientConnector clientConnector = ClientConnector.forUnixDomain(unixDomainPath);
         HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(clientConnector));
         httpClient.start();
         try
@@ -168,15 +165,7 @@ public class UnixDomainTest
             }
         });
 
-        ClientConnector clientConnector = new ClientConnector((address, context) ->
-        {
-            if (address instanceof InetSocketAddress)
-            {
-                if (((InetSocketAddress)address).getPort() == fakeProxyPort)
-                    return forUnixDomain(unixDomainPath).newSocketChannelWithAddress(address, context);
-            }
-            throw new IOException("request was not proxied");
-        });
+        ClientConnector clientConnector = ClientConnector.forUnixDomain(unixDomainPath);
 
         HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(clientConnector));
         httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", fakeProxyPort));
@@ -230,7 +219,7 @@ public class UnixDomainTest
         });
 
         // Java 11+ portable way to implement SocketChannelWithAddress.Factory.
-        ClientConnector clientConnector = new ClientConnector(forUnixDomain(unixDomainPath));
+        ClientConnector clientConnector = ClientConnector.forUnixDomain(unixDomainPath);
 
         HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(clientConnector));
         httpClient.start();

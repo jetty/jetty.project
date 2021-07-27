@@ -313,7 +313,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-jsp-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
-            try (JettyHomeTester.Run run2 = distribution.start("jetty.unixsocket.path=" + sockFile.toString()))
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.unixsocket.path=" + sockFile))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
@@ -933,7 +933,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
-                ClientConnector connector = new ClientConnector(ClientConnector.SocketChannelWithAddress.Factory.forUnixDomain(path));
+                ClientConnector connector = ClientConnector.forUnixDomain(path);
                 client = new HttpClient(new HttpClientTransportDynamic(connector));
                 client.start();
                 ContentResponse response = client.GET("http://localhost/path");

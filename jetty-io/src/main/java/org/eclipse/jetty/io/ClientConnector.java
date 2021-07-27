@@ -49,6 +49,11 @@ public class ClientConnector extends ContainerLifeCycle
     public static final String CONNECTION_PROMISE_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".connectionPromise";
     private static final Logger LOG = LoggerFactory.getLogger(ClientConnector.class);
 
+    public static ClientConnector forUnixDomain(Path path)
+    {
+        return new ClientConnector(SocketChannelWithAddress.Factory.forUnixDomain(path));
+    }
+
     private final SocketChannelWithAddress.Factory factory;
     private Executor executor;
     private Scheduler scheduler;
@@ -67,7 +72,7 @@ public class ClientConnector extends ContainerLifeCycle
         this((address, context) -> new SocketChannelWithAddress(SocketChannel.open(), address));
     }
 
-    public ClientConnector(SocketChannelWithAddress.Factory factory)
+    private ClientConnector(SocketChannelWithAddress.Factory factory)
     {
         this.factory = Objects.requireNonNull(factory);
     }
@@ -393,23 +398,23 @@ public class ClientConnector extends ContainerLifeCycle
     /**
      * <p>A pair/record holding a {@link SocketChannel} and a {@link SocketAddress} to connect to.</p>
      */
-    public static class SocketChannelWithAddress
+    private static class SocketChannelWithAddress
     {
         private final SocketChannel channel;
         private final SocketAddress address;
 
-        public SocketChannelWithAddress(SocketChannel channel, SocketAddress address)
+        private SocketChannelWithAddress(SocketChannel channel, SocketAddress address)
         {
             this.channel = channel;
             this.address = address;
         }
 
-        public SocketChannel getSocketChannel()
+        private SocketChannel getSocketChannel()
         {
             return channel;
         }
 
-        public SocketAddress getSocketAddress()
+        private SocketAddress getSocketAddress()
         {
             return address;
         }
@@ -417,9 +422,9 @@ public class ClientConnector extends ContainerLifeCycle
         /**
          * <p>A factory for {@link SocketChannelWithAddress} instances.</p>
          */
-        public interface Factory
+        private interface Factory
         {
-            public static Factory forUnixDomain(Path path)
+            private static Factory forUnixDomain(Path path)
             {
                 return (address, context) ->
                 {
