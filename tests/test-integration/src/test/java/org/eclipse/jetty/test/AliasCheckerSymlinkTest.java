@@ -40,7 +40,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -142,12 +141,6 @@ public class AliasCheckerSymlinkTest
         _server.stop();
     }
 
-    @Test
-    public void test() throws Exception
-    {
-        _server.join();
-    }
-
     public static Stream<Arguments> testCases()
     {
         AllowedResourceAliasChecker allowedResource = new AllowedResourceAliasChecker(_context, false);
@@ -176,13 +169,13 @@ public class AliasCheckerSymlinkTest
                 Arguments.of(allowedResourceTarget, "/webInfSymlink/web.xml", HttpStatus.NOT_FOUND_404, null),
 
                 // SymlinkAllowedResourceAliasChecker that does not check the target of symlinks, but only approves files obtained through a symlink.
-                Arguments.of(allowedResource, "/symlinkFile", HttpStatus.OK_200, "This file is inside webroot."),
-                Arguments.of(allowedResource, "/symlinkExternalFile", HttpStatus.OK_200, "This file is outside webroot."),
-                Arguments.of(allowedResource, "/symlinkDir/file", HttpStatus.OK_200, "This file is inside webroot/documents."),
-                Arguments.of(allowedResource, "/symlinkParentDir/webroot/file", HttpStatus.OK_200, "This file is inside webroot."),
-                Arguments.of(allowedResource, "/symlinkParentDir/webroot/WEB-INF/web.xml", HttpStatus.OK_200, "This is the web.xml file."),
-                Arguments.of(allowedResource, "/symlinkSiblingDir/file", HttpStatus.OK_200, "This file is inside a sibling dir to webroot."),
-                Arguments.of(allowedResource, "/webInfSymlink/web.xml", HttpStatus.OK_200, "This is the web.xml file."),
+                Arguments.of(symlinkAllowedResource, "/symlinkFile", HttpStatus.OK_200, "This file is inside webroot."),
+                Arguments.of(symlinkAllowedResource, "/symlinkExternalFile", HttpStatus.OK_200, "This file is outside webroot."),
+                Arguments.of(symlinkAllowedResource, "/symlinkDir/file", HttpStatus.OK_200, "This file is inside webroot/documents."),
+                Arguments.of(symlinkAllowedResource, "/symlinkParentDir/webroot/file", HttpStatus.OK_200, "This file is inside webroot."),
+                Arguments.of(symlinkAllowedResource, "/symlinkParentDir/webroot/WEB-INF/web.xml", HttpStatus.OK_200, "This is the web.xml file."),
+                Arguments.of(symlinkAllowedResource, "/symlinkSiblingDir/file", HttpStatus.OK_200, "This file is inside a sibling dir to webroot."),
+                Arguments.of(symlinkAllowedResource, "/webInfSymlink/web.xml", HttpStatus.OK_200, "This is the web.xml file."),
 
                 // The AllowSymLinkAliasChecker.
                 Arguments.of(allowSymlinks, "/symlinkFile", HttpStatus.OK_200, "This file is inside webroot."),

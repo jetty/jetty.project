@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
- * An extension of {@link AllowedResourceAliasChecker} which only allows resources if they are symlinks.
+ * An extension of {@link AllowedResourceAliasChecker} which only allows aliased resources if they are symlinks.
  */
 public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChecker
 {
@@ -51,13 +51,12 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
             if (!super.check(uri, resource))
                 return false;
 
-            // Only approve resource if it is accessed by a symbolic link.
+            // Approve if path is a symbolic link.
             Path resourcePath = resource.getFile().toPath();
             if (Files.isSymbolicLink(resourcePath))
                 return true;
 
-            // TODO: If base resource contains symlink then this will always return true.
-            //  But we don't want to deny all paths if the resource base is symbolically linked.
+            // Approve if path has symlink in under its resource base.
             if (super.hasSymbolicLink(resourcePath))
                 return true;
         }

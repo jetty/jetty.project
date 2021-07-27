@@ -90,6 +90,18 @@ public class AllowedResourceAliasChecker implements ContextHandler.AliasCheck
         return true;
     }
 
+    /**
+     * <p>Determines whether the provided resource path is protected.</p>
+     *
+     * <p>The resource path is protected if it is under one of the protected targets defined by
+     * {@link ContextHandler#isProtectedTarget(String)} in which case the alias should not be allowed.
+     * The resource path may also attempt to traverse above the root path and should be denied.</p>
+     *
+     * @param resourcePath the resource {@link Path} to be tested.
+     * @param linkOptions an array of {@link LinkOption} to be provided to the {@link Path#toRealPath(LinkOption...)} method.
+     * @return true if the resource path is protected and the alias should not be allowed.
+     * @throws IOException if an I/O error occurs.
+     */
     protected boolean isProtectedPath(Path resourcePath, LinkOption[] linkOptions) throws IOException
     {
         String basePath = Objects.requireNonNull(getPath(_contextHandler.getBaseResource())).toRealPath(linkOptions).toString();
@@ -125,16 +137,14 @@ public class AllowedResourceAliasChecker implements ContextHandler.AliasCheck
 
     protected boolean hasSymbolicLink(Path path)
     {
-        // Is file itself a symlink?
-        if (Files.isSymbolicLink(path))
-            return true;
+        return hasSymbolicLink(path.getRoot(), path);
+    }
 
-        // Lets try each path segment
-        Path base = path.getRoot();
-        for (Path segment : path)
+    protected boolean hasSymbolicLink(Path base, Path path)
+    {
+        for (Path p = path; (p != null) && !p.equals(base); p = p.getParent())
         {
-            base = base.resolve(segment);
-            if (Files.isSymbolicLink(base))
+            if (Files.isSymbolicLink(p))
                 return true;
         }
 
