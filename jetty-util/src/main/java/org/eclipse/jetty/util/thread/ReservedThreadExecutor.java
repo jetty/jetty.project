@@ -178,7 +178,11 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
 
         super.doStop();
         for (int i = getLo(_count.getAndSet(-1)); i-- > 0;)
+        {
+            // yield to wait for any reserved threads that have incremented the size but not yet polled
+            Thread.yield();
             _queue.offer(STOP);
+        }
         _threads.clear();
     }
 
