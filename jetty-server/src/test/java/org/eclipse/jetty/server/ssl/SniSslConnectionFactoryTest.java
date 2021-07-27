@@ -68,8 +68,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -262,7 +260,6 @@ public class SniSslConnectionFactoryTest
     }
 
     @Test
-    @DisabledOnOs(OS.WINDOWS)
     public void testWrongSNIRejectedConnection() throws Exception
     {
         start(ssl ->
@@ -307,7 +304,6 @@ public class SniSslConnectionFactoryTest
     }
 
     @Test
-    @DisabledOnOs(OS.WINDOWS)
     public void testWrongSNIRejectedFunction() throws Exception
     {
         start(ssl ->
@@ -338,7 +334,6 @@ public class SniSslConnectionFactoryTest
     }
 
     @Test
-    @DisabledOnOs(OS.WINDOWS)
     public void testWrongSNIRejectedConnectionWithNonSNIKeystore() throws Exception
     {
         start(ssl ->

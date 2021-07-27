@@ -52,7 +52,6 @@ import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -67,7 +66,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 public class GracefulStopTest
 {
@@ -238,7 +236,6 @@ public class GracefulStopTest
      * @throws Exception on test failure
      */
     @Test
-    @DisabledOnOs(WINDOWS) // TODO: needs more investigation
     public void testGracefulComplete() throws Exception
     {
         Server server = new Server();
