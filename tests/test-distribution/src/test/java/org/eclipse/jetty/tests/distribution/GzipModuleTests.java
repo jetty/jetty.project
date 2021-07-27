@@ -1,0 +1,147 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+package org.eclipse.jetty.tests.distribution;
+
+import java.io.File;
+import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
+
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+public class GzipModuleTests extends AbstractJettyHomeTest
+{
+    @Test
+    public void testGzipDefault() throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        int httpPort = distribution.freePort();
+        int httpsPort = distribution.freePort();
+        assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
+
+        String[] argsConfig = {
+            "--add-modules=gzip",
+            "--add-modules=deploy,webapp,http"
+        };
+
+        try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
+        {
+            assertTrue(runConfig.awaitFor(5, TimeUnit.SECONDS));
+            assertEquals(0, runConfig.getExitValue());
+
+            String[] argsStart = {
+                "jetty.http.port=" + httpPort,
+                "jetty.httpConfig.port=" + httpsPort,
+                "jetty.ssl.port=" + httpsPort
+            };
+
+            File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-simple-webapp:war:" + jettyVersion);
+            distribution.installWarFile(war, "demo");
+
+            try (JettyHomeTester.Run runStart = distribution.start(argsStart))
+            {
+                assertTrue(runStart.awaitConsoleLogsFor("Started Server@", 20, TimeUnit.SECONDS));
+
+                startHttpClient();
+                ContentResponse response = client.GET("http://localhost:" + httpPort + "/demo/index.html");
+                assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
+                assertThat("Ensure that gzip is working", response.getHeaders().get(HttpHeader.CONTENT_ENCODING), containsString("gzip"));
+            }
+        }
+    }
+
+    @Test
+    public void testGzipExcludeMimeType() throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        int httpPort = distribution.freePort();
+        int httpsPort = distribution.freePort();
+        assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
+
+        String[] argsConfig = {
+            "--add-modules=gzip",
+            "--add-modules=deploy,webapp,http"
+        };
+
+        try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
+        {
+            assertTrue(runConfig.awaitFor(5, TimeUnit.SECONDS));
+            assertEquals(0, runConfig.getExitValue());
+
+            String[] argsStart = {
+                "jetty.http.port=" + httpPort,
+                "jetty.httpConfig.port=" + httpsPort,
+                "jetty.ssl.port=" + httpsPort,
+                "jetty.gzip.excludedMimeTypeList=image/webp"
+            };
+
+            File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-simple-webapp:war:" + jettyVersion);
+            distribution.installWarFile(war, "demo");
+
+            try (JettyHomeTester.Run runStart = distribution.start(argsStart))
+            {
+                assertTrue(runStart.awaitConsoleLogsFor("Started Server@", 20, TimeUnit.SECONDS));
+
+                startHttpClient();
+                ContentResponse response = client.GET("http://localhost:" + httpPort + "/demo/jetty.webp");
+                assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
+                assertThat("Ensure that gzip exclusion worked", response.getHeaders().get(HttpHeader.CONTENT_ENCODING), not(containsString("gzip")));
+            }
+        }
+    }
+
+    private static class ResponseDetails implements Supplier<String>
+    {
+        private final ContentResponse response;
+
+        public ResponseDetails(ContentResponse response)
+        {
+            this.response = response;
+        }
+
+        @Override
+        public String get()
+        {
+            StringBuilder ret = new StringBuilder();
+            ret.append(response.toString()).append(System.lineSeparator());
+            ret.append(response.getHeaders().toString()).append(System.lineSeparator());
+            ret.append(response.getContentAsString()).append(System.lineSeparator());
+            return ret.toString();
+        }
+    }
+}
