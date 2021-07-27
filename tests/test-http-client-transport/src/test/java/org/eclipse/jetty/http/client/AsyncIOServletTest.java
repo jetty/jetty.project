@@ -71,7 +71,6 @@ import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.handler.gzip.GzipHttpInputInterceptor;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FuturePromise;
-import org.eclipse.jetty.util.compression.CompressionPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;

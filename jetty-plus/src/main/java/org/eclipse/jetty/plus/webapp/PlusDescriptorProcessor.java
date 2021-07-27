@@ -18,7 +18,6 @@ import java.util.Objects;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
-import javax.naming.NamingException;
 
 import org.eclipse.jetty.jndi.NamingUtil;
 import org.eclipse.jetty.plus.annotation.Injection;

@@ -15,7 +15,6 @@ package org.eclipse.jetty.demos;
 
 import java.io.FileNotFoundException;
 import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.annotations.AnnotationConfiguration;

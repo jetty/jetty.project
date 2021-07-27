@@ -13,18 +13,10 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.net.URI;
-
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.TypeUtil;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.JRE;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.startsWith;
 
 public class JrtResourceTest
 {
