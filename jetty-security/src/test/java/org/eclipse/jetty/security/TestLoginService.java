@@ -13,11 +13,8 @@
 
 package org.eclipse.jetty.security;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
-import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.security.Credential;
 
 /**

@@ -16,7 +16,6 @@ package org.eclipse.jetty.plus.annotation;
 import java.lang.reflect.Method;
 import javax.servlet.http.HttpServlet;
 
-import org.eclipse.jetty.plus.webapp.PlusDecorator;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;

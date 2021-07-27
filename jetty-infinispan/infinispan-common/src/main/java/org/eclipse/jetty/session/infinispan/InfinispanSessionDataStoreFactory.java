@@ -14,7 +14,6 @@
 package org.eclipse.jetty.session.infinispan;
 
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
-import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataStore;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.infinispan.commons.api.BasicCache;
