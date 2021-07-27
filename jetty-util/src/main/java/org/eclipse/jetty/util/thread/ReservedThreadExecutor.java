@@ -25,6 +25,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.ProcessorUtils;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.eclipse.jetty.util.AtomicBiInteger.getHi;
 import static org.eclipse.jetty.util.AtomicBiInteger.getLo;
 
@@ -74,9 +76,8 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     private final AtomicBiInteger _count = new AtomicBiInteger(); // hi=pending; lo=size;
 
     private ThreadPoolBudget.Lease _lease;
-    private long _idleTime = 1L;
-    private TimeUnit _idleTimeUnit = TimeUnit.MINUTES;
-    private volatile long _lastZero = Long.MAX_VALUE;
+    private long _idleTimeMs = TimeUnit.MINUTES.toMillis(1);
+    private AtomicLong _lastEmptyTime = new AtomicLong(Long.MAX_VALUE);
 
     /**
      * @param executor The executor to use to obtain threads
@@ -142,12 +143,10 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         return _count.getHi();
     }
 
-    @ManagedAttribute(value = "idle timeout in MS", readonly = true)
+    @ManagedAttribute(value = "idle timeout in ms", readonly = true)
     public long getIdleTimeoutMs()
     {
-        if (_idleTimeUnit == null)
-            return 0;
-        return _idleTimeUnit.toMillis(_idleTime);
+        return _idleTimeMs;
     }
 
     /**
@@ -160,8 +159,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     {
         if (isRunning())
             throw new IllegalStateException();
-        _idleTime = idleTime;
-        _idleTimeUnit = idleTimeUnit;
+        _idleTimeMs =  (idleTime < 0 || idleTimeUnit == null) ? -1 : idleTimeUnit.toMillis(idleTime);
     }
 
     @Override
@@ -231,7 +229,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             if (size < 0 || pending + size >= _capacity)
                 return;
             if (size == 0)
-                _lastZero = System.nanoTime();
+                _lastEmptyTime.set(System.nanoTime());
             if (!_count.compareAndSet(count, pending + 1, size))
                 continue;
 
@@ -240,10 +238,10 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             try
             {
                 ReservedThread thread = new ReservedThread();
-                _executor.execute(thread);
                 _threads.add(thread);
+                _executor.execute(thread);
             }
-            catch (RejectedExecutionException e)
+            catch (Throwable e)
             {
                 _count.add(-1, 0);
                 LOG.ignore(e);
@@ -295,7 +293,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                 try
                 {
                     // Always poll at some period as safety to ensure we don't poll forever.
-                    Runnable task = _idleTime <= 0 ? _queue.poll(30, TimeUnit.SECONDS) : _queue.poll(_idleTime, _idleTimeUnit);
+                    Runnable task = _idleTimeMs <= 0 ? _queue.poll(1, TimeUnit.SECONDS) : _queue.poll(_idleTimeMs, TimeUnit.MILLISECONDS);
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} task={} {}", this, task, ReservedThreadExecutor.this);
                     if (task != null)
@@ -303,10 +301,13 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
 
                     // Has the RTE stopped?
                     if (_count.getLo() < 0)
+                    {
+                        _state = State.STOPPED;
                         return STOP;
+                    }
 
                     // Have we idled out?
-                    if (_idleTime > 0)
+                    if (_idleTimeMs > 0)
                     {
                         _state = State.IDLE;
                         _count.add(0, -1);
@@ -340,17 +341,22 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                         // The executor has stopped or this thread is excess to capacity
                         next = State.STOPPED;
                     }
-                    else if (size > 0 && _idleTime > 0 && _idleTimeUnit.toNanos(_idleTime) < (System.nanoTime() - _lastZero))
-                    {
-                        // it has been too long since we hit zero reserved threads, so are "busy" idle
-                        _lastZero = System.nanoTime(); // reset lastZero to slow shrinkage
-                        next = State.IDLE;
-                    }
                     else
                     {
-                        // We will become a reserved thread if we can update the count below.
-                        next = State.RESERVED;
-                        size++;
+                        long now = System.nanoTime();
+                        long lastEmpty = _lastEmptyTime.get();
+                        if (size > 0 && _idleTimeMs > 0 && _idleTimeMs < NANOSECONDS.toMillis(now - lastEmpty) &&
+                            _lastEmptyTime.compareAndSet(lastEmpty, now))
+                        {
+                            // it has been too long since we hit zero reserved threads, so are "busy" idle
+                            next = State.IDLE;
+                        }
+                        else
+                        {
+                            // We will become a reserved thread if we can update the count below.
+                            next = State.RESERVED;
+                            size++;
+                        }
                     }
 
                     // Update count for pending and size
@@ -368,11 +374,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
 
                     // Is the task the STOP poison pill?
                     if (task == STOP)
-                    {
-                        if (_state != State.IDLE)
-                            _state = State.STOPPED;
                         break;
-                    }
 
                     // Run the task
                     try
