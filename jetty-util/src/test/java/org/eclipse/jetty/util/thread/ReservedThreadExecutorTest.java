@@ -305,9 +305,9 @@ public class ReservedThreadExecutorTest
         reserved.setIdleTimeout(0, null);
         reserved.start();
 
-        final int LOOPS = 2000000;
+        final int LOOPS = 200000;
         final AtomicInteger executions = new AtomicInteger(LOOPS);
-        final CountDownLatch executed = new CountDownLatch(executions.get());
+        final CountDownLatch executed = new CountDownLatch(LOOPS);
         final AtomicInteger usedReserved = new AtomicInteger(0);
         final AtomicInteger usedPool = new AtomicInteger(0);
 
@@ -355,6 +355,10 @@ public class ReservedThreadExecutorTest
         task.run();
 
         assertTrue(executed.await(60, TimeUnit.SECONDS));
+
+        // ensure tryExecute is still working
+        while (!reserved.tryExecute(() -> {}))
+            Thread.yield();
 
         reserved.stop();
         pool.stop();
