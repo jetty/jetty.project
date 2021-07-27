@@ -177,8 +177,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             _lease.close();
 
         super.doStop();
-        _count.set(0, -1);
-        for (int i = _threads.size(); i-- > 0;)
+        for (int i = getLo(_count.getAndSet(-1)); i-- > 0;)
             _queue.offer(STOP);
         _threads.clear();
     }
