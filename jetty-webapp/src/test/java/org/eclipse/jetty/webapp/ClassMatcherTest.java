@@ -121,6 +121,17 @@ public class ClassMatcherTest
         assertTrue(_pattern.match("org.example.Anything$Else"));
     }
 
+    @Test
+    public void testMatchFundamentalExcludeSpecific()
+    {
+        _pattern.clear();
+        _pattern.add("javax.");
+        _pattern.add("-javax.ws.rs.", "-javax.inject.");
+        assertFalse(_pattern.match("org.example.Anything"));
+        assertTrue(_pattern.match("javax.servlet.HttpServlet"));
+        assertFalse(_pattern.match("javax.ws.rs.ProcessingException"));
+    }
+
     @SuppressWarnings("restriction")
     @Test
     public void testIncludedLocations() throws Exception
