@@ -41,41 +41,6 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     protected int _savePeriodSec = DEFAULT_SAVE_PERIOD_SEC; //time in sec between saves
     
     /**
-     * Small utility class to allow us to
-     * return a result and an Exception
-     * from invocation of Runnables.
-     *
-     * @param <V> the type of the result.
-     */
-    private class Result<V>
-    {
-        private V _result;
-        private Exception _exception;
-        
-        public void setResult(V result)
-        {
-            _result = result;
-        }
-        
-        public void setException(Exception exception)
-        {
-            _exception = exception;
-        }
-        
-        private void throwIfException() throws Exception
-        {
-            if (_exception != null)
-                throw _exception;
-        }
-        
-        public V getOrThrow() throws Exception
-        {
-            throwIfException();
-            return _result;
-        }
-    }
-    
-    /**
      * Check if a session for the given id exists.
      * 
      * @param id the session id to check
@@ -171,7 +136,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
         if (!isStarted())
             throw new IllegalStateException("Not started");
 
-        final Result<SessionData> result = new Result<>();
+        final RunnableResult<SessionData> result = new RunnableResult<>();
 
         Runnable r = () ->
         {
@@ -214,7 +179,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
             //set the last saved time to now
             data.setLastSaved(System.currentTimeMillis());
             
-            final Result<Object> result = new Result<>();
+            final RunnableResult<Object> result = new RunnableResult<>();
             Runnable r = () ->
             {
                 try
@@ -238,7 +203,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     @Override
     public boolean exists(String id) throws Exception
     {
-        Result<Boolean> result = new Result<>();
+        RunnableResult<Boolean> result = new RunnableResult<>();
         Runnable r = () ->
         {
             try
