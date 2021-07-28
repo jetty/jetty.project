@@ -22,10 +22,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -181,6 +181,35 @@ public class ReservedThreadExecutorTest
     }
 
     @Test
+    public void testBusyShrink() throws Exception
+    {
+        final long IDLE = 1000;
+
+        _reservedExecutor.stop();
+        _reservedExecutor.setIdleTimeout(IDLE, TimeUnit.MILLISECONDS);
+        _reservedExecutor.start();
+        assertThat(_reservedExecutor.getAvailable(), is(0));
+
+        assertThat(_reservedExecutor.tryExecute(NOOP), is(false));
+        assertThat(_reservedExecutor.tryExecute(NOOP), is(false));
+
+        _executor.startThread();
+        _executor.startThread();
+
+        waitForAvailable(2);
+
+        int available = _reservedExecutor.getAvailable();
+        assertThat(available, is(2));
+
+        for (int i = 10; i-- > 0;)
+        {
+            assertThat(_reservedExecutor.tryExecute(NOOP), is(true));
+            Thread.sleep(200);
+        }
+        assertThat(_reservedExecutor.getAvailable(), is(1));
+    }
+
+    @Test
     public void testReservedIdleTimeoutWithOneReservedThread() throws Exception
     {
         long idleTimeout = 500;
@@ -261,7 +290,6 @@ public class ReservedThreadExecutorTest
         }
     }
 
-    @Disabled
     @Test
     public void stressTest() throws Exception
     {
@@ -271,9 +299,9 @@ public class ReservedThreadExecutorTest
         reserved.setIdleTimeout(0, null);
         reserved.start();
 
-        final int LOOPS = 1000000;
+        final int LOOPS = 200000;
         final AtomicInteger executions = new AtomicInteger(LOOPS);
-        final CountDownLatch executed = new CountDownLatch(executions.get());
+        final CountDownLatch executed = new CountDownLatch(LOOPS);
         final AtomicInteger usedReserved = new AtomicInteger(0);
         final AtomicInteger usedPool = new AtomicInteger(0);
 
@@ -322,10 +350,15 @@ public class ReservedThreadExecutorTest
 
         assertTrue(executed.await(60, TimeUnit.SECONDS));
 
+        // ensure tryExecute is still working
+        while (!reserved.tryExecute(() -> {}))
+            Thread.yield();
+
         reserved.stop();
         pool.stop();
 
+        assertThat(usedReserved.get(), greaterThan(0));
         assertThat(usedReserved.get() + usedPool.get(), is(LOOPS));
-        System.err.printf("reserved=%d pool=%d total=%d%n", usedReserved.get(), usedPool.get(), LOOPS);
+        // System.err.printf("reserved=%d pool=%d total=%d%n", usedReserved.get(), usedPool.get(), LOOPS);
     }
 }
