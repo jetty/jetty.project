@@ -77,7 +77,8 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     private final AtomicLong _lastEmptyTime = new AtomicLong(Long.MAX_VALUE);
 
     private ThreadPoolBudget.Lease _lease;
-    private long _idleTimeMs = TimeUnit.MINUTES.toMillis(1);
+    private static final long DEFAULT_IDLE_TIMEOUT = TimeUnit.MINUTES.toNanos(1);
+    private long _idleTimeNanos = DEFAULT_IDLE_TIMEOUT;
 
     /**
      * @param executor The executor to use to obtain threads
@@ -146,20 +147,20 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     @ManagedAttribute(value = "idle timeout in ms", readonly = true)
     public long getIdleTimeoutMs()
     {
-        return _idleTimeMs;
+        return NANOSECONDS.toMillis(_idleTimeNanos);
     }
 
     /**
      * Set the idle timeout for shrinking the reserved thread pool
      *
-     * @param idleTime Time to wait before shrinking, or 0 for no timeout.
+     * @param idleTime Time to wait before shrinking, or 0 for default timeout.
      * @param idleTimeUnit Time units for idle timeout
      */
     public void setIdleTimeout(long idleTime, TimeUnit idleTimeUnit)
     {
         if (isRunning())
             throw new IllegalStateException();
-        _idleTimeMs =  (idleTime < 0 || idleTimeUnit == null) ? -1 : idleTimeUnit.toMillis(idleTime);
+        _idleTimeNanos =  (idleTime <= 0 || idleTimeUnit == null) ? DEFAULT_IDLE_TIMEOUT : idleTimeUnit.toNanos(idleTime);
     }
 
     @Override
@@ -179,7 +180,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         super.doStop();
 
         // Offer STOP task to all waiting reserved threads.
-        for (int i = getLo(_count.getAndSet(-1)); i-- > 0;)
+        for (int i = _count.getAndSetLo(-1); i-- > 0;)
         {
             // yield to wait for any reserved threads that have incremented the size but not yet polled
             Thread.yield();
@@ -193,6 +194,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                 thread.interrupt();
         }
         _threads.clear();
+        _count.getAndSetHi(0);
     }
 
     @Override
@@ -305,26 +307,24 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                 try
                 {
                     // Always poll at some period as safety to ensure we don't poll forever.
-                    Runnable task = _queue.poll(_idleTimeMs <= 0 ? 30_000 : _idleTimeMs, TimeUnit.MILLISECONDS);
+                    Runnable task = _queue.poll(_idleTimeNanos, NANOSECONDS);
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} task={} {}", this, task, ReservedThreadExecutor.this);
                     if (task != null)
                         return task;
 
-                    // Have we idled out?
-                    if (_idleTimeMs > 0)
+                    // we have idled out
+                    int size = _count.getLo();
+                    // decrement size if we have not also been stopped.
+                    while (size > 0)
                     {
-                        int size = _count.getLo();
-                        // decrement size if we have not also been stopped.
-                        while (size > 0)
-                        {
-                            if (_count.compareAndSetLo(size, --size))
-                                break;
-                            size = _count.getLo();
-                        }
-                        _state = size >= 0 ? State.IDLE : State.STOPPED;
-                        return STOP;
+                        if (_count.compareAndSetLo(size, --size))
+                            break;
+                        size = _count.getLo();
                     }
+                    _state = size >= 0 ? State.IDLE : State.STOPPED;
+                    return STOP;
+
                 }
                 catch (InterruptedException e)
                 {
@@ -359,8 +359,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                     {
                         long now = System.nanoTime();
                         long lastEmpty = _lastEmptyTime.get();
-                        if (size > 0 && _idleTimeMs > 0 && _idleTimeMs < NANOSECONDS.toMillis(now - lastEmpty) &&
-                            _lastEmptyTime.compareAndSet(lastEmpty, now))
+                        if (size > 0 && _idleTimeNanos < (now - lastEmpty) && _lastEmptyTime.compareAndSet(lastEmpty, now))
                         {
                             // it has been too long since we hit zero reserved threads, so are "busy" idle
                             next = State.IDLE;
