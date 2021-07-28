@@ -16,6 +16,9 @@ package org.eclipse.jetty.security;
 import jakarta.servlet.ServletRequest;
 import org.eclipse.jetty.server.UserIdentity;
 
+/**
+ * LoginService implementation which always denies any attempt to login.
+ */
 public class EmptyLoginService implements LoginService
 {
     @Override
