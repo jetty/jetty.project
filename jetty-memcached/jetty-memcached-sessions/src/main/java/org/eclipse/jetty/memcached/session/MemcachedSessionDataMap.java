@@ -54,6 +54,10 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
      */
     public static class SessionDataTranscoder extends SerializingTranscoder
     {
+        public SessionDataTranscoder()
+        {
+            super();
+        }
 
         @Override
         protected Object deserialize(byte[] in)
@@ -147,7 +151,6 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
         
         try
         {
-            _context = context;
             _builder.setTranscoder(new SessionDataTranscoder());
             _client = _builder.build();
             _client.setEnableHeartBeat(isHeartbeats());

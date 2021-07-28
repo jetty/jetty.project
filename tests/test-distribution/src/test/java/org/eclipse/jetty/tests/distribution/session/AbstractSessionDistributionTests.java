@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -44,8 +45,10 @@ public abstract class AbstractSessionDistributionTests extends AbstractJettyHome
     @BeforeEach
     public void prepareJettyHomeTester() throws Exception
     {
+
         jettyHomeTester = JettyHomeTester.Builder.newInstance()
                 .jettyVersion(jettyVersion)
+                .env(env())
                 .mavenLocalRepository(System.getProperty("mavenRepoPath"))
                 .build();
     }
@@ -101,6 +104,11 @@ public abstract class AbstractSessionDistributionTests extends AbstractJettyHome
         }
 
         stopExternalSessionStorage();
+    }
+
+    public Map<String, String> env()
+    {
+        return Collections.emptyMap();
     }
 
     public abstract List<String> getFirstStartExtraArgs();
