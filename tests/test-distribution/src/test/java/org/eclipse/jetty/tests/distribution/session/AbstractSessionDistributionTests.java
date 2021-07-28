@@ -13,7 +13,12 @@
 
 package org.eclipse.jetty.tests.distribution.session;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -91,6 +96,13 @@ public abstract class AbstractSessionDistributionTests extends AbstractJettyHome
                 response = client.GET("http://localhost:" + port + "/test/session?action=READ");
                 assertEquals(HttpStatus.OK_200, response.getStatus());
                 assertThat(response.getContentAsString(), containsString("SESSION READ CHOCOLATE THE BEST:FRENCH"));
+            }
+
+            Path logFile = jettyHomeTester.getJettyBase().resolve("resources").resolve("jetty-logging.properties");
+            Files.deleteIfExists(logFile);
+            try (BufferedWriter writer = Files.newBufferedWriter(logFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE))
+            {
+                writer.write("org.eclipse.jetty.server.session.LEVEL=DEBUG");
             }
 
             try (JettyHomeTester.Run run2 = jettyHomeTester.start(argsStart))
