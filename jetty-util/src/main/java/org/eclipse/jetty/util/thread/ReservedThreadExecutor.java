@@ -74,10 +74,10 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     private final Set<ReservedThread> _threads = ConcurrentHashMap.newKeySet();
     private final SynchronousQueue<Runnable> _queue = new SynchronousQueue<>(false);
     private final AtomicBiInteger _count = new AtomicBiInteger(); // hi=pending; lo=size;
+    private final AtomicLong _lastEmptyTime = new AtomicLong(Long.MAX_VALUE);
 
     private ThreadPoolBudget.Lease _lease;
     private long _idleTimeMs = TimeUnit.MINUTES.toMillis(1);
-    private AtomicLong _lastEmptyTime = new AtomicLong(Long.MAX_VALUE);
 
     /**
      * @param executor The executor to use to obtain threads
@@ -177,11 +177,20 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             _lease.close();
 
         super.doStop();
+
+        // Offer STOP task to all waiting reserved threads.
         for (int i = getLo(_count.getAndSet(-1)); i-- > 0;)
         {
             // yield to wait for any reserved threads that have incremented the size but not yet polled
             Thread.yield();
             _queue.offer(STOP);
+        }
+        // Interrupt any reserved thread missed the offer so it doesn't wait too long.
+        for (ReservedThread reserved : _threads)
+        {
+            Thread thread = reserved._thread;
+            if (thread != null)
+                thread.interrupt();
         }
         _threads.clear();
     }
@@ -206,12 +215,18 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         if (task == null)
             return false;
 
+        // Offer will only succeed if there is a reserved thread waiting
         boolean offered = _queue.offer(task);
+
+        // If the offer succeeded we need to reduce the size, unless it is set to -1 in the meantime
         int size = _count.getLo();
         while (offered && size > 0 && !_count.compareAndSetLo(size, --size))
             size = _count.getLo();
+
+        // If size is 0 and we are not stopping, start a new reserved thread
         if (size == 0 && task != STOP)
             startReservedThread();
+
         return offered;
     }
 
@@ -284,29 +299,30 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             if (LOG.isDebugEnabled())
                 LOG.debug("{} waiting {}", this, ReservedThreadExecutor.this);
 
-            while (true)
+            // Keep waiting until stopped, tasked or idle
+            while (_count.getLo() >= 0)
             {
                 try
                 {
                     // Always poll at some period as safety to ensure we don't poll forever.
-                    Runnable task = _idleTimeMs <= 0 ? _queue.poll(1, TimeUnit.SECONDS) : _queue.poll(_idleTimeMs, TimeUnit.MILLISECONDS);
+                    Runnable task = _queue.poll(_idleTimeMs <= 0 ? 30_000 : _idleTimeMs, TimeUnit.MILLISECONDS);
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} task={} {}", this, task, ReservedThreadExecutor.this);
                     if (task != null)
                         return task;
 
-                    // Has the RTE stopped?
-                    if (_count.getLo() < 0)
-                    {
-                        _state = State.STOPPED;
-                        return STOP;
-                    }
-
                     // Have we idled out?
                     if (_idleTimeMs > 0)
                     {
-                        _state = State.IDLE;
-                        _count.add(0, -1);
+                        int size = _count.getLo();
+                        // decrement size if we have not also been stopped.
+                        while (size > 0)
+                        {
+                            if (_count.compareAndSetLo(size, --size))
+                                break;
+                            size = _count.getLo();
+                        }
+                        _state = size >= 0 ? State.IDLE : State.STOPPED;
                         return STOP;
                     }
                 }
@@ -315,6 +331,8 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                     LOG.ignore(e);
                 }
             }
+            _state = State.STOPPED;
+            return STOP;
         }
 
         @Override
