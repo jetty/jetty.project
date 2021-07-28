@@ -46,15 +46,16 @@ import static org.eclipse.jetty.util.AtomicBiInteger.getLo;
  * <p>Calls to {@link #execute(Runnable)} on a {@link ReservedThreadExecutor} will either succeed
  * with a Thread immediately being assigned the Runnable task, or fail if no Thread is
  * available.
- * <p>Threads are reserved lazily, with a new reserved thread being allocated from a
- * wrapped {@link Executor} when an execution fails.  If the {@link #setIdleTimeout(long, TimeUnit)}
- * is set to non zero (default 1 minute), then the reserved thread pool will shrink by 1 thread
- * whenever it has been idle for that period.
+ * <p>Threads are reserved lazily, with a new reserved threads being allocated from the
+ * {@link Executor} passed to the constructor.  Whenever 1 or more reserved threads have been
+ * idle for more than {@link #getIdleTimeoutMs()} then one reserved thread will return to
+ * the executor.
  */
 @ManagedObject("A pool for reserved threads")
 public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExecutor, Dumpable
 {
     private static final Logger LOG = Log.getLogger(ReservedThreadExecutor.class);
+    private static final long DEFAULT_IDLE_TIMEOUT = TimeUnit.MINUTES.toNanos(1);
     private static final Runnable STOP = new Runnable()
     {
         @Override
@@ -74,10 +75,9 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     private final Set<ReservedThread> _threads = ConcurrentHashMap.newKeySet();
     private final SynchronousQueue<Runnable> _queue = new SynchronousQueue<>(false);
     private final AtomicBiInteger _count = new AtomicBiInteger(); // hi=pending; lo=size;
-    private final AtomicLong _lastEmptyTime = new AtomicLong(Long.MAX_VALUE);
+    private final AtomicLong _lastEmptyTime = new AtomicLong(System.nanoTime());
 
     private ThreadPoolBudget.Lease _lease;
-    private static final long DEFAULT_IDLE_TIMEOUT = TimeUnit.MINUTES.toNanos(1);
     private long _idleTimeNanos = DEFAULT_IDLE_TIMEOUT;
 
     /**
