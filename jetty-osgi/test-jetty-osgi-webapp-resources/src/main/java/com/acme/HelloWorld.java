@@ -16,7 +16,6 @@ package com.acme;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Enumeration;
-import java.util.Set;
 
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;

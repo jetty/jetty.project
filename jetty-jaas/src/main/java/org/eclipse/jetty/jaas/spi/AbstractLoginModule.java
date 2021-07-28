@@ -14,8 +14,6 @@
 package org.eclipse.jetty.jaas.spi;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -32,7 +30,6 @@ import javax.security.auth.spi.LoginModule;
 import org.eclipse.jetty.jaas.JAASRole;
 import org.eclipse.jetty.jaas.callback.ObjectCallback;
 import org.eclipse.jetty.security.UserPrincipal;
-import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
  * AbstractLoginModule

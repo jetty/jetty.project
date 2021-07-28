@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server.session;
 
 import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.ServletException;
