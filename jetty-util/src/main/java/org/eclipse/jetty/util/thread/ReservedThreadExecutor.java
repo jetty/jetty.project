@@ -207,16 +207,9 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             return false;
 
         boolean offered = _queue.offer(task);
-        int size;
-        while (true)
-        {
-            long count = _count.get();
-            size = getLo(count);
-            if (size < 0 || !offered)
-                break;
-            if (_count.compareAndSet(count, getHi(count), --size))
-                break;
-        }
+        int size = _count.getLo();
+        while (offered && size > 0 && !_count.compareAndSetLo(size, --size))
+            size = _count.getLo();
         if (size == 0 && task != STOP)
             startReservedThread();
         return offered;
