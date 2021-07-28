@@ -329,6 +329,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
      */
     void parseAndFillForContent()
     {
+        // Defensive check to avoid an infinite select/wakeup/fillAndParseForContent/wait loop
+        // in case the parser was mistakenly closed and the connection was not aborted.
+        if (_parser.isTerminated())
+            throw new IllegalStateException("Parser is terminated: " + _parser);
+
         // When fillRequestBuffer() is called, it must always be followed by a parseRequestBuffer() call otherwise this method
         // doesn't trigger EOF/earlyEOF which breaks AsyncRequestReadTest.testPartialReadThenShutdown().
 
