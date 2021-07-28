@@ -25,7 +25,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
-import org.ops4j.pax.exam.options.WrappedUrlProvisionOption.OverwriteMode;
+import org.ops4j.pax.exam.options.WrappedUrlProvisionOption;
 import org.ops4j.pax.tinybundles.core.TinyBundle;
 import org.ops4j.pax.tinybundles.core.TinyBundles;
 import org.osgi.framework.Bundle;
@@ -186,7 +186,7 @@ public class TestOSGiUtil
         //remove unused imports and exports from jakarta.transaction-api manifest
         res.add(wrappedBundle(mavenBundle().groupId("jakarta.transaction").artifactId("jakarta.transaction-api").versionAsInProject())
             .instructions("Import-Package=javax.transaction.xa&Export-Package=jakarta.transaction.*;version=\"2.0.0\"")
-            .overwriteManifest(OverwriteMode.MERGE)
+            .overwriteManifest(WrappedUrlProvisionOption.OverwriteMode.MERGE)
             .start());
 
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-util").versionAsInProject().start());
