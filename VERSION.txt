@@ -9,7 +9,7 @@ jetty-10.0.6 - 29 June 2021
  + 6410 Ensure Jetty IO uses SocketAddress instead of InetSocketAddress
  + 6418 Bad and/or missing Require-Capability for osgi.serviceloader
  + 6425 Update to asm 9.1
- + 6447 Deprecate support for UTF16 encoding in URIs
+ + 6447 Deprecate support for UTF16 encoding in URIs (Resolves CVE-2021-34429)
  + 6451 Request#getServletPath() returns null for ROOT mapping
  + 6464 Wrong files/lib definitions in certain *-capture.mod files?
  + 6473 Improve alias checking in PathResource
