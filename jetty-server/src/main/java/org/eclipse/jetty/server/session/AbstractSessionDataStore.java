@@ -15,8 +15,10 @@ package org.eclipse.jetty.server.session;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -136,21 +138,22 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
         if (!isStarted())
             throw new IllegalStateException("Not started");
 
-        final RunnableResult<SessionData> result = new RunnableResult<>();
-
+        final FuturePromise<SessionData> result = new FuturePromise<>();
+        
         Runnable r = () ->
         {
             try
             {
-                result.setResult(doLoad(id));
+                result.succeeded(doLoad(id));
             }
             catch (Exception e)
             {
-                result.setException(e);
+                result.failed(e);
             }
         };
 
         _context.run(r);
+
         return result.getOrThrow();
     }
 
@@ -179,7 +182,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
             //set the last saved time to now
             data.setLastSaved(System.currentTimeMillis());
             
-            final RunnableResult<Object> result = new RunnableResult<>();
+            final FuturePromise<Boolean> result = new FuturePromise<>();
             Runnable r = () ->
             {
                 try
@@ -187,32 +190,33 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
                     //call the specific store method, passing in previous save time
                     doStore(id, data, lastSave);
                     data.clean(); //unset all dirty flags
+                    result.succeeded(Boolean.TRUE);
                 }
                 catch (Exception e)
                 {
                     //reset last save time if save failed
                     data.setLastSaved(lastSave);
-                    result.setException(e);
+                    result.failed(e);
                 }
             };
             _context.run(r);
-            result.throwIfException();
+            result.getOrThrow();
         }
     }
 
     @Override
     public boolean exists(String id) throws Exception
     {
-        RunnableResult<Boolean> result = new RunnableResult<>();
+        FuturePromise<Boolean> result = new FuturePromise<>();
         Runnable r = () ->
         {
             try
             {
-                result.setResult(doExists(id));
+                result.succeeded(doExists(id));
             }
             catch (Exception e)
             {
-                result.setException(e);
+                result.failed(e);
             }
         };
 

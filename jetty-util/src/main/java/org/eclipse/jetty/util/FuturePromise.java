@@ -118,6 +118,27 @@ public class FuturePromise<C> implements Future<C>, Promise<C>
             throw (CancellationException)new CancellationException().initCause(_cause);
         throw new ExecutionException(_cause);
     }
+    
+    /**
+     * Return the result if completed successfully
+     * or rethrow the Exception
+     * 
+     * @return the computed result
+     * @throws Exception
+     */
+    public C getOrThrow() throws Exception
+    {
+        _latch.await();
+
+        if (_cause == COMPLETED)
+            return _result;
+        if (_cause instanceof Exception)
+            throw (Exception)_cause;
+        if (_cause instanceof Error)
+            throw (Error)_cause;
+        
+        throw new ExecutionException(_cause);
+    }
 
     @Override
     public C get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException

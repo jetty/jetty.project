@@ -21,11 +21,11 @@ import java.util.List;
 import net.rubyeye.xmemcached.MemcachedClient;
 import net.rubyeye.xmemcached.XMemcachedClientBuilder;
 import net.rubyeye.xmemcached.transcoders.SerializingTranscoder;
-import org.eclipse.jetty.server.session.RunnableResult;
 import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataMap;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
+import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -164,17 +164,17 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
         if (!isStarted())
             throw new IllegalStateException("Not started");
         
-        final RunnableResult<SessionData> result = new RunnableResult<>();
+        final FuturePromise<SessionData> result = new FuturePromise<>();
 
         Runnable r = () ->
         {
             try
             {
-                result.setResult(_client.get(id));
+                result.succeeded(_client.get(id));
             }
             catch (Exception e)
             {
-                result.setException(e);
+                result.failed(e);
             }
         };
 
@@ -188,20 +188,21 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
         if (!isStarted())
             throw new IllegalStateException("Not started");
         
-        final RunnableResult<Object> result = new RunnableResult<>();
+        final FuturePromise<Boolean> result = new FuturePromise<>();
         Runnable r = () ->
         {
             try
             {
                 _client.set(id, _expirySec, data);
+                result.succeeded(Boolean.TRUE);
             }
             catch (Exception e)
             {
-                result.setException(e);
+                result.failed(e);
             }
         };
         _context.run(r);
-        result.throwIfException();
+        result.getOrThrow();
     }
 
     @Override
