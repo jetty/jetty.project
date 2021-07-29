@@ -148,7 +148,7 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
         try
         {
             _context = context;
-            _builder.setTranscoder(new SessionDataTranscoder(_context.getContext().getClassLoader()));
+            _builder.setTranscoder(new SessionDataTranscoder());
             _client = _builder.build();
             _client.setEnableHeartBeat(isHeartbeats());
         }
