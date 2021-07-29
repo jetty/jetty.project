@@ -13,15 +13,8 @@
 
 package org.eclipse.jetty.tests.distribution.session;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.output.Slf4jLogConsumer;
 
 /**
  *
@@ -29,61 +22,34 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 public class FileSessionDistributionTests extends AbstractSessionDistributionTests
 {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(FileSessionDistributionTests.class);
-    private static final Logger MEMCACHED_LOG = LoggerFactory.getLogger("org.eclipse.jetty.tests.distribution.session.memcached");
-
-    private GenericContainer memcached;
-
-    private String host;
-    private int port;
-
-    @Override
-    @BeforeEach
-    public void prepareJettyHomeTester() throws Exception
-    {
-        memcached =
-                new GenericContainer("memcached:" + System.getProperty("memcached.docker.version", "1.6.6"))
-                        .withLogConsumer(new Slf4jLogConsumer(MEMCACHED_LOG));
-        memcached.start();
-        this.host = memcached.getContainerIpAddress();
-        this.port = memcached.getMappedPort(11211);
-        super.prepareJettyHomeTester();
-    }
-
     @Override
     public void startExternalSessionStorage() throws Exception
     {
         // no op
     }
-
-    @Override
-    public Map<String, String> env()
-    {
-        return Map.of("MEMCACHE_PORT_11211_TCP_ADDR", host, "MEMCACHE_PORT_11211_TCP_PORT", Integer.toString(port));
-    }
-
+    
     @Override
     public void stopExternalSessionStorage() throws Exception
     {
-        memcached.stop();
+        // no op
     }
 
     @Override
     public List<String> getFirstStartExtraArgs()
     {
-        return Arrays.asList("session-data-cache=xmemcached");
+        return Collections.emptyList();
     }
 
     @Override
     public String getFirstStartExtraModules()
     {
-        return "session-store-file,session-store-cache";
+        return "session-store-file";
     }
 
     @Override
     public List<String> getSecondStartExtraArgs()
     {
-        return Arrays.asList("session-data-cache=xmemcached");
+        return Collections.emptyList();
     }
 
 }
