@@ -182,7 +182,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
             //set the last saved time to now
             data.setLastSaved(System.currentTimeMillis());
             
-            final FuturePromise<Boolean> result = new FuturePromise<>();
+            final FuturePromise<Void> result = new FuturePromise<>();
             Runnable r = () ->
             {
                 try
@@ -190,7 +190,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
                     //call the specific store method, passing in previous save time
                     doStore(id, data, lastSave);
                     data.clean(); //unset all dirty flags
-                    result.succeeded(Boolean.TRUE);
+                    result.succeeded(null);
                 }
                 catch (Exception e)
                 {

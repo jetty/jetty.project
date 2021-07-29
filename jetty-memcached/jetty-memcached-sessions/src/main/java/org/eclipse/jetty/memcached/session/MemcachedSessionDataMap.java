@@ -188,13 +188,13 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
         if (!isStarted())
             throw new IllegalStateException("Not started");
         
-        final FuturePromise<Boolean> result = new FuturePromise<>();
+        final FuturePromise<Void> result = new FuturePromise<>();
         Runnable r = () ->
         {
             try
             {
                 _client.set(id, _expirySec, data);
-                result.succeeded(Boolean.TRUE);
+                result.succeeded(null);
             }
             catch (Exception e)
             {
