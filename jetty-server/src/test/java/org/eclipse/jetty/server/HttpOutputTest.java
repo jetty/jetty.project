@@ -28,6 +28,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
@@ -761,6 +762,102 @@ public class HttpOutputTest
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, Matchers.not(containsString("Content-Length")));
         assertThat(response, containsString("400\tTHIS IS A BIGGER FILE"));
+    }
+
+    @Test
+    public void testEmptyArray() throws Exception
+    {
+        AtomicBoolean committed = new AtomicBoolean();
+        AbstractHandler handler = new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setStatus(200);
+                response.getOutputStream().write(new byte[0]);
+                committed.set(response.isCommitted());
+            }
+        };
+
+        _swap.setHandler(handler);
+        handler.start();
+        String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(committed.get(), is(false));
+    }
+
+    @Test
+    public void testEmptyArrayKnown() throws Exception
+    {
+        AtomicBoolean committed = new AtomicBoolean();
+        AbstractHandler handler = new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setStatus(200);
+                response.setContentLength(0);
+                response.getOutputStream().write(new byte[0]);
+                committed.set(response.isCommitted());
+            }
+        };
+
+        _swap.setHandler(handler);
+        handler.start();
+        String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("Content-Length: 0"));
+        assertThat(committed.get(), is(true));
+    }
+
+    @Test
+    public void testEmptyBuffer() throws Exception
+    {
+        AtomicBoolean committed = new AtomicBoolean();
+        AbstractHandler handler = new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setStatus(200);
+                ((HttpOutput)response.getOutputStream()).write(ByteBuffer.wrap(new byte[0]));
+                committed.set(response.isCommitted());
+            }
+        };
+
+        _swap.setHandler(handler);
+        handler.start();
+        String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(committed.get(), is(false));
+    }
+
+    @Test
+    public void testEmptyBufferKnown() throws Exception
+    {
+        AtomicBoolean committed = new AtomicBoolean();
+        AbstractHandler handler = new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setStatus(200);
+                response.setContentLength(0);
+                ((HttpOutput)response.getOutputStream()).write(ByteBuffer.wrap(new byte[0]));
+                committed.set(response.isCommitted());
+            }
+        };
+
+        _swap.setHandler(handler);
+        handler.start();
+        String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("Content-Length: 0"));
+        assertThat(committed.get(), is(true));
     }
 
     @Test
