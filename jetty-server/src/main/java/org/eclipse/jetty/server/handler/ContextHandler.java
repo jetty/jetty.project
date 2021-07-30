@@ -88,6 +88,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.Graceful;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -2084,6 +2085,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public void addAliasCheck(AliasCheck check)
     {
         getAliasChecks().add(check);
+        if (check instanceof LifeCycle)
+            addManaged((LifeCycle)check);
+        else
+            addBean(check);
     }
 
     /**
@@ -2099,7 +2104,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void setAliasChecks(List<AliasCheck> checks)
     {
-        getAliasChecks().clear();
+        clearAliasChecks();
         getAliasChecks().addAll(checks);
     }
 
@@ -2108,7 +2113,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void clearAliasChecks()
     {
-        getAliasChecks().clear();
+        List<AliasCheck> aliasChecks = getAliasChecks();
+        aliasChecks.forEach(this::removeBean);
+        aliasChecks.clear();
     }
 
     /**

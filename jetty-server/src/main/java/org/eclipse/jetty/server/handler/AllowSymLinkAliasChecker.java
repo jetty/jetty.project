@@ -40,6 +40,11 @@ public class AllowSymLinkAliasChecker implements AliasCheck
 {
     private static final Logger LOG = Log.getLogger(AllowSymLinkAliasChecker.class);
 
+    public AllowSymLinkAliasChecker()
+    {
+        LOG.warn("Deprecated, use SymlinkAllowedResourceAliasChecker instead.");
+    }
+
     @Override
     public boolean check(String uri, Resource resource)
     {

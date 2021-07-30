@@ -57,7 +57,7 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
                 return true;
 
             // Approve if path has symlink in under its resource base.
-            if (super.hasSymbolicLink(resourcePath))
+            if (super.hasSymbolicLink(getBasePath(), resourcePath))
                 return true;
         }
         catch (IOException e)

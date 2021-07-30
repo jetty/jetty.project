@@ -23,10 +23,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.util.Objects;
+import java.util.HashSet;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.PathResource;
@@ -40,7 +41,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * <p>Aliases approved by this may still be able to bypass SecurityConstraints, so this class would need to be extended
  * to enforce any additional security constraints that are required.</p>
  */
-public class AllowedResourceAliasChecker implements ContextHandler.AliasCheck
+public class AllowedResourceAliasChecker extends AbstractLifeCycle implements ContextHandler.AliasCheck
 {
     private static final Logger LOG = Log.getLogger(AllowedResourceAliasChecker.class);
     private static final LinkOption[] FOLLOW_LINKS = new LinkOption[0];
@@ -48,6 +49,8 @@ public class AllowedResourceAliasChecker implements ContextHandler.AliasCheck
 
     private final ContextHandler _contextHandler;
     private final boolean _checkSymlinkTargets;
+    private final HashSet<Path> _protectedPaths = new HashSet<>();
+    private Path _basePath;
 
     /**
      * @param contextHandler the context handler to use.
@@ -57,6 +60,40 @@ public class AllowedResourceAliasChecker implements ContextHandler.AliasCheck
     {
         _contextHandler = contextHandler;
         _checkSymlinkTargets = checkSymlinkTargets;
+    }
+
+    protected ContextHandler getContextHandler()
+    {
+        return _contextHandler;
+    }
+
+    protected Path getBasePath()
+    {
+        return _basePath;
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        _basePath = getPath(_contextHandler.getBaseResource());
+        if (_basePath == null)
+            throw new IllegalStateException("Could not obtain base resource path");
+
+        String[] protectedTargets = _contextHandler.getProtectedTargets();
+        if (protectedTargets != null)
+        {
+            for (String s : protectedTargets)
+            {
+                _protectedPaths.add(_basePath.resolve(s));
+            }
+        }
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        _basePath = null;
+        _protectedPaths.clear();
     }
 
     @Override
@@ -104,31 +141,34 @@ public class AllowedResourceAliasChecker implements ContextHandler.AliasCheck
      */
     protected boolean isProtectedPath(Path resourcePath, LinkOption[] linkOptions) throws IOException
     {
-        String basePath = Objects.requireNonNull(getPath(_contextHandler.getBaseResource())).toRealPath(linkOptions).toString();
-        String targetPath = resourcePath.toRealPath(linkOptions).toString();
+        // If the resource doesn't exist we cannot determine whether it is protected so we assume it is.
+        if (!Files.exists(resourcePath, linkOptions))
+            return true;
 
+        Path basePath = _basePath.toRealPath(linkOptions);
+        Path targetPath = resourcePath.toRealPath(linkOptions);
+        String target = targetPath.toString();
+
+        // The target path must be under the base resource directory.
         if (!targetPath.startsWith(basePath))
             return true;
 
-        String[] protectedTargets = _contextHandler.getProtectedTargets();
-        if (protectedTargets != null)
+        for (Path protectedPath : _protectedPaths)
         {
-            for (String s : protectedTargets)
-            {
-                // TODO: we are always following links for the base resource.
-                //  We cannot use toRealPath(linkOptions) here as it throws if file does not exist,
-                //  and the protected targets do not have to always exist.
-                String protectedTarget = new File(basePath, s).getCanonicalPath();
-                if (StringUtil.startsWithIgnoreCase(targetPath, protectedTarget))
-                {
-                    if (targetPath.length() == protectedTarget.length())
-                        return true;
+            // We know the targetPath exists, so if protectedPath doesn't exist then targetPath cannot be a child of it.
+            if (!Files.exists(protectedPath, linkOptions))
+                continue;
 
-                    // Check that the target prefix really is a path segment.
-                    char c = targetPath.charAt(protectedTarget.length());
-                    if (c == File.separatorChar)
-                        return true;
-                }
+            // If the target path is protected then we will not allow it.
+            String protect = protectedPath.toRealPath(linkOptions).toString();
+            if (StringUtil.startsWithIgnoreCase(target, protect))
+            {
+                if (target.length() == protect.length())
+                    return true;
+
+                // Check that the target prefix really is a path segment.
+                if (target.charAt(protect.length()) == File.separatorChar)
+                    return true;
             }
         }
 

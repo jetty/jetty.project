@@ -118,16 +118,16 @@ public class AliasCheckerSymlinkTest
         // Create and start Server and Client.
         _server = new Server();
         _connector = new ServerConnector(_server);
-        _connector.setPort(8080);
         _server.addConnector(_connector);
         _context = new ServletContextHandler();
         _context.setContextPath("/");
-        _context.setBaseResource(new PathResource(webrootSymlink));
+        _context.setBaseResource(new PathResource(webRootPath));
         _context.setWelcomeFiles(new String[]{"index.html"});
         _context.setProtectedTargets(new String[]{"/web-inf", "/meta-inf"});
         _context.getMimeTypes().addMimeMapping("txt", "text/plain;charset=utf-8");
         _server.setHandler(_context);
         _context.addServlet(DefaultServlet.class, "/");
+        _context.clearAliasChecks();
         _server.start();
 
         _client = new HttpClient();
