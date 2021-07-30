@@ -84,7 +84,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
         {
             for (String s : protectedTargets)
             {
-                _protectedPaths.add(_basePath.resolve(s));
+                _protectedPaths.add(new File(_basePath.toFile(), s).toPath());
             }
         }
     }
@@ -155,12 +155,15 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
 
         for (Path protectedPath : _protectedPaths)
         {
-            // We know the targetPath exists, so if protectedPath doesn't exist then targetPath cannot be a child of it.
-            if (!Files.exists(protectedPath, linkOptions))
-                continue;
+            String protect;
+            if (Files.exists(protectedPath, linkOptions))
+                protect = protectedPath.toRealPath(linkOptions).toString();
+            else if (linkOptions == NO_FOLLOW_LINKS)
+                protect = protectedPath.normalize().toAbsolutePath().toString();
+            else
+                protect = protectedPath.toFile().getCanonicalPath();
 
             // If the target path is protected then we will not allow it.
-            String protect = protectedPath.toRealPath(linkOptions).toString();
             if (StringUtil.startsWithIgnoreCase(target, protect))
             {
                 if (target.length() == protect.length())
