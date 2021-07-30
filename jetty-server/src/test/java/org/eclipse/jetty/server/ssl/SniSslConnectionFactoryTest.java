@@ -68,6 +68,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.OS;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -132,6 +133,18 @@ public class SniSslConnectionFactoryTest
     protected void start(Consumer<SslContextFactory.Server> sslConfig) throws Exception
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        if (OS.WINDOWS.isCurrentOs())
+        {
+            // Restrict behavior in this testcase to how TLSv1.2 operates.
+            // This is because of behavior differences in TLS between Linux and Windows.
+            // On Linux TLS on client side will always return a javax.net.ssl.SSLHandshakeException
+            // in those test cases that expect it.
+            // However, on Windows, there are differences between using OpenJDK 8 and OpenJDK 11.
+            // Only the TLSv1.2 implementation will return a javax.net.ssl.SSLHandshakeException,
+            // all other TLS versions will result in a
+            // javax.net.ssl.SSLException: Software caused connection abort: recv failed
+            sslContextFactory.setIncludeProtocols("TLSv1.2");
+        }
         sslContextFactory.setKeyStorePassword("storepwd");
         sslConfig.accept(sslContextFactory);
 
