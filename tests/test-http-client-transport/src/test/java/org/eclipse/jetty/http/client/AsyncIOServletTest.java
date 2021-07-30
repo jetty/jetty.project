@@ -20,8 +20,11 @@ import java.io.InterruptedIOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Deque;
+import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -65,6 +68,8 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.HttpInput.Content;
+import org.eclipse.jetty.server.HttpOutput;
+import org.eclipse.jetty.server.HttpOutputHelper;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
@@ -74,8 +79,6 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -398,8 +401,6 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    @Tag("Unstable")
-    @Disabled
     public void testAsyncWriteClosed(Transport transport) throws Exception
     {
         init(transport);
@@ -431,7 +432,18 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
 
                         // Wait for the failure to arrive to
                         // the server while we are about to write.
-                        sleep(2000);
+                        try
+                        {
+                            Await.await().atMost(5, TimeUnit.SECONDS).until(() ->
+                            {
+                                out.write(new byte[0]);
+                                return !HttpOutputHelper.getApiState(((HttpOutput)out)).equals("READY");
+                            });
+                        }
+                        catch (Exception e)
+                        {
+                            throw new AssertionError(e);
+                        }
 
                         out.write(data);
                     }
@@ -1852,6 +1864,37 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
             checkScope();
             scope.set(null);
             super.stopServer();
+        }
+    }
+
+    static class Await
+    {
+        private Duration duration;
+
+        public static Await await()
+        {
+            return new Await();
+        }
+
+        public Await atMost(long time, TimeUnit unit)
+        {
+            duration = Duration.ofMillis(unit.toMillis(time));
+            return this;
+        }
+
+        public void until(Callable<Boolean> condition) throws Exception
+        {
+            Objects.requireNonNull(duration);
+            long start = System.nanoTime();
+
+            while (true)
+            {
+                if (condition.call())
+                    return;
+                if (duration.minus(Duration.ofNanos(System.nanoTime() - start)).isNegative())
+                    throw new AssertionError("Duration expired");
+                Thread.sleep(10);
+            }
         }
     }
 }
