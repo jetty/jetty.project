@@ -5,7 +5,7 @@ jetty-9.4.43.v20210629 - 30 June 2021
  + 6382 HttpClient TimeoutException message reports transient values
  + 6400 QueuedThreadPool interrupts pool threads when stopped with zero timeout
  + 6425 Update to asm 9.1
- + 6447 Deprecate support for UTF16 encoding in URIs
+ + 6447 Deprecate support for UTF16 encoding in URIs (Resolves CVE-2021-34429)
  + 6470 java.nio.ReadOnlyBufferException
  + 6473 Improve alias checking in PathResource
 
