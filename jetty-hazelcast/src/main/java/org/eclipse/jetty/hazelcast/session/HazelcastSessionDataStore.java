@@ -24,7 +24,6 @@ import com.hazelcast.config.IndexConfig;
 import com.hazelcast.config.IndexType;
 import com.hazelcast.map.IMap;
 import com.hazelcast.query.Predicate;
-import com.hazelcast.query.PredicateBuilder;
 import com.hazelcast.query.PredicateBuilder.EntryObject;
 import com.hazelcast.query.Predicates;
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
