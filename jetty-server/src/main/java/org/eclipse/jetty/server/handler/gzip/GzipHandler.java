@@ -769,6 +769,17 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     }
 
     /**
+     * Set the excluded filter list of MIME types (replacing any previously set)
+     *
+     * @param csvTypes The list of mime types to exclude (without charset or other parameters), CSV format
+     * @see #setIncludedMimeTypesList(String)
+     */
+    public void setExcludedMimeTypesList(String csvTypes)
+    {
+        setExcludedMimeTypes(StringUtil.csvSplit(csvTypes));
+    }
+
+    /**
      * Set the excluded filter list of Path specs (replacing any previously set)
      *
      * @param pathspecs Path specs (as per servlet spec) to exclude. If a
@@ -817,6 +828,17 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     {
         _mimeTypes.getIncluded().clear();
         _mimeTypes.include(types);
+    }
+
+    /**
+     * Set the included filter list of MIME types (replacing any previously set)
+     *
+     * @param csvTypes The list of mime types to include (without charset or other parameters), CSV format
+     * @see #setExcludedMimeTypesList(String)
+     */
+    public void setIncludedMimeTypesList(String csvTypes)
+    {
+        setIncludedMimeTypes(StringUtil.csvSplit(csvTypes));
     }
 
     /**
