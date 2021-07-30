@@ -163,15 +163,12 @@ public class GzipHandlerTest
             String defaultContentType = "application/octet-stream";
             if (req.getParameter("type") != null)
                 defaultContentType = req.getParameter("type");
-
             ServletContextHandler servletContextHandler = ServletContextHandler.getServletContextHandler(getServletContext());
             if (servletContextHandler == null)
                 return defaultContentType;
             String contentType = servletContextHandler.getMimeTypes().getMimeByExtension(filename);
             if (contentType != null)
-            {
                 return contentType;
-            }
             return defaultContentType;
         }
     }
