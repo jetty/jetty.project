@@ -863,12 +863,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         // Blocking write
         try
         {
-            boolean complete = false;
             // flush any content from the aggregate
             if (BufferUtil.hasContent(_aggregate))
             {
-                complete = last && len == 0;
-                channelWrite(_aggregate, complete);
+                channelWrite(_aggregate, last && len == 0);
 
                 // should we fill aggregate again from the buffer?
                 if (len > 0 && !last && len <= _commitSize && len <= maximizeAggregateSpace())
@@ -897,10 +895,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     len -= getBufferSize();
                 }
                 channelWrite(view, last);
-            }
-            else if (last && !complete)
-            {
-                channelWrite(BufferUtil.EMPTY_BUFFER, true);
             }
 
             onWriteComplete(last, null);
@@ -969,18 +963,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             {
                 // Blocking write
                 // flush any content from the aggregate
-                boolean complete = false;
                 if (BufferUtil.hasContent(_aggregate))
-                {
-                    complete = last && len == 0;
-                    channelWrite(_aggregate, complete);
-                }
+                    channelWrite(_aggregate, last && len == 0);
 
                 // write any remaining content in the buffer directly
                 if (len > 0)
                     channelWrite(buffer, last);
-                else if (last && !complete)
-                    channelWrite(BufferUtil.EMPTY_BUFFER, true);
 
                 onWriteComplete(last, null);
             }
