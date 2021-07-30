@@ -76,9 +76,6 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
     protected void doStart() throws Exception
     {
         _basePath = getPath(_contextHandler.getBaseResource());
-        if (_basePath == null)
-            throw new IllegalStateException("Could not obtain base resource path");
-
         String[] protectedTargets = _contextHandler.getProtectedTargets();
         if (protectedTargets != null)
         {
@@ -99,6 +96,9 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
     @Override
     public boolean check(String uri, Resource resource)
     {
+        if (_basePath == null)
+            return false;
+
         // The existence check resolves the symlinks.
         if (!resource.exists())
             return false;
