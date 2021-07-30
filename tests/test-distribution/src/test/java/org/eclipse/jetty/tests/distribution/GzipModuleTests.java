@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -44,8 +43,6 @@ public class GzipModuleTests extends AbstractJettyHomeTest
             .build();
 
         int httpPort = distribution.freePort();
-        int httpsPort = distribution.freePort();
-        assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
 
         String[] argsConfig = {
             "--add-modules=gzip",
@@ -59,8 +56,7 @@ public class GzipModuleTests extends AbstractJettyHomeTest
 
             String[] argsStart = {
                 "jetty.http.port=" + httpPort,
-                "jetty.httpConfig.port=" + httpsPort,
-                "jetty.ssl.port=" + httpsPort
+                "jetty.httpConfig.port=" + httpPort
             };
 
             File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-simple-webapp:war:" + jettyVersion);
@@ -79,7 +75,7 @@ public class GzipModuleTests extends AbstractJettyHomeTest
     }
 
     @Test
-    public void testGzipExcludeMimeType() throws Exception
+    public void testGzipDefaultExcludedMimeType() throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
@@ -90,8 +86,6 @@ public class GzipModuleTests extends AbstractJettyHomeTest
             .build();
 
         int httpPort = distribution.freePort();
-        int httpsPort = distribution.freePort();
-        assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
 
         String[] argsConfig = {
             "--add-modules=gzip",
@@ -105,9 +99,7 @@ public class GzipModuleTests extends AbstractJettyHomeTest
 
             String[] argsStart = {
                 "jetty.http.port=" + httpPort,
-                "jetty.httpConfig.port=" + httpsPort,
-                "jetty.ssl.port=" + httpsPort,
-                "jetty.gzip.excludedMimeTypeList=image/webp"
+                "jetty.httpConfig.port=" + httpPort
             };
 
             File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-simple-webapp:war:" + jettyVersion);
@@ -120,7 +112,53 @@ public class GzipModuleTests extends AbstractJettyHomeTest
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + httpPort + "/demo/jetty.webp");
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
+                assertThat("Correct Content-Type", response.getHeaders().get(HttpHeader.CONTENT_TYPE), containsString("image/webp"));
                 assertThat("Ensure that gzip exclusion worked", response.getHeaders().get(HttpHeader.CONTENT_ENCODING), not(containsString("gzip")));
+            }
+        }
+    }
+
+    @Test
+    public void testGzipAddWebappSpecificExcludeMimeType() throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        int httpPort = distribution.freePort();
+
+        String[] argsConfig = {
+            "--add-modules=gzip",
+            "--add-modules=deploy,webapp,http"
+        };
+
+        try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
+        {
+            assertTrue(runConfig.awaitFor(5, TimeUnit.SECONDS));
+            assertEquals(0, runConfig.getExitValue());
+
+            String[] argsStart = {
+                "jetty.http.port=" + httpPort,
+                "jetty.httpConfig.port=" + httpPort,
+                "jetty.gzip.excludedMimeTypeList=image/vnd.microsoft.icon"
+            };
+
+            File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-simple-webapp:war:" + jettyVersion);
+            distribution.installWarFile(war, "demo");
+
+            try (JettyHomeTester.Run runStart = distribution.start(argsStart))
+            {
+                assertTrue(runStart.awaitConsoleLogsFor("Started Server@", 20, TimeUnit.SECONDS));
+
+                startHttpClient();
+                ContentResponse response = client.GET("http://localhost:" + httpPort + "/demo/jetty.icon");
+                assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
+                assertThat("Ensure that gzip exclusion worked", response.getHeaders().get(HttpHeader.CONTENT_ENCODING), not(containsString("gzip")));
+                assertThat("Correct Content-Type", response.getHeaders().get(HttpHeader.CONTENT_TYPE), containsString("image/vnd.microsoft.icon"));
             }
         }
     }

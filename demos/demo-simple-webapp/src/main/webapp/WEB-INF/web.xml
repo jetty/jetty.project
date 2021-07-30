@@ -7,8 +7,8 @@
   <display-name>Simple Web Application</display-name>
 
   <mime-mapping>
-    <extension>webp</extension>
-    <mime-type>image/webp</mime-type>
+    <extension>icon</extension>
+    <mime-type>image/vnd.microsoft.icon</mime-type>
   </mime-mapping>
 
 </web-app>
