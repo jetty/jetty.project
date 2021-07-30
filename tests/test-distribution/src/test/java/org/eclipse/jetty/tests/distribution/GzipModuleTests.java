@@ -16,7 +16,6 @@ package org.eclipse.jetty.tests.distribution;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpHeader;
@@ -68,8 +67,9 @@ public class GzipModuleTests extends AbstractJettyHomeTest
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + httpPort + "/demo/index.html");
-                assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
-                assertThat("Ensure that gzip is working", response.getHeaders().get(HttpHeader.CONTENT_ENCODING), containsString("gzip"));
+                String responseDetails = toResponseDetails(response);
+                assertEquals(HttpStatus.OK_200, response.getStatus(), responseDetails);
+                assertThat(responseDetails, response.getHeaders().get(HttpHeader.CONTENT_ENCODING), containsString("gzip"));
             }
         }
     }
@@ -111,9 +111,10 @@ public class GzipModuleTests extends AbstractJettyHomeTest
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + httpPort + "/demo/jetty.webp");
-                assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
-                assertThat("Correct Content-Type", response.getHeaders().get(HttpHeader.CONTENT_TYPE), containsString("image/webp"));
-                assertThat("Ensure that gzip exclusion worked", response.getHeaders().get(HttpHeader.CONTENT_ENCODING), not(containsString("gzip")));
+                String responseDetails = toResponseDetails(response);
+                assertEquals(HttpStatus.OK_200, response.getStatus(), responseDetails);
+                assertThat(responseDetails, response.getHeaders().get(HttpHeader.CONTENT_TYPE), containsString("image/webp"));
+                assertThat(responseDetails, response.getHeaders().get(HttpHeader.CONTENT_ENCODING), not(containsString("gzip")));
             }
         }
     }
@@ -156,30 +157,20 @@ public class GzipModuleTests extends AbstractJettyHomeTest
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + httpPort + "/demo/jetty.icon");
-                assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
-                assertThat("Ensure that gzip exclusion worked", response.getHeaders().get(HttpHeader.CONTENT_ENCODING), not(containsString("gzip")));
-                assertThat("Correct Content-Type", response.getHeaders().get(HttpHeader.CONTENT_TYPE), containsString("image/vnd.microsoft.icon"));
+                String responseDetails = toResponseDetails(response);
+                assertEquals(HttpStatus.OK_200, response.getStatus(), responseDetails);
+                assertThat(responseDetails, response.getHeaders().get(HttpHeader.CONTENT_ENCODING), not(containsString("gzip")));
+                assertThat(responseDetails, response.getHeaders().get(HttpHeader.CONTENT_TYPE), containsString("image/vnd.microsoft.icon"));
             }
         }
     }
 
-    private static class ResponseDetails implements Supplier<String>
+    private static String toResponseDetails(ContentResponse response)
     {
-        private final ContentResponse response;
-
-        public ResponseDetails(ContentResponse response)
-        {
-            this.response = response;
-        }
-
-        @Override
-        public String get()
-        {
-            StringBuilder ret = new StringBuilder();
-            ret.append(response.toString()).append(System.lineSeparator());
-            ret.append(response.getHeaders().toString()).append(System.lineSeparator());
-            ret.append(response.getContentAsString()).append(System.lineSeparator());
-            return ret.toString();
-        }
+        StringBuilder ret = new StringBuilder();
+        ret.append(response.toString()).append(System.lineSeparator());
+        ret.append(response.getHeaders().toString()).append(System.lineSeparator());
+        ret.append(response.getContentAsString()).append(System.lineSeparator());
+        return ret.toString();
     }
 }
