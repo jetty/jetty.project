@@ -111,21 +111,38 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
             BufferedInterceptor.super.resetBuffer();
         }
 
+        private void closeFileOutput()
+        {
+            if (_fileOutputStream != null)
+            {
+                try
+                {
+                    _fileOutputStream.flush();
+                }
+                catch (IOException e)
+                {
+                    LOG.debug("flush failure", e);
+                }
+                IO.close(_fileOutputStream);
+                _fileOutputStream = null;
+            }
+        }
+
         protected void dispose()
         {
-            IO.close(_fileOutputStream);
-            _fileOutputStream = null;
+            closeFileOutput();
             _aggregating = null;
 
             if (_filePath != null)
             {
                 try
                 {
-                    Files.delete(_filePath);
+                    Files.deleteIfExists(_filePath);
                 }
                 catch (Throwable t)
                 {
-                    LOG.warn("Could not delete file {}", _filePath, t);
+                    LOG.debug("Could not immediately delete file (delaying to jvm exit) {}", _filePath, t);
+                    _filePath.toFile().deleteOnExit();
                 }
                 _filePath = null;
             }
@@ -192,8 +209,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
 
             try
             {
-                _fileOutputStream.close();
-                _fileOutputStream = null;
+                closeFileOutput();
             }
             catch (Throwable t)
             {

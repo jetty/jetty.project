@@ -50,12 +50,16 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -65,9 +69,12 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class FileBufferedResponseHandlerTest
 {
     private static final Logger LOG = Log.getLogger(FileBufferedResponseHandlerTest.class);
+
+    public WorkDir _workDir;
 
     private final CountDownLatch _disposeLatch = new CountDownLatch(1);
     private Server _server;
@@ -79,8 +86,7 @@ public class FileBufferedResponseHandlerTest
     @BeforeEach
     public void before() throws Exception
     {
-        _testDir = MavenTestingUtils.getTargetTestingPath(FileBufferedResponseHandlerTest.class.getName());
-        FS.ensureDirExists(_testDir);
+        _testDir = _workDir.getEmptyPathDir();
 
         _server = new Server();
         HttpConfiguration config = new HttpConfiguration();
@@ -114,8 +120,6 @@ public class FileBufferedResponseHandlerTest
         _bufferedHandler.getPathIncludeExclude().exclude("*.exclude");
         _bufferedHandler.getMimeIncludeExclude().exclude("text/excluded");
         _server.setHandler(_bufferedHandler);
-
-        FS.ensureEmpty(_testDir);
     }
 
     @AfterEach
@@ -180,8 +184,13 @@ public class FileBufferedResponseHandlerTest
         assertThat(responseContent, containsString("Committed: false"));
         assertThat(responseContent, containsString("NumFiles: 1"));
 
-        assertTrue(_disposeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(getNumFiles(), is(0));
+        // Unable to verify file deletion on windows, as immediate delete not possible.
+        // only after a GC has occurred.
+        if (!OS.WINDOWS.isCurrentOs())
+        {
+            assertTrue(_disposeLatch.await(5, TimeUnit.SECONDS));
+            assertThat(getNumFiles(), is(0));
+        }
     }
 
     @Test
@@ -274,8 +283,13 @@ public class FileBufferedResponseHandlerTest
         assertThat(responseContent, containsString("Committed: false"));
         assertThat(responseContent, containsString("NumFiles: 1"));
 
-        assertTrue(_disposeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(getNumFiles(), is(0));
+        // Unable to verify file deletion on windows, as immediate delete not possible.
+        // only after a GC has occurred.
+        if (!OS.WINDOWS.isCurrentOs())
+        {
+            assertTrue(_disposeLatch.await(5, TimeUnit.SECONDS));
+            assertThat(getNumFiles(), is(0));
+        }
     }
 
     @Test
@@ -306,8 +320,13 @@ public class FileBufferedResponseHandlerTest
         assertThat(responseContent, not(containsString("writtenAfterClose")));
         assertThat(responseContent, containsString("NumFiles: 1"));
 
-        assertTrue(_disposeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(getNumFiles(), is(0));
+        // Unable to verify file deletion on windows, as immediate delete not possible.
+        // only after a GC has occurred.
+        if (!OS.WINDOWS.isCurrentOs())
+        {
+            assertTrue(_disposeLatch.await(5, TimeUnit.SECONDS));
+            assertThat(getNumFiles(), is(0));
+        }
     }
 
     @Test
@@ -368,8 +387,13 @@ public class FileBufferedResponseHandlerTest
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(responseContent, containsString("NumFiles: 0"));
 
-        assertTrue(_disposeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(getNumFiles(), is(0));
+        // Unable to verify file deletion on windows, as immediate delete not possible.
+        // only after a GC has occurred.
+        if (!OS.WINDOWS.isCurrentOs())
+        {
+            assertTrue(_disposeLatch.await(5, TimeUnit.SECONDS));
+            assertThat(getNumFiles(), is(0));
+        }
     }
 
     @Test
@@ -405,12 +429,18 @@ public class FileBufferedResponseHandlerTest
         // Resetting the response buffer will delete the file.
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(responseContent, not(containsString("THIS WILL BE RESET")));
+
         assertThat(responseContent, containsString("NumFilesBeforeReset: 1"));
         assertThat(responseContent, containsString("NumFilesAfterReset: 0"));
         assertThat(responseContent, containsString("NumFilesAfterWrite: 1"));
 
-        assertTrue(_disposeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(getNumFiles(), is(0));
+        // Unable to verify file deletion on windows, as immediate delete not possible.
+        // only after a GC has occurred.
+        if (!OS.WINDOWS.isCurrentOs())
+        {
+            assertTrue(_disposeLatch.await(5, TimeUnit.SECONDS));
+            assertThat(getNumFiles(), is(0));
+        }
     }
 
     @Test
@@ -484,8 +514,13 @@ public class FileBufferedResponseHandlerTest
         assertThat(response.get("FileSize"), is(Long.toString(fileSize)));
         assertThat(received.get(), is(fileSize));
 
-        assertTrue(_disposeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(getNumFiles(), is(0));
+        // Unable to verify file deletion on windows, as immediate delete not possible.
+        // only after a GC has occurred.
+        if (!OS.WINDOWS.isCurrentOs())
+        {
+            assertTrue(_disposeLatch.await(5, TimeUnit.SECONDS));
+            assertThat(getNumFiles(), is(0));
+        }
     }
 
     @Test
@@ -564,9 +599,14 @@ public class FileBufferedResponseHandlerTest
         Throwable error = errorFuture.get(5, TimeUnit.SECONDS);
         assertThat(error.getMessage(), containsString("intentionally throwing from interceptor"));
 
-        // All files were deleted.
-        assertTrue(_disposeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(getNumFiles(), is(0));
+        // Unable to verify file deletion on windows, as immediate delete not possible.
+        // only after a GC has occurred.
+        if (!OS.WINDOWS.isCurrentOs())
+        {
+            // All files were deleted.
+            assertTrue(_disposeLatch.await(5, TimeUnit.SECONDS));
+            assertThat(getNumFiles(), is(0));
+        }
     }
 
     @Test
