@@ -68,8 +68,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.HttpInput.Content;
-import org.eclipse.jetty.server.HttpOutput;
-import org.eclipse.jetty.server.HttpOutputHelper;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
@@ -437,7 +435,8 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
                             Await.await().atMost(5, TimeUnit.SECONDS).until(() ->
                             {
                                 out.write(new byte[0]);
-                                return !HttpOutputHelper.getApiState(((HttpOutput)out)).equals("READY");
+                                // Extract HttpOutput._apiState value from toString.
+                                return !out.toString().split(",")[1].split("=")[1].equals("READY");
                             });
                         }
                         catch (Exception e)
