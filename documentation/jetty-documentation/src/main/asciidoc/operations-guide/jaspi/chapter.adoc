@@ -46,7 +46,7 @@ The `jaspi-demo` module illustrates setting up HTTP Basic Authentication using a
 
 [source, xml, subs="{sub-order}"]
 ----
-include::{SRCDIR}/jetty-jaspi/src/main/config/etc/jaspi/jaspi-demo.xml[tags=documentation]
+include::{JETTY_HOME}/etc/jaspi/jaspi-demo.xml[]
 ----
 
 This example uses the `AuthConfigProvider` implementation provided by Jetty to register a `ServerAuthModule` directly. Other custom or 3rd party modules that are compatible with the `ServerAuthModule` interface in JASPI can be registered in the same way.
@@ -56,3 +56,13 @@ This example uses the `AuthConfigProvider` implementation provided by Jetty to r
 To integrate with Jetty authentication mechanisms you must add a `LoginService` to your context. The `LoginService` provides a way for you to obtain a `UserIdentity` from a username and credentials. JASPI can interact with this Jetty `LoginService` by using the `PasswordValidationCallback`.
 
 The `CallerPrincipalCallback` and `GroupPrincipalCallback` do not require use of a Jetty `LoginService`. The principal from the `CallerPrincipalCallback` will be used directly with the `IdentityService` to produce a `UserIdentity`.
+
+===== Replacing the Jetty DefaultAuthConfigFactory
+
+Jetty provides an implementation of the `AuthConfigFactory` interface which is used to register `AuthConfigProviders`. This can be replaced by a custom implementation by adding a custom module which provides `auth-config-factory`.
+This custom module must reference an XML file which sets a new instance of the `AuthConfigFactory` with the static method `AuthConfigFactory.setFactory()`.
+For an example of this see the `jaspi-default-auth-config-factory` module, which provides the default implementation used by Jetty.
+
+----
+include::{JETTY_HOME}/modules/jaspi-default-auth-config-factory.mod[]
+----
