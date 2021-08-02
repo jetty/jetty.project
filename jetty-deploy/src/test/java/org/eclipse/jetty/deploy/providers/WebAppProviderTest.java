@@ -25,6 +25,7 @@ import java.util.Map;
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -124,9 +125,12 @@ public class WebAppProviderTest
         // Check Server for expected Handlers
         jetty.assertWebAppContextsExists("/bar", "/foo", "/bob");
 
+        // Check that baseResources are not aliases
+        jetty.getServer().getContainedBeans(ContextHandler.class).forEach(h -> assertFalse(h.getBaseResource().isAlias()));
+
         // Test for expected work/temp directory behaviour
         File workDir = jetty.getJettyDir("workish");
-        assertTrue(hasJettyGeneratedPath(workDir, "bar_war"), "Should have generated directory in work directory: " + workDir);
+        assertTrue(hasJettyGeneratedPath(workDir, "_war-_bar"), "Should have generated directory in work directory: " + workDir);
     }
     
     @Test

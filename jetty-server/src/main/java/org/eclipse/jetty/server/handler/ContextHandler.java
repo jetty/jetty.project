@@ -854,10 +854,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @Override
     protected void doStart() throws Exception
     {
-        _availability.set(Availability.STARTING);
-
         if (_contextPath == null)
             throw new IllegalStateException("Null contextPath");
+
+        if (getBaseResource() != null && getBaseResource().isAlias())
+            LOG.warn("BaseResource {} is aliased to {} in {}. May not be supported in future releases.",
+                getBaseResource(), getBaseResource().getAlias(), this);
+
+        _availability.set(Availability.STARTING);
 
         if (_logger == null)
             _logger = LoggerFactory.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
