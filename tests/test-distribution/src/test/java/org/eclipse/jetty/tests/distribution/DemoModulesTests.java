@@ -296,24 +296,4 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             }
         }
     }
-
-    private class ResponseDetails implements Supplier<String>
-    {
-        private final ContentResponse response;
-
-        public ResponseDetails(ContentResponse response)
-        {
-            this.response = response;
-        }
-
-        @Override
-        public String get()
-        {
-            StringBuilder ret = new StringBuilder();
-            ret.append(response.toString()).append(System.lineSeparator());
-            ret.append(response.getHeaders().toString()).append(System.lineSeparator());
-            ret.append(response.getContentAsString()).append(System.lineSeparator());
-            return ret.toString();
-        }
-    }
 }
