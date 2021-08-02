@@ -22,6 +22,7 @@ import org.eclipse.jetty.deploy.ConfigurationManager;
 import org.eclipse.jetty.deploy.util.FileID;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -265,8 +266,18 @@ public class WebAppProvider extends ScanningAppProvider
         if (!resource.exists())
             throw new IllegalStateException("App resource does not exist " + resource);
 
-        String context = file.getName();
+        final String contextName = file.getName();
 
+        // Resource aliases (after getting name) to ensure baseResource is not an alias
+        if (resource.isAlias())
+        {
+            resource = Resource.newResource(resource.getAlias());
+            file = resource.getFile().toPath().toRealPath().toFile();
+            if (!resource.exists())
+                throw new IllegalStateException("App resource does not exist " + resource);
+        }
+
+        // Handle a context XML file
         if (resource.exists() && FileID.isXmlFile(file))
         {
             XmlConfiguration xmlc = new XmlConfiguration(resource)
@@ -276,11 +287,15 @@ public class WebAppProvider extends ScanningAppProvider
                 {
                     super.initializeDefaults(context);
 
+                    // If the XML created object is a ContextHandler
+                    if (context instanceof ContextHandler)
+                        // Initialize the context path prior to running context XML
+                        initializeContextPath((ContextHandler)context, contextName, true);
+
+                    // If it is a webapp
                     if (context instanceof WebAppContext)
-                    {
-                        WebAppContext webapp = (WebAppContext)context;
-                        initializeWebAppContextDefaults(webapp);
-                    }
+                        // initialize other defaults prior to running context XML
+                        initializeWebAppContextDefaults((WebAppContext)context);
                 }
             };
 
@@ -290,54 +305,62 @@ public class WebAppProvider extends ScanningAppProvider
                 xmlc.getProperties().putAll(getConfigurationManager().getProperties());
             return (ContextHandler)xmlc.configure();
         }
-        else if (file.isDirectory())
-        {
-            // must be a directory
-        }
-        else if (FileID.isWebArchiveFile(file))
-        {
-            // Context Path is the same as the archive.
-            context = context.substring(0, context.length() - 4);
-        }
-        else
+        // Otherwise it must be a directory or an archive
+        else if (!file.isDirectory() && !FileID.isWebArchiveFile(file))
         {
             throw new IllegalStateException("unable to create ContextHandler for " + app);
         }
 
-        // Ensure "/" is Not Trailing in context paths.
-        if (context.endsWith("/") && context.length() > 0)
-        {
-            context = context.substring(0, context.length() - 1);
-        }
-
-        // Start building the webapplication
+        // Build the web application
         WebAppContext webAppContext = new WebAppContext();
-        webAppContext.setDisplayName(context);
-
-        // special case of archive (or dir) named "root" is / context
-        if (context.equalsIgnoreCase("root"))
-        {
-            context = URIUtil.SLASH;
-        }
-        else if (context.toLowerCase(Locale.ENGLISH).startsWith("root-"))
-        {
-            int dash = context.toLowerCase(Locale.ENGLISH).indexOf('-');
-            String virtual = context.substring(dash + 1);
-            webAppContext.setVirtualHosts(new String[]{virtual});
-            context = URIUtil.SLASH;
-        }
-
-        // Ensure "/" is Prepended to all context paths.
-        if (context.charAt(0) != '/')
-        {
-            context = "/" + context;
-        }
-
-        webAppContext.setDefaultContextPath(context);
         webAppContext.setWar(file.getAbsolutePath());
+        initializeContextPath(webAppContext, contextName, !file.isDirectory());
         initializeWebAppContextDefaults(webAppContext);
 
         return webAppContext;
+    }
+
+    protected void initializeContextPath(ContextHandler context, String contextName, boolean stripExtension)
+    {
+        String contextPath = contextName;
+
+        // Strip any 3 char extension from non directories
+        if (stripExtension && contextPath.length() > 4 && contextPath.charAt(contextPath.length() - 4) == '.')
+            contextPath = contextPath.substring(0, contextPath.length() - 4);
+
+        // Ensure "/" is Not Trailing in context paths.
+        if (contextPath.endsWith("/") && contextPath.length() > 1)
+            contextPath = contextPath.substring(0, contextPath.length() - 1);
+
+        // special case of archive (or dir) named "root" is / context
+        if (contextPath.equalsIgnoreCase("root"))
+        {
+            contextPath = URIUtil.SLASH;
+        }
+        // handle root with virtual host form
+        else if (StringUtil.startsWithIgnoreCase(contextPath, "root-"))
+        {
+            int dash = contextPath.indexOf('-');
+            String virtual = contextPath.substring(dash + 1);
+            context.setVirtualHosts(virtual.split(","));
+            contextPath = URIUtil.SLASH;
+        }
+
+        // Ensure "/" is Prepended to all context paths.
+        if (contextPath.charAt(0) != '/')
+            contextPath = "/" + contextPath;
+
+        // Set the display name and context Path
+        context.setDisplayName(contextName);
+        if (context instanceof WebAppContext)
+        {
+            WebAppContext webAppContext = (WebAppContext)context;
+            webAppContext.setDefaultContextPath(contextPath);
+        }
+        else
+        {
+            context.setContextPath(contextPath);
+        }
     }
 
     @Override
