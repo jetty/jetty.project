@@ -271,8 +271,8 @@ public class WebAppProvider extends ScanningAppProvider
         // Resource aliases (after getting name) to ensure baseResource is not an alias
         if (resource.isAlias())
         {
-            resource = Resource.newResource(resource.getAlias());
-            file = resource.getFile().toPath().toRealPath().toFile();
+            file = new File(resource.getAlias()).toPath().toRealPath().toFile();
+            resource = Resource.newResource(file);
             if (!resource.exists())
                 throw new IllegalStateException("App resource does not exist " + resource);
         }
