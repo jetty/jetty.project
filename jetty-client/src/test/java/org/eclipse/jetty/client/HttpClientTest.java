@@ -91,7 +91,6 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -690,10 +689,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testRequestIdleTimeout(Scenario scenario) throws Exception
     {
-        long idleTimeout = 1000;
+        long idleTimeout = 100;
         start(scenario, new AbstractHandler()
         {
             @Override
