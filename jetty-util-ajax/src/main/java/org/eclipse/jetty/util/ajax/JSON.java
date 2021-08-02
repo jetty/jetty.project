@@ -25,11 +25,14 @@ import java.io.Reader;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
@@ -94,6 +97,7 @@ public class JSON
 
     private final Map<String, Convertor> _convertors = new ConcurrentHashMap<>();
     private int _stringBufferSize = 1024;
+    private Function<List<?>, Object> _arrayConverter = List::toArray;
 
     public JSON()
     {
@@ -669,6 +673,12 @@ public class JSON
         return new HashMap<>();
     }
 
+    /**
+     * @param size the size of the array
+     * @return a new array
+     * @deprecated use {@link #setArrayConverter(Function)} instead.
+     */
+    @Deprecated
     protected Object[] newArray(int size)
     {
         return new Object[size];
@@ -762,6 +772,39 @@ public class JSON
     public void addConvertorFor(String name, Convertor convertor)
     {
         _convertors.put(name, convertor);
+    }
+
+    /**
+     * Removes a registered {@link JSON.Convertor} for the given named class or interface.
+     *
+     * @param name name of a class or an interface for a registered {@link JSON.Convertor}
+     * @return the {@link JSON.Convertor} that was removed, or null
+     */
+    public Convertor removeConvertorFor(String name)
+    {
+        return _convertors.remove(name);
+    }
+
+    /**
+     * @return the function to customize the Java representation of JSON arrays
+     * @see #setArrayConverter(Function)
+     */
+    public Function<List<?>, Object> getArrayConverter()
+    {
+        return _arrayConverter;
+    }
+
+    /**
+     * <p>Sets the function to convert JSON arrays from their default Java
+     * representation, a {@code List<Object>}, to another Java data structure
+     * such as an {@code Object[]}.</p>
+     *
+     * @param arrayConverter the function to customize the Java representation of JSON arrays
+     * @see #getArrayConverter()
+     */
+    public void setArrayConverter(Function<List<?>, Object> arrayConverter)
+    {
+        _arrayConverter = Objects.requireNonNull(arrayConverter);
     }
 
     /**
@@ -1047,14 +1090,15 @@ public class JSON
                     switch (size)
                     {
                         case 0:
-                            return newArray(0);
+                            list = Collections.emptyList();
+                            break;
                         case 1:
-                            Object array = newArray(1);
-                            Array.set(array, 0, item);
-                            return array;
+                            list = Collections.singletonList(item);
+                            break;
                         default:
-                            return list.toArray(newArray(list.size()));
+                            break;
                     }
+                    return getArrayConverter().apply(list);
 
                 case ',':
                     if (comma)

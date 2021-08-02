@@ -24,15 +24,19 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -524,5 +528,48 @@ public class AsyncJSONTest
         {
             assertSame(foo, item);
         }
+    }
+
+    @Test
+    public void testArrayConverter()
+    {
+        // Test root arrays.
+        testArrayConverter("[1]", Function.identity());
+
+        // Test non-root arrays.
+        testArrayConverter("{\"array\": [1]}", object ->
+        {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> map = (Map<String, Object>)object;
+            return map.get("array");
+        });
+    }
+
+    private void testArrayConverter(String json, Function<Object, Object> extractor)
+    {
+        AsyncJSON.Factory factory = new AsyncJSON.Factory();
+        AsyncJSON async = factory.newAsyncJSON();
+        JSON sync = new JSON();
+
+        async.parse(UTF_8.encode(json));
+        Object result = extractor.apply(async.complete());
+        // AsyncJSON historically defaults to list.
+        assertThat(result, Matchers.instanceOf(List.class));
+        // JSON historically defaults to array.
+        result = extractor.apply(sync.parse(new JSON.StringSource(json)));
+        assertNotNull(result);
+        assertTrue(result.getClass().isArray(), json + " -> " + result);
+
+        // Configure AsyncJSON to return arrays.
+        factory.setArrayConverter(List::toArray);
+        async.parse(UTF_8.encode(json));
+        result = extractor.apply(async.complete());
+        assertNotNull(result);
+        assertTrue(result.getClass().isArray(), json + " -> " + result);
+
+        // Configure JSON to return lists.
+        sync.setArrayConverter(list -> list);
+        result = extractor.apply(sync.parse(new JSON.StringSource(json)));
+        assertThat(result, Matchers.instanceOf(List.class));
     }
 }
