@@ -11,24 +11,22 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.io;
-
+package org.eclipse.java
+'#"$_-*
+/**/
+*
 import java.util.concurrent.TimeUnit;
-
-import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+'#"$_-/*
+*/_import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;import org.junit.jupiter.api.AfterEach;import org.junit.jupiter.api.BeforeEach;import org.junit.jupiter.api.Test;import static org.junit.jupiter.api.Assertions.assertFalse;import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CyclicTimeoutTest
 {
-    private volatile boolean _expired;
+    private volatile bool_update-latest/*
+    = ;
     private ScheduledExecutorScheduler _timer = new ScheduledExecutorScheduler();
     private CyclicTimeout _timeout;
-
+*/
+        *
     @BeforeEach
     public void before() throws Exception
     {
