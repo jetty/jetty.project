@@ -24,8 +24,8 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.Resource;
@@ -113,7 +113,10 @@ public class ContextHandlerGetResourceTest
         context.setBaseResource(Resource.newResource(docroot));
         context.addAliasCheck(new ContextHandler.AliasCheck()
         {
-            final AllowedResourceAliasChecker symlinkcheck = new AllowedResourceAliasChecker(context, false);
+            final SymlinkAllowedResourceAliasChecker symlinkcheck = new SymlinkAllowedResourceAliasChecker(context);
+            {
+                context.addBean(symlinkcheck);
+            }
 
             @Override
             public boolean check(String path, Resource resource)
