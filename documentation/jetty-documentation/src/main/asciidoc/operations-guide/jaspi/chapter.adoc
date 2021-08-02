@@ -39,7 +39,7 @@ To enable the `jaspi` module you can use the following command (issued from with
 $ java -jar $JETTY_HOME/start.jar --add-modules=jaspi
 ----
 
-You can then register a `AuthConfigProvider` onto the static `AuthConfigFactory` obtained with `AuthConfigFactory.getFactory()`. This registration can be done in the XML configuration file which will be copied to `$JETTY_BASE/jaspi/jaspi-authmoduleconfig.xml` when the module is enabled.
+You can then register a `AuthConfigProvider` onto the static `AuthConfigFactory` obtained with `AuthConfigFactory.getFactory()`. This registration can be done in the XML configuration file which will be copied to `$JETTY_BASE/etc/jaspi/jaspi-authmoduleconfig.xml` when the module is enabled.
 
 ====== JASPI Demo
 The `jaspi-demo` module illustrates setting up HTTP Basic Authentication using a Jakarta Authentication module that comes packaged with jetty: `org.eclipse.jetty.security.jaspi.modules.BasicAuthenticationAuthModule`, and applies it for a context named `/test`.
