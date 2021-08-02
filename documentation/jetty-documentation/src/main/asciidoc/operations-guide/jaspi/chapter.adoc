@@ -44,7 +44,7 @@ You can then register a `AuthConfigProvider` onto the static `AuthConfigFactory`
 ====== JASPI Demo
 The `jaspi-demo` module illustrates setting up HTTP Basic Authentication using a Jakarta Authentication module that comes packaged with jetty: `org.eclipse.jetty.security.jaspi.modules.BasicAuthenticationAuthModule`, and applies it for a context named `/test`.
 
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 include::{JETTY_HOME}/etc/jaspi/jaspi-demo.xml[]
 ----
