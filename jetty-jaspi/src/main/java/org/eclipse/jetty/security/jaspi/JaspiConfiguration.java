@@ -11,19 +11,22 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.webapp;
+package org.eclipse.jetty.security.jaspi;
 
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.webapp.AbstractConfiguration;
+import org.eclipse.jetty.webapp.FragmentConfiguration;
+import org.eclipse.jetty.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.webapp.WebAppConfiguration;
+import org.eclipse.jetty.webapp.WebInfConfiguration;
+import org.eclipse.jetty.webapp.WebXmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * <p>JASPI Configuration</p>
  * <p>This configuration configures the WebAppContext server/system classes to
- * not be able to see the {@code jakarta.security.auth.message} package.
- * This class is defined in the webapp package, as it implements the {@link Configuration} interface,
- * which is unknown to the jetty-jaspi package.
- * </p>
+ * not be able to see the {@code jakarta.security.auth.message} package.</p>
  */
 public class JaspiConfiguration extends AbstractConfiguration
 {
