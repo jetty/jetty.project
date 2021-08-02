@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -45,11 +46,10 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.eclipse.jetty.http.client.Transport.FCGI;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -319,12 +319,10 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    @Tag("Slow")
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testExpect100ContinueWithContentWithResponseFailureBefore100Continue(Transport transport) throws Exception
     {
         init(transport);
-        long idleTimeout = 1000;
+        long idleTimeout = 100;
         scenario.startServer(new AbstractHandler()
         {
             @Override
@@ -366,12 +364,10 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    @Tag("Slow")
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testExpect100ContinueWithContentWithResponseFailureAfter100Continue(Transport transport) throws Exception
     {
         init(transport);
-        long idleTimeout = 1000;
+        long idleTimeout = 100;
         scenario.startServer(new AbstractHandler()
         {
             @Override
@@ -474,10 +470,10 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    @Tag("Slow")
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testExpect100ContinueWithDeferredContentRespond100Continue(Transport transport) throws Exception
     {
+        AtomicReference<Thread> handlerThread = new AtomicReference<>();
+        CountDownLatch demandLatch = new CountDownLatch(3);
         init(transport);
         scenario.start(new AbstractHandler()
         {
@@ -485,6 +481,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
+                handlerThread.set(Thread.currentThread());
                 // Send 100-Continue and echo the content
                 IO.copy(request.getInputStream(), response.getOutputStream());
             }
@@ -496,8 +493,16 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
         System.arraycopy(chunk1, 0, data, 0, chunk1.length);
         System.arraycopy(chunk2, 0, data, chunk1.length, chunk2.length);
 
-        CountDownLatch latch = new CountDownLatch(1);
-        AsyncRequestContent content = new AsyncRequestContent();
+        CountDownLatch requestLatch = new CountDownLatch(1);
+        AsyncRequestContent content = new AsyncRequestContent()
+        {
+            @Override
+            public void demand()
+            {
+                super.demand();
+                demandLatch.countDown();
+            }
+        };
         scenario.client.newRequest(scenario.newURI())
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .body(content)
@@ -507,28 +512,32 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
                 public void onComplete(Result result)
                 {
                     assertArrayEquals(data, getContent());
-                    latch.countDown();
+                    requestLatch.countDown();
                 }
             });
 
-        Thread.sleep(1000);
+        // Wait for the handler thread to be blocked in IO.
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            Thread thread = handlerThread.get();
+            return thread != null && thread.getState() == Thread.State.WAITING;
+        });
 
         content.offer(ByteBuffer.wrap(chunk1));
 
-        Thread.sleep(1000);
+        assertTrue(demandLatch.await(5, TimeUnit.SECONDS));
 
         content.offer(ByteBuffer.wrap(chunk2));
         content.close();
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(requestLatch.await(5, TimeUnit.SECONDS));
     }
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    @Tag("Slow")
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testExpect100ContinueWithInitialAndDeferredContentRespond100Continue(Transport transport) throws Exception
     {
+        AtomicReference<Thread> handlerThread = new AtomicReference<>();
         init(transport);
         scenario.start(new AbstractHandler()
         {
@@ -536,6 +545,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
+                handlerThread.set(Thread.currentThread());
                 // Send 100-Continue and echo the content
                 IO.copy(request.getInputStream(), response.getOutputStream());
             }
@@ -562,7 +572,12 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
                 }
             });
 
-        Thread.sleep(1000);
+        // Wait for the handler thread to be blocked in IO.
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            Thread thread = handlerThread.get();
+            return thread != null && thread.getState() == Thread.State.WAITING;
+        });
 
         content.offer(ByteBuffer.wrap(chunk2));
         content.close();
