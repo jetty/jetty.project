@@ -68,6 +68,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -143,7 +144,7 @@ public class SniSslConnectionFactoryTest
             // Only the TLSv1.2 implementation will return a javax.net.ssl.SSLHandshakeException,
             // all other TLS versions will result in a
             // javax.net.ssl.SSLException: Software caused connection abort: recv failed
-            sslContextFactory.setIncludeProtocols("TLSv1.2");
+            // sslContextFactory.setIncludeProtocols("TLSv1.2");
         }
         sslContextFactory.setKeyStorePassword("storepwd");
         sslConfig.accept(sslContextFactory);
@@ -272,6 +273,7 @@ public class SniSslConnectionFactoryTest
         assertThat(response, Matchers.containsString("Host does not match SNI"));
     }
 
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "TLSv1.3 behavior differences between Linux and Windows")
     @Test
     public void testWrongSNIRejectedConnection() throws Exception
     {
@@ -316,6 +318,7 @@ public class SniSslConnectionFactoryTest
         assertThat(response.getStatus(), is(400));
     }
 
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "TLSv1.3 behavior differences between Linux and Windows")
     @Test
     public void testWrongSNIRejectedFunction() throws Exception
     {
@@ -346,6 +349,7 @@ public class SniSslConnectionFactoryTest
         assertThat(response.getStatus(), is(400));
     }
 
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "TLSv1.3 behavior differences between Linux and Windows")
     @Test
     public void testWrongSNIRejectedConnectionWithNonSNIKeystore() throws Exception
     {
