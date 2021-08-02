@@ -9,8 +9,7 @@ Deploys the Jminix JMX Console within the server.
 [depend]
 stats
 jmx
-jcl-api
-jcl-impl
+commons-logging
 
 [xml]
 etc/jminix.xml
