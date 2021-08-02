@@ -1516,12 +1516,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
-    // For testing
-    ApiState getApiState()
-    {
-        return _apiState;
-    }
-
     private String stateString()
     {
         return String.format("s=%s,api=%s,sc=%b,e=%s", _state, _apiState, _softClose, _onError);
