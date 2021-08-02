@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashSet;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -76,6 +77,9 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
     protected void doStart() throws Exception
     {
         _basePath = getPath(_contextHandler.getBaseResource());
+        if (_basePath == null)
+            _basePath = Paths.get("/").toAbsolutePath();
+
         String[] protectedTargets = _contextHandler.getProtectedTargets();
         if (protectedTargets != null)
         {
@@ -96,9 +100,6 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
     @Override
     public boolean check(String uri, Resource resource)
     {
-        if (_basePath == null)
-            return false;
-
         // The existence check resolves the symlinks.
         if (!resource.exists())
             return false;
