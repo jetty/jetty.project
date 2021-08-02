@@ -20,11 +20,8 @@ import java.io.InterruptedIOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.Deque;
-import java.util.Objects;
 import java.util.Queue;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -81,6 +78,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import static java.nio.ByteBuffer.wrap;
+import static org.awaitility.Awaitility.await;
 import static org.eclipse.jetty.http.client.Transport.FCGI;
 import static org.eclipse.jetty.http.client.Transport.H2C;
 import static org.eclipse.jetty.http.client.Transport.HTTP;
@@ -432,7 +430,7 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
                         // the server while we are about to write.
                         try
                         {
-                            Await.await().atMost(5, TimeUnit.SECONDS).until(() ->
+                            await().atMost(5, TimeUnit.SECONDS).until(() ->
                             {
                                 out.write(new byte[0]);
                                 // Extract HttpOutput._apiState value from toString.
@@ -1863,37 +1861,6 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
             checkScope();
             scope.set(null);
             super.stopServer();
-        }
-    }
-
-    static class Await
-    {
-        private Duration duration;
-
-        public static Await await()
-        {
-            return new Await();
-        }
-
-        public Await atMost(long time, TimeUnit unit)
-        {
-            duration = Duration.ofMillis(unit.toMillis(time));
-            return this;
-        }
-
-        public void until(Callable<Boolean> condition) throws Exception
-        {
-            Objects.requireNonNull(duration);
-            long start = System.nanoTime();
-
-            while (true)
-            {
-                if (condition.call())
-                    return;
-                if (duration.minus(Duration.ofNanos(System.nanoTime() - start)).isNegative())
-                    throw new AssertionError("Duration expired");
-                Thread.sleep(10);
-            }
         }
     }
 }
