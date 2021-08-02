@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -91,7 +92,7 @@ public class JSON
     static final Logger LOG = Log.getLogger(JSON.class);
     public static final JSON DEFAULT = new JSON();
 
-    private Map<String, Convertor> _convertors = new ConcurrentHashMap<String, Convertor>();
+    private final Map<String, Convertor> _convertors = new ConcurrentHashMap<>();
     private int _stringBufferSize = 1024;
 
     public JSON()
@@ -307,13 +308,13 @@ public class JSON
      * This overridable allows for alternate behavior to escape those with your choice
      * of encoding.
      *
-     * <code>
+     * <pre>
      * protected void escapeUnicode(Appendable buffer, char c) throws IOException
      * {
-     * // Unicode is slash-u escaped
-     * buffer.append(String.format("\\u%04x", (int)c));
+     *     // Unicode is slash-u escaped
+     *     buffer.append(String.format("\\u%04x", (int)c));
      * }
-     * </code>
+     * </pre>
      */
     protected void escapeUnicode(Appendable buffer, char c) throws IOException
     {
@@ -665,7 +666,7 @@ public class JSON
 
     protected Map<String, Object> newMap()
     {
-        return new HashMap<String, Object>();
+        return new HashMap<>();
     }
 
     protected Object[] newArray(int size)
@@ -739,7 +740,7 @@ public class JSON
         {
             Class[] ifs = cls.getInterfaces();
             int i = 0;
-            while (convertor == null && ifs != null && i < ifs.length)
+            while (convertor == null && i < ifs.length)
             {
                 convertor = _convertors.get(ifs[i++].getName());
             }
@@ -1014,7 +1015,7 @@ public class JSON
         {
             try
             {
-                Class c = Loader.loadClass(classname);
+                Class<?> c = Loader.loadClass(classname);
                 return convertTo(c, map);
             }
             catch (ClassNotFoundException e)
@@ -1032,9 +1033,9 @@ public class JSON
             throw new IllegalStateException();
 
         int size = 0;
-        ArrayList list = null;
+        List<Object> list = null;
         Object item = null;
-        boolean coma = true;
+        boolean comma = true;
 
         while (source.hasNext())
         {
@@ -1056,23 +1057,27 @@ public class JSON
                     }
 
                 case ',':
-                    if (coma)
+                    if (comma)
                         throw new IllegalStateException();
-                    coma = true;
+                    comma = true;
                     source.next();
                     break;
 
                 default:
                     if (Character.isWhitespace(c))
+                    {
                         source.next();
+                    }
                     else
                     {
-                        coma = false;
+                        comma = false;
                         if (size++ == 0)
+                        {
                             item = contextForArray().parse(source);
+                        }
                         else if (list == null)
                         {
-                            list = new ArrayList();
+                            list = new ArrayList<>();
                             list.add(item);
                             item = contextForArray().parse(source);
                             list.add(item);
@@ -1085,6 +1090,7 @@ public class JSON
                             item = null;
                         }
                     }
+                    break;
             }
         }
 
@@ -1319,7 +1325,7 @@ public class JSON
                     break doubleLoop;
             }
         }
-        return new Double(buffer.toString());
+        return Double.valueOf(buffer.toString());
     }
 
     protected void seekTo(char seek, Source source)
@@ -1696,7 +1702,7 @@ public class JSON
      */
     public static class Literal implements Generator
     {
-        private String _json;
+        private final String _json;
 
         /**
          * Construct a literal JSON instance for use by
