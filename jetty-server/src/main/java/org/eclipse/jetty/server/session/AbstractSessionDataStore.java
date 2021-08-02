@@ -15,8 +15,10 @@ package org.eclipse.jetty.server.session;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -39,41 +41,6 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     protected long _lastExpiryCheckTime = 0; //last time in ms that getExpired was called
     protected long _lastOrphanSweepTime = 0; //last time in ms that we deleted orphaned sessions
     protected int _savePeriodSec = DEFAULT_SAVE_PERIOD_SEC; //time in sec between saves
-    
-    /**
-     * Small utility class to allow us to
-     * return a result and an Exception
-     * from invocation of Runnables.
-     *
-     * @param <V> the type of the result.
-     */
-    private class Result<V>
-    {
-        private V _result;
-        private Exception _exception;
-        
-        public void setResult(V result)
-        {
-            _result = result;
-        }
-        
-        public void setException(Exception exception)
-        {
-            _exception = exception;
-        }
-        
-        private void throwIfException() throws Exception
-        {
-            if (_exception != null)
-                throw _exception;
-        }
-        
-        public V getOrThrow() throws Exception
-        {
-            throwIfException();
-            return _result;
-        }
-    }
     
     /**
      * Check if a session for the given id exists.
@@ -171,21 +138,22 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
         if (!isStarted())
             throw new IllegalStateException("Not started");
 
-        final Result<SessionData> result = new Result<>();
-
+        final FuturePromise<SessionData> result = new FuturePromise<>();
+        
         Runnable r = () ->
         {
             try
             {
-                result.setResult(doLoad(id));
+                result.succeeded(doLoad(id));
             }
             catch (Exception e)
             {
-                result.setException(e);
+                result.failed(e);
             }
         };
 
         _context.run(r);
+
         return result.getOrThrow();
     }
 
@@ -214,7 +182,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
             //set the last saved time to now
             data.setLastSaved(System.currentTimeMillis());
             
-            final Result<Object> result = new Result<>();
+            final FuturePromise<Void> result = new FuturePromise<>();
             Runnable r = () ->
             {
                 try
@@ -222,32 +190,33 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
                     //call the specific store method, passing in previous save time
                     doStore(id, data, lastSave);
                     data.clean(); //unset all dirty flags
+                    result.succeeded(null);
                 }
                 catch (Exception e)
                 {
                     //reset last save time if save failed
                     data.setLastSaved(lastSave);
-                    result.setException(e);
+                    result.failed(e);
                 }
             };
             _context.run(r);
-            result.throwIfException();
+            result.getOrThrow();
         }
     }
 
     @Override
     public boolean exists(String id) throws Exception
     {
-        Result<Boolean> result = new Result<>();
+        FuturePromise<Boolean> result = new FuturePromise<>();
         Runnable r = () ->
         {
             try
             {
-                result.setResult(doExists(id));
+                result.succeeded(doExists(id));
             }
             catch (Exception e)
             {
-                result.setException(e);
+                result.failed(e);
             }
         };
 
