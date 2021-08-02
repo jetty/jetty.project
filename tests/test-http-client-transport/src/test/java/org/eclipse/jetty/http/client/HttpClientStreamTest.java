@@ -58,7 +58,6 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -666,7 +665,6 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testUploadWithDeferredContentProviderFromInputStream(Transport transport) throws Exception
     {
         init(transport);
@@ -680,8 +678,17 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
             }
         });
 
-        CountDownLatch latch = new CountDownLatch(1);
-        try (AsyncRequestContent content = new AsyncRequestContent())
+        CountDownLatch demandLatch = new CountDownLatch(2);
+        CountDownLatch requestLatch = new CountDownLatch(1);
+        try (AsyncRequestContent content = new AsyncRequestContent()
+        {
+            @Override
+            public void demand()
+            {
+                demandLatch.countDown();
+                super.demand();
+            }
+        })
         {
             scenario.client.newRequest(scenario.newURI())
                 .scheme(scenario.getScheme())
@@ -689,11 +696,11 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
                 .send(result ->
                 {
                     if (result.isSucceeded() && result.getResponse().getStatus() == 200)
-                        latch.countDown();
+                        requestLatch.countDown();
                 });
 
             // Make sure we provide the content *after* the request has been "sent".
-            Thread.sleep(1000);
+            assertTrue(demandLatch.await(5, TimeUnit.SECONDS));
 
             try (ByteArrayInputStream input = new ByteArrayInputStream(new byte[1024]))
             {
@@ -705,7 +712,7 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
                 }
             }
         }
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(requestLatch.await(5, TimeUnit.SECONDS));
     }
 
     @ParameterizedTest
