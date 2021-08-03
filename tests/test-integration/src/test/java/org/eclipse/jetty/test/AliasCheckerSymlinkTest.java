@@ -55,6 +55,14 @@ public class AliasCheckerSymlinkTest
     private static HttpClient _client;
     private static ServletContextHandler _context;
 
+    private static Path _symlinkFile;
+    private static Path _symlinkExternalFile;
+    private static Path _symlinkDir;
+    private static Path _symlinkParentDir;
+    private static Path _symlinkSiblingDir;
+    private static Path _webInfSymlink;
+    private static Path _webrootSymlink;
+
     private static Path getResource(String path) throws Exception
     {
         URL url = AliasCheckerSymlinkTest.class.getClassLoader().getResource(path);
@@ -81,39 +89,39 @@ public class AliasCheckerSymlinkTest
         Path fileInWebroot = webRootPath.resolve("file");
 
         // Create symlink file that targets inside the webroot directory.
-        Path symlinkFile = webRootPath.resolve("symlinkFile");
-        delete(symlinkFile);
-        Files.createSymbolicLink(symlinkFile, fileInWebroot).toFile().deleteOnExit();
+        _symlinkFile = webRootPath.resolve("symlinkFile");
+        delete(_symlinkFile);
+        Files.createSymbolicLink(_symlinkFile, fileInWebroot).toFile().deleteOnExit();
 
         // Create symlink file that targets outside the webroot directory.
-        Path symlinkExternalFile = webRootPath.resolve("symlinkExternalFile");
-        delete(symlinkExternalFile);
-        Files.createSymbolicLink(symlinkExternalFile, getResource("file")).toFile().deleteOnExit();
+        _symlinkExternalFile = webRootPath.resolve("symlinkExternalFile");
+        delete(_symlinkExternalFile);
+        Files.createSymbolicLink(_symlinkExternalFile, getResource("file")).toFile().deleteOnExit();
 
         // Symlink to a directory inside of the webroot.
-        Path symlinkDir = webRootPath.resolve("symlinkDir");
-        delete(symlinkDir);
-        Files.createSymbolicLink(symlinkDir, webRootPath.resolve("documents")).toFile().deleteOnExit();
+        _symlinkDir = webRootPath.resolve("symlinkDir");
+        delete(_symlinkDir);
+        Files.createSymbolicLink(_symlinkDir, webRootPath.resolve("documents")).toFile().deleteOnExit();
 
         // Symlink to a directory parent of the webroot.
-        Path symlinkParentDir = webRootPath.resolve("symlinkParentDir");
-        delete(symlinkParentDir);
-        Files.createSymbolicLink(symlinkParentDir, webRootPath.resolve("..")).toFile().deleteOnExit();
+        _symlinkParentDir = webRootPath.resolve("symlinkParentDir");
+        delete(_symlinkParentDir);
+        Files.createSymbolicLink(_symlinkParentDir, webRootPath.resolve("..")).toFile().deleteOnExit();
 
         // Symlink to a directory outside of the webroot.
-        Path symlinkSiblingDir = webRootPath.resolve("symlinkSiblingDir");
-        delete(symlinkSiblingDir);
-        Files.createSymbolicLink(symlinkSiblingDir, webRootPath.resolve("../sibling")).toFile().deleteOnExit();
+        _symlinkSiblingDir = webRootPath.resolve("symlinkSiblingDir");
+        delete(_symlinkSiblingDir);
+        Files.createSymbolicLink(_symlinkSiblingDir, webRootPath.resolve("../sibling")).toFile().deleteOnExit();
 
         // Symlink to the WEB-INF directory.
-        Path webInfSymlink = webRootPath.resolve("webInfSymlink");
-        delete(webInfSymlink);
-        Files.createSymbolicLink(webInfSymlink, webRootPath.resolve("WEB-INF")).toFile().deleteOnExit();
+        _webInfSymlink = webRootPath.resolve("webInfSymlink");
+        delete(_webInfSymlink);
+        Files.createSymbolicLink(_webInfSymlink, webRootPath.resolve("WEB-INF")).toFile().deleteOnExit();
 
         // External symlink to webroot.
-        Path webrootSymlink = webRootPath.resolve("../webrootSymlink");
-        delete(webrootSymlink);
-        Files.createSymbolicLink(webrootSymlink, webRootPath).toFile().deleteOnExit();
+        _webrootSymlink = webRootPath.resolve("../webrootSymlink");
+        delete(_webrootSymlink);
+        Files.createSymbolicLink(_webrootSymlink, webRootPath).toFile().deleteOnExit();
 
         // Create and start Server and Client.
         _server = new Server();
@@ -137,6 +145,15 @@ public class AliasCheckerSymlinkTest
     @AfterAll
     public static void afterAll() throws Exception
     {
+        // Try to delete all files now so that the symlinks do not confuse other tests.
+        Files.delete(_symlinkFile);
+        Files.delete(_symlinkExternalFile);
+        Files.delete(_symlinkDir);
+        Files.delete(_symlinkParentDir);
+        Files.delete(_symlinkSiblingDir);
+        Files.delete(_webInfSymlink);
+        Files.delete(_webrootSymlink);
+
         _client.stop();
         _server.stop();
     }
