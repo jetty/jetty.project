@@ -47,7 +47,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class GracefulStopTest
 {
@@ -415,7 +414,7 @@ public class GracefulStopTest
                     }
                 }
 
-                response.getWriter().printf("read %d/%d%n", c, contentLength);
+                response.getWriter().printf("read %d/%d\n", c, contentLength);
             }
             catch (Throwable th)
             {
