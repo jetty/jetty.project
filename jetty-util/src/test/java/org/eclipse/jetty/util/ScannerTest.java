@@ -457,7 +457,7 @@ public class ScannerTest
         }
     }
 
-    private void delete(String string)
+    private void delete(String string) throws IOException
     {
         Path file = _directory.resolve(string);
         Files.deleteIfExists(file);
