@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.net.SocketException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
@@ -31,7 +30,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManagerFactory;
 import javax.servlet.ServletException;
@@ -41,7 +39,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.HttpServerTestBase;
@@ -50,13 +47,11 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -64,7 +59,6 @@ import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 /**
  * HttpServer Tester for SSL based ServerConnector
@@ -129,43 +123,6 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         socket.setSoTimeout(10000);
         socket.setTcpNoDelay(true);
         return socket;
-    }
-
-    @Override
-    @DisabledOnOs(WINDOWS) // Don't run on Windows (buggy JVM)
-    public void testFullMethod() throws Exception
-    {
-        try
-        {
-            super.testFullMethod();
-        }
-        catch (SocketException e)
-        {
-            // TODO This needs to be investigated #2244
-            Log.getLogger(SslConnection.class).warn("Close overtook 400 response");
-        }
-        catch (SSLException e)
-        {
-            // TODO This needs to be investigated #2244
-            if (e.getCause() instanceof SocketException)
-                Log.getLogger(SslConnection.class).warn("Close overtook 400 response");
-            else
-                throw e;
-        }
-    }
-
-    @Override
-    @DisabledOnOs(WINDOWS) // Don't run on Windows (buggy JVM)
-    public void testFullURI() throws Exception
-    {
-        try
-        {
-            super.testFullURI();
-        }
-        catch (SocketException e)
-        {
-            Log.getLogger(SslConnection.class).warn("Close overtook 400 response");
-        }
     }
 
     @Override

@@ -51,7 +51,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -663,7 +662,6 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    @DisabledOnOs(WINDOWS)
     public void testSymlink(Class resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
@@ -680,7 +678,7 @@ public class FileSystemResourceTest
         {
             // if unable to create symlink, no point testing the rest
             // this is the path that Microsoft Windows takes.
-            assumeTrue(true, "Not supported");
+            assumeTrue(false, "Not supported");
         }
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
@@ -705,7 +703,6 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @ValueSource(classes = PathResource.class) // FileResource does not support this
-    @DisabledOnOs(WINDOWS)
     public void testNonExistantSymlink(Class resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
@@ -722,7 +719,7 @@ public class FileSystemResourceTest
         {
             // if unable to create symlink, no point testing the rest
             // this is the path that Microsoft Windows takes.
-            assumeTrue(true, "Not supported");
+            assumeTrue(false, "Not supported");
         }
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
@@ -858,7 +855,7 @@ public class FileSystemResourceTest
             catch (InvalidPathException e)
             {
                 // NTFS filesystem streams are unsupported on some platforms.
-                assumeTrue(true, "Not supported");
+                assumeTrue(false, "NTFS filesystem streams not supported");
             }
         }
     }
@@ -906,7 +903,7 @@ public class FileSystemResourceTest
             catch (InvalidPathException e)
             {
                 // NTFS filesystem streams are unsupported on some platforms.
-                assumeTrue(true, "Not supported");
+                assumeTrue(false, "NTFS filesystem streams not supported");
             }
         }
     }
@@ -952,14 +949,13 @@ public class FileSystemResourceTest
             catch (InvalidPathException e)
             {
                 // NTFS filesystem streams are unsupported on some platforms.
-                assumeTrue(true, "Not supported on this OS");
+                assumeTrue(false, "NFTS Dats streams not supported");
             }
         }
     }
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    @DisabledOnOs(WINDOWS)
     public void testSemicolon(Class resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
@@ -974,7 +970,7 @@ public class FileSystemResourceTest
         {
             // if unable to create file, no point testing the rest.
             // this is the path that Microsoft Windows takes.
-            assumeTrue(true, "Not supported on this OS");
+            assumeTrue(false, "Not supported on this OS");
         }
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
@@ -986,7 +982,6 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    @DisabledOnOs(WINDOWS)
     public void testSingleQuote(Class resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
@@ -1002,7 +997,7 @@ public class FileSystemResourceTest
         {
             // if unable to create file, no point testing the rest.
             // this is the path that Microsoft Windows takes.
-            assumeTrue(true, "Not supported on this OS");
+            assumeTrue(false, "Not supported on this OS");
         }
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
@@ -1014,7 +1009,6 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    @DisabledOnOs(WINDOWS)
     public void testSingleBackTick(Class resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
@@ -1030,7 +1024,7 @@ public class FileSystemResourceTest
         {
             // if unable to create file, no point testing the rest.
             // this is the path that Microsoft Windows takes.
-            assumeTrue(true, "Not supported on this OS");
+            assumeTrue(false, "Not supported on this OS");
         }
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
@@ -1042,7 +1036,6 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    @DisabledOnOs(WINDOWS)
     public void testBrackets(Class resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
@@ -1058,7 +1051,7 @@ public class FileSystemResourceTest
         {
             // if unable to create file, no point testing the rest.
             // this is the path that Microsoft Windows takes.
-            assumeTrue(true, "Not supported on this OS");
+            assumeTrue(false, "Not supported on this OS");
         }
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
@@ -1070,7 +1063,6 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @ValueSource(classes = PathResource.class) // FileResource does not support this
-    @DisabledOnOs(WINDOWS)
     public void testBraces(Class resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
@@ -1086,7 +1078,7 @@ public class FileSystemResourceTest
         {
             // if unable to create file, no point testing the rest.
             // this is the path that Microsoft Windows takes.
-            assumeTrue(true, "Not supported on this OS");
+            assumeTrue(false, "Not supported on this OS");
         }
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
@@ -1098,7 +1090,6 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @ValueSource(classes = PathResource.class) // FileResource does not support this
-    @DisabledOnOs(WINDOWS)
     public void testCaret(Class resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
@@ -1114,7 +1105,7 @@ public class FileSystemResourceTest
         {
             // if unable to create file, no point testing the rest.
             // this is the path that Microsoft Windows takes.
-            assumeTrue(true, "Not supported on this OS");
+            assumeTrue(false, "Not supported on this OS");
         }
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
@@ -1126,7 +1117,6 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @ValueSource(classes = PathResource.class) // FileResource does not support this
-    @DisabledOnOs(WINDOWS)
     public void testPipe(Class resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
@@ -1142,7 +1132,7 @@ public class FileSystemResourceTest
         {
             // if unable to create file, no point testing the rest.
             // this is the path that Microsoft Windows takes.
-            assumeTrue(true, "Not supported on this OS");
+            assumeTrue(false, "Not supported on this OS");
         }
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
@@ -1504,7 +1494,7 @@ public class FileSystemResourceTest
             // if unable to create file, no point testing the rest.
             // this is the path that occurs if you have a system that doesn't support UTF-8
             // directory names (or you simply don't have a Locale set properly)
-            assumeTrue(true, "Not supported on this OS");
+            assumeTrue(false, "Not supported on this OS");
             return;
         }
 

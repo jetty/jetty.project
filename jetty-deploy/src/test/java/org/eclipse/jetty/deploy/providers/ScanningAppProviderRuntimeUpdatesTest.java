@@ -33,10 +33,7 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 /**
  * Similar in scope to {@link ScanningAppProviderStartupTest}, except is concerned with the modification of existing
@@ -160,8 +157,6 @@ public class ScanningAppProviderRuntimeUpdatesTest
      * @throws Exception on test failure
      */
     @Test
-    @DisabledOnOs(WINDOWS)
-    // This test will not work on Windows as second war file would, not be written over the first one because of a file lock
     public void testAfterStartupThenUpdateContext() throws Exception
     {
         jetty.copyWebapp("foo-webapp-1.war", "foo.war");

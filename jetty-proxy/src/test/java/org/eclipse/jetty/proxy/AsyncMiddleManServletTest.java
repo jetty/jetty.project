@@ -1293,7 +1293,7 @@ public class AsyncMiddleManServletTest
         startClient();
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-            .timeout(5, TimeUnit.SECONDS)
+            .timeout(10, TimeUnit.SECONDS)
             .send();
 
         assertEquals(200, response.getStatus());

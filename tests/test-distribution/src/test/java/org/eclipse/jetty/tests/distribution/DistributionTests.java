@@ -210,7 +210,7 @@ public class DistributionTests extends AbstractDistributionTest
     }
 
     @Test
-    @DisabledOnOs(OS.WINDOWS)  // jnr not supported on windows
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "jnr not supported on windows")
     public void testUnixSocket() throws Exception
     {
         Path tmpSockFile;

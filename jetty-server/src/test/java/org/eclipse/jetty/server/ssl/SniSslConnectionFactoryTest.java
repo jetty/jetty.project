@@ -134,6 +134,18 @@ public class SniSslConnectionFactoryTest
     protected void start(Consumer<SslContextFactory.Server> sslConfig) throws Exception
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        if (OS.WINDOWS.isCurrentOs())
+        {
+            // Restrict behavior in this testcase to how TLSv1.2 operates.
+            // This is because of behavior differences in TLS between Linux and Windows.
+            // On Linux TLS on client side will always return a javax.net.ssl.SSLHandshakeException
+            // in those test cases that expect it.
+            // However, on Windows, there are differences between using OpenJDK 8 and OpenJDK 11.
+            // Only the TLSv1.2 implementation will return a javax.net.ssl.SSLHandshakeException,
+            // all other TLS versions will result in a
+            // javax.net.ssl.SSLException: Software caused connection abort: recv failed
+            // sslContextFactory.setIncludeProtocols("TLSv1.2");
+        }
         sslContextFactory.setKeyStorePassword("storepwd");
         sslConfig.accept(sslContextFactory);
 
@@ -261,8 +273,8 @@ public class SniSslConnectionFactoryTest
         assertThat(response, Matchers.containsString("Host does not match SNI"));
     }
 
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "TLSv1.3 behavior differences between Linux and Windows")
     @Test
-    @DisabledOnOs(OS.WINDOWS)
     public void testWrongSNIRejectedConnection() throws Exception
     {
         start(ssl ->
@@ -306,8 +318,8 @@ public class SniSslConnectionFactoryTest
         assertThat(response.getStatus(), is(400));
     }
 
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "TLSv1.3 behavior differences between Linux and Windows")
     @Test
-    @DisabledOnOs(OS.WINDOWS)
     public void testWrongSNIRejectedFunction() throws Exception
     {
         start(ssl ->
@@ -337,8 +349,8 @@ public class SniSslConnectionFactoryTest
         assertThat(response.getStatus(), is(400));
     }
 
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "TLSv1.3 behavior differences between Linux and Windows")
     @Test
-    @DisabledOnOs(OS.WINDOWS)
     public void testWrongSNIRejectedConnectionWithNonSNIKeystore() throws Exception
     {
         start(ssl ->
