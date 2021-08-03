@@ -25,10 +25,14 @@ import java.io.Reader;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
@@ -91,8 +95,9 @@ public class JSON
     static final Logger LOG = Log.getLogger(JSON.class);
     public static final JSON DEFAULT = new JSON();
 
-    private Map<String, Convertor> _convertors = new ConcurrentHashMap<String, Convertor>();
+    private final Map<String, Convertor> _convertors = new ConcurrentHashMap<>();
     private int _stringBufferSize = 1024;
+    private Function<List<?>, Object> _arrayConverter = List::toArray;
 
     public JSON()
     {
@@ -307,13 +312,13 @@ public class JSON
      * This overridable allows for alternate behavior to escape those with your choice
      * of encoding.
      *
-     * <code>
+     * <pre>
      * protected void escapeUnicode(Appendable buffer, char c) throws IOException
      * {
-     * // Unicode is slash-u escaped
-     * buffer.append(String.format("\\u%04x", (int)c));
+     *     // Unicode is slash-u escaped
+     *     buffer.append(String.format("\\u%04x", (int)c));
      * }
-     * </code>
+     * </pre>
      */
     protected void escapeUnicode(Appendable buffer, char c) throws IOException
     {
@@ -665,9 +670,15 @@ public class JSON
 
     protected Map<String, Object> newMap()
     {
-        return new HashMap<String, Object>();
+        return new HashMap<>();
     }
 
+    /**
+     * @param size the size of the array
+     * @return a new array
+     * @deprecated use {@link #setArrayConverter(Function)} instead.
+     */
+    @Deprecated
     protected Object[] newArray(int size)
     {
         return new Object[size];
@@ -739,7 +750,7 @@ public class JSON
         {
             Class[] ifs = cls.getInterfaces();
             int i = 0;
-            while (convertor == null && ifs != null && i < ifs.length)
+            while (convertor == null && i < ifs.length)
             {
                 convertor = _convertors.get(ifs[i++].getName());
             }
@@ -761,6 +772,39 @@ public class JSON
     public void addConvertorFor(String name, Convertor convertor)
     {
         _convertors.put(name, convertor);
+    }
+
+    /**
+     * Removes a registered {@link JSON.Convertor} for the given named class or interface.
+     *
+     * @param name name of a class or an interface for a registered {@link JSON.Convertor}
+     * @return the {@link JSON.Convertor} that was removed, or null
+     */
+    public Convertor removeConvertorFor(String name)
+    {
+        return _convertors.remove(name);
+    }
+
+    /**
+     * @return the function to customize the Java representation of JSON arrays
+     * @see #setArrayConverter(Function)
+     */
+    public Function<List<?>, Object> getArrayConverter()
+    {
+        return _arrayConverter;
+    }
+
+    /**
+     * <p>Sets the function to convert JSON arrays from their default Java
+     * representation, a {@code List<Object>}, to another Java data structure
+     * such as an {@code Object[]}.</p>
+     *
+     * @param arrayConverter the function to customize the Java representation of JSON arrays
+     * @see #getArrayConverter()
+     */
+    public void setArrayConverter(Function<List<?>, Object> arrayConverter)
+    {
+        _arrayConverter = Objects.requireNonNull(arrayConverter);
     }
 
     /**
@@ -1014,7 +1058,7 @@ public class JSON
         {
             try
             {
-                Class c = Loader.loadClass(classname);
+                Class<?> c = Loader.loadClass(classname);
                 return convertTo(c, map);
             }
             catch (ClassNotFoundException e)
@@ -1032,9 +1076,9 @@ public class JSON
             throw new IllegalStateException();
 
         int size = 0;
-        ArrayList list = null;
+        List<Object> list = null;
         Object item = null;
-        boolean coma = true;
+        boolean comma = true;
 
         while (source.hasNext())
         {
@@ -1046,33 +1090,38 @@ public class JSON
                     switch (size)
                     {
                         case 0:
-                            return newArray(0);
+                            list = Collections.emptyList();
+                            break;
                         case 1:
-                            Object array = newArray(1);
-                            Array.set(array, 0, item);
-                            return array;
+                            list = Collections.singletonList(item);
+                            break;
                         default:
-                            return list.toArray(newArray(list.size()));
+                            break;
                     }
+                    return getArrayConverter().apply(list);
 
                 case ',':
-                    if (coma)
+                    if (comma)
                         throw new IllegalStateException();
-                    coma = true;
+                    comma = true;
                     source.next();
                     break;
 
                 default:
                     if (Character.isWhitespace(c))
+                    {
                         source.next();
+                    }
                     else
                     {
-                        coma = false;
+                        comma = false;
                         if (size++ == 0)
+                        {
                             item = contextForArray().parse(source);
+                        }
                         else if (list == null)
                         {
-                            list = new ArrayList();
+                            list = new ArrayList<>();
                             list.add(item);
                             item = contextForArray().parse(source);
                             list.add(item);
@@ -1085,6 +1134,7 @@ public class JSON
                             item = null;
                         }
                     }
+                    break;
             }
         }
 
@@ -1319,7 +1369,7 @@ public class JSON
                     break doubleLoop;
             }
         }
-        return new Double(buffer.toString());
+        return Double.valueOf(buffer.toString());
     }
 
     protected void seekTo(char seek, Source source)
@@ -1696,7 +1746,7 @@ public class JSON
      */
     public static class Literal implements Generator
     {
-        private String _json;
+        private final String _json;
 
         /**
          * Construct a literal JSON instance for use by
