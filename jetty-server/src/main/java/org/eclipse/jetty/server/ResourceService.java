@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.InvalidPathException;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
@@ -296,6 +297,11 @@ public class ResourceService
 
             // Send the data
             releaseContent = sendData(request, response, included, content, reqRanges);
+        }
+        catch (InvalidPathException e)
+        {
+            notFound(request, response);
+            return response.isCommitted();
         }
         catch (IllegalArgumentException e)
         {
