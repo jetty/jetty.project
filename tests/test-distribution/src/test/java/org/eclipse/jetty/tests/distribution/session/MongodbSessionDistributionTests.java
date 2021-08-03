@@ -24,8 +24,7 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 
 /**
- *  This simulate the onlyClient option which means the JVM running Jetty is only an Hazelcast client and not part
- *  of the cluster
+ *  
  */
 public class MongodbSessionDistributionTests extends AbstractSessionDistributionTests
 {
