@@ -22,6 +22,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
@@ -36,6 +38,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HotSwapHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -45,6 +48,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -355,6 +359,7 @@ public class HttpOutputTest
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Content-Length"));
         assertThat(response, endsWith(toUTF8String(big)));
+        assertThat(_handler._closedAfterWrite.get(10, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -369,6 +374,7 @@ public class HttpOutputTest
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Content-Length"));
         assertThat(response, endsWith(toUTF8String(big)));
+        assertThat(_handler._closedAfterWrite.get(10, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -383,6 +389,7 @@ public class HttpOutputTest
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Content-Length"));
         assertThat(response, endsWith(toUTF8String(big)));
+        assertThat(_handler._closedAfterWrite.get(10, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -397,6 +404,7 @@ public class HttpOutputTest
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Content-Length"));
         assertThat(response, endsWith(toUTF8String(big)));
+        assertThat(_handler._closedAfterWrite.get(10, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -414,6 +422,7 @@ public class HttpOutputTest
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Content-Length"));
+        assertThat(_handler._closedAfterWrite.get(10, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -428,6 +437,7 @@ public class HttpOutputTest
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, Matchers.not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
+        assertThat(_handler._closedAfterWrite.get(10, TimeUnit.SECONDS), is(false));
     }
 
     @Test
@@ -442,6 +452,7 @@ public class HttpOutputTest
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, Matchers.not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
+        assertThat(_handler._closedAfterWrite.get(10, TimeUnit.SECONDS), is(false));
     }
 
     @Test
@@ -456,6 +467,52 @@ public class HttpOutputTest
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, Matchers.not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
+        assertThat(_handler._closedAfterWrite.get(10, TimeUnit.SECONDS), is(false));
+    }
+
+    @Test
+    public void testWriteBufferSmallKnown() throws Exception
+    {
+        final Resource big = Resource.newClassPathResource("simple/big.txt");
+        _handler._writeLengthIfKnown = true;
+        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._byteBuffer = BufferUtil.allocate(8);
+
+        String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("Content-Length"));
+        assertThat(response, endsWith(toUTF8String(big)));
+        assertThat(_handler._closedAfterWrite.get(10, TimeUnit.SECONDS), is(true));
+    }
+
+    @Test
+    public void testWriteBufferMedKnown() throws Exception
+    {
+        final Resource big = Resource.newClassPathResource("simple/big.txt");
+        _handler._writeLengthIfKnown = true;
+        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._byteBuffer = BufferUtil.allocate(4000);
+
+        String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("Content-Length"));
+        assertThat(response, endsWith(toUTF8String(big)));
+        assertThat(_handler._closedAfterWrite.get(10, TimeUnit.SECONDS), is(true));
+    }
+
+    @Test
+    public void testWriteBufferLargeKnown() throws Exception
+    {
+        final Resource big = Resource.newClassPathResource("simple/big.txt");
+        _handler._writeLengthIfKnown = true;
+        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._byteBuffer = BufferUtil.allocate(8192);
+
+        String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("Content-Length"));
+        assertThat(response, endsWith(toUTF8String(big)));
+        assertThat(_handler._closedAfterWrite.get(10, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -471,6 +528,7 @@ public class HttpOutputTest
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, Matchers.not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
+        assertThat(_handler._closedAfterWrite.get(10, TimeUnit.SECONDS), is(false));
     }
 
     @Test
@@ -486,6 +544,7 @@ public class HttpOutputTest
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, Matchers.not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
+        assertThat(_handler._closedAfterWrite.get(10, TimeUnit.SECONDS), is(false));
     }
 
     @Test
@@ -501,6 +560,7 @@ public class HttpOutputTest
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, Matchers.not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
+        assertThat(_handler._closedAfterWrite.get(10, TimeUnit.SECONDS), is(false));
     }
 
     @Test
@@ -516,12 +576,13 @@ public class HttpOutputTest
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, Matchers.not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
+        assertThat(_handler._closedAfterWrite.get(10, TimeUnit.SECONDS), is(false));
     }
 
     @Test
     public void testAsyncWriteHuge() throws Exception
     {
-        _handler._writeLengthIfKnown = true;
+        _handler._writeLengthIfKnown = false;
         _handler._content = BufferUtil.allocate(4 * 1024 * 1024);
         _handler._content.limit(_handler._content.capacity());
         for (int i = _handler._content.capacity(); i-- > 0; )
@@ -533,7 +594,8 @@ public class HttpOutputTest
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("Content-Length"));
+        assertThat(response, Matchers.not(containsString("Content-Length")));
+        assertThat(_handler._closedAfterWrite.get(10, TimeUnit.SECONDS), is(false));
     }
 
     @Test
@@ -549,6 +611,7 @@ public class HttpOutputTest
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, Matchers.not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
+        assertThat(_handler._closedAfterWrite.get(10, TimeUnit.SECONDS), is(false));
     }
 
     @Test
@@ -564,6 +627,7 @@ public class HttpOutputTest
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, Matchers.not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
+        assertThat(_handler._closedAfterWrite.get(10, TimeUnit.SECONDS), is(false));
     }
 
     @Test
@@ -579,6 +643,7 @@ public class HttpOutputTest
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, Matchers.not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
+        assertThat(_handler._closedAfterWrite.get(10, TimeUnit.SECONDS), is(false));
     }
 
     @Test
@@ -595,6 +660,7 @@ public class HttpOutputTest
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, Matchers.not(containsString("Content-Length")));
         assertThat(response, endsWith(toUTF8String(big)));
+        assertThat(_handler._closedAfterWrite.get(10, TimeUnit.SECONDS), is(false));
     }
 
     @Test
@@ -629,6 +695,7 @@ public class HttpOutputTest
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Content-Length: 11"));
         assertThat(response, containsString("simple text"));
+        assertThat(_handler._closedAfterWrite.get(10, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -684,6 +751,102 @@ public class HttpOutputTest
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, Matchers.not(containsString("Content-Length")));
         assertThat(response, containsString("400\tTHIS IS A BIGGER FILE"));
+    }
+
+    @Test
+    public void testEmptyArray() throws Exception
+    {
+        AtomicBoolean committed = new AtomicBoolean();
+        AbstractHandler handler = new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setStatus(200);
+                response.getOutputStream().write(new byte[0]);
+                committed.set(response.isCommitted());
+            }
+        };
+
+        _swap.setHandler(handler);
+        handler.start();
+        String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(committed.get(), is(false));
+    }
+
+    @Test
+    public void testEmptyArrayKnown() throws Exception
+    {
+        AtomicBoolean committed = new AtomicBoolean();
+        AbstractHandler handler = new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setStatus(200);
+                response.setContentLength(0);
+                response.getOutputStream().write(new byte[0]);
+                committed.set(response.isCommitted());
+            }
+        };
+
+        _swap.setHandler(handler);
+        handler.start();
+        String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("Content-Length: 0"));
+        assertThat(committed.get(), is(true));
+    }
+
+    @Test
+    public void testEmptyBuffer() throws Exception
+    {
+        AtomicBoolean committed = new AtomicBoolean();
+        AbstractHandler handler = new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setStatus(200);
+                ((HttpOutput)response.getOutputStream()).write(ByteBuffer.wrap(new byte[0]));
+                committed.set(response.isCommitted());
+            }
+        };
+
+        _swap.setHandler(handler);
+        handler.start();
+        String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(committed.get(), is(false));
+    }
+
+    @Test
+    public void testEmptyBufferKnown() throws Exception
+    {
+        AtomicBoolean committed = new AtomicBoolean();
+        AbstractHandler handler = new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setStatus(200);
+                response.setContentLength(0);
+                ((HttpOutput)response.getOutputStream()).write(ByteBuffer.wrap(new byte[0]));
+                committed.set(response.isCommitted());
+            }
+        };
+
+        _swap.setHandler(handler);
+        handler.start();
+        String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("Content-Length: 0"));
+        assertThat(committed.get(), is(true));
     }
 
     @Test
@@ -851,7 +1014,7 @@ public class HttpOutputTest
                 aggregated += data.length;
             }
 
-            // write data that will not be aggregated
+            // write data that will not be aggregated because it is too large
             data = new byte[bufferSize + 1];
             Arrays.fill(data, (byte)(fill++));
             expected.write(data);
@@ -1025,6 +1188,7 @@ public class HttpOutputTest
         ReadableByteChannel _contentChannel;
         ByteBuffer _content;
         ChainedInterceptor _interceptor;
+        final FuturePromise<Boolean> _closedAfterWrite = new FuturePromise<>();
 
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -1045,6 +1209,7 @@ public class HttpOutputTest
             {
                 out.sendContent(_contentInputStream);
                 _contentInputStream = null;
+                _closedAfterWrite.succeeded(out.isClosed());
                 return;
             }
 
@@ -1052,6 +1217,7 @@ public class HttpOutputTest
             {
                 out.sendContent(_contentChannel);
                 _contentChannel = null;
+                _closedAfterWrite.succeeded(out.isClosed());
                 return;
             }
 
@@ -1078,6 +1244,7 @@ public class HttpOutputTest
                                     len = _arrayBuffer.length;
                                 if (len == 0)
                                 {
+                                    _closedAfterWrite.succeeded(out.isClosed());
                                     async.complete();
                                     break;
                                 }
@@ -1088,7 +1255,6 @@ public class HttpOutputTest
                                 else
                                     out.write(_arrayBuffer, 0, len);
                             }
-                            // assertFalse(out.isReady());
                         }
 
                         @Override
@@ -1113,7 +1279,7 @@ public class HttpOutputTest
                     else
                         out.write(_arrayBuffer, 0, len);
                 }
-
+                _closedAfterWrite.succeeded(out.isClosed());
                 return;
             }
 
@@ -1137,6 +1303,7 @@ public class HttpOutputTest
                                 assertTrue(out.isReady());
                                 if (BufferUtil.isEmpty(_content))
                                 {
+                                    _closedAfterWrite.succeeded(out.isClosed());
                                     async.complete();
                                     break;
                                 }
@@ -1167,7 +1334,7 @@ public class HttpOutputTest
                     BufferUtil.flipToFlush(_byteBuffer, 0);
                     out.write(_byteBuffer);
                 }
-
+                _closedAfterWrite.succeeded(out.isClosed());
                 return;
             }
 
@@ -1178,6 +1345,7 @@ public class HttpOutputTest
                 else
                     out.sendContent(_content);
                 _content = null;
+                _closedAfterWrite.succeeded(out.isClosed());
                 return;
             }
         }
