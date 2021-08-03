@@ -23,10 +23,12 @@ import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -35,8 +37,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+@ExtendWith(WorkDirExtension.class)
 public class WebAppDefaultServletTest
 {
+    public WorkDir workDir;
     private Server server;
     private LocalConnector connector;
 
@@ -48,7 +52,7 @@ public class WebAppDefaultServletTest
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
         server.addConnector(connector);
 
-        Path directoryPath = MavenTestingUtils.getTargetTestingDir().toPath();
+        Path directoryPath = workDir.getEmptyPathDir();
         IO.delete(directoryPath.toFile());
         Files.createDirectories(directoryPath);
         Path welcomeResource = directoryPath.resolve("index.html");
