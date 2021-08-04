@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.ProxyConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -212,8 +213,8 @@ public class UnixDomainTest
                 }
                 else if ("/v2".equals(target))
                 {
-                    assertThat(toUnixDomainPath(endPoint.getLocalSocketAddress()).toString(), Matchers.equalTo(dstAddr));
-                    assertThat(toUnixDomainPath(endPoint.getRemoteSocketAddress()).toString(), Matchers.equalTo(srcAddr));
+                    assertThat(toUnixDomainPath(endPoint.getLocalSocketAddress()).toString(), Matchers.equalTo(FS.separators(dstAddr)));
+                    assertThat(toUnixDomainPath(endPoint.getRemoteSocketAddress()).toString(), Matchers.equalTo(FS.separators(srcAddr)));
                 }
                 else
                 {

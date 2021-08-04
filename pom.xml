@@ -1249,7 +1249,7 @@
       <id>unix-domain-windows</id>
       <activation>
         <os>
-          <name>Windows</name>
+          <family>Windows</family>
         </os>
       </activation>
       <properties>
