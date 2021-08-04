@@ -678,29 +678,22 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
             }
         });
 
-        CountDownLatch demandLatch = new CountDownLatch(2);
-        CountDownLatch requestLatch = new CountDownLatch(1);
-        try (AsyncRequestContent content = new AsyncRequestContent()
-        {
-            @Override
-            public void demand()
-            {
-                demandLatch.countDown();
-                super.demand();
-            }
-        })
+        CountDownLatch requestSentLatch = new CountDownLatch(1);
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        try (AsyncRequestContent content = new AsyncRequestContent())
         {
             scenario.client.newRequest(scenario.newURI())
                 .scheme(scenario.getScheme())
                 .body(content)
+                .onRequestCommit((request) -> requestSentLatch.countDown())
                 .send(result ->
                 {
                     if (result.isSucceeded() && result.getResponse().getStatus() == 200)
-                        requestLatch.countDown();
+                        responseLatch.countDown();
                 });
 
             // Make sure we provide the content *after* the request has been "sent".
-            assertTrue(demandLatch.await(5, TimeUnit.SECONDS));
+            assertTrue(requestSentLatch.await(5, TimeUnit.SECONDS));
 
             try (ByteArrayInputStream input = new ByteArrayInputStream(new byte[1024]))
             {
@@ -712,7 +705,7 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
                 }
             }
         }
-        assertTrue(requestLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
     @ParameterizedTest
