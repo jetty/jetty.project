@@ -39,7 +39,6 @@ import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.unixsocket.server.UnixSocketConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -63,8 +62,8 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class DistributionTests extends AbstractJettyHomeTest
 {
@@ -279,20 +278,11 @@ public class DistributionTests extends AbstractJettyHomeTest
     @DisabledOnOs(OS.WINDOWS)  // jnr not supported on windows
     public void testUnixSocket() throws Exception
     {
-        Path tmpSockFile;
-        String unixSocketTmp = System.getProperty("unix.socket.tmp");
-        if (StringUtil.isNotBlank(unixSocketTmp))
-            tmpSockFile = Files.createTempFile(Paths.get(unixSocketTmp), "unix", ".sock");
-        else
-            tmpSockFile = Files.createTempFile("unix", ".sock");
-        if (tmpSockFile.toAbsolutePath().toString().length() > UnixSocketConnector.MAX_UNIX_SOCKET_PATH_LENGTH)
-        {
-            Path tmp = Paths.get("/tmp");
-            assumeTrue(Files.exists(tmp) && Files.isDirectory(tmp));
-            tmpSockFile = Files.createTempFile(tmp, "unix", ".sock");
-        }
-        Path sockFile = tmpSockFile;
-        assertTrue(Files.deleteIfExists(sockFile), "temp sock file cannot be deleted");
+        String dir = System.getProperty("jetty.unixdomain.dir");
+        assertNotNull(dir);
+        Path sockFile = Files.createTempFile(Path.of(dir), "unix_", ".sock");
+        assertTrue(sockFile.toAbsolutePath().toString().length() < UnixSocketConnector.MAX_UNIX_SOCKET_PATH_LENGTH, "Unix-Domain path too long");
+        Files.delete(sockFile);
 
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()

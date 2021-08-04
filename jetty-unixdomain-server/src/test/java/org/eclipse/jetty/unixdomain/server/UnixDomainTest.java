@@ -52,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @EnabledForJreRange(min = JRE.JAVA_16)
 public class UnixDomainTest
@@ -84,7 +85,10 @@ public class UnixDomainTest
     {
         server = new Server();
         UnixDomainServerConnector connector = new UnixDomainServerConnector(server, factories);
-        unixDomainPath = Files.createTempFile(Path.of("/tmp"), "unixdomain_", ".sock");
+        String dir = System.getProperty("jetty.unixdomain.dir");
+        assertNotNull(dir);
+        unixDomainPath = Files.createTempFile(Path.of(dir), "unix_", ".sock");
+        assertTrue(unixDomainPath.toAbsolutePath().toString().length() < 108, "Unix-Domain path too long");
         Files.delete(unixDomainPath);
         connector.setUnixDomainPath(unixDomainPath);
         server.addConnector(connector);
