@@ -484,19 +484,19 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     {
         if (!_dsProvided)
         {
-            boolean customNamespace = StringUtil.isBlank(getNamespace());
-            boolean customHost = StringUtil.isBlank(getHost());
-            boolean customProjectId = StringUtil.isBlank(getProjectId());
-            if (!customNamespace && !customHost && !customProjectId)
+            boolean blankCustomnamespace = StringUtil.isBlank(getNamespace());
+            boolean blankCustomHost = StringUtil.isBlank(getHost());
+            boolean blankCustomProjectId = StringUtil.isBlank(getProjectId());
+            if (blankCustomnamespace && blankCustomHost && blankCustomProjectId)
                  _datastore = DatastoreOptions.getDefaultInstance().getService();
             else
             {
                 DatastoreOptions.Builder builder = DatastoreOptions.newBuilder();
-                if (customNamespace)
+                if (!blankCustomnamespace)
                     builder.setNamespace(getNamespace());
-                if (customHost)
+                if (!blankCustomHost)
                     builder.setHost(getHost());
-                if (customProjectId)
+                if (!blankCustomProjectId)
                     builder.setProjectId(getProjectId());
                 _datastore = builder.build().getService();
             }
