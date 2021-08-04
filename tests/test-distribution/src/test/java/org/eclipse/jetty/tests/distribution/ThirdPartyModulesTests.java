@@ -61,7 +61,7 @@ public class ThirdPartyModulesTests extends AbstractJettyHomeTest
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + httpPort + "/hawtio");
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
-                assertThat(response.getContentAsString(), containsString("<title>hawtio console</title>"));
+                assertThat(response.getContentAsString(), containsString("<title>Hawtio</title>"));
             }
         }
     }
