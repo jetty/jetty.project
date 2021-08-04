@@ -26,12 +26,10 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -40,10 +38,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@ExtendWith(WorkDirExtension.class)
 public class WelcomeFilterTest
 {
-    public WorkDir workDir;
     private Server server;
     private LocalConnector connector;
 
@@ -55,7 +51,7 @@ public class WelcomeFilterTest
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
         server.addConnector(connector);
 
-        Path directoryPath = workDir.getEmptyPathDir();
+        Path directoryPath = MavenTestingUtils.getTargetTestingDir().toPath();
         Files.createDirectories(directoryPath);
         Path welcomeResource = directoryPath.resolve("welcome.html");
         try (OutputStream output = Files.newOutputStream(welcomeResource))
@@ -84,12 +80,14 @@ public class WelcomeFilterTest
         }
 
         WebAppContext context = new WebAppContext(server, directoryPath.toString(), "/");
+        context.setDefaultsDescriptor(MavenTestingUtils.getTestResourceFile("simple-default.xml").toString());
         server.setHandler(context);
         String concatPath = "/*";
 
         FilterHolder filterHolder = new FilterHolder(new WelcomeFilter());
         filterHolder.setInitParameter("welcome", "welcome.html");
         context.addFilter(filterHolder, concatPath, EnumSet.of(DispatcherType.REQUEST));
+        server.setDumpAfterStart(true);
         server.start();
 
         // Verify that I can get the file programmatically, as required by the spec.
