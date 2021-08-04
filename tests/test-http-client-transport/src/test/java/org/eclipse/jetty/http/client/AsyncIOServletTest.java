@@ -60,11 +60,13 @@ import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.client.http.HttpConnectionOverHTTP2;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.HttpInput.Content;
+import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
@@ -401,12 +403,7 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
     {
         init(transport);
 
-        String text = "Now is the winter of our discontent. How Now Brown Cow. The quick brown fox jumped over the lazy dog.\n";
-        for (int i = 0; i < 10; i++)
-        {
-            text = text + text;
-        }
-        byte[] data = text.getBytes(StandardCharsets.UTF_8);
+        byte[] data = new byte[1024];
 
         CountDownLatch errorLatch = new CountDownLatch(1);
         scenario.start(new HttpServlet()
@@ -432,17 +429,22 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
                         {
                             await().atMost(5, TimeUnit.SECONDS).until(() ->
                             {
-                                out.write(new byte[0]);
-                                // Extract HttpOutput._apiState value from toString.
-                                return !out.toString().split(",")[1].split("=")[1].equals("READY");
+                                try
+                                {
+                                    if (out.isReady())
+                                        ((HttpOutput)out).write(ByteBuffer.wrap(data));
+                                    return false;
+                                }
+                                catch (EofException e)
+                                {
+                                    return true;
+                                }
                             });
                         }
                         catch (Exception e)
                         {
                             throw new AssertionError(e);
                         }
-
-                        out.write(data);
                     }
 
                     @Override
