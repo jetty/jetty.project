@@ -31,12 +31,12 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  */
 public class WebSocketComponents extends ContainerLifeCycle
 {
-    private final DecoratedObjectFactory objectFactory;
-    private final WebSocketExtensionRegistry extensionRegistry;
-    private final Executor executor;
-    private final ByteBufferPool bufferPool;
-    private final InflaterPool inflaterPool;
-    private final DeflaterPool deflaterPool;
+    private final DecoratedObjectFactory _objectFactory;
+    private final WebSocketExtensionRegistry _extensionRegistry;
+    private final Executor _executor;
+    private final ByteBufferPool _bufferPool;
+    private final InflaterPool _inflaterPool;
+    private final DeflaterPool _deflaterPool;
 
     public WebSocketComponents()
     {
@@ -52,48 +52,48 @@ public class WebSocketComponents extends ContainerLifeCycle
     public WebSocketComponents(WebSocketExtensionRegistry extensionRegistry, DecoratedObjectFactory objectFactory,
                                ByteBufferPool bufferPool, InflaterPool inflaterPool, DeflaterPool deflaterPool, Executor executor)
     {
-        this.extensionRegistry = (extensionRegistry == null) ? new WebSocketExtensionRegistry() : extensionRegistry;
-        this.objectFactory = (objectFactory == null) ? new DecoratedObjectFactory() : objectFactory;
-        this.bufferPool = (bufferPool == null) ? new MappedByteBufferPool() : bufferPool;
-        this.inflaterPool = (inflaterPool == null) ? new InflaterPool(CompressionPool.DEFAULT_CAPACITY, true) : inflaterPool;
-        this.deflaterPool = (deflaterPool == null) ? new DeflaterPool(CompressionPool.DEFAULT_CAPACITY, Deflater.DEFAULT_COMPRESSION, true) : deflaterPool;
-        this.executor = (executor == null) ? new QueuedThreadPool() : executor;
+        _extensionRegistry = (extensionRegistry == null) ? new WebSocketExtensionRegistry() : extensionRegistry;
+        _objectFactory = (objectFactory == null) ? new DecoratedObjectFactory() : objectFactory;
+        _bufferPool = (bufferPool == null) ? new MappedByteBufferPool() : bufferPool;
+        _inflaterPool = (inflaterPool == null) ? new InflaterPool(CompressionPool.DEFAULT_CAPACITY, true) : inflaterPool;
+        _deflaterPool = (deflaterPool == null) ? new DeflaterPool(CompressionPool.DEFAULT_CAPACITY, Deflater.DEFAULT_COMPRESSION, true) : deflaterPool;
+        _executor = (executor == null) ? new QueuedThreadPool() : executor;
 
-        addBean(inflaterPool);
-        addBean(deflaterPool);
-        addBean(bufferPool);
-        addBean(extensionRegistry);
-        addBean(objectFactory);
-        addBean(executor);
+        addBean(_inflaterPool);
+        addBean(_deflaterPool);
+        addBean(_bufferPool);
+        addBean(_extensionRegistry);
+        addBean(_objectFactory);
+        addBean(_executor);
     }
 
     public ByteBufferPool getBufferPool()
     {
-        return bufferPool;
+        return _bufferPool;
     }
 
     public Executor getExecutor()
     {
-        return executor;
+        return _executor;
     }
 
     public WebSocketExtensionRegistry getExtensionRegistry()
     {
-        return extensionRegistry;
+        return _extensionRegistry;
     }
 
     public DecoratedObjectFactory getObjectFactory()
     {
-        return objectFactory;
+        return _objectFactory;
     }
 
     public InflaterPool getInflaterPool()
     {
-        return inflaterPool;
+        return _inflaterPool;
     }
 
     public DeflaterPool getDeflaterPool()
     {
-        return deflaterPool;
+        return _deflaterPool;
     }
 }
