@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.maven.plugin;
 
-import java.io.File;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -44,7 +43,7 @@ public class TestSelectiveJarResource
         {
             sjr.setCaseSensitive(false);
             List<String> includes = new ArrayList<>();
-            includes.add("**" + File.separator + "*.html");
+            includes.add("**/*.html");
             sjr.setIncludes(includes);
             sjr.copyTo(unpackDir.toFile());
             assertTrue(Files.exists(unpackDir.resolve("top.html")));
@@ -68,7 +67,7 @@ public class TestSelectiveJarResource
         {
             sjr.setCaseSensitive(false);
             List<String> excludes = new ArrayList<>();
-            excludes.add("**" + File.separator + "*");
+            excludes.add("**/*");
             sjr.setExcludes(excludes);
             sjr.copyTo(unpackDir.toFile());
             assertFalse(Files.exists(unpackDir.resolve("top.html")));
@@ -92,10 +91,10 @@ public class TestSelectiveJarResource
         {
             sjr.setCaseSensitive(false);
             List<String> excludes = new ArrayList<>();
-            excludes.add("**" + File.separator + "deep" + File.separator + "*");
+            excludes.add("**/deep/*");
             sjr.setExcludes(excludes);
             List<String> includes = new ArrayList<>();
-            includes.add("bb" + File.separator + "*");
+            includes.add("bb/*");
             sjr.setIncludes(includes);
             sjr.copyTo(unpackDir.toFile());
             assertFalse(Files.exists(unpackDir.resolve("top.html")));
