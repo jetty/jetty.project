@@ -780,7 +780,7 @@ public class HttpOutputTest
         handler.start();
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(committed.get(), is(false));
+        assertThat(committed.get(10, TimeUnit.SECONDS), is(false));
     }
 
     @Test
@@ -812,7 +812,7 @@ public class HttpOutputTest
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Content-Length: 0"));
-        assertThat(committed.get(), is(true));
+        assertThat(committed.get(10, TimeUnit.SECONDS), is(true));
     }
 
     @Test
