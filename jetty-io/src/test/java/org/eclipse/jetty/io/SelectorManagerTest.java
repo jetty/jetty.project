@@ -55,15 +55,15 @@ public class SelectorManagerTest
     }
 
     @Test
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testConnectTimeoutBeforeSuccessfulConnect() throws Exception
     {
         ServerSocketChannel server = ServerSocketChannel.open();
         server.bind(new InetSocketAddress("localhost", 0));
         SocketAddress address = server.getLocalAddress();
 
-        final AtomicLong timeoutConnection = new AtomicLong();
-        final long connectTimeout = 1000;
+        CountDownLatch connectionFinishedLatch = new CountDownLatch(1);
+        AtomicLong timeoutConnection = new AtomicLong();
+        long connectTimeout = 1000;
         SelectorManager selectorManager = new SelectorManager(executor, scheduler)
         {
             @Override
@@ -87,6 +87,10 @@ public class SelectorManagerTest
                 catch (InterruptedException e)
                 {
                     return false;
+                }
+                finally
+                {
+                    connectionFinishedLatch.countDown();
                 }
             }
 
@@ -117,8 +121,7 @@ public class SelectorManagerTest
             SocketChannel client1 = SocketChannel.open();
             client1.configureBlocking(false);
             client1.connect(address);
-            long timeout = connectTimeout * 2;
-            timeoutConnection.set(timeout);
+            timeoutConnection.set(connectTimeout * 110 / 100);
             final CountDownLatch latch1 = new CountDownLatch(1);
             selectorManager.connect(client1, new Callback()
             {
@@ -132,7 +135,7 @@ public class SelectorManagerTest
             assertFalse(client1.isOpen());
 
             // Wait for the first connect to finish, as the selector thread is waiting in finishConnect().
-            Thread.sleep(timeout);
+            assertTrue(connectionFinishedLatch.await(5, TimeUnit.SECONDS));
 
             // Verify that after the failure we can connect successfully.
             try (SocketChannel client2 = SocketChannel.open())
