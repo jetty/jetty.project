@@ -57,7 +57,17 @@ public class WebSocketComponents extends ContainerLifeCycle
         _bufferPool = (bufferPool == null) ? new MappedByteBufferPool() : bufferPool;
         _inflaterPool = (inflaterPool == null) ? new InflaterPool(CompressionPool.DEFAULT_CAPACITY, true) : inflaterPool;
         _deflaterPool = (deflaterPool == null) ? new DeflaterPool(CompressionPool.DEFAULT_CAPACITY, Deflater.DEFAULT_COMPRESSION, true) : deflaterPool;
-        _executor = (executor == null) ? new QueuedThreadPool() : executor;
+
+        if (executor == null)
+        {
+            QueuedThreadPool threadPool = new QueuedThreadPool();
+            threadPool.setName("WebSocket@" + hashCode());
+            _executor = threadPool;
+        }
+        else
+        {
+            _executor = executor;
+        }
 
         addBean(_inflaterPool);
         addBean(_deflaterPool);
