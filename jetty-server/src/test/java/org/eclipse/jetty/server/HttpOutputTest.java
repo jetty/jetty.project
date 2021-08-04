@@ -756,7 +756,7 @@ public class HttpOutputTest
     @Test
     public void testEmptyArray() throws Exception
     {
-        AtomicBoolean committed = new AtomicBoolean();
+        FuturePromise<Boolean> committed = new FuturePromise<>();
         AbstractHandler handler = new AbstractHandler()
         {
             @Override
@@ -764,8 +764,15 @@ public class HttpOutputTest
             {
                 baseRequest.setHandled(true);
                 response.setStatus(200);
-                response.getOutputStream().write(new byte[0]);
-                committed.set(response.isCommitted());
+                try
+                {
+                    response.getOutputStream().write(new byte[0]);
+                    committed.succeeded(response.isCommitted());
+                }
+                catch (Throwable t)
+                {
+                    committed.failed(t);
+                }
             }
         };
 
@@ -779,7 +786,7 @@ public class HttpOutputTest
     @Test
     public void testEmptyArrayKnown() throws Exception
     {
-        AtomicBoolean committed = new AtomicBoolean();
+        FuturePromise<Boolean> committed = new FuturePromise<>();
         AbstractHandler handler = new AbstractHandler()
         {
             @Override
@@ -788,8 +795,15 @@ public class HttpOutputTest
                 baseRequest.setHandled(true);
                 response.setStatus(200);
                 response.setContentLength(0);
-                response.getOutputStream().write(new byte[0]);
-                committed.set(response.isCommitted());
+                try
+                {
+                    response.getOutputStream().write(new byte[0]);
+                    committed.succeeded(response.isCommitted());
+                }
+                catch (Throwable t)
+                {
+                    committed.failed(t);
+                }
             }
         };
 
