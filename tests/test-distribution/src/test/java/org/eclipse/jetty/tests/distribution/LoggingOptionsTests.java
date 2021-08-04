@@ -24,7 +24,6 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.toolchain.test.FS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -43,8 +42,8 @@ public class LoggingOptionsTests extends AbstractJettyHomeTest
         return Stream.of(
             Arguments.of("logging-jetty",
                 Arrays.asList(
-                    "\\$\\{jetty.home\\}[/\\]lib[/\\]logging[/\\]slf4j-api-.*\\.jar",
-                    "\\$\\{jetty.home\\}[/\\]lib[/\\]logging[/\\]jetty-slf4j-impl-.*\\.jar"),
+                    "\\$\\{jetty.home\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-api-.*\\.jar",
+                    "\\$\\{jetty.home\\}[/\\\\]lib[/\\\\]logging[/\\\\]jetty-slf4j-impl-.*\\.jar"),
                 Arrays.asList(
                     "logging/slf4j",
                     "logging-jetty"
@@ -52,9 +51,9 @@ public class LoggingOptionsTests extends AbstractJettyHomeTest
             ),
             Arguments.of("logging-logback",
                 Arrays.asList(
-                    "\\$\\{jetty.home\\}[/\\]lib[/\\]logging[/\\]slf4j-api-.*\\.jar",
-                    "\\$\\{jetty.base\\}[/\\]lib[/\\]logging[/\\]logback-classic-.*\\.jar",
-                    "\\$\\{jetty.base\\}[/\\]lib[/\\]logging[/\\]logback-core-.*\\.jar"
+                    "\\$\\{jetty.home\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-api-.*\\.jar",
+                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]logback-classic-.*\\.jar",
+                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]logback-core-.*\\.jar"
                 ),
                 Arrays.asList(
                     "logging/slf4j",
@@ -63,8 +62,8 @@ public class LoggingOptionsTests extends AbstractJettyHomeTest
             ),
             Arguments.of("logging-jul",
                 Arrays.asList(
-                    "\\$\\{jetty.home\\}[/\\]lib[/\\]logging[/\\]slf4j-api-.*\\.jar",
-                    "\\$\\{jetty.base\\}[/\\]lib[/\\]logging[/\\]slf4j-jdk14-.*\\.jar"
+                    "\\$\\{jetty.home\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-api-.*\\.jar",
+                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-jdk14-.*\\.jar"
                 ),
                 Arrays.asList(
                     "logging/slf4j",
@@ -73,8 +72,8 @@ public class LoggingOptionsTests extends AbstractJettyHomeTest
             ),
             Arguments.of("logging-log4j1",
                 Arrays.asList(
-                    "\\$\\{jetty.home\\}[/\\]lib[/\\]logging[/\\]slf4j-api-.*\\.jar",
-                    "\\$\\{jetty.base\\}[/\\]lib[/\\]logging[/\\]slf4j-log4j12-.*\\.jar"
+                    "\\$\\{jetty.home\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-api-.*\\.jar",
+                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-log4j12-.*\\.jar"
                 ),
                 Arrays.asList(
                     "logging/slf4j",
@@ -83,10 +82,10 @@ public class LoggingOptionsTests extends AbstractJettyHomeTest
             ),
             Arguments.of("logging-log4j2",
                 Arrays.asList(
-                    "\\$\\{jetty.home\\}[/\\]lib[/\\]logging[/\\]slf4j-api-.*\\.jar",
-                    "\\$\\{jetty.base\\}[/\\]lib[/\\]logging[/\\]log4j-slf4j18-impl-.*\\.jar",
-                    "\\$\\{jetty.base\\}[/\\]lib[/\\]logging[/\\]log4j-api-.*\\.jar",
-                    "\\$\\{jetty.base\\}[/\\]lib[/\\]logging[/\\]log4j-core-.*\\.jar"
+                    "\\$\\{jetty.home\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-api-.*\\.jar",
+                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]log4j-slf4j18-impl-.*\\.jar",
+                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]log4j-api-.*\\.jar",
+                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]log4j-core-.*\\.jar"
                 ),
                 Arrays.asList(
                     "logging/slf4j",
@@ -96,7 +95,7 @@ public class LoggingOptionsTests extends AbstractJettyHomeTest
             // Disabled, as slf4j noop is not supported by output/log monitoring of AbstractJettyHomeTest
             /* Arguments.of("logging-noop",
                 Arrays.asList(
-                    "\\$\\{jetty.home\\}[/\\]lib[/\\]logging[/\\]slf4j-api-.*\\.jar"
+                    "\\$\\{jetty.home\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-api-.*\\.jar"
                 ), Arrays.asList(
                     "logging/slf4j",
                     "logging-log4j2"
@@ -104,12 +103,12 @@ public class LoggingOptionsTests extends AbstractJettyHomeTest
             ),*/
             Arguments.of("logging-logback,logging-jcl-capture,logging-jul-capture,logging-log4j1-capture",
                 Arrays.asList(
-                    "\\$\\{jetty.home\\}[/\\]lib[/\\]logging[/\\]slf4j-api-.*\\.jar",
-                    "\\$\\{jetty.base\\}[/\\]lib[/\\]logging[/\\]logback-classic-.*\\.jar",
-                    "\\$\\{jetty.base\\}[/\\]lib[/\\]logging[/\\]logback-core-.*\\.jar",
-                    "\\$\\{jetty.base\\}[/\\]lib[/\\]logging[/\\]jcl-over-slf4j-.*\\.jar",
-                    "\\$\\{jetty.base\\}[/\\]lib[/\\]logging[/\\]jul-to-slf4j-.*\\.jar",
-                    "\\$\\{jetty.base\\}[/\\]lib[/\\]logging[/\\]log4j-over-slf4j-.*\\.jar"
+                    "\\$\\{jetty.home\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-api-.*\\.jar",
+                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]logback-classic-.*\\.jar",
+                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]logback-core-.*\\.jar",
+                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]jcl-over-slf4j-.*\\.jar",
+                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]jul-to-slf4j-.*\\.jar",
+                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]log4j-over-slf4j-.*\\.jar"
                 ),
                 Arrays.asList(
                     "logging/slf4j",
@@ -159,7 +158,7 @@ public class LoggingOptionsTests extends AbstractJettyHomeTest
 
                 for (String expectedClasspathEntry : expectedClasspathEntries)
                 {
-                    containsEntryWith("Expected Classpath Entry", rawConfigLogs, FS.separators(expectedClasspathEntry));
+                    containsEntryWith("Expected Classpath Entry", rawConfigLogs, expectedClasspathEntry);
                 }
             }
 
