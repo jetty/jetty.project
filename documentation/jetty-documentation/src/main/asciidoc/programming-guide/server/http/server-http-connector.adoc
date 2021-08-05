@@ -16,20 +16,31 @@
 
 A `Connector` is the component that handles incoming requests from clients, and works in conjunction with `ConnectionFactory` instances.
 
-The primary implementation is `org.eclipse.jetty.server.ServerConnector`.
-`ServerConnector` uses a `java.nio.channels.ServerSocketChannel` to listen to a TCP port and to accept TCP connections.
+The available implementations are:
 
-Since `ServerConnector` wraps a `ServerSocketChannel`, it can be configured in a similar way, for example the port to listen to, the network address to bind to, etc.:
+* `org.eclipse.jetty.server.ServerConnector`, for TCP/IP sockets.
+* `org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector` for Unix-Domain sockets.
+
+Both use a `java.nio.channels.ServerSocketChannel` to listen to a socket address and to accept socket connections.
+
+Since `ServerConnector` wraps a `ServerSocketChannel`, it can be configured in a similar way, for example the IP port to listen to, the IP address to bind to, etc.:
 
 [source,java,indent=0]
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=configureConnector]
 ----
 
-The _acceptors_ are threads (typically only one) that compete to accept TCP connections on the listening port.
+Likewise, `UnixDomainServerConnector` also wraps a `ServerSocketChannel` and can be configured with the Unix-Domain path to listen to:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=configureConnectorUnix]
+----
+
+The _acceptors_ are threads (typically only one) that compete to accept socket connections.
 When a connection is accepted, `ServerConnector` wraps the accepted `SocketChannel` and passes it to the xref:pg-arch-io-selector-manager[`SelectorManager`].
 Therefore, there is a little moment where the acceptor thread is not accepting new connections because it is busy wrapping the just accepted connection to pass it to the `SelectorManager`.
-Connections that are ready to be accepted but are not accepted yet are queued in a bounded queue (at the OS level) whose capacity can be configured with the `ServerConnector.acceptQueueSize` parameter.
+Connections that are ready to be accepted but are not accepted yet are queued in a bounded queue (at the OS level) whose capacity can be configured with the `acceptQueueSize` parameter.
 
 If your application must withstand a very high rate of connections opened, configuring more than one acceptor thread may be beneficial: when one acceptor thread accepts one connection, another acceptor thread can take over accepting connections.
 
@@ -42,7 +53,7 @@ In this case a single selector may be able to manage many sockets because chance
 On the contrary, web messaging applications tend to send many small messages at a very high frequency so that sockets are rarely idle.
 In this case a single selector may be able to manage less sockets because chances are that many of them will be active at the same time.
 
-It is possible to configure more than one `ServerConnector`, each listening on a different port:
+It is possible to configure more than one `ServerConnector` (each listening on a different port), or more than one `UnixDomainServerConnector` (each listening on a different path), or ``ServerConnector``s and ``UnixDomainServerConnector``s, for example:
 
 [source,java,indent=0]
 ----
@@ -52,9 +63,9 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPSer
 [[pg-server-http-connector-protocol]]
 ===== Configuring Protocols
 
-For each accepted TCP connection, `ServerConnector` asks a `ConnectionFactory` to create a `Connection` object that handles the network traffic on that TCP connection, parsing and generating bytes for a specific protocol (see xref:pg-arch-io[this section] for more details about `Connection` objects).
+For each accepted socket connection, the server `Connector` asks a `ConnectionFactory` to create a `Connection` object that handles the traffic on that socket connection, parsing and generating bytes for a specific protocol (see xref:pg-arch-io[this section] for more details about `Connection` objects).
 
-A `ServerConnector` can be configured with one or more ``ConnectionFactory``s.
+A server `Connector` can be configured with one or more ``ConnectionFactory``s.
 If no `ConnectionFactory` is specified then `HttpConnectionFactory` is implicitly configured.
 
 [[pg-server-http-connector-protocol-http11]]
@@ -87,7 +98,7 @@ By using those ports, a client had _prior knowledge_ that the server would speak
 
 HTTP/2 was designed to be a smooth transition from HTTP/1.1 for users and as such the HTTP ports were not changed.
 However the HTTP/2 protocol is, on the wire, a binary protocol, completely different from HTTP/1.1.
-Therefore, with HTTP/2, clients that connect to port `80` may speak either HTTP/1.1 or HTTP/2, and the server must figure out which version of the HTTP protocol the client is speaking.
+Therefore, with HTTP/2, clients that connect to port `80` (or to a specific Unix-Domain path) may speak either HTTP/1.1 or HTTP/2, and the server must figure out which version of the HTTP protocol the client is speaking.
 
 Jetty can support both HTTP/1.1 and HTTP/2 on the same clear-text port by configuring both the HTTP/1.1 and the HTTP/2 ``ConnectionFactory``s:
 
@@ -128,7 +139,7 @@ Note also that the default protocol set in the ALPN ``ConnectionFactory``, which
 
 It is often the case that Jetty receives connections from a load balancer configured to distribute the load among many Jetty backend servers.
 
-From the Jetty point of view, all the connections arrive from the load balancer, rather than the real clients, but is possible to configure the load balancer to forward the real client IP address and port to the backend Jetty server using the link:https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt[PROXY protocol].
+From the Jetty point of view, all the connections arrive from the load balancer, rather than the real clients, but is possible to configure the load balancer to forward the real client IP address and IP port to the backend Jetty server using the link:https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt[PROXY protocol].
 
 NOTE: The PROXY protocol is widely supported by load balancers such as link:http://cbonte.github.io/haproxy-dconv/2.2/configuration.html#5.2-send-proxy[HAProxy] (via its `send-proxy` directive), link:https://docs.nginx.com/nginx/admin-guide/load-balancer/using-proxy-protocol[Nginx](via its `proxy_protocol on` directive) and others.
 
@@ -144,3 +155,13 @@ Note also how the PROXY `ConnectionFactory` needs to know its _next_ protocol (i
 
 Each `ConnectionFactory` is asked to create a `Connection` object for each accepted TCP connection; the `Connection` objects will be chained together to handle the bytes, each for its own protocol.
 Therefore the `ProxyConnection` will handle the PROXY protocol bytes and `HttpConnection` will handle the HTTP/1.1 bytes producing a request object and response object that will be processed by ``Handler``s.
+
+The load balancer may be configured to communicate with Jetty backend servers via Unix-Domain sockets (requires Java 16 or later).
+For example:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=proxyHTTPUnix]
+----
+
+Note that the only difference when using Unix-Domain sockets is instantiating `UnixDomainServerConnector` instead of `ServerConnector` and configuring the Unix-Domain path instead of the IP port.

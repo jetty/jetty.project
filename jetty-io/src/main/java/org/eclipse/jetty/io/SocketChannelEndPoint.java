@@ -165,8 +165,10 @@ public class SocketChannelEndPoint extends AbstractEndPoint implements ManagedSe
         {
             return _channel.getLocalAddress();
         }
-        catch (IOException x)
+        catch (Throwable x)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Could not retrieve local socket address", x);
             return null;
         }
     }
@@ -178,8 +180,10 @@ public class SocketChannelEndPoint extends AbstractEndPoint implements ManagedSe
         {
             return _channel.getRemoteAddress();
         }
-        catch (IOException e)
+        catch (Throwable x)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Could not retrieve remote socket address", x);
             return null;
         }
     }

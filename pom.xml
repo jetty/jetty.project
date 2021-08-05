@@ -12,6 +12,7 @@
   <inceptionYear>1995</inceptionYear>
 
   <properties>
+    <jetty.unixdomain.dir>/tmp</jetty.unixdomain.dir>
     <compiler.source>11</compiler.source>
     <compiler.target>11</compiler.target>
     <compiler.release>11</compiler.release>
@@ -44,7 +45,6 @@
     <jboss.logging.version>3.4.2.Final</jboss.logging.version>
     <jetty.perf-helper.version>1.0.6</jetty.perf-helper.version>
     <ant.version>1.10.9</ant.version>
-    <unix.socket.tmp></unix.socket.tmp>
     <!-- OSGI import-package -->
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
 
@@ -150,6 +150,7 @@
     <module>jetty-bom</module>
     <module>documentation</module>
     <module>jetty-keystore</module>
+    <module>jetty-unixdomain-server</module>
   </modules>
 
   <build>
@@ -684,7 +685,7 @@
             <runOrder>alphabetical</runOrder>
             <systemPropertyVariables>
               <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
-              <unix.socket.tmp>${unix.socket.tmp}</unix.socket.tmp>
+              <jetty.unixdomain.dir>${jetty.unixdomain.dir}</jetty.unixdomain.dir>
               <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
               <jetty.testtracker.log>${jetty.testtracker.log}</jetty.testtracker.log>
             </systemPropertyVariables>
@@ -1243,6 +1244,17 @@
   </dependencyManagement>
 
   <profiles>
+    <profile>
+      <id>unix-domain-windows</id>
+      <activation>
+        <os>
+          <family>Windows</family>
+        </os>
+      </activation>
+      <properties>
+        <jetty.unixdomain.dir>${user.home}</jetty.unixdomain.dir>
+      </properties>
+    </profile>
     <profile>
       <id>errorprone</id>
       <build>
