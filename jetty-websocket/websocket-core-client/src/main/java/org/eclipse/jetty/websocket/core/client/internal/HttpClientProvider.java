@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.core.client.internal;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public interface HttpClientProvider
 {
@@ -30,11 +29,7 @@ public interface HttpClientProvider
 
     private static HttpClient newDefaultHttpClient()
     {
-        HttpClient client = new HttpClient();
-        QueuedThreadPool threadPool = new QueuedThreadPool();
-        threadPool.setName("WebSocketClient@" + client.hashCode());
-        client.setExecutor(threadPool);
-        return client;
+        return new HttpClient();
     }
 
     default HttpClient newHttpClient()
