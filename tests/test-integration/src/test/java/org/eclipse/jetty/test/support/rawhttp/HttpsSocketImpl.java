@@ -55,7 +55,7 @@ public class HttpsSocketImpl implements HttpSocket
         try
         {
             // TODO real trust manager
-            this.sslContext = SSLContext.getInstance("TLS");
+            this.sslContext = SSLContext.getInstance("TLSv1.2");
             sslContext.init(null, SslContextFactory.TRUST_ALL_CERTS, new java.security.SecureRandom());
         }
         catch (Exception e)
@@ -70,7 +70,7 @@ public class HttpsSocketImpl implements HttpSocket
     public Socket connect(InetAddress host, int port) throws IOException
     {
         SSLSocket sslsock = (SSLSocket)sslfactory.createSocket();
-        sslsock.setEnabledProtocols(new String[]{"TLSv1"});
+        sslsock.setEnabledProtocols(new String[]{"TLSv1.2"});
         SocketAddress address = new InetSocketAddress(host, port);
         sslsock.connect(address);
         return sslsock;
