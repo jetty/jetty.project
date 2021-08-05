@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -52,12 +51,10 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.unixsocket.server.UnixSocketConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.SocketAddressResolver;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Assumptions;
@@ -65,7 +62,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.http.client.Transport.UNIX_SOCKET;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TransportScenario
 {
@@ -86,20 +84,10 @@ public class TransportScenario
     {
         this.transport = transport;
 
-        Path unixSocketTmp;
-        String tmpProp = System.getProperty("unix.socket.tmp");
-        if (StringUtil.isBlank(tmpProp))
-            unixSocketTmp = MavenTestingUtils.getTargetPath();
-        else
-            unixSocketTmp = Paths.get(tmpProp);
-        sockFile = Files.createTempFile(unixSocketTmp, "unix", ".sock");
-        if (sockFile.toAbsolutePath().toString().length() > UnixSocketConnector.MAX_UNIX_SOCKET_PATH_LENGTH)
-        {
-            Files.delete(sockFile);
-            Path tmp = Paths.get("/tmp");
-            assumeTrue(Files.exists(tmp) && Files.isDirectory(tmp));
-            sockFile = Files.createTempFile(tmp, "unix", ".sock");
-        }
+        String dir = System.getProperty("jetty.unixdomain.dir");
+        assertNotNull(dir);
+        sockFile = Files.createTempFile(Path.of(dir), "unix_", ".sock");
+        assertTrue(sockFile.toAbsolutePath().toString().length() < UnixSocketConnector.MAX_UNIX_SOCKET_PATH_LENGTH, "Unix-Domain path too long");
         Files.delete(sockFile);
 
         // Disable UNIX_SOCKET due to jnr/jnr-unixsocket#69.

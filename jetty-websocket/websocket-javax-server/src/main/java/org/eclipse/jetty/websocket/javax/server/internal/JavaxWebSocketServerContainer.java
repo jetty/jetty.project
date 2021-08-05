@@ -73,12 +73,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
                 if (httpClient == null)
                     httpClient = (HttpClient)contextHandler.getServer().getAttribute(JavaxWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE);
 
-                Executor executor = httpClient == null ? null : httpClient.getExecutor();
-                if (executor == null)
-                    executor = (Executor)servletContext.getAttribute("org.eclipse.jetty.server.Executor");
-                if (executor == null)
-                    executor = contextHandler.getServer().getThreadPool();
-
+                Executor executor = wsComponents.getExecutor();
                 if (httpClient != null && httpClient.getExecutor() == null)
                     httpClient.setExecutor(executor);
 
@@ -122,23 +117,6 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     private final JavaxWebSocketServerFrameHandlerFactory frameHandlerFactory;
     private List<Class<?>> deferredEndpointClasses;
     private List<ServerEndpointConfig> deferredEndpointConfigs;
-
-    /**
-     * Main entry point for {@link JavaxWebSocketServletContainerInitializer}.
-     *
-     * @param webSocketMappings the {@link WebSocketMappings} that this container belongs to
-     */
-    public JavaxWebSocketServerContainer(WebSocketMappings webSocketMappings)
-    {
-        this(webSocketMappings, new WebSocketComponents());
-    }
-
-    public JavaxWebSocketServerContainer(WebSocketMappings webSocketMappings, WebSocketComponents components)
-    {
-        super(components);
-        this.webSocketMappings = webSocketMappings;
-        this.frameHandlerFactory = new JavaxWebSocketServerFrameHandlerFactory(this);
-    }
 
     /**
      * Main entry point for {@link JavaxWebSocketServletContainerInitializer}.

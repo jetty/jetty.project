@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.client.HTTP2Client;
@@ -38,7 +39,6 @@ import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.unixsocket.server.UnixSocketConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -48,6 +48,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -61,8 +62,8 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class DistributionTests extends AbstractJettyHomeTest
 {
@@ -277,20 +278,11 @@ public class DistributionTests extends AbstractJettyHomeTest
     @DisabledOnOs(value = OS.WINDOWS, disabledReason = "jnr not supported on windows")
     public void testUnixSocket() throws Exception
     {
-        Path tmpSockFile;
-        String unixSocketTmp = System.getProperty("unix.socket.tmp");
-        if (StringUtil.isNotBlank(unixSocketTmp))
-            tmpSockFile = Files.createTempFile(Paths.get(unixSocketTmp), "unix", ".sock");
-        else
-            tmpSockFile = Files.createTempFile("unix", ".sock");
-        if (tmpSockFile.toAbsolutePath().toString().length() > UnixSocketConnector.MAX_UNIX_SOCKET_PATH_LENGTH)
-        {
-            Path tmp = Paths.get("/tmp");
-            assumeTrue(Files.exists(tmp) && Files.isDirectory(tmp));
-            tmpSockFile = Files.createTempFile(tmp, "unix", ".sock");
-        }
-        Path sockFile = tmpSockFile;
-        assertTrue(Files.deleteIfExists(sockFile), "temp sock file cannot be deleted");
+        String dir = System.getProperty("jetty.unixdomain.dir");
+        assertNotNull(dir);
+        Path sockFile = Files.createTempFile(Path.of(dir), "unix_", ".sock");
+        assertTrue(sockFile.toAbsolutePath().toString().length() < UnixSocketConnector.MAX_UNIX_SOCKET_PATH_LENGTH, "Unix-Domain path too long");
+        Files.delete(sockFile);
 
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
@@ -311,7 +303,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             File war = distribution.resolveArtifact("org.eclipse.jetty.demos:demo-jsp-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
-            try (JettyHomeTester.Run run2 = distribution.start("jetty.unixsocket.path=" + sockFile.toString()))
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.unixsocket.path=" + sockFile))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
@@ -904,6 +896,39 @@ public class DistributionTests extends AbstractJettyHomeTest
             assertTrue(Files.exists(jettyBase.resolve("resources/logback.xml")));
             // The jetty-logging.properties should be absent.
             assertFalse(Files.exists(jettyBase.resolve("resources/jetty-logging.properties")));
+        }
+    }
+
+    @Test
+    @EnabledForJreRange(min = JRE.JAVA_16)
+    public void testUnixDomain() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=unixdomain-http"))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            int maxUnixDomainPathLength = 108;
+            Path path = Files.createTempFile("unix", ".sock");
+            if (path.normalize().toAbsolutePath().toString().length() > maxUnixDomainPathLength)
+                path = Files.createTempFile(Path.of("/tmp"), "unix", ".sock");
+            assertTrue(Files.deleteIfExists(path));
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.unixdomain.path=" + path))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+
+                ClientConnector connector = ClientConnector.forUnixDomain(path);
+                client = new HttpClient(new HttpClientTransportDynamic(connector));
+                client.start();
+                ContentResponse response = client.GET("http://localhost/path");
+                assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+            }
         }
     }
 }

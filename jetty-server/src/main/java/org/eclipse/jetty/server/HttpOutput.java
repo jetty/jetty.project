@@ -847,10 +847,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         // Blocking write
         try
         {
+            boolean complete = false;
             // flush any content from the aggregate
             if (BufferUtil.hasContent(_aggregate))
             {
-                channelWrite(_aggregate, last && len == 0);
+                complete = last && len == 0;
+                channelWrite(_aggregate, complete);
 
                 // should we fill aggregate again from the buffer?
                 if (len > 0 && !last && len <= _commitSize && len <= maximizeAggregateSpace())
@@ -880,7 +882,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 }
                 channelWrite(view, last);
             }
-            else if (last)
+            else if (last && !complete)
             {
                 channelWrite(BufferUtil.EMPTY_BUFFER, true);
             }
@@ -907,7 +909,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             checkWritable();
             long written = _written + len;
-            last = _channel.getResponse().isAllContentWritten(_written);
+            last = _channel.getResponse().isAllContentWritten(written);
             flush = last || len > 0 || BufferUtil.hasContent(_aggregate);
 
             if (last && _state == State.OPEN)
@@ -951,13 +953,17 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             {
                 // Blocking write
                 // flush any content from the aggregate
+                boolean complete = false;
                 if (BufferUtil.hasContent(_aggregate))
-                    channelWrite(_aggregate, last && len == 0);
+                {
+                    complete = last && len == 0;
+                    channelWrite(_aggregate, complete);
+                }
 
                 // write any remaining content in the buffer directly
                 if (len > 0)
                     channelWrite(buffer, last);
-                else if (last)
+                else if (last && !complete)
                     channelWrite(BufferUtil.EMPTY_BUFFER, true);
 
                 onWriteComplete(last, null);

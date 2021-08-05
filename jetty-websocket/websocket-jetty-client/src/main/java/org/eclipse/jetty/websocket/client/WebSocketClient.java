@@ -85,10 +85,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     {
         coreClient = new WebSocketCoreClient(httpClient, components);
         addManaged(coreClient);
-
-        if (httpClient == null)
-            coreClient.getHttpClient().setName("Jetty-WebSocketClient@" + hashCode());
-
         frameHandlerFactory = new JettyWebSocketFrameHandlerFactory(this, components);
         sessionListeners.add(sessionTracker);
         addBean(sessionTracker);
