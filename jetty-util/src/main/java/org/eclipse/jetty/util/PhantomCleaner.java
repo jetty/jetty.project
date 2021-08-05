@@ -29,11 +29,13 @@ public final class PhantomCleaner
 
     public static void register(Object obj, Runnable action)
     {
+        LOG.info("register({}, {})", obj, action);
         CLEANER.register(obj, action);
     }
 
     public static class FileDispose implements Runnable
     {
+        private static final Logger LOG = LoggerFactory.getLogger(FileDispose.class);
         private final String filename;
 
         public FileDispose(Path file)
@@ -48,12 +50,22 @@ public final class PhantomCleaner
             Path file = Paths.get(filename);
             try
             {
+                LOG.info("Cleaning {}", file);
                 Files.deleteIfExists(file);
             }
             catch (IOException e)
             {
                 LOG.trace("IGNORED", e);
             }
+        }
+
+        @Override
+        public String toString()
+        {
+            final StringBuilder sb = new StringBuilder("FileDispose[");
+            sb.append("filename='").append(filename).append('\'');
+            sb.append(']');
+            return sb.toString();
         }
     }
 }

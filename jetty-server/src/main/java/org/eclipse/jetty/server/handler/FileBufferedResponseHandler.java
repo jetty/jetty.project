@@ -216,10 +216,21 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
                     dispose();
                     callback.failed(cause);
                 }
+
+                @Override
+                public String toString()
+                {
+                    final StringBuilder sb = new StringBuilder("FileBufferedInterceptor[");
+                    sb.append("fileLength=").append(fileLength);
+                    sb.append(", pos=").append(_pos);
+                    sb.append(", last=").append(_last);
+                    sb.append(']');
+                    return sb.toString();
+                }
             };
             // once icb is GC'd, cleanup the File.
             if (_filePath != null)
-                PhantomCleaner.register(icb, () -> new PhantomCleaner.FileDispose(_filePath));
+                PhantomCleaner.register(icb, new PhantomCleaner.FileDispose(_filePath));
             icb.iterate();
         }
     }
