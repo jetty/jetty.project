@@ -26,7 +26,7 @@ Each `ManagedSelector` wraps an instance of `java.nio.channels.Selector` that in
 
 NOTE: TODO: add image
 
-`SocketChannel` instances can be created by network clients when connecting to a server and by a network server when accepting connections from network clients.
+`SocketChannel` instances can be created by clients when connecting to a server and by a server when accepting connections from clients.
 In both cases the `SocketChannel` instance is passed to `SelectorManager` (which passes it to `ManagedSelector` and eventually to `java.nio.channels.Selector`) to be registered for use within Jetty.
 
 It is possible for an application to create the `SocketChannel` instances outside Jetty, even perform some initial network traffic also outside Jetty (for example for authentication purposes), and then pass the `SocketChannel` instance to `SelectorManager` for use within Jetty.
@@ -50,7 +50,7 @@ include::{doc_code}/org/eclipse/jetty/docs/programming/SelectorManagerDocs.java[
 
 ``SocketChannel``s that are passed to `SelectorManager` are wrapped into two related components: an link:{javadoc-url}/org/eclipse/jetty/io/EndPoint.html[`EndPoint`] and a link:{javadoc-url}/org/eclipse/jetty/io/Connection.html[`Connection`].
 
-`EndPoint` is the Jetty abstraction for a `SocketChannel`: you can read bytes from an `EndPoint` via `EndPoint.fill(ByteBuffer)`, you can write bytes to an `EndPoint` via `EndPoint.flush(ByteBuffer...)` and `EndPoint.write(Callback, ByteBuffer...)`, you can close an `EndPoint` via `EndPoint.close()`, etc.
+`EndPoint` is the Jetty abstraction for a `SocketChannel`: you can read bytes from an `EndPoint` via `EndPoint.fill(ByteBuffer)`, you can write bytes to an `EndPoint` via `EndPoint.flush(ByteBuffer\...)` and `EndPoint.write(Callback, ByteBuffer\...)`, you can close an `EndPoint` via `EndPoint.close()`, etc.
 
 `Connection` is the Jetty abstraction that is responsible to read bytes from the `EndPoint` and to deserialize the read bytes into objects.
 For example, an HTTP/1.1 server-side `Connection` implementation is responsible to deserialize HTTP/1.1 request bytes into an HTTP request object.
@@ -63,9 +63,9 @@ The writing side for a specific protocol _may_ be implemented in the `Connection
 While there is primarily just one implementation of `EndPoint`,link:{javadoc-url}/org/eclipse/jetty/io/SocketChannelEndPoint.html[`SocketChannelEndPoint`] (used both on the client-side and on the server-side), there are many implementations of `Connection`, typically two for each protocol (one for the client-side and one for the server-side).
 
 The `EndPoint` and `Connection` pairs can be chained, for example in case of encrypted communication using the TLS protocol.
-There is an `EndPoint` and `Connection` TLS pair where the `EndPoint` reads the encrypted bytes from the network and the `Connection` decrypts them; next in the chain there is an `EndPoint` and `Connection` pair where the `EndPoint` "reads" decrypted bytes (provided by the previous `Connection`) and the `Connection` deserializes them into specific protocol objects (for example HTTP/2 frame objects).
+There is an `EndPoint` and `Connection` TLS pair where the `EndPoint` reads the encrypted bytes from the socket and the `Connection` decrypts them; next in the chain there is an `EndPoint` and `Connection` pair where the `EndPoint` "reads" decrypted bytes (provided by the previous `Connection`) and the `Connection` deserializes them into specific protocol objects (for example HTTP/2 frame objects).
 
-Certain protocols, such as WebSocket, start the communication with the server using one protocol (e.g. HTTP/1.1), but then change the communication to use another protocol (e.g. WebSocket).
+Certain protocols, such as WebSocket, start the communication with the server using one protocol (for example, HTTP/1.1), but then change the communication to use another protocol (for example, WebSocket).
 `EndPoint` supports changing the `Connection` object on-the-fly via `EndPoint.upgrade(Connection)`.
 This allows to use the HTTP/1.1 `Connection` during the initial communication and later to replace it with a WebSocket `Connection`.
 
@@ -75,9 +75,9 @@ NOTE: TODO: add a section on `UpgradeFrom` and `UpgradeTo`?
 
 Creating `Connection` instances is performed on the server-side by link:{javadoc-url}/org/eclipse/jetty/server/ConnectionFactory.html[`ConnectionFactory`]s and on the client-side by link:{javadoc-url}/org/eclipse/jetty/io/ClientConnectionFactory.html[`ClientConnectionFactory`]s
 
-On the server-side, the component that aggregates a `SelectorManager` with a set of ``ConnectionFactory``s is link:{javadoc-url}/org/eclipse/jetty/server/ServerConnector.html[`ServerConnector`]s, see xref:pg-server-io-arch[].
+On the server-side, the component that aggregates a `SelectorManager` with a set of ``ConnectionFactory``s is link:{javadoc-url}/org/eclipse/jetty/server/ServerConnector.html[`ServerConnector`]s for TCP/IP sockets, and link:{JDURL}/org/eclipse/jetty/unixdomain/server/UnixDomainServerConnector.html[`UnixDomainServerConnector`] for Unix-Domain sockets (see the xref:pg-server-io-arch[server-side architecture section] for more information).
 
-On the client-side, the components that aggregates a `SelectorManager` with a set of ``ClientConnectionFactory``s are link:{javadoc-url}/org/eclipse/jetty/client/HttpClientTransport.html[`HttpClientTransport`] subclasses, see xref:pg-client-io-arch[].
+On the client-side, the components that aggregates a `SelectorManager` with a set of ``ClientConnectionFactory``s are link:{javadoc-url}/org/eclipse/jetty/client/HttpClientTransport.html[`HttpClientTransport`] subclasses (see the xref:pg-client-io-arch[client-side architecture section] for more information).
 
 [[pg-arch-io-endpoint]]
 ==== Jetty I/O: `EndPoint`
@@ -86,7 +86,7 @@ The Jetty I/O library use Java NIO to handle I/O, so that I/O is non-blocking.
 
 At the Java NIO level, in order to be notified when a `SocketChannel` has data to be read, the `SelectionKey.OP_READ` flag must be set.
 
-In the Jetty I/O library, you can call `EndPoint.fillInterested(Callback)` to declare interest in the "read" (or "fill") event, and the `Callback` parameter is the object that is notified when such an event occurs.
+In the Jetty I/O library, you can call `EndPoint.fillInterested(Callback)` to declare interest in the "read" (also called "fill") event, and the `Callback` parameter is the object that is notified when such an event occurs.
 
 At the Java NIO level, a `SocketChannel` is always writable, unless it becomes TCP congested.
 In order to be notified when a `SocketChannel` uncongests and it is therefore writable again, the `SelectionKey.OP_WRITE` flag must be set.

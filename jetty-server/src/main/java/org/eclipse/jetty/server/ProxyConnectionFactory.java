@@ -585,30 +585,43 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                         {
                             byte[] addr = new byte[4];
                             _buffer.get(addr);
-                            InetAddress src = Inet4Address.getByAddress(addr);
+                            InetAddress srcAddr = Inet4Address.getByAddress(addr);
                             _buffer.get(addr);
-                            InetAddress dst = Inet4Address.getByAddress(addr);
-                            int sp = _buffer.getChar();
-                            int dp = _buffer.getChar();
-                            local = new InetSocketAddress(dst, dp);
-                            remote = new InetSocketAddress(src, sp);
+                            InetAddress dstAddr = Inet4Address.getByAddress(addr);
+                            int srcPort = _buffer.getChar();
+                            int dstPort = _buffer.getChar();
+                            local = new InetSocketAddress(dstAddr, dstPort);
+                            remote = new InetSocketAddress(srcAddr, srcPort);
                             break;
                         }
                         case INET6:
                         {
                             byte[] addr = new byte[16];
                             _buffer.get(addr);
-                            InetAddress src = Inet6Address.getByAddress(addr);
+                            InetAddress srcAddr = Inet6Address.getByAddress(addr);
                             _buffer.get(addr);
-                            InetAddress dst = Inet6Address.getByAddress(addr);
-                            int sp = _buffer.getChar();
-                            int dp = _buffer.getChar();
-                            local = new InetSocketAddress(dst, dp);
-                            remote = new InetSocketAddress(src, sp);
+                            InetAddress dstAddr = Inet6Address.getByAddress(addr);
+                            int srcPort = _buffer.getChar();
+                            int dstPort = _buffer.getChar();
+                            local = new InetSocketAddress(dstAddr, dstPort);
+                            remote = new InetSocketAddress(srcAddr, srcPort);
+                            break;
+                        }
+                        case UNIX:
+                        {
+                            byte[] addr = new byte[108];
+                            _buffer.get(addr);
+                            String src = UnixDomain.toPath(addr);
+                            _buffer.get(addr);
+                            String dst = UnixDomain.toPath(addr);
+                            local = UnixDomain.newSocketAddress(dst);
+                            remote = UnixDomain.newSocketAddress(src);
                             break;
                         }
                         default:
-                            throw new IllegalStateException();
+                        {
+                            throw new IllegalStateException("Unsupported family " + _family);
+                        }
                     }
                     proxyEndPoint = new ProxyEndPoint(endPoint, local, remote);
 
@@ -706,7 +719,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 }
 
                 Transport transport;
-                switch (0xF & transportAndFamily)
+                switch (transportAndFamily & 0xF)
                 {
                     case 0:
                         transport = Transport.UNSPEC;
@@ -723,7 +736,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
 
                 _length = _buffer.getChar();
 
-                if (!_local && (_family == Family.UNSPEC || _family == Family.UNIX || transport != Transport.STREAM))
+                if (!_local && (_family == Family.UNSPEC || transport != Transport.STREAM))
                     throw new IOException(String.format("Proxy v2 unsupported PROXY mode 0x%x,0x%x", versionAndCommand, transportAndFamily));
 
                 if (_length > getMaxProxyHeader())
@@ -955,6 +968,49 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
         {
             _endPoint.write(callback, buffers);
+        }
+    }
+
+    private static class UnixDomain
+    {
+        private static final Class<?> unixDomainSocketAddress = probe();
+
+        private static Class<?> probe()
+        {
+            try
+            {
+                return ClassLoader.getPlatformClassLoader().loadClass("java.net.UnixDomainSocketAddress");
+            }
+            catch (Throwable ignored)
+            {
+                return null;
+            }
+        }
+
+        private static SocketAddress newSocketAddress(String path)
+        {
+            try
+            {
+                if (unixDomainSocketAddress != null)
+                    return (SocketAddress)unixDomainSocketAddress.getMethod("of", String.class).invoke(null, path);
+                return null;
+            }
+            catch (Throwable ignored)
+            {
+                return null;
+            }
+        }
+
+        private static String toPath(byte[] bytes)
+        {
+            // Unix-Domain paths are zero-terminated.
+            int i = 0;
+            while (i < bytes.length)
+            {
+                if (bytes[i++] == 0)
+                    break;
+            }
+            return new String(bytes, 0, i, StandardCharsets.US_ASCII).trim();
         }
     }
 }
