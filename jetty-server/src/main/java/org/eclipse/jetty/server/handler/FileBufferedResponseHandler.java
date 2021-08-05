@@ -28,6 +28,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.PhantomCleaner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,18 +107,8 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
             _fileOutputStream = null;
             _aggregating = null;
 
-            if (_filePath != null)
-            {
-                try
-                {
-                    Files.delete(_filePath);
-                }
-                catch (Throwable t)
-                {
-                    LOG.warn("Could not delete file {}", _filePath, t);
-                }
-                _filePath = null;
-            }
+
+            _filePath = null;
         }
 
         @Override
@@ -226,6 +217,9 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
                     callback.failed(cause);
                 }
             };
+            // once icb is GC'd, cleanup the File.
+            if (_filePath != null)
+                PhantomCleaner.register(icb, () -> new PhantomCleaner.FileDispose(_filePath));
             icb.iterate();
         }
     }
