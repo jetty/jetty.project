@@ -48,7 +48,6 @@ import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -411,7 +410,6 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testRequestIdleTimeout() throws Exception
     {
         final long idleTimeout = 1000;
@@ -423,7 +421,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 try
                 {
                     baseRequest.setHandled(true);
-                    TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
+                    TimeUnit.MILLISECONDS.sleep(idleTimeout);
                 }
                 catch (InterruptedException x)
                 {
@@ -437,7 +435,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         assertThrows(TimeoutException.class, () ->
             client.newRequest(host, port)
                 .scheme(scheme)
-                .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
+                .idleTimeout(idleTimeout * 90 / 100, TimeUnit.MILLISECONDS)
                 .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
                 .send());
 
