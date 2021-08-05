@@ -28,17 +28,21 @@ import org.junit.jupiter.api.BeforeAll;
 public abstract class AbstractJakartaWebSocketFrameHandlerTest
 {
     protected static DummyContainer container;
+    private static WebSocketComponents components;
 
     @BeforeAll
     public static void initContainer() throws Exception
     {
         container = new DummyContainer();
         container.start();
+        components = new WebSocketComponents();
+        components.start();
     }
 
     @AfterAll
     public static void stopContainer() throws Exception
     {
+        components.stop();
         container.stop();
     }
 
@@ -48,7 +52,6 @@ public abstract class AbstractJakartaWebSocketFrameHandlerTest
     protected EndpointConfig endpointConfig;
     protected CoreSession coreSession = new CoreSession.Empty()
     {
-        private final WebSocketComponents components = new WebSocketComponents();
 
         @Override
         public WebSocketComponents getWebSocketComponents()

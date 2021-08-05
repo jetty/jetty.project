@@ -27,10 +27,13 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.jakarta.common.UpgradeRequest;
 import org.eclipse.jetty.websocket.jakarta.common.UpgradeRequestAdapter;
 import org.eclipse.jetty.websocket.jakarta.tests.WSEventTracker;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -38,6 +41,20 @@ import static org.hamcrest.Matchers.is;
 
 public class JakartaWebSocketFrameHandlerOnMessageTextStreamTest extends AbstractJakartaWebSocketServerFrameHandlerTest
 {
+    private static final WebSocketComponents components = new WebSocketComponents();
+
+    @BeforeAll
+    public static void beforeAll() throws Exception
+    {
+        components.start();
+    }
+
+    @AfterAll
+    public static void afterAll() throws Exception
+    {
+        components.stop();
+    }
+
     @SuppressWarnings("Duplicates")
     private <T extends WSEventTracker> T performOnMessageInvocation(T socket, Consumer<JakartaWebSocketFrameHandler> func) throws Exception
     {
@@ -46,7 +63,14 @@ public class JakartaWebSocketFrameHandlerOnMessageTextStreamTest extends Abstrac
 
         // Establish endpoint function
         JakartaWebSocketFrameHandler frameHandler = container.newFrameHandler(socket, request);
-        frameHandler.onOpen(new CoreSession.Empty(), Callback.NOOP);
+        frameHandler.onOpen(new CoreSession.Empty()
+        {
+            @Override
+            public WebSocketComponents getWebSocketComponents()
+            {
+                return components;
+            }
+        }, Callback.NOOP);
         func.accept(frameHandler);
         return socket;
     }

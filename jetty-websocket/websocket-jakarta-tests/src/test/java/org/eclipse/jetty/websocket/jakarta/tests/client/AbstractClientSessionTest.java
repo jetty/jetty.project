@@ -14,6 +14,7 @@
 package org.eclipse.jetty.websocket.jakarta.tests.client;
 
 import org.eclipse.jetty.websocket.core.CoreSession;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.jakarta.client.internal.BasicClientEndpointConfig;
 import org.eclipse.jetty.websocket.jakarta.client.internal.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketContainer;
@@ -29,16 +30,26 @@ public abstract class AbstractClientSessionTest
 {
     protected static JakartaWebSocketSession session;
     protected static JakartaWebSocketContainer container;
+    protected static WebSocketComponents components;
 
     @BeforeAll
     public static void initSession() throws Exception
     {
         container = new JakartaWebSocketClientContainer();
         container.start();
+        components = new WebSocketComponents();
+        components.start();
         Object websocketPojo = new DummyEndpoint();
         UpgradeRequest upgradeRequest = new UpgradeRequestAdapter();
         JakartaWebSocketFrameHandler frameHandler = container.newFrameHandler(websocketPojo, upgradeRequest);
-        CoreSession coreSession = new CoreSession.Empty();
+        CoreSession coreSession = new CoreSession.Empty()
+        {
+            @Override
+            public WebSocketComponents getWebSocketComponents()
+            {
+                return components;
+            }
+        };
         session = new JakartaWebSocketSession(container, coreSession, frameHandler, new BasicClientEndpointConfig());
     }
 

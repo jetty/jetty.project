@@ -40,13 +40,6 @@ public class WebSocketCoreClient extends ContainerLifeCycle
     private final WebSocketComponents components;
     private ClassLoader classLoader;
 
-    // TODO: Things to consider for inclusion in this class (or removal if they can be set elsewhere, like HttpClient)
-    // - AsyncWrite Idle Timeout
-    // - Bind Address
-    // - SslContextFactory setup
-    // - Connect Timeout
-    // - Cookie Store
-
     public WebSocketCoreClient()
     {
         this(null, new WebSocketComponents());
@@ -61,6 +54,8 @@ public class WebSocketCoreClient extends ContainerLifeCycle
     {
         if (httpClient == null)
             httpClient = Objects.requireNonNull(HttpClientProvider.get());
+        if (httpClient.getExecutor() == null)
+            httpClient.setExecutor(webSocketComponents.getExecutor());
 
         this.classLoader = Thread.currentThread().getContextClassLoader();
         this.httpClient = httpClient;

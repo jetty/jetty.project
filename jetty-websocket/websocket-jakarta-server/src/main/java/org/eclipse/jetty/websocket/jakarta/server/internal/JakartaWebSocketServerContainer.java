@@ -74,12 +74,7 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
                 if (httpClient == null)
                     httpClient = (HttpClient)contextHandler.getServer().getAttribute(JakartaWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE);
 
-                Executor executor = httpClient == null ? null : httpClient.getExecutor();
-                if (executor == null)
-                    executor = (Executor)servletContext.getAttribute("org.eclipse.jetty.server.Executor");
-                if (executor == null)
-                    executor = contextHandler.getServer().getThreadPool();
-
+                Executor executor = wsComponents.getExecutor();
                 if (httpClient != null && httpClient.getExecutor() == null)
                     httpClient.setExecutor(executor);
 
@@ -123,23 +118,6 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
     private final JakartaWebSocketServerFrameHandlerFactory frameHandlerFactory;
     private List<Class<?>> deferredEndpointClasses;
     private List<ServerEndpointConfig> deferredEndpointConfigs;
-
-    /**
-     * Main entry point for {@link JakartaWebSocketServletContainerInitializer}.
-     *
-     * @param webSocketMappings the {@link WebSocketMappings} that this container belongs to
-     */
-    public JakartaWebSocketServerContainer(WebSocketMappings webSocketMappings)
-    {
-        this(webSocketMappings, new WebSocketComponents());
-    }
-
-    public JakartaWebSocketServerContainer(WebSocketMappings webSocketMappings, WebSocketComponents components)
-    {
-        super(components);
-        this.webSocketMappings = webSocketMappings;
-        this.frameHandlerFactory = new JakartaWebSocketServerFrameHandlerFactory(this);
-    }
 
     /**
      * Main entry point for {@link JakartaWebSocketServletContainerInitializer}.

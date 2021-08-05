@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
@@ -46,6 +47,10 @@ public class JettyWebSocketFrameHandlerTest
 {
     private static DummyContainer container;
 
+    private final WebSocketComponents components;
+    private final JettyWebSocketFrameHandlerFactory endpointFactory;
+    private final CoreSession coreSession;
+
     @BeforeAll
     public static void startContainer() throws Exception
     {
@@ -59,22 +64,27 @@ public class JettyWebSocketFrameHandlerTest
         container.stop();
     }
 
-    private final WebSocketComponents components = new WebSocketComponents();
-    private final JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(container, components);
-    private final CoreSession coreSession = new CoreSession.Empty()
+    public JettyWebSocketFrameHandlerTest()
     {
-        @Override
-        public Behavior getBehavior()
+        components = new WebSocketComponents();
+        endpointFactory = new JettyWebSocketFrameHandlerFactory(container, components);
+        coreSession = new CoreSession.Empty()
         {
-            return Behavior.CLIENT;
-        }
+            @Override
+            public Behavior getBehavior()
+            {
+                return Behavior.CLIENT;
+            }
 
-        @Override
-        public WebSocketComponents getWebSocketComponents()
-        {
-            return components;
-        }
-    };
+            @Override
+            public WebSocketComponents getWebSocketComponents()
+            {
+                return components;
+            }
+        };
+
+        LifeCycle.start(components);
+    }
 
     private JettyWebSocketFrameHandler newLocalFrameHandler(Object wsEndpoint)
     {

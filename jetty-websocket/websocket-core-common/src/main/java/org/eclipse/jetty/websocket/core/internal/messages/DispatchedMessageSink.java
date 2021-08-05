@@ -16,6 +16,7 @@ package org.eclipse.jetty.websocket.core.internal.messages;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandle;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -95,10 +96,12 @@ public abstract class DispatchedMessageSink extends AbstractMessageSink
 {
     private CompletableFuture<Void> dispatchComplete;
     private MessageSink typeSink;
+    private final Executor executor;
 
     public DispatchedMessageSink(CoreSession session, MethodHandle methodHandle)
     {
         super(session, methodHandle);
+        executor = session.getWebSocketComponents().getExecutor();
     }
 
     public abstract MessageSink newSink(Frame frame);
@@ -112,7 +115,7 @@ public abstract class DispatchedMessageSink extends AbstractMessageSink
 
             // Dispatch to end user function (will likely start with blocking for data/accept).
             // If the MessageSink can be closed do this after invoking and before completing the CompletableFuture.
-            new Thread(() ->
+            executor.execute(() ->
             {
                 try
                 {
@@ -129,7 +132,7 @@ public abstract class DispatchedMessageSink extends AbstractMessageSink
 
                     dispatchComplete.completeExceptionally(throwable);
                 }
-            }).start();
+            });
         }
 
         Callback frameCallback = callback;
