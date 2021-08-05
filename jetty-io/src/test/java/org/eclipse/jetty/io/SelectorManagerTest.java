@@ -22,7 +22,6 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -30,7 +29,6 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -62,16 +60,14 @@ public class SelectorManagerTest
         SocketAddress address = server.getLocalAddress();
 
         CountDownLatch connectionFinishedLatch = new CountDownLatch(1);
-        AtomicLong timeoutConnection = new AtomicLong();
+        CountDownLatch failedConnectionLatch = new CountDownLatch(1);
         long connectTimeout = 1000;
         SelectorManager selectorManager = new SelectorManager(executor, scheduler)
         {
             @Override
             protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key)
             {
-                SocketChannelEndPoint endPoint = new SocketChannelEndPoint((SocketChannel)channel, selector, key, getScheduler());
-                endPoint.setIdleTimeout(connectTimeout / 2);
-                return endPoint;
+                return new SocketChannelEndPoint((SocketChannel)channel, selector, key, getScheduler());
             }
 
             @Override
@@ -79,9 +75,7 @@ public class SelectorManagerTest
             {
                 try
                 {
-                    long timeout = timeoutConnection.get();
-                    if (timeout > 0)
-                        TimeUnit.MILLISECONDS.sleep(timeout);
+                    assertTrue(failedConnectionLatch.await(connectTimeout * 2, TimeUnit.MILLISECONDS));
                     return super.doFinishConnect(channel);
                 }
                 catch (InterruptedException e)
@@ -120,39 +114,36 @@ public class SelectorManagerTest
         {
             SocketChannel client1 = SocketChannel.open();
             client1.configureBlocking(false);
-            client1.connect(address);
-            timeoutConnection.set(connectTimeout * 110 / 100);
-            final CountDownLatch latch1 = new CountDownLatch(1);
+            assertFalse(client1.connect(address));
             selectorManager.connect(client1, new Callback()
             {
                 @Override
                 public void failed(Throwable x)
                 {
-                    latch1.countDown();
+                    failedConnectionLatch.countDown();
                 }
             });
-            assertTrue(latch1.await(connectTimeout * 3, TimeUnit.MILLISECONDS));
+            assertTrue(failedConnectionLatch.await(connectTimeout * 2, TimeUnit.MILLISECONDS));
             assertFalse(client1.isOpen());
 
-            // Wait for the first connect to finish, as the selector thread is waiting in finishConnect().
+            // Wait for the first connect to finish, as the selector thread is waiting in doFinishConnect().
             assertTrue(connectionFinishedLatch.await(5, TimeUnit.SECONDS));
 
             // Verify that after the failure we can connect successfully.
             try (SocketChannel client2 = SocketChannel.open())
             {
                 client2.configureBlocking(false);
-                client2.connect(address);
-                timeoutConnection.set(0);
-                final CountDownLatch latch2 = new CountDownLatch(1);
+                assertFalse(client2.connect(address));
+                CountDownLatch successfulConnectionLatch = new CountDownLatch(1);
                 selectorManager.connect(client2, new Callback()
                 {
                     @Override
                     public void succeeded()
                     {
-                        latch2.countDown();
+                        successfulConnectionLatch.countDown();
                     }
                 });
-                assertTrue(latch2.await(connectTimeout * 5, TimeUnit.MILLISECONDS));
+                assertTrue(successfulConnectionLatch.await(connectTimeout * 2, TimeUnit.MILLISECONDS));
                 assertTrue(client2.isOpen());
             }
         }
