@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpOutput.Interceptor;
@@ -55,6 +56,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
     private static final Logger LOG = LoggerFactory.getLogger(FileBufferedResponseHandler.class);
 
     private Path _tempDir = new File(System.getProperty("java.io.tmpdir")).toPath();
+    CompletableFuture<Void> _cleanable;
 
     public Path getTempDir()
     {
@@ -107,6 +109,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
             _fileOutputStream = null;
             _aggregating = null;
 
+            ReferenceCleaner.DeleteFile.delete(_filePath);
 
             _filePath = null;
         }
@@ -154,7 +157,8 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
             if (_fileOutputStream == null)
             {
                 // Create a new OutputStream to a file.
-                _filePath = Files.createTempFile(_tempDir, "BufferedResponse", "");
+                _filePath = Files.createTempFile(_tempDir, "JettyBufferedResponse.", ".buf");
+                _cleanable = ReferenceCleaner.register(this, new ReferenceCleaner.DeleteFile(_filePath));
                 _fileOutputStream = Files.newOutputStream(_filePath, StandardOpenOption.WRITE);
             }
 
@@ -225,9 +229,6 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
                     );
                 }
             };
-            // once icb is GC'd, cleanup the File.
-            if (_filePath != null)
-                ReferenceCleaner.register(icb, new ReferenceCleaner.DeleteFile(_filePath));
             icb.iterate();
         }
     }

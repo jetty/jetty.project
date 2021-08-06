@@ -48,7 +48,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Callback;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,6 +60,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -123,14 +123,6 @@ public class FileBufferedResponseHandlerTest
     public void after() throws Exception
     {
         _server.stop();
-    }
-
-    @AfterAll
-    public static void cleanup() throws InterruptedException
-    {
-        System.gc();
-        Thread.sleep(1000);
-        System.gc();
     }
 
     @Test
@@ -308,6 +300,10 @@ public class FileBufferedResponseHandlerTest
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(responseContent, not(containsString("writtenAfterClose")));
         assertThat(responseContent, containsString("NumFiles: 1"));
+
+        System.gc(); // allow reference to be cleaned
+        CompletableFuture<Integer> fileCountFut = _bufferedHandler._cleanable.thenApply((x) -> getNumFiles());
+        assertEquals(0, fileCountFut.get(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -383,14 +379,8 @@ public class FileBufferedResponseHandlerTest
                 writer.println("THIS WILL BE RESET");
                 writer.flush();
                 writer.println("THIS WILL BE RESET");
-                int numFilesBeforeReset = getNumFiles();
                 response.resetBuffer();
-                int numFilesAfterReset = getNumFiles();
-
-                writer.println("NumFilesBeforeReset: " + numFilesBeforeReset);
-                writer.println("NumFilesAfterReset: " + numFilesAfterReset);
                 writer.println("a string larger than the buffer size");
-                writer.println("NumFilesAfterWrite: " + getNumFiles());
             }
         });
 
@@ -402,9 +392,10 @@ public class FileBufferedResponseHandlerTest
         // Resetting the response buffer will delete the file.
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(responseContent, not(containsString("THIS WILL BE RESET")));
-        assertThat(responseContent, containsString("NumFilesBeforeReset: 1"));
-        assertThat(responseContent, containsString("NumFilesAfterReset: 1"));
-        assertThat(responseContent, containsString("NumFilesAfterWrite: 2"));
+
+        System.gc(); // allow reference to be cleaned
+        CompletableFuture<Integer> fileCountFut = _bufferedHandler._cleanable.thenApply((x) -> getNumFiles());
+        assertEquals(0, fileCountFut.get(5, TimeUnit.SECONDS));
     }
 
     @Test

@@ -13,10 +13,10 @@
 
 package org.eclipse.jetty.util;
 
-import java.io.IOException;
 import java.lang.ref.Cleaner;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,11 +29,24 @@ public final class ReferenceCleaner
     private static final Logger LOG = LoggerFactory.getLogger(ReferenceCleaner.class);
     private static final Cleaner CLEANER = Cleaner.create();
 
-    public static void register(Object obj, Runnable action)
+    public static CompletableFuture<Void> register(Object obj, Runnable action)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("register({}, {})", obj, action);
-        CLEANER.register(obj, action);
+        CompletableFuture<Void> fut = new CompletableFuture<>();
+        CLEANER.register(obj, () ->
+        {
+            try
+            {
+                action.run();
+                fut.complete(null);
+            }
+            catch (Throwable t)
+            {
+                fut.completeExceptionally(t);
+            }
+        });
+        return fut;
     }
 
     /**
@@ -48,19 +61,26 @@ public final class ReferenceCleaner
             this.file = file;
         }
 
-        @Override
-        public void run()
+        public static void delete(Path file)
         {
+            if (file == null)
+                return;
             try
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("DeleteFile {}", file);
                 Files.deleteIfExists(file);
             }
-            catch (IOException e)
+            catch (Throwable t)
             {
-                LOG.trace("IGNORED", e);
+                LOG.trace("IGNORED", t);
             }
+        }
+
+        @Override
+        public void run()
+        {
+            delete(file);
         }
 
         @Override
