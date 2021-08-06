@@ -29,4 +29,3 @@ http://www.apache.org/licenses/LICENSE-2.0.html
 #jetty.session.infinispan.idleTimeout.seconds=0
 #jetty.session.gracePeriod.seconds=3600
 #jetty.session.savePeriod.seconds=0
-
