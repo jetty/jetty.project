@@ -17,40 +17,44 @@ import java.io.IOException;
 import java.lang.ref.Cleaner;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class PhantomCleaner
+/**
+ * Using {@link java.lang.ref.Cleaner} to perform actions when a reference is garbage collected.
+ */
+public final class ReferenceCleaner
 {
-    private static final Logger LOG = LoggerFactory.getLogger(PhantomCleaner.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ReferenceCleaner.class);
     private static final Cleaner CLEANER = Cleaner.create();
 
     public static void register(Object obj, Runnable action)
     {
-        LOG.info("register({}, {})", obj, action);
+        if (LOG.isDebugEnabled())
+            LOG.debug("register({}, {})", obj, action);
         CLEANER.register(obj, action);
     }
 
-    public static class FileDispose implements Runnable
+    /**
+     * Action to delete a file once the referenced objects (that might hold a file lock) are released.
+     */
+    public static class DeleteFile implements Runnable
     {
-        private static final Logger LOG = LoggerFactory.getLogger(FileDispose.class);
-        private final String filename;
+        private final Path file;
 
-        public FileDispose(Path file)
+        public DeleteFile(Path file)
         {
-            // storing this reference as a String to allow GC to work.
-            this.filename = file.toAbsolutePath().toString();
+            this.file = file;
         }
 
         @Override
         public void run()
         {
-            Path file = Paths.get(filename);
             try
             {
-                LOG.info("Cleaning {}", file);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("DeleteFile {}", file);
                 Files.deleteIfExists(file);
             }
             catch (IOException e)
@@ -62,10 +66,7 @@ public final class PhantomCleaner
         @Override
         public String toString()
         {
-            final StringBuilder sb = new StringBuilder("FileDispose[");
-            sb.append("filename='").append(filename).append('\'');
-            sb.append(']');
-            return sb.toString();
+            return String.format("%s@%x[file='%s']", this.getClass().getSimpleName(), this.hashCode(), file);
         }
     }
 }

@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.PhantomCleaner;
+import org.eclipse.jetty.util.ReferenceCleaner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -220,17 +220,14 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
                 @Override
                 public String toString()
                 {
-                    final StringBuilder sb = new StringBuilder("FileBufferedInterceptor[");
-                    sb.append("fileLength=").append(fileLength);
-                    sb.append(", pos=").append(_pos);
-                    sb.append(", last=").append(_last);
-                    sb.append(']');
-                    return sb.toString();
+                    return String.format("FileBufferedInterceptor@%X[fileLength=%d,pos=%d,last=%b]",
+                        this.hashCode(), fileLength, _pos, _last
+                    );
                 }
             };
             // once icb is GC'd, cleanup the File.
             if (_filePath != null)
-                PhantomCleaner.register(icb, new PhantomCleaner.FileDispose(_filePath));
+                ReferenceCleaner.register(icb, new ReferenceCleaner.DeleteFile(_filePath));
             icb.iterate();
         }
     }

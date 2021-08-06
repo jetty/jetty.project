@@ -48,6 +48,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Callback;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -122,6 +123,14 @@ public class FileBufferedResponseHandlerTest
     public void after() throws Exception
     {
         _server.stop();
+    }
+
+    @AfterAll
+    public static void cleanup() throws InterruptedException
+    {
+        System.gc();
+        Thread.sleep(1000);
+        System.gc();
     }
 
     @Test
