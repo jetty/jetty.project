@@ -25,7 +25,6 @@ module org.eclipse.jetty.security.jaspi
     requires jetty.servlet.api;
     requires transitive org.eclipse.jetty.security;
     requires org.slf4j;
-    requires static org.eclipse.jetty.webapp;
 
     provides Authenticator.Factory with JaspiAuthenticatorFactory;
 }
