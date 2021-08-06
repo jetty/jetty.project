@@ -14,7 +14,9 @@
        <Set name="savePeriodSec" property="jetty.session.savePeriod.seconds"/>
        <Set name="maxRetries" property="jetty.session.gcloud.maxRetries"/>
        <Set name="backoffMs" property="jetty.session.gcloud.backoffMs"/>
-       <Set name="namespace" property="jetty.session.gcloud.namespace"/>  
+       <Set name="namespace" property="jetty.session.gcloud.namespace"/>
+       <Set name="host" property="jetty.session.gcloud.host"/>
+       <Set name="projectId" property="jetty.session.gcloud.projectId"/>
        <Set name="entityDataModel">
           <New class="org.eclipse.jetty.gcloud.session.GCloudSessionDataStore$EntityDataModel">
               <Set name="kind" property="jetty.session.gcloud.model.kind"/>

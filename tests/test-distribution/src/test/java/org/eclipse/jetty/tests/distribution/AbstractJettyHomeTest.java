@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -67,5 +68,25 @@ public class AbstractJettyHomeTest
     {
         if (client != null)
             client.stop();
+    }
+
+    protected class ResponseDetails implements Supplier<String>
+    {
+        private final ContentResponse response;
+
+        public ResponseDetails(ContentResponse response)
+        {
+            this.response = response;
+        }
+
+        @Override
+        public String get()
+        {
+            StringBuilder ret = new StringBuilder();
+            ret.append(response.toString()).append(System.lineSeparator());
+            ret.append(response.getHeaders().toString()).append(System.lineSeparator());
+            ret.append(response.getContentAsString()).append(System.lineSeparator());
+            return ret.toString();
+        }
     }
 }
