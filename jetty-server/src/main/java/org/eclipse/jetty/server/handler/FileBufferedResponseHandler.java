@@ -220,14 +220,6 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
                     dispose();
                     callback.failed(cause);
                 }
-
-                @Override
-                public String toString()
-                {
-                    return String.format("FileBufferedInterceptor@%x[fileLength=%d,pos=%d,last=%b]",
-                        hashCode(), _fileLength, _pos, _last
-                    );
-                }
             };
             icb.iterate();
         }
