@@ -189,7 +189,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
             // Create an iterating callback to do the writing
             IteratingCallback icb = new IteratingCallback()
             {
-                private final long fileLength = _filePath.toFile().length();
+                private final long _fileLength = _filePath.toFile().length();
                 private long _pos = 0;
                 private boolean _last = false;
 
@@ -199,8 +199,8 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
                     if (_last)
                         return Action.SUCCEEDED;
 
-                    long len = Math.min(MAX_MAPPED_BUFFER_SIZE, fileLength - _pos);
-                    _last = (_pos + len == fileLength);
+                    long len = Math.min(MAX_MAPPED_BUFFER_SIZE, _fileLength - _pos);
+                    _last = (_pos + len == _fileLength);
                     ByteBuffer buffer = BufferUtil.toMappedBuffer(_filePath, _pos, len);
                     getNextInterceptor().write(buffer, _last, this);
                     _pos += len;
@@ -224,8 +224,8 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
                 @Override
                 public String toString()
                 {
-                    return String.format("FileBufferedInterceptor@%X[fileLength=%d,pos=%d,last=%b]",
-                        this.hashCode(), fileLength, _pos, _last
+                    return String.format("FileBufferedInterceptor@%x[fileLength=%d,pos=%d,last=%b]",
+                        hashCode(), _fileLength, _pos, _last
                     );
                 }
             };

@@ -86,7 +86,7 @@ public final class ReferenceCleaner
         @Override
         public String toString()
         {
-            return String.format("%s@%x[file='%s']", this.getClass().getSimpleName(), this.hashCode(), file);
+            return String.format("%s@%x[file='%s']", getClass().getSimpleName(), hashCode(), file);
         }
     }
 }
