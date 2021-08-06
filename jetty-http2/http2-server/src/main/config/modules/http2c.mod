@@ -23,10 +23,13 @@ etc/jetty-http2c.xml
 # jetty.http2c.maxConcurrentStreams=1024
 
 ## Initial stream receive window (client to server)
-# jetty.http2c.initialStreamRecvWindow=65535
+# jetty.http2c.initialStreamRecvWindow=524288
+
+## Initial session receive window (client to server)
+# jetty.http2c.initialSessionRecvWindow=1048576
 
 ## The max number of keys in all SETTINGS frames
-# jetty.http2.maxSettingsKeys=64
+# jetty.http2c.maxSettingsKeys=64
 
 ## Max number of bad frames and pings per second
-# jetty.http2.rateControl.maxEventsPerSecond=20
+# jetty.http2c.rateControl.maxEventsPerSecond=50
