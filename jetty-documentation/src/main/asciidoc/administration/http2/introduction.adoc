@@ -37,7 +37,7 @@ In mid-2019, there were a link:#security-reports[number of CVEs] were issued war
 
 As a result of these CVEs, Jetty introduced a new, configurable denial of service (DOS) protection feature in Jetty 9.4.22.
 
-Jetty’s HTTP/2 implementation now features a new Rate Control parameter, `jetty.http2.rateControl.maxEventsPerSecond`, that defaults to 20 events per second, per connection for all pings, bad frames, settings frames, priority changes etc.
+Jetty’s HTTP/2 implementation now features a new Rate Control parameter, `jetty.http2.rateControl.maxEventsPerSecond`, that defaults to 50 events per second, per connection for all pings, bad frames, settings frames, priority changes etc.
 
 
 [[http2-modules]]
