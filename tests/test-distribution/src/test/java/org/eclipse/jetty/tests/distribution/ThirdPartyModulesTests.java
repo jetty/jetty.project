@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -28,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ThirdPartyModulesTests extends AbstractJettyHomeTest
 {
     @Test
+    @Disabled("not jakarta ready")
     public void testHawtio() throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -67,6 +69,7 @@ public class ThirdPartyModulesTests extends AbstractJettyHomeTest
     }
 
     @Test
+    @Disabled("not jakarta ready")
     public void testJAMon() throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -140,6 +143,7 @@ public class ThirdPartyModulesTests extends AbstractJettyHomeTest
     }
 
     @Test
+    @Disabled("not jakarta ready")
     public void testjolokia() throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
