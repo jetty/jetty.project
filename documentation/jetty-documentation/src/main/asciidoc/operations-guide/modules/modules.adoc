@@ -396,6 +396,8 @@ When the `[exec]` section is present, the JVM running the Jetty start mechanism 
 This is necessary because JVM options such as `-Xmx` (that specifies the max JVM heap size) cannot be changed in a running JVM.
 For an example, see xref:og-start-configure-custom-module-exec[this section].
 
+You can avoid that the Jetty start mechanism forks the second JVM, as explained in xref:og-start-configure-dry-run[this section].
+
 [[og-modules-directive-jpms]]
 ===== [jpms]
 
