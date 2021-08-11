@@ -247,9 +247,9 @@ if [ -z "$JETTY_HOME" ]; then
   exit 1
 fi
 
-RUN_DIR=$PWD
+RUN_DIR=$(pwd)
 cd "$JETTY_HOME"
-JETTY_HOME=$PWD
+JETTY_HOME=$(pwd)
 
 ##################################################
 # Set JETTY_BASE
@@ -263,7 +263,7 @@ if [ -z "$JETTY_BASE" ]; then
   fi
 fi
 cd "$JETTY_BASE"
-JETTY_BASE=$PWD
+JETTY_BASE=$(pwd)
 
 #####################################################
 # Check that jetty is where we think it is
