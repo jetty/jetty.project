@@ -78,7 +78,7 @@
     <settingsPath>src/it/settings.xml</settingsPath>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
-    <testcontainers.version>1.15.1</testcontainers.version>
+    <testcontainers.version>1.16.0</testcontainers.version>
     <maria.version>2.7.0</maria.version>
   </properties>
 
