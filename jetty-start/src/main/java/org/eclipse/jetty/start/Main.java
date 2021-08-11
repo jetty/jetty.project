@@ -475,9 +475,7 @@ public class Main
                 .filter(module -> !module.getJvmArgs().isEmpty())
                 .map(Module::getName)
                 .collect(Collectors.toList());
-            StartLog.warn("Forking second JVM due to forking module(s): %s.", execModules);
-            StartLog.warn("Consider using option --dry-run to generate the command line:");
-            StartLog.warn("$(java -jar $JETTY_HOME/start.jar --dry-run)");
+            StartLog.warn("Forking second JVM due to forking module(s): %s. Use --dry-run to generate the command line to avoid forking.", execModules);
 
             ProcessBuilder pbuilder = new ProcessBuilder(cmd.getArgs());
             StartLog.endStartLog();
