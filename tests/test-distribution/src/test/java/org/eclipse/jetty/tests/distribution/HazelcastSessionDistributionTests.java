@@ -28,12 +28,12 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
@@ -50,15 +50,14 @@ public class HazelcastSessionDistributionTests extends AbstractJettyHomeTest
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HazelcastSessionDistributionTests.class);
 
-
     /**
-     *  This simulate the onlyClient option which means the JVM running Jetty is only an Hazelcast client and not part
+     *  This test will simulate the onlyClient option which means the JVM running Jetty is only a Hazelcast client and not part
      *  of the cluster
      */
     @Test
-    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Hazelcast + Docker not available on windows")
     public void testHazelcastRemoteOnlyClient() throws Exception
     {
+        Assumptions.assumeTrue(DockerClientFactory.instance().isDockerAvailable(), "Docker is not available on this environment");
         try (GenericContainer hazelcast =
                             new GenericContainer("hazelcast/hazelcast:" + System.getProperty("hazelcast.version", "4.1"))
                                     .withExposedPorts(5701)
