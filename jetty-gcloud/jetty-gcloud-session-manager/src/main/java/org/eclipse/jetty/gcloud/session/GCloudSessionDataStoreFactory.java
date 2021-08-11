@@ -26,6 +26,8 @@ public class GCloudSessionDataStoreFactory extends AbstractSessionDataStoreFacto
     private int _maxRetries = GCloudSessionDataStore.DEFAULT_MAX_RETRIES;
     private int _backoffMs = GCloudSessionDataStore.DEFAULT_BACKOFF_MS;
     private GCloudSessionDataStore.EntityDataModel _model;
+    private String _host;
+    private String _projectId;
 
     public GCloudSessionDataStore.EntityDataModel getEntityDataModel()
     {
@@ -73,6 +75,26 @@ public class GCloudSessionDataStoreFactory extends AbstractSessionDataStoreFacto
         _namespace = namespace;
     }
 
+    public void setHost(String host)
+    {
+        _host = host;
+    }
+
+    public String getHost()
+    {
+        return _host;
+    }
+
+    public void setProjectId(String projectId)
+    {
+        _projectId = projectId;
+    }
+
+    public String getProjectId()
+    {
+        return _projectId;
+    }
+
     @Override
     public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
     {
@@ -83,6 +105,8 @@ public class GCloudSessionDataStoreFactory extends AbstractSessionDataStoreFacto
         ds.setNamespace(getNamespace());
         ds.setSavePeriodSec(getSavePeriodSec());
         ds.setEntityDataModel(getEntityDataModel());
+        ds.setHost(getHost());
+        ds.setProjectId(getProjectId());
         return ds;
     }
 }

@@ -44,7 +44,7 @@
     <weld.version>3.1.8.Final</weld.version>
     <jboss.logging.version>3.4.2.Final</jboss.logging.version>
     <jetty.perf-helper.version>1.0.6</jetty.perf-helper.version>
-    <ant.version>1.10.9</ant.version>
+    <ant.version>1.10.11</ant.version>
     <!-- OSGI import-package -->
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
 
@@ -68,6 +68,7 @@
     <it.debug>false</it.debug>
     <jetty.test.version>5.5</jetty.test.version>
     <hamcrest.version>2.2</hamcrest.version>
+    <mariadb.docker.version>10.3.6</mariadb.docker.version>
 
     <!-- springboot is only used for jetty-maven-plugin it test
     otherwise depending on Spring Boot might be chicken and egg issue :) -->
@@ -79,6 +80,7 @@
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
     <testcontainers.version>1.16.0</testcontainers.version>
+    <jna.version>5.8.0</jna.version>
     <maria.version>2.7.0</maria.version>
   </properties>
 
@@ -1138,9 +1140,14 @@
         <scope>import</scope>
       </dependency>
       <dependency>
+        <groupId>org.mariadb.jdbc</groupId>
+        <artifactId>mariadb-java-client</artifactId>
+        <version>${mariadb.version}</version>
+      </dependency>
+      <dependency>
         <groupId>net.java.dev.jna</groupId>
         <artifactId>jna</artifactId>
-        <version>5.8.0</version>
+        <version>${jna.version}</version>
       </dependency>
       <!-- Old Deps -->
       <dependency>
