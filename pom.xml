@@ -81,7 +81,7 @@
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
     <testcontainers.version>1.16.0</testcontainers.version>
     <jna.version>5.8.0</jna.version>
-    <maria.version>2.7.0</maria.version>
+    <mariadb.version>2.7.0</mariadb.version>
   </properties>
 
   <licenses>
