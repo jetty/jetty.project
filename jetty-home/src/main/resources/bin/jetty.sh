@@ -433,8 +433,8 @@ case "`uname`" in
 CYGWIN*) JETTY_START="`cygpath -w $JETTY_START`";;
 esac
 
-RUN_ARGS=$("$JAVA" ${JAVA_OPTIONS[@]} -jar "$JETTY_START" --dry-run=opts,path,main,args ${JETTY_ARGS[*]})
-RUN_CMD=("$JAVA" ${RUN_ARGS[@]})
+RUN_ARGS=$("$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args ${JETTY_ARGS[*]})
+RUN_CMD=("$JAVA" ${JAVA_OPTIONS[@]} ${RUN_ARGS[@]})
 
 #####################################################
 # Comment these out after you're happy with what
