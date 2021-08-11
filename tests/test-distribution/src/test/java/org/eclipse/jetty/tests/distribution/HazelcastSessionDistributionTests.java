@@ -30,6 +30,8 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
@@ -54,6 +56,7 @@ public class HazelcastSessionDistributionTests extends AbstractJettyHomeTest
      *  of the cluster
      */
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Hazelcast + Docker not available on windows")
     public void testHazelcastRemoteOnlyClient() throws Exception
     {
         try (GenericContainer hazelcast =
