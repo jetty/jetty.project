@@ -66,7 +66,8 @@ NAME=$(echo $(basename $0) | sed -e 's/^[SK][0-9]*//' -e 's/\.sh$//')
 #    <Arg><Property name="jetty.home" default="."/>/webapps/jetty.war</Arg>
 #
 # JETTY_BASE
-#   Where your Jetty base directory is.  If not set, the value from
+#   Where your Jetty base directory is.  If not set, then the currently
+#   directory is checked, otherwise the value from
 #   $JETTY_HOME will be used.
 #
 # JETTY_RUN
@@ -238,7 +239,6 @@ then
   fi
 fi
 
-
 ##################################################
 # No JETTY_HOME yet? We're out of luck!
 ##################################################
@@ -247,20 +247,23 @@ if [ -z "$JETTY_HOME" ]; then
   exit 1
 fi
 
+RUN_DIR=$PWD
 cd "$JETTY_HOME"
 JETTY_HOME=$PWD
-
 
 ##################################################
 # Set JETTY_BASE
 ##################################################
+export JETTY_BASE
 if [ -z "$JETTY_BASE" ]; then
-  JETTY_BASE=$JETTY_HOME
+  if [ -d "$RUN_DIR/start.d" -o -f "$RUN_DIR/start.ini" ]; then
+    JETTY_BASE=$RUN_DIR
+  else
+    JETTY_BASE=$JETTY_HOME
+  fi
 fi
-
 cd "$JETTY_BASE"
 JETTY_BASE=$PWD
-
 
 #####################################################
 # Check that jetty is where we think it is
@@ -430,7 +433,7 @@ case "`uname`" in
 CYGWIN*) JETTY_START="`cygpath -w $JETTY_START`";;
 esac
 
-RUN_ARGS=(${JAVA_OPTIONS[@]} -jar "$JETTY_START" ${JETTY_ARGS[*]})
+RUN_ARGS=$("$JAVA" ${JAVA_OPTIONS[@]} -jar "$JETTY_START" --dry-run=opts,path,main,args ${JETTY_ARGS[*]})
 RUN_CMD=("$JAVA" ${RUN_ARGS[@]})
 
 #####################################################
