@@ -839,7 +839,7 @@ public class HttpOutputTest
     }
 
     @Test
-    public void testEmptyBufferKnown() throws Exception
+    public void testEmptyBufferWithZeroContentLength() throws Exception
     {
         CountDownLatch latch = new CountDownLatch(1);
         AbstractHandler handler = new AbstractHandler()
