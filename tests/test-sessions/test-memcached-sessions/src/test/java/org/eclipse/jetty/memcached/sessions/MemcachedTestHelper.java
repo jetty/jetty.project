@@ -149,7 +149,8 @@ public class MemcachedTestHelper
     @SuppressWarnings({"rawtypes", "unchecked"})
     static GenericContainer memcached =
         new GenericContainer("memcached:" + System.getProperty("memcached.docker.version", "1.6.6"))
-            .withLogConsumer(new Slf4jLogConsumer(MEMCACHED_LOG));
+                .withExposedPorts(11211)
+                .withLogConsumer(new Slf4jLogConsumer(MEMCACHED_LOG));
 
     static
     {
