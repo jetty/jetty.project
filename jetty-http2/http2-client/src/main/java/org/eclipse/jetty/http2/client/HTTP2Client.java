@@ -127,6 +127,7 @@ public class HTTP2Client extends ContainerLifeCycle
     private long connectTimeout = 10000;
     private boolean connectBlocking;
     private SocketAddress bindAddress;
+    private boolean tcpNoDelay = true;
     private int inputBufferSize = 8192;
     private List<String> protocols = Arrays.asList("h2", "h2-17", "h2-16", "h2-15", "h2-14");
     private int initialSessionRecvWindow = 16 * 1024 * 1024;
@@ -295,6 +296,16 @@ public class HTTP2Client extends ContainerLifeCycle
     public void setBindAddress(SocketAddress bindAddress)
     {
         this.bindAddress = bindAddress;
+    }
+
+    public boolean isTCPNoDelay()
+    {
+        return tcpNoDelay;
+    }
+
+    public void setTCPNoDelay(boolean tcpNoDelay)
+    {
+        this.tcpNoDelay = tcpNoDelay;
     }
 
     @ManagedAttribute("The size of the buffer used to read from the network")
@@ -471,7 +482,7 @@ public class HTTP2Client extends ContainerLifeCycle
 
     protected void configure(SocketChannel channel) throws IOException
     {
-        channel.socket().setTcpNoDelay(true);
+        channel.socket().setTcpNoDelay(isTCPNoDelay());
     }
 
     private class ClientSelectorManager extends SelectorManager

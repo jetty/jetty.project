@@ -98,6 +98,9 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
             client.setConnectTimeout(httpClient.getConnectTimeout());
             client.setIdleTimeout(httpClient.getIdleTimeout());
             client.setInputBufferSize(httpClient.getResponseBufferSize());
+            client.setConnectBlocking(httpClient.isConnectBlocking());
+            client.setBindAddress(httpClient.getBindAddress());
+            client.setTCPNoDelay(httpClient.isTCPNoDelay());
         }
         addBean(client);
         super.doStart();
