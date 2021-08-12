@@ -24,7 +24,6 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPOutputStream;
@@ -48,7 +47,6 @@ import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -408,47 +406,6 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         assertEquals(200, response.getStatus());
         assertArrayEquals(data, response.getContent());
-    }
-
-    @Test
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
-    public void testRequestIdleTimeout() throws Exception
-    {
-        final long idleTimeout = 1000;
-        start(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
-            {
-                try
-                {
-                    baseRequest.setHandled(true);
-                    TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
-                }
-                catch (InterruptedException x)
-                {
-                    throw new ServletException(x);
-                }
-            }
-        });
-
-        final String host = "localhost";
-        final int port = connector.getLocalPort();
-        assertThrows(TimeoutException.class, () ->
-            client.newRequest(host, port)
-                .scheme(scheme)
-                .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
-                .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
-                .send());
-
-        // Make another request without specifying the idle timeout, should not fail
-        ContentResponse response = client.newRequest(host, port)
-            .scheme(scheme)
-            .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
-            .send();
-
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
     }
 
     @Test

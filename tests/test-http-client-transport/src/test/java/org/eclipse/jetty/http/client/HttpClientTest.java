@@ -22,10 +22,12 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
+import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
@@ -779,6 +781,58 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         });
 
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testRequestIdleTimeout(Transport transport) throws Exception
+    {
+        init(transport);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        long idleTimeout = 500;
+        scenario.start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            {
+                try
+                {
+                    baseRequest.setHandled(true);
+                    if (target.equals("/1"))
+                        assertTrue(latch.await(5, TimeUnit.SECONDS));
+                    else if (target.equals("/2"))
+                        Thread.sleep(2 * idleTimeout);
+                    else
+                        fail("Unknown path: " + target);
+                }
+                catch (InterruptedException x)
+                {
+                    throw new ServletException(x);
+                }
+            }
+        });
+
+        String host = "localhost";
+        int port = scenario.getNetworkConnectorLocalPortInt().get();
+        assertThrows(TimeoutException.class, () ->
+            scenario.client.newRequest(host, port)
+                .scheme(scenario.getScheme())
+                .path("/1")
+                .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
+                .timeout(2 * idleTimeout, TimeUnit.MILLISECONDS)
+                .send());
+        latch.countDown();
+
+        // Make another request without specifying the idle timeout, should not fail
+        ContentResponse response = scenario.client.newRequest(host, port)
+            .scheme(scenario.getScheme())
+            .path("/2")
+            .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
+            .send();
+
+        assertNotNull(response);
+        assertEquals(200, response.getStatus());
     }
 
     private void sleep(long time) throws IOException

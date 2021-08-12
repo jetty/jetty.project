@@ -60,11 +60,13 @@ import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.client.http.HttpConnectionOverHTTP2;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.HttpInput.Content;
+import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
@@ -74,12 +76,11 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import static java.nio.ByteBuffer.wrap;
+import static org.awaitility.Awaitility.await;
 import static org.eclipse.jetty.http.client.Transport.FCGI;
 import static org.eclipse.jetty.http.client.Transport.H2C;
 import static org.eclipse.jetty.http.client.Transport.HTTP;
@@ -398,18 +399,11 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    @Tag("Unstable")
-    @Disabled
     public void testAsyncWriteClosed(Transport transport) throws Exception
     {
         init(transport);
 
-        String text = "Now is the winter of our discontent. How Now Brown Cow. The quick brown fox jumped over the lazy dog.\n";
-        for (int i = 0; i < 10; i++)
-        {
-            text = text + text;
-        }
-        byte[] data = text.getBytes(StandardCharsets.UTF_8);
+        byte[] data = new byte[1024];
 
         CountDownLatch errorLatch = new CountDownLatch(1);
         scenario.start(new HttpServlet()
@@ -431,9 +425,26 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
 
                         // Wait for the failure to arrive to
                         // the server while we are about to write.
-                        sleep(2000);
-
-                        out.write(data);
+                        try
+                        {
+                            await().atMost(5, TimeUnit.SECONDS).until(() ->
+                            {
+                                try
+                                {
+                                    if (out.isReady())
+                                        ((HttpOutput)out).write(ByteBuffer.wrap(data));
+                                    return false;
+                                }
+                                catch (EofException e)
+                                {
+                                    return true;
+                                }
+                            });
+                        }
+                        catch (Exception e)
+                        {
+                            throw new AssertionError(e);
+                        }
                     }
 
                     @Override

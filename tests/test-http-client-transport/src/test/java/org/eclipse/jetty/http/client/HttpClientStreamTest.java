@@ -58,7 +58,6 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -666,7 +665,6 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testUploadWithDeferredContentProviderFromInputStream(Transport transport) throws Exception
     {
         init(transport);
@@ -680,20 +678,22 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
             }
         });
 
-        CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch requestSentLatch = new CountDownLatch(1);
+        CountDownLatch responseLatch = new CountDownLatch(1);
         try (AsyncRequestContent content = new AsyncRequestContent())
         {
             scenario.client.newRequest(scenario.newURI())
                 .scheme(scenario.getScheme())
                 .body(content)
+                .onRequestCommit((request) -> requestSentLatch.countDown())
                 .send(result ->
                 {
                     if (result.isSucceeded() && result.getResponse().getStatus() == 200)
-                        latch.countDown();
+                        responseLatch.countDown();
                 });
 
             // Make sure we provide the content *after* the request has been "sent".
-            Thread.sleep(1000);
+            assertTrue(requestSentLatch.await(5, TimeUnit.SECONDS));
 
             try (ByteArrayInputStream input = new ByteArrayInputStream(new byte[1024]))
             {
@@ -705,7 +705,7 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
                 }
             }
         }
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
     @ParameterizedTest
