@@ -60,9 +60,6 @@ public class HazelcastSessionDistributionTests extends AbstractSessionDistributi
     @BeforeEach
     public void setupHazelcast()
     {
-        // Do not fail test on environments where docker is not present (eg: Windows, ARM64, etc)
-        Assumptions.assumeTrue(DockerClientFactory.instance().isDockerAvailable(), "Docker is not available on this environment");
-
         hazelcast = new GenericContainer<>("hazelcast/hazelcast:" + System.getProperty("hazelcast.version", "4.1"))
             .withExposedPorts(5701)
             .waitingFor(Wait.forListeningPort())
