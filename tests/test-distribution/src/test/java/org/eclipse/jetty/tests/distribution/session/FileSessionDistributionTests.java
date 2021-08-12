@@ -16,9 +16,7 @@ package org.eclipse.jetty.tests.distribution.session;
 import java.util.Collections;
 import java.util.List;
 
-/**
- *
- */
+@Testcontainers(disabledWithoutDocker = false)
 public class FileSessionDistributionTests extends AbstractSessionDistributionTests
 {
 
