@@ -80,14 +80,14 @@ public class WelcomeFilterTest
         }
 
         WebAppContext context = new WebAppContext(server, directoryPath.toString(), "/");
-        context.setDefaultsDescriptor(MavenTestingUtils.getTestResourceFile("simple-default.xml").toString());
+        // Turn off memory-mapped behavior in DefaultServlet for Windows testing reasons.
+        context.setDefaultsDescriptor(MavenTestingUtils.getTestResourceFile("no-memory-mapped-default-servlet.xml").toString());
         server.setHandler(context);
         String concatPath = "/*";
 
         FilterHolder filterHolder = new FilterHolder(new WelcomeFilter());
         filterHolder.setInitParameter("welcome", "welcome.html");
         context.addFilter(filterHolder, concatPath, EnumSet.of(DispatcherType.REQUEST));
-        server.setDumpAfterStart(true);
         server.start();
 
         // Verify that I can get the file programmatically, as required by the spec.
