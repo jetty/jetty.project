@@ -18,6 +18,7 @@ import java.net.InetSocketAddress;
 import java.net.ProtocolFamily;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.net.SocketOption;
 import java.net.StandardProtocolFamily;
 import java.net.StandardSocketOptions;
 import java.nio.channels.SelectableChannel;
@@ -33,6 +34,8 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -41,6 +44,10 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * <p>The client-side component that connects to server sockets.</p>
+ */
+@ManagedObject
 public class ClientConnector extends ContainerLifeCycle
 {
     public static final String CLIENT_CONNECTOR_CONTEXT_KEY = "org.eclipse.jetty.client.connector";
@@ -49,6 +56,12 @@ public class ClientConnector extends ContainerLifeCycle
     public static final String CONNECTION_PROMISE_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".connectionPromise";
     private static final Logger LOG = LoggerFactory.getLogger(ClientConnector.class);
 
+    /**
+     * <p>Creates a ClientConnector configured to connect via Unix-Domain sockets to the given Unix-Domain path</p>
+     *
+     * @param path the Unix-Domain path to connect to
+     * @return a ClientConnector that connects to the given Unix-Domain path
+     */
     public static ClientConnector forUnixDomain(Path path)
     {
         return new ClientConnector(SocketChannelWithAddress.Factory.forUnixDomain(path));
@@ -65,7 +78,11 @@ public class ClientConnector extends ContainerLifeCycle
     private Duration connectTimeout = Duration.ofSeconds(5);
     private Duration idleTimeout = Duration.ofSeconds(30);
     private SocketAddress bindAddress;
+    private boolean tcpNoDelay = true;
     private boolean reuseAddress = true;
+    private boolean reusePort;
+    private int receiveBufferSize = -1;
+    private int sendBufferSize = -1;
 
     public ClientConnector()
     {
@@ -129,6 +146,10 @@ public class ClientConnector extends ContainerLifeCycle
         this.sslContextFactory = sslContextFactory;
     }
 
+    /**
+     * @return the number of NIO selectors
+     */
+    @ManagedAttribute("The number of NIO selectors")
     public int getSelectors()
     {
         return selectors;
@@ -141,6 +162,10 @@ public class ClientConnector extends ContainerLifeCycle
         this.selectors = selectors;
     }
 
+    /**
+     * @return whether {@link #connect(SocketAddress, Map)} operations are performed in blocking mode
+     */
+    @ManagedAttribute("Whether connect operations are performed in blocking mode")
     public boolean isConnectBlocking()
     {
         return connectBlocking;
@@ -151,6 +176,10 @@ public class ClientConnector extends ContainerLifeCycle
         this.connectBlocking = connectBlocking;
     }
 
+    /**
+     * @return the timeout of {@link #connect(SocketAddress, Map)} operations
+     */
+    @ManagedAttribute("The timeout of connect operations")
     public Duration getConnectTimeout()
     {
         return connectTimeout;
@@ -163,6 +192,10 @@ public class ClientConnector extends ContainerLifeCycle
             selectorManager.setConnectTimeout(connectTimeout.toMillis());
     }
 
+    /**
+     * @return the max duration for which a connection can be idle (that is, without traffic of bytes in either direction)
+     */
+    @ManagedAttribute("The duration for which a connection can be idle")
     public Duration getIdleTimeout()
     {
         return idleTimeout;
@@ -173,24 +206,118 @@ public class ClientConnector extends ContainerLifeCycle
         this.idleTimeout = idleTimeout;
     }
 
+    /**
+     * @return the address to bind a socket to before the connect operation
+     */
+    @ManagedAttribute("The socket address to bind sockets to before the connect operation")
     public SocketAddress getBindAddress()
     {
         return bindAddress;
     }
 
+    /**
+     * <p>Sets the bind address of sockets before the connect operation.</p>
+     * <p>In multi-homed hosts, you may want to connect from a specific address:</p>
+     * <pre>
+     * clientConnector.setBindAddress(new InetSocketAddress("127.0.0.2", 0));
+     * </pre>
+     * <p>Note the use of the port {@code 0} to indicate that a different ephemeral port
+     * should be used for each different connection.</p>
+     * <p>In the rare cases where you want to use the same port for all connections,
+     * you must also call {@link #setReusePort(boolean) setReusePort(true)}.</p>
+     *
+     * @param bindAddress the socket address to bind to before the connect operation
+     */
     public void setBindAddress(SocketAddress bindAddress)
     {
         this.bindAddress = bindAddress;
     }
 
+    /**
+     * @return whether small TCP packets are sent without delay
+     */
+    @ManagedAttribute("Whether small TCP packets are sent without delay")
+    public boolean isTCPNoDelay()
+    {
+        return tcpNoDelay;
+    }
+
+    public void setTCPNoDelay(boolean tcpNoDelay)
+    {
+        this.tcpNoDelay = tcpNoDelay;
+    }
+
+    /**
+     * @return whether rebinding is allowed with sockets in tear-down states
+     */
+    @ManagedAttribute("Whether rebinding is allowed with sockets in tear-down states")
     public boolean getReuseAddress()
     {
         return reuseAddress;
     }
 
+    /**
+     * <p>Sets whether it is allowed to bind a socket to a socket address
+     * that may be in use by another socket in tear-down state, for example
+     * in TIME_WAIT state.</p>
+     * <p>This is useful when ClientConnector is restarted: an existing connection
+     * may still be using a network address (same host and same port) that is also
+     * chosen for a new connection.</p>
+     *
+     * @param reuseAddress whether rebinding is allowed with sockets in tear-down states
+     * @see #setReusePort(boolean)
+     */
     public void setReuseAddress(boolean reuseAddress)
     {
         this.reuseAddress = reuseAddress;
+    }
+
+    /**
+     * @return whether binding to same host and port is allowed
+     */
+    @ManagedAttribute("Whether binding to same host and port is allowed")
+    public boolean isReusePort()
+    {
+        return reusePort;
+    }
+
+    /**
+     * <p>Sets whether it is allowed to bind multiple sockets to the same
+     * socket address (same host and same port).</p>
+     *
+     * @param reusePort whether binding to same host and port is allowed
+     */
+    public void setReusePort(boolean reusePort)
+    {
+        this.reusePort = reusePort;
+    }
+
+    /**
+     * @return the receive buffer size in bytes, or -1 for the default value
+     */
+    @ManagedAttribute("The receive buffer size in bytes")
+    public int getReceiveBufferSize()
+    {
+        return receiveBufferSize;
+    }
+
+    public void setReceiveBufferSize(int receiveBufferSize)
+    {
+        this.receiveBufferSize = receiveBufferSize;
+    }
+
+    /**
+     * @return the send buffer size in bytes, or -1 for the default value
+     */
+    @ManagedAttribute("The send buffer size in bytes")
+    public int getSendBufferSize()
+    {
+        return sendBufferSize;
+    }
+
+    public void setSendBufferSize(int sendBufferSize)
+    {
+        this.sendBufferSize = sendBufferSize;
     }
 
     @Override
@@ -246,10 +373,12 @@ public class ClientConnector extends ContainerLifeCycle
             SocketChannelWithAddress channelWithAddress = factory.newSocketChannelWithAddress(address, context);
             channel = channelWithAddress.getSocketChannel();
             address = channelWithAddress.getSocketAddress();
+
+            configure(channel);
+
             SocketAddress bindAddress = getBindAddress();
             if (bindAddress != null)
                 bind(channel, bindAddress);
-            configure(channel);
 
             boolean connected = true;
             boolean blocking = isConnectBlocking() && address instanceof InetSocketAddress;
@@ -306,33 +435,36 @@ public class ClientConnector extends ContainerLifeCycle
         }
     }
 
-    private void bind(SocketChannel channel, SocketAddress bindAddress)
+    private void bind(SocketChannel channel, SocketAddress bindAddress) throws IOException
     {
-        try
-        {
-            boolean reuseAddress = getReuseAddress();
-            if (LOG.isDebugEnabled())
-                LOG.debug("Binding to {} reusing address {}", bindAddress, reuseAddress);
-            channel.setOption(StandardSocketOptions.SO_REUSEADDR, reuseAddress);
-            channel.bind(bindAddress);
-        }
-        catch (Throwable x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Could not bind {}", channel);
-        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("Binding {} to {}", channel, bindAddress);
+        channel.bind(bindAddress);
     }
 
     protected void configure(SocketChannel channel) throws IOException
     {
+        setSocketOption(channel, StandardSocketOptions.TCP_NODELAY, isTCPNoDelay());
+        setSocketOption(channel, StandardSocketOptions.SO_REUSEADDR, getReuseAddress());
+        setSocketOption(channel, StandardSocketOptions.SO_REUSEPORT, isReusePort());
+        int receiveBufferSize = getReceiveBufferSize();
+        if (receiveBufferSize >= 0)
+            setSocketOption(channel, StandardSocketOptions.SO_RCVBUF, receiveBufferSize);
+        int sendBufferSize = getSendBufferSize();
+        if (sendBufferSize >= 0)
+            setSocketOption(channel, StandardSocketOptions.SO_SNDBUF, sendBufferSize);
+    }
+
+    private <T> void setSocketOption(SocketChannel channel, SocketOption<T> option, T value)
+    {
         try
         {
-            channel.setOption(StandardSocketOptions.TCP_NODELAY, true);
+            channel.setOption(option, value);
         }
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Could not configure {}", channel);
+                LOG.debug("Could not configure {} to {} on {}", option, value, channel);
         }
     }
 

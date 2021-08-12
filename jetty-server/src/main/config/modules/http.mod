@@ -40,6 +40,9 @@ etc/jetty-http.xml
 ## Whether to enable the SO_REUSEADDR socket option.
 # jetty.http.reuseAddress=true
 
+## Whether to enable the SO_REUSEPORT socket option.
+# jetty.http.reusePort=false
+
 ## Whether to enable the TCP_NODELAY socket option on accepted sockets.
 # jetty.http.acceptedTcpNoDelay=true
 
