@@ -931,4 +931,37 @@ public class DistributionTests extends AbstractJettyHomeTest
             }
         }
     }
+
+    @Test
+    public void testModuleWithExecEmitsWarning() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        Path jettyBase = distribution.getJettyBase();
+        Path jettyBaseModules = jettyBase.resolve("modules");
+        Files.createDirectories(jettyBaseModules);
+        Path execModule = jettyBaseModules.resolve("exec.mod");
+        String module = "" +
+            "[exec]\n" +
+            "--show-version";
+        Files.write(execModule, List.of(module), StandardOpenOption.CREATE);
+
+        try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=http,exec")))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            int port = distribution.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.getLogs().stream()
+                    .anyMatch(log -> log.contains("WARN") && log.contains("Forking")));
+            }
+        }
+    }
 }

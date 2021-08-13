@@ -25,6 +25,7 @@ import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
@@ -32,6 +33,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -50,6 +54,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -200,6 +205,59 @@ public class ServerConnectorTest
             if (!org.junit.jupiter.api.condition.OS.WINDOWS.isCurrentOs())
             {
                 assertThat("Response", response, containsString("socket.getReuseAddress() = false"));
+            }
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
+
+    @Test
+    public void testReusePort() throws Exception
+    {
+        int port;
+        try (ServerSocket server = new ServerSocket())
+        {
+            server.setReuseAddress(true);
+            server.bind(new InetSocketAddress("localhost", 0));
+            port = server.getLocalPort();
+        }
+
+        Server server = new Server();
+        try
+        {
+            // Two connectors listening on the same port.
+            ServerConnector connector1 = new ServerConnector(server, 1, 1);
+            connector1.setReuseAddress(true);
+            connector1.setReusePort(true);
+            connector1.setPort(port);
+            server.addConnector(connector1);
+            ServerConnector connector2 = new ServerConnector(server, 1, 1);
+            connector2.setReuseAddress(true);
+            connector2.setReusePort(true);
+            connector2.setPort(port);
+            server.addConnector(connector2);
+
+            server.setHandler(new AbstractHandler()
+            {
+                @Override
+                public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+                {
+                    jettyRequest.setHandled(true);
+                }
+            });
+
+            server.start();
+
+            try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", port)))
+            {
+                HttpTester.Request request = HttpTester.newRequest();
+                request.put(HttpHeader.HOST, "localhost");
+                client.write(request.generate());
+                HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(client));
+                assertNotNull(response);
+                assertEquals(HttpStatus.OK_200, response.getStatus());
             }
         }
         finally
