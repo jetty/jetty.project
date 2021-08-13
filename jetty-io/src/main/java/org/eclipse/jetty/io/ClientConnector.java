@@ -46,6 +46,28 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>The client-side component that connects to server sockets.</p>
+ * <p>ClientConnector delegates the handling of {@link SocketChannel}s
+ * to a {@link SelectorManager}, and centralizes the configuration of
+ * necessary components such as the executor, the scheduler, etc.</p>
+ * <p>ClientConnector offers a low-level API that can be used to
+ * connect {@link SocketChannel}s to listening servers via the
+ * {@link #connect(SocketAddress, Map)} method.</p>
+ * <p>However, a ClientConnector instance is typically just configured
+ * and then passed to an HttpClient transport, so that applications
+ * can use high-level APIs to make HTTP requests to servers:</p>
+ * <pre>
+ * // Create a ClientConnector instance.
+ * ClientConnector connector = new ClientConnector();
+ *
+ * // Configure the ClientConnector.
+ * connector.setSelectors(1);
+ * connector.setSslContextFactory(new SslContextFactory.Client());
+ *
+ * // Pass it to the HttpClient transport.
+ * HttpClientTransport transport = new HttpClientTransportDynamic(clientConnector);
+ * HttpClient httpClient = new HttpClient(transport);
+ * httpClient.start();
+ * </pre>
  */
 @ManagedObject
 public class ClientConnector extends ContainerLifeCycle
