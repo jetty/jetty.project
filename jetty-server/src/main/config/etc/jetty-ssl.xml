@@ -32,6 +32,7 @@
         <Set name="acceptorPriorityDelta" property="jetty.ssl.acceptorPriorityDelta"/>
         <Set name="acceptQueueSize" property="jetty.ssl.acceptQueueSize"/>
         <Set name="reuseAddress"><Property name="jetty.ssl.reuseAddress" default="true"/></Set>
+        <Set name="reusePort"><Property name="jetty.ssl.reusePort" default="false"/></Set>
         <Set name="acceptedTcpNoDelay"><Property name="jetty.ssl.acceptedTcpNoDelay" default="true"/></Set>
         <Set name="acceptedReceiveBufferSize" property="jetty.ssl.acceptedReceiveBufferSize" />
         <Set name="acceptedSendBufferSize" property="jetty.ssl.acceptedSendBufferSize" />

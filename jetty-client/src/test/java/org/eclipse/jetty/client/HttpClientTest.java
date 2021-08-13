@@ -73,6 +73,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
@@ -1907,6 +1908,45 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         assertTrue(clientResultLatch.await(5, TimeUnit.SECONDS), "clientResultLatch didn't finish");
         assertTrue(serverOnErrorLatch.await(5, TimeUnit.SECONDS), "serverOnErrorLatch didn't finish");
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testBindAddress(Scenario scenario) throws Exception
+    {
+        String bindAddress = "127.0.0.2";
+        start(scenario, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            {
+                assertEquals(bindAddress, request.getRemoteAddr());
+            }
+        });
+
+        client.setBindAddress(new InetSocketAddress(bindAddress, 0));
+
+        CountDownLatch latch = new CountDownLatch(1);
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .path("/1")
+            .onRequestBegin(r ->
+            {
+                client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scenario.getScheme())
+                    .path("/2")
+                    .send(result ->
+                    {
+                        assertTrue(result.isSucceeded());
+                        assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+                        latch.countDown();
+                    });
+            })
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
     private void assertCopyRequest(Request original)
