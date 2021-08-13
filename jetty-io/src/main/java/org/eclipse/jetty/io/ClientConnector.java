@@ -64,7 +64,7 @@ import org.slf4j.LoggerFactory;
  * connector.setSslContextFactory(new SslContextFactory.Client());
  *
  * // Pass it to the HttpClient transport.
- * HttpClientTransport transport = new HttpClientTransportDynamic(clientConnector);
+ * HttpClientTransport transport = new HttpClientTransportDynamic(connector);
  * HttpClient httpClient = new HttpClient(transport);
  * httpClient.start();
  * </pre>
