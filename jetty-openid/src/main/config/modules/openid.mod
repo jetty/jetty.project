@@ -42,3 +42,6 @@ etc/jetty-openid.xml
 
 ## True if all certificates should be trusted by the default SslContextFactory
 # jetty.openid.sslContextFactory.trustAll=false
+
+## What authentication method to use with the Token Endpoint (client_secret_post, client_secret_basic).
+# jetty.openid.basicAuth=client_secret_post
