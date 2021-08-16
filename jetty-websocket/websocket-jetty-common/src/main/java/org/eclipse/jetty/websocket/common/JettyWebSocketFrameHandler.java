@@ -151,6 +151,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         {
             customizer.customize(coreSession);
             session = new WebSocketSession(container, coreSession, this);
+            if (!session.isOpen())
+                throw new IllegalStateException("Session is not open");
 
             frameHandle = InvokerUtils.bindTo(frameHandle, session);
             openHandle = InvokerUtils.bindTo(openHandle, session);
@@ -172,7 +174,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             if (openHandle != null)
                 openHandle.invoke();
 
-            container.notifySessionListeners((listener) -> listener.onWebSocketSessionOpened(session));
+            if (session.isOpen())
+                container.notifySessionListeners((listener) -> listener.onWebSocketSessionOpened(session));
 
             callback.succeeded();
             demand();
