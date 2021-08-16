@@ -72,7 +72,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     public OpenIdConfiguration(String issuer, String authorizationEndpoint, String tokenEndpoint,
                                String clientId, String clientSecret, HttpClient httpClient)
     {
-        this(issuer, authorizationEndpoint, tokenEndpoint, clientId, clientSecret, "post", httpClient);
+        this(issuer, authorizationEndpoint, tokenEndpoint, clientId, clientSecret, "client_secret_post", httpClient);
     }
 
     /**
