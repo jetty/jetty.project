@@ -15,6 +15,7 @@ package org.eclipse.jetty.security.openid;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -95,7 +96,7 @@ public class OpenIdCredentials implements Serializable
                 claims = JwtDecoder.decode(idToken);
                 if (LOG.isDebugEnabled())
                     LOG.debug("claims {}", claims);
-                validateClaims(configuration);
+                validateClaims(claims, configuration);
             }
             finally
             {
@@ -105,14 +106,14 @@ public class OpenIdCredentials implements Serializable
         }
     }
 
-    private void validateClaims(OpenIdConfiguration configuration) throws Exception
+    static void validateClaims(Map<String, Object> claims, OpenIdConfiguration configuration) throws Exception
     {
         // Issuer Identifier for the OpenID Provider MUST exactly match the value of the iss (issuer) Claim.
         if (!configuration.getIssuer().equals(claims.get("iss")))
             throw new AuthenticationException("Issuer Identifier MUST exactly match the iss Claim");
 
         // The aud (audience) Claim MUST contain the client_id value.
-        validateAudience(configuration);
+        validateAudience(claims, configuration);
 
         // If an azp (authorized party) Claim is present, verify that its client_id is the Claim Value.
         Object azp = claims.get("azp");
@@ -126,7 +127,7 @@ public class OpenIdCredentials implements Serializable
             throw new AuthenticationException("ID Token has expired");
     }
 
-    private void validateAudience(OpenIdConfiguration configuration) throws AuthenticationException
+    private static void validateAudience(Map<String, Object> claims, OpenIdConfiguration configuration) throws AuthenticationException
     {
         Object aud = claims.get("aud");
         String clientId = configuration.getClientId();
@@ -138,10 +139,11 @@ public class OpenIdCredentials implements Serializable
             throw new AuthenticationException("Audience Claim MUST contain the client_id value");
         else if (isList)
         {
-            if (!Arrays.asList((Object[])aud).contains(clientId))
+            List<Object> list = Arrays.asList((Object[])aud);
+            if (!list.contains(clientId))
                 throw new AuthenticationException("Audience Claim MUST contain the client_id value");
 
-            if (claims.get("azp") == null)
+            if (list.size() > 1 && claims.get("azp") == null)
                 throw new AuthenticationException("A multi-audience ID token needs to contain an azp claim");
         }
         else if (!isValidType)
