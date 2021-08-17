@@ -20,10 +20,7 @@ import org.slf4j.LoggerFactory;
 /**
  * <p>JASPI Configuration</p>
  * <p>This configuration configures the WebAppContext server/system classes to
- * not be able to see the {@code jakarta.security.auth.message} package.
- * This class is defined in the webapp package, as it implements the {@link Configuration} interface,
- * which is unknown to the jetty-jaspi package.
- * </p>
+ * not be able to see the {@code jakarta.security.auth.message} package.</p>
  */
 public class JaspiConfiguration extends AbstractConfiguration
 {
@@ -42,7 +39,7 @@ public class JaspiConfiguration extends AbstractConfiguration
     {
         try
         {
-            return Loader.loadClass("jakarta.security.auth.message.config.AuthConfigFactory") != null;
+            return Loader.loadClass("org.eclipse.jetty.security.jaspi.JaspiAuthenticator") != null;
         }
         catch (Throwable e)
         {

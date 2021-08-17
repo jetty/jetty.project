@@ -9,5 +9,8 @@ security
 [depend]
 jaspi
 
+[xml]
+etc/jaspi/jaspi-demo.xml
+
 [files]
-basehome:etc/jaspi/jaspi-demo.xml|etc/jaspi/jaspi-authmoduleconfig.xml
+basehome:etc/jaspi/jaspi-demo.xml|etc/jaspi/jaspi-demo.xml

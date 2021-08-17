@@ -17,6 +17,10 @@ import java.util.Set;
 
 import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
 
+/**
+ * A wrapper for {@link AuthConfiguration}. This allows you create a new AuthConfiguration which can
+ * override a method to change a value from an another instance of AuthConfiguration.
+ */
 public class WrappedAuthConfiguration implements AuthConfiguration
 {
     private final AuthConfiguration _configuration;
