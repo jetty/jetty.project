@@ -27,7 +27,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.AsyncContext;
@@ -862,7 +861,6 @@ public class HttpOutputTest
                 response.setStatus(200);
                 response.setContentLength(0);
                 ((HttpOutput)response.getOutputStream()).write(ByteBuffer.wrap(new byte[0]));
-                assertThat(response.isCommitted(), is(true));
                 committed.succeeded(response.isCommitted());
             }
         };
