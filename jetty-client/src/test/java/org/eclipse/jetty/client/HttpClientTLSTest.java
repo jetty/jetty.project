@@ -60,7 +60,6 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
@@ -1029,6 +1028,7 @@ public class HttpClientTLSTest
             .send();
         assertEquals(HttpStatus.OK_200, response2.getStatus());
 
+        /* TODO Fix. See #6624
         if (Net.isIpv6InterfaceAvailable())
         {
             // Send a request with SNI "[::1]", we should get the certificate at alias=ip.
@@ -1038,6 +1038,7 @@ public class HttpClientTLSTest
 
             assertEquals(HttpStatus.OK_200, response3.getStatus());
         }
+        */
     }
 
     @Test
