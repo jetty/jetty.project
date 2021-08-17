@@ -135,7 +135,7 @@ Refer to the xref:pg-server-websocket-configure-filter[advanced `WebSocketUpgrad
 
 With the default configuration, every HTTP request flows first through the `WebSocketUpgradeFilter`.
 
-If the HTTP request is an upgrade to WebSocket, `WebSocketUpgradeFilter` performs the upgrade and does not invoke any other Filter or Servlet.
+If the HTTP request is a valid upgrade to WebSocket, then `WebSocketUpgradeFilter` tries to find a matching WebSocket endpoint for the request URI path; if the match is found, `WebSocketUpgradeFilter` performs the upgrade and does not invoke any other Filter or Servlet.
 From this point on, the communication happens with the WebSocket protocol, and HTTP components such as Filters and Servlets are not relevant anymore.
 
-If the HTTP request is not an upgrade to WebSocket, `WebSocketUpgradeFilter` passes the request to the Filter chain of your web application, and eventually the request arrives to a Servlet to be processed (otherwise a `404 Not Found` response is returned to client).
+If the HTTP request is not an upgrade to WebSocket, or `WebSocketUpgradeFilter` did not find a matching WebSocket endpoint for the request URI path, then the request is passed to the Filter chain of your web application, and eventually the request arrives to a Servlet to be processed (otherwise a `404 Not Found` response is returned to client).

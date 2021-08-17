@@ -14,7 +14,6 @@
 package org.eclipse.jetty.docs.programming.server.websocket;
 
 import java.util.List;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.websocket.DeploymentException;
@@ -27,8 +26,6 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
-import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
@@ -137,7 +134,7 @@ public class WebSocketServerDocs
         server.setHandler(handler);
 
         // Setup the ServerContainer and the WebSocket endpoints for this web application context.
-        JavaxWebSocketServletContainerInitializer.configure(handler, (ServletContext context, ServerContainer container) ->
+        JavaxWebSocketServletContainerInitializer.configure(handler, (servletContext, container) ->
         {
             // Configure the ServerContainer.
             container.setDefaultMaxTextMessageBufferSize(128 * 1024);
@@ -216,7 +213,7 @@ public class WebSocketServerDocs
             container.addMapping("/ws/myURI", MyJettyWebSocketEndPoint.class);
 
             // Advanced registration of your WebSocket endpoints.
-            container.addMapping("/ws/myOtherURI", (JettyServerUpgradeRequest request, JettyServerUpgradeResponse response) ->
+            container.addMapping("/ws/myOtherURI", (upgradeRequest, upgradeResponse) ->
                 new MyOtherJettyWebSocketEndPoint()
             );
         }
@@ -234,7 +231,7 @@ public class WebSocketServerDocs
         server.setHandler(handler);
 
         // Setup the JettyWebSocketServerContainer and the WebSocket endpoints for this web application context.
-        JettyWebSocketServletContainerInitializer.configure(handler, (ServletContext context, JettyWebSocketServerContainer container) ->
+        JettyWebSocketServletContainerInitializer.configure(handler, (servletContext, container) ->
         {
             // Configure the ServerContainer.
             container.setMaxTextMessageSize(128 * 1024);
@@ -290,7 +287,7 @@ public class WebSocketServerDocs
             factory.setMaxTextMessageSize(1048576);
 
             // Add the WebSocket endpoint.
-            factory.addMapping("/ws/someURI", (JettyServerUpgradeRequest upgradeRequest, JettyServerUpgradeResponse upgradeResponse) ->
+            factory.addMapping("/ws/someURI", (upgradeRequest, upgradeResponse) ->
             {
                 // Possibly inspect the upgrade request and modify the upgrade response.
 

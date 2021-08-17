@@ -149,11 +149,6 @@ public class JettyClientClassLoaderTest
     @WebSocket
     public static class EchoSocket
     {
-        public EchoSocket()
-        {
-            System.err.println("this = " + this);
-        }
-
         @OnWebSocketMessage
         public void onMessage(Session session, String message) throws Exception
         {
@@ -196,7 +191,7 @@ public class JettyClientClassLoaderTest
             WebAppTester.WebApp app2 = webAppTester.createWebApp("/echo");
             app2.addConfiguration(new JettyWebSocketConfiguration());
             app2.createWebInf();
-//            app2.copyClass(EchoServlet.class);
+            app2.copyClass(EchoServlet.class);
             app2.copyClass(EchoSocket.class);
             app2.deploy();
         });

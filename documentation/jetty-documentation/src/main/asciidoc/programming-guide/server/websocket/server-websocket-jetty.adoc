@@ -86,7 +86,7 @@ When using the Jetty WebSocket APIs, WebSocket endpoints must always be explicit
 There are two ways of configuring WebSocket endpoints when using the Jetty WebSocket APIs:
 
 * xref:pg-server-websocket-jetty-endpoints-container[Using `JettyWebSocketServerContainer`], which is very similar to how WebSocket endpoints are configured using the standard `javax.websocket` APIs (see xref:pg-server-websocket-standard-endpoints[here]).
-* xref:pg-server-websocket-jetty-endpoints-servlet[Using `JettyWebSocketServlet`], which may be simpler to configure.
+* xref:pg-server-websocket-jetty-endpoints-servlet[Using `JettyWebSocketServlet`], which may be more straightforward to configure in `web.xml`.
 
 [[pg-server-websocket-jetty-endpoints-container]]
 ====== Using `JettyWebSocketServerContainer`
@@ -124,14 +124,7 @@ An alternative way to register WebSocket endpoints using the Jetty WebSocket API
 
 This method has the advantage that it does not install the `WebSocketUpgradeFilter` under the hoods, because the WebSocket upgrade is handled directly by your `JettyWebSocketServlet` subclass.
 
-This may also have a performance benefit for non-WebSocket HTTP requests (as they will not pass through the `WebSocketUpgradeFilter`), and be simpler to configure (for example, it is easier to configure the `CrossOriginFilter`, see also xref:pg-server-websocket-configure-filter[this section] for more information).
-
-[IMPORTANT]
-====
-Do not mix the use of `JettyWebSocketServerContainer` with the use of `JettyWebSocketServlet`.
-
-Using `JettyWebSocketServerContainer` will install the `WebSocketUpgradeFilter` under the hoods, which by default will intercepts all HTTP requests to upgrade to WebSocket, and your `JettyWebSocketServlet` subclasses will not be invoked.
-====
+This may also have a performance benefit for non-WebSocket HTTP requests (as they will not pass through the `WebSocketUpgradeFilter`), and be simpler to configure in `web.xml` (for example, it is easier to configure the `CrossOriginFilter`, see also xref:pg-server-websocket-configure-filter[this section] for more information).
 
 For example:
 
@@ -148,8 +141,10 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/websocket/We
 Note how in the call to `JettyWebSocketServletContainerInitializer.configure(\...)` the second parameter is `null`, because WebSocket endpoints are not created here, but instead by one (or more) `JettyWebSocketServlet` subclasses.
 Yet the call is necessary to create other WebSocket implementation components that are necessary also when using `JettyWebSocketServlet` subclasses.
 
-[[pg-server-websocket-jetty-upgrade]]
-====== Upgrade to WebSocket
+[TIP]
+====
+It is best to avoid mixing the use of `JettyWebSocketServerContainer` with the use of `JettyWebSocketServlet`, so that all your WebSocket endpoints are initialized by the same code in one place only.
+====
 
 An HTTP upgrade request to WebSocket that matches your `JettyWebSocketServlet` subclass path mapping (specified above via `ServletContextHandler.addServlet(...)`) arrives at the Servlet and is inspected to verify it is a valid upgrade to WebSocket.
 
@@ -159,3 +154,8 @@ From this point on, the communication happens with the WebSocket protocol, and H
 
 If the HTTP request is not an upgrade to WebSocket, `JettyWebSocketServlet` delegates the processing to the superclass, `javax.servlet.HttpServlet`, which in turn invokes methods such as `doGet(...)` or `doPost(...)` depending on the HTTP method.
 If your `JettyWebSocketServlet` subclass did not override the `doXYZ(...)` method corresponding to the HTTP request, a `405 Method Not Allowed` response is returned to the client.
+
+Note that it is possible, although not recommended, to use both `JettyWebSocketServerContainer` and `JettyWebSocketServlet`.
+
+Using `JettyWebSocketServerContainer` will install the `WebSocketUpgradeFilter` under the hoods, which by default will intercepts all HTTP requests to upgrade to WebSocket.
+However, as explained in xref:pg-server-websocket-standard-upgrade[this section], if `WebSocketUpgradeFilter` does not find a matching WebSocket endpoint for the request URI path, then the HTTP request is passed to the Filter chain of your web application and may arrive to your `JettyWebSocketServlet` subclass, where it would be processed and possibly result in a WebSocket upgrade.

@@ -14,24 +14,6 @@
 [[pg-server-websocket]]
 === WebSocket Server
 
-// JettyWebSocketServletContainerInitializer.configure(ServletContextHandler context, Configurator configurator); is one entry point.
-
-// JettyWebSocketServlet.configure(JettyWebSocketServletFactory factory); another entry point.
-
-// TODO: why they expose different interfaces? Configurator exposes JettyWebSocketServerContainer, the servlet exposes JettyWebSocketServletFactory => historical, live with it.
-
-// WSUFilter is automatically added lazily when context is started or when calling addMapping().
-// Talk about WSUF but in the context of the upgrade, not much as an API to use, only init-params.
-// WSUF init-params will however configure both Jetty and Javax containers.
-// WSUF has a specific name in web.xml if you want to provide a WSUF that has a different config, e.g. different mapping than /*, or different init-params.
-
-// For Javax I can pass in an HttpClient via ServletContext attribute.
-// Also describe the XML file for HttpClient => needed to avoid class loader issues?
-
-// WSUF and Servlet are typically mutually exclusive.
-// However, WSUF could be mapped to /foo and servlet to /bar; OR
-// WSUF has a mapping for /ep1 and Servlet has a mapping for /ep2, so an upgrade request enters WSUF, finds no mapping, forwards, lands to Servlet where the mapping is found.
-
 Jetty provides two API implementations of the WebSocket protocol:
 
 * An implementation for the standard `javax.websocket` APIs provided by link:https://www.jcp.org/en/jsr/detail?id=356[JSR 356], described in xref:pg-server-websocket-standard[this section].

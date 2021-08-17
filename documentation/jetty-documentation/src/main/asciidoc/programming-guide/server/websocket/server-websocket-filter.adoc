@@ -14,17 +14,17 @@
 [[pg-server-websocket-configure-filter]]
 ==== Advanced `WebSocketUpgradeFilter` Configuration
 
-`JavaxWebSocketServletContainerInitializer` installs the `WebSocketUpgradeFilter` to handle HTTP requests that upgrade to WebSocket.
+The WebSocket ``ServletContainerInitializer``s, namely `JavaxWebSocketServletContainerInitializer` and `JettyWebSocketServletContainerInitializer`, install the `WebSocketUpgradeFilter` to handle HTTP requests that upgrade to WebSocket.
 
-Typically, the `WebSocketUpgradeFilter` is not present in the `web.xml` configuration, and therefore `JavaxWebSocketServletContainerInitializer` creates a new `WebSocketUpgradeFilter` and installs it _before_ any other Filter declared in `web.xml`, under the default name of `"org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter"` and with path mapping `/*`.
+Typically, the `WebSocketUpgradeFilter` is not present in the `web.xml` configuration, and therefore the WebSocket ``ServletContainerInitializer``s create a new `WebSocketUpgradeFilter` and install it _before_ any other Filter declared in `web.xml`, under the default name of `"org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter"` and with path mapping `/*`.
 
-However, if the `WebSocketUpgradeFilter` is already present in `web.xml` under the default name, then `JavaxWebSocketServletContainerInitializer` will use that declared in `web.xml` instead of creating a new one.
+However, if the `WebSocketUpgradeFilter` is already present in `web.xml` under the default name, then the ``ServletContainerInitializer``s will use that declared in `web.xml` instead of creating a new one.
 
 This allows you to customize:
 
 * The filter order; for example, by configuring the `CrossOriginFilter` (or other filters) for increased security or authentication _before_ the `WebSocketUpgradeFilter`.
 * The `WebSocketUpgradeFilter` configuration via ``init-param``s, that affects all `Session` instances created by this filter.
-* The `WebSocketUpgradeFilter` path mapping. Rather than the default mapping of `/*`, you can map the `WebSocketUpgradeFilter` to a more specific path such as `/ws/*`.
+* The `WebSocketUpgradeFilter` path mapping. Rather than the default mapping of `+/*+`, you can map the `WebSocketUpgradeFilter` to a more specific path such as `+/ws/*+`.
 * The possibility to have multiple ``WebSocketUpgradeFilter``s, mapped to different paths, each with its own configuration.
 
 For example:
