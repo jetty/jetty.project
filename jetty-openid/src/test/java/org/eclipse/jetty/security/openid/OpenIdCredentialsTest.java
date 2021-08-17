@@ -35,6 +35,6 @@ public class OpenIdCredentialsTest
         claims.put("aud", new String[]{clientId});
         claims.put("exp", System.currentTimeMillis() + 5000);
 
-        assertDoesNotThrow(() -> OpenIdCredentials.validateClaims(claims, configuration));
+        assertDoesNotThrow(() -> new OpenIdCredentials(claims).redeemAuthCode(configuration));
     }
 }

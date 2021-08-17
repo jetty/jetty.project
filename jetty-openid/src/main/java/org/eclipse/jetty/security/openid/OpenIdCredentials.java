@@ -46,6 +46,14 @@ public class OpenIdCredentials implements Serializable
     private String authCode;
     private Map<String, Object> response;
     private Map<String, Object> claims;
+    private boolean verified = false;
+
+    public OpenIdCredentials(Map<String, Object> claims)
+    {
+        this.redirectUri = null;
+        this.authCode = null;
+        this.claims = claims;
+    }
 
     public OpenIdCredentials(String authCode, String redirectUri)
     {
@@ -96,7 +104,6 @@ public class OpenIdCredentials implements Serializable
                 claims = JwtDecoder.decode(idToken);
                 if (LOG.isDebugEnabled())
                     LOG.debug("claims {}", claims);
-                validateClaims(claims, configuration);
             }
             finally
             {
@@ -104,16 +111,22 @@ public class OpenIdCredentials implements Serializable
                 authCode = null;
             }
         }
+
+        if (!verified)
+        {
+            validateClaims(configuration);
+            verified = true;
+        }
     }
 
-    static void validateClaims(Map<String, Object> claims, OpenIdConfiguration configuration) throws Exception
+    private void validateClaims(OpenIdConfiguration configuration) throws Exception
     {
         // Issuer Identifier for the OpenID Provider MUST exactly match the value of the iss (issuer) Claim.
         if (!configuration.getIssuer().equals(claims.get("iss")))
             throw new AuthenticationException("Issuer Identifier MUST exactly match the iss Claim");
 
         // The aud (audience) Claim MUST contain the client_id value.
-        validateAudience(claims, configuration);
+        validateAudience(configuration);
 
         // If an azp (authorized party) Claim is present, verify that its client_id is the Claim Value.
         Object azp = claims.get("azp");
@@ -127,7 +140,7 @@ public class OpenIdCredentials implements Serializable
             throw new AuthenticationException("ID Token has expired");
     }
 
-    private static void validateAudience(Map<String, Object> claims, OpenIdConfiguration configuration) throws AuthenticationException
+    private void validateAudience(OpenIdConfiguration configuration) throws AuthenticationException
     {
         Object aud = claims.get("aud");
         String clientId = configuration.getClientId();
