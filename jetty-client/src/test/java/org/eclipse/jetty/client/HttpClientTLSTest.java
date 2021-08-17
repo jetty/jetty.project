@@ -60,14 +60,16 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledOnJre;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -365,7 +367,7 @@ public class HttpClientTLSTest
 
     // Excluded in JDK 11+ because resumed sessions cannot be compared
     // using their session IDs even though they are resumed correctly.
-    @EnabledOnJre({JRE.JAVA_8, JRE.JAVA_9, JRE.JAVA_10})
+    @EnabledForJreRange(max = JRE.JAVA_10)
     @Test
     public void testHandshakeSucceededWithSessionResumption() throws Exception
     {
@@ -445,7 +447,7 @@ public class HttpClientTLSTest
 
     // Excluded in JDK 11+ because resumed sessions cannot be compared
     // using their session IDs even though they are resumed correctly.
-    @EnabledOnJre({JRE.JAVA_8, JRE.JAVA_9, JRE.JAVA_10})
+    @EnabledForJreRange(max = JRE.JAVA_10)
     @Test
     public void testClientRawCloseDoesNotInvalidateSession() throws Exception
     {
@@ -1013,7 +1015,6 @@ public class HttpClientTLSTest
         // Force TLS-level hostName verification, as we want to receive the correspondent certificate.
         clientTLS.setEndpointIdentificationAlgorithm("HTTPS");
         startClient(clientTLS);
-
         clientTLS.setSNIProvider(SslContextFactory.Client.SniProvider.NON_DOMAIN_SNI_PROVIDER);
 
         // Send a request with SNI "localhost", we should get the certificate at alias=localhost.
@@ -1027,18 +1028,40 @@ public class HttpClientTLSTest
             .scheme(HttpScheme.HTTPS.asString())
             .send();
         assertEquals(HttpStatus.OK_200, response2.getStatus());
+    }
 
-        /* TODO Fix. See #6624
-        if (Net.isIpv6InterfaceAvailable())
+    @Test
+    @EnabledForJreRange(max = JRE.JAVA_16, disabledReason = "Since Java 17, SNI host names can only have letter|digit|hyphen characters.")
+    public void testForcedNonDomainSNIWithIPv6() throws Exception
+    {
+        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
+
+        SslContextFactory.Server serverTLS = new SslContextFactory.Server();
+        serverTLS.setKeyStorePath("src/test/resources/keystore_sni_non_domain.p12");
+        serverTLS.setKeyStorePassword("storepwd");
+        serverTLS.setSNISelector((keyType, issuers, session, sniHost, certificates) ->
         {
-            // Send a request with SNI "[::1]", we should get the certificate at alias=ip.
-            ContentResponse response3 = client.newRequest("[::1]", connector.getLocalPort())
-                .scheme(HttpScheme.HTTPS.asString())
-                .send();
+            // We have forced the client to send the non-domain SNI.
+            assertNotNull(sniHost);
+            return serverTLS.sniSelect(keyType, issuers, session, sniHost, certificates);
+        });
+        startServer(serverTLS, new EmptyServerHandler());
 
-            assertEquals(HttpStatus.OK_200, response3.getStatus());
-        }
-        */
+        SslContextFactory.Client clientTLS = new SslContextFactory.Client();
+        // Trust any certificate received by the server.
+        clientTLS.setTrustStorePath("src/test/resources/keystore_sni_non_domain.p12");
+        clientTLS.setTrustStorePassword("storepwd");
+        // Force TLS-level hostName verification, as we want to receive the correspondent certificate.
+        clientTLS.setEndpointIdentificationAlgorithm("HTTPS");
+        startClient(clientTLS);
+        clientTLS.setSNIProvider(SslContextFactory.Client.SniProvider.NON_DOMAIN_SNI_PROVIDER);
+
+        // Send a request with SNI "[::1]", we should get the certificate at alias=ip.
+        ContentResponse response3 = client.newRequest("[::1]", connector.getLocalPort())
+            .scheme(HttpScheme.HTTPS.asString())
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response3.getStatus());
     }
 
     @Test
