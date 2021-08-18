@@ -737,7 +737,10 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             int maxCount = getMaxLocalStreams();
             if (maxCount >= 0 && localCount >= maxCount)
             {
-                promise.failed(new IllegalStateException("Max local stream count " + maxCount + " exceeded"));
+                IllegalStateException failure = new IllegalStateException("Max local stream count " + maxCount + " exceeded");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Could not create local stream #{} for {}", streamId, this, failure);
+                promise.failed(failure);
                 return null;
             }
             if (localStreamCount.compareAndSet(localCount, localCount + 1))
@@ -750,7 +753,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             stream.setIdleTimeout(getStreamIdleTimeout());
             flowControl.onStreamCreated(stream);
             if (LOG.isDebugEnabled())
-                LOG.debug("Created local {}", stream);
+                LOG.debug("Created local {} for {}", stream, this);
             return stream;
         }
         else
@@ -785,6 +788,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             int maxCount = getMaxRemoteStreams();
             if (maxCount >= 0 && remoteCount - remoteClosing >= maxCount)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Could not create remote stream #{} for {}", streamId, this);
                 reset(null, new ResetFrame(streamId, ErrorCode.REFUSED_STREAM_ERROR.code), Callback.from(() -> onStreamDestroyed(streamId)));
                 return null;
             }
@@ -798,7 +803,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             stream.setIdleTimeout(getStreamIdleTimeout());
             flowControl.onStreamCreated(stream);
             if (LOG.isDebugEnabled())
-                LOG.debug("Created remote {}", stream);
+                LOG.debug("Created remote {} for {}", stream, this);
             return stream;
         }
         else
@@ -944,7 +949,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private void onStreamCreated(int streamId)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Created stream #{} for {}", streamId, this);
+            LOG.debug("Creating stream #{} for {}", streamId, this);
         streamsState.onStreamCreated();
     }
 

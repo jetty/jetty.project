@@ -212,8 +212,9 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         public void onSettings(Session session, SettingsFrame frame)
         {
             Map<Integer, Integer> settings = frame.getSettings();
-            if (settings.containsKey(SettingsFrame.MAX_CONCURRENT_STREAMS))
-                destination().setMaxRequestsPerConnection(settings.get(SettingsFrame.MAX_CONCURRENT_STREAMS));
+            Integer maxConcurrentStreams = settings.get(SettingsFrame.MAX_CONCURRENT_STREAMS);
+            if (maxConcurrentStreams != null)
+                destination().setMaxRequestsPerConnection(connection.getReference(), maxConcurrentStreams);
             if (!connection.isMarked())
                 onServerPreface(session);
         }

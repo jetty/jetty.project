@@ -131,7 +131,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         this.maxEntries = maxEntries;
         this.strategyType = strategyType;
         this.cache = cache ? new ThreadLocal<>() : null;
-        nextIndex = strategyType == StrategyType.ROUND_ROBIN ? new AtomicInteger() : null;
+        this.nextIndex = strategyType == StrategyType.ROUND_ROBIN ? new AtomicInteger() : null;
     }
 
     public int getReservedCount()
@@ -169,6 +169,14 @@ public class Pool<T> implements AutoCloseable, Dumpable
         if (maxMultiplex < 1)
             throw new IllegalArgumentException("Max multiplex must be >= 1");
         this.maxMultiplex = maxMultiplex;
+
+        try (Locker.Lock l = locker.lock())
+        {
+            if (closed)
+                return;
+
+            entries.forEach(entry -> entry.setMaxMultiplex(maxMultiplex));
+        }
     }
 
     /**
@@ -507,15 +515,28 @@ public class Pool<T> implements AutoCloseable, Dumpable
         // hi: positive=open/maxUsage counter; negative=closed; MIN_VALUE pending
         // lo: multiplexing counter
         private final AtomicBiInteger state;
-
         // The pooled item.  This is not volatile as it is set once and then never changed.
         // Other threads accessing must check the state field above first, so a good before/after
         // relationship exists to make a memory barrier.
         private T pooled;
+        private volatile int maxMultiplex;
 
         Entry()
         {
             this.state = new AtomicBiInteger(Integer.MIN_VALUE, 0);
+            this.maxMultiplex = Pool.this.maxMultiplex;
+        }
+
+        public int getMaxMultiplex()
+        {
+            return maxMultiplex;
+        }
+
+        public void setMaxMultiplex(int maxMultiplex)
+        {
+            if (maxMultiplex < 1)
+                throw new IllegalArgumentException("Max multiplex must be >= 1");
+            this.maxMultiplex = maxMultiplex;
         }
 
         // for testing only

@@ -57,6 +57,12 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     }
 
     @Override
+    public void setMaxMultiplex(Connection connection, int maxMultiplex)
+    {
+        super.setMaxMultiplex(connection, maxMultiplex);
+    }
+
+    @Override
     @ManagedAttribute(value = "The maximum amount of times a connection is used before it gets closed")
     public int getMaxUsageCount()
     {
