@@ -24,30 +24,17 @@ import org.eclipse.jetty.util.Callback;
 public class BufferCallbackAccumulator
 {
     private final List<Entry> _entries = new ArrayList<>();
-    private final ByteBufferPool _bufferPool;
-    private final boolean _direct;
 
     private static class Entry
     {
+        private final ByteBuffer buffer;
+        private final Callback callback;
+
         Entry(ByteBuffer buffer, Callback callback)
         {
             this.buffer = buffer;
             this.callback = callback;
         }
-
-        ByteBuffer buffer;
-        Callback callback;
-    }
-
-    public BufferCallbackAccumulator()
-    {
-        this(null, false);
-    }
-
-    BufferCallbackAccumulator(ByteBufferPool bufferPool, boolean direct)
-    {
-        _bufferPool = (bufferPool == null) ? new NullByteBufferPool() : bufferPool;
-        _direct = direct;
     }
 
     public void addEntry(ByteBuffer buffer, Callback callback)
@@ -86,7 +73,7 @@ public class BufferCallbackAccumulator
 
     public void writeTo(ByteBuffer buffer)
     {
-        for (Iterator<Entry> iterator = _entries.iterator(); iterator.hasNext(); )
+        for (Iterator<Entry> iterator = _entries.iterator(); iterator.hasNext();)
         {
             Entry entry = iterator.next();
             buffer.put(entry.buffer);

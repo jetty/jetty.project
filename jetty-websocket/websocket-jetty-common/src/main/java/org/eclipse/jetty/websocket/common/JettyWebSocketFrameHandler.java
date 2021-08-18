@@ -82,6 +82,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private WebSocketSession session;
     private SuspendState state = SuspendState.DEMANDING;
     private Runnable delayedOnFrame;
+    private CoreSession coreSession;
 
     public JettyWebSocketFrameHandler(WebSocketContainer container,
                                       Object endpointInstance,
@@ -150,6 +151,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         try
         {
             customizer.customize(coreSession);
+            this.coreSession = coreSession;
             session = new WebSocketSession(container, coreSession, this);
             if (!session.isOpen())
                 throw new IllegalStateException("Session is not open");
@@ -226,16 +228,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         // Demand after succeeding any received frame
         Callback demandingCallback = Callback.from(() ->
             {
-                try
-                {
-                    demand();
-                }
-                catch (Throwable t)
-                {
-                    callback.failed(t);
-                    return;
-                }
-
+                demand();
                 callback.succeeded();
             },
             callback::failed
@@ -253,13 +246,13 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                 onPongFrame(frame, demandingCallback);
                 break;
             case OpCode.TEXT:
-                onTextFrame(frame, demandingCallback);
+                onTextFrame(frame, callback);
                 break;
             case OpCode.BINARY:
-                onBinaryFrame(frame, demandingCallback);
+                onBinaryFrame(frame, callback);
                 break;
             case OpCode.CONTINUATION:
-                onContinuationFrame(frame, demandingCallback);
+                onContinuationFrame(frame, callback);
                 break;
             default:
                 callback.failed(new IllegalStateException());
@@ -342,6 +335,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         if (activeMessageSink == null)
         {
             callback.succeeded();
+            coreSession.demand(1);
             return;
         }
 

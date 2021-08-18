@@ -17,6 +17,8 @@ import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.Session;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.NullByteBufferPool;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.junit.jupiter.api.AfterAll;
@@ -38,12 +40,19 @@ public abstract class AbstractSessionTest
         Object websocketPojo = new DummyEndpoint();
         UpgradeRequest upgradeRequest = new UpgradeRequestAdapter();
         JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(websocketPojo, upgradeRequest);
+        ByteBufferPool bufferPool = new NullByteBufferPool();
         CoreSession coreSession = new CoreSession.Empty()
         {
             @Override
             public WebSocketComponents getWebSocketComponents()
             {
                 return components;
+            }
+
+            @Override
+            public ByteBufferPool getByteBufferPool()
+            {
+                return bufferPool;
             }
         };
         session = new JavaxWebSocketSession(container, coreSession, frameHandler, container.getFrameHandlerFactory()
