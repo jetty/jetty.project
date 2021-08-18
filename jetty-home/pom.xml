@@ -409,8 +409,8 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
-              <includeArtifactIds>javax.security.auth.message</includeArtifactIds>
+              <includeGroupIds>jakarta.authentication</includeGroupIds>
+              <includeArtifactIds>jakarta.authentication-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/jaspi</outputDirectory>
             </configuration>
@@ -422,8 +422,8 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
-              <includeArtifactIds>javax.security.auth.message</includeArtifactIds>
+              <includeGroupIds>jakarta.authentication</includeGroupIds>
+              <includeArtifactIds>jakarta.authentication-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/jaspi</outputDirectory>
@@ -534,12 +534,6 @@
   </build>
 
   <dependencies>
-    <!-- Orbit Deps -->
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.security.auth.message</artifactId>
-    </dependency>
-
     <dependency>
       <groupId>jakarta.mail</groupId>
       <artifactId>jakarta.mail-api</artifactId>
@@ -547,6 +541,10 @@
     <dependency>
       <groupId>jakarta.annotation</groupId>
       <artifactId>jakarta.annotation-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.authentication</groupId>
+      <artifactId>jakarta.authentication-api</artifactId>
     </dependency>
     <dependency>
       <groupId>jakarta.transaction</groupId>

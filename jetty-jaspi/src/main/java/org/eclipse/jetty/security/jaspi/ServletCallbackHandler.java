@@ -18,14 +18,14 @@ import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.UnsupportedCallbackException;
-import javax.security.auth.message.callback.CallerPrincipalCallback;
-import javax.security.auth.message.callback.CertStoreCallback;
-import javax.security.auth.message.callback.GroupPrincipalCallback;
-import javax.security.auth.message.callback.PasswordValidationCallback;
-import javax.security.auth.message.callback.PrivateKeyCallback;
-import javax.security.auth.message.callback.SecretKeyCallback;
-import javax.security.auth.message.callback.TrustStoreCallback;
 
+import jakarta.security.auth.message.callback.CallerPrincipalCallback;
+import jakarta.security.auth.message.callback.CertStoreCallback;
+import jakarta.security.auth.message.callback.GroupPrincipalCallback;
+import jakarta.security.auth.message.callback.PasswordValidationCallback;
+import jakarta.security.auth.message.callback.PrivateKeyCallback;
+import jakarta.security.auth.message.callback.SecretKeyCallback;
+import jakarta.security.auth.message.callback.TrustStoreCallback;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.authentication.LoginCallback;
 import org.eclipse.jetty.security.authentication.LoginCallbackImpl;
@@ -33,14 +33,13 @@ import org.eclipse.jetty.security.jaspi.callback.CredentialValidationCallback;
 import org.eclipse.jetty.server.UserIdentity;
 
 /**
- * Idiot class required by jaspi stupidity
+ * This {@link CallbackHandler} will bridge {@link Callback}s to handle to the given to the Jetty {@link LoginService}.
  */
 public class ServletCallbackHandler implements CallbackHandler
 {
     private final LoginService _loginService;
-
-    private final ThreadLocal<CallerPrincipalCallback> _callerPrincipals = new ThreadLocal<CallerPrincipalCallback>();
-    private final ThreadLocal<GroupPrincipalCallback> _groupPrincipals = new ThreadLocal<GroupPrincipalCallback>();
+    private final ThreadLocal<CallerPrincipalCallback> _callerPrincipals = new ThreadLocal<>();
+    private final ThreadLocal<GroupPrincipalCallback> _groupPrincipals = new ThreadLocal<>();
 
     public ServletCallbackHandler(LoginService loginService)
     {
@@ -64,6 +63,7 @@ public class ServletCallbackHandler implements CallbackHandler
             else if (callback instanceof PasswordValidationCallback)
             {
                 PasswordValidationCallback passwordValidationCallback = (PasswordValidationCallback)callback;
+                @SuppressWarnings("unused")
                 Subject subject = passwordValidationCallback.getSubject();
 
                 UserIdentity user = _loginService.login(passwordValidationCallback.getUsername(), passwordValidationCallback.getPassword(), null);
