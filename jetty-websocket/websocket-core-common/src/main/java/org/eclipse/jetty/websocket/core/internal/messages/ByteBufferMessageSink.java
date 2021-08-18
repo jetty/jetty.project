@@ -71,7 +71,14 @@ public class ByteBufferMessageSink extends AbstractMessageSink
                 return;
             }
 
-            aggregatePayload(frame, callback);
+            // Aggregate the frame payload.
+            if (frame.hasPayload())
+            {
+                ByteBuffer payload = frame.getPayload();
+                if (out == null)
+                    out = new BufferCallbackAccumulator();
+                out.addEntry(payload, callback);
+            }
 
             // If the methodHandle throws we don't want to fail callback twice.
             callback = Callback.NOOP;
@@ -108,17 +115,6 @@ public class ByteBufferMessageSink extends AbstractMessageSink
                 out = null;
                 size = 0;
             }
-        }
-    }
-
-    private void aggregatePayload(Frame frame, Callback callback)
-    {
-        if (frame.hasPayload())
-        {
-            ByteBuffer payload = frame.getPayload();
-            if (out == null)
-                out = new BufferCallbackAccumulator();
-            out.addEntry(payload, callback);
         }
     }
 }

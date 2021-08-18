@@ -24,6 +24,7 @@ import org.eclipse.jetty.util.Callback;
 public class BufferCallbackAccumulator
 {
     private final List<Entry> _entries = new ArrayList<>();
+    private int _length;
 
     private static class Entry
     {
@@ -40,6 +41,7 @@ public class BufferCallbackAccumulator
     public void addEntry(ByteBuffer buffer, Callback callback)
     {
         _entries.add(new Entry(buffer, callback));
+        _length = Math.addExact(_length, buffer.remaining());
     }
 
     /**
@@ -49,16 +51,13 @@ public class BufferCallbackAccumulator
      */
     public int getLength()
     {
-        int length = 0;
-        for (Entry entry : _entries)
-            length = Math.addExact(length, entry.buffer.remaining());
-        return length;
+        return _length;
     }
 
     /**
      * @return a newly allocated byte array containing all content written into the accumulator.
      */
-    public byte[] toByteArray()
+    public byte[] takeByteArray()
     {
         int length = getLength();
         if (length == 0)
@@ -76,10 +75,16 @@ public class BufferCallbackAccumulator
         for (Iterator<Entry> iterator = _entries.iterator(); iterator.hasNext();)
         {
             Entry entry = iterator.next();
+            _length = entry.buffer.remaining();
             buffer.put(entry.buffer);
             iterator.remove();
             entry.callback.succeeded();
         }
+
+        if (!_entries.isEmpty())
+            throw new IllegalStateException("remaining entries: " + _entries.size());
+        if (_length != 0)
+            throw new IllegalStateException("non-zero length: " + _length);
     }
 
     public void fail(Throwable t)
@@ -89,5 +94,6 @@ public class BufferCallbackAccumulator
             entry.callback.failed(t);
         }
         _entries.clear();
+        _length = 0;
     }
 }

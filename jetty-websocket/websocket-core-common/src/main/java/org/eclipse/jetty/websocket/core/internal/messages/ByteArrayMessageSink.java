@@ -53,8 +53,8 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             long maxBinaryMessageSize = session.getMaxBinaryMessageSize();
             if (maxBinaryMessageSize > 0 && size > maxBinaryMessageSize)
             {
-                callback.failed(new MessageTooLargeException(
-                    String.format("Binary message too large: (actual) %,d > (configured max binary message size) %,d", size, maxBinaryMessageSize)));
+                throw new MessageTooLargeException(
+                    String.format("Binary message too large: (actual) %,d > (configured max binary message size) %,d", size, maxBinaryMessageSize));
             }
 
             // If we are fin and no OutputStream has been created we don't need to aggregate.
@@ -73,13 +73,20 @@ public class ByteArrayMessageSink extends AbstractMessageSink
                 return;
             }
 
-            aggregatePayload(frame, callback);
+            // Aggregate the frame payload.
+            if (frame.hasPayload())
+            {
+                ByteBuffer payload = frame.getPayload();
+                if (out == null)
+                    out = new BufferCallbackAccumulator();
+                out.addEntry(payload, callback);
+            }
 
             // If the methodHandle throws we don't want to fail callback twice.
             callback = Callback.NOOP;
             if (frame.isFin())
             {
-                byte[] buf = out.toByteArray();
+                byte[] buf = out.takeByteArray();
                 methodHandle.invoke(buf, 0, buf.length);
             }
 
@@ -99,17 +106,6 @@ public class ByteArrayMessageSink extends AbstractMessageSink
                 out = null;
                 size = 0;
             }
-        }
-    }
-
-    private void aggregatePayload(Frame frame, Callback callback)
-    {
-        if (frame.hasPayload())
-        {
-            ByteBuffer payload = frame.getPayload();
-            if (out == null)
-                out = new BufferCallbackAccumulator();
-            out.addEntry(payload, callback);
         }
     }
 }
