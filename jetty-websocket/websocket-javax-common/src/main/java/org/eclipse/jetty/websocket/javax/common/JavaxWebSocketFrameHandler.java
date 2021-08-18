@@ -133,6 +133,9 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             // Rewire EndpointConfig to call CoreSession setters if Jetty specific properties are set.
             endpointConfig = getWrappedEndpointConfig();
             session = new JavaxWebSocketSession(container, coreSession, this, endpointConfig);
+            if (!session.isOpen())
+                throw new IllegalStateException("Session is not open");
+
             openHandle = InvokerUtils.bindTo(openHandle, session, endpointConfig);
             closeHandle = InvokerUtils.bindTo(closeHandle, session);
             errorHandle = InvokerUtils.bindTo(errorHandle, session);
@@ -171,7 +174,9 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             if (openHandle != null)
                 openHandle.invoke();
 
-            container.notifySessionListeners((listener) -> listener.onJavaxWebSocketSessionOpened(session));
+            if (session.isOpen())
+                container.notifySessionListeners((listener) -> listener.onJavaxWebSocketSessionOpened(session));
+
             callback.succeeded();
         }
         catch (Throwable cause)

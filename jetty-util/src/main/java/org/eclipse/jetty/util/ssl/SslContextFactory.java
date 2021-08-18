@@ -2178,6 +2178,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
                 String host = sslEngine.getPeerHost();
                 if (host != null)
                 {
+                    // TODO Must handle : somehow as java17 SNIHostName never handles:  See #6624
                     // Must use the byte[] constructor, because the character ':' is forbidden when
                     // using the String constructor (but typically present in IPv6 addresses).
                     return List.of(new SNIHostName(host.getBytes(StandardCharsets.US_ASCII)));

@@ -13,13 +13,10 @@
 
 package org.eclipse.jetty.util;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
@@ -30,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
-import static org.eclipse.jetty.util.BlockingArrayQueueTest.Await.await;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -527,36 +524,5 @@ public class BlockingArrayQueueTest
         assertThat(to, Matchers.contains("one", "two", "three", "four", "five", "six"));
         assertThat(queue.size(), Matchers.is(0));
         assertThat(queue, Matchers.empty());
-    }
-
-    static class Await
-    {
-        private Duration duration;
-
-        public static Await await()
-        {
-            return new Await();
-        }
-
-        public Await atMost(long time, TimeUnit unit)
-        {
-            duration = Duration.ofMillis(unit.toMillis(time));
-            return this;
-        }
-
-        public void until(Callable<Boolean> condition) throws Exception
-        {
-            Objects.requireNonNull(duration);
-            long start = System.nanoTime();
-
-            while (true)
-            {
-                if (condition.call())
-                    return;
-                if (duration.minus(Duration.ofNanos(System.nanoTime() - start)).isNegative())
-                    throw new AssertionError("Duration expired");
-                Thread.sleep(10);
-            }
-        }
     }
 }

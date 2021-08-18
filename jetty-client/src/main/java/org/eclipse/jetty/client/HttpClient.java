@@ -923,8 +923,10 @@ public class HttpClient extends ContainerLifeCycle
 
     /**
      * @return whether TCP_NODELAY is enabled
+     * @deprecated use {@link ClientConnector#isTCPNoDelay()} instead
      */
     @ManagedAttribute(value = "Whether the TCP_NODELAY option is enabled", name = "tcpNoDelay")
+    @Deprecated
     public boolean isTCPNoDelay()
     {
         return tcpNoDelay;
@@ -933,7 +935,9 @@ public class HttpClient extends ContainerLifeCycle
     /**
      * @param tcpNoDelay whether TCP_NODELAY is enabled
      * @see java.net.Socket#setTcpNoDelay(boolean)
+     * @deprecated use {@link ClientConnector#setTCPNoDelay(boolean)} instead
      */
+    @Deprecated
     public void setTCPNoDelay(boolean tcpNoDelay)
     {
         this.tcpNoDelay = tcpNoDelay;

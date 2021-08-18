@@ -93,6 +93,8 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
             client.setInputBufferSize(httpClient.getResponseBufferSize());
             client.setUseInputDirectByteBuffers(httpClient.isUseInputDirectByteBuffers());
             client.setUseOutputDirectByteBuffers(httpClient.isUseOutputDirectByteBuffers());
+            client.setConnectBlocking(httpClient.isConnectBlocking());
+            client.setBindAddress(httpClient.getBindAddress());
         }
         addBean(client);
         super.doStart();
