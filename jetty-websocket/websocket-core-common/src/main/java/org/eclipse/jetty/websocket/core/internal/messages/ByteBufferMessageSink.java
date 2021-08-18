@@ -91,9 +91,9 @@ public class ByteBufferMessageSink extends AbstractMessageSink
                 {
                     bufferPool.release(buffer);
                 }
-
-                session.demand(1);
             }
+
+            session.demand(1);
         }
         catch (Throwable t)
         {
