@@ -20,6 +20,7 @@ package org.eclipse.jetty.security.openid;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -50,6 +51,14 @@ public class OpenIdCredentials implements Serializable
     private String authCode;
     private Map<String, Object> response;
     private Map<String, Object> claims;
+    private boolean verified = false;
+
+    public OpenIdCredentials(Map<String, Object> claims)
+    {
+        this.redirectUri = null;
+        this.authCode = null;
+        this.claims = claims;
+    }
 
     public OpenIdCredentials(String authCode, String redirectUri)
     {
@@ -100,13 +109,18 @@ public class OpenIdCredentials implements Serializable
                 claims = JwtDecoder.decode(idToken);
                 if (LOG.isDebugEnabled())
                     LOG.debug("claims {}", claims);
-                validateClaims(configuration);
             }
             finally
             {
                 // reset authCode as it can only be used once
                 authCode = null;
             }
+        }
+
+        if (!verified)
+        {
+            validateClaims(configuration);
+            verified = true;
         }
     }
 
@@ -143,10 +157,11 @@ public class OpenIdCredentials implements Serializable
             throw new AuthenticationException("Audience Claim MUST contain the client_id value");
         else if (isList)
         {
-            if (!Arrays.asList((Object[])aud).contains(clientId))
+            List<Object> list = Arrays.asList((Object[])aud);
+            if (!list.contains(clientId))
                 throw new AuthenticationException("Audience Claim MUST contain the client_id value");
 
-            if (claims.get("azp") == null)
+            if (list.size() > 1 && claims.get("azp") == null)
                 throw new AuthenticationException("A multi-audience ID token needs to contain an azp claim");
         }
         else if (!isValidType)
