@@ -843,7 +843,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                     // Protocol "h2" must not be enabled because the
                     // http2 Jetty module was not explicitly enabled.
                     assertFalse(run3.getLogs().stream()
-                        .anyMatch(log -> log.contains("h2")));
+                        .anyMatch(log -> log.contains("h2")), "Full logs: " + String.join("", run3.getLogs()));
                 }
             }
         }
