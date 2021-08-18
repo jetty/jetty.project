@@ -26,7 +26,7 @@ lib/logging/slf4j-jdk14-${slf4j.version}.jar
 -Djava.util.logging.config.file=${jetty.base}/resources/java-util-logging.properties
 
 [ini]
-slf4j.version?=2.0.0-alpha1
+slf4j.version?=2.0.0-alpha4
 
 [license]
 SLF4J is distributed under the MIT License.
