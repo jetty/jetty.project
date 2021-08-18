@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.client.http;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -40,6 +41,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.MultiplexConnectionPool;
+import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
@@ -76,6 +78,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class MaxConcurrentStreamsTest extends AbstractTest
 {
@@ -543,6 +546,109 @@ public class MaxConcurrentStreamsTest extends AbstractTest
 
         assertTrue(response1Latch.await(15, TimeUnit.SECONDS));
         assertTrue(response3Latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testDifferentMaxConcurrentStreamsForDifferentConnections() throws Exception
+    {
+        long processing = 125;
+        RawHTTP2ServerConnectionFactory http2 = new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), new ServerSessionListener.Adapter()
+        {
+            private Session session1;
+            private Session session2;
+
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                MetaData.Request request = (MetaData.Request)frame.getMetaData();
+                switch (request.getURI().getPath())
+                {
+                    case "/prime":
+                    {
+                        session1 = stream.getSession();
+                        // Send another request from here to force the opening of the 2nd connection.
+                        client.newRequest("localhost", connector.getLocalPort()).path("/prime2").send(result ->
+                        {
+                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, result.getResponse().getStatus(), new HttpFields());
+                            stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                        });
+                        break;
+                    }
+                    case "/prime2":
+                    {
+                        session2 = stream.getSession();
+                        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                        stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                        break;
+                    }
+                    case "/update_max_streams":
+                    {
+                        Session session = stream.getSession() == session1 ? session2 : session1;
+                        Map<Integer, Integer> settings = new HashMap<>();
+                        settings.put(SettingsFrame.MAX_CONCURRENT_STREAMS, 2);
+                        session.settings(new SettingsFrame(settings, false), Callback.NOOP);
+                        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                        stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                        break;
+                    }
+                    default:
+                    {
+                        sleep(processing);
+                        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                        stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                        break;
+                    }
+                }
+                return null;
+            }
+        });
+        http2.setMaxConcurrentStreams(1);
+        prepareServer(http2);
+        server.start();
+        prepareClient();
+        client.setMaxConnectionsPerDestination(2);
+        client.start();
+
+        // Prime the 2 connections.
+        primeConnection();
+
+        String host = "localhost";
+        int port = connector.getLocalPort();
+
+        AbstractConnectionPool pool = (AbstractConnectionPool)client.resolveDestination(new Origin("http", host, port)).getConnectionPool();
+        assertEquals(2, pool.getConnectionCount());
+
+        // Send a request on one connection, which sends back a SETTINGS frame on the other connection.
+        ContentResponse response = client.newRequest(host, port)
+            .path("/update_max_streams")
+            .send();
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        // Send 4 requests at once: 1 should go on one connection, 2 on the other connection, and 1 queued.
+        int count = 4;
+        CountDownLatch latch = new CountDownLatch(count);
+        for (int i = 0; i < count; ++i)
+        {
+            client.newRequest(host, port)
+                .path("/" + i)
+                .send(result ->
+                {
+                    if (result.isSucceeded())
+                    {
+                        int status = result.getResponse().getStatus();
+                        if (status == HttpStatus.OK_200)
+                            latch.countDown();
+                        else
+                            fail("unexpected status " + status);
+                    }
+                    else
+                    {
+                        fail(result.getFailure());
+                    }
+                });
+        }
+
+        assertTrue(awaitLatch(latch, count * processing * 10, TimeUnit.MILLISECONDS));
     }
 
     private void primeConnection() throws Exception

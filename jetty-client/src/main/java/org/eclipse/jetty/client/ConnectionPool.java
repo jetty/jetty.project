@@ -109,13 +109,22 @@ public interface ConnectionPool extends Closeable
     interface Multiplexable
     {
         /**
-         * @return the max number of requests multiplexable on a single connection
+         * @return the default max number of requests multiplexable on a connection
          */
         int getMaxMultiplex();
 
         /**
-         * @param maxMultiplex the max number of requests multiplexable on a single connection
+         * @param maxMultiplex the default max number of requests multiplexable on a connection
          */
         void setMaxMultiplex(int maxMultiplex);
+
+        /**
+         * @param connection the multiplexed connection
+         * @param maxMultiplex the max number of requests multiplexable on the given connection
+         */
+        default void setMaxMultiplex(Connection connection, int maxMultiplex)
+        {
+            setMaxMultiplex(maxMultiplex);
+        }
     }
 }
