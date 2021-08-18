@@ -762,6 +762,11 @@
       <artifactId>jetty-keystore</artifactId>
       <optional>true</optional>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-javax-transformation</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <!-- Demo Apps -->
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>

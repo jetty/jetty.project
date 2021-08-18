@@ -29,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ThirdPartyModulesTests extends AbstractJettyHomeTest
 {
     @Test
-    @Disabled("not jakarta ready https://github.com/eclipse/jetty.project/issues/6595")
     public void testHawtio() throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();

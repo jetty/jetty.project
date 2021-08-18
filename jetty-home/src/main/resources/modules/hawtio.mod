@@ -10,6 +10,7 @@ Deploys the Hawtio console as a web application.
 stats
 deploy
 jmx
+javax-transformer
 
 [xml]
 etc/hawtio.xml
