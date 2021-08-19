@@ -474,6 +474,7 @@ public class StreamResetTest extends AbstractTest
         h2.setInitialSessionRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         h2.setInitialStreamRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         connector = new ServerConnector(server, 1, 1, h2);
+        connector.setHost(getServerHost());
         server.addConnector(connector);
         ServletContextHandler context = new ServletContextHandler(server, "/");
         AtomicReference<CountDownLatch> phaser = new AtomicReference<>();
@@ -891,7 +892,7 @@ public class StreamResetTest extends AbstractTest
         ByteBufferPool byteBufferPool = client.getByteBufferPool();
         try (SocketChannel socket = SocketChannel.open())
         {
-            String host = "localhost";
+            String host = getServerHost();
             int port = connector.getLocalPort();
             socket.connect(new InetSocketAddress(host, port));
 
@@ -994,7 +995,7 @@ public class StreamResetTest extends AbstractTest
         ByteBufferPool byteBufferPool = client.getByteBufferPool();
         try (SocketChannel socket = SocketChannel.open())
         {
-            String host = "localhost";
+            String host = getServerHost();
             int port = connector.getLocalPort();
             socket.connect(new InetSocketAddress(host, port));
 
