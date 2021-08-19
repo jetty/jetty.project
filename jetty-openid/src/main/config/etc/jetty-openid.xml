@@ -16,6 +16,7 @@
     <Arg><Property name="jetty.openid.provider.tokenEndpoint"/></Arg>
     <Arg><Property name="jetty.openid.clientId"/></Arg>
     <Arg><Property name="jetty.openid.clientSecret"/></Arg>
+    <Arg><Property name="jetty.openid.authMethod" default="client_secret_post"/></Arg>
     <Arg><Ref refid="HttpClient"/></Arg>
     <Call name="addScopes">
       <Arg>

@@ -1,7 +1,7 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Adds OpenId Connect authentication.
+Adds OpenId Connect authentication to the server.
 
 [depend]
 security
@@ -42,3 +42,6 @@ etc/jetty-openid.xml
 
 ## True if all certificates should be trusted by the default SslContextFactory
 # jetty.openid.sslContextFactory.trustAll=false
+
+## What authentication method to use with the Token Endpoint (client_secret_post, client_secret_basic).
+# jetty.openid.authMethod=client_secret_post

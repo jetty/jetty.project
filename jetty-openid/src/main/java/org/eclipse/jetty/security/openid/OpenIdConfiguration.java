@@ -48,6 +48,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     private final String clientId;
     private final String clientSecret;
     private final List<String> scopes = new ArrayList<>();
+    private final String authMethod;
     private String authEndpoint;
     private String tokenEndpoint;
 
@@ -74,12 +75,29 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     public OpenIdConfiguration(String issuer, String authorizationEndpoint, String tokenEndpoint,
                                String clientId, String clientSecret, HttpClient httpClient)
     {
+        this(issuer, authorizationEndpoint, tokenEndpoint, clientId, clientSecret, "client_secret_post", httpClient);
+    }
+
+    /**
+     * Create an OpenID configuration for a specific OIDC provider.
+     * @param issuer The URL of the OpenID provider.
+     * @param authorizationEndpoint the URL of the OpenID provider's authorization endpoint if configured.
+     * @param tokenEndpoint the URL of the OpenID provider's token endpoint if configured.
+     * @param clientId OAuth 2.0 Client Identifier valid at the Authorization Server.
+     * @param clientSecret The client secret known only by the Client and the Authorization Server.
+     * @param authMethod Authentication method to use with the Token Endpoint.
+     * @param httpClient The {@link HttpClient} instance to use.
+     */
+    public OpenIdConfiguration(String issuer, String authorizationEndpoint, String tokenEndpoint,
+                               String clientId, String clientSecret, String authMethod, HttpClient httpClient)
+    {
         this.issuer = issuer;
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.authEndpoint = authorizationEndpoint;
         this.tokenEndpoint = tokenEndpoint;
         this.httpClient = httpClient != null ? httpClient : newHttpClient();
+        this.authMethod = authMethod;
 
         if (this.issuer == null)
             throw new IllegalArgumentException("Issuer was not configured");
@@ -177,6 +195,11 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     public String getTokenEndpoint()
     {
         return tokenEndpoint;
+    }
+
+    public String getAuthMethod()
+    {
+        return authMethod;
     }
 
     public void addScopes(String... scopes)

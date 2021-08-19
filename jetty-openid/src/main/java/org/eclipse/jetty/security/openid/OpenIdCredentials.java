@@ -19,13 +19,16 @@
 package org.eclipse.jetty.security.openid;
 
 import java.io.Serializable;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.client.util.FormContentProvider;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ajax.JSON;
@@ -173,14 +176,27 @@ public class OpenIdCredentials implements Serializable
     {
         Fields fields = new Fields();
         fields.add("code", authCode);
-        fields.add("client_id", configuration.getClientId());
-        fields.add("client_secret", configuration.getClientSecret());
         fields.add("redirect_uri", redirectUri);
         fields.add("grant_type", "authorization_code");
-        FormContentProvider formContentProvider = new FormContentProvider(fields);
-        Request request = configuration.getHttpClient().POST(configuration.getTokenEndpoint())
-                .content(formContentProvider)
-                .timeout(10, TimeUnit.SECONDS);
+
+        Request request = configuration.getHttpClient().POST(configuration.getTokenEndpoint());
+        switch (configuration.getAuthMethod())
+        {
+            case "client_secret_basic":
+                URI uri = URI.create(configuration.getTokenEndpoint());
+                Authentication.Result authentication = new BasicAuthentication.BasicResult(uri, configuration.getClientId(), configuration.getClientSecret());
+                authentication.apply(request);
+                break;
+            case "client_secret_post":
+                fields.add("client_id", configuration.getClientId());
+                fields.add("client_secret", configuration.getClientSecret());
+                break;
+            default:
+                throw new IllegalStateException(configuration.getAuthMethod());
+        }
+
+        FormContentProvider formContent = new FormContentProvider(fields);
+        request = request.content(formContent).timeout(10, TimeUnit.SECONDS);
         ContentResponse response = request.send();
         String responseBody = response.getContentAsString();
         if (LOG.isDebugEnabled())
