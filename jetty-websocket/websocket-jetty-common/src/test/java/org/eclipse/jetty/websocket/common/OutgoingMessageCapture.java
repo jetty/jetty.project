@@ -120,7 +120,7 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
         if (OpCode.isDataFrame(frame.getOpCode()))
         {
             Frame copy = Frame.copy(frame);
-            messageSink.accept(copy, Callback.NOOP);
+            messageSink.accept(copy, Callback.from(() -> {}, Throwable::printStackTrace));
             if (frame.isFin())
                 messageSink = null;
         }

@@ -75,7 +75,7 @@ public class BufferCallbackAccumulator
         for (Iterator<Entry> iterator = _entries.iterator(); iterator.hasNext();)
         {
             Entry entry = iterator.next();
-            _length = entry.buffer.remaining();
+            _length -= entry.buffer.remaining();
             buffer.put(entry.buffer);
             iterator.remove();
             entry.callback.succeeded();
