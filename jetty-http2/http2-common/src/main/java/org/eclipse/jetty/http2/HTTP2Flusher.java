@@ -147,6 +147,12 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     }
 
     @Override
+    public InvocationType getInvocationType()
+    {
+        return InvocationType.NON_BLOCKING;
+    }
+
+    @Override
     protected Action process() throws Throwable
     {
         if (LOG.isDebugEnabled())
