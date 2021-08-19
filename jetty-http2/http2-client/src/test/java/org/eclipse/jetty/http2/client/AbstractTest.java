@@ -13,7 +13,9 @@
 
 package org.eclipse.jetty.http2.client;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import javax.servlet.http.HttpServlet;
@@ -45,6 +47,7 @@ public class AbstractTest
     protected String servletPath = "/test";
     protected HTTP2Client client;
     protected Server server;
+    protected String serverHost;
 
     protected void start(HttpServlet servlet) throws Exception
     {
@@ -88,7 +91,21 @@ public class AbstractTest
         QueuedThreadPool serverExecutor = new QueuedThreadPool();
         serverExecutor.setName("server");
         server = new Server(serverExecutor);
+
+        // Get a local IP address that can use the LAN, just to avoid
+        // any optimizations that "localhost" provides.
+        try (Socket socket = new Socket())
+        {
+            socket.connect(new InetSocketAddress("webtide.com", 443));
+            serverHost = socket.getLocalAddress().getHostAddress();
+        }
+        catch (IOException e)
+        {
+            // fall back to localhost if we cannot
+            serverHost = "localhost";
+        }
         connector = new ServerConnector(server, 1, 1, connectionFactories);
+        connector.setHost(serverHost);
         server.addConnector(connector);
     }
 
@@ -104,9 +121,9 @@ public class AbstractTest
 
     protected Session newClient(Session.Listener listener) throws Exception
     {
-        String host = "localhost";
         int port = connector.getLocalPort();
-        InetSocketAddress address = new InetSocketAddress(host, port);
+        InetSocketAddress address = new InetSocketAddress(serverHost, port);
+        System.err.printf("newClient(%s)%n", address);
         FuturePromise<Session> promise = new FuturePromise<>();
         client.connect(address, listener, promise);
         return promise.get(5, TimeUnit.SECONDS);
@@ -119,9 +136,8 @@ public class AbstractTest
 
     protected MetaData.Request newRequest(String method, String pathInfo, HttpFields fields)
     {
-        String host = "localhost";
         int port = connector.getLocalPort();
-        String authority = host + ":" + port;
+        String authority = serverHost + ":" + port;
         return new MetaData.Request(method, HttpScheme.HTTP.asString(), new HostPortHttpField(authority), servletPath + pathInfo, HttpVersion.HTTP_2, fields, -1);
     }
 
