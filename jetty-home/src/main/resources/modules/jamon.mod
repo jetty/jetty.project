@@ -11,6 +11,7 @@ stats
 deploy
 jmx
 jsp
+javax-transformer
 
 [xml]
 etc/jamon.xml

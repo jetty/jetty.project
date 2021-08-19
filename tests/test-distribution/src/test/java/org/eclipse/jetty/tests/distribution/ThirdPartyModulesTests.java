@@ -142,7 +142,6 @@ public class ThirdPartyModulesTests extends AbstractJettyHomeTest
     }
 
     @Test
-    @Disabled("not jakarta ready https://github.com/eclipse/jetty.project/issues/6595")
     public void testjolokia() throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();

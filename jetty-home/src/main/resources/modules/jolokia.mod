@@ -10,6 +10,7 @@ Deploys the Jolokia console as a web application.
 stats
 deploy
 jmx
+javax-transformer
 
 [xml]
 etc/jolokia.xml
