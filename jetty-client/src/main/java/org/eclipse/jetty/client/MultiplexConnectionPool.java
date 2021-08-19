@@ -25,7 +25,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 @ManagedObject
-public class MultiplexConnectionPool extends AbstractConnectionPool implements ConnectionPool.Multiplexable
+public class MultiplexConnectionPool extends AbstractConnectionPool
 {
     public MultiplexConnectionPool(HttpDestination destination, int maxConnections, Callback requester, int maxMultiplex)
     {
@@ -54,12 +54,6 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     public void setMaxMultiplex(int maxMultiplex)
     {
         super.setMaxMultiplex(maxMultiplex);
-    }
-
-    @Override
-    public void setMaxMultiplex(Connection connection, int maxMultiplex)
-    {
-        super.setMaxMultiplex(connection, maxMultiplex);
     }
 
     @Override

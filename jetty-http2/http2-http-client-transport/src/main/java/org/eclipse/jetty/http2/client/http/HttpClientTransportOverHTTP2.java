@@ -60,7 +60,7 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         setConnectionPoolFactory(destination ->
         {
             HttpClient httpClient = getHttpClient();
-            return new MultiplexConnectionPool(destination, httpClient.getMaxConnectionsPerDestination(), destination, httpClient.getMaxRequestsQueuedPerDestination());
+            return new MultiplexConnectionPool(destination, httpClient.getMaxConnectionsPerDestination(), destination, 1);
         });
     }
 
@@ -213,15 +213,24 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         {
             Map<Integer, Integer> settings = frame.getSettings();
             Integer maxConcurrentStreams = settings.get(SettingsFrame.MAX_CONCURRENT_STREAMS);
-            if (maxConcurrentStreams != null)
-                destination().setMaxRequestsPerConnection(connection.getReference(), maxConcurrentStreams);
-            if (!connection.isMarked())
-                onServerPreface(session);
+            boolean[] initialized = new boolean[1];
+            Connection connection = this.connection.get(initialized);
+            if (initialized[0])
+            {
+                if (maxConcurrentStreams != null && connection != null)
+                    destination().setMaxRequestsPerConnection(connection, maxConcurrentStreams);
+            }
+            else
+            {
+                onServerPreface(session, maxConcurrentStreams);
+            }
         }
 
-        private void onServerPreface(Session session)
+        private void onServerPreface(Session session, Integer maxConcurrentStreams)
         {
             HttpConnectionOverHTTP2 connection = newHttpConnection(destination(), session);
+            if (maxConcurrentStreams != null)
+                connection.setMaxMultiplex(maxConcurrentStreams);
             if (this.connection.compareAndSet(null, connection, false, true))
                 connectionPromise().succeeded(connection);
         }

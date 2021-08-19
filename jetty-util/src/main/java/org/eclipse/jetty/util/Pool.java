@@ -31,6 +31,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
@@ -38,24 +40,22 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Locker;
 
 /**
- * A fast pool of objects, with optional support for
+ * <p>A pool of objects, with optional support for
  * multiplexing, max usage count and several optimized strategies plus
- * an optional {@link ThreadLocal} cache of the last release entry.
- * <p>
- * When the method {@link #close()} is called, all {@link Closeable}s in the pool
- * are also closed.
- * </p>
- * @param <T>
+ * an optional {@link ThreadLocal} cache of the last release entry.</p>
+ * <p>When the method {@link #close()} is called, all {@link Closeable}s
+ * object pooled by the pool are also closed.</p>
+ *
+ * @param <T> the type of the pooled objects
  */
+@ManagedObject
 public class Pool<T> implements AutoCloseable, Dumpable
 {
     private static final Logger LOGGER = Log.getLogger(Pool.class);
 
     private final List<Entry> entries = new CopyOnWriteArrayList<>();
-
     private final int maxEntries;
     private final StrategyType strategyType;
-
     /*
      * The cache is used to avoid hammering on the first index of the entry list.
      * Caches can become poisoned (i.e.: containing entries that are in use) when
@@ -104,7 +104,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
          * random strategy but with more predictable behaviour.
          * No entries are favoured and contention is reduced.
          */
-        ROUND_ROBIN,
+        ROUND_ROBIN
     }
 
     /**
@@ -122,6 +122,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
     /**
      * Construct a Pool with the specified thread-local cache size and
      * an optional {@link ThreadLocal} cache.
+     *
      * @param strategyType The strategy to used for looking up entries.
      * @param maxEntries the maximum amount of entries that the pool will accept.
      * @param cache True if a {@link ThreadLocal} cache should be used to try the most recently released entry.
@@ -134,65 +135,92 @@ public class Pool<T> implements AutoCloseable, Dumpable
         this.nextIndex = strategyType == StrategyType.ROUND_ROBIN ? new AtomicInteger() : null;
     }
 
+    /**
+     * @return the number of reserved entries
+     */
+    @ManagedAttribute("The number of reserved entries")
     public int getReservedCount()
     {
         return (int)entries.stream().filter(Entry::isReserved).count();
     }
 
+    /**
+     * @return the number of idle entries
+     */
+    @ManagedAttribute("The number of idle entries")
     public int getIdleCount()
     {
         return (int)entries.stream().filter(Entry::isIdle).count();
     }
 
+    /**
+     * @return the number of in-use entries
+     */
+    @ManagedAttribute("The number of in-use entries")
     public int getInUseCount()
     {
         return (int)entries.stream().filter(Entry::isInUse).count();
     }
 
+    /**
+     * @return the number of closed entries
+     */
+    @ManagedAttribute("The number of closed entries")
     public int getClosedCount()
     {
         return (int)entries.stream().filter(Entry::isClosed).count();
     }
 
+    /**
+     * @return the maximum number of entries
+     */
+    @ManagedAttribute("The maximum number of entries")
     public int getMaxEntries()
     {
         return maxEntries;
     }
 
+    /**
+     * @return the default maximum multiplex count of entries
+     */
+    @ManagedAttribute("The default maximum multiplex count of entries")
     public int getMaxMultiplex()
     {
         return maxMultiplex;
     }
 
+    /**
+     * <p>Sets the default maximum multiplex count for the Pool's entries.</p>
+     * <p>This value is used to initialize {@link Entry#maxMultiplex}
+     * when a new {@link Entry} is created.</p>
+     *
+     * @param maxMultiplex the default maximum multiplex count of entries
+     */
     public final void setMaxMultiplex(int maxMultiplex)
     {
         if (maxMultiplex < 1)
             throw new IllegalArgumentException("Max multiplex must be >= 1");
         this.maxMultiplex = maxMultiplex;
-
-        try (Locker.Lock l = locker.lock())
-        {
-            if (closed)
-                return;
-
-            entries.forEach(entry -> entry.setMaxMultiplex(maxMultiplex));
-        }
     }
 
     /**
-     * Get the maximum number of times the entries of the pool
-     * can be acquired.
-     * @return the max usage count.
+     * <p>Returns the maximum number of times the entries of the pool
+     * can be acquired.</p>
+     *
+     * @return the default maximum usage count of entries
      */
+    @ManagedAttribute("The default maximum usage count of entries")
     public int getMaxUsageCount()
     {
         return maxUsageCount;
     }
 
     /**
-     * Change the max usage count of the pool's entries. All existing
-     * idle entries over this new max usage are removed and closed.
-     * @param maxUsageCount the max usage count.
+     * <p>Sets the maximum usage count for the Pool's entries.</p>
+     * <p>All existing idle entries that have a usage count larger
+     * than this new value are removed from the Pool and closed.</p>
+     *
+     * @param maxUsageCount the default maximum usage count of entries
      */
     public final void setMaxUsageCount(int maxUsageCount)
     {
@@ -218,10 +246,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
     }
 
     /**
-     * Create a new disabled slot into the pool.
-     * The returned entry must ultimately have the {@link Entry#enable(Object, boolean)}
+     * <p>Creates a new disabled slot into the pool.</p>
+     * <p>The returned entry must ultimately have the {@link Entry#enable(Object, boolean)}
      * method called or be removed via {@link Pool.Entry#remove()} or
-     * {@link Pool#remove(Pool.Entry)}.
+     * {@link Pool#remove(Pool.Entry)}.</p>
      *
      * @param allotment the desired allotment, where each entry handles an allotment of maxMultiplex,
      * or a negative number to always trigger the reservation of a new entry.
@@ -252,10 +280,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
     }
 
     /**
-     * Create a new disabled slot into the pool.
-     * The returned entry must ultimately have the {@link Entry#enable(Object, boolean)}
+     * <p>Creates a new disabled slot into the pool.</p>
+     * <p>The returned entry must ultimately have the {@link Entry#enable(Object, boolean)}
      * method called or be removed via {@link Pool.Entry#remove()} or
-     * {@link Pool#remove(Pool.Entry)}.
+     * {@link Pool#remove(Pool.Entry)}.</p>
      *
      * @return a disabled entry that is contained in the pool,
      * or null if the pool is closed or if the pool already contains
@@ -279,10 +307,12 @@ public class Pool<T> implements AutoCloseable, Dumpable
     }
 
     /**
-     * Acquire the entry from the pool at the specified index. This method bypasses the thread-local mechanism.
-     * @deprecated No longer supported. Instead use a {@link StrategyType} to configure the pool.
+     * <p>Acquires the entry from the pool at the specified index.</p>
+     * <p>This method bypasses the thread-local cache mechanism.</p>
+     *
      * @param idx the index of the entry to acquire.
      * @return the specified entry or null if there is none at the specified index or if it is not available.
+     * @deprecated No longer supported. Instead use a {@link StrategyType} to configure the pool.
      */
     @Deprecated
     public Entry acquireAt(int idx)
@@ -304,8 +334,11 @@ public class Pool<T> implements AutoCloseable, Dumpable
     }
 
     /**
-     * Acquire an entry from the pool.
-     * Only enabled entries will be returned from this method and their enable method must not be called.
+     * <p>Acquires an entry from the pool.</p>
+     * <p>Only enabled entries will be returned from this method
+     * and their {@link Entry#enable(Object, boolean)}
+     * method must not be called.</p>
+     *
      * @return an entry from the pool or null if none is available.
      */
     public Entry acquire()
@@ -326,7 +359,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
         int index = startIndex(size);
 
-        for (int tries = size; tries-- > 0;)
+        for (int tries = size; tries-- > 0; )
         {
             try
             {
@@ -367,8 +400,8 @@ public class Pool<T> implements AutoCloseable, Dumpable
     }
 
     /**
-     * Utility method to acquire an entry from the pool,
-     * reserving and creating a new entry if necessary.
+     * <p>Acquires an entry from the pool,
+     * reserving and creating a new entry if necessary.</p>
      *
      * @param creator a function to create the pooled value for a reserved entry.
      * @return an entry from the pool or null if none is available.
@@ -404,9 +437,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
     }
 
     /**
-     * This method will return an acquired object to the pool. Objects
-     * that are acquired from the pool but never released will result
-     * in a memory leak.
+     * <p>Releases an {@link #acquire() acquired} entry to the pool.</p>
+     * <p>Entries that are acquired from the pool but never released
+     * will result in a memory leak.</p>
      *
      * @param entry the value to return to the pool
      * @return true if the entry was released and could be acquired again,
@@ -426,7 +459,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
     }
 
     /**
-     * Remove a value from the pool.
+     * <p>Removes an entry from the pool.</p>
      *
      * @param entry the value to remove
      * @return true if the entry was removed, false otherwise
@@ -510,6 +543,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
             closed);
     }
 
+    /**
+     * <p>A Pool entry that holds metadata and a pooled object.</p>
+     */
     public class Entry
     {
         // hi: positive=open/maxUsage counter; negative=closed; MIN_VALUE pending
@@ -527,6 +563,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
             this.maxMultiplex = Pool.this.maxMultiplex;
         }
 
+        /**
+         * @return the maximum multiplex count for this entry
+         */
         public int getMaxMultiplex()
         {
             return maxMultiplex;
@@ -545,15 +584,17 @@ public class Pool<T> implements AutoCloseable, Dumpable
             this.state.getAndSetHi(usageCount);
         }
 
-        /** Enable a reserved entry {@link Entry}.
-         * An entry returned from the {@link #reserve()} method must be enabled with this method,
-         * once and only once, before it is usable by the pool.
-         * The entry may be enabled and not acquired, in which case it is immediately available to be
+        /**
+         * <p>Enables a {@link #reserve() reserved} Entry.</p>
+         * <p>An entry returned from the {@link #reserve()} method must be enabled with this method,
+         * once and only once, before it is usable by the pool.</p>
+         * <p>The entry may be enabled and not acquired, in which case it is immediately available to be
          * acquired, potentially by another thread; or it can be enabled and acquired atomically so that
-         * no other thread can acquire it, although the acquire may still fail if the pool has been closed.
+         * no other thread can acquire it, although the acquire may still fail if the pool has been closed.</p>
+         *
          * @param pooled The pooled item for the entry
          * @param acquire If true the entry is atomically enabled and acquired.
-         * @return true If the entry was enabled.
+         * @return whether the entry was enabled
          * @throws IllegalStateException if the entry was already enabled
          */
         public boolean enable(T pooled, boolean acquire)
@@ -585,9 +626,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
 
         /**
-         * Release the entry.
-         * This is equivalent to calling {@link Pool#release(Pool.Entry)} passing this entry.
-         * @return true if released.
+         * <p>Releases this Entry.</p>
+         * <p>This is equivalent to calling {@link Pool#release(Entry)} passing this entry.</p>
+         *
+         * @return whether the entry was released
          */
         public boolean release()
         {
@@ -595,9 +637,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
 
         /**
-         * Remove the entry.
-         * This is equivalent to calling {@link Pool#remove(Pool.Entry)} passing this entry.
-         * @return true if remove.
+         * <p>Removes the entry.</p>
+         * <p>This is equivalent to calling {@link Pool#remove(Entry)} passing this entry.</p>
+         *
+         * @return whether the entry was removed
          */
         public boolean remove()
         {
@@ -605,8 +648,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
 
         /**
-         * Try to acquire the entry if possible by incrementing both the usage
-         * count and the multiplex count.
+         * <p>Tries to acquire the entry if possible by incrementing both the usage
+         * count and the multiplex count.</p>
+         *
          * @return true if the usage count is &lt;= maxUsageCount and
          * the multiplex count is maxMultiplex and the entry is not closed,
          * false otherwise.
@@ -631,8 +675,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
 
         /**
-         * Try to release the entry if possible by decrementing the multiplexing
-         * count unless the entity is closed.
+         * <p>Tries to release the entry if possible by decrementing the multiplexing
+         * count unless the entity is closed.</p>
+         *
          * @return true if the entry was released,
          * false if {@link #tryRemove()} should be called.
          */
@@ -662,8 +707,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
 
         /**
-         * Try to remove the entry by marking it as closed and decrementing the multiplexing counter.
-         * The multiplexing counter will never go below zero and if it reaches zero, the entry is considered removed.
+         * <p>Try to remove the entry by marking it as closed and decrementing the multiplexing counter.</p>
+         * <p>The multiplexing counter will never go below zero and if it reaches zero, the entry is considered removed.</p>
+         *
          * @return true if the entry can be removed from the containing pool, false otherwise.
          */
         boolean tryRemove()

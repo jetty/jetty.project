@@ -738,7 +738,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             int maxCount = getMaxLocalStreams();
             if (maxCount >= 0 && localCount >= maxCount)
             {
-                IllegalStateException failure = new IllegalStateException("Max local stream count " + maxCount + " exceeded");
+                IllegalStateException failure = new IllegalStateException("Max local stream count " + maxCount + " exceeded: " + localCount);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Could not create local stream #{} for {}", streamId, this, failure);
                 promise.failed(failure);
@@ -789,8 +789,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             int maxCount = getMaxRemoteStreams();
             if (maxCount >= 0 && remoteCount - remoteClosing >= maxCount)
             {
+                IllegalStateException failure = new IllegalStateException("Max remote stream count " + maxCount + " exceeded: " + remoteCount + "+" + remoteClosing);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Could not create remote stream #{} for {}", streamId, this);
+                    LOG.debug("Could not create remote stream #{} for {}", streamId, this, failure);
                 reset(null, new ResetFrame(streamId, ErrorCode.REFUSED_STREAM_ERROR.code), Callback.from(() -> onStreamDestroyed(streamId)));
                 return null;
             }
