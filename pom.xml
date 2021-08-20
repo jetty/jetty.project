@@ -1504,6 +1504,9 @@
               <version>${maven.surefire.version}</version>
               <configuration>
                 <excludedGroups>external, large-disk-resource</excludedGroups>
+                <systemPropertyVariables>
+                  <env>ci</env>
+                </systemPropertyVariables>
               </configuration>
             </plugin>
           </plugins>
