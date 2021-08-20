@@ -12,6 +12,7 @@
   <inceptionYear>1995</inceptionYear>
 
   <properties>
+    <jetty.unixdomain.dir>/tmp</jetty.unixdomain.dir>
     <compiler.source>11</compiler.source>
     <compiler.target>11</compiler.target>
     <compiler.release>11</compiler.release>
@@ -43,8 +44,7 @@
     <weld.version>3.1.8.Final</weld.version>
     <jboss.logging.version>3.4.2.Final</jboss.logging.version>
     <jetty.perf-helper.version>1.0.6</jetty.perf-helper.version>
-    <ant.version>1.10.9</ant.version>
-    <unix.socket.tmp></unix.socket.tmp>
+    <ant.version>1.10.11</ant.version>
     <!-- OSGI import-package -->
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
 
@@ -68,6 +68,7 @@
     <it.debug>false</it.debug>
     <jetty.test.version>5.5</jetty.test.version>
     <hamcrest.version>2.2</hamcrest.version>
+    <mariadb.docker.version>10.3.6</mariadb.docker.version>
 
     <!-- springboot is only used for jetty-maven-plugin it test
     otherwise depending on Spring Boot might be chicken and egg issue :) -->
@@ -79,7 +80,7 @@
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
     <testcontainers.version>1.15.1</testcontainers.version>
-    <maria.version>2.7.0</maria.version>
+    <mariadb.version>2.7.0</mariadb.version>
   </properties>
 
   <licenses>
@@ -150,6 +151,7 @@
     <module>jetty-bom</module>
     <module>documentation</module>
     <module>jetty-keystore</module>
+    <module>jetty-unixdomain-server</module>
   </modules>
 
   <build>
@@ -684,7 +686,7 @@
             <runOrder>alphabetical</runOrder>
             <systemPropertyVariables>
               <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
-              <unix.socket.tmp>${unix.socket.tmp}</unix.socket.tmp>
+              <jetty.unixdomain.dir>${jetty.unixdomain.dir}</jetty.unixdomain.dir>
               <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
               <jetty.testtracker.log>${jetty.testtracker.log}</jetty.testtracker.log>
             </systemPropertyVariables>
@@ -979,7 +981,7 @@
         <plugin>
           <groupId>org.mortbay.jetty</groupId>
           <artifactId>h2spec-maven-plugin</artifactId>
-          <version>1.0.5</version>
+          <version>1.0.6</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -1130,11 +1132,21 @@
         <version>${hamcrest.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.awaitility</groupId>
+        <artifactId>awaitility</artifactId>
+        <version>4.1.0</version>
+      </dependency>
+      <dependency>
         <groupId>org.testcontainers</groupId>
         <artifactId>testcontainers-bom</artifactId>
         <version>${testcontainers.version}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.mariadb.jdbc</groupId>
+        <artifactId>mariadb-java-client</artifactId>
+        <version>${mariadb.version}</version>
       </dependency>
       <dependency>
         <groupId>net.java.dev.jna</groupId>
@@ -1243,6 +1255,17 @@
   </dependencyManagement>
 
   <profiles>
+    <profile>
+      <id>unix-domain-windows</id>
+      <activation>
+        <os>
+          <family>Windows</family>
+        </os>
+      </activation>
+      <properties>
+        <jetty.unixdomain.dir>${user.home}</jetty.unixdomain.dir>
+      </properties>
+    </profile>
     <profile>
       <id>errorprone</id>
       <build>
@@ -1435,6 +1458,9 @@
               <version>${maven.surefire.version}</version>
               <configuration>
                 <excludedGroups>external, large-disk-resource</excludedGroups>
+                <systemPropertyVariables>
+                  <env>ci</env>
+                </systemPropertyVariables>
               </configuration>
             </plugin>
           </plugins>

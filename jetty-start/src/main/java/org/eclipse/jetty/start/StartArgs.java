@@ -302,7 +302,7 @@ public class StartArgs
         // Jetty Environment
         System.out.println();
         System.out.println("Jetty Environment:");
-        System.out.println("-----------------");
+        System.out.println("------------------");
         dumpProperty(JETTY_VERSION_KEY);
         dumpProperty(JETTY_TAG_NAME_KEY);
         dumpProperty(JETTY_BUILDNUM_KEY);
@@ -330,26 +330,20 @@ public class StartArgs
 
     public void dumpJvmArgs()
     {
-        System.out.println();
-        System.out.println("JVM Arguments:");
-        System.out.println("--------------");
         if (jvmArgs.isEmpty())
-        {
-            System.out.println(" (no jvm args specified)");
             return;
-        }
+
+        System.out.println();
+        System.out.println("Forked JVM Arguments:");
+        System.out.println("---------------------");
 
         for (String jvmArgKey : jvmArgs)
         {
             String value = System.getProperty(jvmArgKey);
             if (value != null)
-            {
                 System.out.printf(" %s = %s%n", jvmArgKey, value);
-            }
             else
-            {
                 System.out.printf(" %s%n", jvmArgKey);
-            }
         }
     }
 

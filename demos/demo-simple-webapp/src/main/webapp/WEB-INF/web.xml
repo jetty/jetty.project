@@ -6,4 +6,10 @@
 
   <display-name>Simple Web Application</display-name>
 
+  <!-- using a mime-type and extension that does NOT exist in jetty-http's mime.properties -->
+  <mime-mapping>
+    <extension>icon</extension>
+    <mime-type>image/vnd.microsoft.icon</mime-type>
+  </mime-mapping>
+
 </web-app>

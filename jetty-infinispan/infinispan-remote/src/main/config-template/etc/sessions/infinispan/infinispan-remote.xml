@@ -6,7 +6,7 @@
   <!-- ===================================================================== -->
   <!-- Read hotrod-client.properties file                                    -->
   <!-- ===================================================================== -->
-    <New id="properties" class="java.util.Properties">
+  <New id="properties" class="java.util.Properties">
     <Call name="load">
       <Arg>
           <New class="java.io.FileInputStream">

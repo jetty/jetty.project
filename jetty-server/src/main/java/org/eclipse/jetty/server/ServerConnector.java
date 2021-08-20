@@ -19,6 +19,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.StandardSocketOptions;
 import java.nio.channels.Channel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
@@ -77,6 +78,7 @@ public class ServerConnector extends AbstractNetworkConnector
     private volatile int _localPort = -1;
     private volatile int _acceptQueueSize = 0;
     private volatile boolean _reuseAddress = true;
+    private volatile boolean _reusePort = false;
     private volatile boolean _acceptedTcpNoDelay = true;
     private volatile int _acceptedReceiveBufferSize = -1;
     private volatile int _acceptedSendBufferSize = -1;
@@ -332,8 +334,9 @@ public class ServerConnector extends AbstractNetworkConnector
             serverChannel = ServerSocketChannel.open();
             try
             {
-                serverChannel.socket().setReuseAddress(getReuseAddress());
-                serverChannel.socket().bind(bindAddress, getAcceptQueueSize());
+                serverChannel.setOption(StandardSocketOptions.SO_REUSEADDR, getReuseAddress());
+                serverChannel.setOption(StandardSocketOptions.SO_REUSEPORT, isReusePort());
+                serverChannel.bind(bindAddress, getAcceptQueueSize());
             }
             catch (Throwable e)
             {
@@ -450,7 +453,7 @@ public class ServerConnector extends AbstractNetworkConnector
     }
 
     /**
-     * @return whether the server socket reuses addresses
+     * @return whether rebinding the server socket is allowed with sockets in tear-down states
      * @see ServerSocket#getReuseAddress()
      */
     @ManagedAttribute("Server Socket SO_REUSEADDR")
@@ -460,12 +463,29 @@ public class ServerConnector extends AbstractNetworkConnector
     }
 
     /**
-     * @param reuseAddress whether the server socket reuses addresses
+     * @param reuseAddress whether rebinding the server socket is allowed with sockets in tear-down states
      * @see ServerSocket#setReuseAddress(boolean)
      */
     public void setReuseAddress(boolean reuseAddress)
     {
         _reuseAddress = reuseAddress;
+    }
+
+    /**
+     * @return whether it is allowed to bind multiple server sockets to the same host and port
+     */
+    @ManagedAttribute("Server Socket SO_REUSEPORT")
+    public boolean isReusePort()
+    {
+        return _reusePort;
+    }
+
+    /**
+     * @param reusePort whether it is allowed to bind multiple server sockets to the same host and port
+     */
+    public void setReusePort(boolean reusePort)
+    {
+        _reusePort = reusePort;
     }
 
     /**

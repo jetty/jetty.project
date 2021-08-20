@@ -131,7 +131,7 @@ In the cases where you need to enhance Jetty with a custom functionality, you ca
 For example, let's assume that you need to add a custom auditing component that integrates with the auditing tools used by your company.
 This custom auditing component should measure the HTTP request processing times and record them (how they are recorded is irrelevant here -- could be in a local log file or sent via network to an external service).
 
-The Jetty libraries already provide a way to measure HTTP request processing times via xref:{prog-guide}#pg-server-http-channel-events[`HttpChannel` events]: you write a custom component that implements the `HttpChannel.Listener` interface and add it as a bean to the `ServerConnector` that receives the HTTP requests.
+The Jetty libraries already provide a way to measure HTTP request processing times via xref:{prog-guide}#pg-server-http-channel-events[`HttpChannel` events]: you write a custom component that implements the `HttpChannel.Listener` interface and add it as a bean to the server `Connector` that receives the HTTP requests.
 
 The steps to create a Jetty module are similar to those necessary to xref:og-modules-custom-modify[modify an existing module]:
 

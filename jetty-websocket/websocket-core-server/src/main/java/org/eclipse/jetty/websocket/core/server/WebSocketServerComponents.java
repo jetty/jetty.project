@@ -14,6 +14,7 @@
 package org.eclipse.jetty.websocket.core.server;
 
 import java.util.Objects;
+import java.util.concurrent.Executor;
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -40,9 +41,9 @@ public class WebSocketServerComponents extends WebSocketComponents
     public static final String WEBSOCKET_DEFLATER_POOL_ATTRIBUTE = "jetty.websocket.deflater";
     public static final String WEBSOCKET_BUFFER_POOL_ATTRIBUTE = "jetty.websocket.bufferPool";
 
-    WebSocketServerComponents(InflaterPool inflaterPool, DeflaterPool deflaterPool, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory)
+    WebSocketServerComponents(InflaterPool inflaterPool, DeflaterPool deflaterPool, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory, Executor executor)
     {
-        super(null, objectFactory, bufferPool, inflaterPool, deflaterPool);
+        super(null, objectFactory, bufferPool, inflaterPool, deflaterPool, executor);
     }
 
     /**
@@ -79,8 +80,12 @@ public class WebSocketServerComponents extends WebSocketComponents
         if (bufferPool == null)
             bufferPool = server.getBean(ByteBufferPool.class);
 
+        Executor executor = (Executor)servletContext.getAttribute("org.eclipse.jetty.server.Executor");
+        if (executor == null)
+            executor = server.getThreadPool();
+
         DecoratedObjectFactory objectFactory = (DecoratedObjectFactory)servletContext.getAttribute(DecoratedObjectFactory.ATTR);
-        WebSocketComponents serverComponents = new WebSocketServerComponents(inflaterPool, deflaterPool, bufferPool, objectFactory);
+        WebSocketComponents serverComponents = new WebSocketServerComponents(inflaterPool, deflaterPool, bufferPool, objectFactory, executor);
         if (objectFactory != null)
             serverComponents.unmanage(objectFactory);
 
@@ -92,6 +97,8 @@ public class WebSocketServerComponents extends WebSocketComponents
             serverComponents.unmanage(deflaterPool);
         if (server.contains(bufferPool))
             serverComponents.unmanage(bufferPool);
+        if (executor != null)
+            serverComponents.unmanage(executor);
 
         // Stop the WebSocketComponents when the ContextHandler stops.
         ContextHandler contextHandler = Objects.requireNonNull(ContextHandler.getContextHandler(servletContext));

@@ -14,6 +14,7 @@
 package org.eclipse.jetty.websocket.javax.tests.client;
 
 import org.eclipse.jetty.websocket.core.CoreSession;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.javax.client.internal.BasicClientEndpointConfig;
 import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
@@ -29,16 +30,26 @@ public abstract class AbstractClientSessionTest
 {
     protected static JavaxWebSocketSession session;
     protected static JavaxWebSocketContainer container;
+    protected static WebSocketComponents components;
 
     @BeforeAll
     public static void initSession() throws Exception
     {
         container = new JavaxWebSocketClientContainer();
         container.start();
+        components = new WebSocketComponents();
+        components.start();
         Object websocketPojo = new DummyEndpoint();
         UpgradeRequest upgradeRequest = new UpgradeRequestAdapter();
         JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(websocketPojo, upgradeRequest);
-        CoreSession coreSession = new CoreSession.Empty();
+        CoreSession coreSession = new CoreSession.Empty()
+        {
+            @Override
+            public WebSocketComponents getWebSocketComponents()
+            {
+                return components;
+            }
+        };
         session = new JavaxWebSocketSession(container, coreSession, frameHandler, new BasicClientEndpointConfig());
     }
 

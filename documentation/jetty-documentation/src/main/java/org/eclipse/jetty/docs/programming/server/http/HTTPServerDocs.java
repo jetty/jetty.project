@@ -14,6 +14,7 @@
 package org.eclipse.jetty.docs.programming.server.http;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -62,6 +63,7 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
+import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
@@ -163,20 +165,48 @@ public class HTTPServerDocs
         int selectors = 1;
 
         // Create a ServerConnector instance.
-        ServerConnector connector = new ServerConnector(server, 1, 1, new HttpConnectionFactory());
+        ServerConnector connector = new ServerConnector(server, acceptors, selectors, new HttpConnectionFactory());
 
-        // Configure TCP parameters.
+        // Configure TCP/IP parameters.
 
-        // The TCP port to listen to.
+        // The port to listen to.
         connector.setPort(8080);
-        // The TCP address to bind to.
+        // The address to bind to.
         connector.setHost("127.0.0.1");
+
         // The TCP accept queue size.
         connector.setAcceptQueueSize(128);
 
         server.addConnector(connector);
         server.start();
         // end::configureConnector[]
+    }
+
+    public void configureConnectorUnix() throws Exception
+    {
+        // tag::configureConnectorUnix[]
+        Server server = new Server();
+
+        // The number of acceptor threads.
+        int acceptors = 1;
+
+        // The number of selectors.
+        int selectors = 1;
+
+        // Create a ServerConnector instance.
+        UnixDomainServerConnector connector = new UnixDomainServerConnector(server, acceptors, selectors, new HttpConnectionFactory());
+
+        // Configure Unix-Domain parameters.
+
+        // The Unix-Domain path to listen to.
+        connector.setUnixDomainPath(Path.of("/tmp/jetty.sock"));
+
+        // The TCP accept queue size.
+        connector.setAcceptQueueSize(128);
+
+        server.addConnector(connector);
+        server.start();
+        // end::configureConnectorUnix[]
     }
 
     public void configureConnectors() throws Exception
@@ -246,6 +276,31 @@ public class HTTPServerDocs
         server.addConnector(connector);
         server.start();
         // end::proxyHTTP[]
+    }
+
+    public void proxyHTTPUnix() throws Exception
+    {
+        // tag::proxyHTTPUnix[]
+        Server server = new Server();
+
+        // The HTTP configuration object.
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        // Configure the HTTP support, for example:
+        httpConfig.setSendServerVersion(false);
+
+        // The ConnectionFactory for HTTP/1.1.
+        HttpConnectionFactory http11 = new HttpConnectionFactory(httpConfig);
+
+        // The ConnectionFactory for the PROXY protocol.
+        ProxyConnectionFactory proxy = new ProxyConnectionFactory(http11.getProtocol());
+
+        // Create the ServerConnector.
+        UnixDomainServerConnector connector = new UnixDomainServerConnector(server, proxy, http11);
+        connector.setUnixDomainPath(Path.of("/tmp/jetty.sock"));
+
+        server.addConnector(connector);
+        server.start();
+        // end::proxyHTTPUnix[]
     }
 
     public void tlsHttp11() throws Exception

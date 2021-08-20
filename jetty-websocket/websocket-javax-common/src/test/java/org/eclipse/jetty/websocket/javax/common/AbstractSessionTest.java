@@ -18,6 +18,7 @@ import javax.websocket.EndpointConfig;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.core.CoreSession;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
@@ -25,16 +26,26 @@ public abstract class AbstractSessionTest
 {
     protected static JavaxWebSocketSession session;
     protected static JavaxWebSocketContainer container;
+    protected static WebSocketComponents components;
 
     @BeforeAll
     public static void initSession() throws Exception
     {
         container = new DummyContainer();
         container.start();
+        components = new WebSocketComponents();
+        components.start();
         Object websocketPojo = new DummyEndpoint();
         UpgradeRequest upgradeRequest = new UpgradeRequestAdapter();
         JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(websocketPojo, upgradeRequest);
-        CoreSession coreSession = new CoreSession.Empty();
+        CoreSession coreSession = new CoreSession.Empty()
+        {
+            @Override
+            public WebSocketComponents getWebSocketComponents()
+            {
+                return components;
+            }
+        };
         session = new JavaxWebSocketSession(container, coreSession, frameHandler, container.getFrameHandlerFactory()
             .newDefaultEndpointConfig(websocketPojo.getClass()));
     }
@@ -42,6 +53,7 @@ public abstract class AbstractSessionTest
     @AfterAll
     public static void stopContainer() throws Exception
     {
+        components.stop();
         container.stop();
     }
 

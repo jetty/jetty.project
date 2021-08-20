@@ -41,8 +41,8 @@ A wildcard domain name which will match only one level of arbitrary subdomains.
 An IP address may be set as a virtual host to indicate that a web application should handle requests received on the network interface with that IP address for protocols that do not indicate a host name such as HTTP/0.9 or HTTP/1.0.
 
 `@ConnectorName`::
-A Jetty `ServerConnector` name to indicate that a web application should handle requests received on the `ServerConnector` with that name, and therefore received on a specific IP port.
-A `ServerConnector` name can be set via link:{javadoc-url}/org/eclipse/jetty/server/AbstractConnector.html#setName(java.lang.String)[].
+A Jetty server `Connector` name to indicate that a web application should handle requests received on the server `Connector` with that name, and therefore received on a specific socket address (either an IP port for `ServerConnector`, or a Unix-Domain path for `UnixDomainServerConnector`).
+A server `Connector` name can be set via link:{javadoc-url}/org/eclipse/jetty/server/AbstractConnector.html#setName(java.lang.String)[].
 
 `www.√integral.com`::
 Non-ASCII and https://en.wikipedia.org/wiki/Internationalized_domain_name[IDN] domain names can be set as virtual hosts using https://en.wikipedia.org/wiki/Punycode[Puny Code] equivalents that may be obtained from a https://www.punycoder.com/[Punycode/IDN converters].
@@ -134,7 +134,7 @@ To achieve this, you simply use the same context path of `/` for each of your we
 [[og-deploy-virtual-hosts-port]]
 ===== Different Port, Different Web Application
 
-Sometimes it is required to serve different web applications from different IP ports, and therefore from different ``ServerConnector``s.
+Sometimes it is required to serve different web applications from different socket addresses (either different IP ports, or different Unix-Domain paths), and therefore from different server ``Connector``s.
 
 For example, you want requests to `+http://localhost:8080/+` to be served by one web application, but requests to `+http://localhost:9090/+` to be served by another web application.
 
