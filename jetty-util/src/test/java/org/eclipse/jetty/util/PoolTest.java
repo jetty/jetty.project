@@ -170,7 +170,7 @@ public class PoolTest
     public void testReserve(Factory factory)
     {
         Pool<CloseableHolder> pool = factory.getPool(2);
-        pool.setMaxInUse(2);
+        pool.setMaxMultiplex(2);
 
         // Reserve an entry
         Pool<CloseableHolder>.Entry e1 = pool.reserve();
@@ -400,7 +400,7 @@ public class PoolTest
     public void testMaxMultiplex(Factory factory)
     {
         Pool<CloseableHolder> pool = factory.getPool(2);
-        pool.setMaxInUse(3);
+        pool.setMaxMultiplex(3);
 
         Map<String, AtomicInteger> counts = new HashMap<>();
         AtomicInteger a = new AtomicInteger();
@@ -434,7 +434,7 @@ public class PoolTest
     public void testRemoveMultiplexed(Factory factory)
     {
         Pool<CloseableHolder> pool = factory.getPool(1);
-        pool.setMaxInUse(2);
+        pool.setMaxMultiplex(2);
         pool.reserve().enable(new CloseableHolder("aaa"), false);
 
         Pool<CloseableHolder>.Entry e1 = pool.acquire();
@@ -464,7 +464,7 @@ public class PoolTest
     public void testMultiplexRemoveThenAcquireThenReleaseRemove(Factory factory)
     {
         Pool<CloseableHolder> pool = factory.getPool(1);
-        pool.setMaxInUse(2);
+        pool.setMaxMultiplex(2);
         pool.reserve().enable(new CloseableHolder("aaa"), false);
 
         Pool<CloseableHolder>.Entry e1 = pool.acquire();
@@ -482,7 +482,7 @@ public class PoolTest
     public void testNonMultiplexRemoveAfterAcquire(Factory factory)
     {
         Pool<CloseableHolder> pool = factory.getPool(1);
-        pool.setMaxInUse(2);
+        pool.setMaxMultiplex(2);
         pool.reserve().enable(new CloseableHolder("aaa"), false);
 
         Pool<CloseableHolder>.Entry e1 = pool.acquire();
@@ -495,7 +495,7 @@ public class PoolTest
     public void testMultiplexRemoveAfterAcquire(Factory factory)
     {
         Pool<CloseableHolder> pool = factory.getPool(1);
-        pool.setMaxInUse(2);
+        pool.setMaxMultiplex(2);
         pool.reserve().enable(new CloseableHolder("aaa"), false);
 
         Pool<CloseableHolder>.Entry e1 = pool.acquire();
@@ -544,7 +544,7 @@ public class PoolTest
     public void testMultiplexMaxUsageReachedAcquireThenRemove(Factory factory)
     {
         Pool<CloseableHolder> pool = factory.getPool(1);
-        pool.setMaxInUse(2);
+        pool.setMaxMultiplex(2);
         pool.setMaxUsageCount(3);
         pool.reserve().enable(new CloseableHolder("aaa"), false);
 
@@ -565,7 +565,7 @@ public class PoolTest
     public void testMultiplexMaxUsageReachedAcquireThenReleaseThenRemove(Factory factory)
     {
         Pool<CloseableHolder> pool = factory.getPool(1);
-        pool.setMaxInUse(2);
+        pool.setMaxMultiplex(2);
         pool.setMaxUsageCount(3);
         pool.reserve().enable(new CloseableHolder("aaa"), false);
 
@@ -590,7 +590,7 @@ public class PoolTest
     public void testUsageCountAfterReachingMaxMultiplexLimit(Factory factory)
     {
         Pool<CloseableHolder> pool = factory.getPool(1);
-        pool.setMaxInUse(2);
+        pool.setMaxMultiplex(2);
         pool.setMaxUsageCount(10);
         pool.reserve().enable(new CloseableHolder("aaa"), false);
 
@@ -645,8 +645,8 @@ public class PoolTest
     @Test
     public void testConfigLimits()
     {
-        assertThrows(IllegalArgumentException.class, () -> new Pool<CloseableHolder>(FIRST, 1).setMaxInUse(0));
-        assertThrows(IllegalArgumentException.class, () -> new Pool<CloseableHolder>(FIRST, 1).setMaxInUse(-1));
+        assertThrows(IllegalArgumentException.class, () -> new Pool<CloseableHolder>(FIRST, 1).setMaxMultiplex(0));
+        assertThrows(IllegalArgumentException.class, () -> new Pool<CloseableHolder>(FIRST, 1).setMaxMultiplex(-1));
         assertThrows(IllegalArgumentException.class, () -> new Pool<CloseableHolder>(FIRST, 1).setMaxUsageCount(0));
     }
 

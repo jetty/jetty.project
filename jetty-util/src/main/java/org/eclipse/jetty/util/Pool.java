@@ -28,7 +28,7 @@ import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -68,10 +68,11 @@ public class Pool<T> implements AutoCloseable, Dumpable
     private final Locker locker = new Locker();
     private final ThreadLocal<Entry> cache;
     private final AtomicInteger nextIndex;
-    private final BiFunction<T, Integer, Boolean> checkInUse;
+    private final BiPredicate<T, Integer> available;
     private volatile boolean closed;
-    private volatile int maxInUse = 1;
-    private volatile int maxUsageCount = -1;
+    private volatile int maxUsage = -1;
+    @Deprecated
+    private volatile int maxMultiplex = 1;
 
     /**
      * The type of the strategy to use for the pool.
@@ -141,21 +142,21 @@ public class Pool<T> implements AutoCloseable, Dumpable
      * @param strategyType The strategy to used for looking up entries.
      * @param maxEntries the maximum amount of entries that the pool will accept.
      * @param cache True if a {@link ThreadLocal} cache should be used to try the most recently released entry.
-     * @param checkInUse A bi-function to check if the entry inUse count is OK to allocate another usage.  If null
-     * then the inUse count will be checked against {@link #maxInUse}
+     * @param available A bi predicate to check if the entry available for another usage.  If null
+     * then the active count will be checked against {@link #maxMultiplex}
      */
-    public Pool(StrategyType strategyType, int maxEntries, boolean cache, BiFunction<T, Integer, Boolean> checkInUse)
+    public Pool(StrategyType strategyType, int maxEntries, boolean cache, BiPredicate<T, Integer> available)
     {
         this.maxEntries = maxEntries;
         this.strategyType = strategyType;
         this.cache = cache ? new ThreadLocal<>() : null;
         this.nextIndex = strategyType == StrategyType.ROUND_ROBIN ? new AtomicInteger() : null;
-        this.checkInUse = checkInUse == null ? this::checkMaxInUse : checkInUse;
+        this.available = available == null ? this::isAvailable : available;
     }
 
-    private Boolean checkMaxInUse(T item, Integer inUse)
+    private boolean isAvailable(T item, Integer inUse)
     {
-        return inUse < maxInUse;
+        return inUse < maxMultiplex;
     }
 
     /**
@@ -205,23 +206,27 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
     /**
      * @return the default maximum in-use count of entries
+     * @deprecated Use available predicate in {@link #Pool(StrategyType, int, boolean, BiPredicate)}
      */
-    @ManagedAttribute("The default maximum in-use count of entries")
-    public int getMaxInUse()
+    @Deprecated
+    @ManagedAttribute("The default maximum multiplex count of entries")
+    public int getMaxMultiplex()
     {
-        return maxInUse;
+        return maxMultiplex;
     }
 
     /**
-     * <p>Sets the default maximum in-use count for the Pool's entries.</p>
+     * <p>Sets the default maximum multiplex count for the Pool's entries.</p>
      *
-     * @param maxMultiplex the default maximum in-use count of entries
+     * @param maxMultiplex the default maximum multiplex count of entries
+     * @deprecated Use available predicate in {@link #Pool(StrategyType, int, boolean, BiPredicate)}
      */
-    public final void setMaxInUse(int maxMultiplex)
+    @Deprecated
+    public final void setMaxMultiplex(int maxMultiplex)
     {
         if (maxMultiplex < 1)
-            throw new IllegalArgumentException("Max in-use must be >= 1");
-        this.maxInUse = maxMultiplex;
+            throw new IllegalArgumentException("Max multiplex must be >= 1");
+        this.maxMultiplex = maxMultiplex;
     }
 
     /**
@@ -233,7 +238,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
     @ManagedAttribute("The default maximum usage count of entries")
     public int getMaxUsageCount()
     {
-        return maxUsageCount;
+        return maxUsage;
     }
 
     /**
@@ -247,7 +252,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
     {
         if (maxUsageCount == 0)
             throw new IllegalArgumentException("Max usage count must be != 0");
-        this.maxUsageCount = maxUsageCount;
+        this.maxUsage = maxUsageCount;
 
         // Iterate the entries, remove overused ones and collect a list of the closeable removed ones.
         List<Closeable> copy;
@@ -667,8 +672,8 @@ public class Pool<T> implements AutoCloseable, Dumpable
                 int usageCount = AtomicBiInteger.getHi(encoded);
                 boolean closed = usageCount < 0;
                 int inUseCount = AtomicBiInteger.getLo(encoded);
-                int maxUsageCount = Pool.this.maxUsageCount;
-                if (closed || !checkInUse.apply(pooled, inUseCount) || (maxUsageCount > 0 && usageCount >= maxUsageCount))
+                int maxUsageCount = Pool.this.maxUsage;
+                if (closed || !available.test(pooled, inUseCount) || (maxUsageCount > 0 && usageCount >= maxUsageCount))
                     return false;
 
                 // Prevent overflowing the usage counter by capping it at Integer.MAX_VALUE.
@@ -705,7 +710,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
                     break;
             }
 
-            int currentMaxUsageCount = maxUsageCount;
+            int currentMaxUsageCount = maxUsage;
             boolean overUsed = currentMaxUsageCount > 0 && usageCount >= currentMaxUsageCount;
             return !(overUsed && newInUseCount == 0);
         }
@@ -755,18 +760,17 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
         public boolean isOverUsed()
         {
-            int currentMaxUsageCount = maxUsageCount;
+            int currentMaxUsageCount = maxUsage;
             int usageCount = state.getHi();
             return currentMaxUsageCount > 0 && usageCount >= currentMaxUsageCount;
         }
 
         boolean isIdleAndOverUsed()
         {
-            int currentMaxUsageCount = maxUsageCount;
             long encoded = state.get();
             int usageCount = AtomicBiInteger.getHi(encoded);
             int inUseCount = AtomicBiInteger.getLo(encoded);
-            return currentMaxUsageCount > 0 && usageCount >= currentMaxUsageCount && inUseCount == 0;
+            return maxUsage > 0 && usageCount >= maxUsage && inUseCount == 0;
         }
 
         public int getUsageCount()
