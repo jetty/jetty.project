@@ -102,9 +102,10 @@ public class UnauthenticatedTest
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("DeferredAuthentication"));
 
-        // This URI requires just that the request is authenticated.
+        // This URI requires just that the request is authenticated. But DeferredAuthentication can bypass this.
         response = connector.getResponse("GET /requireAuth/test HTTP/1.1\r\nHost: localhost\r\n\r\n");
-        assertThat(response, containsString("HTTP/1.1 401 Unauthorized"));
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("DeferredAuthentication"));
     }
 
     public static class TestAuthenticator extends LoginAuthenticator

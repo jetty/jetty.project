@@ -546,11 +546,6 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                     if (authenticator != null)
                         authenticator.secureResponse(request, response, isAuthMandatory, userAuth);
                 }
-                else if (isAuthMandatory)
-                {
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "unauthenticated");
-                    baseRequest.setHandled(true);
-                }
                 else if (authentication instanceof Authentication.Deferred)
                 {
                     DeferredAuthentication deferred = (DeferredAuthentication)authentication;
@@ -576,6 +571,11 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                         else
                             authenticator.secureResponse(request, response, isAuthMandatory, null);
                     }
+                }
+                else if (isAuthMandatory)
+                {
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "unauthenticated");
+                    baseRequest.setHandled(true);
                 }
                 else
                 {
