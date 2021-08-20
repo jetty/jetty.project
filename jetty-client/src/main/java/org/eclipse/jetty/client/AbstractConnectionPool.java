@@ -132,22 +132,12 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
 
     protected int getMaxMultiplex()
     {
-        return pool.getMaxMultiplex();
+        return pool.getMaxInUse();
     }
 
     protected void setMaxMultiplex(int maxMultiplex)
     {
-        pool.setMaxMultiplex(maxMultiplex);
-    }
-
-    protected void setMaxMultiplex(Connection connection, int maxMultiplex)
-    {
-        if (connection instanceof Attachable)
-        {
-            Object attachment = ((Attachable)connection).getAttachment();
-            if (attachment instanceof EntryHolder)
-                ((EntryHolder)attachment).entry.setMaxMultiplex(maxMultiplex);
-        }
+        pool.setMaxInUse(maxMultiplex);
     }
 
     protected int getMaxUsageCount()
@@ -538,8 +528,6 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
                 onCreated(connection);
                 pending.decrementAndGet();
                 reserved.enable(connection, false);
-                if (connection instanceof Multiplexable)
-                    setMaxMultiplex(connection, ((ConnectionPool.Multiplexable)connection).getMaxMultiplex());
                 idle(connection, false);
                 complete(null);
                 proceed();
