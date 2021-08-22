@@ -33,6 +33,7 @@
               <categoryName>Jetty Bundles</categoryName>
               <includeReactor>true</includeReactor>
               <includeDependencies>false</includeDependencies>
+              <includePGPSignature>true</includePGPSignature>
             </configuration>
             <id>maven-p2-site</id>
             <phase>prepare-package</phase>
