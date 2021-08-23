@@ -98,6 +98,10 @@ public class ServerUpgradeRequest
                     .map(c -> new HttpCookie(c.getName(), c.getValue()))
                     .collect(Collectors.toList());
             }
+            else
+            {
+                cookies = List.of();
+            }
         }
 
         return cookies;
