@@ -72,6 +72,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
 
@@ -1900,7 +1901,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
         private void sendGoAwayAndTerminate(GoAwayFrame frame, GoAwayFrame eventFrame)
         {
-            sendGoAway(frame, Callback.from(() -> terminate(eventFrame)));
+            sendGoAway(frame, Callback.from(Callback.NOOP, () -> terminate(eventFrame)));
         }
 
         private void sendGoAway(GoAwayFrame frame, Callback callback)
@@ -2077,7 +2078,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             stream.setListener(listener);
             stream.process(new PrefaceFrame(), Callback.NOOP);
 
-            Callback streamCallback = Callback.from(() -> promise.succeeded(stream), x ->
+            Callback streamCallback = Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> promise.succeeded(stream), x ->
             {
                 HTTP2Session.this.onStreamDestroyed(streamId);
                 promise.failed(x);

@@ -723,6 +723,12 @@ public class ResourceService
                         }
 
                         @Override
+                        public InvocationType getInvocationType()
+                        {
+                            return InvocationType.NON_BLOCKING;
+                        }
+
+                        @Override
                         public String toString()
                         {
                             return String.format("ResourceService@%x$CB", ResourceService.this.hashCode());
