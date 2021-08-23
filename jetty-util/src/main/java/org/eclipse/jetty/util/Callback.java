@@ -113,13 +113,26 @@ public interface Callback extends Invocable
     }
 
     /**
-     * Create a callback from the passed success and failure
+     * Creates a callback from the given success and failure lambdas.
      *
      * @param success Called when the callback succeeds
      * @param failure Called when the callback fails
      * @return a new Callback
      */
     static Callback from(Runnable success, Consumer<Throwable> failure)
+    {
+        return from(InvocationType.BLOCKING, success, failure);
+    }
+
+    /**
+     * Creates a callback with the given InvocationType from the given success and failure lambdas.
+     *
+     * @param invocationType the Callback invocation type
+     * @param success Called when the callback succeeds
+     * @param failure Called when the callback fails
+     * @return a new Callback
+     */
+    static Callback from(InvocationType invocationType, Runnable success, Consumer<Throwable> failure)
     {
         return new Callback()
         {
@@ -133,6 +146,12 @@ public interface Callback extends Invocable
             public void failed(Throwable x)
             {
                 failure.accept(x);
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return invocationType;
             }
         };
     }
@@ -291,10 +310,6 @@ public interface Callback extends Invocable
         }
     }
 
-    interface InvocableCallback extends Invocable, Callback
-    {
-    }
-
     static Callback combine(Callback cb1, Callback cb2)
     {
         if (cb1 == null || cb1 == cb2)
@@ -302,7 +317,7 @@ public interface Callback extends Invocable
         if (cb2 == null)
             return cb1;
 
-        return new InvocableCallback()
+        return new Callback()
         {
             @Override
             public void succeeded()

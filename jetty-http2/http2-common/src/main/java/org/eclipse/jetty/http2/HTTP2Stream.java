@@ -600,6 +600,15 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             callback.failed(x);
     }
 
+    @Override
+    public InvocationType getInvocationType()
+    {
+        synchronized (this)
+        {
+            return sendCallback != null ? sendCallback.getInvocationType() : Callback.super.getInvocationType();
+        }
+    }
+
     private Callback endWrite()
     {
         synchronized (this)
