@@ -30,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.config.CommandLineConfigSource;
@@ -467,6 +468,15 @@ public class Main
         {
             CommandLineBuilder cmd = args.getMainArgs(StartArgs.ALL_PARTS);
             cmd.debug();
+
+            List<String> execModules = args.getEnabledModules().stream()
+                .map(name -> args.getAllModules().get(name))
+                // Keep only the forking modules.
+                .filter(module -> !module.getJvmArgs().isEmpty())
+                .map(Module::getName)
+                .collect(Collectors.toList());
+            StartLog.warn("Forking second JVM due to forking module(s): %s. Use --dry-run to generate the command line to avoid forking.", execModules);
+
             ProcessBuilder pbuilder = new ProcessBuilder(cmd.getArgs());
             StartLog.endStartLog();
             final Process process = pbuilder.start();

@@ -843,7 +843,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                     // Protocol "h2" must not be enabled because the
                     // http2 Jetty module was not explicitly enabled.
                     assertFalse(run3.getLogs().stream()
-                        .anyMatch(log -> log.contains("h2")));
+                        .anyMatch(log -> log.contains("h2")), "Full logs: " + String.join("", run3.getLogs()));
                 }
             }
         }
@@ -928,6 +928,39 @@ public class DistributionTests extends AbstractJettyHomeTest
                 client.start();
                 ContentResponse response = client.GET("http://localhost/path");
                 assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+            }
+        }
+    }
+
+    @Test
+    public void testModuleWithExecEmitsWarning() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        Path jettyBase = distribution.getJettyBase();
+        Path jettyBaseModules = jettyBase.resolve("modules");
+        Files.createDirectories(jettyBaseModules);
+        Path execModule = jettyBaseModules.resolve("exec.mod");
+        String module = "" +
+            "[exec]\n" +
+            "--show-version";
+        Files.write(execModule, List.of(module), StandardOpenOption.CREATE);
+
+        try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=http,exec")))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            int port = distribution.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.getLogs().stream()
+                    .anyMatch(log -> log.contains("WARN") && log.contains("Forking")));
             }
         }
     }

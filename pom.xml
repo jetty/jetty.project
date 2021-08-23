@@ -982,7 +982,7 @@
         <plugin>
           <groupId>org.mortbay.jetty</groupId>
           <artifactId>h2spec-maven-plugin</artifactId>
-          <version>1.0.5</version>
+          <version>1.0.6</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -1459,6 +1459,9 @@
               <version>${maven.surefire.version}</version>
               <configuration>
                 <excludedGroups>external, large-disk-resource</excludedGroups>
+                <systemPropertyVariables>
+                  <env>ci</env>
+                </systemPropertyVariables>
               </configuration>
             </plugin>
           </plugins>

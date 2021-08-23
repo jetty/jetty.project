@@ -256,7 +256,7 @@ public interface CoreSession extends OutgoingFrames, Configuration
         @Override
         public boolean isOutputOpen()
         {
-            return false;
+            return true;
         }
 
         @Override
