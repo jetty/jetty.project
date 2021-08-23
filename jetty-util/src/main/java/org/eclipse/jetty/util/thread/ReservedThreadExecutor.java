@@ -179,14 +179,19 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
 
         super.doStop();
 
-        // Offer STOP task to all waiting reserved threads.
-        for (int i = _count.getAndSetLo(-1); i-- > 0;)
+        // Mark this instance as stopped.
+        int size = _count.getAndSetLo(-1);
+
+        // Offer the STOP task to all waiting reserved threads.
+        for (int i = 0; i < size; ++i)
         {
-            // yield to wait for any reserved threads that have incremented the size but not yet polled
+            // Yield to wait for any reserved threads that
+            // have incremented the size but not yet polled.
             Thread.yield();
             _queue.offer(STOP);
         }
-        // Interrupt any reserved thread missed the offer so it doesn't wait too long.
+        // Interrupt any reserved thread missed the offer,
+        // so they do not wait for the whole idle timeout.
         for (ReservedThread reserved : _threads)
         {
             Thread thread = reserved._thread;
@@ -251,7 +256,6 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             try
             {
                 ReservedThread thread = new ReservedThread();
-                _threads.add(thread);
                 _executor.execute(thread);
             }
             catch (Throwable e)
@@ -267,13 +271,13 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     public void dump(Appendable out, String indent) throws IOException
     {
         Dumpable.dumpObjects(out, indent, this,
-            new DumpableCollection("reserved", _threads));
+            new DumpableCollection("threads", _threads));
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x{s=%d/%d,p=%d}",
+        return String.format("%s@%x{reserved=%d/%d,pending=%d}",
             getClass().getSimpleName(),
             hashCode(),
             _count.getLo(),
@@ -301,38 +305,50 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             if (LOG.isDebugEnabled())
                 LOG.debug("{} waiting {}", this, ReservedThreadExecutor.this);
 
-            // Keep waiting until stopped, tasked or idle
-            while (_count.getLo() >= 0)
+            // This is now a reserved thread.
+            // Note that this thread must be added to the reserved set
+            // before checking for lo<0 (i.e. stopped), see doStop().
+            _threads.add(this);
+            try
             {
-                try
+                // Keep waiting until stopped, tasked or idle.
+                while (_count.getLo() >= 0)
                 {
-                    // Always poll at some period as safety to ensure we don't poll forever.
-                    Runnable task = _queue.poll(_idleTimeNanos, NANOSECONDS);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} task={} {}", this, task, ReservedThreadExecutor.this);
-                    if (task != null)
-                        return task;
-
-                    // we have idled out
-                    int size = _count.getLo();
-                    // decrement size if we have not also been stopped.
-                    while (size > 0)
+                    try
                     {
-                        if (_count.compareAndSetLo(size, --size))
-                            break;
-                        size = _count.getLo();
-                    }
-                    _state = size >= 0 ? State.IDLE : State.STOPPED;
-                    return STOP;
+                        // Always poll at some period as safety to ensure we don't poll forever.
+                        Runnable task = _queue.poll(_idleTimeNanos, NANOSECONDS);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("{} task={} {}", this, task, ReservedThreadExecutor.this);
+                        if (task != null)
+                            return task;
 
+                        // we have idled out
+                        int size = _count.getLo();
+                        // decrement size if we have not also been stopped.
+                        while (size > 0)
+                        {
+                            if (_count.compareAndSetLo(size, --size))
+                                break;
+                            size = _count.getLo();
+                        }
+                        _state = size >= 0 ? State.IDLE : State.STOPPED;
+                        return STOP;
+
+                    }
+                    catch (InterruptedException e)
+                    {
+                        LOG.ignore(e);
+                    }
                 }
-                catch (InterruptedException e)
-                {
-                    LOG.ignore(e);
-                }
+                _state = State.STOPPED;
+                return STOP;
             }
-            _state = State.STOPPED;
-            return STOP;
+            finally
+            {
+                // No longer a reserved thread.
+                _threads.remove(this);
+            }
         }
 
         @Override
@@ -405,7 +421,6 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} exited {}", this, ReservedThreadExecutor.this);
-                _threads.remove(this);
                 _thread = null;
             }
         }

@@ -61,6 +61,7 @@ import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -535,7 +536,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         }
                         
                         // Set a close callback on the HttpOutput to make it an async callback
-                        _response.completeOutput(Callback.from(() -> _state.completed(null), _state::completed));
+                        _response.completeOutput(Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> _state.completed(null), _state::completed));
 
                         break;
                     }
