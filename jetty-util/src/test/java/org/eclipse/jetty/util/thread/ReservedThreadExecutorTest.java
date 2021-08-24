@@ -360,6 +360,8 @@ public class ReservedThreadExecutorTest
         while (!reserved.tryExecute(() -> {}))
             Thread.yield();
 
+        System.err.println(reserved.dump());
+
         reserved.stop();
         pool.stop();
 

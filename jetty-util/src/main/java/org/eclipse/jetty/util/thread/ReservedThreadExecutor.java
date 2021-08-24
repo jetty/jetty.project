@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util.thread;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -26,6 +27,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.ProcessorUtils;
@@ -33,7 +35,6 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -190,14 +191,10 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             Thread.yield();
             _queue.offer(STOP);
         }
+
         // Interrupt any reserved thread missed the offer,
         // so they do not wait for the whole idle timeout.
-        for (ReservedThread reserved : _threads)
-        {
-            Thread thread = reserved._thread;
-            if (thread != null)
-                thread.interrupt();
-        }
+        _threads.stream().filter(ReservedThread::isReserved).map(t -> t._thread).forEach(Thread::interrupt);
         _threads.clear();
         _count.getAndSetHi(0);
     }
@@ -256,6 +253,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             try
             {
                 ReservedThread thread = new ReservedThread();
+                _threads.add(thread);
                 _executor.execute(thread);
             }
             catch (Throwable e)
@@ -271,7 +269,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     public void dump(Appendable out, String indent) throws IOException
     {
         Dumpable.dumpObjects(out, indent, this,
-            new DumpableCollection("threads", _threads));
+            _threads.stream().filter(ReservedThread::isReserved).collect(Collectors.toList()));
     }
 
     @Override
@@ -300,55 +298,48 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         private volatile State _state = State.PENDING;
         private volatile Thread _thread;
 
+        private boolean isReserved()
+        {
+            return Objects.equals(_state, State.RESERVED);
+        }
+
         private Runnable reservedWait()
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} waiting {}", this, ReservedThreadExecutor.this);
 
-            // This is now a reserved thread.
-            // Note that this thread must be added to the reserved set
-            // before checking for lo<0 (i.e. stopped), see doStop().
-            _threads.add(this);
-            try
+            // Keep waiting until stopped, tasked or idle
+            while (_count.getLo() >= 0)
             {
-                // Keep waiting until stopped, tasked or idle.
-                while (_count.getLo() >= 0)
+                try
                 {
-                    try
-                    {
-                        // Always poll at some period as safety to ensure we don't poll forever.
-                        Runnable task = _queue.poll(_idleTimeNanos, NANOSECONDS);
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("{} task={} {}", this, task, ReservedThreadExecutor.this);
-                        if (task != null)
-                            return task;
+                    // Always poll at some period as safety to ensure we don't poll forever.
+                    Runnable task = _queue.poll(_idleTimeNanos, NANOSECONDS);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} task={} {}", this, task, ReservedThreadExecutor.this);
+                    if (task != null)
+                        return task;
 
-                        // we have idled out
-                        int size = _count.getLo();
-                        // decrement size if we have not also been stopped.
-                        while (size > 0)
-                        {
-                            if (_count.compareAndSetLo(size, --size))
-                                break;
-                            size = _count.getLo();
-                        }
-                        _state = size >= 0 ? State.IDLE : State.STOPPED;
-                        return STOP;
-
-                    }
-                    catch (InterruptedException e)
+                    // we have idled out
+                    int size = _count.getLo();
+                    // decrement size if we have not also been stopped.
+                    while (size > 0)
                     {
-                        LOG.ignore(e);
+                        if (_count.compareAndSetLo(size, --size))
+                            break;
+                        size = _count.getLo();
                     }
+                    _state = size >= 0 ? State.IDLE : State.STOPPED;
+                    return STOP;
+
                 }
-                _state = State.STOPPED;
-                return STOP;
+                catch (InterruptedException e)
+                {
+                    LOG.ignore(e);
+                }
             }
-            finally
-            {
-                // No longer a reserved thread.
-                _threads.remove(this);
-            }
+            _state = State.STOPPED;
+            return STOP;
         }
 
         @Override
@@ -421,6 +412,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} exited {}", this, ReservedThreadExecutor.this);
+                _threads.remove(this);
                 _thread = null;
             }
         }
