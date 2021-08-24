@@ -831,7 +831,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         dump = pool.dump();
         assertThat(count(dump, " - STARTED"), is(2));
         assertThat(dump, containsString(",3<=3<=4,i=2,r=2,q=0"));
-        assertThat(dump, containsString("s=0/2"));
+        assertThat(dump, containsString("reserved=0/2"));
         assertThat(dump, containsString("[ReservedThreadExecutor@"));
         assertThat(count(dump, " IDLE"), is(2));
         assertThat(count(dump, " WAITING"), is(1));
@@ -846,7 +846,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         dump = pool.dump();
         assertThat(count(dump, " - STARTED"), is(2));
         assertThat(dump, containsString(",3<=3<=4,i=1,r=2,q=0"));
-        assertThat(dump, containsString("s=1/2"));
+        assertThat(dump, containsString("reserved=1/2"));
         assertThat(dump, containsString("[ReservedThreadExecutor@"));
         assertThat(count(dump, " IDLE"), is(1));
         assertThat(count(dump, " WAITING"), is(1));
