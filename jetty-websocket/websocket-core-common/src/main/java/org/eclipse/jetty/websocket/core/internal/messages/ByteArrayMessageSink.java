@@ -29,7 +29,6 @@ public class ByteArrayMessageSink extends AbstractMessageSink
 {
     private static final byte[] EMPTY_BUFFER = new byte[0];
     private BufferCallbackAccumulator out;
-    private int size;
 
     public ByteArrayMessageSink(CoreSession session, MethodHandle methodHandle)
     {
@@ -49,7 +48,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
     {
         try
         {
-            size += frame.getPayloadLength();
+            long size = (out == null ? 0 : out.getLength()) + frame.getPayloadLength();
             long maxBinaryMessageSize = session.getMaxBinaryMessageSize();
             if (maxBinaryMessageSize > 0 && size > maxBinaryMessageSize)
             {
@@ -104,7 +103,6 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             {
                 // reset
                 out = null;
-                size = 0;
             }
         }
     }

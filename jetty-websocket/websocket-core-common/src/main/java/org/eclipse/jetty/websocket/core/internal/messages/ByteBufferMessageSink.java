@@ -30,7 +30,6 @@ import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 public class ByteBufferMessageSink extends AbstractMessageSink
 {
     private BufferCallbackAccumulator out;
-    private int size;
 
     public ByteBufferMessageSink(CoreSession session, MethodHandle methodHandle)
     {
@@ -50,7 +49,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
     {
         try
         {
-            size += frame.getPayloadLength();
+            long size = (out == null ? 0 : out.getLength()) + frame.getPayloadLength();
             long maxBinaryMessageSize = session.getMaxBinaryMessageSize();
             if (maxBinaryMessageSize > 0 && size > maxBinaryMessageSize)
             {
@@ -113,7 +112,6 @@ public class ByteBufferMessageSink extends AbstractMessageSink
             if (frame.isFin())
             {
                 out = null;
-                size = 0;
             }
         }
     }
