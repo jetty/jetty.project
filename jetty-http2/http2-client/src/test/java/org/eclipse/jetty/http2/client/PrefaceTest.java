@@ -149,7 +149,7 @@ public class PrefaceTest extends AbstractTest
         ByteBufferPool byteBufferPool = client.getByteBufferPool();
         try (SocketChannel socket = SocketChannel.open())
         {
-            socket.connect(new InetSocketAddress(getServerHost(), connector.getLocalPort()));
+            socket.connect(new InetSocketAddress("localhost", connector.getLocalPort()));
 
             Generator generator = new Generator(byteBufferPool);
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
@@ -237,11 +237,11 @@ public class PrefaceTest extends AbstractTest
         ByteBufferPool byteBufferPool = new MappedByteBufferPool();
         try (SocketChannel socket = SocketChannel.open())
         {
-            socket.connect(new InetSocketAddress(getServerHost(), connector.getLocalPort()));
+            socket.connect(new InetSocketAddress("localhost", connector.getLocalPort()));
 
             String upgradeRequest =
                 "GET /one HTTP/1.1\r\n" +
-                    "Host: " + getServerHost() + "\r\n" +
+                    "Host: localhost\r\n" +
                     "Connection: Upgrade, HTTP2-Settings\r\n" +
                     "Upgrade: h2c\r\n" +
                     "HTTP2-Settings: \r\n" +
@@ -344,7 +344,7 @@ public class PrefaceTest extends AbstractTest
 
             CountDownLatch failureLatch = new CountDownLatch(1);
             Promise.Completable<Session> promise = new Promise.Completable<>();
-            InetSocketAddress address = new InetSocketAddress(getServerHost(), server.getLocalPort());
+            InetSocketAddress address = new InetSocketAddress("localhost", server.getLocalPort());
             client.connect(address, new Session.Listener.Adapter()
             {
                 @Override
@@ -381,7 +381,7 @@ public class PrefaceTest extends AbstractTest
     {
         start(new ServerSessionListener.Adapter());
 
-        try (Socket client = new Socket(getServerHost(), connector.getLocalPort()))
+        try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
             OutputStream output = client.getOutputStream();
             output.write("enough_junk_bytes".getBytes(StandardCharsets.UTF_8));

@@ -49,27 +49,6 @@ public class AbstractTest
     protected Server server;
     protected String serverHost;
 
-    public String getServerHost()
-    {
-        if (serverHost == null)
-        {
-            // Get a local IP address that can use the LAN, just to avoid
-            // any optimizations that "localhost" provides.
-            try (Socket socket = new Socket())
-            {
-                socket.connect(new InetSocketAddress("webtide.com", 443));
-                serverHost = socket.getLocalAddress().getHostAddress();
-            }
-            catch (IOException e)
-            {
-                // fall back to localhost if we cannot
-                serverHost = "localhost";
-            }
-        }
-
-        return serverHost;
-    }
-
     protected void start(HttpServlet servlet) throws Exception
     {
         HTTP2CServerConnectionFactory connectionFactory = new HTTP2CServerConnectionFactory(new HttpConfiguration());
@@ -113,8 +92,20 @@ public class AbstractTest
         serverExecutor.setName("server");
         server = new Server(serverExecutor);
 
+        // Get a local IP address that can use the LAN, just to avoid
+        // any optimizations that "localhost" provides.
+        try (Socket socket = new Socket())
+        {
+            socket.connect(new InetSocketAddress("webtide.com", 443));
+            serverHost = socket.getLocalAddress().getHostAddress();
+        }
+        catch (IOException e)
+        {
+            // fall back to localhost if we cannot
+            serverHost = "localhost";
+        }
         connector = new ServerConnector(server, 1, 1, connectionFactories);
-        connector.setHost(getServerHost());
+        connector.setHost(serverHost);
         server.addConnector(connector);
     }
 
@@ -131,7 +122,7 @@ public class AbstractTest
     protected Session newClient(Session.Listener listener) throws Exception
     {
         int port = connector.getLocalPort();
-        InetSocketAddress address = new InetSocketAddress(getServerHost(), port);
+        InetSocketAddress address = new InetSocketAddress(serverHost, port);
         System.err.printf("newClient(%s)%n", address);
         FuturePromise<Session> promise = new FuturePromise<>();
         client.connect(address, listener, promise);
@@ -146,7 +137,7 @@ public class AbstractTest
     protected MetaData.Request newRequest(String method, String pathInfo, HttpFields fields)
     {
         int port = connector.getLocalPort();
-        String authority = getServerHost() + ":" + port;
+        String authority = serverHost + ":" + port;
         return new MetaData.Request(method, HttpScheme.HTTP.asString(), new HostPortHttpField(authority), servletPath + pathInfo, HttpVersion.HTTP_2, fields, -1);
     }
 

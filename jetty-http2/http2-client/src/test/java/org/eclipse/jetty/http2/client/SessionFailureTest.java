@@ -48,7 +48,7 @@ public class SessionFailureTest extends AbstractTest
             }
         });
 
-        try (Socket socket = new Socket(getServerHost(), connector.getLocalPort()))
+        try (Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
             // Preface starts with byte 0x50, send something different.
             OutputStream output = socket.getOutputStream();
