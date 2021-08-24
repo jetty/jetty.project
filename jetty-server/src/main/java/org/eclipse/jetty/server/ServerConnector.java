@@ -19,6 +19,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.SocketOption;
 import java.net.StandardSocketOptions;
 import java.nio.channels.Channel;
 import java.nio.channels.SelectableChannel;
@@ -332,10 +333,10 @@ public class ServerConnector extends AbstractNetworkConnector
         {
             InetSocketAddress bindAddress = getHost() == null ? new InetSocketAddress(getPort()) : new InetSocketAddress(getHost(), getPort());
             serverChannel = ServerSocketChannel.open();
+            setSocketOption(serverChannel, StandardSocketOptions.SO_REUSEADDR, getReuseAddress());
+            setSocketOption(serverChannel, StandardSocketOptions.SO_REUSEPORT, isReusePort());
             try
             {
-                serverChannel.setOption(StandardSocketOptions.SO_REUSEADDR, getReuseAddress());
-                serverChannel.setOption(StandardSocketOptions.SO_REUSEPORT, isReusePort());
                 serverChannel.bind(bindAddress, getAcceptQueueSize());
             }
             catch (Throwable e)
@@ -346,6 +347,18 @@ public class ServerConnector extends AbstractNetworkConnector
         }
 
         return serverChannel;
+    }
+
+    private <T> void setSocketOption(ServerSocketChannel channel, SocketOption<T> name, T value)
+    {
+        try
+        {
+            channel.setOption(name, value);
+        }
+        catch (Throwable t)
+        {
+            LOG.warn("Unable to set socket option {} to {}", name, value, t);
+        }
     }
 
     @Override
