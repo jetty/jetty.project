@@ -310,10 +310,6 @@ public interface Callback extends Invocable
         }
     }
 
-    interface InvocableCallback extends Invocable, Callback
-    {
-    }
-
     static Callback combine(Callback cb1, Callback cb2)
     {
         if (cb1 == null || cb1 == cb2)
@@ -321,7 +317,7 @@ public interface Callback extends Invocable
         if (cb2 == null)
             return cb1;
 
-        return new InvocableCallback()
+        return new Callback()
         {
             @Override
             public void succeeded()
