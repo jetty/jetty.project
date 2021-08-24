@@ -61,8 +61,9 @@ import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
+
+import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
 
 /**
  * HttpChannel represents a single endpoint for HTTP semantic processing.
@@ -153,7 +154,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * {@link TransientListeners} as an {@link AbstractConnector}
      * provided listener</p>
      * <p>Transient listeners are removed after every request cycle</p>
-     * @param listener
+     * @param listener The listener to add.
      * @return true if the listener was added.
      */
     @Deprecated
@@ -536,7 +537,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         }
                         
                         // Set a close callback on the HttpOutput to make it an async callback
-                        _response.completeOutput(Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> _state.completed(null), _state::completed));
+                        _response.completeOutput(Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
 
                         break;
                     }
