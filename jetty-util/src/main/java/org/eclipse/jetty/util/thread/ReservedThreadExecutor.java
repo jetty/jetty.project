@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util.thread;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -196,6 +197,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         _threads.stream()
             .filter(ReservedThread::isReserved)
             .map(t -> t._thread)
+            .filter(Objects::nonNull)
             .forEach(Thread::interrupt);
         _threads.clear();
         _count.getAndSetHi(0);
