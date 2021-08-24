@@ -25,6 +25,7 @@ import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -81,13 +82,14 @@ public class WelcomeFilterTest
 
         WebAppContext context = new WebAppContext(server, directoryPath.toString(), "/");
         // Turn off memory-mapped behavior in DefaultServlet for Windows testing reasons.
-        context.setDefaultsDescriptor(MavenTestingUtils.getTestResourceFile("no-memory-mapped-default-servlet.xml").toString());
+        context.setInitParameter(DefaultServlet.CONTEXT_INIT + "useFileMappedBuffer", "false");
         server.setHandler(context);
         String concatPath = "/*";
 
         FilterHolder filterHolder = new FilterHolder(new WelcomeFilter());
         filterHolder.setInitParameter("welcome", "welcome.html");
         context.addFilter(filterHolder, concatPath, EnumSet.of(DispatcherType.REQUEST));
+        server.setDumpAfterStart(true);
         server.start();
 
         // Verify that I can get the file programmatically, as required by the spec.
