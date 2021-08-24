@@ -345,6 +345,18 @@ public class HttpGenerator
             return Result.FLUSH;
         }
 
+        // If this is an upgrade then we don't want to close the connection.
+        if (_info.isResponse() && ((MetaData.Response)_info).getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
+        {
+            return Result.DONE;
+        }
+        else if (_info.isRequest())
+        {
+            HttpField connectionHeader = _info.getFields().getField(HttpHeader.CONNECTION);
+            if (connectionHeader != null && connectionHeader.contains(HttpHeaderValue.UPGRADE.asString()))
+                return Result.DONE;
+        }
+
         _state = State.END;
         return Boolean.TRUE.equals(_persistent) ? Result.DONE : Result.SHUTDOWN_OUT;
     }

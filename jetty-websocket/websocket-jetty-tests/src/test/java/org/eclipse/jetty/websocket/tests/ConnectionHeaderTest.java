@@ -67,7 +67,7 @@ public class ConnectionHeaderTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"Upgrade", "keep-alive, Upgrade"}) // TODO: should we test "close, Upgrade", what should we expect?
+    @ValueSource(strings = {"Upgrade", "keep-alive, Upgrade", "close, Upgrade"})
     public void testConnectionKeepAlive(String connectionHeaderValue) throws Exception
     {
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/echo");
