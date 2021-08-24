@@ -137,7 +137,8 @@ public class SmallThreadPoolLoadTest extends AbstractTest
         boolean download = random.nextBoolean();
         HttpMethod method = download ? HttpMethod.GET : HttpMethod.POST;
 
-        int contentLength = (random.nextInt(5) * random.nextInt(1024) * random.nextInt(1024)) + 1;
+        int maxContentLength = 128 * 1024;
+        int contentLength = random.nextInt(maxContentLength) + 1;
 
         long requestId = requestIds.incrementAndGet();
 
@@ -182,8 +183,9 @@ public class SmallThreadPoolLoadTest extends AbstractTest
         if (success)
             latch.countDown();
         else
-            logger.warn("Request {} took too long - \nServer: \n" +
-                server.dump() + "\nClient: \n" + client.dump(), requestId);
+            logger.warn("Request {} took too long{}Server:{}{}{}Client:{}{}", requestId,
+                System.lineSeparator(), System.lineSeparator(), server.dump(),
+                System.lineSeparator(), System.lineSeparator(), client.dump());
         return !reset.get();
     }
 
@@ -199,11 +201,7 @@ public class SmallThreadPoolLoadTest extends AbstractTest
                 {
                     int contentLength = request.getIntHeader("X-Download");
                     if (contentLength > 0)
-                    {
-                        byte[] buf = new byte[contentLength];
-                        ThreadLocalRandom.current().nextBytes(buf);
-                        response.getOutputStream().write(buf);
-                    }
+                        response.getOutputStream().write(new byte[contentLength]);
                     break;
                 }
                 case "POST":
