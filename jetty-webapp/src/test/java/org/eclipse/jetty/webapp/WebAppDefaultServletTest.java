@@ -25,7 +25,6 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,8 +52,6 @@ public class WebAppDefaultServletTest
         server.addConnector(connector);
 
         Path directoryPath = workDir.getEmptyPathDir();
-        IO.delete(directoryPath.toFile());
-        Files.createDirectories(directoryPath);
         Path welcomeResource = directoryPath.resolve("index.html");
         try (OutputStream output = Files.newOutputStream(welcomeResource))
         {

@@ -25,9 +25,6 @@
             </Item>
           </Array>
         </Arg>
-        <Set name="host" property="jetty.http.host" />
-        <Set name="port" property="jetty.http.port" />
-        <Set name="idleTimeout"><Property name="jetty.http.idleTimeout" default="30000"/></Set>
       </New>
     </Arg>
   </Call>

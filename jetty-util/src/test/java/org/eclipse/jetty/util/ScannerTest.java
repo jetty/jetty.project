@@ -29,13 +29,16 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Scanner.Notification;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,18 +46,19 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class ScannerTest
 {
-    static Path _directory;
-    static Scanner _scanner;
-    static BlockingQueue<Event> _queue = new LinkedBlockingQueue<>();
-    static BlockingQueue<Set<String>> _bulk = new LinkedBlockingQueue<>();
+    public WorkDir workDir;
+    private Path _directory;
+    private Scanner _scanner;
+    private BlockingQueue<Event> _queue = new LinkedBlockingQueue<>();
+    private BlockingQueue<Set<String>> _bulk = new LinkedBlockingQueue<>();
 
-    @BeforeAll
-    public static void setUpBeforeClass() throws Exception
+    @BeforeEach
+    public void setUpBeforeClass() throws Exception
     {
-        _directory = MavenTestingUtils.getTargetTestingPath(ScannerTest.class.getSimpleName());
-        FS.ensureEmpty(_directory);
+        _directory = workDir.getEmptyPathDir();
 
         _directory = _directory.toRealPath();
 
@@ -92,10 +96,10 @@ public class ScannerTest
         assertTrue(_bulk.isEmpty());
     }
 
-    @AfterAll
-    public static void tearDownAfterClass() throws Exception
+    @AfterEach
+    public void tearDownAfterClass() throws Exception
     {
-        _scanner.stop();
+        LifeCycle.stop(_scanner);
     }
 
     static class Event

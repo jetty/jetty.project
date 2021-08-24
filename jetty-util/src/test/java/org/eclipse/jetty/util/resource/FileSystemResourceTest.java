@@ -647,17 +647,19 @@ public class FileSystemResourceTest
         Path foo = dir.resolve("foo");
         Path bar = dir.resolve("bar");
 
+        boolean symlinkSupported;
         try
         {
             Files.createFile(foo);
             Files.createSymbolicLink(bar, foo);
+            symlinkSupported = true;
         }
         catch (UnsupportedOperationException | FileSystemException e)
         {
-            // if unable to create symlink, no point testing the rest
-            // this is the path that Microsoft Windows takes.
-            assumeTrue(false, "Not supported");
+            symlinkSupported = false;
         }
+
+        assumeTrue(symlinkSupported, "Symlink not supported");
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
         {
@@ -689,16 +691,18 @@ public class FileSystemResourceTest
         Path foo = dir.resolve("foo");
         Path bar = dir.resolve("bar");
 
+        boolean symlinkSupported;
         try
         {
             Files.createSymbolicLink(bar, foo);
+            symlinkSupported = true;
         }
         catch (UnsupportedOperationException | FileSystemException e)
         {
-            // if unable to create symlink, no point testing the rest
-            // this is the path that Microsoft Windows takes.
-            assumeTrue(false, "Not supported");
+            symlinkSupported = false;
         }
+
+        assumeTrue(symlinkSupported, "Symlink not supported");
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
         {
@@ -832,8 +836,7 @@ public class FileSystemResourceTest
             }
             catch (InvalidPathException e)
             {
-                // NTFS filesystem streams are unsupported on some platforms.
-                assumeTrue(false, "NTFS filesystem streams not supported");
+                assumeTrue(false, "NTFS simple streams not supported");
             }
         }
     }
@@ -880,8 +883,7 @@ public class FileSystemResourceTest
             }
             catch (InvalidPathException e)
             {
-                // NTFS filesystem streams are unsupported on some platforms.
-                assumeTrue(false, "NTFS filesystem streams not supported");
+                assumeTrue(false, "NTFS $DATA streams not supported");
             }
         }
     }
@@ -926,8 +928,7 @@ public class FileSystemResourceTest
             }
             catch (InvalidPathException e)
             {
-                // NTFS filesystem streams are unsupported on some platforms.
-                assumeTrue(false, "NFTS Dats streams not supported");
+                assumeTrue(false, "NTFS $DATA streams not supported");
             }
         }
     }
@@ -944,11 +945,9 @@ public class FileSystemResourceTest
             Path foo = dir.resolve("foo;");
             Files.createFile(foo);
         }
-        catch (Exception e)
+        catch (InvalidPathException e)
         {
-            // if unable to create file, no point testing the rest.
-            // this is the path that Microsoft Windows takes.
-            assumeTrue(false, "Not supported on this OS");
+            assumeTrue(false, "Unable to create file with semicolon");
         }
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
@@ -971,11 +970,9 @@ public class FileSystemResourceTest
             Path foo = dir.resolve("foo' bar");
             Files.createFile(foo);
         }
-        catch (Exception e)
+        catch (InvalidPathException e)
         {
-            // if unable to create file, no point testing the rest.
-            // this is the path that Microsoft Windows takes.
-            assumeTrue(false, "Not supported on this OS");
+            assumeTrue(false, "Unable to create file with single quote");
         }
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
@@ -998,11 +995,9 @@ public class FileSystemResourceTest
             Path foo = dir.resolve("foo` bar");
             Files.createFile(foo);
         }
-        catch (Exception e)
+        catch (InvalidPathException e)
         {
-            // if unable to create file, no point testing the rest.
-            // this is the path that Microsoft Windows takes.
-            assumeTrue(false, "Not supported on this OS");
+            assumeTrue(false, "Unable to create file with single back tick");
         }
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
@@ -1025,11 +1020,9 @@ public class FileSystemResourceTest
             Path foo = dir.resolve("foo[1]");
             Files.createFile(foo);
         }
-        catch (Exception e)
+        catch (InvalidPathException e)
         {
-            // if unable to create file, no point testing the rest.
-            // this is the path that Microsoft Windows takes.
-            assumeTrue(false, "Not supported on this OS");
+            assumeTrue(false, "Unable to create file with square brackets");
         }
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
@@ -1052,11 +1045,9 @@ public class FileSystemResourceTest
             Path foo = dir.resolve("foo.{bar}.txt");
             Files.createFile(foo);
         }
-        catch (Exception e)
+        catch (InvalidPathException e)
         {
-            // if unable to create file, no point testing the rest.
-            // this is the path that Microsoft Windows takes.
-            assumeTrue(false, "Not supported on this OS");
+            assumeTrue(false, "Unable to create file with squiggle braces");
         }
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
@@ -1079,11 +1070,9 @@ public class FileSystemResourceTest
             Path foo = dir.resolve("foo^3.txt");
             Files.createFile(foo);
         }
-        catch (Exception e)
+        catch (InvalidPathException e)
         {
-            // if unable to create file, no point testing the rest.
-            // this is the path that Microsoft Windows takes.
-            assumeTrue(false, "Not supported on this OS");
+            assumeTrue(false, "Unable to create file with caret");
         }
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
@@ -1106,11 +1095,9 @@ public class FileSystemResourceTest
             Path foo = dir.resolve("foo|bar.txt");
             Files.createFile(foo);
         }
-        catch (Exception e)
+        catch (InvalidPathException e)
         {
-            // if unable to create file, no point testing the rest.
-            // this is the path that Microsoft Windows takes.
-            assumeTrue(false, "Not supported on this OS");
+            assumeTrue(false, "Unable to create file with pipe symbol");
         }
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
@@ -1467,10 +1454,7 @@ public class FileSystemResourceTest
         }
         catch (InvalidPathException e)
         {
-            // if unable to create file, no point testing the rest.
-            // this is the path that occurs if you have a system that doesn't support UTF-8
-            // directory names (or you simply don't have a Locale set properly)
-            assumeTrue(false, "Not supported on this OS");
+            assumeTrue(false, "Unable to create directory with utf-8 character");
             return;
         }
 

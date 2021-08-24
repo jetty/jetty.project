@@ -303,7 +303,7 @@ public class ResourceTest
         {
             // if unable to reference the glob file, no point testing the rest.
             // this is the path that Microsoft Windows takes.
-            assumeTrue(true, "Not supported on this OS");
+            assumeTrue(false, "Glob not supported on this OS");
         }
     }
 

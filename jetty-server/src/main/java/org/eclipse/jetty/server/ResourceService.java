@@ -298,8 +298,13 @@ public class ResourceService
             // Send the data
             releaseContent = sendData(request, response, included, content, reqRanges);
         }
+        // Can be thrown from contentFactory.getContent() call when using invalid characters
         catch (InvalidPathException e)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("InvalidPathException for pathInContext: {}", pathInContext, e);
+            if (included)
+                throw new FileNotFoundException("!" + pathInContext);
             notFound(request, response);
             return response.isCommitted();
         }

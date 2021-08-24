@@ -246,17 +246,8 @@ public class WebSocketOverHTTP2Test
             wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));
 
         Throwable cause = failure.getCause();
-        cause.printStackTrace();
-        if (cause instanceof ClosedChannelException)
-        {
-            // This is the path that Windows takes.
-            return; // nothing else to do
-        }
-        else if (cause instanceof ConnectException)
-        {
-            // This is the path that Linux and OSX takes
-            assertThat(cause.getMessage(), containsStringIgnoringCase("Connection refused"));
-        }
+        assertThat(cause, instanceOf(ConnectException.class));
+        assertThat(cause.getMessage(), containsStringIgnoringCase("Connection refused"));
     }
 
     @Test

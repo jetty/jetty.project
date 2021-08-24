@@ -183,9 +183,8 @@ public class SmallThreadPoolLoadTest extends AbstractTest
         if (success)
             latch.countDown();
         else
-            logger.warn("Request {} took too long{}Server:{}{}{}Client:{}{}", requestId,
-                System.lineSeparator(), System.lineSeparator(), server.dump(),
-                System.lineSeparator(), System.lineSeparator(), client.dump());
+            logger.warn("Request {} took too long - \nServer: \n" +
+                server.dump() + "\nClient: \n" + client.dump(), requestId);
         return !reset.get();
     }
 
