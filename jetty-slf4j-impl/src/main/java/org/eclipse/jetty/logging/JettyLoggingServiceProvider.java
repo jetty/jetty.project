@@ -66,7 +66,7 @@ public class JettyLoggingServiceProvider implements SLF4JServiceProvider
     }
 
     @Override
-    public String getRequesteApiVersion()
+    public String getRequestedApiVersion()
     {
         return REQUESTED_API_VERSION;
     }
