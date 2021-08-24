@@ -100,7 +100,7 @@ public class ServerUpgradeRequest
             }
             else
             {
-                cookies = List.of();
+                cookies = Collections.emptyList();
             }
         }
 
