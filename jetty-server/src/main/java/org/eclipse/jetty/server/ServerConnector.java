@@ -349,15 +349,16 @@ public class ServerConnector extends AbstractNetworkConnector
         return serverChannel;
     }
 
-    private <T> void setSocketOption(ServerSocketChannel channel, SocketOption<T> name, T value)
+    private <T> void setSocketOption(ServerSocketChannel channel, SocketOption<T> option, T value)
     {
         try
         {
-            channel.setOption(name, value);
+            channel.setOption(option, value);
         }
-        catch (Throwable t)
+        catch (Throwable x)
         {
-            LOG.warn("Unable to set socket option {} to {}", name, value, t);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Could not configure {} to {} on {}", option, value, channel, x);
         }
     }
 

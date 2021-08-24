@@ -486,7 +486,7 @@ public class ClientConnector extends ContainerLifeCycle
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Could not configure {} to {} on {}", option, value, channel);
+                LOG.debug("Could not configure {} to {} on {}", option, value, channel, x);
         }
     }
 
