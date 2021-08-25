@@ -30,6 +30,7 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import jakarta.servlet.ServletRequest;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.http.BadMessageException;
@@ -90,9 +91,17 @@ public class ServerUpgradeRequest
     {
         if (cookies == null)
         {
-            cookies = Arrays.stream(request.getCookies())
-                .map(c -> new HttpCookie(c.getName(), c.getValue()))
-                .collect(Collectors.toList());
+            Cookie[] reqCookies = request.getCookies();
+            if (reqCookies != null)
+            {
+                cookies = Arrays.stream(reqCookies)
+                    .map(c -> new HttpCookie(c.getName(), c.getValue()))
+                    .collect(Collectors.toList());
+            }
+            else
+            {
+                cookies = Collections.emptyList();
+            }
         }
 
         return cookies;
@@ -135,10 +144,13 @@ public class ServerUpgradeRequest
     {
         Map<String, List<String>> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         Enumeration<String> headerNames = request.getHeaderNames();
-        while (headerNames.hasMoreElements())
+        if (headerNames != null)
         {
-            String name = headerNames.nextElement();
-            headers.put(name, Collections.list(request.getHeaders(name)));
+            while (headerNames.hasMoreElements())
+            {
+                String name = headerNames.nextElement();
+                headers.put(name, Collections.list(request.getHeaders(name)));
+            }
         }
         return headers;
     }
