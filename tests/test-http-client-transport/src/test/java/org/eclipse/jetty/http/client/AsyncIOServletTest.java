@@ -75,12 +75,11 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import static java.nio.ByteBuffer.wrap;
+import static org.awaitility.Awaitility.await;
 import static org.eclipse.jetty.http.client.Transport.FCGI;
 import static org.eclipse.jetty.http.client.Transport.H2C;
 import static org.eclipse.jetty.http.client.Transport.HTTP;
@@ -398,8 +397,6 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    @Tag("Unstable")
-    @Disabled
     public void testAsyncWriteClosed(Transport transport) throws Exception
     {
         init(transport);
@@ -431,7 +428,19 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
 
                         // Wait for the failure to arrive to
                         // the server while we are about to write.
-                        sleep(2000);
+                        try
+                        {
+                            await().atMost(5, TimeUnit.SECONDS).until(() ->
+                            {
+                                out.write(new byte[0]);
+                                // Extract HttpOutput._apiState value from toString.
+                                return !out.toString().split(",")[1].split("=")[1].equals("READY");
+                            });
+                        }
+                        catch (Exception e)
+                        {
+                            throw new AssertionError(e);
+                        }
 
                         out.write(data);
                     }

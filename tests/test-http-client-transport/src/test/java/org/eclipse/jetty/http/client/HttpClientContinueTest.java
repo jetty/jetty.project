@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http.client;
 
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -30,8 +31,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -55,6 +58,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.eclipse.jetty.http.client.Transport.FCGI;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -481,10 +485,16 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    @Tag("Slow")
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testExpect100ContinueWithDeferredContentRespond100Continue(Transport transport) throws Exception
     {
+        byte[] chunk1 = new byte[]{0, 1, 2, 3};
+        byte[] chunk2 = new byte[]{4, 5, 6, 7};
+        byte[] data = new byte[chunk1.length + chunk2.length];
+        System.arraycopy(chunk1, 0, data, 0, chunk1.length);
+        System.arraycopy(chunk2, 0, data, chunk1.length, chunk2.length);
+
+        CountDownLatch serverLatch = new CountDownLatch(1);
+        AtomicReference<Thread> handlerThread = new AtomicReference<>();
         init(transport);
         scenario.start(new AbstractHandler()
         {
@@ -492,18 +502,22 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
+                handlerThread.set(Thread.currentThread());
                 // Send 100-Continue and echo the content
-                IO.copy(request.getInputStream(), response.getOutputStream());
+
+                ServletOutputStream outputStream = response.getOutputStream();
+                DataInputStream inputStream = new DataInputStream(request.getInputStream());
+                // Block until the 1st chunk is fully received.
+                byte[] buf1 = new byte[chunk1.length];
+                inputStream.readFully(buf1);
+                outputStream.write(buf1);
+
+                serverLatch.countDown();
+                IO.copy(inputStream, outputStream);
             }
         });
 
-        final byte[] chunk1 = new byte[]{0, 1, 2, 3};
-        final byte[] chunk2 = new byte[]{4, 5, 6, 7};
-        final byte[] data = new byte[chunk1.length + chunk2.length];
-        System.arraycopy(chunk1, 0, data, 0, chunk1.length);
-        System.arraycopy(chunk2, 0, data, chunk1.length, chunk2.length);
-
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch requestLatch = new CountDownLatch(1);
         DeferredContentProvider content = new DeferredContentProvider();
         scenario.client.newRequest(scenario.newURI())
             .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
@@ -514,20 +528,31 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
                 public void onComplete(Result result)
                 {
                     assertArrayEquals(data, getContent());
-                    latch.countDown();
+                    requestLatch.countDown();
                 }
             });
 
-        Thread.sleep(1000);
+        // Wait for the handler thread to be blocked in the 1st IO.
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            Thread thread = handlerThread.get();
+            return thread != null && thread.getState() == Thread.State.WAITING;
+        });
 
         content.offer(ByteBuffer.wrap(chunk1));
 
-        Thread.sleep(1000);
+        // Wait for the handler thread to be blocked in the 2nd IO.
+        assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            Thread thread = handlerThread.get();
+            return thread != null && thread.getState() == Thread.State.WAITING;
+        });
 
         content.offer(ByteBuffer.wrap(chunk2));
         content.close();
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(requestLatch.await(5, TimeUnit.SECONDS));
     }
 
     @ParameterizedTest
@@ -581,6 +606,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
     @ArgumentsSource(TransportProvider.class)
     public void testExpect100ContinueWithConcurrentDeferredContentRespond100Continue(Transport transport) throws Exception
     {
+        AtomicReference<Thread> handlerThread = new AtomicReference<>();
         init(transport);
         scenario.start(new AbstractHandler()
         {
@@ -588,22 +614,22 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
+                handlerThread.set(Thread.currentThread());
                 // Send 100-Continue and echo the content
                 IO.copy(request.getInputStream(), response.getOutputStream());
             }
         });
 
-        final byte[] data = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
-        final DeferredContentProvider content = new DeferredContentProvider();
+        byte[] chunk1 = new byte[]{0, 1, 2, 3};
+        byte[] chunk2 = new byte[]{4, 5, 6, 7};
+        byte[] data = new byte[chunk1.length + chunk2.length];
+        System.arraycopy(chunk1, 0, data, 0, chunk1.length);
+        System.arraycopy(chunk2, 0, data, chunk1.length, chunk2.length);
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
+        DeferredContentProvider content = new DeferredContentProvider(ByteBuffer.wrap(chunk1));
         scenario.client.newRequest(scenario.newURI())
             .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
-            .onRequestHeaders(request ->
-            {
-                content.offer(ByteBuffer.wrap(data));
-                content.close();
-            })
             .content(content)
             .send(new BufferingResponseListener()
             {
@@ -614,6 +640,16 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
                     latch.countDown();
                 }
             });
+
+        // Wait for the handler thread to be blocked in IO.
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            Thread thread = handlerThread.get();
+            return thread != null && thread.getState() == Thread.State.WAITING;
+        });
+
+        content.offer(ByteBuffer.wrap(chunk2));
+        content.close();
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
