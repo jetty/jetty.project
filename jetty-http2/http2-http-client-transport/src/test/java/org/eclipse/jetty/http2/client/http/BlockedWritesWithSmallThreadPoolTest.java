@@ -21,7 +21,6 @@ package org.eclipse.jetty.http2.client.http;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -56,10 +55,10 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class BlockedWritesWithSmallThreadPoolTest
 {
@@ -143,16 +142,23 @@ public class BlockedWritesWithSmallThreadPoolTest
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
             {
-                // Block here to stop reading from the network
-                // to cause the server to TCP congest.
-                awaitUntil(0, () -> clientBlockLatch.await(5, TimeUnit.SECONDS));
-                callback.succeeded();
-                if (frame.isEndStream())
-                    clientDataLatch.countDown();
+                try
+                {
+                    // Block here to stop reading from the network
+                    // to cause the server to TCP congest.
+                    clientBlockLatch.await(5, TimeUnit.SECONDS);
+                    callback.succeeded();
+                    if (frame.isEndStream())
+                        clientDataLatch.countDown();
+                }
+                catch (InterruptedException x)
+                {
+                    callback.failed(x);
+                }
             }
         });
 
-        awaitUntil(5000, () ->
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
         {
             AbstractEndPoint serverEndPoint = serverEndPointRef.get();
             return serverEndPoint != null && serverEndPoint.getWriteFlusher().isPending();
@@ -164,11 +170,11 @@ public class BlockedWritesWithSmallThreadPoolTest
         if (serverThreads.getAvailableReservedThreads() != 1)
         {
             assertFalse(serverThreads.tryExecute(() -> {}));
-            awaitUntil(5000, () -> serverThreads.getAvailableReservedThreads() == 1);
+            await().atMost(5, TimeUnit.SECONDS).until(() -> serverThreads.getAvailableReservedThreads() == 1);
         }
         // Use the reserved thread for a blocking operation, simulating another blocking write.
         CountDownLatch serverBlockLatch = new CountDownLatch(1);
-        assertTrue(serverThreads.tryExecute(() -> awaitUntil(0, () -> serverBlockLatch.await(15, TimeUnit.SECONDS))));
+        assertTrue(serverThreads.tryExecute(() -> await().atMost(20, TimeUnit.SECONDS).until(() -> serverBlockLatch.await(15, TimeUnit.SECONDS), b -> true)));
 
         assertEquals(0, serverThreads.getReadyThreads());
 
@@ -194,14 +200,21 @@ public class BlockedWritesWithSmallThreadPoolTest
                     @Override
                     public void onData(Stream stream, DataFrame frame, Callback callback)
                     {
-                        // Block here to stop reading from the network
-                        // to cause the client to TCP congest.
-                        awaitUntil(0, () -> serverBlockLatch.await(5, TimeUnit.SECONDS));
-                        callback.succeeded();
-                        if (frame.isEndStream())
+                        try
                         {
-                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
-                            stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                            // Block here to stop reading from the network
+                            // to cause the client to TCP congest.
+                            serverBlockLatch.await(5, TimeUnit.SECONDS);
+                            callback.succeeded();
+                            if (frame.isEndStream())
+                            {
+                                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                                stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                            }
+                        }
+                        catch (InterruptedException x)
+                        {
+                            callback.failed(x);
                         }
                     }
                 };
@@ -241,7 +254,7 @@ public class BlockedWritesWithSmallThreadPoolTest
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
         stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(contentLength), true), Callback.NOOP);
 
-        awaitUntil(5000, () ->
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
         {
             AbstractEndPoint clientEndPoint = (AbstractEndPoint)((HTTP2Session)session).getEndPoint();
             return clientEndPoint.getWriteFlusher().isPending();
@@ -251,53 +264,22 @@ public class BlockedWritesWithSmallThreadPoolTest
 
         CountDownLatch clientBlockLatch = new CountDownLatch(1);
         // Make sure the application thread is blocked.
-        clientThreads.execute(() -> awaitUntil(0, () -> clientBlockLatch.await(15, TimeUnit.SECONDS)));
+        clientThreads.execute(() -> await().until(() -> clientBlockLatch.await(15, TimeUnit.SECONDS), b -> true));
         // Make sure the reserved thread is blocked.
         if (clientThreads.getAvailableReservedThreads() != 1)
         {
             assertFalse(clientThreads.tryExecute(() -> {}));
-            awaitUntil(5000, () -> clientThreads.getAvailableReservedThreads() == 1);
+            await().atMost(5, TimeUnit.SECONDS).until(() -> clientThreads.getAvailableReservedThreads() == 1);
         }
         // Use the reserved thread for a blocking operation, simulating another blocking write.
-        assertTrue(clientThreads.tryExecute(() -> awaitUntil(0, () -> clientBlockLatch.await(15, TimeUnit.SECONDS))));
+        assertTrue(clientThreads.tryExecute(() -> await().until(() -> clientBlockLatch.await(15, TimeUnit.SECONDS), b -> true)));
 
-        awaitUntil(5000, () -> clientThreads.getReadyThreads() == 0);
+        await().atMost(5, TimeUnit.SECONDS).until(() -> clientThreads.getReadyThreads() == 0);
 
         // Unblock the server to read from the network, which should unblock the client.
         serverBlockLatch.countDown();
 
         assertTrue(latch.await(10, TimeUnit.SECONDS), client.dump());
         clientBlockLatch.countDown();
-    }
-
-    private void awaitUntil(long millis, Callable<Boolean> test)
-    {
-        try
-        {
-            if (millis == 0)
-            {
-                if (test.call())
-                    return;
-            }
-            else
-            {
-                long begin = System.nanoTime();
-                while (System.nanoTime() - begin < TimeUnit.MILLISECONDS.toNanos(millis))
-                {
-                    if (test.call())
-                        return;
-                    Thread.sleep(10);
-                }
-            }
-            fail("Await elapsed: " + millis + "ms");
-        }
-        catch (RuntimeException | Error x)
-        {
-            throw x;
-        }
-        catch (Exception x)
-        {
-            throw new RuntimeException(x);
-        }
     }
 }
