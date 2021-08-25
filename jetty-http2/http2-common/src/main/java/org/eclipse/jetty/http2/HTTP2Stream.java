@@ -742,6 +742,15 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
             callback.failed(x);
     }
 
+    @Override
+    public InvocationType getInvocationType()
+    {
+        synchronized (this)
+        {
+            return sendCallback != null ? sendCallback.getInvocationType() : Callback.super.getInvocationType();
+        }
+    }
+
     private Callback endWrite()
     {
         try (AutoLock l = lock.lock())
