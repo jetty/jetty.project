@@ -89,7 +89,6 @@ public class WelcomeFilterTest
         FilterHolder filterHolder = new FilterHolder(new WelcomeFilter());
         filterHolder.setInitParameter("welcome", "welcome.html");
         context.addFilter(filterHolder, concatPath, EnumSet.of(DispatcherType.REQUEST));
-        server.setDumpAfterStart(true);
         server.start();
 
         // Verify that I can get the file programmatically, as required by the spec.
