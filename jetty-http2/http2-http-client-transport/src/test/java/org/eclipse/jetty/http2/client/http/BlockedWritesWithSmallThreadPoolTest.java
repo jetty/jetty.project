@@ -25,7 +25,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.IntStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -251,10 +250,9 @@ public class BlockedWritesWithSmallThreadPoolTest
         Thread.sleep(1000);
 
         CountDownLatch clientBlockLatch = new CountDownLatch(1);
-        // Make sure the application threads are blocked.
-        IntStream.range(0, clientThreads.getIdleThreads())
-            .forEach(i -> clientThreads.execute(() -> awaitUntil(0, () -> clientBlockLatch.await(15, TimeUnit.SECONDS))));
-        // Make sure the reserved threads are blocked.
+        // Make sure the application thread is blocked.
+        clientThreads.execute(() -> awaitUntil(0, () -> clientBlockLatch.await(15, TimeUnit.SECONDS)));
+        // Make sure the reserved thread is blocked.
         if (clientThreads.getAvailableReservedThreads() != 1)
         {
             assertFalse(clientThreads.tryExecute(() -> {}));
