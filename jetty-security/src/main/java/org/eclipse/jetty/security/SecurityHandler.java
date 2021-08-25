@@ -594,6 +594,11 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                             authenticator.secureResponse(request, response, isAuthMandatory, null);
                     }
                 }
+                else if (isAuthMandatory)
+                {
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "unauthenticated");
+                    baseRequest.setHandled(true);
+                }
                 else
                 {
                     baseRequest.setAuthentication(authentication);
