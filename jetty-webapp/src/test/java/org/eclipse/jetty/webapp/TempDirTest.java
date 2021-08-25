@@ -25,9 +25,9 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -300,7 +300,12 @@ public class TempDirTest
     {
         WebInfConfiguration webInfConfiguration = new WebInfConfiguration();
         WebAppContext webAppContext = new WebAppContext();
-        webAppContext.setAttribute(ServletContext.TEMPDIR, "/var/foo_jetty");
+        String securedDir = "/var/foo_jetty";
+        if (OS.WINDOWS.isCurrentOs())
+        {
+            securedDir = "C:\\Windows\\System32\\temp\\foo_jetty";
+        }
+        webAppContext.setAttribute(ServletContext.TEMPDIR, securedDir);
         assertThrows(IllegalStateException.class, () -> webInfConfiguration.resolveTempDirectory(webAppContext));
     }
 
