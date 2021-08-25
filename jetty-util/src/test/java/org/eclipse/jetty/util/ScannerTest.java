@@ -56,12 +56,9 @@ public class ScannerTest
     private BlockingQueue<Set<String>> _bulk = new LinkedBlockingQueue<>();
 
     @BeforeEach
-    public void setUpBeforeClass() throws Exception
+    public void setupScanner() throws Exception
     {
         _directory = workDir.getEmptyPathDir();
-
-        _directory = _directory.toRealPath();
-
         _scanner = new Scanner();
         _scanner.addDirectory(_directory);
         _scanner.setScanInterval(0);
@@ -97,7 +94,7 @@ public class ScannerTest
     }
 
     @AfterEach
-    public void tearDownAfterClass() throws Exception
+    public void cleanup() throws Exception
     {
         LifeCycle.stop(_scanner);
     }
