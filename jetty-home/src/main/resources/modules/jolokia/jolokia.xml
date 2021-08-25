@@ -4,7 +4,7 @@
 <Configure id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection">
   <Call name="addHandler">
     <Arg>
-      <New id="jolokia" class="org.eclipse.jetty.webapp.WebAppContext">
+      <New id="jolokia" class="org.eclipse.jetty.transformer.JavaxWebAppContext">
         <Set name="contextPath">/jolokia</Set>
         <Set name="war"><Property name="jetty.base"/>/lib/jolokia/jolokia.war</Set>
         <Set name="classLoader">

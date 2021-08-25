@@ -18,7 +18,7 @@
   <Ref refid="Contexts">
     <Call name="addHandler">
       <Arg>
-        <New id="jamon" class="org.eclipse.jetty.webapp.WebAppContext">
+        <New id="jamon" class="org.eclipse.jetty.transformer.JavaxWebAppContext">
           <Set name="contextPath">/jamon</Set>
           <Set name="war"><Property name="jetty.base"/>/lib/jamon/jamon.war</Set>
           <Set name="classLoader">

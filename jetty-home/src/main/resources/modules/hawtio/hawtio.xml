@@ -4,7 +4,7 @@
 <Configure id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection">
   <Call name="addHandler">
     <Arg>
-      <New id="hawtio" class="org.eclipse.jetty.webapp.WebAppContext">
+      <New id="hawtio" class="org.eclipse.jetty.transformer.JavaxWebAppContext">
         <Set name="contextPath">/hawtio</Set>
         <Set name="war"><Property name="jetty.base"/>/lib/hawtio/hawtio.war</Set>
         <Set name="classLoader">

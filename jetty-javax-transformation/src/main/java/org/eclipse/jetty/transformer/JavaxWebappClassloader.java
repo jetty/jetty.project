@@ -17,7 +17,11 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
+import java.net.URL;
 import java.security.ProtectionDomain;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
 
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.objectweb.asm.ClassReader;
@@ -36,6 +40,45 @@ public class JavaxWebappClassloader extends WebAppClassLoader
         addTransformer(INSTANCE);
     }
 
+    @Override
+    public Enumeration<URL> getResources(String name) throws IOException
+    {
+        if ("META-INF/services/jakarta.servlet.ServletContainerInitializer".equals(name))
+        {
+            // we can mix with javax.servlet if any
+            Enumeration<URL> enumeration =
+                    super.getResources("META-INF/services/javax.servlet.ServletContainerInitializer");
+            List<URL> urls = Collections.list(enumeration);
+            urls.addAll(Collections.list(super.getResources(name)));
+            return Collections.enumeration(urls);
+        }
+        return super.getResources(name);
+    }
+
+    @Override
+    public URL getResource(String name)
+    {
+        return super.getResource(name);
+    }
+
+    @Override
+    protected Class<?> loadAsResource(String name, boolean checkSystemResource) throws ClassNotFoundException
+    {
+        return super.loadAsResource(name, checkSystemResource);
+    }
+
+    @Override
+    public URL findResource(String name)
+    {
+        return super.findResource(name);
+    }
+
+    @Override
+    public Enumeration<URL> findResources(String name) throws IOException
+    {
+        return super.findResources(name);
+    }
+
     static class JavaxTransfomer implements ClassFileTransformer
     {
         @Override
@@ -49,6 +92,7 @@ public class JavaxWebappClassloader extends WebAppClassLoader
                 ClassRemapper classRemapper = new ClassRemapper(cw, new JavaxRemapper());
 
                 cr.accept(classRemapper, ClassReader.EXPAND_FRAMES);
+
                 return cw.toByteArray();
             }
             catch (IOException e)
@@ -58,6 +102,7 @@ public class JavaxWebappClassloader extends WebAppClassLoader
                 throw icfe;
             }
         }
+
     }
 
     static class JavaxRemapper extends Remapper

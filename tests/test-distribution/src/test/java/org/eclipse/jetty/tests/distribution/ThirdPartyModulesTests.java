@@ -68,7 +68,7 @@ public class ThirdPartyModulesTests extends AbstractJettyHomeTest
     }
 
     @Test
-    @Disabled("not jakarta ready https://github.com/eclipse/jetty.project/issues/6595")
+    @Disabled("not jakarta ready https://github.com/eclipse/jetty.project/issues/6595 and handler not ready com.jamonapi.http.JAMonJettyHandlerNew")
     public void testJAMon() throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
