@@ -63,6 +63,8 @@ import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerI
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsStringIgnoringCase;
@@ -234,6 +236,7 @@ public class WebSocketOverHTTP2Test
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Issue #6660 - Windows does not throw ConnectException")
     public void testWebSocketConnectPortDoesNotExist() throws Exception
     {
         startServer();
