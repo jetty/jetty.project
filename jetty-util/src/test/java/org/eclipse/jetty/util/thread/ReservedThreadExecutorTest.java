@@ -359,6 +359,5 @@ public class ReservedThreadExecutorTest
 
         assertThat(usedReserved.get(), greaterThan(0));
         assertThat(usedReserved.get() + usedPool.get(), is(LOOPS));
-        // System.err.printf("reserved=%d pool=%d total=%d%n", usedReserved.get(), usedPool.get(), LOOPS);
     }
 }
