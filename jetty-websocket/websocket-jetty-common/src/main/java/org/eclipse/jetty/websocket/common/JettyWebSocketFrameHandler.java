@@ -225,25 +225,16 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             }
         }
 
-        // Demand after succeeding any received frame
-        Callback demandingCallback = Callback.from(() ->
-            {
-                demand();
-                callback.succeeded();
-            },
-            callback::failed
-        );
-
         switch (frame.getOpCode())
         {
             case OpCode.CLOSE:
                 onCloseFrame(frame, callback);
                 break;
             case OpCode.PING:
-                onPingFrame(frame, demandingCallback);
+                onPingFrame(frame, callback);
                 break;
             case OpCode.PONG:
-                onPongFrame(frame, demandingCallback);
+                onPongFrame(frame, callback);
                 break;
             case OpCode.TEXT:
                 onTextFrame(frame, callback);
@@ -381,7 +372,9 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             ByteBuffer payload = BufferUtil.copy(frame.getPayload());
             getSession().getRemote().sendPong(payload, WriteCallback.NOOP);
         }
+
         callback.succeeded();
+        demand();
     }
 
     private void onPongFrame(Frame frame, Callback callback)
@@ -401,7 +394,9 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                 throw new WebSocketException(endpointInstance.getClass().getSimpleName() + " PONG method error: " + cause.getMessage(), cause);
             }
         }
+
         callback.succeeded();
+        demand();
     }
 
     private void onTextFrame(Frame frame, Callback callback)

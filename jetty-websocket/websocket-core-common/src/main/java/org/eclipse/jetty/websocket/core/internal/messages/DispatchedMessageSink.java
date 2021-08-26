@@ -151,11 +151,15 @@ public abstract class DispatchedMessageSink extends AbstractMessageSink
         }
         else
         {
-            frameCallback = Callback.from(() ->
+            frameCallback = new Callback.Nested(callback)
             {
-                callback.succeeded();
-                session.demand(1);
-            }, callback::failed);
+                @Override
+                public void succeeded()
+                {
+                    session.demand(1);
+                    super.succeeded();
+                }
+            };
         }
 
         typeSink.accept(frame, frameCallback);

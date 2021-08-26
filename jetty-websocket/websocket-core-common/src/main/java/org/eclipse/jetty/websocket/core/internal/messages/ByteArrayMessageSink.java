@@ -17,7 +17,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.BufferCallbackAccumulator;
+import org.eclipse.jetty.io.ByteBufferCallbackAccumulator;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -28,7 +28,7 @@ import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 public class ByteArrayMessageSink extends AbstractMessageSink
 {
     private static final byte[] EMPTY_BUFFER = new byte[0];
-    private BufferCallbackAccumulator out;
+    private ByteBufferCallbackAccumulator out;
 
     public ByteArrayMessageSink(CoreSession session, MethodHandle methodHandle)
     {
@@ -77,7 +77,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             {
                 ByteBuffer payload = frame.getPayload();
                 if (out == null)
-                    out = new BufferCallbackAccumulator();
+                    out = new ByteBufferCallbackAccumulator();
                 out.addEntry(payload, callback);
             }
 

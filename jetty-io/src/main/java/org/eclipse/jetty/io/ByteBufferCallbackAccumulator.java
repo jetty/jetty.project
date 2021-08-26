@@ -21,7 +21,11 @@ import java.util.List;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 
-public class BufferCallbackAccumulator
+/**
+ * This class can be used to accumulate pairs of {@link ByteBuffer} and {@link Callback}, and eventually copy
+ * these into a single {@link ByteBuffer} or byte array and succeed the callbacks.
+ */
+public class ByteBufferCallbackAccumulator
 {
     private final List<Entry> _entries = new ArrayList<>();
     private int _length;
@@ -45,8 +49,6 @@ public class BufferCallbackAccumulator
     }
 
     /**
-     * Get the amount of bytes which have been accumulated.
-     * This will add up the remaining of each buffer in the accumulator.
      * @return the total length of the content in the accumulator.
      */
     public int getLength()
