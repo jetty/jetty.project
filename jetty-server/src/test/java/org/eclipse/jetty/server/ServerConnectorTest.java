@@ -45,6 +45,8 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
@@ -214,6 +216,7 @@ public class ServerConnectorTest
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "SO_REUSEPORT not available on windows")
     public void testReusePort() throws Exception
     {
         int port;

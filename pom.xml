@@ -85,7 +85,8 @@
     <settingsPath>src/it/settings.xml</settingsPath>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
-    <testcontainers.version>1.15.1</testcontainers.version>
+    <testcontainers.version>1.16.0</testcontainers.version>
+    <jna.version>5.8.0</jna.version>
     <mariadb.version>2.7.0</mariadb.version>
   </properties>
 
@@ -1197,7 +1198,7 @@
       <dependency>
         <groupId>net.java.dev.jna</groupId>
         <artifactId>jna</artifactId>
-        <version>5.6.0</version>
+        <version>${jna.version}</version>
       </dependency>
       <!-- Old Deps -->
       <dependency>

@@ -14,4 +14,4 @@ PROP|main.prop=value0
 EXISTS|maindir/
 EXISTS|start.d/main.ini
 
-OUTPUT|INFO  : main already enabled by \[\$\{jetty.base}[\\/]start.d/main.ini\]
+OUTPUT|INFO  : main already enabled by \[\$\{jetty.base}[/\\]start.d[/\\]main.ini\]

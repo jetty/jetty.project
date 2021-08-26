@@ -98,9 +98,8 @@ public class SmallThreadPoolLoadTest extends AbstractTest
             Thread testThread = Thread.currentThread();
             Scheduler.Task task = client.getScheduler().schedule(() ->
             {
-                logger.warn("Interrupting test, it is taking too long{}Server:{}{}{}Client:{}{}",
-                    System.lineSeparator(), System.lineSeparator(), server.dump(),
-                    System.lineSeparator(), System.lineSeparator(), client.dump());
+                logger.warn("Interrupting test, it is taking too long - \nServer: \n" +
+                    server.dump() + "\nClient: \n" + client.dump());
                 testThread.interrupt();
             }, iterations * factor, TimeUnit.MILLISECONDS);
 
@@ -184,9 +183,8 @@ public class SmallThreadPoolLoadTest extends AbstractTest
         if (success)
             latch.countDown();
         else
-            logger.warn("Request {} took too long{}Server:{}{}{}Client:{}{}", requestId,
-                System.lineSeparator(), System.lineSeparator(), server.dump(),
-                System.lineSeparator(), System.lineSeparator(), client.dump());
+            logger.warn("Request {} took too long - \nServer: \n" +
+                server.dump() + "\nClient: \n" + client.dump(), requestId);
         return !reset.get();
     }
 

@@ -37,6 +37,7 @@ import org.eclipse.jetty.util.URIUtil;
  * will be handled by any servlets mapped to that URL.
  *
  * Requests to "/some/directory" will be redirected to "/some/directory/".
+ * @deprecated no replacement is offered, use standard Servlet web.xml welcome features
  */
 @Deprecated
 public class WelcomeFilter implements Filter

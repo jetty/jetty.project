@@ -28,7 +28,6 @@ import java.util.jar.Manifest;
 
 import org.codehaus.plexus.util.SelectorUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.slf4j.Logger;
@@ -87,7 +86,7 @@ public class SelectiveJarResource extends JarResource
     {
         for (String include : _includes)
         {
-            if (SelectorUtils.matchPath(include, name, _caseSensitive))
+            if (SelectorUtils.matchPath(include, name, "/", _caseSensitive))
             {
                 return true;
             }
@@ -99,7 +98,7 @@ public class SelectiveJarResource extends JarResource
     {
         for (String exclude : _excludes)
         {
-            if (SelectorUtils.matchPath(exclude, name, _caseSensitive))
+            if (SelectorUtils.matchPath(exclude, name, "/", _caseSensitive))
             {
                 return true;
             }
@@ -140,8 +139,8 @@ public class SelectiveJarResource extends JarResource
                 String entryName = entry.getName();
 
                 LOG.debug("Looking at {}", entryName);
-                String dotCheck = StringUtil.replace(entryName, '\\', '/');
-                dotCheck = URIUtil.canonicalPath(dotCheck);
+                // make sure no access out of the root entry is present
+                String dotCheck = URIUtil.canonicalPath(entryName);
                 if (dotCheck == null)
                 {
                     LOG.info("Invalid entry: {}", entryName);

@@ -45,6 +45,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -289,7 +290,8 @@ public abstract class AbstractDoSFilterTest
         String responses = doRequests(request1 + request2 + request1 + request2 + request1, 2, 1100, 1100, last);
 
         assertEquals(11, count(responses, "HTTP/1.1 200 OK"));
-        assertEquals(0, count(responses, "DoSFilter: delayed"));
+        // This test is system speed dependent, so allow some (20%-ish) requests to be delayed, but not more.
+        assertThat("delayed count", count(responses, "DoSFilter: delayed"), lessThan(2));
 
         // alternate between sessions
         responses = doRequests(request1 + request2 + request1 + request2 + request1, 2, 250, 250, last);

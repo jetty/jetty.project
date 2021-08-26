@@ -96,7 +96,6 @@ public abstract class RFC2616BaseTest
         server = testableserver;
         server.load();
         server.start();
-        //server.getServer().dumpStdErr();
     }
 
     @BeforeEach
