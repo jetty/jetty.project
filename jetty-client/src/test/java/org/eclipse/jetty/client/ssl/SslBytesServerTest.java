@@ -68,7 +68,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.JRE;
@@ -82,7 +81,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.condition.OS.LINUX;
-import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 // Other JREs have slight differences in how TLS work
 // and this test expects a very specific TLS behavior.
@@ -1027,7 +1025,6 @@ public class SslBytesServerTest extends SslBytesTest
     }
 
     @Test
-    @DisabledOnOs(WINDOWS) // Don't run on Windows (buggy JVM)
     public void testRequestWithBigContentWriteBlockedThenReset() throws Exception
     {
         final SSLSocket client = newClient();
@@ -1082,7 +1079,6 @@ public class SslBytesServerTest extends SslBytesTest
     }
 
     @Test
-    @DisabledOnOs(WINDOWS) // Don't run on Windows (buggy JVM)
     public void testRequestWithBigContentReadBlockedThenReset() throws Exception
     {
         final SSLSocket client = newClient();

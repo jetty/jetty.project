@@ -99,6 +99,8 @@ public class WebAppProviderTest
     @Test
     public void testStartupContext()
     {
+        assumeTrue(symlinkSupported);
+
         // Check Server for Handlers
         jetty.assertWebAppContextsExists("/bar", "/foo", "/bob");
 

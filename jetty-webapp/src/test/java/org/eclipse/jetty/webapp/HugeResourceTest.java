@@ -123,9 +123,22 @@ public class HugeResourceTest
     @AfterAll
     public static void cleanupTestFiles()
     {
-        FS.ensureDeleted(staticBase);
-        FS.ensureDeleted(outputDir);
-        FS.ensureDeleted(multipartTempDir);
+        quietlyDelete(staticBase);
+        quietlyDelete(outputDir);
+        quietlyDelete(multipartTempDir);
+    }
+
+    private static void quietlyDelete(Path path)
+    {
+        try
+        {
+            if (path != null)
+                FS.ensureDeleted(path);
+        }
+        catch (Throwable ignore)
+        {
+            // ignore
+        }
     }
 
     private static void makeStaticFile(Path staticFile, long size) throws IOException

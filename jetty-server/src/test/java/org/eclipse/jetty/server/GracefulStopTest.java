@@ -149,7 +149,7 @@ public class GracefulStopTest
 
         HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
         assertThat(response.getStatus(), is(200));
-        assertThat(response.getContent(), is("read 10/10\n"));
+        assertThat(response.getContent(), is("read [10/10]"));
         assertThat(response.get(HttpHeader.CONNECTION), nullValue());
 
         return client;
@@ -164,7 +164,7 @@ public class GracefulStopTest
 
         HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
         assertThat(response.getStatus(), is(200));
-        assertThat(response.getContent(), is("read 10/10\n"));
+        assertThat(response.getContent(), is("read [10/10]"));
         assertThat(response.get(HttpHeader.CONNECTION), nullValue());
     }
 
@@ -224,7 +224,7 @@ public class GracefulStopTest
             assertThat(response.get(HttpHeader.CONNECTION), is("close"));
         else
             assertThat(response.get(HttpHeader.CONNECTION), nullValue());
-        assertThat(response.getContent(), is("read 10/10\n"));
+        assertThat(response.getContent(), is("read [10/10]"));
     }
 
     void assert500Response(Socket client) throws Exception
@@ -414,7 +414,7 @@ public class GracefulStopTest
                     }
                 }
 
-                response.getWriter().printf("read %d/%d%n", c, contentLength);
+                response.getWriter().printf("read [%d/%d]", c, contentLength);
             }
             catch (Throwable th)
             {

@@ -16,9 +16,12 @@ package org.eclipse.jetty.tests.distribution.session;
 import java.util.Collections;
 import java.util.List;
 
-/**
- *
- */
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+@Testcontainers(disabledWithoutDocker = false)
 public class FileSessionDistributionTests extends AbstractSessionDistributionTests
 {
 
@@ -52,4 +55,11 @@ public class FileSessionDistributionTests extends AbstractSessionDistributionTes
         return Collections.emptyList();
     }
 
+    @Override
+    @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "File always locked between stop/start")
+    public void stopRestartWebappTestSessionContentSaved() throws Exception
+    {
+        super.stopRestartWebappTestSessionContentSaved();
+    }
 }

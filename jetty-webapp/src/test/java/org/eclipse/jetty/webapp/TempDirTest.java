@@ -25,9 +25,10 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -295,6 +296,7 @@ public class TempDirTest
      * so we _will_ have permission to write to this directory.
      */
     @DisabledIfSystemProperty(named = "env", matches = "ci")
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Test/Temp directory is always writable")
     @Test
     public void attributeWithInvalidPermissions()
     {
