@@ -28,7 +28,6 @@ import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -68,7 +67,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
     private final Locker locker = new Locker();
     private final ThreadLocal<Entry> cache;
     private final AtomicInteger nextIndex;
-    private final BiPredicate<T, Integer> available;
+    private final Availability<T> available;
     private volatile boolean closed;
     private volatile int maxUsage = -1;
     @Deprecated
@@ -145,7 +144,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
      * @param available A bi predicate to check if the entry available for another usage.  If null
      * then the active count will be checked against {@link #maxMultiplex}
      */
-    public Pool(StrategyType strategyType, int maxEntries, boolean cache, BiPredicate<T, Integer> available)
+    public Pool(StrategyType strategyType, int maxEntries, boolean cache, Availability<T> available)
     {
         this.maxEntries = maxEntries;
         this.strategyType = strategyType;
@@ -154,7 +153,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         this.available = available == null ? this::isAvailable : available;
     }
 
-    private boolean isAvailable(T item, Integer inUse)
+    private boolean isAvailable(T item, int inUse)
     {
         return inUse < maxMultiplex;
     }
@@ -206,7 +205,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
     /**
      * @return the default maximum in-use count of entries
-     * @deprecated Use available predicate in {@link #Pool(StrategyType, int, boolean, BiPredicate)}
+     * @deprecated Use available predicate in {@link #Pool(StrategyType, int, boolean, Availability)}
      */
     @Deprecated
     @ManagedAttribute("The default maximum multiplex count of entries")
@@ -219,7 +218,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
      * <p>Sets the default maximum multiplex count for the Pool's entries.</p>
      *
      * @param maxMultiplex the default maximum multiplex count of entries
-     * @deprecated Use available predicate in {@link #Pool(StrategyType, int, boolean, BiPredicate)}
+     * @deprecated Use available predicate in {@link #Pool(StrategyType, int, boolean, Availability)}
      */
     @Deprecated
     public final void setMaxMultiplex(int maxMultiplex)
@@ -795,5 +794,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
                 Math.max(inUseCount, 0),
                 pooled);
         }
+    }
+
+    public interface Availability<T>
+    {
+        boolean test(T item, int inUse);
     }
 }
