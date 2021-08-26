@@ -174,6 +174,12 @@ public class FastFileServer
                     x.printStackTrace();
                     async.complete();
                 }
+
+                @Override
+                public InvocationType getInvocationType()
+                {
+                    return InvocationType.NON_BLOCKING;
+                }
             };
 
             // send "medium" files from an input stream

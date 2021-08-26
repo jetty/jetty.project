@@ -56,6 +56,8 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
+
 /**
  * HttpChannel represents a single endpoint for HTTP semantic processing.
  * The HttpChannel is both an HttpParser.RequestHandler, where it passively receives events from
@@ -540,7 +542,7 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
                             break;
                         
                         // Set a close callback on the HttpOutput to make it an async callback
-                        _response.completeOutput(Callback.from(() -> _state.completed(null), _state::completed));
+                        _response.completeOutput(Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
 
                         break;
                     }
