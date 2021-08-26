@@ -85,7 +85,8 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
         {
             for (String s : protectedTargets)
             {
-                _protectedPaths.add(new File(_basePath.toFile(), s).toPath());
+                Path path = _basePath.getFileSystem().getPath(_basePath.toString(), s);
+                _protectedPaths.add(path);
             }
         }
     }
@@ -186,10 +187,16 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
 
     protected boolean hasSymbolicLink(Path base, Path path)
     {
-        for (Path p = path; (p != null) && !p.equals(base); p = p.getParent())
+        Path p = path;
+        while (!base.equals(p))
         {
+            if (p == null)
+                throw new IllegalArgumentException("path was not child of base");
+
             if (Files.isSymbolicLink(p))
                 return true;
+
+            p = p.getParent();
         }
 
         return false;
