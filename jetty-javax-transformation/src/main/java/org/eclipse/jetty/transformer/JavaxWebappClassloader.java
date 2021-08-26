@@ -19,6 +19,7 @@ import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.net.URL;
 import java.security.ProtectionDomain;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -132,6 +133,12 @@ public class JavaxWebappClassloader extends WebAppClassLoader
             return super.mapType(internalName);
         }
 
+        @Override
+        public String[] mapTypes(String[] internalNames)
+        {
+            List<String> names = Arrays.asList(internalNames);
+            return super.mapTypes(internalNames);
+        }
     }
 
 }
