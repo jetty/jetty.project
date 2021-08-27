@@ -211,26 +211,13 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         @Override
         public void onSettings(Session session, SettingsFrame frame)
         {
-            Map<Integer, Integer> settings = frame.getSettings();
-            Integer maxConcurrentStreams = settings.get(SettingsFrame.MAX_CONCURRENT_STREAMS);
-            boolean[] initialized = new boolean[1];
-            Connection connection = this.connection.get(initialized);
-            if (initialized[0])
-            {
-                if (maxConcurrentStreams != null && connection != null)
-                    destination().setMaxRequestsPerConnection(connection, maxConcurrentStreams);
-            }
-            else
-            {
-                onServerPreface(session, maxConcurrentStreams);
-            }
+            if (!connection.isMarked())
+                onServerPreface(session);
         }
 
-        private void onServerPreface(Session session, Integer maxConcurrentStreams)
+        private void onServerPreface(Session session)
         {
             HttpConnectionOverHTTP2 connection = newHttpConnection(destination(), session);
-            if (maxConcurrentStreams != null)
-                connection.setMaxMultiplex(maxConcurrentStreams);
             if (this.connection.compareAndSet(null, connection, false, true))
                 connectionPromise().succeeded(connection);
         }

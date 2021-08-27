@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.client.api.Connection;
-
 public abstract class MultiplexHttpDestination extends HttpDestination
 {
     protected MultiplexHttpDestination(HttpClient client, Origin origin)
@@ -40,12 +38,5 @@ public abstract class MultiplexHttpDestination extends HttpDestination
         ConnectionPool connectionPool = getConnectionPool();
         if (connectionPool instanceof AbstractConnectionPool)
             ((AbstractConnectionPool)connectionPool).setMaxMultiplex(maxRequestsPerConnection);
-    }
-
-    public void setMaxRequestsPerConnection(Connection connection, int maxRequestsPerConnection)
-    {
-        ConnectionPool connectionPool = getConnectionPool();
-        if (connectionPool instanceof AbstractConnectionPool)
-            ((AbstractConnectionPool)connectionPool).setMaxMultiplex(connection, maxRequestsPerConnection);
     }
 }

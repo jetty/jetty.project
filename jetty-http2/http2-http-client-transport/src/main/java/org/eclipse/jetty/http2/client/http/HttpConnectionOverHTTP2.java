@@ -37,6 +37,7 @@ import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.SendFailure;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
@@ -53,7 +54,6 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     private final AtomicInteger sweeps = new AtomicInteger();
     private final Session session;
     private boolean recycleHttpChannels = true;
-    private int maxMultiplex = 1;
 
     public HttpConnectionOverHTTP2(HttpDestination destination, Session session)
     {
@@ -76,14 +76,10 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         this.recycleHttpChannels = recycleHttpChannels;
     }
 
+    @Override
     public int getMaxMultiplex()
     {
-        return maxMultiplex;
-    }
-
-    public void setMaxMultiplex(int maxMultiplex)
-    {
-        this.maxMultiplex = maxMultiplex;
+        return ((HTTP2Session)session).getMaxLocalStreams();
     }
 
     @Override

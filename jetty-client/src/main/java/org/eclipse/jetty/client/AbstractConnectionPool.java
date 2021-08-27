@@ -70,7 +70,12 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
 
     protected AbstractConnectionPool(HttpDestination destination, int maxConnections, boolean cache, Callback requester)
     {
-        this(destination, new Pool<>(Pool.StrategyType.FIRST, maxConnections, cache), requester);
+        this(destination, Pool.StrategyType.FIRST, maxConnections, cache, requester);
+    }
+
+    protected AbstractConnectionPool(HttpDestination destination, Pool.StrategyType strategy, int maxConnections, boolean cache, Callback requester)
+    {
+        this(destination, new Pool<>(strategy, maxConnections, cache), requester);
     }
 
     protected AbstractConnectionPool(HttpDestination destination, Pool<Connection> pool, Callback requester)
@@ -78,6 +83,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         this.destination = destination;
         this.requester = requester;
         this.pool = pool;
+        pool.setMaxMultiplex(1); // Force the use of multiplexing.
         addBean(pool);
     }
 
@@ -138,16 +144,6 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     protected void setMaxMultiplex(int maxMultiplex)
     {
         pool.setMaxMultiplex(maxMultiplex);
-    }
-
-    protected void setMaxMultiplex(Connection connection, int maxMultiplex)
-    {
-        if (connection instanceof Attachable)
-        {
-            Object attachment = ((Attachable)connection).getAttachment();
-            if (attachment instanceof EntryHolder)
-                ((EntryHolder)attachment).entry.setMaxMultiplex(maxMultiplex);
-        }
     }
 
     protected int getMaxUsageCount()
@@ -538,8 +534,6 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
                 onCreated(connection);
                 pending.decrementAndGet();
                 reserved.enable(connection, false);
-                if (connection instanceof Multiplexable)
-                    setMaxMultiplex(connection, ((ConnectionPool.Multiplexable)connection).getMaxMultiplex());
                 idle(connection, false);
                 complete(null);
                 proceed();
