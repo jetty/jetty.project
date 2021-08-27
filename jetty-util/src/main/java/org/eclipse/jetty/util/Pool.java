@@ -68,7 +68,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
     private final ThreadLocal<Entry> cache;
     private final AtomicInteger nextIndex;
     private volatile boolean closed;
+
+    @Deprecated
     private volatile int maxUsage = -1;
+    @Deprecated
     private volatile int maxMultiplex = -1;
 
     /**
@@ -175,6 +178,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
      * @return the maximum number of entries
      */
     @ManagedAttribute("The maximum number of entries")
+    @Deprecated
     public int getMaxEntries()
     {
         return maxEntries;
@@ -184,11 +188,13 @@ public class Pool<T> implements AutoCloseable, Dumpable
      * @return the default maximum in-use count of entries
      */
     @ManagedAttribute("The default maximum multiplex count of entries")
+    @Deprecated
     public int getMaxMultiplex()
     {
         return maxMultiplex == -1 ? 1 : maxMultiplex;
     }
 
+    @Deprecated
     protected int getMaxMultiplex(T item)
     {
         return getMaxMultiplex();
@@ -199,6 +205,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
      *
      * @param maxMultiplex the default maximum multiplex count of entries
      */
+    @Deprecated
     public final void setMaxMultiplex(int maxMultiplex)
     {
         if (maxMultiplex < 1)
@@ -222,11 +229,13 @@ public class Pool<T> implements AutoCloseable, Dumpable
      * @return the default maximum usage count of entries
      */
     @ManagedAttribute("The default maximum usage count of entries")
+    @Deprecated
     public int getMaxUsageCount()
     {
         return maxUsage;
     }
 
+    @Deprecated
     protected int getMaxUsageCount(T item)
     {
         return getMaxUsageCount();
@@ -239,6 +248,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
      *
      * @param maxUsageCount the default maximum usage count of entries
      */
+    @Deprecated
     public final void setMaxUsageCount(int maxUsageCount)
     {
         if (maxUsageCount == 0)
@@ -648,6 +658,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
             return false;
         }
 
+        @Deprecated
         public int getUsageCount()
         {
             return isIdle() ? 0 : 1;
@@ -655,9 +666,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
     }
 
     /**
-     * <p>A Pool entry that holds metadata and a pooled object.</p>
+     * <p>A Pool entry that holds metadata and a pooled object, that can only be used one at a time</p>
      */
-    public class SingleUseEntry extends Entry
+    private class SingleUseEntry extends Entry
     {
         // MIN_VALUE == pending; -1 == closed; 0 == idle; 1 == inuse ;
         private final AtomicInteger state;
@@ -778,6 +789,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
     }
 
+    @Deprecated
     class MultiUseEntry extends Entry
     {
 
@@ -934,7 +946,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
             int usageCount = AtomicBiInteger.getHi(encoded);
             int inUseCount = AtomicBiInteger.getLo(encoded);
 
-            String state = usageCount < 0 ? "CLOSED" : inUseCount == 0 ? "IDLE" : "INUSE";
+            String state = usageCount < 0
+                ? (usageCount == Integer.MIN_VALUE ? "PENDING" : "CLOSED")
+                : (inUseCount == 0 ? "IDLE" : "INUSE");
 
             return String.format("%s@%x{%s, used=%d, inUse=%d, pooled=%s}",
                 getClass().getSimpleName(),
