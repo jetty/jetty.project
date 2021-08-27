@@ -156,8 +156,8 @@ public abstract class DispatchedMessageSink extends AbstractMessageSink
                 @Override
                 public void succeeded()
                 {
-                    session.demand(1);
                     super.succeeded();
+                    session.demand(1);
                 }
             };
         }

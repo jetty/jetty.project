@@ -15,7 +15,6 @@ package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -74,19 +73,16 @@ public class ByteBufferCallbackAccumulator
 
     public void writeTo(ByteBuffer buffer)
     {
-        for (Iterator<Entry> iterator = _entries.iterator(); iterator.hasNext();)
+        if (BufferUtil.space(buffer) < _length)
+            throw new IllegalArgumentException("not enough buffer space remaining");
+
+        for (Entry entry : _entries)
         {
-            Entry entry = iterator.next();
-            _length -= entry.buffer.remaining();
             buffer.put(entry.buffer);
-            iterator.remove();
             entry.callback.succeeded();
         }
-
-        if (!_entries.isEmpty())
-            throw new IllegalStateException("remaining entries: " + _entries.size());
-        if (_length != 0)
-            throw new IllegalStateException("non-zero length: " + _length);
+        _entries.clear();
+        _length = 0;
     }
 
     public void fail(Throwable t)

@@ -326,7 +326,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         if (activeMessageSink == null)
         {
             callback.succeeded();
-            coreSession.demand(1);
+            demand();
             return;
         }
 
