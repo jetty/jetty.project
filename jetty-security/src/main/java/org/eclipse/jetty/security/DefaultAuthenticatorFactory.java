@@ -62,7 +62,7 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
         String auth = configuration.getAuthMethod();
         Authenticator authenticator = null;
 
-        if (auth == null || Constraint.__BASIC_AUTH.equalsIgnoreCase(auth))
+        if (Constraint.__BASIC_AUTH.equalsIgnoreCase(auth))
             authenticator = new BasicAuthenticator();
         else if (Constraint.__DIGEST_AUTH.equalsIgnoreCase(auth))
             authenticator = new DigestAuthenticator();
