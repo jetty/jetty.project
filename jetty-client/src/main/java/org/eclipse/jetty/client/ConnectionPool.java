@@ -102,20 +102,4 @@ public interface ConnectionPool extends Closeable
          */
         ConnectionPool newConnectionPool(HttpDestination destination);
     }
-
-    /**
-     * Marks a connection as supporting multiplexed requests.
-     */
-    interface Multiplexable
-    {
-        /**
-         * @return the max number of requests that can be multiplexed on a connection
-         */
-        int getMaxMultiplex();
-
-        /**
-         * @param maxMultiplex the max number of requests that can be multiplexed on a connection
-         */
-        void setMaxMultiplex(int maxMultiplex);
-    }
 }

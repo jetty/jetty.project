@@ -34,12 +34,21 @@ public class MultiplexConnectionPool extends AbstractConnectionPool
 
     public MultiplexConnectionPool(HttpDestination destination, int maxConnections, boolean cache, Callback requester, int maxMultiplex)
     {
-        this(destination, new Pool<>(Pool.StrategyType.FIRST, maxConnections, cache), requester, maxMultiplex);
+        this(destination, Pool.StrategyType.FIRST, maxConnections, cache, requester, maxMultiplex);
     }
 
-    public MultiplexConnectionPool(HttpDestination destination, Pool<Connection> pool, Callback requester, int maxMultiplex)
+    public MultiplexConnectionPool(HttpDestination destination, Pool.StrategyType strategy, int maxConnections, boolean cache, Callback requester, int maxMultiplex)
     {
-        super(destination, pool, requester);
+        super(destination, new Pool<Connection>(strategy, maxConnections, cache)
+        {
+            @Override
+            protected int getMaxMultiplex(Connection connection)
+            {
+                if (connection instanceof Multiplexable)
+                    return ((Multiplexable)connection).getMaxMultiplex();
+                return super.getMaxMultiplex(connection);
+            }
+        }, requester);
         setMaxMultiplex(maxMultiplex);
     }
 
@@ -67,5 +76,16 @@ public class MultiplexConnectionPool extends AbstractConnectionPool
     public void setMaxUsageCount(int maxUsageCount)
     {
         super.setMaxUsageCount(maxUsageCount);
+    }
+
+    /**
+     * Marks a connection as supporting multiplexed requests.
+     */
+    public interface Multiplexable extends Connection
+    {
+        /**
+         * @return the max number of requests that can be multiplexed on a connection
+         */
+        int getMaxMultiplex();
     }
 }

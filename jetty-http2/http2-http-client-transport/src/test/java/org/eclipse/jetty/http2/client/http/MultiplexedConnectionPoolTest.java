@@ -100,10 +100,12 @@ public class MultiplexedConnectionPoolTest
         ConnectionPoolFactory factory = new ConnectionPoolFactory("duplex-maxDuration", destination ->
         {
             int maxConnections = destination.getHttpClient().getMaxConnectionsPerDestination();
-            Pool<Connection> pool = new Pool<>(Pool.StrategyType.FIRST, maxConnections, false);
-            poolRef.set(pool);
-            MultiplexConnectionPool connectionPool = new MultiplexConnectionPool(destination, pool, destination, MAX_MULTIPLEX)
+            MultiplexConnectionPool connectionPool = new MultiplexConnectionPool(destination, Pool.StrategyType.FIRST, maxConnections, false, destination, MAX_MULTIPLEX)
             {
+                {
+                    poolRef.set(getBean(Pool.class));
+                }
+
                 @Override
                 protected void onCreated(Connection connection)
                 {
@@ -161,22 +163,27 @@ public class MultiplexedConnectionPoolTest
         ConnectionPoolFactory factory = new ConnectionPoolFactory("duplex-maxDuration", destination ->
         {
             int maxConnections = destination.getHttpClient().getMaxConnectionsPerDestination();
-            Pool<Connection> pool = new Pool<>(Pool.StrategyType.FIRST, maxConnections, false);
-            poolRef.set(pool);
-            MultiplexConnectionPool connectionPool = new MultiplexConnectionPool(destination, pool, destination, MAX_MULTIPLEX)
-            {
-                @Override
-                protected void onCreated(Connection connection)
+            MultiplexConnectionPool connectionPool =
+                new MultiplexConnectionPool(destination, Pool.StrategyType.FIRST, maxConnections, false, destination, MAX_MULTIPLEX)
                 {
-                    poolCreateCounter.incrementAndGet();
-                }
+                    {
+                        poolRef.set(getBean(Pool.class));
+                    }
 
-                @Override
-                protected void removed(Connection connection)
-                {
-                    poolRemoveCounter.incrementAndGet();
-                }
-            };
+                    @Override
+                    protected void onCreated(Connection connection)
+                    {
+                        poolCreateCounter.incrementAndGet();
+                    }
+
+                    @Override
+                    protected void removed(Connection connection)
+                    {
+                        poolRemoveCounter.incrementAndGet();
+                    }
+                };
+
+
             connectionPool.setMaxDuration(maxDuration);
             return connectionPool;
         });

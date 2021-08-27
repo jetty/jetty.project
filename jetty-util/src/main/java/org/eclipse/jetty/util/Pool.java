@@ -67,11 +67,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
     private final Locker locker = new Locker();
     private final ThreadLocal<Entry> cache;
     private final AtomicInteger nextIndex;
-    private final Availability<T> available;
     private volatile boolean closed;
     private volatile int maxUsage = -1;
-    @Deprecated
-    private volatile int maxMultiplex = 1;
+    private volatile int maxMultiplex = -1;
 
     /**
      * The type of the strategy to use for the pool.
@@ -131,31 +129,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
      */
     public Pool(StrategyType strategyType, int maxEntries, boolean cache)
     {
-        this(strategyType, maxEntries, cache, null);
-    }
-
-    /**
-     * Construct a Pool with the specified thread-local cache size and
-     * an optional {@link ThreadLocal} cache.
-     *
-     * @param strategyType The strategy to used for looking up entries.
-     * @param maxEntries the maximum amount of entries that the pool will accept.
-     * @param cache True if a {@link ThreadLocal} cache should be used to try the most recently released entry.
-     * @param available A bi predicate to check if the entry available for another usage.  If null
-     * then the active count will be checked against {@link #maxMultiplex}
-     */
-    public Pool(StrategyType strategyType, int maxEntries, boolean cache, Availability<T> available)
-    {
         this.maxEntries = maxEntries;
         this.strategyType = strategyType;
         this.cache = cache ? new ThreadLocal<>() : null;
         this.nextIndex = strategyType == StrategyType.ROUND_ROBIN ? new AtomicInteger() : null;
-        this.available = available == null ? this::isAvailable : available;
-    }
-
-    private boolean isAvailable(T item, int inUse)
-    {
-        return inUse < maxMultiplex;
     }
 
     /**
@@ -205,27 +182,37 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
     /**
      * @return the default maximum in-use count of entries
-     * @deprecated Use available predicate in {@link #Pool(StrategyType, int, boolean, Availability)}
      */
-    @Deprecated
     @ManagedAttribute("The default maximum multiplex count of entries")
     public int getMaxMultiplex()
     {
-        return maxMultiplex;
+        return maxMultiplex == -1 ? 1 : maxMultiplex;
+    }
+
+    protected int getMaxMultiplex(T item)
+    {
+        return getMaxMultiplex();
     }
 
     /**
      * <p>Sets the default maximum multiplex count for the Pool's entries.</p>
      *
      * @param maxMultiplex the default maximum multiplex count of entries
-     * @deprecated Use available predicate in {@link #Pool(StrategyType, int, boolean, Availability)}
      */
-    @Deprecated
     public final void setMaxMultiplex(int maxMultiplex)
     {
         if (maxMultiplex < 1)
             throw new IllegalArgumentException("Max multiplex must be >= 1");
-        this.maxMultiplex = maxMultiplex;
+        try (Locker.Lock l = locker.lock())
+        {
+            if (closed)
+                return;
+
+            if (entries.stream().anyMatch(SingleUseEntry.class::isInstance))
+                throw new IllegalStateException("SingleUse Entries in use");
+
+            this.maxMultiplex = maxMultiplex;
+        }
     }
 
     /**
@@ -240,6 +227,11 @@ public class Pool<T> implements AutoCloseable, Dumpable
         return maxUsage;
     }
 
+    protected int getMaxUsageCount(T item)
+    {
+        return getMaxUsageCount();
+    }
+
     /**
      * <p>Sets the maximum usage count for the Pool's entries.</p>
      * <p>All existing idle entries that have a usage count larger
@@ -251,7 +243,6 @@ public class Pool<T> implements AutoCloseable, Dumpable
     {
         if (maxUsageCount == 0)
             throw new IllegalArgumentException("Max usage count must be != 0");
-        this.maxUsage = maxUsageCount;
 
         // Iterate the entries, remove overused ones and collect a list of the closeable removed ones.
         List<Closeable> copy;
@@ -259,6 +250,11 @@ public class Pool<T> implements AutoCloseable, Dumpable
         {
             if (closed)
                 return;
+
+            if (entries.stream().anyMatch(SingleUseEntry.class::isInstance))
+                throw new IllegalStateException("SingleUse Entries in use");
+
+            this.maxUsage = maxUsageCount;
 
             copy = entries.stream()
                 .filter(entry -> entry.isIdleAndOverUsed() && remove(entry) && entry.pooled instanceof Closeable)
@@ -271,37 +267,12 @@ public class Pool<T> implements AutoCloseable, Dumpable
     }
 
     /**
-     * <p>Creates a new disabled slot into the pool.</p>
-     * <p>The returned entry must ultimately have the {@link Entry#enable(Object, boolean)}
-     * method called or be removed via {@link Pool.Entry#remove()} or
-     * {@link Pool#remove(Pool.Entry)}.</p>
-     *
-     * @param allotment the desired allotment, where each entry handles an allotment of maxMultiplex,
-     * or a negative number to always trigger the reservation of a new entry.
-     * @return a disabled entry that is contained in the pool,
-     * or null if the pool is closed or if the pool already contains
-     * {@link #getMaxEntries()} entries, or the allotment has already been reserved
-     * @deprecated Use {@link #reserve()} instead
+     * @deprecated Use {@link #reserve()}
      */
     @Deprecated
     public Entry reserve(int allotment)
     {
-        try (Locker.Lock l = locker.lock())
-        {
-            if (closed)
-                return null;
-
-            int space = maxEntries - entries.size();
-            if (space <= 0)
-                return null;
-
-            if (allotment >= 0 && getReservedCount() >= allotment)
-                return null;
-
-            Entry entry = new Entry();
-            entries.add(entry);
-            return entry;
-        }
+        return null;
     }
 
     /**
@@ -325,36 +296,25 @@ public class Pool<T> implements AutoCloseable, Dumpable
             if (entries.size() >= maxEntries)
                 return null;
 
-            Entry entry = new Entry();
+            Entry entry = newEntry();
             entries.add(entry);
             return entry;
         }
     }
 
+    protected Entry newEntry()
+    {
+        if (maxMultiplex >= 0 || maxUsage >= 0)
+            return new MultiUseEntry();
+        return new SingleUseEntry();
+    }
+
     /**
-     * <p>Acquires the entry from the pool at the specified index.</p>
-     * <p>This method bypasses the thread-local cache mechanism.</p>
-     *
-     * @param idx the index of the entry to acquire.
-     * @return the specified entry or null if there is none at the specified index or if it is not available.
-     * @deprecated No longer supported. Instead use a {@link StrategyType} to configure the pool.
+     * @deprecated Use {@link #acquire()}
      */
     @Deprecated
     public Entry acquireAt(int idx)
     {
-        if (closed)
-            return null;
-
-        try
-        {
-            Entry entry = entries.get(idx);
-            if (entry.tryAcquire())
-                return entry;
-        }
-        catch (IndexOutOfBoundsException e)
-        {
-            // no entry at that index
-        }
         return null;
     }
 
@@ -561,9 +521,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
     @Override
     public String toString()
     {
-        return String.format("%s@%x[size=%d closed=%s]",
+        return String.format("%s@%x[inUse=%d/%d, closed=%s]",
             getClass().getSimpleName(),
             hashCode(),
+            getInUseCount(),
             entries.size(),
             closed);
     }
@@ -571,26 +532,12 @@ public class Pool<T> implements AutoCloseable, Dumpable
     /**
      * <p>A Pool entry that holds metadata and a pooled object.</p>
      */
-    public class Entry
+    public abstract class Entry
     {
-        // hi: negative==closed else total-usage counter; negative=closed; MIN_VALUE pending
-        // lo: in-use counter
-        private final AtomicBiInteger state;
         // The pooled item.  This is not volatile as it is set once and then never changed.
         // Other threads accessing must check the state field above first, so a good before/after
         // relationship exists to make a memory barrier.
-        private T pooled;
-
-        Entry()
-        {
-            this.state = new AtomicBiInteger(Integer.MIN_VALUE, 0);
-        }
-
-        // for testing only
-        void setUsageCount(int usageCount)
-        {
-            this.state.getAndSetHi(usageCount);
-        }
+        protected T pooled;
 
         /**
          * <p>Enables a {@link #reserve() reserved} Entry.</p>
@@ -616,17 +563,17 @@ public class Pool<T> implements AutoCloseable, Dumpable
                 throw new IllegalStateException("Entry already enabled: " + this);
             }
             this.pooled = pooled;
-            int usage = acquire ? 1 : 0;
-            if (!state.compareAndSet(Integer.MIN_VALUE, usage, 0, usage))
-            {
-                this.pooled = null;
-                if (isClosed())
-                    return false; // Pool has been closed
-                throw new IllegalStateException("Entry already enabled: " + this);
-            }
 
-            return true;
+            if (tryEnable(acquire))
+                return true;
+
+            this.pooled = null;
+            if (isClosed())
+                return false; // Pool has been closed
+            throw new IllegalStateException("Entry already enabled: " + this);
         }
+
+        protected abstract boolean tryEnable(boolean acquire);
 
         public T getPooled()
         {
@@ -663,6 +610,207 @@ public class Pool<T> implements AutoCloseable, Dumpable
          * the in-use count is maxMultiplex and the entry is not closed,
          * false otherwise.
          */
+        abstract boolean tryAcquire();
+
+        /**
+         * <p>Tries to release the entry if possible by decrementing the in-use
+         * count unless the entity is closed.</p>
+         *
+         * @return true if the entry was released,
+         * false if {@link #tryRemove()} should be called.
+         */
+        abstract boolean tryRelease();
+
+        /**
+         * <p>Try to remove the entry by marking it as closed.</p>
+         *
+         * @return true if the entry can be removed from the containing pool, false otherwise.
+         */
+        abstract boolean tryRemove();
+
+        public abstract boolean isClosed();
+
+        public abstract boolean isReserved();
+
+        public abstract boolean isIdle();
+
+        public abstract boolean isInUse();
+
+        @Deprecated
+        public boolean isOverUsed()
+        {
+            return false;
+        }
+
+        @Deprecated
+        boolean isIdleAndOverUsed()
+        {
+            return false;
+        }
+
+        public int getUsageCount()
+        {
+            return isIdle() ? 0 : 1;
+        }
+    }
+
+    /**
+     * <p>A Pool entry that holds metadata and a pooled object.</p>
+     */
+    public class SingleUseEntry extends Entry
+    {
+        // MIN_VALUE == pending; -1 == closed; 0 == idle; 1 == inuse ;
+        private final AtomicInteger state;
+
+        SingleUseEntry()
+        {
+            this.state = new AtomicInteger(Integer.MIN_VALUE);
+        }
+
+        @Override
+        protected boolean tryEnable(boolean acquire)
+        {
+            return state.compareAndSet(Integer.MIN_VALUE, acquire ? 1 : 0);
+        }
+
+        /**
+         * <p>Tries to acquire the entry if possible by incrementing both the usage
+         * count and the in-use count.</p>
+         *
+         * @return true if the usage count is &lt;= maxUsageCount and
+         * the in-use count is maxMultiplex and the entry is not closed,
+         * false otherwise.
+         */
+        @Override
+        boolean tryAcquire()
+        {
+            while (true)
+            {
+                int s = state.get();
+                if (s != 0)
+                    return false;
+                if (state.compareAndSet(s, 1))
+                    return true;
+            }
+        }
+
+        /**
+         * <p>Tries to release the entry if possible by decrementing the in-use
+         * count unless the entity is closed.</p>
+         *
+         * @return true if the entry was released,
+         * false if {@link #tryRemove()} should be called.
+         */
+        @Override
+        boolean tryRelease()
+        {
+            while (true)
+            {
+                int s = state.get();
+                if (s < 0)
+                    return false;
+                if (s == 0)
+                    throw new IllegalStateException("Cannot release an already released entry");
+                if (state.compareAndSet(s, 0))
+                    return true;
+            }
+        }
+
+        /**
+         * <p>Try to remove the entry by marking it as closed.</p>
+         *
+         * @return true if the entry can be removed from the containing pool, false otherwise.
+         */
+        @Override
+        boolean tryRemove()
+        {
+            state.set(-1);
+            return true;
+        }
+
+        @Override
+        public boolean isClosed()
+        {
+            return state.get() < 0;
+        }
+
+        @Override
+        public boolean isReserved()
+        {
+            return state.get() == Integer.MIN_VALUE;
+        }
+
+        @Override
+        public boolean isIdle()
+        {
+            return state.get() == 0;
+        }
+
+        public boolean isInUse()
+        {
+            return state.get() == 1;
+        }
+
+        @Override
+        public String toString()
+        {
+            String s;
+            switch (state.get())
+            {
+                case Integer.MIN_VALUE:
+                    s = "PENDING";
+                    break;
+                case -1:
+                    s = "CLOSED";
+                    break;
+                case 0:
+                    s = "IDLE";
+                    break;
+                default:
+                    s = "INUSE";
+            }
+
+            return String.format("%s@%x{%s, pooled=%s}",
+                getClass().getSimpleName(),
+                hashCode(),
+                s,
+                pooled);
+        }
+    }
+
+    class MultiUseEntry extends Entry
+    {
+
+        // hi: negative==closed else total-usage counter; negative=closed; MIN_VALUE pending
+        // lo: in-use counter
+        private final AtomicBiInteger state;
+
+        MultiUseEntry()
+        {
+            this.state = new AtomicBiInteger(Integer.MIN_VALUE, 0);
+        }
+
+        // for testing only
+        void setUsageCount(int usageCount)
+        {
+            this.state.getAndSetHi(usageCount);
+        }
+
+        @Override
+        protected boolean tryEnable(boolean acquire)
+        {
+            int usage = acquire ? 1 : 0;
+            return state.compareAndSet(Integer.MIN_VALUE, usage, 0, usage);
+        }
+
+        /**
+         * <p>Tries to acquire the entry if possible by incrementing both the usage
+         * count and the in-use count.</p>
+         *
+         * @return true if the usage count is &lt;= maxUsageCount and
+         * the in-use count is maxMultiplex and the entry is not closed,
+         * false otherwise.
+         */
         boolean tryAcquire()
         {
             while (true)
@@ -671,8 +819,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
                 int usageCount = AtomicBiInteger.getHi(encoded);
                 boolean closed = usageCount < 0;
                 int inUseCount = AtomicBiInteger.getLo(encoded);
-                int maxUsageCount = Pool.this.maxUsage;
-                if (closed || !available.test(pooled, inUseCount) || (maxUsageCount > 0 && usageCount >= maxUsageCount))
+                T pooled = getPooled();
+                int maxUsageCount = getMaxUsageCount(pooled);
+                int maxMultiplexed = getMaxMultiplex(pooled);
+                if (closed || inUseCount >= maxMultiplexed || (maxUsageCount > 0 && usageCount >= maxUsageCount))
                     return false;
 
                 // Prevent overflowing the usage counter by capping it at Integer.MAX_VALUE.
@@ -794,10 +944,5 @@ public class Pool<T> implements AutoCloseable, Dumpable
                 Math.max(inUseCount, 0),
                 pooled);
         }
-    }
-
-    public interface Availability<T>
-    {
-        boolean test(T item, int inUse);
     }
 }
