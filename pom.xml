@@ -36,7 +36,7 @@
     <tycho-version>2.1.0</tycho-version>
     <junit.version>5.7.0</junit.version>
     <maven.version>3.6.3</maven.version>
-    <maven.resolver.version>1.6.1</maven.resolver.version>
+    <maven.resolver.version>1.7.1</maven.resolver.version>
     <javax.servlet.api.version>3.1.0</javax.servlet.api.version>
     <weld.version>3.1.5.Final</weld.version>
     <hazelcast.version>3.12.10</hazelcast.version>
