@@ -103,7 +103,7 @@ public class HttpChannelOverHTTP extends HttpChannel
             closeReason = "failure";
         else if (receiver.isShutdown())
             closeReason = "server close";
-        else if (sender.isShutdown())
+        else if (sender.isShutdown() && response.getStatus() != HttpStatus.SWITCHING_PROTOCOLS_101)
             closeReason = "client close";
 
         if (closeReason == null)

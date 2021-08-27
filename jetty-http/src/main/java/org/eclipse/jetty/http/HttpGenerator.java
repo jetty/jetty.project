@@ -345,15 +345,6 @@ public class HttpGenerator
             return Result.FLUSH;
         }
         _state = State.END;
-
-        // If this is a request, don't close the connection until the server responds.
-        if (_info.isRequest())
-            return Result.DONE;
-
-        // If successfully upgraded it is responsibility of the next protocol to close the connection.
-        if (_info.isResponse() && ((MetaData.Response)_info).getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
-            return Result.DONE;
-
         return Boolean.TRUE.equals(_persistent) ? Result.DONE : Result.SHUTDOWN_OUT;
     }
 
