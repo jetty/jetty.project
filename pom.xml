@@ -20,9 +20,9 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build-support.version>1.5</build-support.version>
     <checkstyle.version>8.37</checkstyle.version>
-    <slf4j.version>2.0.0-alpha1</slf4j.version>
+    <slf4j.version>2.0.0-alpha4</slf4j.version>
     <log4j2.version>2.14.0</log4j2.version>
-    <logback.version>1.3.0-alpha5</logback.version>
+    <logback.version>1.3.0-alpha9</logback.version>
     <disruptor.version>3.4.2</disruptor.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <servlet.api.version>4.0.6</servlet.api.version>
@@ -79,7 +79,8 @@
     <settingsPath>src/it/settings.xml</settingsPath>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
-    <testcontainers.version>1.15.1</testcontainers.version>
+    <testcontainers.version>1.16.0</testcontainers.version>
+    <jna.version>5.8.0</jna.version>
     <mariadb.version>2.7.0</mariadb.version>
   </properties>
 
@@ -981,7 +982,7 @@
         <plugin>
           <groupId>org.mortbay.jetty</groupId>
           <artifactId>h2spec-maven-plugin</artifactId>
-          <version>1.0.5</version>
+          <version>1.0.6</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -1151,7 +1152,7 @@
       <dependency>
         <groupId>net.java.dev.jna</groupId>
         <artifactId>jna</artifactId>
-        <version>5.6.0</version>
+        <version>${jna.version}</version>
       </dependency>
       <!-- Old Deps -->
       <dependency>
@@ -1458,6 +1459,9 @@
               <version>${maven.surefire.version}</version>
               <configuration>
                 <excludedGroups>external, large-disk-resource</excludedGroups>
+                <systemPropertyVariables>
+                  <env>ci</env>
+                </systemPropertyVariables>
               </configuration>
             </plugin>
           </plugins>

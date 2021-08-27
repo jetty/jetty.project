@@ -14,6 +14,7 @@
 package org.eclipse.jetty.util.thread;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -21,6 +22,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.ProcessorUtils;
@@ -38,14 +40,14 @@ import static org.eclipse.jetty.util.AtomicBiInteger.getLo;
 
 
 /**
- * An Executor using pre-allocated/reserved Threads from a wrapped Executor.
- * <p>Calls to {@link #execute(Runnable)} on a {@link ReservedThreadExecutor} will either succeed
- * with a Thread immediately being assigned the Runnable task, or fail if no Thread is
- * available.
- * <p>Threads are reserved lazily, with a new reserved threads being allocated from the
- * {@link Executor} passed to the constructor.  Whenever 1 or more reserved threads have been
+ * <p>A TryExecutor using pre-allocated/reserved threads from an external Executor.</p>
+ * <p>Calls to {@link #tryExecute(Runnable)} on ReservedThreadExecutor will either
+ * succeed with a reserved thread immediately being assigned the task, or fail if
+ * no reserved thread is available.</p>
+ * <p>Threads are reserved lazily, with new reserved threads being allocated from the external
+ * {@link Executor} passed to the constructor. Whenever 1 or more reserved threads have been
  * idle for more than {@link #getIdleTimeoutMs()} then one reserved thread will return to
- * the executor.
+ * the external Executor.</p>
  */
 @ManagedObject("A pool for reserved threads")
 public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExecutor, Dumpable
@@ -62,7 +64,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         @Override
         public String toString()
         {
-            return "STOP!";
+            return "STOP";
         }
     };
 
@@ -72,7 +74,6 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     private final SynchronousQueue<Runnable> _queue = new SynchronousQueue<>(false);
     private final AtomicBiInteger _count = new AtomicBiInteger(); // hi=pending; lo=size;
     private final AtomicLong _lastEmptyTime = new AtomicLong(System.nanoTime());
-
     private ThreadPoolBudget.Lease _lease;
     private long _idleTimeNanos = DEFAULT_IDLE_TIMEOUT;
 
@@ -175,20 +176,25 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
 
         super.doStop();
 
-        // Offer STOP task to all waiting reserved threads.
-        for (int i = _count.getAndSetLo(-1); i-- > 0;)
+        // Mark this instance as stopped.
+        int size = _count.getAndSetLo(-1);
+
+        // Offer the STOP task to all waiting reserved threads.
+        for (int i = 0; i < size; ++i)
         {
-            // yield to wait for any reserved threads that have incremented the size but not yet polled
+            // Yield to wait for any reserved threads that
+            // have incremented the size but not yet polled.
             Thread.yield();
             _queue.offer(STOP);
         }
-        // Interrupt any reserved thread missed the offer so it doesn't wait too long.
-        for (ReservedThread reserved : _threads)
-        {
-            Thread thread = reserved._thread;
-            if (thread != null)
-                thread.interrupt();
-        }
+
+        // Interrupt any reserved thread missed the offer,
+        // so they do not wait for the whole idle timeout.
+        _threads.stream()
+            .filter(ReservedThread::isReserved)
+            .map(t -> t._thread)
+            .filter(Objects::nonNull)
+            .forEach(Thread::interrupt);
         _threads.clear();
         _count.getAndSetHi(0);
     }
@@ -264,13 +270,16 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     public void dump(Appendable out, String indent) throws IOException
     {
         Dumpable.dumpObjects(out, indent, this,
-            new DumpableCollection("reserved", _threads));
+            new DumpableCollection("threads",
+                _threads.stream()
+                    .filter(ReservedThread::isReserved)
+                    .collect(Collectors.toList())));
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x{s=%d/%d,p=%d}",
+        return String.format("%s@%x{reserved=%d/%d,pending=%d}",
             getClass().getSimpleName(),
             hashCode(),
             _count.getLo(),
@@ -292,6 +301,11 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         // The state and thread are kept only for dumping
         private volatile State _state = State.PENDING;
         private volatile Thread _thread;
+
+        private boolean isReserved()
+        {
+            return _state == State.RESERVED;
+        }
 
         private Runnable reservedWait()
         {
@@ -321,7 +335,6 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                     }
                     _state = size >= 0 ? State.IDLE : State.STOPPED;
                     return STOP;
-
                 }
                 catch (InterruptedException e)
                 {

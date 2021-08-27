@@ -275,7 +275,7 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @Test
-    @DisabledOnOs(OS.WINDOWS)  // jnr not supported on windows
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "jnr not supported on windows")
     public void testUnixSocket() throws Exception
     {
         String dir = System.getProperty("jetty.unixdomain.dir");
@@ -843,7 +843,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                     // Protocol "h2" must not be enabled because the
                     // http2 Jetty module was not explicitly enabled.
                     assertFalse(run3.getLogs().stream()
-                        .anyMatch(log -> log.contains("h2")));
+                        .anyMatch(log -> log.contains("h2")), "Full logs: " + String.join("", run3.getLogs()));
                 }
             }
         }

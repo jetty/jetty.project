@@ -725,7 +725,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         if (content == null)
+        {
             new AsyncFlush(false).iterate();
+        }
         else
         {
             try
@@ -1534,7 +1536,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         final boolean _last;
 
-        ChannelWriteCB(boolean last)
+        private ChannelWriteCB(boolean last)
         {
             _last = last;
         }
@@ -1560,12 +1562,18 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     private abstract class NestedChannelWriteCB extends ChannelWriteCB
     {
-        final Callback _callback;
+        private final Callback _callback;
 
-        NestedChannelWriteCB(Callback callback, boolean last)
+        private NestedChannelWriteCB(Callback callback, boolean last)
         {
             super(last);
             _callback = callback;
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return _callback.getInvocationType();
         }
 
         @Override
@@ -1602,9 +1610,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     private class AsyncFlush extends ChannelWriteCB
     {
-        volatile boolean _flushed;
+        private volatile boolean _flushed;
 
-        AsyncFlush(boolean last)
+        private AsyncFlush(boolean last)
         {
             super(last);
         }
@@ -1637,7 +1645,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         private final int _len;
         private boolean _completed;
 
-        AsyncWrite(byte[] b, int off, int len, boolean last)
+        private AsyncWrite(byte[] b, int off, int len, boolean last)
         {
             super(last);
             _buffer = ByteBuffer.wrap(b, off, len);
@@ -1646,7 +1654,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _slice = _len < getBufferSize() ? null : _buffer.duplicate();
         }
 
-        AsyncWrite(ByteBuffer buffer, boolean last)
+        private AsyncWrite(ByteBuffer buffer, boolean last)
         {
             super(last);
             _buffer = buffer;
@@ -1734,7 +1742,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         private boolean _eof;
         private boolean _closed;
 
-        InputStreamWritingCB(InputStream in, Callback callback)
+        private InputStreamWritingCB(InputStream in, Callback callback)
         {
             super(callback, true);
             _in = in;
@@ -1810,7 +1818,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         private boolean _eof;
         private boolean _closed;
 
-        ReadableByteChannelWritingCB(ReadableByteChannel in, Callback callback)
+        private ReadableByteChannelWritingCB(ReadableByteChannel in, Callback callback)
         {
             super(callback, true);
             _in = in;
@@ -1881,6 +1889,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         public void failed(Throwable x)
         {
             onWriteComplete(true, x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
         }
     }
 }

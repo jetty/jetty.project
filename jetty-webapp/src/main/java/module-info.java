@@ -27,6 +27,7 @@ module org.eclipse.jetty.webapp
     provides Configuration with
         org.eclipse.jetty.webapp.FragmentConfiguration,
         org.eclipse.jetty.webapp.JaasConfiguration,
+        org.eclipse.jetty.webapp.JaspiConfiguration,
         org.eclipse.jetty.webapp.JettyWebXmlConfiguration,
         org.eclipse.jetty.webapp.JmxConfiguration,
         org.eclipse.jetty.webapp.JndiConfiguration,

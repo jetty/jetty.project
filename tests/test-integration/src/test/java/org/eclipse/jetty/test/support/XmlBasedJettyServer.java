@@ -77,6 +77,10 @@ public class XmlBasedJettyServer
         Path webappsDir = MavenTestingUtils.getTargetPath("webapps");
         properties.setProperty("test.webapps", webappsDir.toString());
 
+        Path keystorePath = MavenTestingUtils.getTestResourcePathFile("keystore.p12");
+        properties.setProperty("jetty.sslContext.keyStorePath", keystorePath.toString());
+        properties.setProperty("jetty.sslContext.keyStorePassword", "storepwd");
+
         // Write out configuration for use by ConfigurationManager.
         Path testConfig = targetDir.resolve("testable-jetty-server-config.properties");
         try (OutputStream out = Files.newOutputStream(testConfig))

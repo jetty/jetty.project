@@ -235,8 +235,8 @@ public class SniSslConnectionFactoryTest
         assertThat(response, Matchers.containsString("Invalid SNI"));
     }
 
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "See Issue #6609 - TLSv1.3 behavior differences between Linux and Windows")
     @Test
-    @DisabledOnOs(OS.WINDOWS)
     public void testWrongSNIRejectedConnection() throws Exception
     {
         start(ssl ->
@@ -275,8 +275,8 @@ public class SniSslConnectionFactoryTest
         assertThat(response.getStatus(), is(400));
     }
 
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "See Issue #6609 - TLSv1.3 behavior differences between Linux and Windows")
     @Test
-    @DisabledOnOs(OS.WINDOWS)
     public void testWrongSNIRejectedFunction() throws Exception
     {
         start((ssl, customizer) ->
@@ -302,8 +302,8 @@ public class SniSslConnectionFactoryTest
         assertThat(response.getStatus(), is(400));
     }
 
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "See Issue #6609 - TLSv1.3 behavior differences between Linux and Windows")
     @Test
-    @DisabledOnOs(OS.WINDOWS)
     public void testWrongSNIRejectedConnectionWithNonSNIKeystore() throws Exception
     {
         start(ssl ->

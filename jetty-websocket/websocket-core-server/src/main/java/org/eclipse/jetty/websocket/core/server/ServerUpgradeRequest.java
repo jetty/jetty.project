@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import javax.servlet.ServletRequest;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
@@ -90,9 +91,17 @@ public class ServerUpgradeRequest
     {
         if (cookies == null)
         {
-            cookies = Arrays.stream(request.getCookies())
-                .map(c -> new HttpCookie(c.getName(), c.getValue()))
-                .collect(Collectors.toList());
+            Cookie[] reqCookies = request.getCookies();
+            if (reqCookies != null)
+            {
+                cookies = Arrays.stream(reqCookies)
+                    .map(c -> new HttpCookie(c.getName(), c.getValue()))
+                    .collect(Collectors.toList());
+            }
+            else
+            {
+                cookies = Collections.emptyList();
+            }
         }
 
         return cookies;
@@ -135,10 +144,13 @@ public class ServerUpgradeRequest
     {
         Map<String, List<String>> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         Enumeration<String> headerNames = request.getHeaderNames();
-        while (headerNames.hasMoreElements())
+        if (headerNames != null)
         {
-            String name = headerNames.nextElement();
-            headers.put(name, Collections.list(request.getHeaders(name)));
+            while (headerNames.hasMoreElements())
+            {
+                String name = headerNames.nextElement();
+                headers.put(name, Collections.list(request.getHeaders(name)));
+            }
         }
         return headers;
     }

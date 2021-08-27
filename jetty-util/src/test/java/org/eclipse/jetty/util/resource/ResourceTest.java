@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.stream.Stream;
@@ -29,7 +30,6 @@ import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -43,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class ResourceTest
 {
@@ -287,15 +288,23 @@ public class ResourceTest
     }
 
     @Test
-    @DisabledOnOs(OS.WINDOWS) // this uses forbidden characters on some Windows Environments
     public void testGlobPath() throws IOException
     {
         Path testDir = MavenTestingUtils.getTargetTestingPath("testGlobPath");
         FS.ensureEmpty(testDir);
 
-        String globReference = testDir.toAbsolutePath().toString() + File.separator + '*';
-        Resource globResource = Resource.newResource(globReference);
-        assertNotNull(globResource, "Should have produced a Resource");
+        try
+        {
+            String globReference = testDir.toAbsolutePath() + File.separator + '*';
+            Resource globResource = Resource.newResource(globReference);
+            assertNotNull(globResource, "Should have produced a Resource");
+        }
+        catch (InvalidPathException e)
+        {
+            // if unable to reference the glob file, no point testing the rest.
+            // this is the path that Microsoft Windows takes.
+            assumeTrue(false, "Glob not supported on this OS");
+        }
     }
 
     @Test

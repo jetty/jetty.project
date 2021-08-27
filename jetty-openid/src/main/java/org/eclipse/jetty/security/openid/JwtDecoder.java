@@ -35,6 +35,7 @@ public class JwtDecoder
      * @param jwt the JWT to decode.
      * @return the map of claims encoded in the JWT.
      */
+    @SuppressWarnings("unchecked")
     public static Map<String, Object> decode(String jwt)
     {
         if (LOG.isDebugEnabled())
@@ -54,7 +55,6 @@ public class JwtDecoder
         Object parsedJwtHeader = json.fromJSON(jwtHeaderString);
         if (!(parsedJwtHeader instanceof Map))
             throw new IllegalStateException("Invalid JWT header");
-        @SuppressWarnings("unchecked")
         Map<String, Object> jwtHeader = (Map<String, Object>)parsedJwtHeader;
         if (LOG.isDebugEnabled())
             LOG.debug("JWT Header: {}", jwtHeader);

@@ -135,6 +135,12 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
             close();
             promise.failed(x);
         }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
     }
 
     private static class ConnectionListener implements Connection.Listener

@@ -48,7 +48,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.condition.OS.MAC;
-import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 @ExtendWith(WorkDirExtension.class)
 public class PropertyUserStoreTest
@@ -277,7 +276,6 @@ public class PropertyUserStoreTest
     }
 
     @Test
-    @DisabledOnOs({MAC, WINDOWS}) // File is locked on OS, cannot change.
     public void testPropertyUserStoreLoadRemoveUser() throws Exception
     {
         testdir.ensureEmpty();

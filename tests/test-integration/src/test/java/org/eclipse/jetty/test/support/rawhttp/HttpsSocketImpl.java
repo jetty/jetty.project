@@ -18,9 +18,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
-import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
@@ -40,21 +38,8 @@ public class HttpsSocketImpl implements HttpSocket
 
     public HttpsSocketImpl() throws Exception
     {
-        @SuppressWarnings("unused")
-        HostnameVerifier hostnameVerifier = new HostnameVerifier()
-        {
-            @Override
-            public boolean verify(String urlHostName, SSLSession session)
-            {
-                LOG.warn("Warning: URL Host: " + urlHostName + " vs." + session.getPeerHost());
-                return true;
-            }
-        };
-
-        // Install the all-trusting trust manager
         try
         {
-            // TODO real trust manager
             this.sslContext = SSLContext.getInstance("TLS");
             sslContext.init(null, SslContextFactory.TRUST_ALL_CERTS, new java.security.SecureRandom());
         }
@@ -70,7 +55,6 @@ public class HttpsSocketImpl implements HttpSocket
     public Socket connect(InetAddress host, int port) throws IOException
     {
         SSLSocket sslsock = (SSLSocket)sslfactory.createSocket();
-        sslsock.setEnabledProtocols(new String[]{"TLSv1"});
         SocketAddress address = new InetSocketAddress(host, port);
         sslsock.connect(address);
         return sslsock;

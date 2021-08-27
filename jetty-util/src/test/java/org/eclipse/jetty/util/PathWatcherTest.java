@@ -362,7 +362,7 @@ public class PathWatcherTest
             capture.finishedLatch.await(LONG_TIME, TimeUnit.MILLISECONDS);
             long end = System.nanoTime();
             capture.assertEvents(expected);
-            assertThat(end - start, greaterThan(TimeUnit.MILLISECONDS.toNanos(2 * QUIET_TIME)));
+            assertThat(end - start, greaterThan(TimeUnit.MILLISECONDS.toNanos(2L * QUIET_TIME)));
             Thread.sleep(WAIT_TIME);
             capture.assertEvents(expected);
 

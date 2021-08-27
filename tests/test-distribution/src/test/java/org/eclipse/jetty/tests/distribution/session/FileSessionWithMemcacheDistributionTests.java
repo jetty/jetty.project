@@ -43,6 +43,7 @@ public class FileSessionWithMemcacheDistributionTests extends AbstractSessionDis
     {
         memcached =
                 new GenericContainer("memcached:" + System.getProperty("memcached.docker.version", "1.6.6"))
+                        .withExposedPorts(11211)
                         .withLogConsumer(new Slf4jLogConsumer(MEMCACHED_LOG));
         memcached.start();
         this.host = memcached.getContainerIpAddress();

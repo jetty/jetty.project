@@ -29,9 +29,12 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@DisabledOnOs(value = OS.WINDOWS, disabledReason = "Unable to create all of the streams")
 public class ConcurrentStreamCreationTest extends AbstractTest
 {
     @Test

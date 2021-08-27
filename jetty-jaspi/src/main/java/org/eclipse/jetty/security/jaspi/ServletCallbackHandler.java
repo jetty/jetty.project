@@ -33,14 +33,13 @@ import org.eclipse.jetty.security.jaspi.callback.CredentialValidationCallback;
 import org.eclipse.jetty.server.UserIdentity;
 
 /**
- * Idiot class required by jaspi stupidity
+ * This {@link CallbackHandler} will bridge {@link Callback}s to handle to the given to the Jetty {@link LoginService}.
  */
 public class ServletCallbackHandler implements CallbackHandler
 {
     private final LoginService _loginService;
-
-    private final ThreadLocal<CallerPrincipalCallback> _callerPrincipals = new ThreadLocal<CallerPrincipalCallback>();
-    private final ThreadLocal<GroupPrincipalCallback> _groupPrincipals = new ThreadLocal<GroupPrincipalCallback>();
+    private final ThreadLocal<CallerPrincipalCallback> _callerPrincipals = new ThreadLocal<>();
+    private final ThreadLocal<GroupPrincipalCallback> _groupPrincipals = new ThreadLocal<>();
 
     public ServletCallbackHandler(LoginService loginService)
     {
@@ -64,6 +63,7 @@ public class ServletCallbackHandler implements CallbackHandler
             else if (callback instanceof PasswordValidationCallback)
             {
                 PasswordValidationCallback passwordValidationCallback = (PasswordValidationCallback)callback;
+                @SuppressWarnings("unused")
                 Subject subject = passwordValidationCallback.getSubject();
 
                 UserIdentity user = _loginService.login(passwordValidationCallback.getUsername(), passwordValidationCallback.getPassword(), null);
