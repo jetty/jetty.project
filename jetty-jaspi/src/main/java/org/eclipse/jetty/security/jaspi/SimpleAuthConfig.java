@@ -15,11 +15,14 @@ package org.eclipse.jetty.security.jaspi;
 
 import java.util.Map;
 import javax.security.auth.Subject;
-import javax.security.auth.message.AuthException;
 import javax.security.auth.message.MessageInfo;
 import javax.security.auth.message.config.ServerAuthConfig;
 import javax.security.auth.message.config.ServerAuthContext;
 
+/**
+ * @deprecated use {@link org.eclipse.jetty.security.jaspi.provider.JaspiAuthConfigProvider}.
+ */
+@Deprecated
 public class SimpleAuthConfig implements ServerAuthConfig
 {
     public static final String HTTP_SERVLET = "HttpServlet";
@@ -35,7 +38,7 @@ public class SimpleAuthConfig implements ServerAuthConfig
     }
 
     @Override
-    public ServerAuthContext getAuthContext(String authContextID, Subject serviceSubject, Map properties) throws AuthException
+    public ServerAuthContext getAuthContext(String authContextID, Subject serviceSubject, Map properties)
     {
         return _serverAuthContext;
     }

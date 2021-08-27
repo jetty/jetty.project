@@ -511,3 +511,19 @@ Below is an example which, like the one above, sets up a server with a `HashLogi
 ----
 include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/SecuredHelloHandler.java[]
 ----
+
+==== JSR 196: Java Authentication Service Provider Interface for Containers (JASPI)
+
+Jetty can utilize portable authentication modules that implements the Jakarta Authentication specification. This requires the jetty-jaspi module.
+
+Only modules conforming to the ServerAuthModule interface in the https://www.jcp.org/en/jsr/detail?id=196[JASPI Spec] are supported. These modules must be configured before start-up.
+
+The following illustrates a jetty module setting up HTTP Basic Authentication using an Authentication module that comes packaged with the jetty-jaspi module: `org.eclipse.jetty.security.jaspi.modules.BasicAuthenticationAuthModule`
+
+[source, xml, subs="{sub-order}"]
+----
+include::{SRCDIR}/jetty-jaspi/src/main/config/etc/jaspi/jaspi-demo.xml[tags=documentation]
+----
+
+Given the portability goal of Jakarta Authentication, custom or 3rd party `ServerAuthModule` implementations may be configured instead here.
+
