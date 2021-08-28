@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.AsyncContext;
@@ -838,9 +839,9 @@ public class HttpOutputTest
     }
 
     @Test
-    public void testEmptyBufferKnown() throws Exception
+    public void testEmptyBufferWithZeroContentLength() throws Exception
     {
-        FuturePromise<Boolean> committed = new FuturePromise<>();
+        CountDownLatch latch = new CountDownLatch(1);
         AbstractHandler handler = new AbstractHandler()
         {
             @Override
@@ -850,7 +851,8 @@ public class HttpOutputTest
                 response.setStatus(200);
                 response.setContentLength(0);
                 ((HttpOutput)response.getOutputStream()).write(ByteBuffer.wrap(new byte[0]));
-                committed.succeeded(response.isCommitted());
+                assertThat(response.isCommitted(), is(true));
+                latch.countDown();
             }
         };
 
@@ -859,7 +861,7 @@ public class HttpOutputTest
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Content-Length: 0"));
-        assertThat(committed.get(10, TimeUnit.SECONDS), is(true));
+        assertThat(latch.await(3, TimeUnit.SECONDS), is(true));
     }
 
     @Test
