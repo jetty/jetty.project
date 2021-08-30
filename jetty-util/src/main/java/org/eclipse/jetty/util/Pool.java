@@ -353,8 +353,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
     }
 
-    protected Entry newEntry()
+    private Entry newEntry()
     {
+        // Do not allow more than 2 implementations of Entry, otherwise call sites in Pool
+        // referencing Entry methods will become mega-morphic and kill the performance.
         if (maxMultiplex >= 0 || maxUsage >= 0)
             return new MultiEntry();
         return new MonoEntry();
