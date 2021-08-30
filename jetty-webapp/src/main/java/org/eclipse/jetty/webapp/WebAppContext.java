@@ -158,7 +158,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public static final String SERVER_SYS_CLASSES = "org.eclipse.jetty.webapp.systemClasses";
     public static final String SERVER_SRV_CLASSES = "org.eclipse.jetty.webapp.serverClasses";
 
-    private static String[] __dftProtectedTargets = {"/web-inf", "/meta-inf"};
+    private static String[] __dftProtectedTargets = {"/WEB-INF", "/META-INF"};
 
     // System classes are classes that cannot be replaced by
     // the web application, and they are *always* loaded via

@@ -13,16 +13,16 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
@@ -40,30 +40,19 @@ import org.slf4j.LoggerFactory;
 public class AllowedResourceAliasChecker extends AbstractLifeCycle implements ContextHandler.AliasCheck
 {
     private static final Logger LOG = LoggerFactory.getLogger(AllowedResourceAliasChecker.class);
-    private static final LinkOption[] FOLLOW_LINKS = new LinkOption[0];
-    private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
+    protected static final LinkOption[] FOLLOW_LINKS = new LinkOption[0];
+    protected static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
 
     private final ContextHandler _contextHandler;
-    private final boolean _checkSymlinkTargets;
-    private final HashSet<Path> _protectedPaths = new HashSet<>();
-    private Path _basePath;
+    private final List<Path> _protected = new ArrayList<>();
+    protected Path _base;
 
     /**
      * @param contextHandler the context handler to use.
      */
     public AllowedResourceAliasChecker(ContextHandler contextHandler)
     {
-        this(contextHandler, false);
-    }
-
-    /**
-     * @param contextHandler the context handler to use.
-     * @param checkSymlinkTargets true to check that the target of the symlink is an allowed resource.
-     */
-    public AllowedResourceAliasChecker(ContextHandler contextHandler, boolean checkSymlinkTargets)
-    {
         _contextHandler = contextHandler;
-        _checkSymlinkTargets = checkSymlinkTargets;
     }
 
     protected ContextHandler getContextHandler()
@@ -71,34 +60,28 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
         return _contextHandler;
     }
 
-    protected Path getBasePath()
-    {
-        return _basePath;
-    }
-
     @Override
     protected void doStart() throws Exception
     {
-        _basePath = getPath(_contextHandler.getBaseResource());
-        if (_basePath == null)
-            _basePath = Paths.get("/").toAbsolutePath();
+        _base = getPath(_contextHandler.getBaseResource());
+        if (_base == null)
+            _base = Paths.get("/").toAbsolutePath();
+        if (Files.exists(_base, NO_FOLLOW_LINKS))
+            _base = _base.toRealPath(FOLLOW_LINKS);
 
         String[] protectedTargets = _contextHandler.getProtectedTargets();
         if (protectedTargets != null)
         {
             for (String s : protectedTargets)
-            {
-                Path path = _basePath.getFileSystem().getPath(_basePath.toString(), s);
-                _protectedPaths.add(path);
-            }
+                _protected.add(_base.getFileSystem().getPath(_base.toString(), s));
         }
     }
 
     @Override
     protected void doStop() throws Exception
     {
-        _basePath = null;
-        _protectedPaths.clear();
+        _base = null;
+        _protected.clear();
     }
 
     @Override
@@ -108,104 +91,48 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
         if (!resource.exists())
             return false;
 
-        Path resourcePath = getPath(resource);
-        if (resourcePath == null)
+        Path path = getPath(resource);
+        if (path == null)
             return false;
 
         try
         {
-            if (isProtectedPath(resourcePath, NO_FOLLOW_LINKS))
-                return false;
+            Path link = path.toRealPath(NO_FOLLOW_LINKS);
+            Path real = path.toRealPath(FOLLOW_LINKS);
 
-            if (_checkSymlinkTargets && hasSymbolicLink(resourcePath))
-            {
-                if (isProtectedPath(resourcePath, FOLLOW_LINKS))
-                    return false;
-            }
+            return isAllowed(real) && (link.equals(real) || isAllowed(link));
         }
         catch (Throwable t)
         {
             LOG.warn("Failed to check alias", t);
             return false;
         }
-
-        return true;
     }
 
-    /**
-     * <p>Determines whether the provided resource path is protected.</p>
-     *
-     * <p>The resource path is protected if it is under one of the protected targets defined by
-     * {@link ContextHandler#isProtectedTarget(String)} in which case the alias should not be allowed.
-     * The resource path may also attempt to traverse above the root path and should be denied.</p>
-     *
-     * @param resourcePath the resource {@link Path} to be tested.
-     * @param linkOptions an array of {@link LinkOption} to be provided to the {@link Path#toRealPath(LinkOption...)} method.
-     * @return true if the resource path is protected and the alias should not be allowed.
-     * @throws IOException if an I/O error occurs.
-     */
-    protected boolean isProtectedPath(Path resourcePath, LinkOption[] linkOptions) throws IOException
+    protected boolean isAllowed(Path path) throws IOException
     {
         // If the resource doesn't exist we cannot determine whether it is protected so we assume it is.
-        if (!Files.exists(resourcePath, linkOptions))
-            return true;
-
-        Path basePath = _basePath.toRealPath(linkOptions);
-        Path targetPath = resourcePath.toRealPath(linkOptions);
-        String target = targetPath.toString();
-
-        // The target path must be under the base resource directory.
-        if (!targetPath.startsWith(basePath))
-            return true;
-
-        for (Path protectedPath : _protectedPaths)
+        if (Files.exists(path))
         {
-            String protect;
-            if (Files.exists(protectedPath, linkOptions))
-                protect = protectedPath.toRealPath(linkOptions).toString();
-            else if (linkOptions == NO_FOLLOW_LINKS)
-                protect = protectedPath.normalize().toAbsolutePath().toString();
-            else
-                protect = protectedPath.toFile().getCanonicalPath();
-
-            // If the target path is protected then we will not allow it.
-            if (StringUtil.startsWithIgnoreCase(target, protect))
+            while (path != null)
             {
-                if (target.length() == protect.length())
+                if (Files.isSameFile(path, _base))
                     return true;
 
-                // Check that the target prefix really is a path segment.
-                if (target.charAt(protect.length()) == File.separatorChar)
-                    return true;
+                for (Path protectedPath : _protected)
+                {
+                    if (Files.exists(protectedPath, FOLLOW_LINKS) && Files.isSameFile(path, protectedPath))
+                        return false;
+                }
+
+                path = path.getParent();
             }
         }
 
         return false;
     }
 
-    protected boolean hasSymbolicLink(Path path)
-    {
-        return hasSymbolicLink(path.getRoot(), path);
-    }
-
-    protected boolean hasSymbolicLink(Path base, Path path)
-    {
-        Path p = path;
-        while (!base.equals(p))
-        {
-            if (p == null)
-                throw new IllegalArgumentException("path was not child of base");
-
-            if (Files.isSymbolicLink(p))
-                return true;
-
-            p = p.getParent();
-        }
-
-        return false;
-    }
-
-    private Path getPath(Resource resource)
+    protected Path getPath(Resource resource)
     {
         try
         {
@@ -223,6 +150,10 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
     @Override
     public String toString()
     {
-        return String.format("%s@%x{checkSymlinkTargets=%s}", AllowedResourceAliasChecker.class.getSimpleName(), hashCode(), _checkSymlinkTargets);
+        return String.format("%s@%x{base=%s,protected=%s}",
+            AllowedResourceAliasChecker.class.getSimpleName(),
+            hashCode(),
+            _base,
+            Arrays.asList(_contextHandler.getProtectedTargets()));
     }
 }
