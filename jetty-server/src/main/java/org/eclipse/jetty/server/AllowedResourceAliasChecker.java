@@ -21,6 +21,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -100,6 +102,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
             Path link = path.toRealPath(NO_FOLLOW_LINKS);
             Path real = path.toRealPath(FOLLOW_LINKS);
 
+            // Allowed IFF the real file is allowed and either it is not linked or the link file itself is also allowed.
             return isAllowed(real) && (link.equals(real) || isAllowed(link));
         }
         catch (Throwable t)
@@ -114,19 +117,22 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
         // If the resource doesn't exist we cannot determine whether it is protected so we assume it is.
         if (Files.exists(path))
         {
+            // resolve the protected paths now, as they may have changed since start
+            List<Path> protect = _protected.stream()
+                .map(AllowedResourceAliasChecker::getRealPath)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+            // Walk the path parent links looking for the base resource, but failing if any steps are protected
             while (path != null)
             {
                 if (Files.isSameFile(path, _base))
                     return true;
 
-                for (Path protectedPath : _protected)
+                for (Path p : protect)
                 {
-                    if (Files.exists(protectedPath))
-                    {
-                        protectedPath = protectedPath.toRealPath(FOLLOW_LINKS);
-                        if (Files.exists(protectedPath) && Files.isSameFile(path, protectedPath))
-                            return false;
-                    }
+                    if (Files.isSameFile(path, p))
+                        return false;
                 }
 
                 path = path.getParent();
@@ -134,6 +140,24 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
         }
 
         return false;
+    }
+
+    private static Path getRealPath(Path path)
+    {
+        if (path == null || !Files.exists(path))
+            return null;
+        try
+        {
+            path = path.toRealPath(FOLLOW_LINKS);
+            if (Files.exists(path))
+                return path;
+        }
+        catch (IOException e)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("No real path for {}", path, e);
+        }
+        return null;
     }
 
     protected Path getPath(Resource resource)
