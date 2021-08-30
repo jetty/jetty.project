@@ -25,6 +25,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
@@ -46,7 +47,7 @@ import org.eclipse.jetty.util.thread.Sweeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.Sweepable
+public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.Sweepable, ConnectionPool.Multiplexable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnection.class);
 
@@ -76,6 +77,12 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     public void setRecycleHttpChannels(boolean recycleHttpChannels)
     {
         this.recycleHttpChannels = recycleHttpChannels;
+    }
+
+    @Override
+    public int getMaxMultiplex()
+    {
+        return ((HTTP2Session)session).getMaxLocalStreams();
     }
 
     @Override

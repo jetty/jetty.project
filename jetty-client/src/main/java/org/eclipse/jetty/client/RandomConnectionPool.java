@@ -26,6 +26,6 @@ public class RandomConnectionPool extends MultiplexConnectionPool
 {
     public RandomConnectionPool(HttpDestination destination, int maxConnections, Callback requester, int maxMultiplex)
     {
-        super(destination, new Pool<>(Pool.StrategyType.RANDOM, maxConnections, false), requester, maxMultiplex);
+        super(destination, Pool.StrategyType.RANDOM, maxConnections, false, requester, maxMultiplex);
     }
 }

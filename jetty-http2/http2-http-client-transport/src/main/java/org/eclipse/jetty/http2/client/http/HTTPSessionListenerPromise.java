@@ -65,14 +65,6 @@ class HTTPSessionListenerPromise extends Session.Listener.Adapter implements Pro
     @Override
     public void onSettings(Session session, SettingsFrame frame)
     {
-        Map<Integer, Integer> settings = frame.getSettings();
-        if (settings.containsKey(SettingsFrame.MAX_CONCURRENT_STREAMS))
-        {
-            HttpDestination destination = destination();
-            if (destination instanceof HttpDestination.Multiplexed)
-                ((HttpDestination.Multiplexed)destination).setMaxRequestsPerConnection(settings.get(SettingsFrame.MAX_CONCURRENT_STREAMS));
-        }
-        // The first SETTINGS frame is the server preface reply.
         if (!connection.isMarked())
             onServerPreface(session);
     }
