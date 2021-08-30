@@ -85,9 +85,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
             {
                 ByteBufferPool bufferPool = session.getByteBufferPool();
                 ByteBuffer buffer = bufferPool.acquire(out.getLength(), false);
-                BufferUtil.clearToFill(buffer);
                 out.writeTo(buffer);
-                BufferUtil.flipToFlush(buffer, 0);
 
                 try
                 {

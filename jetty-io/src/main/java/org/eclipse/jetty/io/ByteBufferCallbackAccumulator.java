@@ -66,21 +66,23 @@ public class ByteBufferCallbackAccumulator
 
         byte[] bytes = new byte[length];
         ByteBuffer buffer = BufferUtil.toBuffer(bytes);
-        BufferUtil.clearToFill(buffer);
+        BufferUtil.clear(buffer);
         writeTo(buffer);
         return bytes;
     }
 
     public void writeTo(ByteBuffer buffer)
     {
-        if (buffer.remaining() < _length)
+        if (BufferUtil.space(buffer) < _length)
             throw new IllegalArgumentException("not enough buffer space remaining");
 
+        int pos = BufferUtil.flipToFill(buffer);
         for (Entry entry : _entries)
         {
             buffer.put(entry.buffer);
             entry.callback.succeeded();
         }
+        BufferUtil.flipToFlush(buffer, pos);
         _entries.clear();
         _length = 0;
     }
