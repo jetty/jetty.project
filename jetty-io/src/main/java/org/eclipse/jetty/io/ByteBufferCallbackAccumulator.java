@@ -73,7 +73,7 @@ public class ByteBufferCallbackAccumulator
 
     public void writeTo(ByteBuffer buffer)
     {
-        if (BufferUtil.space(buffer) < _length)
+        if (buffer.remaining() < _length)
             throw new IllegalArgumentException("not enough buffer space remaining");
 
         for (Entry entry : _entries)
