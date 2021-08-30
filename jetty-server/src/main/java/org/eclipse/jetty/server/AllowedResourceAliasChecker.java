@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -22,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -33,9 +33,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>This will approve any alias to anything inside of the {@link ContextHandler}s resource base which
- * is not protected by {@link ContextHandler#isProtectedTarget(String)}.</p>
- * <p>This will approve symlinks to outside of the resource base. This can be optionally configured to check that the
- * target of the symlinks is also inside of the resource base and is not a protected target.</p>
+ * is not protected by a protected target as defined by {@link ContextHandler#getProtectedTargets()} at start.</p>
  * <p>Aliases approved by this may still be able to bypass SecurityConstraints, so this class would need to be extended
  * to enforce any additional security constraints that are required.</p>
  */
@@ -89,56 +87,81 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
     @Override
     public boolean check(String pathInContext, Resource resource)
     {
-        // The existence check resolves the symlinks.
-        if (!resource.exists())
-            return false;
-
-        Path path = getPath(resource);
-        if (path == null)
-            return false;
-
         try
         {
-            Path link = path.toRealPath(NO_FOLLOW_LINKS);
-            Path real = path.toRealPath(FOLLOW_LINKS);
+            // do not allow any file separation characters in the URI
+            if (File.separatorChar != '/' && pathInContext.indexOf(File.separatorChar) >= 0)
+                return false;
 
-            // Allowed IFF the real file is allowed and either it is not linked or the link file itself is also allowed.
-            return isAllowed(real) && (link.equals(real) || isAllowed(link));
+            // The existence check resolves the symlinks.
+            if (!resource.exists())
+                return false;
+
+            Path path = getPath(resource);
+            if (path == null)
+                return false;
+
+            return check(pathInContext, path);
         }
         catch (Throwable t)
         {
-            LOG.warn("Failed to check alias", t);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Failed to check alias", t);
             return false;
         }
     }
 
-    protected boolean isAllowed(Path path) throws IOException
+    protected boolean check(String pathInContext, Path path) throws Exception
+    {
+        // Allow any aliases (symlinks, 8.3, casing, etc.) so long as
+        // the resulting real file is allowed.
+        return isAllowed(path.toRealPath(FOLLOW_LINKS));
+    }
+
+    protected boolean isAllowed(Path path)
     {
         // If the resource doesn't exist we cannot determine whether it is protected so we assume it is.
         if (Files.exists(path))
         {
-            // resolve the protected paths now, as they may have changed since start
-            List<Path> protect = _protected.stream()
-                .map(AllowedResourceAliasChecker::getRealPath)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-
             // Walk the path parent links looking for the base resource, but failing if any steps are protected
             while (path != null)
             {
-                if (Files.isSameFile(path, _base))
+                // If the path is the same file as the base, then it is contained in the base and
+                // is not protected.
+                if (isSameFile(path, _base))
                     return true;
 
-                for (Path p : protect)
+                // If the path is the same file as any protected resources, then it is protected.
+                for (Path p : _protected)
                 {
-                    if (Files.isSameFile(path, p))
+                    if (isSameFile(path, p))
                         return false;
                 }
 
+                // Walks up the aliased path name, not the real path name.
+                // If WEB-INF is a link to /var/lib/webmeta then after checking
+                // a URI of /WEB-INF/file.xml the parent is /WEB-INF and not /var/lib/webmeta
                 path = path.getParent();
             }
         }
 
+        return false;
+    }
+
+    protected boolean isSameFile(Path path1, Path path2)
+    {
+        if (Objects.equals(path1, path2))
+            return true;
+        try
+        {
+            if (Files.isSameFile(path1, path2))
+                return true;
+        }
+        catch (Throwable t)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("ignored", t);
+        }
         return false;
     }
 

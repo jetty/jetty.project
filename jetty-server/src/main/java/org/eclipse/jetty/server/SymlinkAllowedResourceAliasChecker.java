@@ -17,12 +17,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An extension of {@link AllowedResourceAliasChecker} which only allows aliased resources if they are symlinks.
+ * An extension of {@link AllowedResourceAliasChecker} which will allow symlinks alias to arbitrary
+ * targets, so long as the symlink file itself is an allowed resource.
  */
 public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChecker
 {
@@ -37,38 +37,39 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
     }
 
     @Override
-    public boolean check(String pathInContext, Resource resource)
+    protected boolean check(String pathInContext, Path path)
     {
-        // The existence check resolves the symlinks.
-        if (!resource.exists())
-            return false;
-
-        Path path = getPath(resource);
-        if (path == null)
-            return false;
-
-        String[] segments = pathInContext.split("/");
+        // Split the URI path so we can walk down the resource tree and build the realURI of any symlink found
+        String[] segments = pathInContext.substring(1).split("/");
         Path fromBase = _base;
+        StringBuilder realURI = new StringBuilder();
 
         try
         {
             for (String segment : segments)
             {
+                // Add the segment to the path and realURI.
                 fromBase = fromBase.resolve(segment);
-                if (!Files.exists(fromBase))
-                    return false;
+                realURI.append("/").append(fromBase.toRealPath(NO_FOLLOW_LINKS).getFileName());
+
+                // If the ancestor of the alias is a symlink, then check if the real URI is protected, otherwise allow.
+                // This will allow a symlink like /other->/WEB-INF, but not /WeB-InF->/var/lib/other
                 if (Files.isSymbolicLink(fromBase))
-                    return true;
+                    return !getContextHandler().isProtectedTarget(realURI.toString());
+
+                // If the ancestor is not allowed then do not allow.
                 if (!isAllowed(fromBase))
                     return false;
             }
         }
         catch (Throwable t)
         {
-            LOG.warn("Failed to check alias", t);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Failed to check alias", t);
             return false;
         }
-        
-        return true;
+
+        // No symlink found, so must be allowed. Double check it is the right path we checked.
+        return isSameFile(fromBase, path);
     }
 }
