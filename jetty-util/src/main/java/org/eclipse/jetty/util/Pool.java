@@ -559,7 +559,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
     @Override
     public String toString()
     {
-        return String.format("%s@%x[inUse=%d,size=%d,capacity=%d,closed=%b]",
+        return String.format("%s@%x[inUse=%d,size=%d,max=%d,closed=%b]",
             getClass().getSimpleName(),
             hashCode(),
             getInUseCount(),
