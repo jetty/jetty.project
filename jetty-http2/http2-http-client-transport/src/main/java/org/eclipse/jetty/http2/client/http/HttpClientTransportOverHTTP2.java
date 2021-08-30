@@ -60,7 +60,9 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         setConnectionPoolFactory(destination ->
         {
             HttpClient httpClient = getHttpClient();
-            return new MultiplexConnectionPool(destination, httpClient.getMaxConnectionsPerDestination(), destination, httpClient.getMaxRequestsQueuedPerDestination());
+            // Start with the minimum maxMultiplex; the SETTINGS frame from the
+            // server preface will override this value before any request is sent.
+            return new MultiplexConnectionPool(destination, httpClient.getMaxConnectionsPerDestination(), destination, 1);
         });
     }
 
@@ -211,9 +213,6 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         @Override
         public void onSettings(Session session, SettingsFrame frame)
         {
-            Map<Integer, Integer> settings = frame.getSettings();
-            if (settings.containsKey(SettingsFrame.MAX_CONCURRENT_STREAMS))
-                destination().setMaxRequestsPerConnection(settings.get(SettingsFrame.MAX_CONCURRENT_STREAMS));
             if (!connection.isMarked())
                 onServerPreface(session);
         }

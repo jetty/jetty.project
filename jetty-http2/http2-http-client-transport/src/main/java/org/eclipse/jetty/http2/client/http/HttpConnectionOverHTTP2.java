@@ -28,6 +28,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
@@ -36,13 +37,14 @@ import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.SendFailure;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Sweeper;
 
-public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.Sweepable
+public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.Sweepable, ConnectionPool.Multiplexable
 {
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
 
@@ -72,6 +74,12 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     public void setRecycleHttpChannels(boolean recycleHttpChannels)
     {
         this.recycleHttpChannels = recycleHttpChannels;
+    }
+
+    @Override
+    public int getMaxMultiplex()
+    {
+        return ((HTTP2Session)session).getMaxLocalStreams();
     }
 
     @Override
