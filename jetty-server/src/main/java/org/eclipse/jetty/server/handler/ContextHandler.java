@@ -1920,14 +1920,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /**
      * Attempt to get a Resource from the Context.
      *
-     * @param path the path within the resource to attempt to get
+     * @param pathInContext the path within the base resource to attempt to get
      * @return the resource, or null if not available.
      * @throws MalformedURLException if unable to form a Resource from the provided path
      */
-    public Resource getResource(String path) throws MalformedURLException
+    public Resource getResource(String pathInContext) throws MalformedURLException
     {
-        if (path == null || !path.startsWith(URIUtil.SLASH))
-            throw new MalformedURLException(path);
+        if (pathInContext == null || !pathInContext.startsWith(URIUtil.SLASH))
+            throw new MalformedURLException(pathInContext);
 
         if (_baseResource == null)
             return null;
@@ -1937,9 +1937,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             // addPath with accept non-canonical paths that don't go above the root,
             // but will treat them as aliases. So unless allowed by an AliasChecker
             // they will be rejected below.
-            Resource resource = _baseResource.addPath(path);
+            Resource resource = _baseResource.addPath(pathInContext);
 
-            if (checkAlias(path, resource))
+            if (checkAlias(pathInContext, resource))
                 return resource;
             return null;
         }
@@ -3027,11 +3027,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         /**
          * Check an alias
          *
-         * @param path The path the aliased resource was created for
+         * @param pathInContext The path the aliased resource was created for
          * @param resource The aliased resourced
          * @return True if the resource is OK to be served.
          */
-        boolean check(String path, Resource resource);
+        boolean check(String pathInContext, Resource resource);
     }
 
     /**
@@ -3042,7 +3042,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public static class ApproveAliases implements AliasCheck
     {
         @Override
-        public boolean check(String path, Resource resource)
+        public boolean check(String pathInContext, Resource resource)
         {
             return true;
         }
@@ -3055,7 +3055,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public static class ApproveNonExistentDirectoryAliases implements AliasCheck
     {
         @Override
-        public boolean check(String path, Resource resource)
+        public boolean check(String pathInContext, Resource resource)
         {
             if (resource.exists())
                 return false;

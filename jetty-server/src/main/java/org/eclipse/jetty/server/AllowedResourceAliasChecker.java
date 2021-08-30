@@ -85,7 +85,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
     }
 
     @Override
-    public boolean check(String uri, Resource resource)
+    public boolean check(String pathInContext, Resource resource)
     {
         // The existence check resolves the symlinks.
         if (!resource.exists())
@@ -121,8 +121,12 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
 
                 for (Path protectedPath : _protected)
                 {
-                    if (Files.exists(protectedPath, FOLLOW_LINKS) && Files.isSameFile(path, protectedPath))
-                        return false;
+                    if (Files.exists(protectedPath))
+                    {
+                        protectedPath = protectedPath.toRealPath(FOLLOW_LINKS);
+                        if (Files.exists(protectedPath) && Files.isSameFile(path, protectedPath))
+                            return false;
+                    }
                 }
 
                 path = path.getParent();
@@ -151,7 +155,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
     public String toString()
     {
         return String.format("%s@%x{base=%s,protected=%s}",
-            AllowedResourceAliasChecker.class.getSimpleName(),
+            this.getClass().getSimpleName(),
             hashCode(),
             _base,
             Arrays.asList(_contextHandler.getProtectedTargets()));

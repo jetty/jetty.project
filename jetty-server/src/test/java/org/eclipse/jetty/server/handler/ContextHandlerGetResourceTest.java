@@ -114,12 +114,12 @@ public class ContextHandlerGetResourceTest
             }
 
             @Override
-            public boolean check(String path, Resource resource)
+            public boolean check(String pathInContext, Resource resource)
             {
                 if (allowAliases.get())
                     return true;
                 if (allowSymlinks.get())
-                    return symlinkcheck.check(path, resource);
+                    return symlinkcheck.check(pathInContext, resource);
                 return allowAliases.get();
             }
         });

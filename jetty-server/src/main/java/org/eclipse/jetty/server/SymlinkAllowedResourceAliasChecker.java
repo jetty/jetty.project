@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -36,7 +37,7 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
     }
 
     @Override
-    public boolean check(String uri, Resource resource)
+    public boolean check(String pathInContext, Resource resource)
     {
         // The existence check resolves the symlinks.
         if (!resource.exists())
@@ -46,15 +47,28 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
         if (path == null)
             return false;
 
+        String[] segments = pathInContext.split("/");
+        Path fromBase = _base;
+
         try
         {
-            Path link = path.toRealPath(NO_FOLLOW_LINKS);
-            return path.equals(link) ? isAllowed(path) : isAllowed(link);
+            for (String segment : segments)
+            {
+                fromBase = fromBase.resolve(segment);
+                if (!Files.exists(fromBase))
+                    return false;
+                if (Files.isSymbolicLink(fromBase))
+                    return true;
+                if (!isAllowed(fromBase))
+                    return false;
+            }
         }
         catch (Throwable t)
         {
             LOG.warn("Failed to check alias", t);
             return false;
         }
+        
+        return true;
     }
 }
