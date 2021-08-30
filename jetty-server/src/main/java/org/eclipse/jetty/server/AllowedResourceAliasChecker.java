@@ -111,17 +111,17 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
         }
     }
 
-    protected boolean check(String pathInContext, Path path) throws Exception
+    protected boolean check(String pathInContext, Path path)
     {
         // Allow any aliases (symlinks, 8.3, casing, etc.) so long as
         // the resulting real file is allowed.
-        return isAllowed(path.toRealPath(FOLLOW_LINKS));
+        return isAllowed(getRealPath(path));
     }
 
     protected boolean isAllowed(Path path)
     {
         // If the resource doesn't exist we cannot determine whether it is protected so we assume it is.
-        if (Files.exists(path))
+        if (path != null && Files.exists(path))
         {
             // Walk the path parent links looking for the base resource, but failing if any steps are protected
             while (path != null)
