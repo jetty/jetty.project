@@ -135,21 +135,31 @@ public abstract class DispatchedMessageSink extends AbstractMessageSink
             });
         }
 
-        Callback frameCallback = callback;
+        Callback frameCallback;
         if (frame.isFin())
         {
             // This is the final frame we should wait for the frame callback and the dispatched thread.
-            Callback.Completable completableCallback = new Callback.Completable();
-            frameCallback = completableCallback;
-            CompletableFuture.allOf(dispatchComplete, completableCallback).whenComplete((aVoid, throwable) ->
+            Callback.Completable finComplete = Callback.Completable.from(callback);
+            frameCallback = finComplete;
+            CompletableFuture.allOf(dispatchComplete, finComplete).whenComplete((aVoid, throwable) ->
             {
                 typeSink = null;
                 dispatchComplete = null;
-                if (throwable != null)
-                    callback.failed(throwable);
-                else
-                    callback.succeeded();
+                if (throwable == null)
+                    session.demand(1);
             });
+        }
+        else
+        {
+            frameCallback = new Callback.Nested(callback)
+            {
+                @Override
+                public void succeeded()
+                {
+                    super.succeeded();
+                    session.demand(1);
+                }
+            };
         }
 
         typeSink.accept(frame, frameCallback);

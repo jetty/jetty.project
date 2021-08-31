@@ -82,6 +82,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private WebSocketSession session;
     private SuspendState state = SuspendState.DEMANDING;
     private Runnable delayedOnFrame;
+    private CoreSession coreSession;
 
     public JettyWebSocketFrameHandler(WebSocketContainer container,
                                       Object endpointInstance,
@@ -150,6 +151,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         try
         {
             customizer.customize(coreSession);
+            this.coreSession = coreSession;
             session = new WebSocketSession(container, coreSession, this);
             if (!session.isOpen())
                 throw new IllegalStateException("Session is not open");
@@ -223,43 +225,25 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             }
         }
 
-        // Demand after succeeding any received frame
-        Callback demandingCallback = Callback.from(() ->
-            {
-                try
-                {
-                    demand();
-                }
-                catch (Throwable t)
-                {
-                    callback.failed(t);
-                    return;
-                }
-
-                callback.succeeded();
-            },
-            callback::failed
-        );
-
         switch (frame.getOpCode())
         {
             case OpCode.CLOSE:
                 onCloseFrame(frame, callback);
                 break;
             case OpCode.PING:
-                onPingFrame(frame, demandingCallback);
+                onPingFrame(frame, callback);
                 break;
             case OpCode.PONG:
-                onPongFrame(frame, demandingCallback);
+                onPongFrame(frame, callback);
                 break;
             case OpCode.TEXT:
-                onTextFrame(frame, demandingCallback);
+                onTextFrame(frame, callback);
                 break;
             case OpCode.BINARY:
-                onBinaryFrame(frame, demandingCallback);
+                onBinaryFrame(frame, callback);
                 break;
             case OpCode.CONTINUATION:
-                onContinuationFrame(frame, demandingCallback);
+                onContinuationFrame(frame, callback);
                 break;
             default:
                 callback.failed(new IllegalStateException());
@@ -342,6 +326,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         if (activeMessageSink == null)
         {
             callback.succeeded();
+            demand();
             return;
         }
 
@@ -387,7 +372,9 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             ByteBuffer payload = BufferUtil.copy(frame.getPayload());
             getSession().getRemote().sendPong(payload, WriteCallback.NOOP);
         }
+
         callback.succeeded();
+        demand();
     }
 
     private void onPongFrame(Frame frame, Callback callback)
@@ -407,7 +394,9 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                 throw new WebSocketException(endpointInstance.getClass().getSimpleName() + " PONG method error: " + cause.getMessage(), cause);
             }
         }
+
         callback.succeeded();
+        demand();
     }
 
     private void onTextFrame(Frame frame, Callback callback)

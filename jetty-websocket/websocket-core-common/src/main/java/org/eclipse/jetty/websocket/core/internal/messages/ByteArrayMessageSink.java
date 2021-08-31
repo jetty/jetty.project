@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.websocket.core.internal.messages;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.ByteBufferCallbackAccumulator;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -29,9 +28,7 @@ import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 public class ByteArrayMessageSink extends AbstractMessageSink
 {
     private static final byte[] EMPTY_BUFFER = new byte[0];
-    private static final int BUFFER_SIZE = 65535;
-    private ByteArrayOutputStream out;
-    private int size;
+    private ByteBufferCallbackAccumulator out;
 
     public ByteArrayMessageSink(CoreSession session, MethodHandle methodHandle)
     {
@@ -51,12 +48,12 @@ public class ByteArrayMessageSink extends AbstractMessageSink
     {
         try
         {
-            size += frame.getPayloadLength();
+            long size = (out == null ? 0 : out.getLength()) + frame.getPayloadLength();
             long maxBinaryMessageSize = session.getMaxBinaryMessageSize();
             if (maxBinaryMessageSize > 0 && size > maxBinaryMessageSize)
             {
-                throw new MessageTooLargeException(String.format("Binary message too large: (actual) %,d > (configured max binary message size) %,d",
-                    size, maxBinaryMessageSize));
+                throw new MessageTooLargeException(
+                    String.format("Binary message too large: (actual) %,d > (configured max binary message size) %,d", size, maxBinaryMessageSize));
             }
 
             // If we are fin and no OutputStream has been created we don't need to aggregate.
@@ -71,19 +68,33 @@ public class ByteArrayMessageSink extends AbstractMessageSink
                     methodHandle.invoke(EMPTY_BUFFER, 0, 0);
 
                 callback.succeeded();
+                session.demand(1);
                 return;
             }
 
-            aggregatePayload(frame);
+            // Aggregate the frame payload.
+            if (frame.hasPayload())
+            {
+                ByteBuffer payload = frame.getPayload();
+                if (out == null)
+                    out = new ByteBufferCallbackAccumulator();
+                out.addEntry(payload, callback);
+            }
+
+            // If the methodHandle throws we don't want to fail callback twice.
+            callback = Callback.NOOP;
             if (frame.isFin())
             {
-                byte[] buf = out.toByteArray();
+                byte[] buf = out.takeByteArray();
                 methodHandle.invoke(buf, 0, buf.length);
             }
-            callback.succeeded();
+
+            session.demand(1);
         }
         catch (Throwable t)
         {
+            if (out != null)
+                out.fail(t);
             callback.failed(t);
         }
         finally
@@ -92,19 +103,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             {
                 // reset
                 out = null;
-                size = 0;
             }
-        }
-    }
-
-    private void aggregatePayload(Frame frame) throws IOException
-    {
-        if (frame.hasPayload())
-        {
-            ByteBuffer payload = frame.getPayload();
-            if (out == null)
-                out = new ByteArrayOutputStream(BUFFER_SIZE);
-            BufferUtil.writeTo(payload, out);
         }
     }
 }

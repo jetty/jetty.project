@@ -45,11 +45,11 @@ public class ReaderMessageSinkTest extends AbstractMessageSinkTest
 
         FutureCallback finCallback = new FutureCallback();
         sink.accept(new Frame(OpCode.TEXT).setPayload("Hello World"), finCallback);
+        coreSession.waitForDemand(1, TimeUnit.SECONDS);
 
-        finCallback.get(1, TimeUnit.SECONDS); // wait for callback
         StringWriter writer = copyFuture.get(1, TimeUnit.SECONDS);
-        assertThat("FinCallback.done", finCallback.isDone(), is(true));
         assertThat("Writer.contents", writer.getBuffer().toString(), is("Hello World"));
+        assertThat("FinCallback.done", finCallback.isDone(), is(true));
     }
 
     @Test
@@ -65,15 +65,17 @@ public class ReaderMessageSinkTest extends AbstractMessageSinkTest
         FutureCallback finCallback = new FutureCallback();
 
         sink.accept(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), callback1);
+        coreSession.waitForDemand(1, TimeUnit.SECONDS);
         sink.accept(new Frame(OpCode.CONTINUATION).setPayload(", ").setFin(false), callback2);
+        coreSession.waitForDemand(1, TimeUnit.SECONDS);
         sink.accept(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true), finCallback);
+        coreSession.waitForDemand(1, TimeUnit.SECONDS);
 
-        finCallback.get(1, TimeUnit.SECONDS); // wait for fin callback
         StringWriter writer = copyFuture.get(1, TimeUnit.SECONDS);
+        assertThat("Writer contents", writer.getBuffer().toString(), is("Hello, World"));
         assertThat("Callback1.done", callback1.isDone(), is(true));
         assertThat("Callback2.done", callback2.isDone(), is(true));
         assertThat("finCallback.done", finCallback.isDone(), is(true));
-        assertThat("Writer contents", writer.getBuffer().toString(), is("Hello, World"));
     }
 
     public static class ReaderCopy implements Consumer<Reader>

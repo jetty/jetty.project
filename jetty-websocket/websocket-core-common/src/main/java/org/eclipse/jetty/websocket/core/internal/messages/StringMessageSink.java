@@ -53,6 +53,7 @@ public class StringMessageSink extends AbstractMessageSink
                 methodHandle.invoke(out.toString());
 
             callback.succeeded();
+            session.demand(1);
         }
         catch (Throwable t)
         {

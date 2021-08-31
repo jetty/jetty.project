@@ -111,6 +111,11 @@ public interface CoreSession extends OutgoingFrames, Configuration
     SocketAddress getRemoteAddress();
 
     /**
+     * @return True if the websocket is open inbound
+     */
+    boolean isInputOpen();
+
+    /**
      * @return True if the websocket is open outbound
      */
     boolean isOutputOpen();
@@ -251,6 +256,12 @@ public interface CoreSession extends OutgoingFrames, Configuration
         public SocketAddress getRemoteAddress()
         {
             return null;
+        }
+
+        @Override
+        public boolean isInputOpen()
+        {
+            return true;
         }
 
         @Override

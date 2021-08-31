@@ -178,6 +178,7 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
                 container.notifySessionListeners((listener) -> listener.onJakartaWebSocketSessionOpened(session));
 
             callback.succeeded();
+            coreSession.demand(1);
         }
         catch (Throwable cause)
         {
@@ -319,6 +320,12 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
             wsError.addSuppressed(cause);
             callback.failed(wsError);
         }
+    }
+
+    @Override
+    public boolean isDemanding()
+    {
+        return true;
     }
 
     public Set<MessageHandler> getMessageHandlers()
@@ -591,6 +598,7 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         ByteBuffer payload = BufferUtil.copy(frame.getPayload());
         coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(payload), Callback.NOOP, false);
         callback.succeeded();
+        coreSession.demand(1);
     }
 
     public void onPong(Frame frame, Callback callback)
@@ -613,6 +621,7 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
             }
         }
         callback.succeeded();
+        coreSession.demand(1);
     }
 
     public void onText(Frame frame, Callback callback)

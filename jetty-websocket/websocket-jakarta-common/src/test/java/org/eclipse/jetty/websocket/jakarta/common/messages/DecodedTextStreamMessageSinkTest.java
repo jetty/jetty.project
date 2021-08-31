@@ -54,11 +54,11 @@ public class DecodedTextStreamMessageSinkTest extends AbstractMessageSinkTest
 
         FutureCallback finCallback = new FutureCallback();
         sink.accept(new Frame(OpCode.TEXT).setPayload("2018.02.13").setFin(true), finCallback);
+        coreSession.waitForDemand(1, TimeUnit.SECONDS);
 
-        finCallback.get(1, TimeUnit.SECONDS); // wait for callback
         Date decoded = copyFuture.get(1, TimeUnit.SECONDS);
-        assertThat("FinCallback.done", finCallback.isDone(), is(true));
         assertThat("Decoded.contents", format(decoded, "MM-dd-yyyy"), is("02-13-2018"));
+        assertThat("FinCallback.done", finCallback.isDone(), is(true));
     }
 
     @Test
@@ -75,16 +75,17 @@ public class DecodedTextStreamMessageSinkTest extends AbstractMessageSinkTest
         FutureCallback finCallback = new FutureCallback();
 
         sink.accept(new Frame(OpCode.TEXT).setPayload("2023").setFin(false), callback1);
+        coreSession.waitForDemand(1, TimeUnit.SECONDS);
         sink.accept(new Frame(OpCode.CONTINUATION).setPayload(".08").setFin(false), callback2);
+        coreSession.waitForDemand(1, TimeUnit.SECONDS);
         sink.accept(new Frame(OpCode.CONTINUATION).setPayload(".22").setFin(true), finCallback);
+        coreSession.waitForDemand(1, TimeUnit.SECONDS);
 
-        finCallback.get(1, TimeUnit.SECONDS); // wait for callback
         Date decoded = copyFuture.get(1, TimeUnit.SECONDS);
+        assertThat("Decoded.contents", format(decoded, "MM-dd-yyyy"), is("08-22-2023"));
         assertThat("Callback1.done", callback1.isDone(), is(true));
         assertThat("Callback2.done", callback2.isDone(), is(true));
         assertThat("finCallback.done", finCallback.isDone(), is(true));
-
-        assertThat("Decoded.contents", format(decoded, "MM-dd-yyyy"), is("08-22-2023"));
     }
 
     private String format(Date date, String formatPattern)
