@@ -893,8 +893,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         @Override
         protected void onCompleteSuccess()
         {
+            boolean upgrading = _channel.getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE) != null;
             release().succeeded();
-            if (_shutdownOut)
+            // If successfully upgraded it is responsibility of the next protocol to close the connection.
+            if (_shutdownOut && !upgrading)
                 getEndPoint().shutdownOutput();
         }
 
