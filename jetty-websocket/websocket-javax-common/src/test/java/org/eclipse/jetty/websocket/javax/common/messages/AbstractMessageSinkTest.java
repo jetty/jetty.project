@@ -20,15 +20,12 @@ import java.util.function.Consumer;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.Decoder;
 
-import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.javax.common.AbstractSessionTest;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 
 public abstract class AbstractMessageSinkTest extends AbstractSessionTest
 {
-    private final WebSocketComponents _components = new WebSocketComponents();
-
     public List<RegisteredDecoder> toRegisteredDecoderList(Class<? extends Decoder> clazz, Class<?> objectType)
     {
         Class<? extends Decoder> interfaceType;
@@ -43,7 +40,7 @@ public abstract class AbstractMessageSinkTest extends AbstractSessionTest
         else
             throw new IllegalStateException();
 
-        return List.of(new RegisteredDecoder(clazz, interfaceType, objectType, ClientEndpointConfig.Builder.create().build(), _components));
+        return List.of(new RegisteredDecoder(clazz, interfaceType, objectType, ClientEndpointConfig.Builder.create().build(), components));
     }
 
     public <T> MethodHandle getAcceptHandle(Consumer<T> copy, Class<T> type)

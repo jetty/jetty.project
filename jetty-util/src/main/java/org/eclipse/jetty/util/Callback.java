@@ -152,7 +152,7 @@ public interface Callback extends Invocable
     }
 
     /**
-     * Creaste a callback that runs completed when it succeeds or fails
+     * Creates a callback that runs completed when it succeeds or fails
      *
      * @param completed The completion to run on success or failure
      * @return a new callback
@@ -169,7 +169,7 @@ public interface Callback extends Invocable
     }
 
     /**
-     * Create a nested callback that runs completed after
+     * Creates a nested callback that runs completed after
      * completing the nested callback.
      *
      * @param callback The nested callback
@@ -188,7 +188,7 @@ public interface Callback extends Invocable
     }
 
     /**
-     * Create a nested callback that runs completed before
+     * Creates a nested callback that runs completed before
      * completing the nested callback.
      *
      * @param callback The nested callback
@@ -231,7 +231,7 @@ public interface Callback extends Invocable
     }
 
     /**
-     * Create a nested callback which always fails the nested callback on completion.
+     * Creates a nested callback which always fails the nested callback on completion.
      *
      * @param callback The nested callback
      * @param cause The cause to fail the nested callback, if the new callback is failed the reason
@@ -258,7 +258,7 @@ public interface Callback extends Invocable
     }
 
     /**
-     * Create a callback which combines two other callbacks and will succeed or fail them both.
+     * Creates a callback which combines two other callbacks and will succeed or fail them both.
      * @param callback1 The first callback
      * @param callback2 The second callback
      * @return a new callback.
@@ -411,6 +411,32 @@ public interface Callback extends Invocable
      */
     class Completable extends CompletableFuture<Void> implements Callback
     {
+        /**
+         * Creates a completable future given a callback.
+         *
+         * @param callback The nested callback.
+         * @return a new Completable which will succeed this callback when completed.
+         */
+        public static Completable from(Callback callback)
+        {
+            return new Completable(callback.getInvocationType())
+            {
+                @Override
+                public void succeeded()
+                {
+                    callback.succeeded();
+                    super.succeeded();
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    callback.failed(x);
+                    super.failed(x);
+                }
+            };
+        }
+
         private final InvocationType invocation;
 
         public Completable()

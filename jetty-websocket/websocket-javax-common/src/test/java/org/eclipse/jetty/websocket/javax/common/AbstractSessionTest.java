@@ -13,39 +13,35 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.Session;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public abstract class AbstractSessionTest
 {
     protected static JavaxWebSocketSession session;
-    protected static JavaxWebSocketContainer container;
-    protected static WebSocketComponents components;
+    protected static JavaxWebSocketContainer container = new DummyContainer();
+    protected static WebSocketComponents components = new WebSocketComponents();
+    protected static TestCoreSession coreSession = new TestCoreSession();
 
     @BeforeAll
     public static void initSession() throws Exception
     {
-        container = new DummyContainer();
         container.start();
-        components = new WebSocketComponents();
         components.start();
         Object websocketPojo = new DummyEndpoint();
         UpgradeRequest upgradeRequest = new UpgradeRequestAdapter();
         JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(websocketPojo, upgradeRequest);
-        CoreSession coreSession = new CoreSession.Empty()
-        {
-            @Override
-            public WebSocketComponents getWebSocketComponents()
-            {
-                return components;
-            }
-        };
         session = new JavaxWebSocketSession(container, coreSession, frameHandler, container.getFrameHandlerFactory()
             .newDefaultEndpointConfig(websocketPojo.getClass()));
     }
@@ -55,6 +51,34 @@ public abstract class AbstractSessionTest
     {
         components.stop();
         container.stop();
+    }
+
+    public static class TestCoreSession extends CoreSession.Empty
+    {
+        private final Semaphore demand = new Semaphore(0);
+
+        @Override
+        public WebSocketComponents getWebSocketComponents()
+        {
+            return components;
+        }
+
+        @Override
+        public ByteBufferPool getByteBufferPool()
+        {
+            return components.getBufferPool();
+        }
+
+        public void waitForDemand(long timeout, TimeUnit timeUnit) throws InterruptedException
+        {
+            assertTrue(demand.tryAcquire(timeout, timeUnit));
+        }
+
+        @Override
+        public void demand(long n)
+        {
+            demand.release();
+        }
     }
 
     public static class DummyEndpoint extends Endpoint

@@ -51,6 +51,7 @@ public class PartialStringMessageSink extends AbstractMessageSink
             }
 
             callback.succeeded();
+            session.demand(1);
         }
         catch (Throwable t)
         {

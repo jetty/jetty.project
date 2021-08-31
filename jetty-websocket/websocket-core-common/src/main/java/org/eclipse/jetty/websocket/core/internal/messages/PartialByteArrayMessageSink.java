@@ -41,6 +41,7 @@ public class PartialByteArrayMessageSink extends AbstractMessageSink
             }
 
             callback.succeeded();
+            session.demand(1);
         }
         catch (Throwable t)
         {
