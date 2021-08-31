@@ -344,7 +344,6 @@ public class HttpGenerator
             _endOfContent = EndOfContent.UNKNOWN_CONTENT;
             return Result.FLUSH;
         }
-
         _state = State.END;
         return Boolean.TRUE.equals(_persistent) ? Result.DONE : Result.SHUTDOWN_OUT;
     }
