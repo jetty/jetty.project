@@ -16,7 +16,7 @@ sessions/infinispan/remote/infinispan-remote-libs
 basehome:modules/sessions/infinispan/remote/resources/hotrod-client.properties|resources/hotrod-client.properties
 
 [ini]
-infinispan.version?=9.4.8.Final
+infinispan.version?=9.4.23.Final
 
 
 [license]

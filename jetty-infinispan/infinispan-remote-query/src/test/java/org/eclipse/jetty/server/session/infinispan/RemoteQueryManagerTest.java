@@ -70,7 +70,7 @@ public class RemoteQueryManagerTest
     
     GenericContainer infinispan =
         new GenericContainer(System.getProperty("infinispan.docker.image.name", "jboss/infinispan-server") +
-            ":" + System.getProperty("infinispan.docker.image.version", "9.4.8.Final"))
+            ":" + System.getProperty("infinispan.docker.image.version", "9.4.23.Final"))
             .withEnv("APP_USER", "theuser")
             .withEnv("APP_PASS", "foobar")
             .withEnv("MGMT_USER", "admin")

@@ -62,7 +62,7 @@ public class RemoteInfinispanTestSupport
         {
             //Testcontainers.exposeHostPorts(11222);
             long start = System.currentTimeMillis();
-            String infinispanVersion = System.getProperty("infinispan.docker.image.version", "9.4.8.Final");
+            String infinispanVersion = System.getProperty("infinispan.docker.image.version", "9.4.23.Final");
             infinispan =
                 new GenericContainer(System.getProperty("infinispan.docker.image.name", "jboss/infinispan-server") +
                     ":" + infinispanVersion)
