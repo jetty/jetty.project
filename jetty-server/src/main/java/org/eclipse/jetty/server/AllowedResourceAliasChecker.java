@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -89,10 +88,6 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
     {
         try
         {
-            // do not allow any file separation characters in the URI
-            if (File.separatorChar != '/' && pathInContext.indexOf(File.separatorChar) >= 0)
-                return false;
-
             // The existence check resolves the symlinks.
             if (!resource.exists())
                 return false;

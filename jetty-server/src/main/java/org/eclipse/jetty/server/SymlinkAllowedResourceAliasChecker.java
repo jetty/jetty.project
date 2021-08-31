@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -39,7 +40,13 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
     @Override
     protected boolean check(String pathInContext, Path path)
     {
-        // Split the URI path so we can walk down the resource tree and build the realURI of any symlink found
+        // do not allow any file separation characters in the URI, as we need to know exactly what are the segments
+        if (File.separatorChar != '/' && pathInContext.indexOf(File.separatorChar) >= 0)
+            return false;
+
+        // Split the URI path into segments, to walk down the resource tree and build the realURI of any symlink found
+        // We rebuild the realURI, segment by segment, getting the real name at each step, so that we can distinguish between
+        // alias types.  Specifically, so we can allow a symbolic link so long as it's realpath is not protected.
         String[] segments = pathInContext.substring(1).split("/");
         Path fromBase = _base;
         StringBuilder realURI = new StringBuilder();
@@ -53,13 +60,17 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
                 realURI.append("/").append(fromBase.toRealPath(NO_FOLLOW_LINKS).getFileName());
 
                 // If the ancestor of the alias is a symlink, then check if the real URI is protected, otherwise allow.
-                // This will allow a symlink like /other->/WEB-INF, but not /WeB-InF->/var/lib/other
+                // This allows symlinks like /other->/WEB-INF and /external->/var/lib/docroot
+                // This does not allow symlinks like /WeB-InF->/var/lib/other
                 if (Files.isSymbolicLink(fromBase))
                     return !getContextHandler().isProtectedTarget(realURI.toString());
 
                 // If the ancestor is not allowed then do not allow.
                 if (!isAllowed(fromBase))
                     return false;
+
+                // TODO as we are building the realURI of the resource, it would be possible to
+                //  re-check that against security constraints.
             }
         }
         catch (Throwable t)
