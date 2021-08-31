@@ -6,7 +6,7 @@
     <version>10.0.7-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>test-websocket-core</artifactId>
+  <artifactId>test-jpms-websocket-core</artifactId>
   <packaging>jar</packaging>
   <name>Jetty Tests :: JPMS :: WebSocket Core Tests</name>
 

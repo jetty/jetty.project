@@ -10,7 +10,7 @@
   <packaging>pom</packaging>
   <name>Jetty Tests :: JPMS Parent</name>
   <modules>
-    <module>test-websocket-core</module>
+    <module>test-jpms-websocket-core</module>
   </modules>
 
   <dependencies>

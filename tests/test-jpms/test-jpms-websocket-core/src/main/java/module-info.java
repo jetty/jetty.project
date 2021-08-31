@@ -11,10 +11,12 @@
 // ========================================================================
 //
 
+/**
+ * This module-info.java exists so that the tests can be run in JPMS mode,
+ * therefore testing the JPMS module descriptors of the dependencies involved.
+ */
 module org.eclipse.jetty.websocket.core.tests
 {
-    exports org.example.websocket;
-
     requires org.eclipse.jetty.websocket.core.server;
     requires org.eclipse.jetty.websocket.core.client;
 }
