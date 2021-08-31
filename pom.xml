@@ -9,7 +9,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-project</artifactId>
-  <version>9.3.29.v20201019</version>
+  <version>9.3.30-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
@@ -1644,7 +1644,7 @@
       <activation>
         <property>
           <name>java.version</name>
-          <value>1.8.0_242</value>
+          <value>1.8.0_292</value>
         </property>
       </activation>
       <properties>
@@ -1656,7 +1656,7 @@
       <activation>
         <property>
           <name>java.version</name>
-          <value>1.8.0_242</value>
+          <value>1.8.0_302</value>
         </property>
       </activation>
       <properties>
