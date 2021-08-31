@@ -45,6 +45,10 @@ public class JavaxWebAppContext extends WebAppContext
 
     private void transformAttributeNames(HttpServletRequest request)
     {
+        if (request.getAttributeNames() == null)
+        {
+            return;
+        }
         for (Iterator<String> it = request.getAttributeNames().asIterator(); it.hasNext();)
         {
             String attributeName = it.next();

@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.objectweb.asm.ClassReader;
@@ -96,7 +97,7 @@ public class JavaxWebappClassloader extends WebAppClassLoader
 
                 return cw.toByteArray();
             }
-            catch (IOException e)
+            catch (Exception e)
             {
                 IllegalClassFormatException icfe = new IllegalClassFormatException(e.getMessage());
                 icfe.initCause(e);
@@ -136,9 +137,31 @@ public class JavaxWebappClassloader extends WebAppClassLoader
         @Override
         public String[] mapTypes(String[] internalNames)
         {
-            List<String> names = Arrays.asList(internalNames);
-            return super.mapTypes(internalNames);
+            List<String> names = Arrays.stream(internalNames).map(
+                    s ->
+                    {
+                        if (s.startsWith(JAVAX_SERVLET))
+                        {
+                            return JAKARTA_SERVLET + s.substring(JAVAX_SERVLET.length());
+                        }
+                        return s;
+                    }
+            ).collect(Collectors.toList());
+            return names.toArray(new String[0]);
         }
+
+        @Override
+        public String mapSignature(String signature, boolean typeSignature)
+        {
+            return super.mapSignature(signature, typeSignature);
+        }
+
+        @Override
+        public String mapPackageName(String name)
+        {
+            return super.mapPackageName(name);
+        }
+
     }
 
 }
