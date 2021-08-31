@@ -26,6 +26,7 @@
     <alpn.version>undefined</alpn.version>
     <tycho-version>1.2.0</tycho-version>
     <cbi-plugins.version>1.1.5</cbi-plugins.version>
+    <argLine></argLine>
   </properties>
 
   <scm>
