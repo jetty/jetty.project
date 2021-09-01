@@ -196,13 +196,13 @@ public class ThreadStarvationTest
         assertThat(response, containsString("Read Input 10"));
     }
 
-    @Ignore("flaky with recent 1.8")
+    //@Ignore("flaky with recent 1.8")
     public void testEPCStarvation() throws Exception
     {
         testStarvation(new ExecuteProduceConsume.Factory());
     }
 
-    @Ignore("flaky with recent 1.8")
+    //@Ignore("flaky with recent 1.8")
     public void testPECStarvation() throws Exception
     {
         testStarvation(new ProduceExecuteConsume.Factory());
