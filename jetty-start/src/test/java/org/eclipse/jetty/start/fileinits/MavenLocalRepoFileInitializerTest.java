@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.start.fileinits;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -38,6 +32,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
 
 public class MavenLocalRepoFileInitializerTest
 {
@@ -95,7 +95,7 @@ public class MavenLocalRepoFileInitializerTest
         assertThat("coords.classifier",coords.classifier,nullValue());
         
         assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(), 
-                is("http://central.maven.org/maven2/org/eclipse/jetty/jetty-start/9.3.x/jetty-start-9.3.x.jar"));
+                is("https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-start/9.3.x/jetty-start-9.3.x.jar"));
     }
 
     @Test
@@ -113,7 +113,7 @@ public class MavenLocalRepoFileInitializerTest
         assertThat("coords.classifier",coords.classifier,nullValue());
         
         assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(), 
-                is("http://central.maven.org/maven2/org/eclipse/jetty/jetty-distribution/9.3.x/jetty-distribution-9.3.x.zip"));
+                is("https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-distribution/9.3.x/jetty-distribution-9.3.x.zip"));
     }
 
     @Test
@@ -131,7 +131,7 @@ public class MavenLocalRepoFileInitializerTest
         assertThat("coords.classifier",coords.classifier,is("tests"));
         
         assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(), 
-                is("http://central.maven.org/maven2/org/eclipse/jetty/jetty-http/9.3.x/jetty-http-9.3.x-tests.jar"));
+                is("https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-http/9.3.x/jetty-http-9.3.x-tests.jar"));
     }
     
     @Test
@@ -149,6 +149,6 @@ public class MavenLocalRepoFileInitializerTest
         assertThat("coords.classifier",coords.classifier,is("tests"));
         
         assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(), 
-                is("http://central.maven.org/maven2/org/eclipse/jetty/jetty-http/9.3.x/jetty-http-9.3.x-tests.jar"));
+                is("https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-http/9.3.x/jetty-http-9.3.x-tests.jar"));
     }
 }

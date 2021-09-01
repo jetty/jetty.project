@@ -75,7 +75,7 @@ public class MavenLocalRepoFileInitializer extends UriFileInitializer implements
 
         public URI toCentralURI()
         {
-            return URI.create("http://central.maven.org/maven2/" + toPath());
+            return URI.create("https://repo1.maven.org/maven2/" + toPath());
         }
     }
 

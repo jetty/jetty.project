@@ -70,9 +70,9 @@ appropriate to your container.
 
 Now that you have the basic set of Jetty jars installed, you can install
 the
-http://central.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-boot/[jetty-osgi-boot.jar]
+https://repo1.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-boot/[jetty-osgi-boot.jar]
 bundle, downloadable from the maven central repo
-http://central.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-boot/[here.]
+https://repo1.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-boot/[here.]
 
 This bundle will instantiate and make available the Jetty OSGi container
 when it is started. If this bundle is not auto-started upon installation
@@ -827,7 +827,7 @@ In order to use JSPs with your webapps and bundles you will need to
 install the JSP and JSTL jars and their dependencies into your OSGi
 container. Some you will find in the Jetty distribution, whereas others
 you will need to download from
-http://central.maven.org/maven2/org/eclipse/jetty/orbit/[Maven central].
+https://repo1.maven.org/maven2/org/eclipse/jetty/orbit/[Maven central].
 Here is the list of recommended jars (NOTE the version numbers may
 change in future):
 
@@ -851,7 +851,7 @@ change in future):
 
 |org.eclipse.jetty.osgi:jetty-osgi-boot-jsp
 |org.eclipse.jetty.osgi.boot.jsp
-|http://central.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-boot-jsp[Maven
+|https://repo1.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-boot-jsp[Maven
 central]
 |=======================================================================
 
@@ -915,9 +915,9 @@ Orbit]
 ===== The jetty-osgi-boot-jsp jar
 
 To be able to use JSPs you will need to also install the
-http://central.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-boot-jsp/[jetty-osgi-boot-jsp.jar]
+https://repo1.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-boot-jsp/[jetty-osgi-boot-jsp.jar]
 into your OSGi container. This jar can be obtained from maven central
-http://central.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-boot-jsp/[here].
+https://repo1.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-boot-jsp/[here].
 
 This bundle acts as a fragment extension to the jetty-osgi-boot.jar and
 adds in support for using JSP.
@@ -1054,25 +1054,25 @@ to deploy some extra jars into your OSGi container:
 |=======================================================================
 |Jar |Bundle Symbolic Name |Location
 |org.ow2.asm:asm-5.0.1.jar |org.objectweb.asm
-|http://central.maven.org/maven2/org/ow2/asm/asm[Maven central]
+|https://repo1.maven.org/maven2/org/ow2/asm/asm[Maven central]
 
 |org.ow2.asm:asm-commons-5.0.1.jar |org.objectweb.asm.commons
-|http://central.maven.org/maven2/org/ow2/asm/asm-commons[Maven central]
+|https://repo1.maven.org/maven2/org/ow2/asm/asm-commons[Maven central]
 
 |org.ow2.asm:asm-tree-5.0.1.jar |org.objectweb.asm.tree
-|http://central.maven.org/maven2/org/ow2/asm/asm-tree[Maven central]
+|https://repo1.maven.org/maven2/org/ow2/asm/asm-tree[Maven central]
 
 |org.apache.aries:org.apache.aries.util-1.0.1.jar |org.apache.aries.util
-|http://central.maven.org/maven2/org/apache/aries/org.apache.aries.util/[Maven
+|https://repo1.maven.org/maven2/org/apache/aries/org.apache.aries.util/[Maven
 central]
 
 |org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle-1.0.1.jar
 |org.apache.aries.spifly.dynamic.bundle
-|http://central.maven.org/maven2/org/apache/aries/spifly/org.apache.aries.spifly.dynamic.bundle/[Maven
+|https://repo1.maven.org/maven2/org/apache/aries/spifly/org.apache.aries.spifly.dynamic.bundle/[Maven
 central]
 
 |javax.annotation:javax.annotation-api-1.2.jar |javax.annotation-api
-|http://central.maven.org/maven2/javax/annotation/javax.annotation-api/[Maven
+|https://repo1.maven.org/maven2/javax/annotation/javax.annotation-api/[Maven
 central]
 
 |jta api version 1.1.1 (eg
@@ -1425,6 +1425,6 @@ download and have installed the javax.websocket-api jar:
 |=======================================================================
 |Jar |Bundle Symbolic Name |Location
 |javax.websocket-api |javax.websocket-api
-|http://central.maven.org/maven2/javax/websocket/websocket-api[Maven
+|https://repo1.maven.org/maven2/javax/websocket/websocket-api[Maven
 central]
 |=======================================================================

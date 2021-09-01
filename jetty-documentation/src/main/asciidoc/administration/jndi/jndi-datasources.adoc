@@ -68,7 +68,7 @@ The following is a list of the pooled datasource examples we have worked with in
 [[hikaricp-datasource]]
 ===== HikariCP
 
-Connection pooling, available at http://search.maven.org/remotecontent?filepath=com/zaxxer/HikariCP/1.4.0/HikariCP-1.4.0.jar[HikariCP Download].
+Connection pooling, available at https://search.maven.org/remotecontent?filepath=com/zaxxer/HikariCP/1.4.0/HikariCP-1.4.0.jar[HikariCP Download].
 All configuration options for HikariCP are described here: https://github.com/brettwooldridge/HikariCP[HikariCP documentation].
 
 [source, xml, subs="{sub-order}"]
@@ -126,7 +126,7 @@ All configuration options for BoneCP are described here: http://jolbox.com/bonec
 [[c3p0-datasource]]
 ===== c3p0
 
-Connection pooling, available at http://central.maven.org/maven2/c3p0/c3p0/0.9.1.2/c3p0-0.9.1.2.jar[c3p0 Jar].
+Connection pooling, available at https://repo1.maven.org/maven2/c3p0/c3p0/0.9.1.2/c3p0-0.9.1.2.jar[c3p0 Jar].
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -147,7 +147,7 @@ Connection pooling, available at http://central.maven.org/maven2/c3p0/c3p0/0.9.1
 [[dbcp-datasource]]
 ===== DBCP
 
-Connection pooling, available at http://central.maven.org/maven2/commons-dbcp/commons-dbcp/1.2/commons-dbcp-1.2.jar[dbcp Jar].
+Connection pooling, available at https://repo1.maven.org/maven2/commons-dbcp/commons-dbcp/1.2/commons-dbcp-1.2.jar[dbcp Jar].
 
 [source, xml, subs="{sub-order}"]
 ----
