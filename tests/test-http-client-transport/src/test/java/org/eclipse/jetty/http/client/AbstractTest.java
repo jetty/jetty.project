@@ -20,7 +20,8 @@ package org.eclipse.jetty.http.client;
 
 import java.util.ArrayList;
 import java.util.List;
-
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
 import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
@@ -45,6 +46,7 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -83,18 +85,21 @@ public abstract class AbstractTest
 
     public void start(Handler handler) throws Exception
     {
+        assumeJavaVersionSupportsALPN();
         startServer(handler);
         startClient();
     }
 
     public void start(HttpServlet servlet) throws Exception
     {
+        assumeJavaVersionSupportsALPN();
         startServer(servlet);
         startClient();
     }
 
     protected void startServer(HttpServlet servlet) throws Exception
     {
+        assumeJavaVersionSupportsALPN();
         context = new ServletContextHandler();
         context.setContextPath("/");
         ServletHolder holder = new ServletHolder(servlet);
@@ -105,6 +110,7 @@ public abstract class AbstractTest
 
     protected void startServer(Handler handler) throws Exception
     {
+        assumeJavaVersionSupportsALPN();
         sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("storepwd");
@@ -123,11 +129,13 @@ public abstract class AbstractTest
 
     protected ServerConnector newServerConnector(Server server)
     {
+        assumeJavaVersionSupportsALPN();
         return new ServerConnector(server, provideServerConnectionFactory(transport));
     }
 
     protected void startClient() throws Exception
     {
+        assumeJavaVersionSupportsALPN();
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         client = newHttpClient(provideClientTransport(transport), sslContextFactory);
@@ -265,6 +273,43 @@ public abstract class AbstractTest
     {
         if (server != null)
             server.stop();
+    }
+
+    protected void assumeJavaVersionSupportsALPN()
+    {
+        if (transport != Transport.H2)
+        {
+            // Only test ALPN assumption on H2 transport
+            return;
+        }
+
+        boolean isALPNSupported = false;
+
+        if (JavaVersion.VERSION.getPlatform() >= 9)
+        {
+            // Java 9+ is always supported with the native java ALPN support libs
+            isALPNSupported = true;
+        }
+        else
+        {
+            // Java 8 updates around update 252 are not supported in Jetty 9.3 (it requires a new ALPN support library that exists only in Java 9.4+)
+            try
+            {
+                // JDK 8u252 has the JDK 9 ALPN API backported.
+                SSLParameters.class.getMethod("setApplicationProtocols", String[].class);
+                SSLEngine.class.getMethod("getApplicationProtocol");
+                // This means we have a new version of Java 8 that has ALPN backported, which Jetty 9.3 does not support.
+                // Use Jetty 9.4 for proper support.
+                isALPNSupported = false;
+            }
+            catch (NoSuchMethodException x)
+            {
+                // this means we have an old version of Java 8 that needs the XBootclasspath support libs
+                isALPNSupported = true;
+            }
+        }
+
+        Assume.assumeTrue("ALPN support exists", isALPNSupported);
     }
 
     protected enum Transport
