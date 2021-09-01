@@ -95,9 +95,7 @@ public class MultiplexedConnectionPoolTest
         ConnectionPoolFactory factory = new ConnectionPoolFactory("duplex-maxDuration", destination ->
         {
             int maxConnections = destination.getHttpClient().getMaxConnectionsPerDestination();
-            Pool<Connection> pool = new Pool<>(Pool.StrategyType.FIRST, maxConnections, false);
-            poolRef.set(pool);
-            MultiplexConnectionPool connectionPool = new MultiplexConnectionPool(destination, pool, destination, MAX_MULTIPLEX)
+            MultiplexConnectionPool connectionPool = new MultiplexConnectionPool(destination, Pool.StrategyType.FIRST, maxConnections, false, destination, MAX_MULTIPLEX)
             {
                 @Override
                 protected void onCreated(Connection connection)
@@ -111,6 +109,7 @@ public class MultiplexedConnectionPoolTest
                     poolRemoveCounter.incrementAndGet();
                 }
             };
+            poolRef.set(connectionPool.getBean(Pool.class));
             connectionPool.setMaxDuration(maxDuration);
             return connectionPool;
         });
@@ -156,9 +155,7 @@ public class MultiplexedConnectionPoolTest
         ConnectionPoolFactory factory = new ConnectionPoolFactory("duplex-maxDuration", destination ->
         {
             int maxConnections = destination.getHttpClient().getMaxConnectionsPerDestination();
-            Pool<Connection> pool = new Pool<>(Pool.StrategyType.FIRST, maxConnections, false);
-            poolRef.set(pool);
-            MultiplexConnectionPool connectionPool = new MultiplexConnectionPool(destination, pool, destination, MAX_MULTIPLEX)
+            MultiplexConnectionPool connectionPool = new MultiplexConnectionPool(destination, Pool.StrategyType.FIRST, maxConnections, false, destination, MAX_MULTIPLEX)
             {
                 @Override
                 protected void onCreated(Connection connection)
@@ -172,6 +169,7 @@ public class MultiplexedConnectionPoolTest
                     poolRemoveCounter.incrementAndGet();
                 }
             };
+            poolRef.set(connectionPool.getBean(Pool.class));
             connectionPool.setMaxDuration(maxDuration);
             return connectionPool;
         });

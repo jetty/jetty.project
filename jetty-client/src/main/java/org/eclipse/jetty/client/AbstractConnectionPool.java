@@ -55,7 +55,12 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
 
     protected AbstractConnectionPool(HttpDestination destination, int maxConnections, boolean cache, Callback requester)
     {
-        this(destination, new Pool<>(Pool.StrategyType.FIRST, maxConnections, cache), requester);
+        this(destination, Pool.StrategyType.FIRST, maxConnections, cache, requester);
+    }
+
+    protected AbstractConnectionPool(HttpDestination destination, Pool.StrategyType strategy, int maxConnections, boolean cache, Callback requester)
+    {
+        this(destination, new Pool<>(strategy, maxConnections, cache), requester);
     }
 
     protected AbstractConnectionPool(HttpDestination destination, Pool<Connection> pool, Callback requester)
@@ -63,6 +68,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         this.destination = destination;
         this.requester = requester;
         this.pool = pool;
+        pool.setMaxMultiplex(1); // Force the use of multiplexing.
         addBean(pool);
     }
 
