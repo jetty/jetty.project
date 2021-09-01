@@ -39,7 +39,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
@@ -99,7 +98,7 @@ public class SslBytesServerTest extends SslBytesTest
         threadPool = Executors.newCachedThreadPool();
         server = new Server();
 
-        File keyStore = MavenTestingUtils.getTestResourceFile("keystore.jks");
+        File keyStore = MavenTestingUtils.getTestResourceFile("keystore.p12");
         sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath(keyStore.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");

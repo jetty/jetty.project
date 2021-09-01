@@ -20,7 +20,6 @@ package org.eclipse.jetty.client.ssl;
 
 import java.io.File;
 import java.nio.ByteBuffer;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLHandshakeException;
 
@@ -42,7 +41,7 @@ public class SslConnectionTest
     @Test
     public void testSslConnectionClosedBeforeFill() throws Exception
     {
-        File keyStore = MavenTestingUtils.getTestResourceFile("keystore.jks");
+        File keyStore = MavenTestingUtils.getTestResourceFile("keystore.p12");
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath(keyStore.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");

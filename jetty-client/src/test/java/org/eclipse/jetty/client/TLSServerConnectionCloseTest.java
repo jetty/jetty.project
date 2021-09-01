@@ -24,7 +24,6 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.TimeUnit;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 
@@ -67,10 +66,10 @@ public class TLSServerConnectionCloseTest
     {
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setEndpointIdentificationAlgorithm("");
-        sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+        sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
         sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
-        sslContextFactory.setTrustStorePassword("storepwd");
+//        sslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
+//        sslContextFactory.setTrustStorePassword("storepwd");
 
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");

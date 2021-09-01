@@ -69,10 +69,10 @@ public abstract class AbstractHttpClientServerTest
         if (sslContextFactory != null)
         {
             sslContextFactory.setEndpointIdentificationAlgorithm("");
-            sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+            sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
             sslContextFactory.setKeyStorePassword("storepwd");
-            sslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
-            sslContextFactory.setTrustStorePassword("storepwd");
+//            sslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
+//            sslContextFactory.setTrustStorePassword("storepwd");
         }
 
         if (server == null)
