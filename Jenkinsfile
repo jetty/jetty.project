@@ -11,7 +11,7 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             container('jetty-build') {
-              timeout( time: 240, unit: 'MINUTES' ) {
+              timeout( time: 120, unit: 'MINUTES' ) {
                 mavenBuild( "jdk8", "clean install", "maven3")
                 // Collect up the jacoco execution results (only on main build)
                 jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
@@ -41,7 +41,7 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             container( 'jetty-build' ) {
-              timeout( time: 240, unit: 'MINUTES' ) {
+              timeout( time: 120, unit: 'MINUTES' ) {
                 mavenBuild( "jdk11", "clean install -Djacoco.skip=true -Perrorprone", "maven3")
                 recordIssues id: "jdk11", name: "Static Analysis jdk11", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser(), errorProne()]
               }
@@ -90,23 +90,6 @@ pipeline {
 }
 
 def slackNotif() {
-  script {
-    try
-    {
-      if ( env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-9.4.x' )
-      {
-        //BUILD_USER = currentBuild.rawBuild.getCause(Cause.UserIdCause).getUserId()
-        // by ${BUILD_USER}
-        COLOR_MAP = ['SUCCESS': 'good', 'FAILURE': 'danger', 'UNSTABLE': 'danger', 'ABORTED': 'danger']
-        slackSend channel: '#jenkins',
-                color: COLOR_MAP[currentBuild.currentResult],
-                message: "*${currentBuild.currentResult}:* Job ${env.JOB_NAME} build ${env.BUILD_NUMBER} - ${env.BUILD_URL}"
-      }
-    } catch (Exception e) {
-      e.printStackTrace()
-      echo "skip failure slack notification: " + e.getMessage()
-    }
-  }
 }
 
 /**
