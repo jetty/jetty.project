@@ -29,9 +29,10 @@ public class DuplexConnectionPool extends AbstractConnectionPool
 
     public DuplexConnectionPool(HttpDestination destination, int maxConnections, boolean cache, Callback requester)
     {
-        this(destination, new Pool<>(Pool.StrategyType.FIRST, maxConnections, cache), requester);
+        super(destination, Pool.StrategyType.FIRST, maxConnections, cache, requester);
     }
 
+    @Deprecated
     public DuplexConnectionPool(HttpDestination destination, Pool<Connection> pool, Callback requester)
     {
         super(destination, pool, requester);

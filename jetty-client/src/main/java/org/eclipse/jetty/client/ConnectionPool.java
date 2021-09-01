@@ -24,7 +24,7 @@ import org.eclipse.jetty.client.api.Connection;
 public interface ConnectionPool extends Closeable
 {
     /**
-     * Optionally pre-create up to <code>connectionCount</code>
+     * Optionally pre-create up to {@code connectionCount}
      * connections so they are immediately ready for use.
      * @param connectionCount the number of connections to pre-start.
      */
@@ -106,7 +106,7 @@ public interface ConnectionPool extends Closeable
     }
 
     /**
-     * Marks a connection pool as supporting multiplexed connections.
+     * Marks a connection as supporting multiplexed requests.
      */
     interface Multiplexable
     {
@@ -117,7 +117,11 @@ public interface ConnectionPool extends Closeable
 
         /**
          * @param maxMultiplex the max number of requests multiplexable on a single connection
+         * @deprecated do not use, as the maxMultiplex value is pulled, rather than pushed
          */
-        void setMaxMultiplex(int maxMultiplex);
+        @Deprecated
+        default void setMaxMultiplex(int maxMultiplex)
+        {
+        }
     }
 }
