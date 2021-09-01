@@ -25,24 +25,30 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
-
+import java.util.function.Consumer;
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SNIServerName;
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
@@ -61,44 +67,81 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+
 public class SniSslConnectionFactoryTest
 {
     private Server _server;
     private ServerConnector _connector;
-    private HttpConfiguration _https_config;
+    private HttpConfiguration _httpsConfiguration;
     private int _port;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
-        String keystorePath = "src/test/resources/snikeystore";
-        File keystoreFile = new File(keystorePath);
+        _server = new Server();
+
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.setSecureScheme("https");
+        httpConfig.setSecurePort(8443);
+        httpConfig.setOutputBufferSize(32768);
+        _httpsConfiguration = new HttpConfiguration(httpConfig);
+        SecureRequestCustomizer src = new SecureRequestCustomizer();
+        src.setSniHostCheck(true);
+        _httpsConfiguration.addCustomizer(src);
+        _httpsConfiguration.addCustomizer((connector, hc, request) ->
+        {
+            EndPoint endp = request.getHttpChannel().getEndPoint();
+            if (endp instanceof SslConnection.DecryptedEndPoint)
+            {
+                try
+                {
+                    SslConnection.DecryptedEndPoint sslEndp = (SslConnection.DecryptedEndPoint)endp;
+                    SslConnection sslConnection = sslEndp.getSslConnection();
+                    SSLEngine sslEngine = sslConnection.getSSLEngine();
+                    SSLSession session = sslEngine.getSession();
+                    for (Certificate c : session.getLocalCertificates())
+                    {
+                        request.getResponse().getHttpFields().add("X-Cert", ((X509Certificate)c).getSubjectDN().toString());
+                    }
+                }
+                catch (Throwable th)
+                {
+                    th.printStackTrace();
+                }
+            }
+        });
+    }
+
+    protected void start(String keystorePath) throws Exception
+    {
+        start(ssl ->
+        {
+            ssl.setKeyStorePath(keystorePath);
+            ssl.setKeyManagerPassword("keypwd");
+        });
+    }
+
+    protected void start(Consumer<SslContextFactory> sslConfig) throws Exception
+    {
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslConfig.accept(sslContextFactory);
+
+        File keystoreFile = sslContextFactory.getKeyStoreResource().getFile();
         if (!keystoreFile.exists())
             throw new FileNotFoundException(keystoreFile.getAbsolutePath());
 
-        _server = new Server();
-
-        HttpConfiguration http_config = new HttpConfiguration();
-        http_config.setSecureScheme("https");
-        http_config.setSecurePort(8443);
-        http_config.setOutputBufferSize(32768);
-        _https_config = new HttpConfiguration(http_config);
-        _https_config.addCustomizer(new SecureRequestCustomizer());
-
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setKeyStorePath(keystoreFile.getAbsolutePath());
-        sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
-
         ServerConnector https = _connector = new ServerConnector(_server,
-                new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
-                new HttpConnectionFactory(_https_config));
+            new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
+            new HttpConnectionFactory(_httpsConfiguration));
         _server.addConnector(https);
 
         _server.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 response.setStatus(200);
@@ -121,78 +164,83 @@ public class SniSslConnectionFactoryTest
     @Test
     public void testConnect() throws Exception
     {
+        start("src/test/resources/keystore_sni.p12");
         String response = getResponse("127.0.0.1", null);
-        Assert.assertThat(response, Matchers.containsString("X-HOST: 127.0.0.1"));
+        assertThat(response, Matchers.containsString("X-HOST: 127.0.0.1"));
     }
 
     @Test
     public void testSNIConnectNoWild() throws Exception
     {
-        // Use the alternate keystore without wildcard certificates.
-        _server.stop();
-        _server.removeConnector(_connector);
+        start("src/test/resources/keystore_sni_nowild.p12");
 
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setKeyStorePath("src/test/resources/snikeystore_nowild");
-        sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+        String response = getResponse("www.acme.org", null);
+        assertThat(response, Matchers.containsString("X-HOST: www.acme.org"));
+        assertThat(response, Matchers.containsString("X-Cert: OU=default"));
 
-        _connector = new ServerConnector(_server,
-                new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
-                new HttpConnectionFactory(_https_config));
-        _server.addConnector(_connector);
-        _server.start();
-        _port = _connector.getLocalPort();
-
-        // The first entry in the keystore is www.example.com, and it will
-        // be returned by default, so make sure that here we don't ask for it.
-        String response = getResponse("jetty.eclipse.org", "jetty.eclipse.org");
-        Assert.assertThat(response, Matchers.containsString("X-HOST: jetty.eclipse.org"));
+        response = getResponse("www.example.com", null);
+        assertThat(response, Matchers.containsString("X-HOST: www.example.com"));
+        assertThat(response, Matchers.containsString("X-Cert: OU=example"));
     }
 
     @Test
     public void testSNIConnect() throws Exception
     {
+        start(ssl ->
+        {
+            ssl.setKeyStorePath("src/test/resources/keystore_sni.p12");
+            ssl.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+        });
+
         String response = getResponse("jetty.eclipse.org", "jetty.eclipse.org");
-        Assert.assertThat(response, Matchers.containsString("X-HOST: jetty.eclipse.org"));
+        assertThat(response, Matchers.containsString("X-HOST: jetty.eclipse.org"));
 
         response = getResponse("www.example.com", "www.example.com");
-        Assert.assertThat(response, Matchers.containsString("X-HOST: www.example.com"));
+        assertThat(response, Matchers.containsString("X-HOST: www.example.com"));
 
         response = getResponse("foo.domain.com", "*.domain.com");
-        Assert.assertThat(response, Matchers.containsString("X-HOST: foo.domain.com"));
+        assertThat(response, Matchers.containsString("X-HOST: foo.domain.com"));
+
+        response = getResponse("sub.domain.com", "sub.domain.com");
+        assertThat(response, Matchers.containsString("X-HOST: sub.domain.com"));
 
         response = getResponse("m.san.com", "san example");
-        Assert.assertThat(response, Matchers.containsString("X-HOST: m.san.com"));
+        assertThat(response, Matchers.containsString("X-HOST: m.san.com"));
 
         response = getResponse("www.san.com", "san example");
-        Assert.assertThat(response, Matchers.containsString("X-HOST: www.san.com"));
+        assertThat(response, Matchers.containsString("X-HOST: www.san.com"));
     }
 
     @Test
     public void testWildSNIConnect() throws Exception
     {
+        start("src/test/resources/keystore_sni.p12");
+
         String response = getResponse("domain.com", "www.domain.com", "*.domain.com");
-        Assert.assertThat(response, Matchers.containsString("X-HOST: www.domain.com"));
+        assertThat(response, Matchers.containsString("X-HOST: www.domain.com"));
 
         response = getResponse("domain.com", "domain.com", "*.domain.com");
-        Assert.assertThat(response, Matchers.containsString("X-HOST: domain.com"));
+        assertThat(response, Matchers.containsString("X-HOST: domain.com"));
 
         response = getResponse("www.domain.com", "www.domain.com", "*.domain.com");
-        Assert.assertThat(response, Matchers.containsString("X-HOST: www.domain.com"));
+        assertThat(response, Matchers.containsString("X-HOST: www.domain.com"));
     }
 
     @Test
     public void testBadSNIConnect() throws Exception
     {
+        start("src/test/resources/keystore_sni.p12");
+
         String response = getResponse("www.example.com", "some.other.com", "www.example.com");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 400 "));
-        Assert.assertThat(response, Matchers.containsString("Host does not match SNI"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 400 "));
+        assertThat(response, Matchers.containsString("Host does not match SNI"));
     }
 
     @Test
     public void testSameConnectionRequestsForManyDomains() throws Exception
     {
+        start("src/test/resources/keystore_sni.p12");
+
         SslContextFactory clientContextFactory = new SslContextFactory(true);
         clientContextFactory.start();
         SSLSocketFactory factory = clientContextFactory.getSslContext().getSocketFactory();
@@ -205,8 +253,8 @@ public class SniSslConnectionFactoryTest
             sslSocket.startHandshake();
 
             // The first request binds the socket to an alias.
-            String request = "" +
-                    "GET /ctx/path HTTP/1.1\r\n" +
+            String request =
+                "GET /ctx/path HTTP/1.1\r\n" +
                     "Host: m.san.com\r\n" +
                     "\r\n";
             OutputStream output = sslSocket.getOutputStream();
@@ -218,8 +266,8 @@ public class SniSslConnectionFactoryTest
             Assert.assertTrue(response.startsWith("HTTP/1.1 200 "));
 
             // Same socket, send a request for a different domain but same alias.
-            request = "" +
-                    "GET /ctx/path HTTP/1.1\r\n" +
+            request =
+                "GET /ctx/path HTTP/1.1\r\n" +
                     "Host: www.san.com\r\n" +
                     "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
@@ -229,8 +277,8 @@ public class SniSslConnectionFactoryTest
             Assert.assertTrue(response.startsWith("HTTP/1.1 200 "));
 
             // Same socket, send a request for a different domain but different alias.
-            request = "" +
-                    "GET /ctx/path HTTP/1.1\r\n" +
+            request =
+                "GET /ctx/path HTTP/1.1\r\n" +
                     "Host: www.example.com\r\n" +
                     "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
@@ -249,6 +297,8 @@ public class SniSslConnectionFactoryTest
     @Test
     public void testSameConnectionRequestsForManyWildDomains() throws Exception
     {
+        start("src/test/resources/keystore_sni.p12");
+
         SslContextFactory clientContextFactory = new SslContextFactory(true);
         clientContextFactory.start();
         SSLSocketFactory factory = clientContextFactory.getSslContext().getSocketFactory();
@@ -260,8 +310,8 @@ public class SniSslConnectionFactoryTest
             sslSocket.setSSLParameters(params);
             sslSocket.startHandshake();
 
-            String request = "" +
-                    "GET /ctx/path HTTP/1.1\r\n" +
+            String request =
+                "GET /ctx/path HTTP/1.1\r\n" +
                     "Host: www.domain.com\r\n" +
                     "\r\n";
             OutputStream output = sslSocket.getOutputStream();
@@ -273,8 +323,8 @@ public class SniSslConnectionFactoryTest
             Assert.assertTrue(response.startsWith("HTTP/1.1 200 "));
 
             // Now, on the same socket, send a request for a different valid domain.
-            request = "" +
-                    "GET /ctx/path HTTP/1.1\r\n" +
+            request =
+                "GET /ctx/path HTTP/1.1\r\n" +
                     "Host: assets.domain.com\r\n" +
                     "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
@@ -284,8 +334,8 @@ public class SniSslConnectionFactoryTest
             Assert.assertTrue(response.startsWith("HTTP/1.1 200 "));
 
             // Now make a request for an invalid domain for this connection.
-            request = "" +
-                    "GET /ctx/path HTTP/1.1\r\n" +
+            request =
+                "GET /ctx/path HTTP/1.1\r\n" +
                     "Host: www.example.com\r\n" +
                     "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
@@ -301,68 +351,11 @@ public class SniSslConnectionFactoryTest
         }
     }
 
-    private String response(InputStream input) throws IOException
-    {
-        Utf8StringBuilder buffer = new Utf8StringBuilder();
-        int crlfs = 0;
-        while (true)
-        {
-            int read = input.read();
-            Assert.assertTrue(read >= 0);
-            buffer.append((byte)read);
-            crlfs = (read == '\r' || read == '\n') ? crlfs + 1 : 0;
-            if (crlfs == 4)
-                break;
-        }
-        return buffer.toString();
-    }
-
-    private String getResponse(String host, String cn) throws Exception
-    {
-        String response = getResponse(host, host, cn);
-        Assert.assertThat(response, Matchers.startsWith("HTTP/1.1 200 "));
-        Assert.assertThat(response, Matchers.containsString("X-URL: /ctx/path"));
-        return response;
-    }
-
-    private String getResponse(String sniHost, String reqHost, String cn) throws Exception
-    {
-        SslContextFactory clientContextFactory = new SslContextFactory(true);
-        clientContextFactory.start();
-        SSLSocketFactory factory = clientContextFactory.getSslContext().getSocketFactory();
-        try (SSLSocket sslSocket = (SSLSocket)factory.createSocket("127.0.0.1", _port))
-        {
-            if (cn != null)
-            {
-                SNIHostName serverName = new SNIHostName(sniHost);
-                List<SNIServerName> serverNames = new ArrayList<>();
-                serverNames.add(serverName);
-
-                SSLParameters params = sslSocket.getSSLParameters();
-                params.setServerNames(serverNames);
-                sslSocket.setSSLParameters(params);
-            }
-            sslSocket.startHandshake();
-
-            if (cn != null)
-            {
-                X509Certificate cert = ((X509Certificate)sslSocket.getSession().getPeerCertificates()[0]);
-                Assert.assertThat(cert.getSubjectX500Principal().getName("CANONICAL"), Matchers.startsWith("cn=" + cn));
-            }
-
-            String response = "GET /ctx/path HTTP/1.0\r\nHost: " + reqHost + ":" + _port + "\r\n\r\n";
-            sslSocket.getOutputStream().write(response.getBytes(StandardCharsets.ISO_8859_1));
-            return IO.toString(sslSocket.getInputStream());
-        }
-        finally
-        {
-            clientContextFactory.stop();
-        }
-    }
-
     @Test
     public void testSocketCustomization() throws Exception
     {
+        start("src/test/resources/keystore_sni.p12");
+
         final Queue<String> history = new LinkedBlockingQueue<>();
 
         _connector.addBean(new SocketCustomizationListener()
@@ -393,12 +386,86 @@ public class SniSslConnectionFactoryTest
         });
 
         String response = getResponse("127.0.0.1", null);
-        Assert.assertThat(response, Matchers.containsString("X-HOST: 127.0.0.1"));
+        assertThat(response, Matchers.containsString("X-HOST: 127.0.0.1"));
 
-        Assert.assertEquals("customize connector class org.eclipse.jetty.io.ssl.SslConnection,false", history.poll());
-        Assert.assertEquals("customize ssl class org.eclipse.jetty.io.ssl.SslConnection,false", history.poll());
-        Assert.assertEquals("customize connector class org.eclipse.jetty.server.HttpConnection,true", history.poll());
-        Assert.assertEquals("customize http class org.eclipse.jetty.server.HttpConnection,true", history.poll());
-        Assert.assertEquals(0, history.size());
+        assertEquals("customize connector class org.eclipse.jetty.io.ssl.SslConnection,false", history.poll());
+        assertEquals("customize ssl class org.eclipse.jetty.io.ssl.SslConnection,false", history.poll());
+        assertEquals("customize connector class org.eclipse.jetty.server.HttpConnection,true", history.poll());
+        assertEquals("customize http class org.eclipse.jetty.server.HttpConnection,true", history.poll());
+        assertEquals(0, history.size());
+    }
+
+    @Test
+    public void testSNIWithDifferentKeyTypes() throws Exception
+    {
+        // This KeyStore contains 2 certificates, one with keyAlg=EC, one with keyAlg=RSA.
+        start(ssl -> ssl.setKeyStorePath("src/test/resources/keystore_sni_key_types.p12"));
+
+        // Make a request with SNI = rsa.domain.com, the RSA certificate should be chosen.
+        HttpTester.Response response1 = HttpTester.parseResponse(getResponse("rsa.domain.com", "rsa.domain.com"));
+        assertEquals(HttpStatus.OK_200, response1.getStatus());
+
+        // Make a request with SNI = ec.domain.com, the EC certificate should be chosen.
+        HttpTester.Response response2 = HttpTester.parseResponse(getResponse("ec.domain.com", "ec.domain.com"));
+        assertEquals(HttpStatus.OK_200, response2.getStatus());
+    }
+
+    private String response(InputStream input) throws IOException
+    {
+        Utf8StringBuilder buffer = new Utf8StringBuilder();
+        int crlfs = 0;
+        while (true)
+        {
+            int read = input.read();
+            Assert.assertTrue(read >= 0);
+            buffer.append((byte)read);
+            crlfs = (read == '\r' || read == '\n') ? crlfs + 1 : 0;
+            if (crlfs == 4)
+                break;
+        }
+        return buffer.toString();
+    }
+
+    private String getResponse(String host, String cn) throws Exception
+    {
+        String response = getResponse(host, host, cn);
+        assertThat(response, Matchers.startsWith("HTTP/1.1 200 "));
+        assertThat(response, Matchers.containsString("X-URL: /ctx/path"));
+        return response;
+    }
+
+    private String getResponse(String sniHost, String reqHost, String cn) throws Exception
+    {
+        SslContextFactory clientContextFactory = new SslContextFactory(true);
+        clientContextFactory.start();
+        SSLSocketFactory factory = clientContextFactory.getSslContext().getSocketFactory();
+        try (SSLSocket sslSocket = (SSLSocket)factory.createSocket("127.0.0.1", _port))
+        {
+            if (sniHost != null)
+            {
+                SNIHostName serverName = new SNIHostName(sniHost);
+                List<SNIServerName> serverNames = new ArrayList<>();
+                serverNames.add(serverName);
+
+                SSLParameters params = sslSocket.getSSLParameters();
+                params.setServerNames(serverNames);
+                sslSocket.setSSLParameters(params);
+            }
+            sslSocket.startHandshake();
+
+            if (cn != null)
+            {
+                X509Certificate cert = ((X509Certificate)sslSocket.getSession().getPeerCertificates()[0]);
+                assertThat(cert.getSubjectX500Principal().getName("CANONICAL"), Matchers.startsWith("cn=" + cn));
+            }
+
+            String response = "GET /ctx/path HTTP/1.0\r\nHost: " + reqHost + ":" + _port + "\r\n\r\n";
+            sslSocket.getOutputStream().write(response.getBytes(StandardCharsets.ISO_8859_1));
+            return IO.toString(sslSocket.getInputStream());
+        }
+        finally
+        {
+            clientContextFactory.stop();
+        }
     }
 }

@@ -48,7 +48,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -121,6 +120,27 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
 
     /** String name of keystore password property. */
     public static final String PASSWORD_PROPERTY = "org.eclipse.jetty.ssl.password";
+
+    /**
+     * Default Excluded Protocols List
+     */
+    private static final String[] DEFAULT_EXCLUDED_PROTOCOLS = {"SSL", "SSLv2", "SSLv2Hello", "SSLv3"};
+    /**
+     * Default Excluded Cipher Suite List
+     */
+    private static final String[] DEFAULT_EXCLUDED_CIPHER_SUITES = {
+        // Exclude weak / insecure ciphers
+        "^.*_(MD5|SHA|SHA1)$",
+        // Exclude ciphers that don't support forward secrecy
+        "^TLS_RSA_.*$",
+        // The following exclusions are present to cleanup known bad cipher
+        // suites that may be accidentally included via include patterns.
+        // The default enabled cipher list in Java will not include these
+        // (but they are available in the supported list).
+        "^SSL_.*$",
+        "^.*_NULL_.*$",
+        "^.*_anon_.*$"
+    };
 
     private final Set<String> _excludeProtocols = new LinkedHashSet<>();
     private final Set<String> _includeProtocols = new LinkedHashSet<>();
@@ -203,8 +223,8 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     private SslContextFactory(boolean trustAll, String keyStorePath)
     {
         setTrustAll(trustAll);
-        addExcludeProtocols("SSL", "SSLv2", "SSLv2Hello", "SSLv3");
-        setExcludeCipherSuites("^.*_(MD5|SHA|SHA1)$");
+        addExcludeProtocols(DEFAULT_EXCLUDED_PROTOCOLS);
+        setExcludeCipherSuites(DEFAULT_EXCLUDED_CIPHER_SUITES);
         if (keyStorePath != null)
             setKeyStorePath(keyStorePath);
     }

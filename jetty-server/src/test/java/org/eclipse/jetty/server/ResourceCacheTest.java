@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -36,6 +32,9 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ResourceCacheTest
 {
@@ -147,7 +146,7 @@ public class ResourceCacheTest
         assertTrue(content!=null);
         assertEquals(80,content.getContentLengthValue());
         assertEquals(0,cache.getCachedSize());
-        
+
         if (OS.IS_LINUX)
         {
             // Initially not using memory mapped files
@@ -156,14 +155,14 @@ public class ResourceCacheTest
 
             // with both types of buffer loaded, this is too large for cache
             content.getIndirectBuffer();
-            assertEquals(0,cache.getCachedSize());
+            assertEquals(cache.isUseFileMappedBuffer()?0:80,cache.getCachedSize());
             assertEquals(0,cache.getCachedFiles());
 
             cache=new ResourceCache(null,directory,new MimeTypes(),true,false,false);
             cache.setMaxCacheSize(95);
             cache.setMaxCachedFileSize(85);
             cache.setMaxCachedFiles(4);
-            
+
             content=cache.getContent(names[8],4096);
             content.getDirectBuffer();
             assertEquals(cache.isUseFileMappedBuffer()?0:80,cache.getCachedSize());
@@ -290,7 +289,7 @@ public class ResourceCacheTest
         assertEquals("4 - four (no extension)", getContent(cache, "four"));
     }
 
-    
+
     static String getContent(Resource r, String path) throws Exception
     {
         StringBuilder buffer = new StringBuilder();

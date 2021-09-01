@@ -70,7 +70,6 @@ public abstract class AbstractTest
 
     protected final HttpConfiguration httpConfig = new HttpConfiguration();
     protected final Transport transport;
-    protected SslContextFactory sslContextFactory;
     protected Server server;
     protected ServerConnector connector;
     protected ServletContextHandler context;
@@ -111,13 +110,6 @@ public abstract class AbstractTest
     protected void startServer(Handler handler) throws Exception
     {
         assumeJavaVersionSupportsALPN();
-        sslContextFactory = new SslContextFactory();
-        sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
-        sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
-        sslContextFactory.setTrustStorePassword("storepwd");
-        sslContextFactory.setUseCipherSuitesOrder(true);
-        sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
@@ -125,6 +117,31 @@ public abstract class AbstractTest
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();
+    }
+
+    protected SslContextFactory newServerSslContextFactory()
+    {
+        SslContextFactory ssl = new SslContextFactory();
+        configureSslContextFactory(ssl);
+        return ssl;
+    }
+
+    protected SslContextFactory newClientSslContextFactory()
+    {
+        SslContextFactory ssl = new SslContextFactory();
+        configureSslContextFactory(ssl);
+        ssl.setEndpointIdentificationAlgorithm(null);
+        return ssl;
+    }
+
+    private void configureSslContextFactory(SslContextFactory sslContextFactory)
+    {
+        sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
+        sslContextFactory.setTrustStorePassword("storepwd");
+        sslContextFactory.setUseCipherSuitesOrder(true);
+        sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
     }
 
     protected ServerConnector newServerConnector(Server server)
@@ -138,7 +155,7 @@ public abstract class AbstractTest
         assumeJavaVersionSupportsALPN();
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
-        client = newHttpClient(provideClientTransport(transport), sslContextFactory);
+        client = newHttpClient(provideClientTransport(transport), newClientSslContextFactory());
         client.setExecutor(clientThreads);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
         client.start();
@@ -158,7 +175,7 @@ public abstract class AbstractTest
             {
                 httpConfig.addCustomizer(new SecureRequestCustomizer());
                 HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
-                SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, http.getProtocol());
+                SslConnectionFactory ssl = new SslConnectionFactory(newServerSslContextFactory(), http.getProtocol());
                 result.add(ssl);
                 result.add(http);
                 break;
@@ -173,7 +190,7 @@ public abstract class AbstractTest
                 httpConfig.addCustomizer(new SecureRequestCustomizer());
                 HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfig);
                 ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory("h2");
-                SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, alpn.getProtocol());
+                SslConnectionFactory ssl = new SslConnectionFactory(newServerSslContextFactory(), alpn.getProtocol());
                 result.add(ssl);
                 result.add(alpn);
                 result.add(h2);

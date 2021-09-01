@@ -56,7 +56,7 @@ public class HttpChannelAssociationTest extends AbstractTest
     {
         startServer(new EmptyServerHandler());
 
-        client = new HttpClient(newHttpClientTransport(transport, exchange -> false), sslContextFactory);
+        client = new HttpClient(newHttpClientTransport(transport, exchange -> false), newClientSslContextFactory());
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         client.setExecutor(clientThreads);
@@ -85,7 +85,7 @@ public class HttpChannelAssociationTest extends AbstractTest
             // we must be able to send the request successfully.
             sleep(2 * idleTimeout);
             return true;
-        }), sslContextFactory);
+        }), newClientSslContextFactory());
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         client.setExecutor(clientThreads);
