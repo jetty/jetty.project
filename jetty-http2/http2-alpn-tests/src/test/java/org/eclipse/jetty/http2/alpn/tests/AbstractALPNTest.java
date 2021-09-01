@@ -19,17 +19,18 @@
 package org.eclipse.jetty.http2.alpn.tests;
 
 import java.net.InetSocketAddress;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
 
 import org.eclipse.jetty.alpn.ALPN;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
-import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.toolchain.test.JDK;
 import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.After;
 import org.junit.Assume;
@@ -46,9 +47,38 @@ public class AbstractALPNTest
     @Before
     public void before()
     {
-        // The mandatory cipher needed to run HTTP/2
-        // over TLS is only available in JDK 8.
-        Assume.assumeTrue(JDK.IS_8);
+        assumeJavaVersionSupportsALPN();
+    }
+
+    protected void assumeJavaVersionSupportsALPN()
+    {
+        boolean isALPNSupported = false;
+
+        if (JavaVersion.VERSION.getPlatform() >= 9)
+        {
+            // Java 9+ is always supported with the native java ALPN support libs
+            isALPNSupported = true;
+        }
+        else
+        {
+            // Java 8 updates around update 252 are not supported in Jetty 9.3 (it requires a new ALPN support library that exists only in Java 9.4+)
+            try
+            {
+                // JDK 8u252 has the JDK 9 ALPN API backported.
+                SSLParameters.class.getMethod("setApplicationProtocols", String[].class);
+                SSLEngine.class.getMethod("getApplicationProtocol");
+                // This means we have a new version of Java 8 that has ALPN backported, which Jetty 9.3 does not support.
+                // Use Jetty 9.4 for proper support.
+                isALPNSupported = false;
+            }
+            catch (NoSuchMethodException x)
+            {
+                // this means we have an old version of Java 8 that needs the XBootclasspath support libs
+                isALPNSupported = true;
+            }
+        }
+
+        Assume.assumeTrue("ALPN support exists", isALPNSupported);
     }
 
     protected InetSocketAddress prepare() throws Exception

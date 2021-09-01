@@ -31,7 +31,6 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -41,11 +40,12 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.toolchain.test.JDK;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.anyOf;
@@ -247,6 +247,7 @@ public class ServerConnectorTest
     @Test
     public void testExceptionWhileAccepting() throws Exception
     {
+        Assume.assumeTrue("Not supported on Java 8", JDK.IS_9);
         Server server = new Server();
         try (StacklessLogging stackless = new StacklessLogging(AbstractConnector.class))
         {
