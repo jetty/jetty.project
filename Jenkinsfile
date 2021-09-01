@@ -37,17 +37,17 @@ pipeline {
           }
         }
 
-        stage("Build / Test - JDK11") {
-          agent { node { label 'linux' } }
-          steps {
-            container( 'jetty-build' ) {
-              timeout( time: 240, unit: 'MINUTES' ) {
-                mavenBuild( "jdk11", "clean install -Djacoco.skip=true -Perrorprone", "maven3")
-                recordIssues id: "jdk11", name: "Static Analysis jdk11", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser(), errorProne()]
-              }
-            }
-          }
-        }
+//        stage("Build / Test - JDK11") {
+//          agent { node { label 'linux' } }
+//          steps {
+//            container( 'jetty-build' ) {
+//              timeout( time: 240, unit: 'MINUTES' ) {
+//                mavenBuild( "jdk11", "clean install -Djacoco.skip=true -Perrorprone", "maven3")
+//                recordIssues id: "jdk11", name: "Static Analysis jdk11", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser(), errorProne()]
+//              }
+//            }
+//          }
+//        }
 
         stage("Build Javadoc") {
           agent { node { label 'linux' } }
