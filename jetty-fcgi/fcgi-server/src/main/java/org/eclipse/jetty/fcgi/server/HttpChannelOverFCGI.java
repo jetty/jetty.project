@@ -13,9 +13,7 @@
 
 package org.eclipse.jetty.fcgi.server;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Locale;
 import java.util.Queue;
 import java.util.concurrent.Executor;
@@ -35,8 +33,8 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.HttpTransport;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,104 +43,121 @@ public class HttpChannelOverFCGI extends HttpChannel
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelOverFCGI.class);
 
     private final Queue<HttpInput.Content> _contentQueue = new LinkedList<>();
-    private final AutoLock _lock = new AutoLock();
-    private HttpInput.Content _specialContent;
+    private final Callback _asyncFillCallback = new AsyncFillCallback();
+    private final ServerFCGIConnection connection;
     private final HttpFields.Mutable fields = HttpFields.build();
     private final Dispatcher dispatcher;
+    private HttpInput.Content _specialContent;
     private String method;
     private String path;
     private String query;
     private String version;
     private HostPortHttpField hostPort;
 
-    public HttpChannelOverFCGI(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport)
+    public HttpChannelOverFCGI(ServerFCGIConnection connection, Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport)
     {
         super(connector, configuration, endPoint, transport);
+        this.connection = connection;
         this.dispatcher = new Dispatcher(connector.getServer().getThreadPool(), this);
     }
 
     @Override
     public boolean onContent(HttpInput.Content content)
     {
-        boolean b = super.onContent(content);
+        boolean result = super.onContent(content);
 
-        Throwable failure;
-        try (AutoLock l = _lock.lock())
-        {
-            failure = _specialContent == null ? null : _specialContent.getError();
-            if (failure == null)
-                _contentQueue.offer(content);
-        }
+        Throwable failure = _specialContent == null ? null : _specialContent.getError();
+        if (failure == null)
+            _contentQueue.offer(content);
         if (failure != null)
             content.failed(failure);
 
-        return b;
+        return result;
     }
 
     @Override
     public boolean needContent()
     {
-        try (AutoLock l = _lock.lock())
+        if (needContent("immediate"))
+            return true;
+        parseAndFill();
+        if (needContent("parsed"))
+            return true;
+        connection.getEndPoint().tryFillInterested(_asyncFillCallback);
+        return false;
+    }
+
+    private boolean needContent(String context)
+    {
+        if (_specialContent != null || !_contentQueue.isEmpty())
         {
-            boolean hasContent = _specialContent != null || !_contentQueue.isEmpty();
             if (LOG.isDebugEnabled())
-                LOG.debug("needContent has content? {}", hasContent);
-            return hasContent;
+                LOG.debug("needContent has {} content {}", context, this);
+            return true;
         }
+        return false;
     }
 
     @Override
     public HttpInput.Content produceContent()
     {
-        HttpInput.Content content;
-        try (AutoLock l = _lock.lock())
+        if (_specialContent == null && _contentQueue.isEmpty())
+            parseAndFill();
+        HttpInput.Content content = _contentQueue.poll();
+        if (content != null)
         {
-            content = _contentQueue.poll();
-            if (content == null)
-                content = _specialContent;
+            if (LOG.isDebugEnabled())
+                LOG.debug("produceContent produced {} {}", content, this);
+            return content;
         }
+        content = _specialContent;
+        if (content != null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("produceContent produced special {} {}", content, this);
+            return content;
+        }
+        return null;
+    }
+
+    private void parseAndFill()
+    {
         if (LOG.isDebugEnabled())
-            LOG.debug("produceContent has produced {}", content);
-        return content;
+            LOG.debug("parseAndFill {}", this);
+        connection.parseAndFill();
     }
 
     @Override
     public boolean failAllContent(Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("failing all content with {} {}", failure, this);
-        List<HttpInput.Content> copy;
-        try (AutoLock l = _lock.lock())
+            LOG.debug("failing all content {}", this);
+        _contentQueue.forEach(c -> c.failed(failure));
+        _contentQueue.clear();
+        if (_specialContent != null)
+            return _specialContent.isEof();
+        while (true)
         {
-            copy = new ArrayList<>(_contentQueue);
-            _contentQueue.clear();
+            HttpInput.Content content = produceContent();
+            if (content == null)
+                return false;
+            if (_specialContent != null)
+                return _specialContent.isEof();
+            content.failed(failure);
         }
-        copy.forEach(c -> c.failed(failure));
-        boolean atEof;
-        try (AutoLock l = _lock.lock())
-        {
-            atEof = _specialContent != null && _specialContent.isEof();
-        }
-        if (LOG.isDebugEnabled())
-            LOG.debug("failed all content, EOF = {}", atEof);
-        return atEof;
     }
 
     @Override
     public boolean failed(Throwable x)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("failed " + x);
+            LOG.debug("failed {}", this, x);
 
-        try (AutoLock l = _lock.lock())
-        {
-            Throwable error = _specialContent == null ? null : _specialContent.getError();
-
-            if (error != null && error != x)
-                error.addSuppressed(x);
-            else
-                _specialContent = new HttpInput.ErrorContent(x);
-        }
+        Throwable error = _specialContent == null ? null : _specialContent.getError();
+        if (error != null && error != x)
+            error.addSuppressed(x);
+        else
+            _specialContent = new HttpInput.ErrorContent(x);
 
         return getRequest().getHttpInput().onContentProducible();
     }
@@ -152,10 +167,7 @@ public class HttpChannelOverFCGI extends HttpChannel
     {
         if (LOG.isDebugEnabled())
             LOG.debug("received EOF");
-        try (AutoLock l = _lock.lock())
-        {
-            _specialContent = new HttpInput.EofContent();
-        }
+        _specialContent = new HttpInput.EofContent();
         return getRequest().getHttpInput().onContentProducible();
     }
 
@@ -238,20 +250,11 @@ public class HttpChannelOverFCGI extends HttpChannel
     private boolean doOnIdleTimeout(Throwable x)
     {
         boolean neverDispatched = getState().isIdle();
-        boolean waitingForContent;
-        HttpInput.Content specialContent;
-        try (AutoLock l = _lock.lock())
-        {
-            waitingForContent = _contentQueue.isEmpty() || _contentQueue.peek().remaining() == 0;
-            specialContent = _specialContent;
-        }
-        if ((waitingForContent || neverDispatched) && specialContent == null)
+        boolean waitingForContent = _contentQueue.isEmpty() || _contentQueue.peek().remaining() == 0;
+        if ((waitingForContent || neverDispatched) && _specialContent == null)
         {
             x.addSuppressed(new Throwable("HttpInput idle timeout"));
-            try (AutoLock l = _lock.lock())
-            {
-                _specialContent = new HttpInput.ErrorContent(x);
-            }
+            _specialContent = new HttpInput.ErrorContent(x);
             return getRequest().getHttpInput().onContentProducible();
         }
         return false;
@@ -260,13 +263,45 @@ public class HttpChannelOverFCGI extends HttpChannel
     @Override
     public void recycle()
     {
-        try (AutoLock l = _lock.lock())
-        {
-            if (!_contentQueue.isEmpty())
-                throw new AssertionError("unconsumed content: " + _contentQueue);
-            _specialContent = null;
-        }
+        if (!_contentQueue.isEmpty())
+            throw new AssertionError("unconsumed content: " + _contentQueue);
+        _specialContent = null;
         super.recycle();
+    }
+
+    @Override
+    public void onCompleted()
+    {
+        super.onCompleted();
+        HttpInput input = getRequest().getHttpInput();
+        boolean consumed = input.consumeAll();
+        // Assume we don't arrive here from the connection's onFillable() (which already
+        // calls fillInterested()), because we dispatch() when all the headers are received.
+        // When the request/response is completed, we must arrange to call fillInterested().
+        connection.onCompleted(consumed);
+    }
+
+    private class AsyncFillCallback implements Callback
+    {
+        @Override
+        public void succeeded()
+        {
+            if (getRequest().getHttpInput().onContentProducible())
+                handle();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            if (HttpChannelOverFCGI.this.failed(x))
+                handle();
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
     }
 
     private static class Dispatcher implements Runnable

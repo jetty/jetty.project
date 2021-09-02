@@ -57,14 +57,18 @@ public class StreamContentParser extends ContentParser
                     int length = Math.min(contentLength, buffer.remaining());
                     int limit = buffer.limit();
                     buffer.limit(buffer.position() + length);
-                    final ByteBuffer slice = buffer.slice();
+                    ByteBuffer slice = buffer.slice();
                     buffer.position(buffer.limit());
                     buffer.limit(limit);
                     contentLength -= length;
+                    if (contentLength <= 0)
+                        state = State.EOF;
                     if (onContent(slice))
                         return Result.ASYNC;
-                    if (contentLength > 0)
-                        break;
+                    break;
+                }
+                case EOF:
+                {
                     state = State.LENGTH;
                     return Result.COMPLETE;
                 }
@@ -78,7 +82,7 @@ public class StreamContentParser extends ContentParser
     }
 
     @Override
-    public void noContent()
+    public boolean noContent()
     {
         try
         {
@@ -89,6 +93,7 @@ public class StreamContentParser extends ContentParser
             if (LOG.isDebugEnabled())
                 LOG.debug("Exception while invoking listener {}", listener, x);
         }
+        return false;
     }
 
     protected boolean onContent(ByteBuffer buffer)
@@ -111,6 +116,6 @@ public class StreamContentParser extends ContentParser
 
     private enum State
     {
-        LENGTH, CONTENT
+        LENGTH, CONTENT, EOF
     }
 }
