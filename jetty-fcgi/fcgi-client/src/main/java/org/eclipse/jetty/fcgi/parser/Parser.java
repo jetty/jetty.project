@@ -39,14 +39,14 @@ import org.slf4j.LoggerFactory;
  * <p>A typical exchange is:</p>
  * <pre>
  * BEGIN_REQUEST
- * PARAMS (length > 0)
+ * PARAMS (length &gt; 0)
  * PARAMS (length == 0 to signal end of PARAMS frames)
- * [STDIN (length > 0 in case of request content)]
+ * [STDIN (length &gt; 0 in case of request content)]
  * STDIN (length == 0 to signal end of STDIN frames and end of request)
  * ...
- * STDOUT (length > 0 with HTTP headers and HTTP content)
+ * STDOUT (length &gt; 0 with HTTP headers and HTTP content)
  * STDOUT (length == 0 to signal end of STDOUT frames)
- * [STDERR (length > 0)]
+ * [STDERR (length &gt; 0)]
  * [STDERR (length == 0 to signal end of STDERR frames)]
  * END_REQUEST
  * </pre>
