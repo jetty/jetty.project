@@ -155,7 +155,8 @@ public class ResourceCacheTest
 
             // with both types of buffer loaded, this is too large for cache
             content.getIndirectBuffer();
-            assertEquals(cache.isUseFileMappedBuffer()?0:80,cache.getCachedSize());
+            assertEquals("isUseFileMappedBuffer?"+cache.isUseFileMappedBuffer(),
+                    cache.isUseFileMappedBuffer()?0:80,cache.getCachedSize());
             assertEquals(0,cache.getCachedFiles());
 
             cache=new ResourceCache(null,directory,new MimeTypes(),true,false,false);
