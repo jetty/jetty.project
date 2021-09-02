@@ -57,5 +57,6 @@
     <module>test-distribution</module>
     <module>test-cdi</module>
     <module>test-jndi</module>
+    <module>test-jpms</module>
   </modules>
 </project>

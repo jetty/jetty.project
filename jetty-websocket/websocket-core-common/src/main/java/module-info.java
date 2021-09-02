@@ -24,7 +24,8 @@ module org.eclipse.jetty.websocket.core.common
 
     exports org.eclipse.jetty.websocket.core.internal to
         org.eclipse.jetty.websocket.core.client,
-        org.eclipse.jetty.websocket.core.server;
+        org.eclipse.jetty.websocket.core.server,
+        org.eclipse.jetty.util; // Export to DecoratedObjectFactory.
 
     // The Jetty & Jakarta API Layers need to access both access some internal utilities which we don't want to expose.
     exports org.eclipse.jetty.websocket.core.internal.util to
