@@ -69,10 +69,10 @@ public class RemoteQueryManagerTest
     private int port;
     
     GenericContainer infinispan =
-        new GenericContainer(System.getProperty("infinispan.docker.image.name", "jboss/infinispan-server") +
+        new GenericContainer(System.getProperty("infinispan.docker.image.name", "infinispan/server") +
             ":" + System.getProperty("infinispan.docker.image.version", "9.4.8.Final"))
-            .withEnv("APP_USER", "theuser")
-            .withEnv("APP_PASS", "foobar")
+            .withEnv("USER", "theuser")
+            .withEnv("PASS", "foobar")
             .withEnv("MGMT_USER", "admin")
             .withEnv("MGMT_PASS", "admin")
             .waitingFor(new LogMessageWaitStrategy()
@@ -110,7 +110,10 @@ public class RemoteQueryManagerTest
         clientBuilder.withProperties(properties).addServer()
             .host(this.host).port(this.port)
             .clientIntelligence(ClientIntelligence.BASIC)
-            .marshaller(new ProtoStreamMarshaller());
+            .marshaller(new ProtoStreamMarshaller())
+            .security()
+            .authentication()
+            .username("theuser").password("foobar");
 
         RemoteCacheManager remoteCacheManager = new RemoteCacheManager(clientBuilder.build());
         remoteCacheManager.administration().getOrCreateCache("remote-session-test", (String)null);

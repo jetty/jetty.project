@@ -9,7 +9,7 @@
   <name>Jetty :: Infinispan Session Manager Remote with Querying</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.infinispan.remote.query</bundle-symbolic-name>
-    <infinispan.docker.image.version>9.4.8.Final</infinispan.docker.image.version>
+    <infinispan.docker.image.version>11.0.9.Final</infinispan.docker.image.version>
   </properties>
   <build>
     <plugins>
@@ -127,6 +127,11 @@
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-remote-query-client</artifactId>
       <version>${infinispan.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>${gson.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

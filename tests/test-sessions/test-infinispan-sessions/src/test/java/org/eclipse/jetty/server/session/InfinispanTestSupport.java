@@ -27,6 +27,7 @@ import org.infinispan.Cache;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.configuration.cache.ConfigurationChildBuilder;
 import org.infinispan.configuration.cache.Index;
+import org.infinispan.configuration.cache.StorageType;
 import org.infinispan.configuration.global.GlobalConfigurationBuilder;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
@@ -53,7 +54,7 @@ public class InfinispanTestSupport
     {
         try
         {
-            _manager = new DefaultCacheManager(new GlobalConfigurationBuilder().globalJmxStatistics().allowDuplicateDomains(true).build());
+            _manager = new DefaultCacheManager(new GlobalConfigurationBuilder().globalJmxStatistics().jmx().build());
         }
         catch (Exception e)
         {
@@ -115,7 +116,7 @@ public class InfinispanTestSupport
                 .location(_tmpdir.getAbsolutePath());
             if (_serializeSessionData)
             {
-                b = b.storeAsBinary().enable();
+                b = b.memory().storage(StorageType.HEAP);
             }
                 
             _manager.defineConfiguration(_name, b.build());
@@ -129,7 +130,7 @@ public class InfinispanTestSupport
         
             if (_serializeSessionData)
             {
-                b = b.storeAsBinary().enable();
+                b = b.memory().storage(StorageType.HEAP);
             }
                 
             _manager.defineConfiguration(_name, b.build());
@@ -140,7 +141,7 @@ public class InfinispanTestSupport
     public void teardown() throws Exception
     {
         _cache.clear();
-        _manager.removeCache(_name);
+        _manager.administration().removeCache(_name);
         if (_useFileStore)
         {
             if (_tmpdir != null)
