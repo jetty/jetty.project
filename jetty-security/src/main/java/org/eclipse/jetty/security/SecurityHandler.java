@@ -312,9 +312,6 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         return getServer().getBean(IdentityService.class);
     }
 
-    /**
-     *
-     */
     @Override
     protected void doStart()
         throws Exception
@@ -353,11 +350,8 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
             if (_identityService == null)
             {
-                if (_realmName != null)
-                {
-                    setIdentityService(new DefaultIdentityService());
-                    manage(_identityService);
-                }
+                setIdentityService(new DefaultIdentityService());
+                manage(_identityService);
             }
             else
                 unmanage(_identityService);
@@ -371,7 +365,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 throw new IllegalStateException("LoginService has different IdentityService to " + this);
         }
 
-        if (_authenticator == null && _identityService != null)
+        if (_authenticator == null)
         {
             // If someone has set an authenticator factory only use that, otherwise try the list of discovered factories.
             if (_authenticatorFactory != null)
@@ -418,7 +412,6 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     }
 
     @Override
-
     protected void doStop() throws Exception
     {
         //if we discovered the services (rather than had them explicitly configured), remove them.
