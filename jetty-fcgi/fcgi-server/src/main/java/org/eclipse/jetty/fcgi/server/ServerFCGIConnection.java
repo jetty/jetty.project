@@ -133,10 +133,13 @@ public class ServerFCGIConnection extends AbstractConnection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("parseAndFill {}", this);
+        // This loop must run only until the request is completed.
+        // See also HttpConnection.parseAndFillForContent().
         while (channel != null)
         {
             if (parse(networkBuffer.getBuffer()))
                 return;
+            // Check if the request was completed by the parsing.
             if (channel == null)
                 return;
             if (fillInputBuffer() <= 0)
@@ -265,6 +268,8 @@ public class ServerFCGIConnection extends AbstractConnection
             {
                 channel.onContentComplete();
                 channel.onRequestComplete();
+                // Nulling out the channel signals that the
+                // request is complete, see also parseAndFill().
                 channel = null;
             }
         }

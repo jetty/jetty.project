@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 public class HttpChannelOverFCGI extends HttpChannel
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelOverFCGI.class);
+    private static final HttpInput.Content EOF_CONTENT = new HttpInput.EofContent();
 
     private final Queue<HttpInput.Content> _contentQueue = new LinkedList<>();
     private final Callback _asyncFillCallback = new AsyncFillCallback();
@@ -69,7 +70,7 @@ public class HttpChannelOverFCGI extends HttpChannel
         Throwable failure = _specialContent == null ? null : _specialContent.getError();
         if (failure == null)
             _contentQueue.offer(content);
-        if (failure != null)
+        else
             content.failed(failure);
 
         return result;
@@ -78,31 +79,40 @@ public class HttpChannelOverFCGI extends HttpChannel
     @Override
     public boolean needContent()
     {
-        if (needContent("immediate"))
+        if (hasContent())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("needContent has immediate content {}", this);
             return true;
+        }
+
         parseAndFill();
-        if (needContent("parsed"))
+
+        if (hasContent())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("needContent has parsed content {}", this);
             return true;
+        }
+
         connection.getEndPoint().tryFillInterested(_asyncFillCallback);
         return false;
     }
 
-    private boolean needContent(String context)
+    private boolean hasContent()
     {
-        if (_specialContent != null || !_contentQueue.isEmpty())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("needContent has {} content {}", context, this);
-            return true;
-        }
-        return false;
+        return _specialContent != null || !_contentQueue.isEmpty();
     }
 
     @Override
     public HttpInput.Content produceContent()
     {
-        if (_specialContent == null && _contentQueue.isEmpty())
+        if (!hasContent())
             parseAndFill();
+
+        if (!hasContent())
+            return null;
+
         HttpInput.Content content = _contentQueue.poll();
         if (content != null)
         {
@@ -167,7 +177,7 @@ public class HttpChannelOverFCGI extends HttpChannel
     {
         if (LOG.isDebugEnabled())
             LOG.debug("received EOF");
-        _specialContent = new HttpInput.EofContent();
+        _specialContent = EOF_CONTENT;
         return getRequest().getHttpInput().onContentProducible();
     }
 
@@ -263,10 +273,10 @@ public class HttpChannelOverFCGI extends HttpChannel
     @Override
     public void recycle()
     {
+        super.recycle();
         if (!_contentQueue.isEmpty())
             throw new AssertionError("unconsumed content: " + _contentQueue);
         _specialContent = null;
-        super.recycle();
     }
 
     @Override

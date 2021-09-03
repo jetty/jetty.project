@@ -106,11 +106,8 @@ public abstract class Parser
                             // parsing; the async operation will eventually resume parsing.
                             return true;
                         }
-                        else
-                        {
-                            padding = headerParser.getPaddingLength();
-                            state = State.PADDING;
-                        }
+                        padding = headerParser.getPaddingLength();
+                        state = State.PADDING;
                     }
                     break;
                 }
