@@ -64,10 +64,10 @@ public class RemoteInfinispanTestSupport
             long start = System.currentTimeMillis();
             String infinispanVersion = System.getProperty("infinispan.docker.image.version", "9.4.8.Final");
             infinispan =
-                new GenericContainer(System.getProperty("infinispan.docker.image.name", "jboss/infinispan-server") +
+                new GenericContainer(System.getProperty("infinispan.docker.image.name", "infinispan/server") +
                     ":" + infinispanVersion)
-                    .withEnv("APP_USER", "theuser")
-                    .withEnv("APP_PASS", "foobar")
+                    .withEnv("USER", "theuser")
+                    .withEnv("PASS", "foobar")
                     .withEnv("MGMT_USER", "admin")
                     .withEnv("MGMT_PASS", "admin")
                     .waitingFor(new LogMessageWaitStrategy()
@@ -98,8 +98,8 @@ public class RemoteInfinispanTestSupport
             if (infinispanVersion.startsWith("1"))
             {
                 configurationBuilder.security().authentication()
-                    .realm("default")
-                    .serverName("infinispan")
+//                    .realm("default")
+//                    .serverName("infinispan")
                     .saslMechanism("DIGEST-MD5")
                     .username("theuser").password("foobar");
             }

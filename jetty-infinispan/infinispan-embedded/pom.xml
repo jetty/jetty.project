@@ -99,6 +99,12 @@
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-core</artifactId>
       <version>${infinispan.version}</version>
+      <exclusions>
+          <exclusion>
+              <groupId>org.wildfly.common</groupId>
+              <artifactId>wildfly-common</artifactId>
+          </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
 </project>

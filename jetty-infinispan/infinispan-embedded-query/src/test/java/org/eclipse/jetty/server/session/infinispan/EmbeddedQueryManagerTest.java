@@ -51,7 +51,7 @@ public class EmbeddedQueryManagerTest
     public void test()
     {
         String name = DEFAULT_CACHE_NAME + System.currentTimeMillis();
-        EmbeddedCacheManager cacheManager = new DefaultCacheManager(new GlobalConfigurationBuilder().globalJmxStatistics().allowDuplicateDomains(true).build());
+        EmbeddedCacheManager cacheManager = new DefaultCacheManager(new GlobalConfigurationBuilder().jmx().build());
 
         //TODO verify that this is being indexed properly, if you change expiry to something that is not a valid field it still passes the tests
         SearchMapping mapping = new SearchMapping();

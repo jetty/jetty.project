@@ -39,6 +39,12 @@
       <artifactId>infinispan-core</artifactId>
       <version>${infinispan.version}</version>
       <optional>true</optional>
+      <exclusions>
+          <exclusion>
+              <groupId>org.wildfly.common</groupId>
+              <artifactId>wildfly-common</artifactId>
+          </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.infinispan.protostream</groupId>
