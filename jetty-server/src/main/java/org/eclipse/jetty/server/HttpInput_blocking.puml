@@ -46,16 +46,20 @@ activate Application
             end
         end
     ' return from BlockingContentProducer: nextContent
-    HttpInput->BlockingContentProducer: reclaim
-        BlockingContentProducer->AsyncContentProducer: reclaim
-        return
+    HttpInput->HttpInput: copy content\ninto byte[]
     return
+    alt content is empty
+        HttpInput->BlockingContentProducer: reclaim
+            BlockingContentProducer->AsyncContentProducer: reclaim
+            return
+        return
+    end
 return
 deactivate Application
 
 alt if content arrives
-    AsyncContentDelivery->HttpInput: wakeup
-        HttpInput->BlockingContentProducer: wakeup
+    AsyncContentDelivery->HttpInput: onContentProducible
+        HttpInput->BlockingContentProducer: onContentProducible
             BlockingContentProducer->Semaphore: release
             return
         return false
