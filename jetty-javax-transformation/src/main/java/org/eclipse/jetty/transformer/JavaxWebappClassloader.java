@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.objectweb.asm.ClassReader;
@@ -112,42 +111,31 @@ public class JavaxWebappClassloader extends WebAppClassLoader
 
         private static final String JAVAX_SERVLET = "javax/servlet/";
 
+        private static final String JAVAX_EL = "javax/el/";
+
         private static final String JAKARTA_SERVLET = "jakarta/servlet/";
+
+        private static final String JAKARTA_EL = "jakarta/el/";
 
         @Override
         public String map(String internalName)
         {
-            if (internalName.startsWith(JAVAX_SERVLET))
-            {
-                return JAKARTA_SERVLET + internalName.substring(JAVAX_SERVLET.length());
-            }
-            return internalName;
+            return nameMapping(internalName);
         }
 
         @Override
         public String mapType(String internalName)
         {
-            if (internalName.startsWith(JAVAX_SERVLET))
-            {
-                return JAKARTA_SERVLET + internalName.substring(JAVAX_SERVLET.length());
-            }
-            return super.mapType(internalName);
+            String mappedName = nameMapping(internalName);
+            return mappedName.equals(internalName) ? super.mapType(internalName) : mappedName;
         }
 
         @Override
         public String[] mapTypes(String[] internalNames)
         {
-            List<String> names = Arrays.stream(internalNames).map(
-                    s ->
-                    {
-                        if (s.startsWith(JAVAX_SERVLET))
-                        {
-                            return JAKARTA_SERVLET + s.substring(JAVAX_SERVLET.length());
-                        }
-                        return s;
-                    }
-            ).collect(Collectors.toList());
-            return names.toArray(new String[0]);
+            return Arrays.stream(internalNames)
+                    .map(this::nameMapping)
+                    .toArray(String[]::new);
         }
 
         @Override
@@ -160,6 +148,19 @@ public class JavaxWebappClassloader extends WebAppClassLoader
         public String mapPackageName(String name)
         {
             return super.mapPackageName(name);
+        }
+
+        private String nameMapping(String internalName)
+        {
+            if (internalName.startsWith(JAVAX_SERVLET))
+            {
+                return JAKARTA_SERVLET + internalName.substring(JAVAX_SERVLET.length());
+            }
+            if (internalName.startsWith(JAVAX_EL))
+            {
+                return JAKARTA_EL + internalName.substring(JAVAX_EL.length());
+            }
+            return internalName;
         }
 
     }

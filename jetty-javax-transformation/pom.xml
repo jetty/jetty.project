@@ -9,17 +9,6 @@
   <artifactId>jetty-javax-transformation</artifactId>
   <name>Jetty :: Javax Transformation</name>
   <description>Dynamic transformation of javax packages to jakarta.</description>
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <argLine>
-          </argLine>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 
   <dependencies>
 
