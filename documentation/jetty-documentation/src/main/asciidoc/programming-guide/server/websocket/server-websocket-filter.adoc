@@ -14,9 +14,12 @@
 [[pg-server-websocket-configure-filter]]
 ==== Advanced `WebSocketUpgradeFilter` Configuration
 
-The WebSocket ``ServletContainerInitializer``s, namely `JavaxWebSocketServletContainerInitializer` and `JettyWebSocketServletContainerInitializer`, install the `WebSocketUpgradeFilter` to handle HTTP requests that upgrade to WebSocket.
+The `WebSocketUpgradeFilter` that handles the HTTP requests that upgrade to WebSocket is installed in these cases:
 
-Typically, the `WebSocketUpgradeFilter` is not present in the `web.xml` configuration, and therefore the WebSocket ``ServletContainerInitializer``s create a new `WebSocketUpgradeFilter` and install it _before_ any other Filter declared in `web.xml`, under the default name of `"org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter"` and with path mapping `/*`.
+* Either by the `JavaxWebSocketServletContainerInitializer`, as described in xref:pg-server-websocket-standard[this section].
+* Or by a call to `JettyWebSocketServerContainer.addMapping(\...)`, as described in xref:pg-server-websocket-jetty[this section].
+
+Typically, the `WebSocketUpgradeFilter` is not present in the `web.xml` configuration, and therefore the mechanisms above create a new `WebSocketUpgradeFilter` and install it _before_ any other Filter declared in `web.xml`, under the default name of `"org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter"` and with path mapping `/*`.
 
 However, if the `WebSocketUpgradeFilter` is already present in `web.xml` under the default name, then the ``ServletContainerInitializer``s will use that declared in `web.xml` instead of creating a new one.
 

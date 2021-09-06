@@ -63,8 +63,8 @@ The `javax.websocket-api` artifact and the `websocket-javax-server` artifact (an
 
 To configure correctly your WebSocket application based on the standard `javax.websocket` APIs, you need two steps:
 
-. Make sure that Jetty xref:pg-server-websocket-standard-container[sets up] an instance of `javax.websocket.server.ServerContainer`, so that WebSocket applications can use it to register xref:pg-websocket-endpoints[WebSocket endpoints] that implement your application logic.
-. Use the `ServerContainer` APIs to  xref:pg-server-websocket-standard-endpoints[register your WebSocket endpoints].
+. Make sure that Jetty xref:pg-server-websocket-standard-container[sets up] an instance of `javax.websocket.server.ServerContainer`.
+. Use the `ServerContainer` APIs in your applications to xref:pg-server-websocket-standard-endpoints[register your WebSocket endpoints] that implement your application logic.
 
 [[pg-server-websocket-standard-container]]
 ===== Setting Up `ServerContainer`
@@ -98,7 +98,7 @@ The WebSocket endpoints classes may be either annotated with the standard `javax
 When you deploy web applications using xref:pg-server-http-handler-use-webapp-context[`WebAppContext`], then annotated WebSocket endpoint classes are automatically discovered and registered.
 In this way, you do not need to write any additional code; you just need to ensure that your WebSocket endpoint classes are present in the web application's `/WEB-INF/classes` directory, or in a `*.jar` file in `/WEB-INF/lib`.
 
-On the other hand, when you deploy web applications using xref:pg-server-http-handler-use-servlet-context[`ServletContextHandler`], or you need to perform more advanced configuration of the `ServerContainer` or of the WebSocket endpoints, you need to access the `ServerContainer` APIs.
+On the other hand, when you deploy web applications using xref:pg-server-http-handler-use-webapp-context[`WebAppContext`] but you need to perform more advanced configuration of the `ServerContainer` or of the WebSocket endpoints, or when you deploy web applications using xref:pg-server-http-handler-use-servlet-context[`ServletContextHandler`], you need to access the `ServerContainer` APIs.
 
 The `ServerContainer` instance is stored as a `ServletContext` attribute, so it can be retrieved when the `ServletContext` is initialized, either from a `ServletContextListener` or from a `HttpServlet`:
 

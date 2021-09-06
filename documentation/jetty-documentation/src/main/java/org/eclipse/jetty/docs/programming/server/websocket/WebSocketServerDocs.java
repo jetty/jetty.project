@@ -13,9 +13,12 @@
 
 package org.eclipse.jetty.docs.programming.server.websocket;
 
+import java.io.IOException;
 import java.util.List;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.websocket.DeploymentException;
 import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpoint;
@@ -26,6 +29,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.server.JettyWebSocketCreator;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
@@ -253,6 +257,38 @@ public class WebSocketServerDocs
         // Starting the Server will start the ServletContextHandler.
         server.start();
         // end::jettyContainerAndEndpoints[]
+    }
+
+    @SuppressWarnings("InnerClassMayBeStatic")
+    // tag::jettyContainerUpgrade[]
+    public class ProgrammaticWebSocketUpgradeServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
+        {
+            if (requiresWebSocketUpgrade(request))
+            {
+                // Retrieve the JettyWebSocketServerContainer.
+                JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(getServletContext());
+
+                // Use a JettyWebSocketCreator to inspect the upgrade request,
+                // possibly modify the upgrade response, and create the WebSocket endpoint.
+                JettyWebSocketCreator creator = (upgradeRequest, upgradeResponse) -> new MyJettyWebSocketEndPoint();
+
+                // Perform the direct WebSocket upgrade.
+                container.upgrade(creator, request, response);
+            }
+            else
+            {
+                // Normal handling of the HTTP request/response.
+            }
+        }
+    }
+    // end::jettyContainerUpgrade[]
+
+    private boolean requiresWebSocketUpgrade(HttpServletRequest request)
+    {
+        return false;
     }
 
     public void jettyWebSocketServletMain() throws Exception
