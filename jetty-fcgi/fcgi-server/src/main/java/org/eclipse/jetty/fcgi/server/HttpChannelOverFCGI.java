@@ -13,9 +13,7 @@
 
 package org.eclipse.jetty.fcgi.server;
 
-import java.util.LinkedList;
 import java.util.Locale;
-import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -43,12 +41,12 @@ public class HttpChannelOverFCGI extends HttpChannel
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelOverFCGI.class);
     private static final HttpInput.Content EOF_CONTENT = new HttpInput.EofContent();
 
-    private final Queue<HttpInput.Content> _contentQueue = new LinkedList<>();
-    private final Callback _asyncFillCallback = new AsyncFillCallback();
+    private final Callback asyncFillCallback = new AsyncFillCallback();
     private final ServerFCGIConnection connection;
     private final HttpFields.Mutable fields = HttpFields.build();
     private final Dispatcher dispatcher;
-    private HttpInput.Content _specialContent;
+    private HttpInput.Content normalContent;
+    private HttpInput.Content specialContent;
     private String method;
     private String path;
     private String query;
@@ -67,11 +65,18 @@ public class HttpChannelOverFCGI extends HttpChannel
     {
         boolean result = super.onContent(content);
 
-        Throwable failure = _specialContent == null ? null : _specialContent.getError();
+        HttpInput.Content special = this.specialContent;
+        Throwable failure = special == null ? null : special.getError();
         if (failure == null)
-            _contentQueue.offer(content);
+        {
+            if (normalContent != null)
+                throw new IllegalStateException("onContent has unconsumed content");
+            normalContent = content;
+        }
         else
+        {
             content.failed(failure);
+        }
 
         return result;
     }
@@ -95,13 +100,13 @@ public class HttpChannelOverFCGI extends HttpChannel
             return true;
         }
 
-        connection.getEndPoint().tryFillInterested(_asyncFillCallback);
+        connection.getEndPoint().tryFillInterested(asyncFillCallback);
         return false;
     }
 
     private boolean hasContent()
     {
-        return _specialContent != null || !_contentQueue.isEmpty();
+        return specialContent != null || normalContent != null;
     }
 
     @Override
@@ -113,21 +118,18 @@ public class HttpChannelOverFCGI extends HttpChannel
         if (!hasContent())
             return null;
 
-        HttpInput.Content content = _contentQueue.poll();
+        HttpInput.Content content = normalContent;
         if (content != null)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("produceContent produced {} {}", content, this);
+            normalContent = null;
             return content;
         }
-        content = _specialContent;
-        if (content != null)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("produceContent produced special {} {}", content, this);
-            return content;
-        }
-        return null;
+        content = specialContent;
+        if (LOG.isDebugEnabled())
+            LOG.debug("produceContent produced special {} {}", content, this);
+        return content;
     }
 
     private void parseAndFill()
@@ -142,17 +144,20 @@ public class HttpChannelOverFCGI extends HttpChannel
     {
         if (LOG.isDebugEnabled())
             LOG.debug("failing all content {}", this);
-        _contentQueue.forEach(c -> c.failed(failure));
-        _contentQueue.clear();
-        if (_specialContent != null)
-            return _specialContent.isEof();
+        HttpInput.Content normal = normalContent;
+        if (normal != null)
+            normal.failed(failure);
+        HttpInput.Content special = specialContent;
+        if (special != null)
+            return special.isEof();
         while (true)
         {
             HttpInput.Content content = produceContent();
             if (content == null)
                 return false;
-            if (_specialContent != null)
-                return _specialContent.isEof();
+            special = specialContent;
+            if (special != null)
+                return special.isEof();
             content.failed(failure);
         }
     }
@@ -163,11 +168,12 @@ public class HttpChannelOverFCGI extends HttpChannel
         if (LOG.isDebugEnabled())
             LOG.debug("failed {}", this, x);
 
-        Throwable error = _specialContent == null ? null : _specialContent.getError();
+        HttpInput.Content special = specialContent;
+        Throwable error = special == null ? null : special.getError();
         if (error != null && error != x)
             error.addSuppressed(x);
         else
-            _specialContent = new HttpInput.ErrorContent(x);
+            specialContent = new HttpInput.ErrorContent(x);
 
         return getRequest().getHttpInput().onContentProducible();
     }
@@ -177,7 +183,7 @@ public class HttpChannelOverFCGI extends HttpChannel
     {
         if (LOG.isDebugEnabled())
             LOG.debug("received EOF");
-        _specialContent = EOF_CONTENT;
+        specialContent = EOF_CONTENT;
         return getRequest().getHttpInput().onContentProducible();
     }
 
@@ -260,11 +266,12 @@ public class HttpChannelOverFCGI extends HttpChannel
     private boolean doOnIdleTimeout(Throwable x)
     {
         boolean neverDispatched = getState().isIdle();
-        boolean waitingForContent = _contentQueue.isEmpty() || _contentQueue.peek().remaining() == 0;
-        if ((waitingForContent || neverDispatched) && _specialContent == null)
+        HttpInput.Content normal = this.normalContent;
+        boolean waitingForContent = normal == null || normal.remaining() == 0;
+        if ((waitingForContent || neverDispatched) && specialContent == null)
         {
             x.addSuppressed(new Throwable("HttpInput idle timeout"));
-            _specialContent = new HttpInput.ErrorContent(x);
+            specialContent = new HttpInput.ErrorContent(x);
             return getRequest().getHttpInput().onContentProducible();
         }
         return false;
@@ -274,9 +281,10 @@ public class HttpChannelOverFCGI extends HttpChannel
     public void recycle()
     {
         super.recycle();
-        if (!_contentQueue.isEmpty())
-            throw new AssertionError("unconsumed content: " + _contentQueue);
-        _specialContent = null;
+        HttpInput.Content normal = normalContent;
+        if (normal != null)
+            throw new AssertionError("unconsumed content: " + normal);
+        specialContent = null;
     }
 
     @Override
