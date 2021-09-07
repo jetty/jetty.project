@@ -19,6 +19,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 
+import org.eclipse.jetty.session.infinispan.InfinispanSerializationContextInitializer;
+import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.util.IO;
 import org.hibernate.search.cfg.Environment;
@@ -26,9 +28,9 @@ import org.hibernate.search.cfg.SearchMapping;
 import org.infinispan.Cache;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.configuration.cache.ConfigurationChildBuilder;
-import org.infinispan.configuration.cache.Index;
 import org.infinispan.configuration.cache.StorageType;
 import org.infinispan.configuration.global.GlobalConfigurationBuilder;
+import org.infinispan.eviction.EvictionStrategy;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
 
@@ -54,7 +56,10 @@ public class InfinispanTestSupport
     {
         try
         {
-            _manager = new DefaultCacheManager(new GlobalConfigurationBuilder().globalJmxStatistics().jmx().build());
+            _manager = new DefaultCacheManager(new GlobalConfigurationBuilder().jmx()
+                .serialization()
+                .addContextInitializer(new InfinispanSerializationContextInitializer())
+                .build());
         }
         catch (Exception e)
         {
@@ -101,22 +106,28 @@ public class InfinispanTestSupport
         Properties properties = new Properties();
         properties.put(Environment.MODEL_MAPPING, mapping);
         properties.put("hibernate.search.default.indexBase", indexesDir.toString());
+        properties.put("hibernate.cache.infinispan.entity.eviction.strategy", "NONE");
 
         if (_useFileStore)
         {
             Path tmpDir = Files.createTempDirectory("infinispan");
             _tmpdir = tmpDir.toFile();
 
-            ConfigurationChildBuilder b = _builder.indexing()
-                .index(Index.ALL)
+            ConfigurationChildBuilder b = _builder
+                .indexing()
                 .addIndexedEntity(SessionData.class)
                 .withProperties(properties)
+                .memory()
+                .whenFull(EvictionStrategy.NONE)
                 .persistence()
                 .addSingleFileStore()
+                .segmented(false)
                 .location(_tmpdir.getAbsolutePath());
             if (_serializeSessionData)
             {
-                b = b.memory().storage(StorageType.HEAP);
+                b = b.memory().storage(StorageType.HEAP)
+                    .encoding()
+                    .mediaType("application/x-protostream");
             }
                 
             _manager.defineConfiguration(_name, b.build());
@@ -125,12 +136,13 @@ public class InfinispanTestSupport
         {
             ConfigurationChildBuilder b = _builder.indexing()
                 .withProperties(properties)
-                .index(Index.ALL)
                 .addIndexedEntity(SessionData.class);
         
             if (_serializeSessionData)
             {
-                b = b.memory().storage(StorageType.HEAP);
+                b = b.memory().storage(StorageType.HEAP)
+                    .encoding()
+                    .mediaType("application/x-protostream");
             }
                 
             _manager.defineConfiguration(_name, b.build());
@@ -155,6 +167,7 @@ public class InfinispanTestSupport
     public void createSession(SessionData data)
         throws Exception
     {
+        ((InfinispanSessionData)data).serializeAttributes();
         _cache.put(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId(), data);
     }
 
@@ -169,21 +182,30 @@ public class InfinispanTestSupport
         return (_cache.get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId()) != null);
     }
 
-    public boolean checkSessionPersisted(SessionData data)
+    public boolean checkSessionPersisted(SessionData data, ClassLoader loader)
         throws Exception
     {
-        
         //evicts the object from memory. Forces the cache to fetch the data from file
         if (_useFileStore)
         {
             _cache.evict(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId());
         }
         
+        System.err.println(Thread.currentThread() + " TestSupport retrieving session " + data.getId());
         Object obj = _cache.get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId());
         if (obj == null)
             return false;
 
         SessionData saved = (SessionData)obj;
+        
+        Thread.currentThread().setContextClassLoader(loader);
+        if (saved instanceof InfinispanSessionData)
+        {
+            System.err.println(Thread.currentThread() + " TestSupport deserializing " + data.getId() + " CONTEXTCLASSLOADER= " + Thread.currentThread().getContextClassLoader());
+            InfinispanSessionData isd = (InfinispanSessionData)saved;
+            if (isd.getSerializedAttributes() != null)
+                isd.deserializeAttributes();
+        }
 
         //turn an Entity into a Session
         assertEquals(data.getId(), saved.getId());
@@ -198,6 +220,7 @@ public class InfinispanTestSupport
         assertEquals(data.getExpiry(), saved.getExpiry());
         assertEquals(data.getMaxInactiveMs(), saved.getMaxInactiveMs());
 
+        
         //same number of attributes
         assertEquals(data.getAllAttributes().size(), saved.getAllAttributes().size());
         //same keys

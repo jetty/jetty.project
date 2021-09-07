@@ -42,6 +42,11 @@ public class SerializedInfinispanSessionDataStoreTest extends AbstractSessionDat
 
     public WorkDir workDir;
 
+    public SerializedInfinispanSessionDataStoreTest() throws Exception
+    {
+        super();
+    }
+    
     @BeforeEach
     public void setup() throws Exception
     {
@@ -121,7 +126,7 @@ public class SerializedInfinispanSessionDataStoreTest extends AbstractSessionDat
         Thread.currentThread().setContextClassLoader(_contextClassLoader);
         try
         {
-            return _testSupport.checkSessionPersisted(data);
+            return _testSupport.checkSessionPersisted(data, _contextClassLoader);
         }
         finally
         {

@@ -57,7 +57,7 @@ public abstract class AbstractSessionDataStoreTest
     public static final long RECENT_TIMESTAMP = System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(3 * GRACE_PERIOD_SEC);
     protected static File extraClasses;
 
-    protected URLClassLoader _contextClassLoader = new URLClassLoader(new URL[]{}, Thread.currentThread().getContextClassLoader());
+    protected URLClassLoader _contextClassLoader;
 
     public abstract SessionDataStoreFactory createSessionDataStoreFactory();
 
@@ -94,8 +94,15 @@ public abstract class AbstractSessionDataStoreTest
         File factoryClass = new File(extraClasses, "ProxyableFactory.class");
         IO.copy(is, new FileOutputStream(factoryClass));
         is.close();
-    }
 
+    }
+    
+    public AbstractSessionDataStoreTest() throws Exception
+    {
+        URL[] foodirUrls = new URL[]{extraClasses.toURI().toURL()};
+        _contextClassLoader = new URLClassLoader(foodirUrls, Thread.currentThread().getContextClassLoader());
+    }
+    
     /**
      * Test that the store can persist a session. The session uses an attribute
      * class that is only known to the webapp classloader. This tests that
@@ -104,10 +111,6 @@ public abstract class AbstractSessionDataStoreTest
     @Test
     public void testStoreSession() throws Exception
     {
-        //Use a class that would only be known to the webapp classloader
-        URL[] foodirUrls = new URL[]{extraClasses.toURI().toURL()};
-        _contextClassLoader = new URLClassLoader(foodirUrls, Thread.currentThread().getContextClassLoader());
-
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
@@ -155,6 +158,7 @@ public abstract class AbstractSessionDataStoreTest
                 try
                 {
                     store.store("aaa1", finalData);
+                    System.err.println(Thread.currentThread() + " SUCCESSFUL store of aaa1");
                 }
                 catch (Exception e)
                 {
@@ -167,6 +171,7 @@ public abstract class AbstractSessionDataStoreTest
         t.start();
         t.join(TimeUnit.SECONDS.toMillis(10));
 
+        System.err.println(Thread.currentThread() + " testStoreSession CURRENT CONTEXT CLASSLOADER=" + Thread.currentThread().getContextClassLoader());
         //check that the store contains all of the session data
         assertTrue(checkSessionPersisted(data));
     }
@@ -180,6 +185,7 @@ public abstract class AbstractSessionDataStoreTest
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
@@ -198,13 +204,19 @@ public abstract class AbstractSessionDataStoreTest
         //put it into the store
         persistSession(data);
 
+        System.err.println(Thread.currentThread() + " STORED aaa2 initially");
+        
+        assertTrue(checkSessionExists(data));
+        
         //now test we can update the session
         data.setLastAccessed(now - 1);
         data.setAccessed(now);
         data.setMaxInactiveMs(TimeUnit.MINUTES.toMillis(2));
         data.setAttribute("a", "c");
+        
+        System.err.println(Thread.currentThread() + " ABOUT to store changed aaa2");
         store.store("aaa2", data);
-
+        System.err.println(Thread.currentThread() + " STORED changed aaa2");
         assertTrue(checkSessionPersisted(data));
     }
 
@@ -215,10 +227,6 @@ public abstract class AbstractSessionDataStoreTest
     @Test
     public void testStoreObjectAttributes() throws Exception
     {
-        //Use classes that would only be known to the webapp classloader
-        URL[] proxyabledirUrls = new URL[]{extraClasses.toURI().toURL()};
-        _contextClassLoader = new URLClassLoader(proxyabledirUrls, Thread.currentThread().getContextClassLoader());
-
         //create the SessionDataStore 
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
@@ -303,6 +311,7 @@ public abstract class AbstractSessionDataStoreTest
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
@@ -336,6 +345,7 @@ public abstract class AbstractSessionDataStoreTest
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
@@ -370,6 +380,7 @@ public abstract class AbstractSessionDataStoreTest
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
@@ -391,6 +402,7 @@ public abstract class AbstractSessionDataStoreTest
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
@@ -428,6 +440,7 @@ public abstract class AbstractSessionDataStoreTest
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
@@ -455,6 +468,7 @@ public abstract class AbstractSessionDataStoreTest
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
@@ -491,6 +505,7 @@ public abstract class AbstractSessionDataStoreTest
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
@@ -521,6 +536,7 @@ public abstract class AbstractSessionDataStoreTest
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
@@ -542,6 +558,7 @@ public abstract class AbstractSessionDataStoreTest
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
@@ -577,6 +594,7 @@ public abstract class AbstractSessionDataStoreTest
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
@@ -611,6 +629,7 @@ public abstract class AbstractSessionDataStoreTest
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
@@ -634,6 +653,7 @@ public abstract class AbstractSessionDataStoreTest
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
@@ -670,6 +690,7 @@ public abstract class AbstractSessionDataStoreTest
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
@@ -695,6 +716,7 @@ public abstract class AbstractSessionDataStoreTest
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
@@ -795,6 +817,7 @@ public abstract class AbstractSessionDataStoreTest
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
@@ -821,6 +844,7 @@ public abstract class AbstractSessionDataStoreTest
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
@@ -847,6 +871,7 @@ public abstract class AbstractSessionDataStoreTest
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
@@ -864,6 +889,7 @@ public abstract class AbstractSessionDataStoreTest
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
@@ -892,6 +918,7 @@ public abstract class AbstractSessionDataStoreTest
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         ((AbstractSessionDataStoreFactory)factory).setSavePeriodSec(20); //only save every 20sec
@@ -932,6 +959,7 @@ public abstract class AbstractSessionDataStoreTest
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         ((AbstractSessionDataStoreFactory)factory).setSavePeriodSec(20); //only save every 20sec
@@ -961,6 +989,7 @@ public abstract class AbstractSessionDataStoreTest
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         ((AbstractSessionDataStoreFactory)factory).setSavePeriodSec(20); //only save every 20sec

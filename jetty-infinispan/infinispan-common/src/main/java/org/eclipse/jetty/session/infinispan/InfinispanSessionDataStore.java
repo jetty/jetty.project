@@ -44,6 +44,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     private int _infinispanIdleTimeoutSec;
     private QueryManager _queryManager;
     private boolean _passivating;
+    private boolean _serialization;
     
     /**
      * Get the clustered cache instance.
@@ -74,9 +75,8 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
 
         try 
         {
-            _passivating = false;
             Class<?> remoteClass = InfinispanSessionDataStore.class.getClassLoader().loadClass("org.infinispan.client.hotrod.RemoteCache");
-            if (remoteClass.isAssignableFrom(_cache.getClass()))
+            if (remoteClass.isAssignableFrom(_cache.getClass()) || _serialization)
                 _passivating = true;
         }
         catch (ClassNotFoundException e)
@@ -205,6 +205,17 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
+        System.err.println(Thread.currentThread() + " doStore for id=" + id);
+        //prepare for serialization: we need to convert the attributes now while the context
+        //classloader is set, because infinispan uses a different thread and classloader to
+        //perform the serialization
+        if (isPassivating() && data != null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Deserializing session attributes for {}", id);
+            System.err.println(Thread.currentThread() + " Serializing attributes for id=" + id);
+            ((InfinispanSessionData)data).serializeAttributes();
+        }
         //Put an idle timeout on the cache entry if the session is not immortal - 
         //if no requests arrive at any node before this timeout occurs, or no node 
         //scavenges the session before this timeout occurs, the session will be removed.
@@ -269,6 +280,11 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     public int getInfinispanIdleTimeoutSec()
     {
         return _infinispanIdleTimeoutSec;
+    }
+    
+    public void setSerialization(boolean serialization)
+    {
+        _serialization = serialization;
     }
 
     @Override
