@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 public class HttpTransportOverFCGI implements HttpTransport
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpTransportOverFCGI.class);
+
     private final ServerGenerator generator;
     private final Flusher flusher;
     private final int request;
@@ -48,6 +49,8 @@ public class HttpTransportOverFCGI implements HttpTransport
     @Override
     public void send(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("send {} {} l={}", this, request, lastContent);
         boolean head = HttpMethod.HEAD.is(request.getMethod());
         if (response != null)
         {
