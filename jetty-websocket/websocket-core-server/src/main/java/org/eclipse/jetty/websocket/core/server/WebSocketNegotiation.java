@@ -54,9 +54,9 @@ public abstract class WebSocketNegotiation
         return baseRequest;
     }
 
-    public void setBaseRequest(Request baseRequest)
+    public void upgrade()
     {
-        this.baseRequest = baseRequest;
+        this.baseRequest = null;
     }
 
     public HttpServletRequest getRequest()
