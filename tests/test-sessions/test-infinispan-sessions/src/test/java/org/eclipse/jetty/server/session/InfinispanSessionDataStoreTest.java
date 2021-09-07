@@ -46,7 +46,12 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
     public InfinispanTestSupport _testSupport;
 
     public WorkDir workDir;
-
+    
+    public InfinispanSessionDataStoreTest() throws Exception
+    {
+        super();
+    }
+    
     @BeforeEach
     public void setup() throws Exception
     {
@@ -73,7 +78,16 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public void persistSession(SessionData data) throws Exception
     {
-        _testSupport.createSession(data);
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(_contextClassLoader);
+        try
+        {
+            _testSupport.createSession(data);
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old);
+        }
     }
 
     @Override
@@ -85,7 +99,16 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public boolean checkSessionExists(SessionData data) throws Exception
     {
-        return _testSupport.checkSessionExists(data);
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(_contextClassLoader);
+        try
+        {
+            return _testSupport.checkSessionExists(data);
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old);
+        }
     }
 
     /**
@@ -98,6 +121,7 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
@@ -125,7 +149,8 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
         Thread.currentThread().setContextClassLoader(_contextClassLoader);
         try
         {
-            return _testSupport.checkSessionPersisted(data);
+            System.err.println(Thread.currentThread() + " InfinispanSessionDataTest.checkSessionPersisted: " + data.getId() + " CONTEXT CLASSLOADER=" + Thread.currentThread().getContextClassLoader());
+            return _testSupport.checkSessionPersisted(data, _contextClassLoader);
         }
         finally
         {
@@ -138,14 +163,17 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
     {
         InfinispanSessionData sd1 = new InfinispanSessionData("sd1", "", "", 0, 0, 0, 1000);
         sd1.setLastNode("fred1");
+        sd1.serializeAttributes();
         _testSupport.getCache().put("session1", sd1);
 
         InfinispanSessionData sd2 = new InfinispanSessionData("sd2", "", "", 0, 0, 0, 2000);
         sd2.setLastNode("fred2");
+        sd2.serializeAttributes();
         _testSupport.getCache().put("session2", sd2);
 
         InfinispanSessionData sd3 = new InfinispanSessionData("sd3", "", "", 0, 0, 0, 3000);
         sd3.setLastNode("fred3");
+        sd3.serializeAttributes();
         _testSupport.getCache().put("session3", sd3);
 
         QueryFactory qf = Search.getQueryFactory(_testSupport.getCache());

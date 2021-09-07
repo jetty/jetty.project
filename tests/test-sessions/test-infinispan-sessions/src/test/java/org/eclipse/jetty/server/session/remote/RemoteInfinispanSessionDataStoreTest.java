@@ -50,6 +50,11 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
 
     public static RemoteInfinispanTestSupport __testSupport;
 
+    public RemoteInfinispanSessionDataStoreTest() throws Exception
+    {
+        super();
+    }
+    
     @BeforeEach
     public void setup() throws Exception
     {

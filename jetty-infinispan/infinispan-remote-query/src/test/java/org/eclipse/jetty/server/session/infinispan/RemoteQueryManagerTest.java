@@ -35,6 +35,7 @@ import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.client.hotrod.configuration.ClientIntelligence;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
+import org.infinispan.client.hotrod.marshall.MarshallerUtil;
 import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.SerializationContext;
@@ -121,7 +122,7 @@ public class RemoteQueryManagerTest
         FileDescriptorSource fds = new FileDescriptorSource();
         fds.addProtoFiles("/session.proto");
 
-        SerializationContext serCtx = ProtoStreamMarshaller.getSerializationContext(remoteCacheManager);
+        SerializationContext serCtx = MarshallerUtil.getSerializationContext(remoteCacheManager);
         serCtx.registerProtoFiles(fds);
         serCtx.registerMarshaller(new SessionDataMarshaller());
 
