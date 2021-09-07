@@ -16,7 +16,7 @@ package org.eclipse.jetty.fcgi.parser;
 import java.nio.ByteBuffer;
 
 /**
- * <p>Parser for the END_REQUEST frame body.</p>
+ * <p>Parser for the END_REQUEST frame content.</p>
  * <pre>
  * struct end_request_body {
  *     uint applicationStatus;

@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>Parser for FastCGI frame headers.</p>
+ * <p>Parser for the FastCGI frame header.</p>
  * <pre>
  * struct frame_header {
  *     ubyte version;
@@ -47,7 +47,7 @@ public class HeaderParser
     private int padding;
 
     /**
-     * Parses the bytes in the given {@code buffer} as FastCGI header bytes
+     * Parses the bytes in the given {@code buffer} as FastCGI frame header bytes
      *
      * @param buffer the bytes to parse
      * @return whether there were enough bytes for a FastCGI header
