@@ -64,7 +64,7 @@ The `javax.websocket-api` artifact and the `websocket-javax-server` artifact (an
 To configure correctly your WebSocket application based on the standard `javax.websocket` APIs, you need two steps:
 
 . Make sure that Jetty xref:pg-server-websocket-standard-container[sets up] an instance of `javax.websocket.server.ServerContainer`.
-. Use the `ServerContainer` APIs in your applications to xref:pg-server-websocket-standard-endpoints[register your WebSocket endpoints] that implement your application logic.
+. xref:pg-server-websocket-standard-endpoints[Configure] the WebSocket endpoints that implement your application logic, either by annotating their classes with the standard `javax.websocket` annotations, or by using the `ServerContainer` APIs to register them in your code.
 
 [[pg-server-websocket-standard-container]]
 ===== Setting Up `ServerContainer`

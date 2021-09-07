@@ -29,7 +29,6 @@ The standard APIs provide few features that are not present in the Jetty WebSock
 
 On the other hand, the Jetty WebSocket APIs are more efficient and offer greater and more fine-grained control, and provide features that are not present in the standard APIs:
 
-* `MessageSink` for advanced, asynchronous, message streaming with backpressure.
 * Suspend/resume to control backpressure.
 * Remote socket address (IP address and port) information.
 * WebSocket upgrade handling via Filter or Servlet.
