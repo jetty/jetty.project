@@ -1,2 +1,0 @@
-EX|CyclicException
-EX|cyclic

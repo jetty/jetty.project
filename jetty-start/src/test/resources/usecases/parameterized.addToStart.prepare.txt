@@ -1,6 +1,0 @@
---create-startd
-other=value
-name=changed
-name0=changed0
-name1=changed1
---add-to-start=parameterized
