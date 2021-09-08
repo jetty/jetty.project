@@ -19,6 +19,7 @@ import java.lang.annotation.ElementType;
 import java.util.Properties;
 
 import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.session.infinispan.InfinispanSerializationContextInitializer;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
 import org.eclipse.jetty.session.infinispan.SessionDataMarshaller;
 import org.eclipse.jetty.util.IO;
@@ -98,22 +99,21 @@ public class RemoteInfinispanTestSupport
             if (infinispanVersion.startsWith("1"))
             {
                 configurationBuilder.security().authentication()
-//                    .realm("default")
-//                    .serverName("infinispan")
                     .saslMechanism("DIGEST-MD5")
                     .username("theuser").password("foobar");
             }
-
+            
+            configurationBuilder.addContextInitializer(new InfinispanSerializationContextInitializer());
             Configuration configuration = configurationBuilder.build();
 
             _manager = new RemoteCacheManager(configuration);
-
+            /*
             FileDescriptorSource fds = new FileDescriptorSource();
             fds.addProtoFiles("/session.proto");
-
+            
             SerializationContext serCtx = ProtoStreamMarshaller.getSerializationContext(_manager);
             serCtx.registerProtoFiles(fds);
-            serCtx.registerMarshaller(new SessionDataMarshaller());
+            serCtx.registerMarshaller(new SessionDataMarshaller());*/
 
             ByteArrayOutputStream baos;
             try (InputStream is = RemoteInfinispanSessionDataStoreTest.class.getClassLoader().getResourceAsStream("session.proto"))
@@ -166,12 +166,13 @@ public class RemoteInfinispanTestSupport
     public void createSession(InfinispanSessionData data)
         throws Exception
     {
+        data.serializeAttributes();
         _cache.put(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId(), data);
     }
 
     public void createUnreadableSession(InfinispanSessionData data)
     {
-
+        //Unused by test
     }
 
     public boolean checkSessionExists(InfinispanSessionData data)
@@ -188,7 +189,8 @@ public class RemoteInfinispanTestSupport
             return false;
 
         InfinispanSessionData saved = (InfinispanSessionData)obj;
-        saved.deserializeAttributes();
+        if (saved.getSerializedAttributes() != null)
+            saved.deserializeAttributes();
 
         assertEquals(data.getId(), saved.getId());
         assertEquals(data.getContextPath(), saved.getContextPath());
