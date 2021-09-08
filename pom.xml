@@ -1209,7 +1209,7 @@
       <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-constants</artifactId>
-        <version>0.10.0</version>
+        <version>0.10.2</version>
       </dependency>
       <dependency>
         <groupId>com.github.jnr</groupId>
