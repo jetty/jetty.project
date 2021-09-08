@@ -1255,17 +1255,17 @@
       <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-constants</artifactId>
-        <version>0.10.0</version>
+        <version>0.10.2</version>
       </dependency>
       <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-enxio</artifactId>
-        <version>0.32.1</version>
+        <version>0.32.8</version>
       </dependency>
       <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-posix</artifactId>
-        <version>3.1.2</version>
+        <version>3.1.9</version>
       </dependency>
       <dependency>
         <groupId>com.github.jnr</groupId>
