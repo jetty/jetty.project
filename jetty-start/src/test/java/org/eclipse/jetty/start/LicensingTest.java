@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.StringReader;
@@ -28,13 +25,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
 
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
 
 /**
  * Test various license handling.
@@ -104,6 +107,8 @@ public class LicensingTest
     @Test
     public void testAdd_HTTP2_Licensed() throws Exception
     {
+        assumeJavaVersionSupportsALPN();
+
         Path basePath = testdir.getEmptyPathDir();
 
         List<String> cmds = getBaseCommandLine(basePath);
@@ -120,6 +125,8 @@ public class LicensingTest
     @Test
     public void testAdd_Http_Http2_Then_Deploy() throws Exception
     {
+        assumeJavaVersionSupportsALPN();
+
         Path basePath = testdir.getEmptyPathDir();
 
         List<String> cmds = getBaseCommandLine(basePath);
@@ -145,6 +152,8 @@ public class LicensingTest
     @Test
     public void testCreate_HTTP2_Licensed() throws Exception
     {
+        assumeJavaVersionSupportsALPN();
+
         Path basePath = testdir.getEmptyPathDir();
 
         List<String> cmds = getBaseCommandLine(basePath);
@@ -178,5 +187,36 @@ public class LicensingTest
         }
 
         execMain(cmds);
+    }
+
+    protected void assumeJavaVersionSupportsALPN()
+    {
+        boolean isALPNSupported = false;
+
+        if (JavaVersion.VERSION.getPlatform() >= 9)
+        {
+            // Java 9+ is always supported with the native java ALPN support libs
+            isALPNSupported = true;
+        }
+        else
+        {
+            // Java 8 updates around update 252 are not supported in Jetty 9.3 (it requires a new ALPN support library that exists only in Java 9.4+)
+            try
+            {
+                // JDK 8u252 has the JDK 9 ALPN API backported.
+                SSLParameters.class.getMethod("setApplicationProtocols", String[].class);
+                SSLEngine.class.getMethod("getApplicationProtocol");
+                // This means we have a new version of Java 8 that has ALPN backported, which Jetty 9.3 does not support.
+                // Use Jetty 9.4 for proper support.
+                isALPNSupported = false;
+            }
+            catch (NoSuchMethodException x)
+            {
+                // this means we have an old version of Java 8 that needs the XBootclasspath support libs
+                isALPNSupported = true;
+            }
+        }
+
+        Assume.assumeTrue("ALPN support exists", isALPNSupported);
     }
 }

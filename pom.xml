@@ -9,7 +9,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-project</artifactId>
-  <version>9.3.29.v20201019</version>
+  <version>9.3.30-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
@@ -26,6 +26,7 @@
     <alpn.version>undefined</alpn.version>
     <tycho-version>1.2.0</tycho-version>
     <cbi-plugins.version>1.1.5</cbi-plugins.version>
+    <argLine></argLine>
   </properties>
 
   <scm>
@@ -425,11 +426,13 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.19.1</version>
+          <version>2.22.2</version>
           <configuration>
+            <trimStackTrace>false</trimStackTrace>
             <argLine>@{argLine} -Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx1g -Xms1g -XX:+PrintGCDetails</argLine>
             <failIfNoTests>false</failIfNoTests>
             <forkCount>1</forkCount>
+<!--            <reuseForks>false</reuseForks>-->
             <systemProperties>
               <property>
                 <name>java.io.tmpdir</name>
@@ -1633,6 +1636,30 @@
         <property>
           <name>java.version</name>
           <value>1.8.0_242</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.13.v20181017</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u292</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_292</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.13.v20181017</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u302</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_302</value>
         </property>
       </activation>
       <properties>

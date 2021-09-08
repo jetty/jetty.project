@@ -21,7 +21,6 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.security.cert.CertificateException;
 import java.util.concurrent.ExecutionException;
-
 import javax.net.ssl.SSLHandshakeException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -39,6 +38,8 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * This test class runs tests to make sure that hostname verification (http://www.ietf.org/rfc/rfc2818.txt
@@ -59,7 +60,7 @@ public class HostnameVerificationTest
         server = new Server(serverThreads);
 
         SslContextFactory serverSslContextFactory = new SslContextFactory();
-        serverSslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+        serverSslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
         serverSslContextFactory.setKeyStorePassword("storepwd");
         connector = new ServerConnector(server, serverSslContextFactory);
         server.addConnector(connector);
@@ -75,7 +76,7 @@ public class HostnameVerificationTest
         server.start();
 
         // keystore contains a hostname which doesn't match localhost
-        clientSslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+        clientSslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
         clientSslContextFactory.setKeyStorePassword("storepwd");
 
         QueuedThreadPool clientThreads = new QueuedThreadPool();
@@ -114,8 +115,16 @@ public class HostnameVerificationTest
         {
             Throwable cause = x.getCause();
             Assert.assertThat(cause, Matchers.instanceOf(SSLHandshakeException.class));
-            Throwable root = cause.getCause().getCause();
-            Assert.assertThat(root, Matchers.instanceOf(CertificateException.class));
+
+            // Search for the CertificateException.
+            Throwable certificateException = cause.getCause();
+            while (certificateException != null)
+            {
+                if (certificateException instanceof CertificateException)
+                    break;
+                certificateException = certificateException.getCause();
+            }
+            assertThat(certificateException, Matchers.instanceOf(CertificateException.class));
         }
     }
 

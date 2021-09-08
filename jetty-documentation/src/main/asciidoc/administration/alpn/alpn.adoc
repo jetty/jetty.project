@@ -50,7 +50,7 @@ Be certain link:#alpn-versions[to get the ALPN Boot Jar version which matches th
 To use ALPN in an OSGi environment, in addition to putting the ALPN jar on the boot classpath for the container, you will also need to deploy the `jetty-osgi-alpn` jar.
 This jar contains a Fragment-Host directive that ensures the ALPN classes will be available from the system bundle.
 
-You can download the http://central.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-alpn/[jetty-osgi-alpn jar] from Maven Central.
+You can download the https://repo1.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-alpn/[jetty-osgi-alpn jar] from Maven Central.
 
 [[alpn-understanding]]
 ==== Understanding the ALPN API

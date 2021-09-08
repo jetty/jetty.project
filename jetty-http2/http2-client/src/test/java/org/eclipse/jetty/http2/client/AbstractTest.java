@@ -20,7 +20,8 @@ package org.eclipse.jetty.http2.client;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
-
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
 import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -40,8 +41,10 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Rule;
 
 public class AbstractTest
@@ -55,6 +58,8 @@ public class AbstractTest
 
     protected void start(HttpServlet servlet) throws Exception
     {
+        assumeJavaVersionSupportsALPN();
+
         prepareServer(new HTTP2ServerConnectionFactory(new HttpConfiguration()));
         ServletContextHandler context = new ServletContextHandler(server, "/", true, false);
         context.addServlet(new ServletHolder(servlet), servletPath + "/*");
@@ -71,6 +76,8 @@ public class AbstractTest
 
     protected void start(ServerSessionListener listener) throws Exception
     {
+        assumeJavaVersionSupportsALPN();
+
         prepareServer(new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), listener));
         server.start();
 
@@ -80,6 +87,8 @@ public class AbstractTest
 
     protected void prepareServer(ConnectionFactory... connectionFactories)
     {
+        assumeJavaVersionSupportsALPN();
+
         QueuedThreadPool serverExecutor = new QueuedThreadPool();
         serverExecutor.setName("server");
         server = new Server(serverExecutor);
@@ -89,6 +98,8 @@ public class AbstractTest
 
     protected void prepareClient()
     {
+        assumeJavaVersionSupportsALPN();
+
         client = new HTTP2Client();
         QueuedThreadPool clientExecutor = new QueuedThreadPool();
         clientExecutor.setName("client");
@@ -97,6 +108,8 @@ public class AbstractTest
 
     protected Session newClient(Session.Listener listener) throws Exception
     {
+        assumeJavaVersionSupportsALPN();
+
         String host = "localhost";
         int port = connector.getLocalPort();
         InetSocketAddress address = new InetSocketAddress(host, port);
@@ -125,5 +138,36 @@ public class AbstractTest
             client.stop();
         if (server != null)
             server.stop();
+    }
+
+    protected void assumeJavaVersionSupportsALPN()
+    {
+        boolean isALPNSupported = false;
+
+        if (JavaVersion.VERSION.getPlatform() >= 9)
+        {
+            // Java 9+ is always supported with the native java ALPN support libs
+            isALPNSupported = true;
+        }
+        else
+        {
+            // Java 8 updates around update 252 are not supported in Jetty 9.3 (it requires a new ALPN support library that exists only in Java 9.4+)
+            try
+            {
+                // JDK 8u252 has the JDK 9 ALPN API backported.
+                SSLParameters.class.getMethod("setApplicationProtocols", String[].class);
+                SSLEngine.class.getMethod("getApplicationProtocol");
+                // This means we have a new version of Java 8 that has ALPN backported, which Jetty 9.3 does not support.
+                // Use Jetty 9.4 for proper support.
+                isALPNSupported = false;
+            }
+            catch (NoSuchMethodException x)
+            {
+                // this means we have an old version of Java 8 that needs the XBootclasspath support libs
+                isALPNSupported = true;
+            }
+        }
+
+        Assume.assumeTrue("ALPN support exists", isALPNSupported);
     }
 }

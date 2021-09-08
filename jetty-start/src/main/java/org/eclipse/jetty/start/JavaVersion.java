@@ -18,55 +18,44 @@
 
 package org.eclipse.jetty.start;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 /**
  * Java Version Utility class.
  * <p>Parses java versions to extract a consistent set of version parts</p>
  */
 public class JavaVersion
 {
-    // Copy of code in jetty-util
+    public static final JavaVersion VERSION = parse(System.getProperty("java.version"));
 
-    private static final Pattern PRE_JDK9 = Pattern.compile("1\\.(\\d)(\\.(\\d+)(_(\\d+))?)?(-.+)?");
-    // Regexp from JEP 223 (http://openjdk.java.net/jeps/223).
-    private static final Pattern JDK9 = Pattern.compile("(\\d+)(\\.(\\d+))?(\\.(\\d+))?((-.+)?(\\+(\\d+)?(-.+)?)?)");
-
-    public static JavaVersion parse(String version)
+    public static JavaVersion parse(String v)
     {
-        if (version.startsWith("1."))
-            return parsePreJDK9(version);
-        return parseJDK9(version);
-    }
+        // $VNUM is a dot-separated list of integers of arbitrary length
+        String[] split = v.split("[^0-9]");
+        int len = Math.min(split.length, 3);
+        int[] version = new int[len];
+        for (int i = 0; i < len; i++)
+        {
+            try
+            {
+                version[i] = Integer.parseInt(split[i]);
+            }
+            catch (Throwable e)
+            {
+                len = i - 1;
+                break;
+            }
+        }
 
-    private static JavaVersion parsePreJDK9(String version)
-    {
-        Matcher matcher = PRE_JDK9.matcher(version);
-        if (!matcher.matches())
-            throw new IllegalArgumentException("Invalid Java version " + version);
-        int major = 1;
-        int minor = Integer.parseInt(matcher.group(1));
-        String microGroup = matcher.group(3);
-        int micro = microGroup == null || microGroup.isEmpty() ? 0 : Integer.parseInt(microGroup);
-        String updateGroup = matcher.group(5);
-        int update = updateGroup == null || updateGroup.isEmpty() ? 0 : Integer.parseInt(updateGroup);
-        String suffix = matcher.group(6);
-        return new JavaVersion(version, minor, major, minor, micro, update, suffix);
-    }
+        JavaVersion ret = new JavaVersion(
+            v,
+            (version[0] >= 9 || len == 1) ? version[0] : version[1],
+            version[0],
+            len > 1 ? version[1] : 0,
+            len > 2 ? version[2] : 0);
 
-    private static JavaVersion parseJDK9(String version)
-    {
-        Matcher matcher = JDK9.matcher(version);
-        if (!matcher.matches())
-            throw new IllegalArgumentException("Invalid Java version " + version);
-        int major = Integer.parseInt(matcher.group(1));
-        String minorGroup = matcher.group(3);
-        int minor = minorGroup == null || minorGroup.isEmpty() ? 0 : Integer.parseInt(minorGroup);
-        String microGroup = matcher.group(5);
-        int micro = microGroup == null || microGroup.isEmpty() ? 0 : Integer.parseInt(microGroup);
-        String suffix = matcher.group(6);
-        return new JavaVersion(version, major, major, minor, micro, 0, suffix);
+        if (!(ret.getPlatform() >= 8))
+            throw new IllegalArgumentException("Invalid Java version " + v);
+
+        return ret;
     }
 
     private final String version;
@@ -74,18 +63,14 @@ public class JavaVersion
     private final int major;
     private final int minor;
     private final int micro;
-    private final int update;
-    private final String suffix;
 
-    private JavaVersion(String version, int platform, int major, int minor, int micro, int update, String suffix)
+    private JavaVersion(String version, int platform, int major, int minor, int micro)
     {
         this.version = version;
         this.platform = platform;
         this.major = major;
         this.minor = minor;
         this.micro = micro;
-        this.update = update;
-        this.suffix = suffix;
     }
 
     /**
@@ -127,7 +112,7 @@ public class JavaVersion
     }
 
     /**
-     * <p>Returns the micro number version, such as {@code 0} for JDK 1.8.0_92 and {@code 4} for JDK 9.2.4.</p>
+     * <p>Returns the micro number version (aka security number), such as {@code 0} for JDK 1.8.0_92 and {@code 4} for JDK 9.2.4.</p>
      *
      * @return the micro number version
      */
@@ -141,9 +126,10 @@ public class JavaVersion
      *
      * @return the update number version
      */
+    @Deprecated
     public int getUpdate()
     {
-        return update;
+        return 0;
     }
 
     /**
@@ -152,8 +138,15 @@ public class JavaVersion
      *
      * @return the remaining string after the version numbers
      */
+    @Deprecated
     public String getSuffix()
     {
-        return suffix;
+        return null;
+    }
+
+    @Override
+    public String toString()
+    {
+        return version;
     }
 }
