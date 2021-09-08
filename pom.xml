@@ -995,7 +995,7 @@
         <plugin>
           <groupId>org.mortbay.jetty</groupId>
           <artifactId>h2spec-maven-plugin</artifactId>
-          <version>1.0.6</version>
+          <version>1.0.7</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -1255,7 +1255,7 @@
       <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-constants</artifactId>
-        <version>0.10.0</version>
+        <version>0.10.2</version>
       </dependency>
       <dependency>
         <groupId>com.github.jnr</groupId>
