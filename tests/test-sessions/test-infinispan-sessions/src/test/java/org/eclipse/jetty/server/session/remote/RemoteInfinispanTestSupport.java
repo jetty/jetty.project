@@ -21,16 +21,18 @@ import java.util.Properties;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.session.infinispan.InfinispanSerializationContextInitializer;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
-import org.eclipse.jetty.session.infinispan.SessionDataMarshaller;
 import org.eclipse.jetty.util.IO;
 import org.hibernate.search.cfg.Environment;
 import org.hibernate.search.cfg.SearchMapping;
+import org.infinispan.client.hotrod.DataFormat;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.client.hotrod.configuration.ClientIntelligence;
 import org.infinispan.client.hotrod.configuration.Configuration;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
-import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
+import org.infinispan.commons.configuration.XMLStringConfiguration;
+import org.infinispan.commons.dataconversion.MediaType;
+import org.infinispan.commons.marshall.ProtoStreamMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.SerializationContext;
 import org.slf4j.Logger;
@@ -63,18 +65,18 @@ public class RemoteInfinispanTestSupport
         {
             //Testcontainers.exposeHostPorts(11222);
             long start = System.currentTimeMillis();
-            String infinispanVersion = System.getProperty("infinispan.docker.image.version", "9.4.8.Final");
+            String infinispanVersion = System.getProperty("infinispan.docker.image.version", "11.0.9.Final");
             infinispan =
                 new GenericContainer(System.getProperty("infinispan.docker.image.name", "infinispan/server") +
                     ":" + infinispanVersion)
-                    .withEnv("USER", "theuser")
-                    .withEnv("PASS", "foobar")
-                    .withEnv("MGMT_USER", "admin")
-                    .withEnv("MGMT_PASS", "admin")
-                    .waitingFor(new LogMessageWaitStrategy()
-                        .withRegEx(".*Infinispan Server.*started in.*\\s"))
-                    .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
-                    .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG));
+                .withEnv("USER", "theuser")
+                .withEnv("PASS", "foobar")
+                .withEnv("MGMT_USER", "admin")
+                .withEnv("MGMT_PASS", "admin")
+                .waitingFor(new LogMessageWaitStrategy()
+                    .withRegEx(".*Infinispan Server.*started in.*\\s"))
+                .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
+                .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG));
             infinispan.start();
             String host = infinispan.getContainerIpAddress();
             System.setProperty("hotrod.host", host);
@@ -155,7 +157,15 @@ public class RemoteInfinispanTestSupport
 
     public void setup() throws Exception
     {
-        _cache = _manager.administration().getOrCreateCache(_name, (String)null);
+        String xml = String.format("<infinispan>"  + 
+            "<cache-container>" + "<distributed-cache name=\"%s\" mode=\"SYNC\">" +
+            "<encoding media-type=\"application/x-protostream\"/>" +
+            "</distributed-cache>" +
+            "</cache-container>" +
+            "</infinispan>", _name);
+
+        XMLStringConfiguration xmlConfig = new XMLStringConfiguration(xml);
+        _cache = _manager.administration().getOrCreateCache(_name, xmlConfig);
     }
 
     public void teardown() throws Exception

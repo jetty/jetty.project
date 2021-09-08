@@ -29,6 +29,7 @@ import org.eclipse.jetty.session.infinispan.RemoteQueryManager;
 import org.infinispan.client.hotrod.Search;
 import org.infinispan.query.dsl.Query;
 import org.infinispan.query.dsl.QueryFactory;
+import org.infinispan.query.dsl.QueryResult;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -178,12 +179,17 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
         __testSupport.getCache().put("session3", sd3);
 
         QueryFactory qf = Search.getQueryFactory(__testSupport.getCache());
+        Query<InfinispanSessionData> query = qf.create("from org_eclipse_jetty_session_infinispan.InfinispanSessionData where " +
+            " expiry < :time");
 
         for (int i = 0; i <= 3; i++)
         {
             long now = System.currentTimeMillis();
-            Query q = qf.from(InfinispanSessionData.class).having("expiry").lt(now).build();
-            assertEquals(i, q.list().size());
+            //Query q = qf.from(InfinispanSessionData.class).having("expiry").lt(now).build();
+            //assertEquals(i, q.list().size());
+            query.setParameter("time", now);
+            QueryResult<InfinispanSessionData> result = query.execute();
+            assertEquals(i, result.list().size());
             Thread.sleep(1000);
         }
     }
