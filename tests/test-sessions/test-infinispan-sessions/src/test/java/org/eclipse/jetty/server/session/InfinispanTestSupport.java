@@ -182,7 +182,7 @@ public class InfinispanTestSupport
         return (_cache.get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId()) != null);
     }
 
-    public boolean checkSessionPersisted(SessionData data, ClassLoader loader)
+    public boolean checkSessionPersisted(SessionData data)
         throws Exception
     {
         //evicts the object from memory. Forces the cache to fetch the data from file
@@ -190,18 +190,15 @@ public class InfinispanTestSupport
         {
             _cache.evict(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId());
         }
-        
-        System.err.println(Thread.currentThread() + " TestSupport retrieving session " + data.getId());
+
         Object obj = _cache.get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId());
         if (obj == null)
             return false;
 
         SessionData saved = (SessionData)obj;
         
-        Thread.currentThread().setContextClassLoader(loader);
         if (saved instanceof InfinispanSessionData)
         {
-            System.err.println(Thread.currentThread() + " TestSupport deserializing " + data.getId() + " CONTEXTCLASSLOADER= " + Thread.currentThread().getContextClassLoader());
             InfinispanSessionData isd = (InfinispanSessionData)saved;
             if (isd.getSerializedAttributes() != null)
                 isd.deserializeAttributes();

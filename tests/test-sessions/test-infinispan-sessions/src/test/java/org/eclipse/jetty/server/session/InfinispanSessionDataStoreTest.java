@@ -149,8 +149,7 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
         Thread.currentThread().setContextClassLoader(_contextClassLoader);
         try
         {
-            System.err.println(Thread.currentThread() + " InfinispanSessionDataTest.checkSessionPersisted: " + data.getId() + " CONTEXT CLASSLOADER=" + Thread.currentThread().getContextClassLoader());
-            return _testSupport.checkSessionPersisted(data, _contextClassLoader);
+            return _testSupport.checkSessionPersisted(data);
         }
         finally
         {

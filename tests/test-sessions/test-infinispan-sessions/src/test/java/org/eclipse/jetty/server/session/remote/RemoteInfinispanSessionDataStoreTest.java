@@ -80,7 +80,17 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
     @Override
     public void persistSession(SessionData data) throws Exception
     {
-        __testSupport.createSession((InfinispanSessionData)data);
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(_contextClassLoader);
+        try
+        {
+            __testSupport.createSession((InfinispanSessionData)data);
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old);
+        }
+        
     }
 
     @Override
@@ -92,7 +102,16 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
     @Override
     public boolean checkSessionExists(SessionData data) throws Exception
     {
-        return __testSupport.checkSessionExists((InfinispanSessionData)data);
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(_contextClassLoader);
+        try
+        {
+            return __testSupport.checkSessionExists((InfinispanSessionData)data);
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old);
+        }
     }
 
     @Override
@@ -145,14 +164,17 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
     {
         InfinispanSessionData sd1 = new InfinispanSessionData("sd1", "", "", 0, 0, 0, 1000);
         sd1.setLastNode("fred1");
+        sd1.serializeAttributes();
         __testSupport.getCache().put("session1", sd1);
 
         InfinispanSessionData sd2 = new InfinispanSessionData("sd2", "", "", 0, 0, 0, 2000);
         sd2.setLastNode("fred2");
+        sd2.serializeAttributes();
         __testSupport.getCache().put("session2", sd2);
 
         InfinispanSessionData sd3 = new InfinispanSessionData("sd3", "", "", 0, 0, 0, 3000);
         sd3.setLastNode("fred3");
+        sd3.serializeAttributes();
         __testSupport.getCache().put("session3", sd3);
 
         QueryFactory qf = Search.getQueryFactory(__testSupport.getCache());
