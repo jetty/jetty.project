@@ -24,6 +24,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.infinispan.query.Search;
 import org.infinispan.query.dsl.Query;
 import org.infinispan.query.dsl.QueryFactory;
+import org.infinispan.query.dsl.QueryResult;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -180,8 +181,11 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
         for (int i = 0; i <= 3; i++)
         {
             long now = System.currentTimeMillis();
-            Query q = qf.from(InfinispanSessionData.class).having("expiry").lt(now).build();
-            assertEquals(i, q.list().size());
+            //Query q = qf.from(InfinispanSessionData.class).having("expiry").lt(now).build();
+            Query<InfinispanSessionData> q = qf.create("from org.eclipse.jetty.session.infinispan.InfinispanSessionData where expiry < " + now);
+            //assertEquals(i, q.list().size());
+            QueryResult<InfinispanSessionData> result = q.execute();
+            assertEquals(i, result.list().size());
             Thread.sleep(1000);
         }
     }
