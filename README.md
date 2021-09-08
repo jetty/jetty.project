@@ -20,10 +20,11 @@ Jetty is a modern fully async web server that has a long history as a component 
 
 Webapp Example
 --------------
-```bash
-# java -jar $JETTY_HOME/start.jar --add-modules=http,deploy
-# cp ~/src/myproj/target/mywebapp.war webapps
-# java -jar $JETTY_HOME/start.jar 
+```shell
+$ mkdir base && cd base
+$ java -jar $JETTY_HOME/start.jar --add-modules=http,deploy
+$ cp ~/src/myproj/target/mywebapp.war webapps
+$ java -jar $JETTY_HOME/start.jar 
 ```
 
 Embedded Example
