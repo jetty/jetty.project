@@ -39,7 +39,7 @@
     <jmhjar.name>benchmarks</jmhjar.name>
     <tycho-version>2.1.0</tycho-version>
     <junit.version>5.7.2</junit.version>
-    <maven.version>3.6.3</maven.version>
+    <maven.version>3.8.2</maven.version>
     <maven.resolver.version>1.7.1</maven.resolver.version>
     <weld.version>3.1.8.Final</weld.version>
     <jboss.logging.version>3.4.2.Final</jboss.logging.version>
@@ -617,12 +617,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-plugin-plugin</artifactId>
-          <version>3.6.0</version>
+          <version>3.6.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-project-info-reports-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.1.2</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -1301,7 +1301,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-project-info-reports-plugin</artifactId>
-            <version>3.1.1</version>
+            <version>3.1.2</version>
           </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
