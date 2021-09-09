@@ -68,7 +68,6 @@ public class SessionData implements Serializable
     public static void serializeAttributes(SessionData data, java.io.ObjectOutputStream out)
         throws IOException
     {
-        System.err.println(Thread.currentThread() + " SessionData.serializeAttributes id=" + data.getId() + " CONTEXTLOADER = " + Thread.currentThread().getContextClassLoader());;
         int entries = data._attributes.size();
         out.writeObject(entries);
         for (Entry<String, Object> entry : data._attributes.entrySet())
@@ -107,7 +106,6 @@ public class SessionData implements Serializable
                 }
             }
             
-            System.err.println(Thread.currentThread() + " Serializing attribute=" + entry.getKey() + " id=" + data.getId() + " isContextLoader=" + isContextLoader + " TCCL =" + contextLoader);
             if (LOG.isDebugEnabled())
                 LOG.debug("Attribute {} class={} isServerLoader={}", entry.getKey(), clazz.getName(), (!isContextLoader));
             out.writeBoolean(!isContextLoader);
@@ -138,7 +136,6 @@ public class SessionData implements Serializable
             data._attributes = new ConcurrentHashMap<>();
             int entries = ((Integer)o).intValue();
             ClassLoader contextLoader = Thread.currentThread().getContextClassLoader();
-            System.err.println(Thread.currentThread() + " SessionData.deserializeAttributes id=" + data.getId() + " CONTEXTLOADER = " + contextLoader);
             ClassLoader serverLoader = SessionData.class.getClassLoader();
             for (int i = 0; i < entries; i++)
             {
@@ -146,7 +143,6 @@ public class SessionData implements Serializable
                 boolean isServerClassLoader = in.readBoolean(); //use server or webapp classloader to load
                 if (LOG.isDebugEnabled())
                     LOG.debug("Deserialize {} isServerLoader={} serverLoader={} tccl={}", name, isServerClassLoader, serverLoader, contextLoader);
-                System.err.println(Thread.currentThread() + " Attr=" + name + " isServerLoader=" + isServerClassLoader);
                 Object value = ((ClassLoadingObjectInputStream)in).readObject(isServerClassLoader ? serverLoader : contextLoader);
                 data._attributes.put(name, value);
             }

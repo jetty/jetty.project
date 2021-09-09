@@ -158,7 +158,6 @@ public abstract class AbstractSessionDataStoreTest
                 try
                 {
                     store.store("aaa1", finalData);
-                    System.err.println(Thread.currentThread() + " SUCCESSFUL store of aaa1");
                 }
                 catch (Exception e)
                 {
@@ -171,7 +170,6 @@ public abstract class AbstractSessionDataStoreTest
         t.start();
         t.join(TimeUnit.SECONDS.toMillis(10));
 
-        System.err.println(Thread.currentThread() + " testStoreSession CURRENT CONTEXT CLASSLOADER=" + Thread.currentThread().getContextClassLoader());
         //check that the store contains all of the session data
         assertTrue(checkSessionPersisted(data));
     }
@@ -203,8 +201,6 @@ public abstract class AbstractSessionDataStoreTest
 
         //put it into the store
         persistSession(data);
-
-        System.err.println(Thread.currentThread() + " STORED aaa2 initially");
         
         assertTrue(checkSessionExists(data));
         
@@ -214,9 +210,7 @@ public abstract class AbstractSessionDataStoreTest
         data.setMaxInactiveMs(TimeUnit.MINUTES.toMillis(2));
         data.setAttribute("a", "c");
         
-        System.err.println(Thread.currentThread() + " ABOUT to store changed aaa2");
         store.store("aaa2", data);
-        System.err.println(Thread.currentThread() + " STORED changed aaa2");
         assertTrue(checkSessionPersisted(data));
     }
 
