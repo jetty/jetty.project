@@ -19,6 +19,7 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.quic.common.ProtocolQuicSession;
 import org.eclipse.jetty.quic.common.QuicConnection;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
@@ -45,20 +46,33 @@ public class ServerQuicSession extends QuicSession
     }
 
     @Override
+    protected ProtocolQuicSession createProtocolQuicSession()
+    {
+        ConnectionFactory connectionFactory = findConnectionFactory(getNegotiatedProtocol());
+        if (connectionFactory instanceof ProtocolQuicSession.Factory)
+            return ((ProtocolQuicSession.Factory)connectionFactory).newProtocolQuicSession(this);
+        return new ProtocolQuicSession(this);
+    }
+
+    @Override
     protected QuicStreamEndPoint createQuicStreamEndPoint(long streamId)
     {
-        String negotiatedProtocol = getNegotiatedProtocol();
-        ConnectionFactory connectionFactory = connector.getConnectionFactory(negotiatedProtocol);
-        if (connectionFactory == null)
-            connectionFactory = connector.getDefaultConnectionFactory();
-        if (connectionFactory == null)
-            throw new RuntimeIOException("No configured connection factory can handle protocol '" + negotiatedProtocol + "'");
-
+        ConnectionFactory connectionFactory = findConnectionFactory(getNegotiatedProtocol());
         QuicStreamEndPoint endPoint = new QuicStreamEndPoint(getScheduler(), this, streamId);
         Connection connection = connectionFactory.newConnection(connector, endPoint);
         endPoint.setConnection(connection);
         endPoint.onOpen();
         connection.onOpen();
         return endPoint;
+    }
+
+    private ConnectionFactory findConnectionFactory(String negotiatedProtocol)
+    {
+        ConnectionFactory connectionFactory = connector.getConnectionFactory(negotiatedProtocol);
+        if (connectionFactory == null)
+            connectionFactory = connector.getDefaultConnectionFactory();
+        if (connectionFactory == null)
+            throw new RuntimeIOException("No configured connection factory can handle protocol '" + negotiatedProtocol + "'");
+        return connectionFactory;
     }
 }

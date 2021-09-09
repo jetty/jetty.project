@@ -14,9 +14,10 @@
 package org.eclipse.jetty.http3.qpack;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 
-public class TestEncoderHandler implements QpackEncoder.Handler
+public class TestEncoderHandler implements Instruction.Handler
 {
     private final Queue<Instruction> _instructionList = new LinkedList<>();
     private QpackDecoder _decoder;
@@ -27,11 +28,11 @@ public class TestEncoderHandler implements QpackEncoder.Handler
     }
 
     @Override
-    public void onInstruction(Instruction instruction) throws QpackException
+    public void onInstructions(List<Instruction> instructions) throws QpackException
     {
-        _instructionList.add(instruction);
+        _instructionList.addAll(instructions);
         if (_decoder != null)
-            _decoder.parseInstruction(QpackTestUtil.toBuffer(instruction));
+            _decoder.parseInstruction(QpackTestUtil.toBuffer(instructions));
     }
 
     public Instruction getInstruction()

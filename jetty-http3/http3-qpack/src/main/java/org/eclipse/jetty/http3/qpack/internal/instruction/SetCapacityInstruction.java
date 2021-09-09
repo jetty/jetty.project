@@ -16,7 +16,7 @@ package org.eclipse.jetty.http3.qpack.internal.instruction;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.qpack.Instruction;
-import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
+import org.eclipse.jetty.http3.qpack.internal.util.NBitLongEncoder;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -37,10 +37,10 @@ public class SetCapacityInstruction implements Instruction
     @Override
     public void encode(ByteBufferPool.Lease lease)
     {
-        int size = NBitIntegerEncoder.octectsNeeded(5, _capacity) + 1;
+        int size = NBitLongEncoder.octectsNeeded(5, _capacity) + 1;
         ByteBuffer buffer = lease.acquire(size, false);
         buffer.put((byte)0x20);
-        NBitIntegerEncoder.encode(buffer, 5, _capacity);
+        NBitLongEncoder.encode(buffer, 5, _capacity);
         BufferUtil.flipToFlush(buffer, 0);
         lease.append(buffer, true);
     }

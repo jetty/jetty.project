@@ -24,6 +24,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class EvictionTest
@@ -67,8 +68,9 @@ public class EvictionTest
             int streamId = getPositiveInt(10);
 
             _encoder.encode(encodedFields, streamId, new MetaData(HttpVersion.HTTP_3, httpFields));
-            _decoder.decode(streamId, encodedFields);
+            _decoder.decode(streamId, encodedFields, _decoderHandler);
             MetaData result = _decoderHandler.getMetaData();
+            assertNotNull(result);
 
 //            System.err.println("encoder: ");
 //            System.err.println(_encoder.dump());

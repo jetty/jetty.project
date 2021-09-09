@@ -14,11 +14,12 @@
 package org.eclipse.jetty.http3.qpack;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 
 import org.eclipse.jetty.http.MetaData;
 
-public class TestDecoderHandler implements QpackDecoder.Handler
+public class TestDecoderHandler implements QpackDecoder.Handler, Instruction.Handler
 {
     private final Queue<MetaData> _metadataList = new LinkedList<>();
     private final Queue<Instruction> _instructionList = new LinkedList<>();
@@ -30,17 +31,17 @@ public class TestDecoderHandler implements QpackDecoder.Handler
     }
 
     @Override
-    public void onMetaData(int streamId, MetaData metadata)
+    public void onMetaData(long streamId, MetaData metadata)
     {
         _metadataList.add(metadata);
     }
 
     @Override
-    public void onInstruction(Instruction instruction) throws QpackException
+    public void onInstructions(List<Instruction> instructions) throws QpackException
     {
-        _instructionList.add(instruction);
+        _instructionList.addAll(instructions);
         if (_encoder != null)
-            _encoder.parseInstruction(QpackTestUtil.toBuffer(instruction));
+            _encoder.parseInstruction(QpackTestUtil.toBuffer(instructions));
     }
 
     public MetaData getMetaData()

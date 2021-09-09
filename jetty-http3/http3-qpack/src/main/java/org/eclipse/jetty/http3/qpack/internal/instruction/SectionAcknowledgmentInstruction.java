@@ -16,15 +16,15 @@ package org.eclipse.jetty.http3.qpack.internal.instruction;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.qpack.Instruction;
-import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
+import org.eclipse.jetty.http3.qpack.internal.util.NBitLongEncoder;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class SectionAcknowledgmentInstruction implements Instruction
 {
-    private final int _streamId;
+    private final long _streamId;
 
-    public SectionAcknowledgmentInstruction(int streamId)
+    public SectionAcknowledgmentInstruction(long streamId)
     {
         _streamId = streamId;
     }
@@ -32,10 +32,10 @@ public class SectionAcknowledgmentInstruction implements Instruction
     @Override
     public void encode(ByteBufferPool.Lease lease)
     {
-        int size = NBitIntegerEncoder.octectsNeeded(7, _streamId) + 1;
+        int size = NBitLongEncoder.octectsNeeded(7, _streamId) + 1;
         ByteBuffer buffer = lease.acquire(size, false);
         buffer.put((byte)0x80);
-        NBitIntegerEncoder.encode(buffer, 7, _streamId);
+        NBitLongEncoder.encode(buffer, 7, _streamId);
         BufferUtil.flipToFlush(buffer, 0);
         lease.append(buffer, true);
     }

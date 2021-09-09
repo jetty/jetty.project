@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http3.qpack;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -83,13 +84,13 @@ public class EncodeDecodeTest
         assertThat(BufferUtil.toHexString(buffer), QpackTestUtil.equalsHex("0000 510b 2f69 6e64 6578 2e68 746d 6c"));
         assertTrue(_encoderHandler.isEmpty());
 
-        _decoder.decode(streamId, buffer);
+        _decoder.decode(streamId, buffer, _decoderHandler);
         MetaData result = _decoderHandler.getMetaData();
         assertThat(result.getFields(), is(httpFields));
         assertThat(_decoderHandler.getInstruction(), instanceOf(SectionAcknowledgmentInstruction.class));
         assertTrue(_decoderHandler.isEmpty());
 
-        _encoderInstructionParser.parse(QpackTestUtil.toBuffer(new SectionAcknowledgmentInstruction(streamId)));
+        _encoderInstructionParser.parse(QpackTestUtil.toBuffer(List.of(new SectionAcknowledgmentInstruction(streamId))));
 
         // B.2. Dynamic Table.
 
@@ -124,7 +125,7 @@ public class EncodeDecodeTest
         assertTrue(_encoderHandler.isEmpty());
 
         // We cannot decode the buffer until we parse the two instructions generated above (we reach required insert count).
-        _decoder.decode(streamId, buffer);
+        _decoder.decode(streamId, buffer, _decoderHandler);
         assertNull(_decoderHandler.getMetaData());
 
         _decoderInstructionParser.parse(QpackTestUtil.hexToBuffer("c00f 7777 772e 6578 616d 706c 652e 636f 6d"));
@@ -139,8 +140,8 @@ public class EncodeDecodeTest
         assertTrue(_decoderHandler.isEmpty());
 
         // Parse the decoder instructions on the encoder.
-        _encoderInstructionParser.parse(QpackTestUtil.toBuffer(new InsertCountIncrementInstruction(2)));
-        _encoderInstructionParser.parse(QpackTestUtil.toBuffer(new SectionAcknowledgmentInstruction(streamId)));
+        _encoderInstructionParser.parse(QpackTestUtil.toBuffer(List.of(new InsertCountIncrementInstruction(2))));
+        _encoderInstructionParser.parse(QpackTestUtil.toBuffer(List.of(new SectionAcknowledgmentInstruction(streamId))));
 
         // B.3. Speculative Insert
         _encoder.insert(new HttpField("custom-key", "custom-value"));

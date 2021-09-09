@@ -23,6 +23,7 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.quic.common.ProtocolQuicSession;
 import org.eclipse.jetty.quic.common.QuicConnection;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
@@ -43,6 +44,12 @@ public class ClientQuicSession extends QuicSession
     {
         super(executor, scheduler, byteBufferPool, quicheConnection, connection, remoteAddress);
         this.context = context;
+    }
+
+    @Override
+    protected ProtocolQuicSession createProtocolQuicSession()
+    {
+        return new ProtocolQuicSession(this);
     }
 
     @Override

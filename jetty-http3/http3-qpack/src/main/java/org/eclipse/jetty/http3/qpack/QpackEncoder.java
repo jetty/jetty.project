@@ -36,7 +36,7 @@ import org.eclipse.jetty.http3.qpack.internal.metadata.Http3Fields;
 import org.eclipse.jetty.http3.qpack.internal.parser.EncoderInstructionParser;
 import org.eclipse.jetty.http3.qpack.internal.table.DynamicTable;
 import org.eclipse.jetty.http3.qpack.internal.table.Entry;
-import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
+import org.eclipse.jetty.http3.qpack.internal.util.NBitLongEncoder;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
@@ -81,12 +81,8 @@ public class QpackEncoder implements Dumpable
             HttpHeader.SET_COOKIE,
             HttpHeader.SET_COOKIE2);
 
-    public interface Handler
-    {
-        void onInstruction(Instruction instruction) throws QpackException;
-    }
-
-    private final Handler _handler;
+    private final List<Instruction> _instructions = new ArrayList<>();
+    private final Instruction.Handler _handler;
     private final QpackContext _context;
     private final int _maxBlockedStreams;
     private final Map<Integer, StreamInfo> _streamInfoMap = new HashMap<>();
@@ -94,17 +90,12 @@ public class QpackEncoder implements Dumpable
     private int _knownInsertCount = 0;
     private int _blockedStreams = 0;
 
-    public QpackEncoder(Handler handler, int maxBlockedStreams)
+    public QpackEncoder(Instruction.Handler handler, int maxBlockedStreams)
     {
         _handler = handler;
         _context = new QpackContext();
         _maxBlockedStreams = maxBlockedStreams;
         _parser = new EncoderInstructionParser(new EncoderAdapter());
-    }
-
-    QpackContext getQpackContext()
-    {
-        return _context;
     }
 
     /**
@@ -114,7 +105,7 @@ public class QpackEncoder implements Dumpable
     public void setCapacity(int capacity) throws QpackException
     {
         _context.getDynamicTable().setCapacity(capacity);
-        _handler.onInstruction(new SetCapacityInstruction(capacity));
+        _handler.onInstructions(List.of(new SetCapacityInstruction(capacity)));
     }
 
     protected boolean shouldIndex(HttpField httpField)
@@ -132,7 +123,7 @@ public class QpackEncoder implements Dumpable
         _parser.parse(buffer);
     }
 
-    public boolean insert(HttpField field) throws QpackException
+    boolean insert(HttpField field) throws QpackException
     {
         DynamicTable dynamicTable = _context.getDynamicTable();
 
@@ -149,7 +140,7 @@ public class QpackEncoder implements Dumpable
         {
             int index = _context.indexOf(entry);
             dynamicTable.add(new Entry(field));
-            _handler.onInstruction(new DuplicateInstruction(index));
+            _instructions.add(new DuplicateInstruction(index));
             return true;
         }
 
@@ -159,12 +150,16 @@ public class QpackEncoder implements Dumpable
         {
             int index = _context.indexOf(nameEntry);
             dynamicTable.add(new Entry(field));
-            _handler.onInstruction(new IndexedNameEntryInstruction(!nameEntry.isStatic(), index, huffman, field.getValue()));
+            _instructions.add(new IndexedNameEntryInstruction(!nameEntry.isStatic(), index, huffman, field.getValue()));
             return true;
         }
 
         dynamicTable.add(new Entry(field));
-        _handler.onInstruction(new LiteralNameEntryInstruction(field, huffman));
+        _instructions.add(new LiteralNameEntryInstruction(field, huffman));
+
+        _handler.onInstructions(_instructions);
+        _instructions.clear();
+
         return true;
     }
 
@@ -222,9 +217,9 @@ public class QpackEncoder implements Dumpable
         int pos = BufferUtil.flipToFill(buffer);
 
         // Encode the Field Section Prefix into the ByteBuffer.
-        NBitIntegerEncoder.encode(buffer, 8, encodedInsertCount);
+        NBitLongEncoder.encode(buffer, 8, encodedInsertCount);
         buffer.put(signBit ? (byte)0x80 : (byte)0x00);
-        NBitIntegerEncoder.encode(buffer, 7, deltaBase);
+        NBitLongEncoder.encode(buffer, 7, deltaBase);
 
         // Encode the field lines into the ByteBuffer.
         for (EncodableEntry entry : encodableEntries)
@@ -233,9 +228,13 @@ public class QpackEncoder implements Dumpable
         }
 
         BufferUtil.flipToFlush(buffer, pos);
+
+        if (!_instructions.isEmpty())
+            _handler.onInstructions(_instructions);
+        _instructions.clear();
     }
 
-    private EncodableEntry encode(StreamInfo streamInfo, HttpField field) throws QpackException
+    private EncodableEntry encode(StreamInfo streamInfo, HttpField field)
     {
         DynamicTable dynamicTable = _context.getDynamicTable();
 
@@ -262,7 +261,7 @@ public class QpackEncoder implements Dumpable
                 int index = _context.indexOf(entry);
                 Entry newEntry = new Entry(field);
                 dynamicTable.add(newEntry);
-                _handler.onInstruction(new DuplicateInstruction(index));
+                _instructions.add(new DuplicateInstruction(index));
 
                 // Should we reference this entry and risk blocking.
                 if (referenceEntry(newEntry, streamInfo))
@@ -280,7 +279,7 @@ public class QpackEncoder implements Dumpable
                 int index = _context.indexOf(nameEntry);
                 Entry newEntry = new Entry(field);
                 dynamicTable.add(newEntry);
-                _handler.onInstruction(new IndexedNameEntryInstruction(!nameEntry.isStatic(), index, huffman, field.getValue()));
+                _instructions.add(new IndexedNameEntryInstruction(!nameEntry.isStatic(), index, huffman, field.getValue()));
 
                 // Should we reference this entry and risk blocking.
                 if (referenceEntry(newEntry, streamInfo))
@@ -295,7 +294,7 @@ public class QpackEncoder implements Dumpable
             {
                 Entry newEntry = new Entry(field);
                 dynamicTable.add(newEntry);
-                _handler.onInstruction(new LiteralNameEntryInstruction(field, huffman));
+                _instructions.add(new LiteralNameEntryInstruction(field, huffman));
 
                 // Should we reference this entry and risk blocking.
                 if (referenceEntry(newEntry, streamInfo))

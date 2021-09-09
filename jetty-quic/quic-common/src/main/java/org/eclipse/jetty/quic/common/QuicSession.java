@@ -54,33 +54,47 @@ public abstract class QuicSession
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicSession.class);
 
-    private final Flusher flusher;
+    private final AutoLock strategyQueueLock = new AutoLock();
+    private final Queue<Runnable> strategyQueue = new ArrayDeque<>();
+    private final ConcurrentMap<Long, QuicStreamEndPoint> endpoints = new ConcurrentHashMap<>();
+    private final Executor executor;
     private final Scheduler scheduler;
     private final ByteBufferPool byteBufferPool;
     private final QuicheConnection quicheConnection;
     private final QuicConnection connection;
-    private final ConcurrentMap<Long, QuicStreamEndPoint> endpoints = new ConcurrentHashMap<>();
+    private final Flusher flusher;
     private final ExecutionStrategy strategy;
-    private final AutoLock strategyQueueLock = new AutoLock();
-    private final Queue<Runnable> strategyQueue = new ArrayDeque<>();
     private SocketAddress remoteAddress;
+    private ProtocolQuicSession protocolSession;
+    // TODO make it final?
     private QuicheConnectionId quicheConnectionId;
 
     protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicheConnection quicheConnection, QuicConnection connection, SocketAddress remoteAddress)
     {
+        this.executor = executor;
         this.scheduler = scheduler;
         this.byteBufferPool = byteBufferPool;
         this.quicheConnection = quicheConnection;
         this.connection = connection;
-        this.remoteAddress = remoteAddress;
         this.flusher = new Flusher(scheduler);
         this.strategy = new AdaptiveExecutionStrategy(new Producer(), executor);
+        this.remoteAddress = remoteAddress;
         LifeCycle.start(strategy);
+    }
+
+    public Executor getExecutor()
+    {
+        return executor;
     }
 
     public Scheduler getScheduler()
     {
         return scheduler;
+    }
+
+    public ProtocolQuicSession getProtocolQuicSession()
+    {
+        return protocolSession;
     }
 
     public String getNegotiatedProtocol()
@@ -153,31 +167,49 @@ public abstract class QuicSession
 
     public void process(SocketAddress remoteAddress, ByteBuffer cipherBufferIn) throws IOException
     {
+        // While the connection ID remains the same,
+        // the remote address may change so store it again.
         this.remoteAddress = remoteAddress;
+
         quicheConnection.feedCipherText(cipherBufferIn);
 
         if (quicheConnection.isConnectionEstablished())
         {
-            List<Long> writableStreamIds = quicheConnection.writableStreamIds();
-            if (LOG.isDebugEnabled())
-                LOG.debug("writable stream ids: {}", writableStreamIds);
-            if (!writableStreamIds.isEmpty())
-            {
-                dispatch(new WritableStreamsTask(writableStreamIds));
-            }
+            // HTTP/1.1
+            // client1 -- sockEP1 -- H1Connection
 
-            List<Long> readableStreamIds = quicheConnection.readableStreamIds();
-            if (LOG.isDebugEnabled())
-                LOG.debug("readable stream ids: {}", readableStreamIds);
-            for (Long readableStreamId : readableStreamIds)
-            {
-                dispatch(new ReadableStreamTask(readableStreamId));
-            }
+            // HTTP/2
+            // client1 -- sockEP1 -> H2Connection - HEADERSParser - H2Session -* RequestStreams -# HTTP Handler
+            // client2 -- sockEP2 -> H2Connection - HEADERSParser - H2Session -* RequestStreams -# HTTP Handler
+
+            // HTTP/3
+            // client1
+            //        \                                                             /- ConnectionStream0 - ConnectionParser for SETTINGS frames, etc.
+            //         dataEP - QuicConnection -* QuicSession -# ProtocolQuicSession -* RequestStreamsEP - H3Connection - HEADERSParser -# HTTP Handler
+            //        /                                                             `- InstructionStream - InstructionConnection/Parser
+            // client2
+            // H3ProtoSession - QpackEncoder
+            // H3ProtoSession - QpackDecoder
+            // H3ProtoSession -* request streams
+
+            if (protocolSession == null)
+                protocolSession = createProtocolQuicSession();
+            protocolSession.process();
         }
         else
         {
             flush();
         }
+    }
+
+    protected abstract ProtocolQuicSession createProtocolQuicSession();
+
+    void processWritableStreams()
+    {
+        List<Long> writableStreamIds = quicheConnection.writableStreamIds();
+        if (LOG.isDebugEnabled())
+            LOG.debug("writable stream ids: {}", writableStreamIds);
+        writableStreamIds.forEach(this::onWritable);
     }
 
     private void onWritable(long writableStreamId)
@@ -186,6 +218,15 @@ public abstract class QuicSession
         if (LOG.isDebugEnabled())
             LOG.debug("selected endpoint for write: {}", streamEndPoint);
         streamEndPoint.onWritable();
+    }
+
+    boolean processReadableStreams()
+    {
+        List<Long> readableStreamIds = quicheConnection.readableStreamIds();
+        if (LOG.isDebugEnabled())
+            LOG.debug("readable stream ids: {}", readableStreamIds);
+        readableStreamIds.forEach(this::onReadable);
+        return !readableStreamIds.isEmpty();
     }
 
     private void onReadable(long readableStreamId)
@@ -369,41 +410,6 @@ public abstract class QuicSession
             {
                 return strategyQueue.poll();
             }
-        }
-    }
-
-    private class WritableStreamsTask implements Runnable
-    {
-        private final List<Long> streamIds;
-
-        private WritableStreamsTask(List<Long> streamIds)
-        {
-            this.streamIds = streamIds;
-        }
-
-        @Override
-        public void run()
-        {
-            for (long streamId : streamIds)
-            {
-                onWritable(streamId);
-            }
-        }
-    }
-
-    private class ReadableStreamTask implements Runnable
-    {
-        private final long streamId;
-
-        private ReadableStreamTask(long streamId)
-        {
-            this.streamId = streamId;
-        }
-
-        @Override
-        public void run()
-        {
-            onReadable(streamId);
         }
     }
 }
