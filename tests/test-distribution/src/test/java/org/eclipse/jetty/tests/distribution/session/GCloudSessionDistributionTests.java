@@ -15,6 +15,7 @@ package org.eclipse.jetty.tests.distribution.session;
 
 import java.net.InetAddress;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
@@ -82,6 +83,12 @@ public class GCloudSessionDistributionTests extends AbstractSessionDistributionT
     public void stopExternalSessionStorage() throws Exception
     {
         emulator.stop();
+    }
+    
+    @Override
+    public void configureExternalSessionStorage(Path jettyBase) throws Exception
+    {
+        // no op
     }
 
     @Override

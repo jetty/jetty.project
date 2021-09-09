@@ -205,7 +205,6 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
-        System.err.println(Thread.currentThread() + " doStore for id=" + id);
         //prepare for serialization: we need to convert the attributes now while the context
         //classloader is set, because infinispan uses a different thread and classloader to
         //perform the serialization
@@ -213,7 +212,6 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Deserializing session attributes for {}", id);
-            System.err.println(Thread.currentThread() + " Serializing attributes for id=" + id);
             ((InfinispanSessionData)data).serializeAttributes();
         }
         //Put an idle timeout on the cache entry if the session is not immortal - 

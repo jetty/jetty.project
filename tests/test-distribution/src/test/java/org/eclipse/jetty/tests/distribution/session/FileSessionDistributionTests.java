@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.tests.distribution.session;
 
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 
@@ -24,7 +25,12 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers(disabledWithoutDocker = false)
 public class FileSessionDistributionTests extends AbstractSessionDistributionTests
 {
-
+    @Override
+    public void configureExternalSessionStorage(Path jettyBase) throws Exception
+    {
+        // no op
+    }
+    
     @Override
     public void startExternalSessionStorage() throws Exception
     {

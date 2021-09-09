@@ -85,7 +85,10 @@ public abstract class AbstractSessionDistributionTests extends AbstractJettyHome
             args = new ArrayList<>(Collections.singletonList("jetty.http.port=" + port));
             args.addAll(getSecondStartExtraArgs());
             argsStart = args.toArray(new String[0]);
-
+            
+            //allow the external storage mechanisms to do some config before starting test
+            configureExternalSessionStorage(jettyHomeTester.getJettyBase());
+            
             try (JettyHomeTester.Run run2 = jettyHomeTester.start(argsStart))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started Server@", START_TIMEOUT, TimeUnit.SECONDS));
@@ -106,6 +109,7 @@ public abstract class AbstractSessionDistributionTests extends AbstractJettyHome
             {
                 writer.write("org.eclipse.jetty.server.session.LEVEL=DEBUG");
             }
+
 
             try (JettyHomeTester.Run run2 = jettyHomeTester.start(argsStart))
             {
@@ -134,5 +138,7 @@ public abstract class AbstractSessionDistributionTests extends AbstractJettyHome
     public abstract void startExternalSessionStorage() throws Exception;
 
     public abstract void stopExternalSessionStorage() throws Exception;
+
+    public abstract void configureExternalSessionStorage(Path jettyBase) throws Exception;
 
 }
