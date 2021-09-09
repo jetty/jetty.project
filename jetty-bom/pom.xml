@@ -321,11 +321,6 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-spring</artifactId>
-        <version>9.4.44-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-unixsocket</artifactId>
         <version>9.4.44-SNAPSHOT</version>
       </dependency>
