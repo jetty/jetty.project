@@ -26,6 +26,7 @@ http://www.apache.org/licenses/LICENSE-2.0.html
 
 [ini-template]
 #jetty.session.infinispan.remoteCacheName=sessions
+#jetty.session.infinispan.serialization=true
 #jetty.session.infinispan.idleTimeout.seconds=0
 #jetty.session.gracePeriod.seconds=3600
 #jetty.session.savePeriod.seconds=0
