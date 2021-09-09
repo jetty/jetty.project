@@ -42,17 +42,19 @@ public class QpackDecoder implements Dumpable
 {
     public static final Logger LOG = LoggerFactory.getLogger(QpackDecoder.class);
 
-    private final Handler _handler;
+    private final List<Instruction> _instructions = new ArrayList<>();
+    private final Instruction.Handler _handler;
     private final QpackContext _context;
     private final DecoderInstructionParser _parser;
     private final List<EncodedFieldSection> _encodedFieldSections = new ArrayList<>();
     private final NBitIntegerParser _integerDecoder = new NBitIntegerParser();
     private final int _maxHeaderSize;
+    private MetaData _metaData;
 
     /**
      * @param maxHeaderSize The maximum allowed size of a headers block, expressed as total of all name and value characters, plus 32 per field
      */
-    public QpackDecoder(Handler handler, int maxHeaderSize)
+    public QpackDecoder(Instruction.Handler handler, int maxHeaderSize)
     {
         _context = new QpackContext();
         _handler = handler;
@@ -67,12 +69,10 @@ public class QpackDecoder implements Dumpable
 
     public interface Handler
     {
-        void onMetaData(int streamId, MetaData metadata);
-
-        void onInstruction(Instruction instruction) throws QpackException;
+        void onMetaData(long streamId, MetaData metadata);
     }
 
-    public void decode(int streamId, ByteBuffer buffer) throws QpackException
+    public boolean decode(long streamId, ByteBuffer buffer, Handler handler) throws QpackException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Decoding: streamId={}, buffer={}", streamId, BufferUtil.toDetailString(buffer));
@@ -105,12 +105,11 @@ public class QpackDecoder implements Dumpable
         // Decode it straight away if we can, otherwise add it to the list of EncodedFieldSections.
         if (requiredInsertCount <= insertCount)
         {
-            MetaData metaData = encodedFieldSection.decode(_context, _maxHeaderSize);
+            _metaData = encodedFieldSection.decode(_context, _maxHeaderSize);
             if (LOG.isDebugEnabled())
-                LOG.debug("Decoded: streamId={}, metadata={}", streamId, metaData);
+                LOG.debug("Decoded: streamId={}, metadata={}", streamId, _metaData);
 
-            _handler.onMetaData(streamId, metaData);
-            _handler.onInstruction(new SectionAcknowledgmentInstruction(streamId));
+            _instructions.add(new SectionAcknowledgmentInstruction(streamId));
         }
         else
         {
@@ -118,9 +117,20 @@ public class QpackDecoder implements Dumpable
                 LOG.debug("Deferred Decoding: streamId={}, encodedFieldSection={}", streamId, encodedFieldSection);
             _encodedFieldSections.add(encodedFieldSection);
         }
+
+        if (!_instructions.isEmpty())
+            _handler.onInstructions(_instructions);
+        _instructions.clear();
+
+        MetaData metaData = _metaData;
+        _metaData = null;
+        if (metaData != null)
+            handler.onMetaData(streamId, metaData);
+
+        return metaData != null;
     }
 
-    public void parseInstruction(ByteBuffer buffer) throws QpackException
+    void parseInstruction(ByteBuffer buffer) throws QpackException
     {
         _parser.parse(buffer);
     }
@@ -132,13 +142,12 @@ public class QpackDecoder implements Dumpable
         {
             if (encodedFieldSection.getRequiredInsertCount() <= insertCount)
             {
-                int streamId = encodedFieldSection.getStreamId();
-                MetaData metaData = encodedFieldSection.decode(_context, _maxHeaderSize);
+                long streamId = encodedFieldSection.getStreamId();
+                _metaData = encodedFieldSection.decode(_context, _maxHeaderSize);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Decoded: streamId={}, metadata={}", streamId, metaData);
+                    LOG.debug("Decoded: streamId={}, metadata={}", streamId, _metaData);
 
-                _handler.onMetaData(streamId, metaData);
-                _handler.onInstruction(new SectionAcknowledgmentInstruction(streamId));
+                _instructions.add(new SectionAcknowledgmentInstruction(streamId));
             }
         }
     }
@@ -159,7 +168,7 @@ public class QpackDecoder implements Dumpable
         // Add the new Entry to the DynamicTable.
         Entry entry = new Entry(referencedEntry.getHttpField());
         dynamicTable.add(entry);
-        _handler.onInstruction(new InsertCountIncrementInstruction(1));
+        _instructions.add(new InsertCountIncrementInstruction(1));
         checkEncodedFieldSections();
     }
 
@@ -175,7 +184,7 @@ public class QpackDecoder implements Dumpable
         // Add the new Entry to the DynamicTable.
         Entry entry = new Entry(new HttpField(referencedEntry.getHttpField().getHeader(), referencedEntry.getHttpField().getName(), value));
         dynamicTable.add(entry);
-        _handler.onInstruction(new InsertCountIncrementInstruction(1));
+        _instructions.add(new InsertCountIncrementInstruction(1));
         checkEncodedFieldSections();
     }
 
@@ -189,7 +198,7 @@ public class QpackDecoder implements Dumpable
         // Add the new Entry to the DynamicTable.
         DynamicTable dynamicTable = _context.getDynamicTable();
         dynamicTable.add(entry);
-        _handler.onInstruction(new InsertCountIncrementInstruction(1));
+        _instructions.add(new InsertCountIncrementInstruction(1));
         checkEncodedFieldSections();
     }
 

@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http3.qpack;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.NullByteBufferPool;
@@ -32,11 +33,11 @@ public class QpackTestUtil
         return org.hamcrest.text.IsEqualIgnoringCase.equalToIgnoringCase(expectedString);
     }
 
-    public static ByteBuffer toBuffer(Instruction instruction)
+    public static ByteBuffer toBuffer(List<Instruction> instructions)
     {
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(new NullByteBufferPool());
-        instruction.encode(lease);
-        assertThat(lease.getSize(), is(1));
+        instructions.forEach(i -> i.encode(lease));
+        assertThat(lease.getSize(), is(instructions.size()));
         return lease.getByteBuffers().get(0);
     }
 
@@ -48,6 +49,6 @@ public class QpackTestUtil
 
     public static String toHexString(Instruction instruction)
     {
-        return BufferUtil.toHexString(toBuffer(instruction));
+        return BufferUtil.toHexString(toBuffer(List.of(instruction)));
     }
 }

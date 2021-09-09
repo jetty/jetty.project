@@ -44,6 +44,16 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         this.streamId = streamId;
     }
 
+    public QuicSession getQuicSession()
+    {
+        return session;
+    }
+
+    public long getStreamId()
+    {
+        return streamId;
+    }
+
     @Override
     public SocketAddress getLocalSocketAddress()
     {

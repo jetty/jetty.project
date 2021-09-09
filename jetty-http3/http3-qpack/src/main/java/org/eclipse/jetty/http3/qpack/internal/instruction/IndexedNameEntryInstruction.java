@@ -17,7 +17,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.http3.qpack.internal.util.HuffmanEncoder;
-import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
+import org.eclipse.jetty.http3.qpack.internal.util.NBitLongEncoder;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -54,24 +54,24 @@ public class IndexedNameEntryInstruction implements Instruction
     @Override
     public void encode(ByteBufferPool.Lease lease)
     {
-        int size = NBitIntegerEncoder.octectsNeeded(6, _index) + (_huffman ? HuffmanEncoder.octetsNeeded(_value) : _value.length()) + 2;
+        int size = NBitLongEncoder.octectsNeeded(6, _index) + (_huffman ? HuffmanEncoder.octetsNeeded(_value) : _value.length()) + 2;
         ByteBuffer buffer = lease.acquire(size, false);
 
         // First bit indicates the instruction, second bit is whether it is a dynamic table reference or not.
         buffer.put((byte)(0x80 | (_dynamic ? 0x00 : 0x40)));
-        NBitIntegerEncoder.encode(buffer, 6, _index);
+        NBitLongEncoder.encode(buffer, 6, _index);
 
         // We will not huffman encode the string.
         if (_huffman)
         {
             buffer.put((byte)(0x80));
-            NBitIntegerEncoder.encode(buffer, 7, HuffmanEncoder.octetsNeeded(_value));
+            NBitLongEncoder.encode(buffer, 7, HuffmanEncoder.octetsNeeded(_value));
             HuffmanEncoder.encode(buffer, _value);
         }
         else
         {
             buffer.put((byte)(0x00));
-            NBitIntegerEncoder.encode(buffer, 7, _value.length());
+            NBitLongEncoder.encode(buffer, 7, _value.length());
             buffer.put(_value.getBytes());
         }
 

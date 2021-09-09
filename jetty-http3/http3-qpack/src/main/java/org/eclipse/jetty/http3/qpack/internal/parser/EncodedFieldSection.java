@@ -36,11 +36,11 @@ public class EncodedFieldSection
     private final NBitStringParser _stringParser = new NBitStringParser();
     private final List<EncodedField> _encodedFields = new ArrayList<>();
 
-    private final int _streamId;
+    private final long _streamId;
     private final int _requiredInsertCount;
     private final int _base;
 
-    public EncodedFieldSection(int streamId, int requiredInsertCount, int base, ByteBuffer content) throws QpackException
+    public EncodedFieldSection(long streamId, int requiredInsertCount, int base, ByteBuffer content) throws QpackException
     {
         _streamId = streamId;
         _requiredInsertCount = requiredInsertCount;
@@ -65,7 +65,7 @@ public class EncodedFieldSection
         }
     }
 
-    public int getStreamId()
+    public long getStreamId()
     {
         return _streamId;
     }

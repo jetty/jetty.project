@@ -15,9 +15,9 @@ package org.eclipse.jetty.http3.qpack.internal.util;
 
 import java.nio.ByteBuffer;
 
-public class NBitIntegerEncoder
+public class NBitLongEncoder
 {
-    public static int octectsNeeded(int n, int i)
+    public static int octectsNeeded(int n, long i)
     {
         if (n == 8)
         {
@@ -27,8 +27,8 @@ public class NBitIntegerEncoder
                 return 1;
             if (i == 0)
                 return 2;
-            int lz = Integer.numberOfLeadingZeros(i);
-            int log = 32 - lz;
+            int lz = Long.numberOfLeadingZeros(i);
+            int log = 64 - lz;
             return 1 + (log + 6) / 7;
         }
 
@@ -38,12 +38,12 @@ public class NBitIntegerEncoder
             return 0;
         if (i == 0)
             return 1;
-        int lz = Integer.numberOfLeadingZeros(i);
-        int log = 32 - lz;
+        int lz = Long.numberOfLeadingZeros(i);
+        int log = 64 - lz;
         return (log + 6) / 7;
     }
 
-    public static void encode(ByteBuffer buf, int n, int i)
+    public static void encode(ByteBuffer buf, int n, long i)
     {
         if (n == 8)
         {
@@ -55,7 +55,7 @@ public class NBitIntegerEncoder
             {
                 buf.put((byte)0xFF);
 
-                int length = i - 0xFF;
+                long length = i - 0xFF;
                 while (true)
                 {
                     if ((length & ~0x7F) == 0)
@@ -84,7 +84,7 @@ public class NBitIntegerEncoder
             {
                 buf.put(p, (byte)(buf.get(p) | bits));
 
-                int length = i - bits;
+                long length = i - bits;
                 while (true)
                 {
                     if ((length & ~0x7F) == 0)
