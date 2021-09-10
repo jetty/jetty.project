@@ -3,13 +3,13 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "daily"
 
   - package-ecosystem: "maven"
     directory: "/"
     target-branch: "jetty-9.4.x"
     schedule:
-      interval: "weekly"
+      interval: "daily"
     ignore:
       # Restrict updates in this branch to jetty in the 9.4.x space
       - dependency-name: "javax.servlet:*"
@@ -29,7 +29,7 @@ updates:
     directory: "/"
     target-branch: "jetty-10.0.x"
     schedule:
-      interval: "weekly"
+      interval: "daily"
     ignore:
       # Restrict updates in this branch to jetty in the 10.x.x space
       - dependency-name: "jakarta.servlet:*"
