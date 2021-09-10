@@ -103,12 +103,14 @@ public abstract class AbstractSessionDistributionTests extends AbstractJettyHome
                 assertThat(response.getContentAsString(), containsString("SESSION READ CHOCOLATE THE BEST:FRENCH"));
             }
 
+            /*
             Path logFile = jettyHomeTester.getJettyBase().resolve("resources").resolve("jetty-logging.properties");
             Files.deleteIfExists(logFile);
             try (BufferedWriter writer = Files.newBufferedWriter(logFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE))
             {
                 writer.write("org.eclipse.jetty.server.session.LEVEL=DEBUG");
             }
+            */
 
 
             try (JettyHomeTester.Run run2 = jettyHomeTester.start(argsStart))

@@ -167,6 +167,7 @@ public abstract class AbstractHandshaker implements Handshaker
         // Save state from request/response and remove reference to the base request/response.
         upgradeRequest.upgrade();
         upgradeResponse.upgrade();
+        negotiation.upgrade();
 
         if (LOG.isDebugEnabled())
             LOG.debug("upgrade connection={} session={} framehandler={}", connection, coreSession, handler);

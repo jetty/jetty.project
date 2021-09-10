@@ -34,8 +34,12 @@ activate Application
         if content
         is null
     end note
-    HttpInput->AsyncContentProducer: reclaim
+    HttpInput->HttpInput: copy content\ninto byte[]
     return
+    alt content is empty
+        HttpInput->AsyncContentProducer: reclaim
+        return
+    end
 return
 deactivate Application
 
@@ -52,12 +56,9 @@ activate Application
                 return transformed content
             end 
         return
-        alt if transformed content is not null
-            AsyncContentProducer->HttpChannelState: onContentAdded
-            return
-        else transformed content is null
             AsyncContentProducer->HttpChannelState: onReadUnready
             return
+        loop
             AsyncContentProducer->HttpChannel: needContent
             return
             alt if needContent returns true
@@ -66,7 +67,14 @@ activate Application
                 alt if transformed content is not null
                     AsyncContentProducer->HttpChannelState: onContentAdded
                     return
+                    note over AsyncContentProducer
+                        break loop
+                    end note
                 end
+            else
+                    note over AsyncContentProducer
+                        break loop
+                    end note
             end
         end
     return boolean\n[transformed\ncontent is not null]
@@ -76,17 +84,12 @@ deactivate Application
 alt if content arrives
     AsyncContentDelivery->HttpInput: onContentProducible
         HttpInput->AsyncContentProducer: onContentProducible
-        alt if not at EOF
             AsyncContentProducer->HttpChannelState: onReadReady
             return true if woken
-        else if at EOF
-            AsyncContentProducer->HttpChannelState: onReadEof
-            return true if woken
-        end
         return true if woken
     return true if woken
     alt onContentProducible returns true
-        AsyncContentDelivery->HttpChannel: execute(HttpChannel)
+        AsyncContentDelivery->HttpChannel: handle()
         return
     end
 end
