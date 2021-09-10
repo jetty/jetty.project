@@ -323,13 +323,6 @@ public interface LibQuiche extends Library
         public timespec at;
     }
 
-    @Structure.FieldOrder({"tv_sec", "tv_nsec"})
-    class timespec extends Structure
-    {
-        public uint64_t tv_sec;
-        public long tv_nsec;
-    }
-
     // Writes a single QUIC packet to be sent to the peer.
     ssize_t quiche_conn_send(quiche_conn conn, ByteBuffer out, size_t out_len, quiche_send_info out_info);
 

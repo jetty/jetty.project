@@ -18,6 +18,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
@@ -37,7 +38,7 @@ public interface netinet_h
 
         sockaddr_in sa = new sockaddr_in();
         sa.sin_family = AF_INET;
-        sa.sin_addr = new uint32_t(ByteBuffer.wrap(address.getAddress()).getInt()); // TODO: is the endianness correct?
+        sa.sin_addr = new uint32_t(ByteBuffer.wrap(address.getAddress()).order(ByteOrder.nativeOrder()).getInt());
         sa.sin_port = new uint16_t(inetSocketAddress.getPort());
         return sa;
     }
