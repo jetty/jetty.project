@@ -43,13 +43,32 @@ public class QpackDecoder implements Dumpable
     public static final Logger LOG = LoggerFactory.getLogger(QpackDecoder.class);
 
     private final List<Instruction> _instructions = new ArrayList<>();
+    private final List<MetaDataNotification> _metaDataNotifications = new ArrayList<>();
     private final Instruction.Handler _handler;
     private final QpackContext _context;
     private final DecoderInstructionParser _parser;
     private final List<EncodedFieldSection> _encodedFieldSections = new ArrayList<>();
     private final NBitIntegerParser _integerDecoder = new NBitIntegerParser();
     private final int _maxHeaderSize;
-    private MetaData _metaData;
+
+    private static class MetaDataNotification
+    {
+        private final MetaData _metaData;
+        private final Handler _handler;
+        private final long _streamId;
+
+        public MetaDataNotification(long streamId, MetaData metaData, Handler handler)
+        {
+            _streamId = streamId;
+            _metaData = metaData;
+            _handler = handler;
+        }
+
+        public void notifyHandler()
+        {
+            _handler.onMetaData(_streamId, _metaData);
+        }
+    }
 
     /**
      * @param maxHeaderSize The maximum allowed size of a headers block, expressed as total of all name and value characters, plus 32 per field
@@ -82,13 +101,13 @@ public class QpackDecoder implements Dumpable
             throw new QpackException.SessionException("431 Request Header Fields too large");
 
         _integerDecoder.setPrefix(8);
-        int encodedInsertCount = _integerDecoder.decode(buffer);
+        int encodedInsertCount = _integerDecoder.decodeInt(buffer);
         if (encodedInsertCount < 0)
             throw new QpackException.CompressionException("Could not parse Required Insert Count");
 
         _integerDecoder.setPrefix(7);
         boolean signBit = (buffer.get(buffer.position()) & 0x80) != 0;
-        int deltaBase = _integerDecoder.decode(buffer);
+        int deltaBase = _integerDecoder.decodeInt(buffer);
         if (deltaBase < 0)
             throw new QpackException.CompressionException("Could not parse Delta Base");
 
@@ -100,15 +119,15 @@ public class QpackDecoder implements Dumpable
 
         // Parse the buffer into an Encoded Field Section.
         int base = signBit ? requiredInsertCount - deltaBase - 1 : requiredInsertCount + deltaBase;
-        EncodedFieldSection encodedFieldSection = new EncodedFieldSection(streamId, requiredInsertCount, base, buffer);
+        EncodedFieldSection encodedFieldSection = new EncodedFieldSection(streamId, handler, requiredInsertCount, base, buffer);
 
         // Decode it straight away if we can, otherwise add it to the list of EncodedFieldSections.
         if (requiredInsertCount <= insertCount)
         {
-            _metaData = encodedFieldSection.decode(_context, _maxHeaderSize);
+            MetaData metaData = encodedFieldSection.decode(_context, _maxHeaderSize);
             if (LOG.isDebugEnabled())
-                LOG.debug("Decoded: streamId={}, metadata={}", streamId, _metaData);
-
+                LOG.debug("Decoded: streamId={}, metadata={}", streamId, metaData);
+            _metaDataNotifications.add(new MetaDataNotification(streamId, metaData, handler));
             _instructions.add(new SectionAcknowledgmentInstruction(streamId));
         }
         else
@@ -118,21 +137,21 @@ public class QpackDecoder implements Dumpable
             _encodedFieldSections.add(encodedFieldSection);
         }
 
-        if (!_instructions.isEmpty())
-            _handler.onInstructions(_instructions);
-        _instructions.clear();
-
-        MetaData metaData = _metaData;
-        _metaData = null;
-        if (metaData != null)
-            handler.onMetaData(streamId, metaData);
-
-        return metaData != null;
+        boolean hadMetaData = !_metaDataNotifications.isEmpty();
+        notifyInstructionHandler();
+        notifyMetaDataHandler();
+        return hadMetaData;
     }
 
-    void parseInstruction(ByteBuffer buffer) throws QpackException
+    public void parseInstructionBuffer(ByteBuffer buffer) throws QpackException
     {
-        _parser.parse(buffer);
+        while (BufferUtil.hasContent(buffer))
+        {
+            _parser.parse(buffer);
+        }
+
+        notifyInstructionHandler();
+        notifyMetaDataHandler();
     }
 
     private void checkEncodedFieldSections() throws QpackException
@@ -143,10 +162,11 @@ public class QpackDecoder implements Dumpable
             if (encodedFieldSection.getRequiredInsertCount() <= insertCount)
             {
                 long streamId = encodedFieldSection.getStreamId();
-                _metaData = encodedFieldSection.decode(_context, _maxHeaderSize);
+                MetaData metaData = encodedFieldSection.decode(_context, _maxHeaderSize);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Decoded: streamId={}, metadata={}", streamId, _metaData);
+                    LOG.debug("Decoded: streamId={}, metadata={}", streamId, metaData);
 
+                _metaDataNotifications.add(new MetaDataNotification(streamId, metaData, encodedFieldSection.getHandler()));
                 _instructions.add(new SectionAcknowledgmentInstruction(streamId));
             }
         }
@@ -242,6 +262,22 @@ public class QpackDecoder implements Dumpable
     public String toString()
     {
         return String.format("QpackDecoder@%x{%s}", hashCode(), _context);
+    }
+
+    private void notifyInstructionHandler() throws QpackException
+    {
+        if (!_instructions.isEmpty())
+            _handler.onInstructions(_instructions);
+        _instructions.clear();
+    }
+
+    private void notifyMetaDataHandler()
+    {
+        for (MetaDataNotification notification : _metaDataNotifications)
+        {
+            notification.notifyHandler();
+        }
+        _metaDataNotifications.clear();
     }
 
     /**

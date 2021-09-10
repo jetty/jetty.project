@@ -44,35 +44,35 @@ public class EncoderInstructionParserTest
         String encoded = "84";
         ByteBuffer buffer = BufferUtil.toBuffer(TypeUtil.fromHexString(encoded));
         _instructionParser.parse(buffer);
-        assertThat(_handler.sectionAcknowledgements.poll(), is(4));
+        assertThat(_handler.sectionAcknowledgements.poll(), is(4L));
         assertTrue(_handler.isEmpty());
 
         // 1111 1110 == FE is largest value we can do without continuation should be stream ID 126.
         encoded = "FE";
         buffer = BufferUtil.toBuffer(TypeUtil.fromHexString(encoded));
         _instructionParser.parse(buffer);
-        assertThat(_handler.sectionAcknowledgements.poll(), is(126));
+        assertThat(_handler.sectionAcknowledgements.poll(), is(126L));
         assertTrue(_handler.isEmpty());
 
         // 1111 1111 0000 0000 == FF00 is next value, stream id 127.
         encoded = "FF00";
         buffer = BufferUtil.toBuffer(TypeUtil.fromHexString(encoded));
         _instructionParser.parse(buffer);
-        assertThat(_handler.sectionAcknowledgements.poll(), is(127));
+        assertThat(_handler.sectionAcknowledgements.poll(), is(127L));
         assertTrue(_handler.isEmpty());
 
         // 1111 1111 0000 0001 == FF01 is next value, stream id 128.
         encoded = "FF01";
         buffer = BufferUtil.toBuffer(TypeUtil.fromHexString(encoded));
         _instructionParser.parse(buffer);
-        assertThat(_handler.sectionAcknowledgements.poll(), is(128));
+        assertThat(_handler.sectionAcknowledgements.poll(), is(128L));
         assertTrue(_handler.isEmpty());
 
         // FFBA09 contains section ack with stream ID of 1337, this contains an octet with continuation bit.
         encoded = "FFBA09";
         buffer = BufferUtil.toBuffer(TypeUtil.fromHexString(encoded));
         _instructionParser.parse(buffer);
-        assertThat(_handler.sectionAcknowledgements.poll(), is(1337));
+        assertThat(_handler.sectionAcknowledgements.poll(), is(1337L));
         assertTrue(_handler.isEmpty());
 
         // Test with continuation.
@@ -85,7 +85,7 @@ public class EncoderInstructionParserTest
             _instructionParser.parse(buffer1);
             assertTrue(_handler.isEmpty());
             _instructionParser.parse(buffer2);
-            assertThat(_handler.sectionAcknowledgements.poll(), is(1337));
+            assertThat(_handler.sectionAcknowledgements.poll(), is(1337L));
             assertTrue(_handler.isEmpty());
         }
     }
@@ -96,7 +96,7 @@ public class EncoderInstructionParserTest
         // Stream Cancellation (Stream=8).
         ByteBuffer buffer = QpackTestUtil.hexToBuffer("48");
         _instructionParser.parse(buffer);
-        assertThat(_handler.streamCancellations.poll(), is(8));
+        assertThat(_handler.streamCancellations.poll(), is(8L));
         assertTrue(_handler.isEmpty());
     }
 

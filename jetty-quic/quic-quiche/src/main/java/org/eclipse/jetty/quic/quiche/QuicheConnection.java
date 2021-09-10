@@ -15,6 +15,7 @@ package org.eclipse.jetty.quic.quiche;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -24,6 +25,7 @@ import java.util.List;
 import org.eclipse.jetty.quic.quiche.ffi.LibQuiche;
 import org.eclipse.jetty.quic.quiche.ffi.bool_pointer;
 import org.eclipse.jetty.quic.quiche.ffi.char_pointer;
+import org.eclipse.jetty.quic.quiche.ffi.netinet_h;
 import org.eclipse.jetty.quic.quiche.ffi.size_t;
 import org.eclipse.jetty.quic.quiche.ffi.size_t_pointer;
 import org.eclipse.jetty.quic.quiche.ffi.ssize_t;
@@ -66,7 +68,9 @@ public class QuicheConnection
         byte[] scid = new byte[connectionIdLength];
         SECURE_RANDOM.nextBytes(scid);
         LibQuiche.quiche_config libQuicheConfig = buildConfig(quicheConfig);
-        LibQuiche.quiche_conn quicheConn = LibQuiche.INSTANCE.quiche_connect(peer.getHostName(), scid, new size_t(scid.length), libQuicheConfig);
+
+        netinet_h.sockaddr_in to = netinet_h.to_sock_addr(peer);
+        LibQuiche.quiche_conn quicheConn = LibQuiche.INSTANCE.quiche_connect(peer.getHostName(), scid, new size_t(scid.length), to, new size_t(to.size()), libQuicheConfig);
         return new QuicheConnection(quicheConn, libQuicheConfig);
     }
 
@@ -245,7 +249,7 @@ public class QuicheConnection
      * Fully consumes the {@code packetRead} buffer if the connection was accepted.
      * @return an established connection if accept succeeded, null if accept failed and negotiation should be tried.
      */
-    public static QuicheConnection tryAccept(QuicheConfig quicheConfig, TokenValidator tokenValidator, ByteBuffer packetRead) throws IOException
+    public static QuicheConnection tryAccept(QuicheConfig quicheConfig, TokenValidator tokenValidator, ByteBuffer packetRead, SocketAddress peer) throws IOException
     {
         uint8_t_pointer type = new uint8_t_pointer();
         uint32_t_pointer version = new uint32_t_pointer();
@@ -297,7 +301,9 @@ public class QuicheConnection
 
         LOG.debug("  connection creation...");
         LibQuiche.quiche_config libQuicheConfig = buildConfig(quicheConfig);
-        LibQuiche.quiche_conn quicheConn = LibQuiche.INSTANCE.quiche_accept(dcid, dcid_len.getPointee(), odcid, new size_t(odcid.length), libQuicheConfig);
+
+        netinet_h.sockaddr_in from = netinet_h.to_sock_addr(peer);
+        LibQuiche.quiche_conn quicheConn = LibQuiche.INSTANCE.quiche_accept(dcid, dcid_len.getPointee(), odcid, new size_t(odcid.length), from, new size_t(from.size()), libQuicheConfig);
         if (quicheConn == null)
         {
             LibQuiche.INSTANCE.quiche_config_free(libQuicheConfig);
@@ -309,7 +315,7 @@ public class QuicheConnection
         LOG.debug("accepted, immediately receiving the same packet - remaining in buffer: {}", packetRead.remaining());
         while (packetRead.hasRemaining())
         {
-            quicheConnection.feedCipherText(packetRead);
+            quicheConnection.feedCipherText(packetRead, peer);
         }
         return quicheConnection;
     }
@@ -345,15 +351,21 @@ public class QuicheConnection
     /**
      * Read the buffer of cipher text coming from the network.
      * @param buffer the buffer to read.
+     * @param peer
      * @return how many bytes were consumed.
      * @throws IOException
      */
-    public synchronized int feedCipherText(ByteBuffer buffer) throws IOException
+    public synchronized int feedCipherText(ByteBuffer buffer, SocketAddress peer) throws IOException
     {
         if (quicheConn == null)
             throw new IOException("Cannot receive when not connected");
 
-        int received = libQuiche().quiche_conn_recv(quicheConn, buffer, new size_t(buffer.remaining())).intValue();
+        LibQuiche.quiche_recv_info info = new LibQuiche.quiche_recv_info();
+        netinet_h.sockaddr_in from = netinet_h.to_sock_addr(peer);
+        info.from = netinet_h.sockaddr_in.byReference(from);
+        info.from_len = new size_t(from.size());
+
+        int received = libQuiche().quiche_conn_recv(quicheConn, buffer, new size_t(buffer.remaining()), info).intValue();
         if (received < 0)
             throw new IOException("Quiche failed to receive packet; err=" + LibQuiche.quiche_error.errToString(received));
         buffer.position(buffer.position() + received);
@@ -370,7 +382,12 @@ public class QuicheConnection
     {
         if (quicheConn == null)
             throw new IOException("Cannot send when not connected");
-        int written = libQuiche().quiche_conn_send(quicheConn, buffer, new size_t(buffer.remaining())).intValue();
+
+        LibQuiche.quiche_send_info quiche_send_info = new LibQuiche.quiche_send_info();
+        quiche_send_info.to = new netinet_h.sockaddr_storage();
+        quiche_send_info.to_len = new size_t(quiche_send_info.to.size());
+
+        int written = libQuiche().quiche_conn_send(quicheConn, buffer, new size_t(buffer.remaining()), quiche_send_info).intValue();
         if (written == LibQuiche.quiche_error.QUICHE_ERR_DONE)
             return 0;
         if (written < 0L)

@@ -28,7 +28,7 @@ public interface LibQuiche extends Library
 {
     // This interface is a translation of the quiche.h header of a specific version.
     // It needs to be reviewed each time the native lib version changes.
-    String EXPECTED_QUICHE_VERSION = "0.7.0";
+    String EXPECTED_QUICHE_VERSION = "0.9.0";
 
     // load the native lib
     LibQuiche INSTANCE = Native.load("quiche", LibQuiche.class);
@@ -56,7 +56,7 @@ public interface LibQuiche extends Library
     // QUIC transport API.
 
     // The current QUIC wire version.
-    int QUICHE_PROTOCOL_VERSION = 0xff00001d;
+    int QUICHE_PROTOCOL_VERSION = 0x00000001;
 
     // The maximum length of a connection ID.
     int QUICHE_MAX_CONN_ID_LEN = 20;
@@ -251,7 +251,7 @@ public interface LibQuiche extends Library
     int quiche_enable_debug_logging(LoggingCallback cb, Pointer argp);
 
     // Creates a new client-side connection.
-    quiche_conn quiche_connect(String server_name, byte[] scid, size_t scid_len, quiche_config config);
+    quiche_conn quiche_connect(String server_name, byte[] scid, size_t scid_len, netinet_h.sockaddr_in to, size_t to_len, quiche_config config);
 
     interface packet_type
     {
@@ -304,7 +304,7 @@ public interface LibQuiche extends Library
                                                        uint32_t version, ByteBuffer out, size_t out_len);
 
     // Creates a new server-side connection.
-    quiche_conn quiche_accept(byte[] scid, size_t scid_len, byte[] odcid, size_t odcid_len, quiche_config config);
+    quiche_conn quiche_accept(byte[] scid, size_t scid_len, byte[] odcid, size_t odcid_len, netinet_h.sockaddr_in from, size_t from_len, quiche_config config);
 
     // Returns the amount of time until the next timeout event, in milliseconds.
     uint64_t quiche_conn_timeout_as_millis(quiche_conn conn);
@@ -315,11 +315,33 @@ public interface LibQuiche extends Library
     // Collects and returns statistics about the connection.
     void quiche_conn_stats(quiche_conn conn, quiche_stats out);
 
+    @Structure.FieldOrder({"to", "to_len", "at"})
+    class quiche_send_info extends Structure
+    {
+        public netinet_h.sockaddr_storage to;
+        public size_t to_len;
+        public timespec at;
+    }
+
+    @Structure.FieldOrder({"tv_sec", "tv_nsec"})
+    class timespec extends Structure
+    {
+        public uint64_t tv_sec;
+        public long tv_nsec;
+    }
+
     // Writes a single QUIC packet to be sent to the peer.
-    ssize_t quiche_conn_send(quiche_conn conn, ByteBuffer out, size_t out_len);
+    ssize_t quiche_conn_send(quiche_conn conn, ByteBuffer out, size_t out_len, quiche_send_info out_info);
+
+    @Structure.FieldOrder({"from", "from_len"})
+    class quiche_recv_info extends Structure
+    {
+        public netinet_h.sockaddr_in.ByReference from;
+        public size_t from_len;
+    }
 
     // Processes QUIC packets received from the peer.
-    ssize_t quiche_conn_recv(quiche_conn conn, ByteBuffer buf, size_t buf_len);
+    ssize_t quiche_conn_recv(quiche_conn conn, ByteBuffer buf, size_t buf_len, quiche_recv_info info);
 
     // Returns the negotiated ALPN protocol.
     void quiche_conn_application_proto(quiche_conn conn, char_pointer out, size_t_pointer out_len);

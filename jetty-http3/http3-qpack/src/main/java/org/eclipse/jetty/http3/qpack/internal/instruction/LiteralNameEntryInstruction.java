@@ -18,7 +18,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.http3.qpack.internal.util.HuffmanEncoder;
-import org.eclipse.jetty.http3.qpack.internal.util.NBitLongEncoder;
+import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -62,26 +62,26 @@ public class LiteralNameEntryInstruction implements Instruction
         if (_huffmanName)
         {
             buffer.put((byte)(0x40 | 0x20));
-            NBitLongEncoder.encode(buffer, 5, HuffmanEncoder.octetsNeeded(_name));
+            NBitIntegerEncoder.encode(buffer, 5, HuffmanEncoder.octetsNeeded(_name));
             HuffmanEncoder.encode(buffer, _name);
         }
         else
         {
             buffer.put((byte)(0x40));
-            NBitLongEncoder.encode(buffer, 5, _name.length());
+            NBitIntegerEncoder.encode(buffer, 5, _name.length());
             buffer.put(_name.getBytes());
         }
 
         if (_huffmanValue)
         {
             buffer.put((byte)(0x80));
-            NBitLongEncoder.encode(buffer, 7, HuffmanEncoder.octetsNeeded(_value));
+            NBitIntegerEncoder.encode(buffer, 7, HuffmanEncoder.octetsNeeded(_value));
             HuffmanEncoder.encode(buffer, _value);
         }
         else
         {
             buffer.put((byte)(0x00));
-            NBitLongEncoder.encode(buffer, 5, _value.length());
+            NBitIntegerEncoder.encode(buffer, 5, _value.length());
             buffer.put(_value.getBytes());
         }
 

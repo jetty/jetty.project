@@ -171,7 +171,7 @@ public abstract class QuicSession
         // the remote address may change so store it again.
         this.remoteAddress = remoteAddress;
 
-        quicheConnection.feedCipherText(cipherBufferIn);
+        quicheConnection.feedCipherText(cipherBufferIn, remoteAddress);
 
         if (quicheConnection.isConnectionEstablished())
         {

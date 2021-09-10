@@ -20,8 +20,8 @@ import org.eclipse.jetty.http3.qpack.internal.parser.EncoderInstructionParser;
 
 public class EncoderParserDebugHandler implements EncoderInstructionParser.Handler
 {
-    public Queue<Integer> sectionAcknowledgements = new LinkedList<>();
-    public Queue<Integer> streamCancellations = new LinkedList<>();
+    public Queue<Long> sectionAcknowledgements = new LinkedList<>();
+    public Queue<Long> streamCancellations = new LinkedList<>();
     public Queue<Integer> insertCountIncrements = new LinkedList<>();
 
     private final QpackEncoder _encoder;
@@ -37,7 +37,7 @@ public class EncoderParserDebugHandler implements EncoderInstructionParser.Handl
     }
 
     @Override
-    public void onSectionAcknowledgement(int streamId) throws QpackException
+    public void onSectionAcknowledgement(long streamId) throws QpackException
     {
         sectionAcknowledgements.add(streamId);
         if (_encoder != null)
@@ -45,7 +45,7 @@ public class EncoderParserDebugHandler implements EncoderInstructionParser.Handl
     }
 
     @Override
-    public void onStreamCancellation(int streamId) throws QpackException
+    public void onStreamCancellation(long streamId) throws QpackException
     {
         streamCancellations.add(streamId);
         if (_encoder != null)

@@ -75,7 +75,7 @@ public class EncodeDecodeTest
     public void test() throws Exception
     {
         // B.1. Literal Field Line With Name Reference.
-        int streamId = 0;
+        long streamId = 0;
         HttpFields httpFields = HttpFields.build().add(":path", "/index.html");
 
         ByteBuffer buffer = BufferUtil.allocate(1024);

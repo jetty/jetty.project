@@ -41,9 +41,9 @@ public class EncoderInstructionParser
 
     public interface Handler
     {
-        void onSectionAcknowledgement(int streamId) throws QpackException;
+        void onSectionAcknowledgement(long streamId) throws QpackException;
 
-        void onStreamCancellation(int streamId) throws QpackException;
+        void onStreamCancellation(long streamId) throws QpackException;
 
         void onInsertCountIncrement(int increment) throws QpackException;
     }
@@ -103,7 +103,7 @@ public class EncoderInstructionParser
 
     private void parseSectionAcknowledgment(ByteBuffer buffer) throws QpackException
     {
-        int streamId = _integerParser.decode(buffer);
+        long streamId = _integerParser.decodeInt(buffer);
         if (streamId >= 0)
         {
             reset();
@@ -113,7 +113,7 @@ public class EncoderInstructionParser
 
     private void parseStreamCancellation(ByteBuffer buffer) throws QpackException
     {
-        int streamId = _integerParser.decode(buffer);
+        long streamId = _integerParser.decodeLong(buffer);
         if (streamId >= 0)
         {
             reset();
@@ -123,7 +123,7 @@ public class EncoderInstructionParser
 
     private void parseInsertCountIncrement(ByteBuffer buffer) throws QpackException
     {
-        int increment = _integerParser.decode(buffer);
+        int increment = _integerParser.decodeInt(buffer);
         if (increment >= 0)
         {
             reset();

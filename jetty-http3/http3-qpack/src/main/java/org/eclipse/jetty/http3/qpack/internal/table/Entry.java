@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http3.qpack.internal.util.HuffmanEncoder;
-import org.eclipse.jetty.http3.qpack.internal.util.NBitLongEncoder;
+import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
 import org.eclipse.jetty.util.StringUtil;
 
 public class Entry
@@ -119,14 +119,14 @@ public class Entry
                 int huffmanLen = HuffmanEncoder.octetsNeeded(value);
                 if (huffmanLen < 0)
                     throw new IllegalStateException("bad value");
-                int lenLen = NBitLongEncoder.octectsNeeded(7, huffmanLen);
+                int lenLen = NBitIntegerEncoder.octectsNeeded(7, huffmanLen);
                 _huffmanValue = new byte[1 + lenLen + huffmanLen];
                 ByteBuffer buffer = ByteBuffer.wrap(_huffmanValue);
 
                 // Indicate Huffman
                 buffer.put((byte)0x80);
                 // Add huffman length
-                NBitLongEncoder.encode(buffer, 7, huffmanLen);
+                NBitIntegerEncoder.encode(buffer, 7, huffmanLen);
                 // Encode value
                 HuffmanEncoder.encode(buffer, value);
             }

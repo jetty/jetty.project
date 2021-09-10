@@ -50,10 +50,6 @@ public class EvictionTest
                 return false;
             }
         };
-
-        // Set the instruction bytes to be passed on to the remote Encoder/Decoder through the handler directly.
-        _encoderHandler.setDecoder(_decoder);
-        _decoderHandler.setEncoder(_encoder);
     }
 
     @Test
@@ -65,10 +61,14 @@ public class EvictionTest
         for (int i = 0; i < 10000; i++)
         {
             HttpFields httpFields = newRandomFields(5);
-            int streamId = getPositiveInt(10);
+            long streamId = getPositiveInt(10);
 
             _encoder.encode(encodedFields, streamId, new MetaData(HttpVersion.HTTP_3, httpFields));
+            _decoder.parseInstructionBuffer(_encoderHandler.getInstructionBuffer());
+
             _decoder.decode(streamId, encodedFields, _decoderHandler);
+            _encoder.parseInstructionBuffer(_decoderHandler.getInstructionBuffer());
+
             MetaData result = _decoderHandler.getMetaData();
             assertNotNull(result);
 

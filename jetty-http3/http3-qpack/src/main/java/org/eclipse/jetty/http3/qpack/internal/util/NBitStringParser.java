@@ -64,7 +64,7 @@ public class NBitStringParser
                     continue;
 
                 case LENGTH:
-                    _length = _integerParser.decode(buffer);
+                    _length = _integerParser.decodeInt(buffer);
                     if (_length < 0)
                         return null;
                     _state = State.VALUE;
