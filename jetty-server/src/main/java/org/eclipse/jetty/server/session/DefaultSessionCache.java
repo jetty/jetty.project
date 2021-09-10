@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server.session;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import javax.servlet.http.HttpServletRequest;
 
@@ -27,7 +28,7 @@ import org.slf4j.LoggerFactory;
 /**
  * DefaultSessionCache
  *
- * A session store that keeps its sessions in memory in a hashmap
+ * A session store that keeps its sessions in memory in a concurrent map
  */
 @ManagedObject
 public class DefaultSessionCache extends AbstractSessionCache
@@ -35,9 +36,9 @@ public class DefaultSessionCache extends AbstractSessionCache
     private static final Logger LOG = LoggerFactory.getLogger(DefaultSessionCache.class);
 
     /**
-     * The cache of sessions in a hashmap
+     * The cache of sessions in a concurrent map
      */
-    protected ConcurrentHashMap<String, Session> _sessions = new ConcurrentHashMap<>();
+    protected ConcurrentMap<String, Session> _sessions = new ConcurrentHashMap<>();
 
     private final CounterStatistic _stats = new CounterStatistic();
 
