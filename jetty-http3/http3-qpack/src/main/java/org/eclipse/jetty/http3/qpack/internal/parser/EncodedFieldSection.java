@@ -19,6 +19,7 @@ import java.util.List;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.http3.qpack.internal.QpackContext;
 import org.eclipse.jetty.http3.qpack.internal.metadata.MetaDataBuilder;
@@ -39,12 +40,14 @@ public class EncodedFieldSection
     private final long _streamId;
     private final int _requiredInsertCount;
     private final int _base;
+    private final QpackDecoder.Handler _handler;
 
-    public EncodedFieldSection(long streamId, int requiredInsertCount, int base, ByteBuffer content) throws QpackException
+    public EncodedFieldSection(long streamId, QpackDecoder.Handler handler, int requiredInsertCount, int base, ByteBuffer content) throws QpackException
     {
         _streamId = streamId;
         _requiredInsertCount = requiredInsertCount;
         _base = base;
+        _handler = handler;
 
         while (content.hasRemaining())
         {
@@ -68,6 +71,11 @@ public class EncodedFieldSection
     public long getStreamId()
     {
         return _streamId;
+    }
+
+    public QpackDecoder.Handler getHandler()
+    {
+        return _handler;
     }
 
     public int getRequiredInsertCount()
@@ -94,7 +102,7 @@ public class EncodedFieldSection
         byte firstByte = buffer.get(buffer.position());
         boolean dynamicTable = (firstByte & 0x40) == 0;
         _integerParser.setPrefix(6);
-        int index = _integerParser.decode(buffer);
+        int index = _integerParser.decodeInt(buffer);
         if (index < 0)
             throw new QpackException.CompressionException("Invalid Index");
         return new IndexedField(dynamicTable, index);
@@ -103,7 +111,7 @@ public class EncodedFieldSection
     private EncodedField parseIndexedFieldPostBase(ByteBuffer buffer) throws QpackException
     {
         _integerParser.setPrefix(4);
-        int index = _integerParser.decode(buffer);
+        int index = _integerParser.decodeInt(buffer);
         if (index < 0)
             throw new QpackException.CompressionException("Invalid Index");
 
@@ -119,7 +127,7 @@ public class EncodedFieldSection
         boolean dynamicTable = (firstByte & 0x10) == 0;
 
         _integerParser.setPrefix(4);
-        int nameIndex = _integerParser.decode(buffer);
+        int nameIndex = _integerParser.decodeInt(buffer);
         if (nameIndex < 0)
             throw new QpackException.CompressionException("Invalid Name Index");
 
@@ -137,7 +145,7 @@ public class EncodedFieldSection
         boolean allowEncoding = (firstByte & 0x08) != 0;
 
         _integerParser.setPrefix(3);
-        int nameIndex = _integerParser.decode(buffer);
+        int nameIndex = _integerParser.decodeInt(buffer);
         if (nameIndex < 0)
             throw new QpackException.CompressionException("Invalid Index");
 

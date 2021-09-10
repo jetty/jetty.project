@@ -16,7 +16,7 @@ package org.eclipse.jetty.http3.qpack.internal.instruction;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.qpack.Instruction;
-import org.eclipse.jetty.http3.qpack.internal.util.NBitLongEncoder;
+import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -37,10 +37,10 @@ public class DuplicateInstruction implements Instruction
     @Override
     public void encode(ByteBufferPool.Lease lease)
     {
-        int size = NBitLongEncoder.octectsNeeded(5, _index) + 1;
+        int size = NBitIntegerEncoder.octectsNeeded(5, _index) + 1;
         ByteBuffer buffer = lease.acquire(size, false);
         buffer.put((byte)0x00);
-        NBitLongEncoder.encode(buffer, 5, _index);
+        NBitIntegerEncoder.encode(buffer, 5, _index);
         BufferUtil.flipToFlush(buffer, 0);
         lease.append(buffer, true);
     }

@@ -15,7 +15,7 @@ package org.eclipse.jetty.http3.qpack.internal.util;
 
 import java.nio.ByteBuffer;
 
-public class NBitLongEncoder
+public class NBitIntegerEncoder
 {
     public static int octectsNeeded(int n, long i)
     {

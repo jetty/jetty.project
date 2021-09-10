@@ -137,7 +137,7 @@ public class DecoderInstructionParser
                     continue;
 
                 case INDEX:
-                    _index = _integerParser.decode(buffer);
+                    _index = _integerParser.decodeInt(buffer);
                     if (_index < 0)
                         return;
 
@@ -200,7 +200,7 @@ public class DecoderInstructionParser
 
     private void parseDuplicate(ByteBuffer buffer) throws QpackException
     {
-        int index = _integerParser.decode(buffer);
+        int index = _integerParser.decodeInt(buffer);
         if (index >= 0)
         {
             reset();
@@ -210,7 +210,7 @@ public class DecoderInstructionParser
 
     private void parseSetDynamicTableCapacity(ByteBuffer buffer) throws QpackException
     {
-        int capacity = _integerParser.decode(buffer);
+        int capacity = _integerParser.decodeInt(buffer);
         if (capacity >= 0)
         {
             reset();

@@ -18,8 +18,8 @@ import java.nio.ByteBuffer;
 public class NBitIntegerParser
 {
     private int _prefix;
-    private int _total;
-    private int _multiplier;
+    private long _total;
+    private long _multiplier;
     private boolean _started;
 
     public void setPrefix(int prefix)
@@ -29,7 +29,12 @@ public class NBitIntegerParser
         _prefix = prefix;
     }
 
-    public int decode(ByteBuffer buffer)
+    public int decodeInt(ByteBuffer buffer)
+    {
+        return Math.toIntExact(decodeLong(buffer));
+    }
+
+    public long decodeLong(ByteBuffer buffer)
     {
         if (!_started)
         {
@@ -42,7 +47,7 @@ public class NBitIntegerParser
             _total = buffer.get() & nbits;
             if (_total < nbits)
             {
-                int total = _total;
+                long total = _total;
                 reset();
                 return total;
             }
@@ -55,11 +60,11 @@ public class NBitIntegerParser
                 return -1;
 
             int b = buffer.get() & 0xFF;
-            _total += (b & 127) * _multiplier;
-            _multiplier = _multiplier * 128;
+            _total = Math.addExact(_total, (b & 127) * _multiplier);
+            _multiplier = Math.multiplyExact(_multiplier, 128);
             if ((b & 128) == 0)
             {
-                int total = _total;
+                long total = _total;
                 reset();
                 return total;
             }

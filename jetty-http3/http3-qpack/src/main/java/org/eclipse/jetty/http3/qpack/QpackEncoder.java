@@ -36,7 +36,7 @@ import org.eclipse.jetty.http3.qpack.internal.metadata.Http3Fields;
 import org.eclipse.jetty.http3.qpack.internal.parser.EncoderInstructionParser;
 import org.eclipse.jetty.http3.qpack.internal.table.DynamicTable;
 import org.eclipse.jetty.http3.qpack.internal.table.Entry;
-import org.eclipse.jetty.http3.qpack.internal.util.NBitLongEncoder;
+import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
@@ -85,7 +85,7 @@ public class QpackEncoder implements Dumpable
     private final Instruction.Handler _handler;
     private final QpackContext _context;
     private final int _maxBlockedStreams;
-    private final Map<Integer, StreamInfo> _streamInfoMap = new HashMap<>();
+    private final Map<Long, StreamInfo> _streamInfoMap = new HashMap<>();
     private final EncoderInstructionParser _parser;
     private int _knownInsertCount = 0;
     private int _blockedStreams = 0;
@@ -118,12 +118,16 @@ public class QpackEncoder implements Dumpable
         return !DO_NOT_HUFFMAN.contains(httpField.getHeader());
     }
 
-    public void parseInstruction(ByteBuffer buffer) throws QpackException
+    public void parseInstructionBuffer(ByteBuffer buffer) throws QpackException
     {
-        _parser.parse(buffer);
+        while (BufferUtil.hasContent(buffer))
+        {
+            _parser.parse(buffer);
+        }
+        notifyInstructionHandler();
     }
 
-    boolean insert(HttpField field) throws QpackException
+    public boolean insert(HttpField field) throws QpackException
     {
         DynamicTable dynamicTable = _context.getDynamicTable();
 
@@ -141,6 +145,7 @@ public class QpackEncoder implements Dumpable
             int index = _context.indexOf(entry);
             dynamicTable.add(new Entry(field));
             _instructions.add(new DuplicateInstruction(index));
+            notifyInstructionHandler();
             return true;
         }
 
@@ -151,19 +156,18 @@ public class QpackEncoder implements Dumpable
             int index = _context.indexOf(nameEntry);
             dynamicTable.add(new Entry(field));
             _instructions.add(new IndexedNameEntryInstruction(!nameEntry.isStatic(), index, huffman, field.getValue()));
+            notifyInstructionHandler();
             return true;
         }
 
         dynamicTable.add(new Entry(field));
         _instructions.add(new LiteralNameEntryInstruction(field, huffman));
 
-        _handler.onInstructions(_instructions);
-        _instructions.clear();
-
+        notifyInstructionHandler();
         return true;
     }
 
-    public void encode(ByteBuffer buffer, int streamId, MetaData metadata) throws QpackException
+    public void encode(ByteBuffer buffer, long streamId, MetaData metadata) throws QpackException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Encoding: streamId={}, metadata={}", streamId, metadata);
@@ -217,9 +221,9 @@ public class QpackEncoder implements Dumpable
         int pos = BufferUtil.flipToFill(buffer);
 
         // Encode the Field Section Prefix into the ByteBuffer.
-        NBitLongEncoder.encode(buffer, 8, encodedInsertCount);
+        NBitIntegerEncoder.encode(buffer, 8, encodedInsertCount);
         buffer.put(signBit ? (byte)0x80 : (byte)0x00);
-        NBitLongEncoder.encode(buffer, 7, deltaBase);
+        NBitIntegerEncoder.encode(buffer, 7, deltaBase);
 
         // Encode the field lines into the ByteBuffer.
         for (EncodableEntry entry : encodableEntries)
@@ -228,10 +232,7 @@ public class QpackEncoder implements Dumpable
         }
 
         BufferUtil.flipToFlush(buffer, pos);
-
-        if (!_instructions.isEmpty())
-            _handler.onInstructions(_instructions);
-        _instructions.clear();
+        notifyInstructionHandler();
     }
 
     private EncodableEntry encode(StreamInfo streamInfo, HttpField field)
@@ -316,7 +317,7 @@ public class QpackEncoder implements Dumpable
         _knownInsertCount += increment;
     }
 
-    void sectionAcknowledgement(int streamId) throws QpackException
+    void sectionAcknowledgement(long streamId) throws QpackException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("SectionAcknowledgement: streamId={}", streamId);
@@ -335,7 +336,7 @@ public class QpackEncoder implements Dumpable
             _streamInfoMap.remove(streamId);
     }
 
-    void streamCancellation(int streamId) throws QpackException
+    void streamCancellation(long streamId) throws QpackException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("StreamCancellation: streamId={}", streamId);
@@ -400,16 +401,23 @@ public class QpackEncoder implements Dumpable
         return (reqInsertCount % (2 * maxEntries)) + 1;
     }
 
+    private void notifyInstructionHandler() throws QpackException
+    {
+        if (!_instructions.isEmpty())
+            _handler.onInstructions(_instructions);
+        _instructions.clear();
+    }
+
     public class EncoderAdapter implements EncoderInstructionParser.Handler
     {
         @Override
-        public void onSectionAcknowledgement(int streamId) throws QpackException
+        public void onSectionAcknowledgement(long streamId) throws QpackException
         {
             sectionAcknowledgement(streamId);
         }
 
         @Override
-        public void onStreamCancellation(int streamId) throws QpackException
+        public void onStreamCancellation(long streamId) throws QpackException
         {
             streamCancellation(streamId);
         }

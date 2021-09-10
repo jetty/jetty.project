@@ -35,10 +35,15 @@ public class QpackTestUtil
 
     public static ByteBuffer toBuffer(List<Instruction> instructions)
     {
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(new NullByteBufferPool());
+        NullByteBufferPool bufferPool = new NullByteBufferPool();
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(bufferPool);
         instructions.forEach(i -> i.encode(lease));
         assertThat(lease.getSize(), is(instructions.size()));
-        return lease.getByteBuffers().get(0);
+        ByteBuffer combinedBuffer = BufferUtil.allocate(Math.toIntExact(lease.getTotalLength()), false);
+        BufferUtil.clearToFill(combinedBuffer);
+        lease.getByteBuffers().forEach(combinedBuffer::put);
+        BufferUtil.flipToFlush(combinedBuffer, 0);
+        return combinedBuffer;
     }
 
     public static ByteBuffer hexToBuffer(String hexString)

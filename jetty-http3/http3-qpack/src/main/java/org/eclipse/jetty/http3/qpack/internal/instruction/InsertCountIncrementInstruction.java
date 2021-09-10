@@ -16,7 +16,7 @@ package org.eclipse.jetty.http3.qpack.internal.instruction;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.qpack.Instruction;
-import org.eclipse.jetty.http3.qpack.internal.util.NBitLongEncoder;
+import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -32,10 +32,10 @@ public class InsertCountIncrementInstruction implements Instruction
     @Override
     public void encode(ByteBufferPool.Lease lease)
     {
-        int size = NBitLongEncoder.octectsNeeded(6, _increment) + 1;
+        int size = NBitIntegerEncoder.octectsNeeded(6, _increment) + 1;
         ByteBuffer buffer = lease.acquire(size, false);
         buffer.put((byte)0x00);
-        NBitLongEncoder.encode(buffer, 6, _increment);
+        NBitIntegerEncoder.encode(buffer, 6, _increment);
         BufferUtil.flipToFlush(buffer, 0);
         lease.append(buffer, true);
     }

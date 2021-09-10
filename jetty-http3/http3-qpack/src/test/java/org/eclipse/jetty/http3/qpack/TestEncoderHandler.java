@@ -13,26 +13,25 @@
 
 package org.eclipse.jetty.http3.qpack;
 
+import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 
 public class TestEncoderHandler implements Instruction.Handler
 {
-    private final Queue<Instruction> _instructionList = new LinkedList<>();
-    private QpackDecoder _decoder;
-
-    public void setDecoder(QpackDecoder decoder)
-    {
-        _decoder = decoder;
-    }
+    private final LinkedList<Instruction> _instructionList = new LinkedList<>();
 
     @Override
-    public void onInstructions(List<Instruction> instructions) throws QpackException
+    public void onInstructions(List<Instruction> instructions)
     {
         _instructionList.addAll(instructions);
-        if (_decoder != null)
-            _decoder.parseInstruction(QpackTestUtil.toBuffer(instructions));
+    }
+
+    public ByteBuffer getInstructionBuffer()
+    {
+        ByteBuffer byteBuffer = QpackTestUtil.toBuffer(_instructionList);
+        _instructionList.clear();
+        return byteBuffer;
     }
 
     public Instruction getInstruction()

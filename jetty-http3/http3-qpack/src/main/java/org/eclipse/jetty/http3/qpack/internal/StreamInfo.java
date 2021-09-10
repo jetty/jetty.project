@@ -23,15 +23,15 @@ import org.eclipse.jetty.http3.qpack.internal.table.Entry;
 
 public class StreamInfo implements Iterable<StreamInfo.SectionInfo>
 {
-    private final int _streamId;
+    private final long _streamId;
     private final Queue<SectionInfo> _sectionInfos = new LinkedList<>();
 
-    public StreamInfo(int streamId)
+    public StreamInfo(long streamId)
     {
         _streamId = streamId;
     }
 
-    public int getStreamId()
+    public long getStreamId()
     {
         return _streamId;
     }
