@@ -415,6 +415,12 @@
       <artifactId>infinispan-core</artifactId>
       <version>${infinispan.version}</version>
       <scope>provided</scope>
+       <exclusions>
+           <exclusion>
+               <groupId>org.wildfly.common</groupId>
+               <artifactId>wildfly-common</artifactId>
+           </exclusion>
+       </exclusions>
     </dependency>
     <!-- to make infinispan-common source sane -->
     <dependency>
@@ -427,7 +433,7 @@
     <dependency>
       <groupId>org.infinispan.protostream</groupId>
       <artifactId>protostream</artifactId>
-      <version>4.2.2.Final</version>
+      <version>4.3.4.Final</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
