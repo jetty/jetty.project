@@ -185,8 +185,6 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
         for (int i = 0; i <= 3; i++)
         {
             long now = System.currentTimeMillis();
-            //Query q = qf.from(InfinispanSessionData.class).having("expiry").lt(now).build();
-            //assertEquals(i, q.list().size());
             query.setParameter("time", now);
             QueryResult<InfinispanSessionData> result = query.execute();
             assertEquals(i, result.list().size());

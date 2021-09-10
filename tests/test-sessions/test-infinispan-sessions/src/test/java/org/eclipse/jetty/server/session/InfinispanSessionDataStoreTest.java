@@ -181,9 +181,7 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
         for (int i = 0; i <= 3; i++)
         {
             long now = System.currentTimeMillis();
-            //Query q = qf.from(InfinispanSessionData.class).having("expiry").lt(now).build();
             Query<InfinispanSessionData> q = qf.create("from org.eclipse.jetty.session.infinispan.InfinispanSessionData where expiry < " + now);
-            //assertEquals(i, q.list().size());
             QueryResult<InfinispanSessionData> result = q.execute();
             assertEquals(i, result.list().size());
             Thread.sleep(1000);

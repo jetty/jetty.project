@@ -24,17 +24,13 @@ import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
 import org.eclipse.jetty.util.IO;
 import org.hibernate.search.cfg.Environment;
 import org.hibernate.search.cfg.SearchMapping;
-import org.infinispan.client.hotrod.DataFormat;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.client.hotrod.configuration.ClientIntelligence;
 import org.infinispan.client.hotrod.configuration.Configuration;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.commons.configuration.XMLStringConfiguration;
-import org.infinispan.commons.dataconversion.MediaType;
 import org.infinispan.commons.marshall.ProtoStreamMarshaller;
-import org.infinispan.protostream.FileDescriptorSource;
-import org.infinispan.protostream.SerializationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -109,14 +105,8 @@ public class RemoteInfinispanTestSupport
             Configuration configuration = configurationBuilder.build();
 
             _manager = new RemoteCacheManager(configuration);
-            /*
-            FileDescriptorSource fds = new FileDescriptorSource();
-            fds.addProtoFiles("/session.proto");
-            
-            SerializationContext serCtx = ProtoStreamMarshaller.getSerializationContext(_manager);
-            serCtx.registerProtoFiles(fds);
-            serCtx.registerMarshaller(new SessionDataMarshaller());*/
 
+            //upload the session.proto file to the remote cache
             ByteArrayOutputStream baos;
             try (InputStream is = RemoteInfinispanSessionDataStoreTest.class.getClassLoader().getResourceAsStream("session.proto"))
             {
