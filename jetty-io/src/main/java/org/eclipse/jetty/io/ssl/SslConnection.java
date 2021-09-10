@@ -743,7 +743,7 @@ public class SslConnection extends AbstractConnection
                                     case BUFFER_UNDERFLOW:
                                         // Continue if we can compact?
                                         if (BufferUtil.compact(_encryptedInput))
-                                            continue;
+                                            break decryption; // to cause fill again.
 
                                         // Are we out of space?
                                         if (BufferUtil.space(_encryptedInput) == 0)
@@ -753,6 +753,7 @@ public class SslConnection extends AbstractConnection
                                         }
 
                                         _underFlown = true;
+                                        // Fall through to OK case.
                                     case OK:
                                     {
                                         if (unwrapHandshakeStatus == HandshakeStatus.FINISHED)
