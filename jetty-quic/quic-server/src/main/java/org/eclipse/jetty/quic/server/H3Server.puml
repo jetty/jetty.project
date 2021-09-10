@@ -1,0 +1,65 @@
+@startuml
+title "H3 Quic Server"
+
+participant QuicConnector as "Quic\nConnector"
+participant SelectorManager as "Selector\nManager"
+participant QuicConnection as "Server\nQuic\nConnection"
+participant Quiche as "Quiche\nConnection"
+participant QuicSession as "Server\nQuic\nSession"
+participant ProtoSession as "H3 Proto\nSession"
+participant Decoder as "QPack\nDecoder"
+participant QuicStream as "Quic\nStream"
+participant HttpChannel as "Http\nChannel"
+autoactivate on
+
+
+QuicConnector -> SelectorManager ** : new
+
+== New Connection ==
+
+SelectorManager -> QuicConnector : newConnection
+  QuicConnector -> QuicConnection ** : new
+return
+loop as packets received
+  SelectorManager -> QuicConnection : onFillable
+    alt if unknown sessionId
+      QuicConnection -> Quiche ** : tryAcquire
+      QuicConnection -> QuicSession ** : newSession
+    end
+    QuicConnection -> QuicSession : process
+      alt if established && protoSession==null
+        QuicSession -> Quiche : getNegotiatedProtocol
+        return protocol
+        QuicSession -> QuicConnector : getProtocolFactory
+        return factory
+        QuicSession -> ProtoSession **
+        activate ProtoSession
+        ProtoSession -> Decoder **
+        deactivate ProtoSession
+      end
+      QuicSession -> ProtoSession : process
+        ProtoSession -> Quiche : readableStreamIds
+        return readableStreamIds
+        alt TODO I don't really know how this bit works ???
+          ProtoSession -> Quiche : ????
+            Quiche -> QuicStream **
+          return stream???
+          ProtoSession -> HttpChannel **
+          ProtoSession -> Decoder : decode
+          return
+          ProtoSession -> QuicConnection : sendInstructions
+          return
+          alt if metaData!=null
+            note over ProtoSession
+              Is this executed
+              or returned as a Runnable??
+            end note
+            ProtoSession -> HttpChannel : handle
+            return
+          end
+        end
+      return
+    return
+  return
+end
+@enduml
