@@ -18,7 +18,7 @@
         <New class="org.hibernate.search.cfg.SearchMapping">
           <Call name="entity">
             <Arg>
-              <Get class="org.eclipse.jetty.server.session.infinispan.InfinispanSessionData" name="class"/>
+              <Get class="org.eclipse.jetty.session.infinispan.InfinispanSessionData" name="class"/>
             </Arg>
             <Call name="indexed">
               <Call name="providedId">
@@ -57,7 +57,7 @@
           </Arg>
           <Call name="addIndexedEntity">
             <Arg>
-              <Get class="org.eclipse.jetty.server.session.infinispan.InfinispanSessionData" name="class"/>
+              <Get class="org.eclipse.jetty.session.infinispan.InfinispanSessionData" name="class"/>
             </Arg>
             <Call name="withProperties">
               <Arg>
