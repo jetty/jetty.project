@@ -120,14 +120,7 @@ public class RemoteQueryManagerTest
         
         RemoteCacheManager remoteCacheManager = new RemoteCacheManager(clientBuilder.build());
 
-       /*
-        FileDescriptorSource fds = new FileDescriptorSource();
-        fds.addProtoFiles("/session.proto");
-        
-        SerializationContext serCtx = MarshallerUtil.getSerializationContext(remoteCacheManager);
-        serCtx.registerProtoFiles(fds);
-        serCtx.registerMarshaller(new SessionDataMarshaller());*/
-
+        //upload the session.proto serialization descriptor to the remote cache
         try (InputStream is = RemoteQueryManagerTest.class.getClassLoader().getResourceAsStream("session.proto");
              ByteArrayOutputStream baos = new ByteArrayOutputStream())
         {
@@ -137,6 +130,8 @@ public class RemoteQueryManagerTest
             String content = baos.toString("UTF-8");
             remoteCacheManager.administration().getOrCreateCache("___protobuf_metadata", (String)null).put("session.proto", content);
         }
+        
+        //make the remote cache encoded with protostream
         String xml = String.format("<infinispan>"  + 
             "<cache-container>" + "<distributed-cache name=\"%s\" mode=\"SYNC\">" +
             "<encoding media-type=\"application/x-protostream\"/>" +

@@ -217,6 +217,7 @@
             <distribution.debug.port>$(distribution.debug.port}</distribution.debug.port>
             <home.start.timeout>${home.start.timeout}</home.start.timeout>
             <mariadb.version>${mariadb.version}</mariadb.version>
+            <sessionLogLevel>${sessionLogLevel}</sessionLogLevel>
           </systemPropertyVariables>
         </configuration>
       </plugin>

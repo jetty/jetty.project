@@ -54,13 +54,12 @@ public class EmbeddedQueryManager implements QueryManager
         QueryResult result = expiredQuery.execute();
         List<Object[]> list = result.list();
         Set<String> ids = list.stream().map(a -> (String)a[0]).collect(toSet());
-        //Set<String> ids = list.stream().map(a -> (String)a[0]).collect(toSet());
         return ids;
     }
 
     public void deleteOrphanSessions(long time)
     {
-        Query<InfinispanSessionData> deleteQuery = _factory.create("select id, contextPath, vhost from from org.eclipse.jetty.session.infinispan.InfinispanSessionData where " +
+        Query<InfinispanSessionData> deleteQuery = _factory.create("select id, contextPath, vhost from org.eclipse.jetty.session.infinispan.InfinispanSessionData where " +
             " expiry <= :expiry and expiry > 0");
         deleteQuery.setParameter("expiry", time);
         

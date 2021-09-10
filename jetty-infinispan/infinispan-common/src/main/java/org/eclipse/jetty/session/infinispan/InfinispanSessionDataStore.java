@@ -105,6 +105,9 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
                 LOG.debug("Loading session {} from infinispan", id);
 
             InfinispanSessionData sd = _cache.get(getCacheKey(id));
+            
+            //Deserialize the attributes now that we are back in a thread that
+            //has the correct classloader set on it
             if (isPassivating() && sd != null)
             {
                 if (LOG.isDebugEnabled())
@@ -211,7 +214,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
         if (isPassivating() && data != null)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Deserializing session attributes for {}", id);
+                LOG.debug("Serializing session attributes for {}", id);
             ((InfinispanSessionData)data).serializeAttributes();
         }
         //Put an idle timeout on the cache entry if the session is not immortal - 

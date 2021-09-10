@@ -50,16 +50,6 @@ public class RemoteQueryManager implements QueryManager
     {
         Objects.requireNonNull(sessionContext);
 
-        /*        Query q = qf.from(InfinispanSessionData.class)
-            .select("id")
-            .having("contextPath").eq(sessionContext.getCanonicalContextPath())
-            .and()
-            .having("expiry").lte(time)
-            .and()
-            .having("expiry").gt(0)
-            .build();
-        
-        List<Object[]> list = q.list();*/
         Query<InfinispanSessionData> expiredQuery = _factory.create("select id from org_eclipse_jetty_session_infinispan.InfinispanSessionData where " +
             " contextPath = :contextPath and expiry <= :expiry and expiry > 0");
         expiredQuery.setParameter("contextPath", sessionContext.getCanonicalContextPath());
@@ -75,15 +65,7 @@ public class RemoteQueryManager implements QueryManager
     @Override
     public void deleteOrphanSessions(long time)
     {
-
-        /*        Query q = qf.from(InfinispanSessionData.class)
-            .select("id", "contextPath", "vhost")
-            .having("expiry").lte(time)
-            .and()
-            .having("expiry").gt(0)
-            .build();
-        List<Object[]> list = q.list();*/
-        Query<InfinispanSessionData> deleteQuery = _factory.create("select id, contextPath, vhost from from org_eclipse_jetty_session_infinispan.InfinispanSessionData where " +
+        Query<InfinispanSessionData> deleteQuery = _factory.create("select id, contextPath, vhost from org_eclipse_jetty_session_infinispan.InfinispanSessionData where " +
             " expiry <= :expiry and expiry > 0");
         deleteQuery.setParameter("expiry", time);
         
@@ -108,20 +90,7 @@ public class RemoteQueryManager implements QueryManager
     public boolean exists(SessionContext sessionContext, String id)
     {
         Objects.requireNonNull(sessionContext);
-        
-        /*
-        Query q = qf.from(InfinispanSessionData.class)
-            .select("id")
-            .having("id").eq(id)
-            .and()
-            .having("contextPath").eq(sessionContext.getCanonicalContextPath())
-            .and()
-            .having("expiry").gt(System.currentTimeMillis())
-            .or()
-            .having("expiry").lte(0)
-            .build();
-        
-        List<Object[]> list = q.list();*/
+
         Query<InfinispanSessionData> existQuery = _factory.create("select id from org_eclipse_jetty_session_infinispan.InfinispanSessionData where" +
             " id = :id and contextPath = :contextPath and expiry > :time or expiry <= 0");
         existQuery.setParameter("id", id);
