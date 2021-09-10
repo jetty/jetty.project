@@ -104,7 +104,7 @@ public class InfinispanSessionDistributionTests extends AbstractSessionDistribut
     @Override
     public String getFirstStartExtraModules()
     {
-        return "session-store-infinispan-remote";
+        return "session-store-infinispan-remote,infinispan-remote-query";
     }
 
     @Override
