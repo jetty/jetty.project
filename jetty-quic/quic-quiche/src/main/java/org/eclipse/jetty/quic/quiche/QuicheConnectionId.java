@@ -44,9 +44,11 @@ public class QuicheConnectionId
         this.string = bytesToHex(dcid);
     }
 
-    private static String bytesToHex(byte[] bytes) {
+    private static String bytesToHex(byte[] bytes)
+    {
         byte[] hexChars = new byte[bytes.length * 2];
-        for (int j = 0; j < bytes.length; j++) {
+        for (int j = 0; j < bytes.length; j++)
+        {
             int v = bytes[j] & 0xFF;
             hexChars[j * 2] = HEX_ARRAY[v >>> 4];
             hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
@@ -60,9 +62,9 @@ public class QuicheConnectionId
         return new QuicheConnectionId(sizedDcid);
     }
 
-    static QuicheConnectionId fromCid(byte[] dcid, size_t_pointer dcid_len)
+    static QuicheConnectionId fromCid(byte[] dcid, size_t_pointer dcidLen)
     {
-        byte[] sizedDcid = resizeIfNeeded(dcid, (int)dcid_len.getValue());
+        byte[] sizedDcid = resizeIfNeeded(dcid, (int)dcidLen.getValue());
         return new QuicheConnectionId(sizedDcid);
     }
 
@@ -76,23 +78,23 @@ public class QuicheConnectionId
 
         // Source Connection ID
         byte[] scid = new byte[LibQuiche.QUICHE_MAX_CONN_ID_LEN];
-        size_t_pointer scid_len = new size_t_pointer(scid.length);
+        size_t_pointer scidLen = new size_t_pointer(scid.length);
 
         // Destination Connection ID
         byte[] dcid = new byte[LibQuiche.QUICHE_MAX_CONN_ID_LEN];
-        size_t_pointer dcid_len = new size_t_pointer(dcid.length);
+        size_t_pointer dcidLen = new size_t_pointer(dcid.length);
 
         byte[] token = new byte[32];
-        size_t_pointer token_len = new size_t_pointer(token.length);
+        size_t_pointer tokenLen = new size_t_pointer(token.length);
 
         int rc = LibQuiche.INSTANCE.quiche_header_info(packet, new size_t(packet.remaining()), new size_t(LibQuiche.QUICHE_MAX_CONN_ID_LEN),
             version, type,
-            scid, scid_len,
-            dcid, dcid_len,
-            token, token_len);
+            scid, scidLen,
+            dcid, dcidLen,
+            token, tokenLen);
         if (rc < 0)
             return null;
-        return fromCid(dcid, dcid_len);
+        return fromCid(dcid, dcidLen);
     }
 
     private static byte[] resizeIfNeeded(byte[] buffer, int length)

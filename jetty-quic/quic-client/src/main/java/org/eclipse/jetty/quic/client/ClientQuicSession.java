@@ -22,7 +22,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.quic.common.ProtocolQuicSession;
 import org.eclipse.jetty.quic.common.QuicConnection;
 import org.eclipse.jetty.quic.common.QuicSession;
@@ -49,25 +48,16 @@ public class ClientQuicSession extends QuicSession
     @Override
     protected ProtocolQuicSession createProtocolQuicSession()
     {
-        return new ProtocolQuicSession(this);
+        ClientConnectionFactory connectionFactory = (ClientConnectionFactory)context.get(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY);
+        if (connectionFactory instanceof ProtocolQuicSession.Factory)
+            return ((ProtocolQuicSession.Factory)connectionFactory).newProtocolQuicSession(this, context);
+        return new ProtocolClientQuicSession(this);
     }
 
     @Override
-    protected QuicStreamEndPoint createQuicStreamEndPoint(long streamId)
+    public Connection newConnection(QuicStreamEndPoint endPoint) throws IOException
     {
-        try
-        {
-            ClientConnectionFactory connectionFactory = (ClientConnectionFactory)context.get(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY);
-            QuicStreamEndPoint endPoint = new QuicStreamEndPoint(getScheduler(), this, streamId);
-            Connection connection = connectionFactory.newConnection(endPoint, context);
-            endPoint.setConnection(connection);
-            endPoint.onOpen();
-            connection.onOpen();
-            return endPoint;
-        }
-        catch (IOException x)
-        {
-            throw new RuntimeIOException("Error creating new connection", x);
-        }
+        ClientConnectionFactory connectionFactory = (ClientConnectionFactory)context.get(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY);
+        return connectionFactory.newConnection(endPoint, context);
     }
 }

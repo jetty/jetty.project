@@ -13,17 +13,21 @@
 
 package org.eclipse.jetty.http3.server;
 
+import org.eclipse.jetty.http3.api.server.ServerSessionListener;
 import org.eclipse.jetty.server.HttpConfiguration;
 
-public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionFactory
+public class RawHTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionFactory
 {
-    public HTTP3ServerConnectionFactory()
+    private final ServerSessionListener listener;
+
+    public RawHTTP3ServerConnectionFactory(ServerSessionListener listener)
     {
-        this(new HttpConfiguration());
+        this(new HttpConfiguration(), listener);
     }
 
-    public HTTP3ServerConnectionFactory(HttpConfiguration configuration)
+    public RawHTTP3ServerConnectionFactory(HttpConfiguration httpConfiguration, ServerSessionListener listener)
     {
-        super(configuration);
+        super(httpConfiguration);
+        this.listener = listener;
     }
 }

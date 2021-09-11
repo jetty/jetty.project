@@ -184,4 +184,10 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         // No need to do anything.
         // See QuicSession.process().
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x#%d[%s]->[%s]", getClass().getSimpleName(), hashCode(), getStreamId(), toEndPointString(), toConnectionString());
+    }
 }

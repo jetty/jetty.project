@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.http3.api;
 
+import java.util.concurrent.CompletableFuture;
+
+import org.eclipse.jetty.http3.frames.HeadersFrame;
+
 public interface Session
 {
+    public CompletableFuture<Stream> newStream(HeadersFrame frame, Stream.Listener listener);
+
+    public interface Listener {}
 }

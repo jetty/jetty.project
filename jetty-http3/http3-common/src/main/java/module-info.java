@@ -11,14 +11,20 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.quic.server
+module org.eclipse.jetty.http3.common
 {
-    exports org.eclipse.jetty.quic.server;
+    exports org.eclipse.jetty.http3;
+    exports org.eclipse.jetty.http3.api;
+    exports org.eclipse.jetty.http3.api.server;
+    exports org.eclipse.jetty.http3.frames;
 
-    requires transitive org.eclipse.jetty.quic.common;
-    requires org.eclipse.jetty.quic.quiche;
+    exports org.eclipse.jetty.http3.internal.parser to org.eclipse.jetty.http3.server;
+    exports org.eclipse.jetty.http3.internal;
+
+    requires transitive org.eclipse.jetty.http;
+    requires org.eclipse.jetty.http3.qpack;
     requires org.eclipse.jetty.io;
-    requires org.eclipse.jetty.server;
+    requires org.eclipse.jetty.quic.common;
     requires org.eclipse.jetty.util;
     requires org.slf4j;
 }

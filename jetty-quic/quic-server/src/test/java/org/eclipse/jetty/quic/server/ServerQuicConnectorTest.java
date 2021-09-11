@@ -25,6 +25,7 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -34,13 +35,17 @@ public class ServerQuicConnectorTest
     @Test
     public void testSmall() throws Exception
     {
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
+        sslContextFactory.setKeyStorePassword("storepwd");
+
         Server server = new Server();
 
         HttpConfiguration config = new HttpConfiguration();
         config.setHttpCompliance(HttpCompliance.LEGACY); // enable HTTP/0.9
         HttpConnectionFactory connectionFactory = new HttpConnectionFactory(config);
 
-        ServerQuicConnector connector = new ServerQuicConnector(server, connectionFactory);
+        ServerQuicConnector connector = new ServerQuicConnector(server, sslContextFactory, connectionFactory);
         connector.setPort(8443);
         server.addConnector(connector);
 
@@ -71,13 +76,17 @@ public class ServerQuicConnectorTest
     @Test
     public void testBig() throws Exception
     {
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
+        sslContextFactory.setKeyStorePassword("storepwd");
+
         Server server = new Server();
 
         HttpConfiguration config = new HttpConfiguration();
         config.setHttpCompliance(HttpCompliance.LEGACY); // enable HTTP/0.9
         HttpConnectionFactory connectionFactory = new HttpConnectionFactory(config);
 
-        ServerQuicConnector connector = new ServerQuicConnector(server, connectionFactory);
+        ServerQuicConnector connector = new ServerQuicConnector(server, sslContextFactory, connectionFactory);
         connector.setPort(8443);
         server.addConnector(connector);
 

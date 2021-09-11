@@ -14,6 +14,7 @@
 package org.eclipse.jetty.quic.server;
 
 import java.net.SocketAddress;
+import java.util.Map;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -50,20 +51,15 @@ public class ServerQuicSession extends QuicSession
     {
         ConnectionFactory connectionFactory = findConnectionFactory(getNegotiatedProtocol());
         if (connectionFactory instanceof ProtocolQuicSession.Factory)
-            return ((ProtocolQuicSession.Factory)connectionFactory).newProtocolQuicSession(this);
-        return new ProtocolQuicSession(this);
+            return ((ProtocolQuicSession.Factory)connectionFactory).newProtocolQuicSession(this, Map.of());
+        return new ProtocolServerQuicSession(this);
     }
 
     @Override
-    protected QuicStreamEndPoint createQuicStreamEndPoint(long streamId)
+    public Connection newConnection(QuicStreamEndPoint endPoint)
     {
         ConnectionFactory connectionFactory = findConnectionFactory(getNegotiatedProtocol());
-        QuicStreamEndPoint endPoint = new QuicStreamEndPoint(getScheduler(), this, streamId);
-        Connection connection = connectionFactory.newConnection(connector, endPoint);
-        endPoint.setConnection(connection);
-        endPoint.onOpen();
-        connection.onOpen();
-        return endPoint;
+        return connectionFactory.newConnection(connector, endPoint);
     }
 
     private ConnectionFactory findConnectionFactory(String negotiatedProtocol)

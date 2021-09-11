@@ -11,14 +11,13 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.quic.server
+module org.eclipse.jetty.http3.client
 {
-    exports org.eclipse.jetty.quic.server;
+    exports org.eclipse.jetty.http3.client;
 
+    requires transitive org.eclipse.jetty.http3.common;
+    requires transitive org.eclipse.jetty.io;
     requires transitive org.eclipse.jetty.quic.common;
-    requires org.eclipse.jetty.quic.quiche;
-    requires org.eclipse.jetty.io;
-    requires org.eclipse.jetty.server;
-    requires org.eclipse.jetty.util;
-    requires org.slf4j;
+    requires org.eclipse.jetty.quic.client;
+    requires transitive org.eclipse.jetty.util;
 }

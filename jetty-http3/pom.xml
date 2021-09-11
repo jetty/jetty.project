@@ -16,6 +16,8 @@
     <module>http3-qpack</module>
     <module>http3-common</module>
     <module>http3-server</module>
+    <module>http3-client</module>
+    <module>http3-tests</module>
   </modules>
 
 </project>

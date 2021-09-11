@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
-    <artifactId>http3-parent</artifactId>
     <groupId>org.eclipse.jetty.http3</groupId>
+    <artifactId>http3-parent</artifactId>
     <version>10.0.7-SNAPSHOT</version>
   </parent>
 
@@ -23,7 +23,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.quic</groupId>
-      <artifactId>quic-common</artifactId>
+      <artifactId>quic-server</artifactId>
       <version>${project.version}</version>
     </dependency>
   </dependencies>
