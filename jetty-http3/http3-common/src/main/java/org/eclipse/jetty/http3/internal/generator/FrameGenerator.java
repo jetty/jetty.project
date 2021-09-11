@@ -11,31 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.internal;
+package org.eclipse.jetty.http3.internal.generator;
 
-import java.util.concurrent.Executor;
+import org.eclipse.jetty.http3.frames.Frame;
+import org.eclipse.jetty.io.ByteBufferPool;
 
-import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.EndPoint;
-
-public class ControlConnection extends AbstractConnection
+public abstract class FrameGenerator
 {
-    public static final int STREAM_TYPE = 0x00;
-
-    public ControlConnection(EndPoint endPoint, Executor executor)
-    {
-        super(endPoint, executor);
-    }
-
-    @Override
-    public void onOpen()
-    {
-        super.onOpen();
-        fillInterested();
-    }
-
-    @Override
-    public void onFillable()
-    {
-    }
+    public abstract int generate(ByteBufferPool.Lease lease, Frame frame);
 }

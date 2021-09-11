@@ -20,6 +20,8 @@ import org.eclipse.jetty.io.EndPoint;
 
 public class EncoderConnection extends AbstractConnection
 {
+    public static final int QPACK_ENCODER_STREAM_TYPE = 0x02;
+
     public EncoderConnection(EndPoint endPoint, Executor executor)
     {
         super(endPoint, executor);
@@ -28,6 +30,5 @@ public class EncoderConnection extends AbstractConnection
     @Override
     public void onFillable()
     {
-
     }
 }

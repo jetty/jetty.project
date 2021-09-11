@@ -11,31 +11,35 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.internal;
+package org.eclipse.jetty.http3.frames;
 
-import java.util.concurrent.Executor;
+import java.util.Map;
 
-import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.EndPoint;
-
-public class ControlConnection extends AbstractConnection
+public class SettingsFrame extends Frame
 {
-    public static final int STREAM_TYPE = 0x00;
+    public static final long MAX_FIELD_SECTION_SIZE = 0x06;
 
-    public ControlConnection(EndPoint endPoint, Executor executor)
+    public static boolean isReserved(long key)
     {
-        super(endPoint, executor);
+        return key >= 0 && key <= 5;
+    }
+
+    private final Map<Long, Long> settings;
+
+    public SettingsFrame(Map<Long, Long> settings)
+    {
+        super(FrameType.SETTINGS);
+        this.settings = settings;
+    }
+
+    public Map<Long, Long> getSettings()
+    {
+        return settings;
     }
 
     @Override
-    public void onOpen()
+    public String toString()
     {
-        super.onOpen();
-        fillInterested();
-    }
-
-    @Override
-    public void onFillable()
-    {
+        return String.format("%s,settings=%s", super.toString(), settings);
     }
 }

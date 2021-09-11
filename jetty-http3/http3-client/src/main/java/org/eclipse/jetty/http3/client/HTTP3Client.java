@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 public class HTTP3Client extends ContainerLifeCycle
 {
     public static final String CLIENT_CONTEXT_KEY = HTTP3Client.class.getName();
-    private static final String SESSION_LISTENER_CONTEXT_KEY = CLIENT_CONTEXT_KEY + ".listener";
+    public static final String SESSION_LISTENER_CONTEXT_KEY = CLIENT_CONTEXT_KEY + ".listener";
     private static final String SESSION_PROMISE_CONTEXT_KEY = CLIENT_CONTEXT_KEY + ".promise";
 
     private final ClientConnector connector;

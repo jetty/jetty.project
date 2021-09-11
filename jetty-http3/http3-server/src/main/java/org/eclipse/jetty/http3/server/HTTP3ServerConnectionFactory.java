@@ -24,6 +24,6 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
 
     public HTTP3ServerConnectionFactory(HttpConfiguration configuration)
     {
-        super(configuration);
+        super(configuration, null);
     }
 }
