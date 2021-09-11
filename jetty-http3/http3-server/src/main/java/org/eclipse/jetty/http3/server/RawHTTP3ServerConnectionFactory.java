@@ -18,8 +18,6 @@ import org.eclipse.jetty.server.HttpConfiguration;
 
 public class RawHTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionFactory
 {
-    private final ServerSessionListener listener;
-
     public RawHTTP3ServerConnectionFactory(ServerSessionListener listener)
     {
         this(new HttpConfiguration(), listener);
@@ -27,7 +25,6 @@ public class RawHTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnecti
 
     public RawHTTP3ServerConnectionFactory(HttpConfiguration httpConfiguration, ServerSessionListener listener)
     {
-        super(httpConfiguration);
-        this.listener = listener;
+        super(httpConfiguration, listener);
     }
 }

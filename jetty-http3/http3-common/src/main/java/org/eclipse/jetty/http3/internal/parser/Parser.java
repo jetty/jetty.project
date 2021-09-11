@@ -19,6 +19,7 @@ import org.eclipse.jetty.http3.ErrorCode;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.FrameType;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,13 +34,13 @@ public class Parser
     private static final Logger LOG = LoggerFactory.getLogger(Parser.class);
 
     private final HeaderParser headerParser;
-    private final BodyParser[] bodyParsers = new BodyParser[FrameType.maxType()];
+    private final BodyParser[] bodyParsers = new BodyParser[FrameType.maxType() + 1];
     private final BodyParser unknownBodyParser;
     private final long streamId;
     private final Listener listener;
     private State state = State.HEADER;
 
-    public Parser(long streamId, Listener listener, QpackDecoder decoder)
+    public Parser(long streamId, QpackDecoder decoder, Listener listener)
     {
         this.streamId = streamId;
         this.headerParser = new HeaderParser();
@@ -143,6 +144,10 @@ public class Parser
         }
 
         public default void onData(DataFrame frame)
+        {
+        }
+
+        public default void onSettings(SettingsFrame frame)
         {
         }
 

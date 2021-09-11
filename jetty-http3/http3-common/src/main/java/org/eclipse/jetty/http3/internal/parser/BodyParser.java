@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http3.ErrorCode;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -117,6 +118,18 @@ public abstract class BodyParser
         try
         {
             listener.onHeaders(frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure while notifying listener {}", listener, x);
+        }
+    }
+
+    protected void notifySettings(SettingsFrame frame)
+    {
+        try
+        {
+            listener.onSettings(frame);
         }
         catch (Throwable x)
         {

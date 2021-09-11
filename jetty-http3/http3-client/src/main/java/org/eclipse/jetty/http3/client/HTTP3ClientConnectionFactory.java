@@ -16,6 +16,8 @@ package org.eclipse.jetty.http3.client;
 import java.io.IOException;
 import java.util.Map;
 
+import org.eclipse.jetty.http3.api.Session;
+import org.eclipse.jetty.http3.internal.generator.Generator;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -29,8 +31,9 @@ public class HTTP3ClientConnectionFactory implements ClientConnectionFactory, Pr
     public ProtocolQuicSession newProtocolQuicSession(QuicSession quicSession, Map<String, Object> context)
     {
         HTTP3Client http3Client = (HTTP3Client)context.get(HTTP3Client.CLIENT_CONTEXT_KEY);
-        // TODO: configure the QpackDecoder.maxHeaderSize from HTTP3Client
-        return new HTTP3ClientQuicSession((ClientQuicSession)quicSession);
+        Session.Listener listener = (Session.Listener)context.get(HTTP3Client.SESSION_LISTENER_CONTEXT_KEY);
+        Generator generator = new Generator();
+        return new HTTP3ClientQuicSession((ClientQuicSession)quicSession, listener, generator);
     }
 
     @Override
