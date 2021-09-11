@@ -11,14 +11,23 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.quic.server
-{
-    exports org.eclipse.jetty.quic.server;
+package org.eclipse.jetty.http3.internal;
 
-    requires transitive org.eclipse.jetty.quic.common;
-    requires org.eclipse.jetty.quic.quiche;
-    requires org.eclipse.jetty.io;
-    requires org.eclipse.jetty.server;
-    requires org.eclipse.jetty.util;
-    requires org.slf4j;
+import java.util.concurrent.Executor;
+
+import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.EndPoint;
+
+public class EncoderConnection extends AbstractConnection
+{
+    public EncoderConnection(EndPoint endPoint, Executor executor)
+    {
+        super(endPoint, executor);
+    }
+
+    @Override
+    public void onFillable()
+    {
+
+    }
 }

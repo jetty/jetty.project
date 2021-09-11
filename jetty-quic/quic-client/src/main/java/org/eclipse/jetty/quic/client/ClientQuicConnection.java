@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ClientQuicConnection extends QuicConnection
 {
+    public static final String APPLICATION_PROTOCOLS = "org.eclipse.jetty.quic.application.protocols";
     private static final Logger LOG = LoggerFactory.getLogger(ClientQuicConnection.class);
 
     private final Map<SocketAddress, QuicSession> pendingSessions = new ConcurrentHashMap<>();
@@ -61,39 +62,63 @@ public class ClientQuicConnection extends QuicConnection
     @Override
     public void onOpen()
     {
-        super.onOpen();
-
         try
         {
-            InetSocketAddress remoteAddress = (InetSocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
-            HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+            super.onOpen();
+
+            @SuppressWarnings("unchecked")
+            List<String> protocols = (List<String>)context.get(APPLICATION_PROTOCOLS);
+            if (protocols == null)
+            {
+                HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+                if (destination != null)
+                    protocols = destination.getOrigin().getProtocol().getProtocols();
+                if (protocols == null)
+                    throw new IllegalStateException("Missing ALPN protocols");
+            }
 
             // TODO: pull the config settings from somewhere else TBD (context?)
             QuicheConfig quicheConfig = new QuicheConfig();
-            List<String> protocols = destination.getOrigin().getProtocol().getProtocols();
-            quicheConfig.setApplicationProtos(protocols.toArray(new String[0]));
+            quicheConfig.setApplicationProtos(protocols.toArray(String[]::new));
             quicheConfig.setDisableActiveMigration(true);
             quicheConfig.setVerifyPeer(false);
-            quicheConfig.setMaxIdleTimeout(5000L);
+            quicheConfig.setMaxIdleTimeout(getEndPoint().getIdleTimeout());
             quicheConfig.setInitialMaxData(10_000_000L);
             quicheConfig.setInitialMaxStreamDataBidiLocal(10_000_000L);
             quicheConfig.setInitialMaxStreamDataUni(10_000_000L);
             quicheConfig.setInitialMaxStreamsBidi(100L);
             quicheConfig.setInitialMaxStreamsUni(100L);
 
+            InetSocketAddress remoteAddress = (InetSocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
             QuicheConnection quicheConnection = QuicheConnection.connect(quicheConfig, remoteAddress);
             QuicSession session = new ClientQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), quicheConnection, this, remoteAddress, context);
             pendingSessions.put(remoteAddress, session);
             session.flush(); // send the response packet(s) that connect generated.
             if (LOG.isDebugEnabled())
                 LOG.debug("created connecting QUIC session {}", session);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeIOException("Error trying to open connection", e);
-        }
 
-        fillInterested();
+            fillInterested();
+        }
+        catch (IOException x)
+        {
+            throw new RuntimeIOException(x);
+        }
+    }
+
+    @Override
+    protected QuicSession createSession(SocketAddress remoteAddress, ByteBuffer cipherBuffer) throws IOException
+    {
+        QuicSession session = pendingSessions.get(remoteAddress);
+        if (session != null)
+        {
+            session.process(remoteAddress, cipherBuffer);
+            if (session.isConnectionEstablished())
+            {
+                pendingSessions.remove(remoteAddress);
+                return session;
+            }
+        }
+        return null;
     }
 
     @Override
@@ -108,22 +133,5 @@ public class ClientQuicConnection extends QuicConnection
             if (promise != null)
                 promise.failed(x);
         }
-    }
-
-    @Override
-    protected QuicSession createSession(SocketAddress remoteAddress, ByteBuffer cipherBuffer) throws IOException
-    {
-        QuicSession session = pendingSessions.get(remoteAddress);
-        if (session != null)
-        {
-            session.process(remoteAddress, cipherBuffer);
-            if (session.isConnectionEstablished())
-            {
-                pendingSessions.remove(remoteAddress);
-                session.onOpen();
-                return session;
-            }
-        }
-        return null;
     }
 }

@@ -7,33 +7,35 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>http3-common</artifactId>
-  <name>Jetty :: HTTP3 :: Common</name>
+  <artifactId>http3-tests</artifactId>
+  <name>Jetty :: HTTP3 :: Tests</name>
 
   <dependencies>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
+      <groupId>org.eclipse.jetty.http3</groupId>
+      <artifactId>http3-client</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http3</groupId>
-      <artifactId>http3-qpack</artifactId>
+      <artifactId>http3-server</artifactId>
       <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.quic</groupId>
-      <artifactId>quic-common</artifactId>
+      <artifactId>quic-server</artifactId>
       <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-io</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-util</artifactId>
-      <version>${project.version}</version>
+      <artifactId>jetty-slf4j-impl</artifactId>
     </dependency>
   </dependencies>
 

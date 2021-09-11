@@ -23,8 +23,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.CyclicTimeout;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
@@ -54,6 +57,7 @@ public abstract class QuicSession
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicSession.class);
 
+    private final AtomicLong ids = new AtomicLong();
     private final AutoLock strategyQueueLock = new AutoLock();
     private final Queue<Runnable> strategyQueue = new ArrayDeque<>();
     private final ConcurrentMap<Long, QuicStreamEndPoint> endpoints = new ConcurrentHashMap<>();
@@ -66,7 +70,6 @@ public abstract class QuicSession
     private final ExecutionStrategy strategy;
     private SocketAddress remoteAddress;
     private ProtocolQuicSession protocolSession;
-    // TODO make it final?
     private QuicheConnectionId quicheConnectionId;
 
     protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicheConnection quicheConnection, QuicConnection connection, SocketAddress remoteAddress)
@@ -92,6 +95,11 @@ public abstract class QuicSession
         return scheduler;
     }
 
+    public ByteBufferPool getByteBufferPool()
+    {
+        return byteBufferPool;
+    }
+
     public ProtocolQuicSession getProtocolQuicSession()
     {
         return protocolSession;
@@ -102,9 +110,46 @@ public abstract class QuicSession
         return quicheConnection.getNegotiatedProtocol();
     }
 
+    /**
+     * @return a new unidirectional, client-initiated, stream ID
+     */
+    public long newClientUnidirectionalStreamId()
+    {
+        return newStreamId() + 0x02;
+    }
+
+    /**
+     * @return a new bidirectional, client-initiated, stream ID
+     */
+    public long newClientBidirectionalStreamId()
+    {
+        return newStreamId();
+    }
+
+    /**
+     * @return a new unidirectional, server-initiated, stream ID
+     */
+    public long newServerUnidirectionalStreamId()
+    {
+        return newStreamId() + 0x03;
+    }
+
+    /**
+     * @return a new bidirectional, server-initiated, stream ID
+     */
+    public long newServerBidirectionalStreamId()
+    {
+        return newStreamId() + 0x01;
+    }
+
+    private long newStreamId()
+    {
+        return ids.getAndIncrement() << 2;
+    }
+
     public void onOpen()
     {
-        getOrCreateStreamEndPoint(0);
+        protocolSession.onOpen();
     }
 
     public int fill(long streamId, ByteBuffer buffer) throws IOException
@@ -182,19 +227,32 @@ public abstract class QuicSession
             // client1 -- sockEP1 -> H2Connection - HEADERSParser - H2Session -* RequestStreams -# HTTP Handler
             // client2 -- sockEP2 -> H2Connection - HEADERSParser - H2Session -* RequestStreams -# HTTP Handler
 
+            // HTTP/1 on QUIC
+            // client1
+            //        \
+            //         dataEP - QuicConnection -* QuicSession -# ProtocolQuicSession -* RequestStreamN - HttpConnection - HTTP Handler
+            //        /
+            // client2
+
             // HTTP/3
             // client1
-            //        \                                                             /- ConnectionStream0 - ConnectionParser for SETTINGS frames, etc.
-            //         dataEP - QuicConnection -* QuicSession -# ProtocolQuicSession -* RequestStreamsEP - H3Connection - HEADERSParser -# HTTP Handler
-            //        /                                                             `- InstructionStream - InstructionConnection/Parser
+            //        \                                                        /- ConnectionStream0 - ConnectionParser for SETTINGS frames, etc.
+            //         dataEP - QuicConnection -* QuicSession -# H3QuicSession -* RequestStreamsEP - H3Connection - HEADERSParser -# HTTP Handler
+            //        /                                                        `- InstructionStream - InstructionConnection/Parser
             // client2
             // H3ProtoSession - QpackEncoder
             // H3ProtoSession - QpackDecoder
             // H3ProtoSession -* request streams
 
             if (protocolSession == null)
+            {
                 protocolSession = createProtocolQuicSession();
-            protocolSession.process();
+                onOpen();
+            }
+            else
+            {
+                protocolSession.process();
+            }
         }
         else
         {
@@ -204,38 +262,22 @@ public abstract class QuicSession
 
     protected abstract ProtocolQuicSession createProtocolQuicSession();
 
-    void processWritableStreams()
+    List<Long> getWritableStreamIds()
     {
-        List<Long> writableStreamIds = quicheConnection.writableStreamIds();
-        if (LOG.isDebugEnabled())
-            LOG.debug("writable stream ids: {}", writableStreamIds);
-        writableStreamIds.forEach(this::onWritable);
+        return quicheConnection.writableStreamIds();
     }
 
-    private void onWritable(long writableStreamId)
+    List<Long> getReadableStreamIds()
     {
-        QuicStreamEndPoint streamEndPoint = getOrCreateStreamEndPoint(writableStreamId);
-        if (LOG.isDebugEnabled())
-            LOG.debug("selected endpoint for write: {}", streamEndPoint);
-        streamEndPoint.onWritable();
+        return quicheConnection.readableStreamIds();
     }
 
-    boolean processReadableStreams()
+    QuicStreamEndPoint getStreamEndPoint(long streamId)
     {
-        List<Long> readableStreamIds = quicheConnection.readableStreamIds();
-        if (LOG.isDebugEnabled())
-            LOG.debug("readable stream ids: {}", readableStreamIds);
-        readableStreamIds.forEach(this::onReadable);
-        return !readableStreamIds.isEmpty();
+        return endpoints.get(streamId);
     }
 
-    private void onReadable(long readableStreamId)
-    {
-        QuicStreamEndPoint streamEndPoint = getOrCreateStreamEndPoint(readableStreamId);
-        if (LOG.isDebugEnabled())
-            LOG.debug("selected endpoint for read: {}", streamEndPoint);
-        streamEndPoint.onReadable();
-    }
+    public abstract Connection newConnection(QuicStreamEndPoint endPoint) throws IOException;
 
     private void dispatch(Runnable runnable)
     {
@@ -253,15 +295,16 @@ public abstract class QuicSession
         flusher.iterate();
     }
 
-    private QuicStreamEndPoint getOrCreateStreamEndPoint(long streamId)
+    public QuicStreamEndPoint getOrCreateStreamEndPoint(long streamId, Consumer<QuicStreamEndPoint> consumer)
     {
         QuicStreamEndPoint endPoint = endpoints.compute(streamId, (sid, quicStreamEndPoint) ->
         {
             if (quicStreamEndPoint == null)
             {
-                quicStreamEndPoint = createQuicStreamEndPoint(streamId);
                 if (LOG.isDebugEnabled())
                     LOG.debug("creating endpoint for stream {}", sid);
+                quicStreamEndPoint = newQuicStreamEndPoint(streamId);
+                consumer.accept(quicStreamEndPoint);
             }
             return quicStreamEndPoint;
         });
@@ -270,7 +313,10 @@ public abstract class QuicSession
         return endPoint;
     }
 
-    protected abstract QuicStreamEndPoint createQuicStreamEndPoint(long streamId);
+    private QuicStreamEndPoint newQuicStreamEndPoint(long streamId)
+    {
+        return new QuicStreamEndPoint(getScheduler(), this, streamId);
+    }
 
     public void close()
     {

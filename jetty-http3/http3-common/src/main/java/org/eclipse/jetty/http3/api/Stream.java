@@ -15,4 +15,5 @@ package org.eclipse.jetty.http3.api;
 
 public interface Stream
 {
+    public interface Listener {}
 }
