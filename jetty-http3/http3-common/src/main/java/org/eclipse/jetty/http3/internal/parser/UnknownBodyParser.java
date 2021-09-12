@@ -17,7 +17,7 @@ import java.nio.ByteBuffer;
 
 public class UnknownBodyParser extends BodyParser
 {
-    public UnknownBodyParser(HeaderParser headerParser, Parser.Listener listener)
+    public UnknownBodyParser(HeaderParser headerParser, ParserListener listener)
     {
         super(1, headerParser, listener);
     }

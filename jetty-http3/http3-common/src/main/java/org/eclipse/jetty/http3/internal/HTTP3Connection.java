@@ -13,23 +13,40 @@
 
 package org.eclipse.jetty.http3.internal;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.http3.internal.parser.Parser;
+import org.eclipse.jetty.http3.internal.parser.MessageParser;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.quic.common.ProtocolQuicSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HTTP3Connection extends AbstractConnection
 {
-    private final ProtocolQuicSession protocolSession;
-    private final Parser parser;
+    private static final Logger LOG = LoggerFactory.getLogger(HTTP3Connection.class);
 
-    public HTTP3Connection(EndPoint endPoint, Executor executor, Parser parser)
+    private final ByteBufferPool byteBufferPool;
+    private final MessageParser parser;
+    private boolean useInputDirectByteBuffers = true;
+    private ByteBuffer buffer;
+
+    public HTTP3Connection(EndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, MessageParser parser)
     {
         super(endPoint, executor);
-        this.protocolSession = null; // TODO
+        this.byteBufferPool = byteBufferPool;
         this.parser = parser;
+    }
+
+    public boolean isUseInputDirectByteBuffers()
+    {
+        return useInputDirectByteBuffers;
+    }
+
+    public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
+    {
+        this.useInputDirectByteBuffers = useInputDirectByteBuffers;
     }
 
     @Override
@@ -42,13 +59,47 @@ public class HTTP3Connection extends AbstractConnection
     @Override
     public void onFillable()
     {
+        try
+        {
+            if (buffer == null)
+                buffer = byteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+            while (true)
+            {
+                int filled = getEndPoint().fill(buffer);
+                if (filled > 0)
+                {
+                    parser.parse(buffer);
+                }
+                else if (filled == 0)
+                {
+                    byteBufferPool.release(buffer);
+                    fillInterested();
+                    break;
+                }
+                else
+                {
+                    byteBufferPool.release(buffer);
+                    buffer = null;
+                    getEndPoint().close();
+                    break;
+                }
+            }
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("could not process control stream {}", getEndPoint(), x);
+            byteBufferPool.release(buffer);
+            buffer = null;
+            getEndPoint().close(x);
+        }
     }
 
     // TODO
     //  Output side.
     //  When responses want to send a HEADERS frame,
     //  they cannot generate the bytes and write them to the EP because otherwise they will be accessing the QpackEncoder concurrently.
-    //  Therefore we need to have a reference from here back to ProtocolQuicSession and do
-    //  protocolQuicSession.append(frames);
-    //  Then ProtocolQuicSession will have a Flusher that will generate the bytes in a single threaded way.
+    //  Therefore we need to have a reference from here back to ProtocolSession and do
+    //  protocolSession.append(frames);
+    //  Then ProtocolSession will have a Flusher that will generate the bytes in a single threaded way.
 }

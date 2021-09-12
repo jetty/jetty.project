@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -31,7 +30,6 @@ import org.eclipse.jetty.quic.server.internal.SimpleTokenValidator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,9 +43,9 @@ public class ServerQuicConnection extends QuicConnection
     private final QuicheConfig quicheConfig;
     private final Connector connector;
 
-    protected ServerQuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endp, QuicheConfig quicheConfig, Connector connector)
+    protected ServerQuicConnection(Connector connector, EndPoint endPoint, QuicheConfig quicheConfig)
     {
-        super(executor, scheduler, byteBufferPool, endp);
+        super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), endPoint);
         this.quicheConfig = quicheConfig;
         this.connector = connector;
     }

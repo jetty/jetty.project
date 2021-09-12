@@ -22,7 +22,8 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.quic.common.ProtocolQuicSession;
+import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicConnection;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
@@ -46,18 +47,25 @@ public class ClientQuicSession extends QuicSession
     }
 
     @Override
-    protected ProtocolQuicSession createProtocolQuicSession()
+    protected ProtocolSession createProtocolSession()
     {
         ClientConnectionFactory connectionFactory = (ClientConnectionFactory)context.get(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY);
-        if (connectionFactory instanceof ProtocolQuicSession.Factory)
-            return ((ProtocolQuicSession.Factory)connectionFactory).newProtocolQuicSession(this, context);
-        return new ProtocolClientQuicSession(this);
+        if (connectionFactory instanceof ProtocolSession.Factory)
+            return ((ProtocolSession.Factory)connectionFactory).newProtocolSession(this, context);
+        return new ClientProtocolSession(this);
     }
 
     @Override
-    public Connection newConnection(QuicStreamEndPoint endPoint) throws IOException
+    public Connection newConnection(QuicStreamEndPoint endPoint)
     {
-        ClientConnectionFactory connectionFactory = (ClientConnectionFactory)context.get(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY);
-        return connectionFactory.newConnection(endPoint, context);
+        try
+        {
+            ClientConnectionFactory connectionFactory = (ClientConnectionFactory)context.get(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY);
+            return connectionFactory.newConnection(endPoint, context);
+        }
+        catch (IOException x)
+        {
+            throw new RuntimeIOException(x);
+        }
     }
 }

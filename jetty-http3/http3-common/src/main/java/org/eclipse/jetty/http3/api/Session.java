@@ -20,11 +20,31 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
 
 public interface Session
 {
-    public CompletableFuture<Stream> newStream(HeadersFrame frame, Stream.Listener listener);
+    public interface Client
+    {
+        public CompletableFuture<Stream> newStream(HeadersFrame frame, Stream.Listener listener);
+
+        public interface Listener extends Session.Listener
+        {
+        }
+    }
+
+    public interface Server
+    {
+        public interface Listener extends Session.Listener
+        {
+            // TODO: accept event.
+        }
+    }
 
     public interface Listener
     {
         public default Map<Long, Long> onPreface(Session session)
+        {
+            return null;
+        }
+
+        public default Stream.Listener onHeaders(Stream stream, HeadersFrame frame)
         {
             return null;
         }

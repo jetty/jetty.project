@@ -29,7 +29,7 @@ public class SettingsBodyParser extends BodyParser
     private long key;
     private Map<Long, Long> settings;
 
-    public SettingsBodyParser(HeaderParser headerParser, Parser.Listener listener)
+    public SettingsBodyParser(HeaderParser headerParser, ParserListener listener)
     {
         super(1, headerParser, listener);
     }

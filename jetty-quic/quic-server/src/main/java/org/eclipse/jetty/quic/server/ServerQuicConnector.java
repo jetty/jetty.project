@@ -102,6 +102,7 @@ public class ServerQuicConnector extends AbstractNetworkConnector
         _quicheConfig.setInitialMaxStreamDataBidiLocal(10000000L);
         _quicheConfig.setInitialMaxStreamDataBidiRemote(10000000L);
         _quicheConfig.setInitialMaxStreamDataUni(10000000L);
+        _quicheConfig.setInitialMaxStreamsUni(100L);
         _quicheConfig.setInitialMaxStreamsBidi(100L);
         _quicheConfig.setCongestionControl(QuicheConfig.CongestionControl.RENO);
         List<String> protocols = getProtocols();
@@ -192,7 +193,7 @@ public class ServerQuicConnector extends AbstractNetworkConnector
         @Override
         public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment)
         {
-            return new ServerQuicConnection(getExecutor(), getScheduler(), getByteBufferPool(), endpoint, _quicheConfig, ServerQuicConnector.this);
+            return new ServerQuicConnection(ServerQuicConnector.this, endpoint, _quicheConfig);
         }
     }
 }

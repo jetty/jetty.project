@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Queue;
 
 import org.eclipse.jetty.http3.frames.Frame;
-import org.eclipse.jetty.http3.internal.generator.Generator;
+import org.eclipse.jetty.http3.internal.generator.ControlGenerator;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.quic.common.QuicSession;
@@ -38,16 +38,16 @@ public class ControlFlusher extends IteratingCallback
     private final AutoLock lock = new AutoLock();
     private final Queue<Entry> queue = new ArrayDeque<>();
     private final ByteBufferPool.Lease lease;
-    private final Generator generator;
+    private final ControlGenerator generator;
     private final EndPoint endPoint;
     private List<Entry> entries;
     private InvocationType invocationType = InvocationType.NON_BLOCKING;
 
-    public ControlFlusher(QuicSession session, Generator generator, EndPoint endPoint)
+    public ControlFlusher(QuicSession session, EndPoint endPoint)
     {
         this.lease = new ByteBufferPool.Lease(session.getByteBufferPool());
-        this.generator = generator;
         this.endPoint = endPoint;
+        this.generator = new ControlGenerator();
     }
 
     public void offer(Frame frame, Callback callback)

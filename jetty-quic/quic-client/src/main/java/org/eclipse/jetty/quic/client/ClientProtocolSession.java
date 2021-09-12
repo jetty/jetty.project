@@ -11,50 +11,46 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.server;
+package org.eclipse.jetty.quic.client;
 
-import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.quic.common.ProtocolQuicSession;
+import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
+import org.eclipse.jetty.quic.common.StreamType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ProtocolServerQuicSession extends ProtocolQuicSession
+public class ClientProtocolSession extends ProtocolSession
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ProtocolServerQuicSession.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ClientProtocolSession.class);
 
-    public ProtocolServerQuicSession(ServerQuicSession session)
+    public ClientProtocolSession(ClientQuicSession session)
     {
         super(session);
     }
 
     @Override
-    public ServerQuicSession getQuicSession()
+    public ClientQuicSession getQuicSession()
     {
-        return (ServerQuicSession)super.getQuicSession();
+        return (ClientQuicSession)super.getQuicSession();
     }
 
     @Override
     public void onOpen()
     {
-        process();
+        // Create a single bidirectional, client-initiated,
+        // QUIC stream that plays the role of the TCP stream.
+        long streamId = getQuicSession().newStreamId(StreamType.CLIENT_BIDIRECTIONAL);
+        getOrCreateStreamEndPoint(streamId, this::configureProtocolEndPoint);
     }
 
     @Override
     protected void onReadable(long readableStreamId)
     {
-        // On the server, we need a get-or-create semantic in case of reads.
-        QuicStreamEndPoint streamEndPoint = getOrCreateStreamEndPoint(readableStreamId, this::configureEndPoint);
+        // On the client, we need a get-only semantic in case of reads.
+        QuicStreamEndPoint streamEndPoint = getStreamEndPoint(readableStreamId);
         if (LOG.isDebugEnabled())
             LOG.debug("stream {} selected endpoint for read: {}", readableStreamId, streamEndPoint);
-        streamEndPoint.onReadable();
-    }
-
-    private void configureEndPoint(QuicStreamEndPoint endPoint)
-    {
-        Connection connection = getQuicSession().newConnection(endPoint);
-        endPoint.setConnection(connection);
-        endPoint.onOpen();
-        connection.onOpen();
+        if (streamEndPoint != null)
+            streamEndPoint.onReadable();
     }
 }

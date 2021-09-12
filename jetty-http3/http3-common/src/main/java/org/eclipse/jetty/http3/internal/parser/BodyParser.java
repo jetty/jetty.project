@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
  * <p>Subclasses implement {@link #parse(ByteBuffer)} to parse
  * the frame specific body.</p>
  *
- * @see Parser
+ * @see MessageParser
  */
 public abstract class BodyParser
 {
@@ -36,9 +36,9 @@ public abstract class BodyParser
 
     private final long streamId;
     private final HeaderParser headerParser;
-    private final Parser.Listener listener;
+    private final ParserListener listener;
 
-    protected BodyParser(long streamId, HeaderParser headerParser, Parser.Listener listener)
+    protected BodyParser(long streamId, HeaderParser headerParser, ParserListener listener)
     {
         this.streamId = streamId;
         this.headerParser = headerParser;
@@ -105,7 +105,7 @@ public abstract class BodyParser
     {
         try
         {
-            listener.onData(frame);
+            listener.onData(getStreamId(), frame);
         }
         catch (Throwable x)
         {
@@ -117,7 +117,7 @@ public abstract class BodyParser
     {
         try
         {
-            listener.onHeaders(frame);
+            listener.onHeaders(getStreamId(), frame);
         }
         catch (Throwable x)
         {

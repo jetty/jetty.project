@@ -20,7 +20,7 @@ import org.eclipse.jetty.http3.internal.VarLenInt;
 /**
  * <p>The parser for the frame header of HTTP/3 frames.</p>
  *
- * @see Parser
+ * @see MessageParser
  */
 public class HeaderParser
 {

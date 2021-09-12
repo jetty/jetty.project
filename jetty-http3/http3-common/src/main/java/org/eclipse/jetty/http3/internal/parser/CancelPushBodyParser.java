@@ -17,7 +17,7 @@ import java.nio.ByteBuffer;
 
 public class CancelPushBodyParser extends BodyParser
 {
-    public CancelPushBodyParser(HeaderParser headerParser, Parser.Listener listener)
+    public CancelPushBodyParser(HeaderParser headerParser, ParserListener listener)
     {
         super(1, headerParser, listener);
     }

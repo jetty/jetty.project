@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -57,7 +58,7 @@ public abstract class QuicSession
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicSession.class);
 
-    private final AtomicLong ids = new AtomicLong();
+    private final AtomicLong[] ids = new AtomicLong[StreamType.values().length];
     private final AutoLock strategyQueueLock = new AutoLock();
     private final Queue<Runnable> strategyQueue = new ArrayDeque<>();
     private final ConcurrentMap<Long, QuicStreamEndPoint> endpoints = new ConcurrentHashMap<>();
@@ -69,7 +70,7 @@ public abstract class QuicSession
     private final Flusher flusher;
     private final ExecutionStrategy strategy;
     private SocketAddress remoteAddress;
-    private ProtocolQuicSession protocolSession;
+    private ProtocolSession protocolSession;
     private QuicheConnectionId quicheConnectionId;
 
     protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicheConnection quicheConnection, QuicConnection connection, SocketAddress remoteAddress)
@@ -83,6 +84,7 @@ public abstract class QuicSession
         this.strategy = new AdaptiveExecutionStrategy(new Producer(), executor);
         this.remoteAddress = remoteAddress;
         LifeCycle.start(strategy);
+        Arrays.setAll(ids, i -> new AtomicLong());
     }
 
     public Executor getExecutor()
@@ -100,7 +102,7 @@ public abstract class QuicSession
         return byteBufferPool;
     }
 
-    public ProtocolQuicSession getProtocolQuicSession()
+    public ProtocolSession getProtocolSession()
     {
         return protocolSession;
     }
@@ -111,40 +113,14 @@ public abstract class QuicSession
     }
 
     /**
-     * @return a new unidirectional, client-initiated, stream ID
+     * @param streamType the stream type
+     * @return a new stream ID for the given type
      */
-    public long newClientUnidirectionalStreamId()
+    public long newStreamId(StreamType streamType)
     {
-        return newStreamId() + 0x02;
-    }
-
-    /**
-     * @return a new bidirectional, client-initiated, stream ID
-     */
-    public long newClientBidirectionalStreamId()
-    {
-        return newStreamId();
-    }
-
-    /**
-     * @return a new unidirectional, server-initiated, stream ID
-     */
-    public long newServerUnidirectionalStreamId()
-    {
-        return newStreamId() + 0x03;
-    }
-
-    /**
-     * @return a new bidirectional, server-initiated, stream ID
-     */
-    public long newServerBidirectionalStreamId()
-    {
-        return newStreamId() + 0x01;
-    }
-
-    private long newStreamId()
-    {
-        return ids.getAndIncrement() << 2;
+        int type = streamType.type();
+        long id = ids[type].getAndIncrement();
+        return (id << 2) + type;
     }
 
     public void onOpen()
@@ -230,7 +206,7 @@ public abstract class QuicSession
             // HTTP/1 on QUIC
             // client1
             //        \
-            //         dataEP - QuicConnection -* QuicSession -# ProtocolQuicSession -* RequestStreamN - HttpConnection - HTTP Handler
+            //         dataEP - QuicConnection -* QuicSession -# ProtocolSession -* RequestStreamN - HttpConnection - HTTP Handler
             //        /
             // client2
 
@@ -246,13 +222,10 @@ public abstract class QuicSession
 
             if (protocolSession == null)
             {
-                protocolSession = createProtocolQuicSession();
+                protocolSession = createProtocolSession();
                 onOpen();
             }
-            else
-            {
-                protocolSession.process();
-            }
+            protocolSession.process();
         }
         else
         {
@@ -260,7 +233,7 @@ public abstract class QuicSession
         }
     }
 
-    protected abstract ProtocolQuicSession createProtocolQuicSession();
+    protected abstract ProtocolSession createProtocolSession();
 
     List<Long> getWritableStreamIds()
     {
@@ -277,7 +250,7 @@ public abstract class QuicSession
         return endpoints.get(streamId);
     }
 
-    public abstract Connection newConnection(QuicStreamEndPoint endPoint) throws IOException;
+    public abstract Connection newConnection(QuicStreamEndPoint endPoint);
 
     private void dispatch(Runnable runnable)
     {

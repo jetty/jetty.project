@@ -17,7 +17,7 @@ import java.nio.ByteBuffer;
 
 public class PushPromiseBodyParser extends BodyParser
 {
-    public PushPromiseBodyParser(HeaderParser headerParser, Parser.Listener listener)
+    public PushPromiseBodyParser(HeaderParser headerParser, ParserListener listener)
     {
         super(1, headerParser, listener);
     }

@@ -17,17 +17,14 @@ import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.FrameType;
 import org.eclipse.jetty.io.ByteBufferPool;
 
-public class Generator
+public class ControlGenerator
 {
     private final FrameGenerator[] generators = new FrameGenerator[FrameType.maxType() + 1];
 
-    public Generator()
+    public ControlGenerator()
     {
-        generators[FrameType.DATA.type()] = new DataGenerator();
-        generators[FrameType.HEADERS.type()] = new HeadersGenerator();
         generators[FrameType.CANCEL_PUSH.type()] = new CancelPushGenerator();
         generators[FrameType.SETTINGS.type()] = new SettingsGenerator();
-        generators[FrameType.PUSH_PROMISE.type()] = new PushPromiseGenerator();
         generators[FrameType.GOAWAY.type()] = new GoAwayGenerator();
         generators[FrameType.MAX_PUSH_ID.type()] = new MaxPushIdGenerator();
     }

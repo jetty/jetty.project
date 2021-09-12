@@ -35,7 +35,7 @@ public class HeadersBodyParser extends BodyParser
     private State state = State.INIT;
     private long length;
 
-    public HeadersBodyParser(long streamId, HeaderParser headerParser, Parser.Listener listener, QpackDecoder decoder)
+    public HeadersBodyParser(long streamId, HeaderParser headerParser, ParserListener listener, QpackDecoder decoder)
     {
         super(streamId, headerParser, listener);
         this.decoder = decoder;

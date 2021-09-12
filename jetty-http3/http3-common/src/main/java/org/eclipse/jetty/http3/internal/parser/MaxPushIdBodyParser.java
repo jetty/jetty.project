@@ -17,7 +17,7 @@ import java.nio.ByteBuffer;
 
 public class MaxPushIdBodyParser extends BodyParser
 {
-    public MaxPushIdBodyParser(HeaderParser headerParser, Parser.Listener listener)
+    public MaxPushIdBodyParser(HeaderParser headerParser, ParserListener listener)
     {
         super(1, headerParser, listener);
     }
