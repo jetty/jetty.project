@@ -27,7 +27,7 @@ public class DataBodyParser extends BodyParser
     private State state = State.INIT;
     private long length;
 
-    public DataBodyParser(long streamId, HeaderParser headerParser, Parser.Listener listener)
+    public DataBodyParser(long streamId, HeaderParser headerParser, ParserListener listener)
     {
         super(streamId, headerParser, listener);
     }

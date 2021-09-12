@@ -20,7 +20,7 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.quic.common.ProtocolQuicSession;
+import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicConnection;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
@@ -47,19 +47,24 @@ public class ServerQuicSession extends QuicSession
     }
 
     @Override
-    protected ProtocolQuicSession createProtocolQuicSession()
+    protected ProtocolSession createProtocolSession()
     {
         ConnectionFactory connectionFactory = findConnectionFactory(getNegotiatedProtocol());
-        if (connectionFactory instanceof ProtocolQuicSession.Factory)
-            return ((ProtocolQuicSession.Factory)connectionFactory).newProtocolQuicSession(this, Map.of());
-        return new ProtocolServerQuicSession(this);
+        if (connectionFactory instanceof ProtocolSession.Factory)
+            return ((ProtocolSession.Factory)connectionFactory).newProtocolSession(this, Map.of());
+        return new ServerProtocolSession(this);
     }
 
     @Override
     public Connection newConnection(QuicStreamEndPoint endPoint)
     {
         ConnectionFactory connectionFactory = findConnectionFactory(getNegotiatedProtocol());
-        return connectionFactory.newConnection(connector, endPoint);
+        return newConnection(connectionFactory, endPoint);
+    }
+
+    private Connection newConnection(ConnectionFactory factory, QuicStreamEndPoint endPoint)
+    {
+        return factory.newConnection(connector, endPoint);
     }
 
     private ConnectionFactory findConnectionFactory(String negotiatedProtocol)

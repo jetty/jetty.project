@@ -20,7 +20,8 @@ import java.util.Map;
 
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.internal.generator.SettingsGenerator;
-import org.eclipse.jetty.http3.internal.parser.Parser;
+import org.eclipse.jetty.http3.internal.parser.MessageParser;
+import org.eclipse.jetty.http3.internal.parser.ParserListener;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.NullByteBufferPool;
 import org.junit.jupiter.api.Test;
@@ -50,7 +51,7 @@ public class SettingsGenerateParseTest
         new SettingsGenerator().generate(lease, input);
 
         List<SettingsFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(0, null, new Parser.Listener()
+        MessageParser parser = new MessageParser(0, null, new ParserListener()
         {
             @Override
             public void onSettings(SettingsFrame frame)

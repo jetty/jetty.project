@@ -85,17 +85,23 @@ public class ClientQuicConnection extends QuicConnection
             quicheConfig.setMaxIdleTimeout(getEndPoint().getIdleTimeout());
             quicheConfig.setInitialMaxData(10_000_000L);
             quicheConfig.setInitialMaxStreamDataBidiLocal(10_000_000L);
+            quicheConfig.setInitialMaxStreamDataBidiRemote(10000000L);
             quicheConfig.setInitialMaxStreamDataUni(10_000_000L);
-            quicheConfig.setInitialMaxStreamsBidi(100L);
             quicheConfig.setInitialMaxStreamsUni(100L);
+            quicheConfig.setInitialMaxStreamsBidi(100L);
+            quicheConfig.setCongestionControl(QuicheConfig.CongestionControl.RENO);
 
             InetSocketAddress remoteAddress = (InetSocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("connecting to {} with protocols {}", remoteAddress, protocols);
+
             QuicheConnection quicheConnection = QuicheConnection.connect(quicheConfig, remoteAddress);
             QuicSession session = new ClientQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), quicheConnection, this, remoteAddress, context);
             pendingSessions.put(remoteAddress, session);
             session.flush(); // send the response packet(s) that connect generated.
             if (LOG.isDebugEnabled())
-                LOG.debug("created connecting QUIC session {}", session);
+                LOG.debug("created QUIC session {}", session);
 
             fillInterested();
         }

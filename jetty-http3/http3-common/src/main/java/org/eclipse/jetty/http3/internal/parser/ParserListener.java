@@ -13,18 +13,29 @@
 
 package org.eclipse.jetty.http3.internal.parser;
 
-import java.nio.ByteBuffer;
+import org.eclipse.jetty.http3.frames.DataFrame;
+import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.http3.frames.SettingsFrame;
 
-public class GoAwayBodyParser extends BodyParser
+public interface ParserListener
 {
-    public GoAwayBodyParser(HeaderParser headerParser, ParserListener listener)
+    public default void onHeaders(long streamId, HeadersFrame frame)
     {
-        super(1, headerParser, listener);
     }
 
-    @Override
-    public boolean parse(ByteBuffer buffer)
+    public default void onData(long streamId, DataFrame frame)
     {
-        throw new UnsupportedOperationException();
+    }
+
+    public default void onSettings(SettingsFrame frame)
+    {
+    }
+
+    public default void onStreamFailure(long streamId, int error, String reason)
+    {
+    }
+
+    public default void onSessionFailure(int error, String reason)
+    {
     }
 }

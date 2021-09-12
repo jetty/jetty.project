@@ -20,11 +20,31 @@ import org.eclipse.jetty.io.EndPoint;
 
 public class DecoderConnection extends AbstractConnection
 {
-    public static final int QPACK_DECODER_STREAM_TYPE = 0x03;
+    // SPEC: QPACK Encoder Stream Type.
+    public static final int STREAM_TYPE = 0x03;
+
+    private boolean useInputDirectByteBuffers = true;
 
     public DecoderConnection(EndPoint endPoint, Executor executor)
     {
         super(endPoint, executor);
+    }
+
+    public boolean isUseInputDirectByteBuffers()
+    {
+        return useInputDirectByteBuffers;
+    }
+
+    public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
+    {
+        this.useInputDirectByteBuffers = useInputDirectByteBuffers;
+    }
+
+    @Override
+    public void onOpen()
+    {
+        super.onOpen();
+        fillInterested();
     }
 
     @Override

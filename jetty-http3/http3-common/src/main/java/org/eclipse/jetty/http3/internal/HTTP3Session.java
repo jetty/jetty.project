@@ -13,18 +13,30 @@
 
 package org.eclipse.jetty.http3.internal;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.Map;
 
 import org.eclipse.jetty.http3.api.Session;
-import org.eclipse.jetty.http3.api.Stream;
-import org.eclipse.jetty.http3.frames.HeadersFrame;
-import org.eclipse.jetty.http3.internal.parser.Parser;
+import org.eclipse.jetty.http3.internal.parser.ParserListener;
+import org.eclipse.jetty.quic.common.ProtocolSession;
 
-public class HTTP3Session implements Session, Parser.Listener
+public class HTTP3Session implements Session, ParserListener
 {
-    @Override
-    public CompletableFuture<Stream> newStream(HeadersFrame frame, Stream.Listener listener)
+    private final ProtocolSession session;
+    private final Listener listener;
+
+    public HTTP3Session(ProtocolSession session, Listener listener)
     {
-        return null;
+        this.session = session;
+        this.listener = listener;
+    }
+
+    public ProtocolSession getProtocolSession()
+    {
+        return session;
+    }
+
+    public Map<Long, Long> onPreface()
+    {
+        return listener.onPreface(this);
     }
 }

@@ -16,11 +16,7 @@ package org.eclipse.jetty.http3.internal.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.ErrorCode;
-import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.FrameType;
-import org.eclipse.jetty.http3.frames.HeadersFrame;
-import org.eclipse.jetty.http3.frames.SettingsFrame;
-import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,26 +25,21 @@ import org.slf4j.LoggerFactory;
  * <p>This parser makes use of the {@link HeaderParser} and of
  * {@link BodyParser}s to parse HTTP/3 frames.</p>
  */
-public class Parser
+public class ControlParser
 {
-    private static final Logger LOG = LoggerFactory.getLogger(Parser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ControlParser.class);
 
     private final HeaderParser headerParser;
     private final BodyParser[] bodyParsers = new BodyParser[FrameType.maxType() + 1];
     private final BodyParser unknownBodyParser;
-    private final long streamId;
-    private final Listener listener;
+    private final ParserListener listener;
     private State state = State.HEADER;
 
-    public Parser(long streamId, QpackDecoder decoder, Listener listener)
+    public ControlParser(ParserListener listener)
     {
-        this.streamId = streamId;
         this.headerParser = new HeaderParser();
-        this.bodyParsers[FrameType.DATA.type()] = new DataBodyParser(streamId, headerParser, listener);
-        this.bodyParsers[FrameType.HEADERS.type()] = new HeadersBodyParser(streamId, headerParser, listener, decoder);
         this.bodyParsers[FrameType.CANCEL_PUSH.type()] = new CancelPushBodyParser(headerParser, listener);
         this.bodyParsers[FrameType.SETTINGS.type()] = new SettingsBodyParser(headerParser, listener);
-        this.bodyParsers[FrameType.PUSH_PROMISE.type()] = new PushPromiseBodyParser(headerParser, listener);
         this.bodyParsers[FrameType.GOAWAY.type()] = new GoAwayBodyParser(headerParser, listener);
         this.bodyParsers[FrameType.MAX_PUSH_ID.type()] = new MaxPushIdBodyParser(headerParser, listener);
         this.unknownBodyParser = new UnknownBodyParser(headerParser, listener);
@@ -62,7 +53,7 @@ public class Parser
     }
 
     /**
-     * <p>Parses the given {@code buffer} bytes and emit events to a {@link Listener}.</p>
+     * <p>Parses the given {@code buffer} bytes and emit events to a {@link ParserListener}.</p>
      *
      * @param buffer the buffer to parse
      */
@@ -135,29 +126,6 @@ public class Parser
     private void connectionFailure(ByteBuffer buffer, int error, String reason)
     {
         unknownBodyParser.sessionFailure(buffer, error, reason);
-    }
-
-    public interface Listener
-    {
-        public default void onHeaders(HeadersFrame frame)
-        {
-        }
-
-        public default void onData(DataFrame frame)
-        {
-        }
-
-        public default void onSettings(SettingsFrame frame)
-        {
-        }
-
-        public default void onStreamFailure(long streamId, int error, String reason)
-        {
-        }
-
-        public default void onSessionFailure(int error, String reason)
-        {
-        }
     }
 
     private enum State

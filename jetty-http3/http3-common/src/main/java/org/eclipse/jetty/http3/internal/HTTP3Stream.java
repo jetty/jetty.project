@@ -11,20 +11,15 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.internal.parser;
+package org.eclipse.jetty.http3.internal;
 
-import java.nio.ByteBuffer;
+import org.eclipse.jetty.http3.api.Stream;
+import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 
-public class GoAwayBodyParser extends BodyParser
+public class HTTP3Stream implements Stream
 {
-    public GoAwayBodyParser(HeaderParser headerParser, ParserListener listener)
+    public HTTP3Stream(QuicStreamEndPoint endPoint, Listener listener)
     {
-        super(1, headerParser, listener);
-    }
 
-    @Override
-    public boolean parse(ByteBuffer buffer)
-    {
-        throw new UnsupportedOperationException();
     }
 }

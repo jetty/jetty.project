@@ -13,32 +13,71 @@
 
 package org.eclipse.jetty.http3.client;
 
-import java.io.IOException;
 import java.util.Map;
 
 import org.eclipse.jetty.http3.api.Session;
-import org.eclipse.jetty.http3.internal.generator.Generator;
+import org.eclipse.jetty.http3.client.internal.ClientHTTP3Session;
+import org.eclipse.jetty.http3.internal.HTTP3Connection;
+import org.eclipse.jetty.http3.internal.parser.MessageParser;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.quic.client.ClientQuicSession;
-import org.eclipse.jetty.quic.common.ProtocolQuicSession;
+import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicSession;
+import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
+import org.eclipse.jetty.util.Promise;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class HTTP3ClientConnectionFactory implements ClientConnectionFactory, ProtocolQuicSession.Factory
+public class HTTP3ClientConnectionFactory implements ClientConnectionFactory, ProtocolSession.Factory
 {
-    @Override
-    public ProtocolQuicSession newProtocolQuicSession(QuicSession quicSession, Map<String, Object> context)
+    private static final Logger LOG = LoggerFactory.getLogger(HTTP3ClientConnectionFactory.class);
+
+    private int maxBlockedStreams;
+    private int maxResponseHeadersSize = 8192;
+
+    public int getMaxBlockedStreams()
     {
-        HTTP3Client http3Client = (HTTP3Client)context.get(HTTP3Client.CLIENT_CONTEXT_KEY);
-        Session.Listener listener = (Session.Listener)context.get(HTTP3Client.SESSION_LISTENER_CONTEXT_KEY);
-        Generator generator = new Generator();
-        return new HTTP3ClientQuicSession((ClientQuicSession)quicSession, listener, generator);
+        return maxBlockedStreams;
+    }
+
+    public void setMaxBlockedStreams(int maxBlockedStreams)
+    {
+        this.maxBlockedStreams = maxBlockedStreams;
+    }
+
+    public int getMaxResponseHeadersSize()
+    {
+        return maxResponseHeadersSize;
+    }
+
+    public void setMaxResponseHeadersSize(int maxResponseHeadersSize)
+    {
+        this.maxResponseHeadersSize = maxResponseHeadersSize;
     }
 
     @Override
-    public Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+    public ProtocolSession newProtocolSession(QuicSession quicSession, Map<String, Object> context)
     {
-        return null;
+        Session.Client.Listener listener = (Session.Client.Listener)context.get(HTTP3Client.SESSION_LISTENER_CONTEXT_KEY);
+        @SuppressWarnings("unchecked")
+        Promise<Session.Client> promise = (Promise<Session.Client>)context.get(HTTP3Client.SESSION_PROMISE_CONTEXT_KEY);
+        ClientHTTP3Session protocolSession = new ClientHTTP3Session((ClientQuicSession)quicSession, listener, promise, getMaxBlockedStreams(), getMaxResponseHeadersSize());
+        if (LOG.isDebugEnabled())
+            LOG.debug("created protocol-specific {}", protocolSession);
+        return protocolSession;
+    }
+
+    @Override
+    public Connection newConnection(EndPoint endPoint, Map<String, Object> context)
+    {
+        // TODO: can the downcasts be removed?
+        QuicStreamEndPoint streamEndPoint = (QuicStreamEndPoint)endPoint;
+        long streamId = streamEndPoint.getStreamId();
+        ClientHTTP3Session http3Session = (ClientHTTP3Session)streamEndPoint.getQuicSession().getProtocolSession();
+        // TODO: Parser may be created internally, if I pass the QuicStreamEndPoint and ClientHTTP3Session.
+        MessageParser parser = new MessageParser(streamId, http3Session.getQpackDecoder(), http3Session);
+        return new HTTP3Connection(endPoint, http3Session.getQuicSession().getExecutor(), http3Session.getQuicSession().getByteBufferPool(), parser);
     }
 }

@@ -11,10 +11,25 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.api.server;
+package org.eclipse.jetty.http3.internal;
 
-import org.eclipse.jetty.http3.api.Session;
+import java.util.List;
 
-public interface ServerSessionListener extends Session.Listener
+import org.eclipse.jetty.http3.qpack.Instruction;
+
+public class InstructionHandler implements Instruction.Handler
 {
+    private final InstructionFlusher encoderFlusher;
+
+    public InstructionHandler(InstructionFlusher encoderFlusher)
+    {
+        this.encoderFlusher = encoderFlusher;
+    }
+
+    @Override
+    public void onInstructions(List<Instruction> instructions)
+    {
+        encoderFlusher.offer(instructions);
+        encoderFlusher.iterate();
+    }
 }

@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http3.tests;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -23,7 +24,6 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
-import org.eclipse.jetty.http3.api.server.ServerSessionListener;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.server.RawHTTP3ServerConnectionFactory;
@@ -32,6 +32,9 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HTTP3ClientServerTest
 {
@@ -45,24 +48,33 @@ public class HTTP3ClientServerTest
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         Server server = new Server(serverThreads);
-        ServerQuicConnector connector = new ServerQuicConnector(server, sslContextFactory, new RawHTTP3ServerConnectionFactory(new ServerSessionListener() {}));
+
+        CountDownLatch serverLatch = new CountDownLatch(1);
+        ServerQuicConnector connector = new ServerQuicConnector(server, sslContextFactory, new RawHTTP3ServerConnectionFactory(new Session.Server.Listener()
+        {
+            @Override
+            public Stream.Listener onHeaders(Stream stream, HeadersFrame frame)
+            {
+                serverLatch.countDown();
+                return null;
+            }
+        }));
         server.addConnector(connector);
         server.start();
 
         HTTP3Client client = new HTTP3Client();
         client.start();
 
-        Session session = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener() {})
+        Session.Client session = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
             .get(555, TimeUnit.SECONDS);
-
-        System.err.println("session = " + session);
 
         HttpURI uri = HttpURI.from("https://localhost:" + connector.getLocalPort());
         MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData);
         Stream stream = session.newStream(frame, new Stream.Listener() {})
-            .get(5, TimeUnit.SECONDS);
+            .get(555, TimeUnit.SECONDS);
+        assertNotNull(stream);
 
-        System.err.println("stream = " + stream);
+        assertTrue(serverLatch.await(555, TimeUnit.SECONDS));
     }
 }

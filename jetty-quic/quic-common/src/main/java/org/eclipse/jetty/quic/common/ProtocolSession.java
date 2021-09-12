@@ -18,17 +18,18 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
+import org.eclipse.jetty.io.Connection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class ProtocolQuicSession
+public abstract class ProtocolSession
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ProtocolQuicSession.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ProtocolSession.class);
 
     private final AtomicLong active = new AtomicLong();
     private final QuicSession session;
 
-    public ProtocolQuicSession(QuicSession session)
+    public ProtocolSession(QuicSession session)
     {
         this.session = session;
     }
@@ -64,7 +65,7 @@ public abstract class ProtocolQuicSession
         return session.getStreamEndPoint(streamId);
     }
 
-    protected QuicStreamEndPoint getOrCreateStreamEndPoint(long streamId, Consumer<QuicStreamEndPoint> consumer)
+    public QuicStreamEndPoint getOrCreateStreamEndPoint(long streamId, Consumer<QuicStreamEndPoint> consumer)
     {
         return session.getOrCreateStreamEndPoint(streamId, consumer);
     }
@@ -98,8 +99,16 @@ public abstract class ProtocolQuicSession
 
     protected abstract void onReadable(long readableStreamId);
 
+    public void configureProtocolEndPoint(QuicStreamEndPoint endPoint)
+    {
+        Connection connection = getQuicSession().newConnection(endPoint);
+        endPoint.setConnection(connection);
+        endPoint.onOpen();
+        connection.onOpen();
+    }
+
     public interface Factory
     {
-        public ProtocolQuicSession newProtocolQuicSession(QuicSession quicSession, Map<String, Object> context);
+        public ProtocolSession newProtocolSession(QuicSession quicSession, Map<String, Object> context);
     }
 }
