@@ -20,6 +20,15 @@
           <groupId>javax.annotation</groupId>
           <artifactId>javax.annotation-api</artifactId>
         </exclusion>
+        <!--
+        the pom of this dependencies has an unknow repository protocol
+        https://issues.apache.org/jira/browse/MENFORCER-393
+        it fail enforcer plugin
+        -->
+        <exclusion>
+          <groupId>org.jruby</groupId>
+          <artifactId>jruby-stdlib</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
