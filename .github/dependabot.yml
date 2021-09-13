@@ -46,26 +46,26 @@ updates:
       - dependency-name: "jakarta.servlet.jsp.jstl:*"
         versions: [ ">=2.0.0" ]
 
-  - package-ecosystem: "maven"
-    directory: "/"
-    target-branch: "jetty-11.0.x"
-    schedule:
-      interval: "weekly"
-    # Associate with milestone 11.0.x
-    milestone: 7
-    ignore:
-      # Restrict updates in this branch to jetty in the 11.x.x space
-      - dependency-name: "jakarta.servlet:*"
-        versions: [ ">=6.0.0" ]
-      - dependency-name: "jakarta.activation:*"
-        versions: [ ">=2.1.0" ]
-      - dependency-name: "jakarta.annotation:*"
-        versions: [ ">=3.0.0" ]
-      - dependency-name: "jakarta.el:*"
-        versions: [ ">=5.0.0" ]
-      - dependency-name: "jakarta.inject:*"
-        versions: [ ">=3.0.0" ]
-      - dependency-name: "jakarta.websocket:*"
-        versions: [ ">=3.0.0" ]
-      - dependency-name: "jakarta.servlet.jsp.jstl:*"
-        versions: [ ">=3.0.0" ]
+#  - package-ecosystem: "maven"
+#    directory: "/"
+#    target-branch: "jetty-11.0.x"
+#    schedule:
+#      interval: "weekly"
+#    # Associate with milestone 11.0.x
+#    milestone: 7
+#    ignore:
+#      # Restrict updates in this branch to jetty in the 11.x.x space
+#      - dependency-name: "jakarta.servlet:*"
+#        versions: [ ">=6.0.0" ]
+#      - dependency-name: "jakarta.activation:*"
+#        versions: [ ">=2.1.0" ]
+#      - dependency-name: "jakarta.annotation:*"
+#        versions: [ ">=3.0.0" ]
+#      - dependency-name: "jakarta.el:*"
+#        versions: [ ">=5.0.0" ]
+#      - dependency-name: "jakarta.inject:*"
+#        versions: [ ">=3.0.0" ]
+#      - dependency-name: "jakarta.websocket:*"
+#        versions: [ ">=3.0.0" ]
+#      - dependency-name: "jakarta.servlet.jsp.jstl:*"
+#        versions: [ ">=3.0.0" ]
