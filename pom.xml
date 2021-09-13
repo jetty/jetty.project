@@ -41,7 +41,7 @@
     <weld.version>3.1.5.Final</weld.version>
     <hazelcast.version>3.12.12</hazelcast.version>
     <jboss.logging.version>3.4.1.Final</jboss.logging.version>
-    <jetty.perf-helper.version>1.0.6</jetty.perf-helper.version>
+    <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
     <ant.version>1.10.11</ant.version>
     <unix.socket.tmp></unix.socket.tmp>
     <!-- enable or not TestTracker junit5 extension i.e log message when test method is starting -->
