@@ -84,6 +84,13 @@ loop as packets received
               loop while task==null
                 alt if instruction available
                   QuicSession -> Decoder : takeInstruction
+                    note right
+                      I'm not sure how we ensure a taken instruction
+                      is always written?  Do we queue them or only take them
+                      when writable?  If we queue, then perhaps they are just
+                      queued during production rather than returned as produced
+                      tasks
+                    end note
                   return task
                 else if metadata available
                   QuicStream -> Decoder : takeMetaData
@@ -98,19 +105,29 @@ loop as packets received
                 end
               end
             else normal stream
-              QuicStream -> QuicSession : fill
-                QuicSession -> Quiche : drainClearText\nForStream
-                return bytes filled
-              return bytes filled
-              QuicStream -> QuicStream : parse
-                alt if header frame
-                  QuicStream -> Decoder : decode
-                  return
+              loop task==null
+                alt if instruction available
+                  QuicStream -> Decoder : takeInstruction
+                  return task
+                else if metadata available
                   QuicStream -> Decoder : takeMetaData
                   return task
-                else data frame
+                else
+                  QuicStream -> QuicSession : fill
+                    QuicSession -> Quiche : drainClearText\nForStream
+                    return bytes filled
+                  return bytes filled
+                  QuicStream -> QuicStream : parse
+                    alt if header frame
+                      QuicStream -> Decoder : decode
+                      return
+                    else data frame
+                      QuicStream -> HttpChannel : getCallback
+                      return task
+                    end
+                  return
                 end
-              return task
+              end
             end
           return task
         end
