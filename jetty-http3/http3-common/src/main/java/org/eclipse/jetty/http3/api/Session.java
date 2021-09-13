@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.http3.frames.SettingsFrame;
 
 public interface Session
 {
@@ -42,6 +43,10 @@ public interface Session
         public default Map<Long, Long> onPreface(Session session)
         {
             return null;
+        }
+
+        public default void onSettings(Session session, SettingsFrame frame)
+        {
         }
 
         public default Stream.Listener onHeaders(Stream stream, HeadersFrame frame)

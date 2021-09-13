@@ -26,6 +26,7 @@ import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.server.RawHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.quic.server.ServerQuicConnector;
 import org.eclipse.jetty.server.Server;
@@ -49,9 +50,16 @@ public class HTTP3ClientServerTest
         serverThreads.setName("server");
         Server server = new Server(serverThreads);
 
+        CountDownLatch settingsLatch = new CountDownLatch(1);
         CountDownLatch serverLatch = new CountDownLatch(1);
         ServerQuicConnector connector = new ServerQuicConnector(server, sslContextFactory, new RawHTTP3ServerConnectionFactory(new Session.Server.Listener()
         {
+            @Override
+            public void onSettings(Session session, SettingsFrame frame)
+            {
+                settingsLatch.countDown();
+            }
+
             @Override
             public Stream.Listener onHeaders(Stream stream, HeadersFrame frame)
             {
@@ -75,6 +83,7 @@ public class HTTP3ClientServerTest
             .get(555, TimeUnit.SECONDS);
         assertNotNull(stream);
 
+        assertTrue(settingsLatch.await(555, TimeUnit.SECONDS));
         assertTrue(serverLatch.await(555, TimeUnit.SECONDS));
     }
 }

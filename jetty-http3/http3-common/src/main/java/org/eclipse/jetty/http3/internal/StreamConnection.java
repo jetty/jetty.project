@@ -67,6 +67,7 @@ public class StreamConnection extends AbstractConnection implements Connection.U
         copy.put(buffer);
         byteBufferPool.release(buffer);
         buffer = null;
+        copy.flip();
         return copy;
     }
 
@@ -81,6 +82,9 @@ public class StreamConnection extends AbstractConnection implements Connection.U
             while (true)
             {
                 int filled = getEndPoint().fill(buffer);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("filled {} on {}", filled, this);
+
                 if (filled > 0)
                 {
                     if (parser.parseInt(buffer, this::detectAndUpgrade))
@@ -104,7 +108,7 @@ public class StreamConnection extends AbstractConnection implements Connection.U
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("could not process special stream {}", getEndPoint(), x);
+                LOG.debug("could not process stream {}", getEndPoint(), x);
             byteBufferPool.release(buffer);
             buffer = null;
             getEndPoint().close(x);
@@ -121,6 +125,8 @@ public class StreamConnection extends AbstractConnection implements Connection.U
                 ControlConnection newConnection = new ControlConnection(getEndPoint(), getExecutor(), byteBufferPool, parser);
                 newConnection.setInputBufferSize(getInputBufferSize());
                 newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("upgrading to {}", newConnection);
                 getEndPoint().upgrade(newConnection);
                 break;
             }
@@ -129,6 +135,8 @@ public class StreamConnection extends AbstractConnection implements Connection.U
                 EncoderConnection newConnection = new EncoderConnection(getEndPoint(), getExecutor());
                 newConnection.setInputBufferSize(getInputBufferSize());
                 newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("upgrading to {}", newConnection);
                 getEndPoint().upgrade(newConnection);
                 break;
             }
@@ -137,6 +145,8 @@ public class StreamConnection extends AbstractConnection implements Connection.U
                 DecoderConnection newConnection = new DecoderConnection(getEndPoint(), getExecutor());
                 newConnection.setInputBufferSize(getInputBufferSize());
                 newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("upgrading to {}", newConnection);
                 getEndPoint().upgrade(newConnection);
                 break;
             }

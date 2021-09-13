@@ -13,14 +13,47 @@
 
 package org.eclipse.jetty.http3.internal.generator;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.http3.frames.Frame;
+import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.http3.qpack.QpackEncoder;
+import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.io.ByteBufferPool;
 
 public class HeadersGenerator extends FrameGenerator
 {
-    @Override
-    public int generate(ByteBufferPool.Lease lease, Frame frame)
+    private final QpackEncoder encoder;
+    private final int maxLength;
+    private final boolean useDirectByteBuffers;
+
+    public HeadersGenerator(QpackEncoder encoder, int maxLength, boolean useDirectByteBuffers)
     {
+        this.encoder = encoder;
+        this.maxLength = maxLength;
+        this.useDirectByteBuffers = useDirectByteBuffers;
+    }
+
+    @Override
+    public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame)
+    {
+        HeadersFrame headersFrame = (HeadersFrame)frame;
+        return generateHeadersFrame(lease, streamId, headersFrame);
+    }
+
+    private int generateHeadersFrame(ByteBufferPool.Lease lease, long streamId, HeadersFrame frame)
+    {
+        try
+        {
+            ByteBuffer buffer = lease.acquire(maxLength, useDirectByteBuffers);
+            encoder.encode(buffer, streamId, frame.getMetaData());
+            buffer.flip();
+            return buffer.remaining();
+        }
+        catch (QpackException e)
+        {
+            e.printStackTrace();
+        }
         return 0;
     }
 }

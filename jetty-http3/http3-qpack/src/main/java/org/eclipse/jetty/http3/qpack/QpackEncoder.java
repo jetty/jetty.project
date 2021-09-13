@@ -221,7 +221,6 @@ public class QpackEncoder implements Dumpable
         int deltaBase = signBit ? requiredInsertCount - base - 1 : base - requiredInsertCount;
 
         // Encode all the entries into the buffer.
-        int pos = BufferUtil.flipToFill(buffer);
 
         // Encode the Field Section Prefix into the ByteBuffer.
         NBitIntegerEncoder.encode(buffer, 8, encodedInsertCount);
@@ -234,7 +233,6 @@ public class QpackEncoder implements Dumpable
             entry.encode(buffer, base);
         }
 
-        BufferUtil.flipToFlush(buffer, pos);
         notifyInstructionHandler();
     }
 

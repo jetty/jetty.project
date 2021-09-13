@@ -25,9 +25,13 @@ import org.eclipse.jetty.quic.common.StreamType;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.Invocable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HTTP3SessionClient extends HTTP3Session implements Session.Client
 {
+    private static final Logger LOG = LoggerFactory.getLogger(HTTP3SessionClient.class);
+
     private final Promise<Client> promise;
 
     public HTTP3SessionClient(ClientHTTP3Session session, Client.Listener listener, Promise<Client> promise)
@@ -55,7 +59,7 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
         QuicStreamEndPoint endPoint = session.getOrCreateStreamEndPoint(streamId, session::configureProtocolEndPoint);
 
         Promise.Completable<Stream> promise = new Promise.Completable<>();
-        HTTP3Stream stream = new HTTP3Stream(endPoint, listener);
+        HTTP3Stream stream = newStream(endPoint, listener);
         Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> promise.succeeded(stream), promise::failed);
 
         session.writeMessageFrame(endPoint, frame, callback);

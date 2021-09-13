@@ -22,8 +22,8 @@ import java.util.Queue;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.internal.generator.ControlGenerator;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.quic.common.QuicSession;
+import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -39,11 +39,12 @@ public class ControlFlusher extends IteratingCallback
     private final Queue<Entry> queue = new ArrayDeque<>();
     private final ByteBufferPool.Lease lease;
     private final ControlGenerator generator;
-    private final EndPoint endPoint;
+    private final QuicStreamEndPoint endPoint;
+    private boolean initialized;
     private List<Entry> entries;
     private InvocationType invocationType = InvocationType.NON_BLOCKING;
 
-    public ControlFlusher(QuicSession session, EndPoint endPoint)
+    public ControlFlusher(QuicSession session, QuicStreamEndPoint endPoint)
     {
         this.lease = new ByteBufferPool.Lease(session.getByteBufferPool());
         this.endPoint = endPoint;
@@ -64,30 +65,27 @@ public class ControlFlusher extends IteratingCallback
         try (AutoLock l = lock.lock())
         {
             if (queue.isEmpty())
-            {
-                entries = List.of();
-            }
-            else
-            {
-                entries = new ArrayList<>(queue);
-                queue.clear();
-            }
+                return Action.IDLE;
+            entries = new ArrayList<>(queue);
+            queue.clear();
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("flushing {} entries on {}", entries.size(), this);
-
-        if (entries.isEmpty())
-            return Action.IDLE;
+            LOG.debug("flushing {} on {}", entries, this);
 
         for (Entry entry : entries)
         {
-            Frame frame = entry.frame;
-            if (frame instanceof Frame.Synthetic)
-                lease.append(((Frame.Synthetic)frame).getByteBuffer(), false);
-            else
-                generator.generate(lease, frame);
+            generator.generate(lease, endPoint.getStreamId(), entry.frame);
             invocationType = Invocable.combine(invocationType, entry.callback.getInvocationType());
+        }
+
+        if (!initialized)
+        {
+            initialized = true;
+            ByteBuffer buffer = ByteBuffer.allocate(VarLenInt.length(ControlConnection.STREAM_TYPE));
+            VarLenInt.generate(buffer, ControlConnection.STREAM_TYPE);
+            buffer.flip();
+            lease.insert(0, buffer, false);
         }
 
         List<ByteBuffer> buffers = lease.getByteBuffers();
@@ -101,7 +99,7 @@ public class ControlFlusher extends IteratingCallback
     public void succeeded()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("succeeded to flush {} entries on {}", entries, this);
+            LOG.debug("succeeded to flush {} on {}", entries, this);
 
         lease.recycle();
 
@@ -117,7 +115,7 @@ public class ControlFlusher extends IteratingCallback
     protected void onCompleteFailure(Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("failed to flush {} entries on {}", entries, this, failure);
+            LOG.debug("failed to flush {} on {}", entries, this, failure);
 
         lease.recycle();
 
@@ -131,6 +129,12 @@ public class ControlFlusher extends IteratingCallback
     public InvocationType getInvocationType()
     {
         return invocationType;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s#%s", super.toString(), endPoint.getStreamId());
     }
 
     private static class Entry

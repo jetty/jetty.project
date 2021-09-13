@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http3.frames;
 
-import java.nio.ByteBuffer;
-
 public abstract class Frame
 {
     private final FrameType type;
@@ -33,21 +31,5 @@ public abstract class Frame
     public String toString()
     {
         return String.format("%s@%x", getClass().getSimpleName(), hashCode());
-    }
-
-    public static class Synthetic extends Frame
-    {
-        private final ByteBuffer buffer;
-
-        public Synthetic(ByteBuffer buffer)
-        {
-            super(null);
-            this.buffer = buffer;
-        }
-
-        public ByteBuffer getByteBuffer()
-        {
-            return buffer;
-        }
     }
 }

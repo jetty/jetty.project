@@ -15,20 +15,18 @@ package org.eclipse.jetty.http3.client.internal;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
-import org.eclipse.jetty.http3.internal.ControlConnection;
 import org.eclipse.jetty.http3.internal.ControlFlusher;
 import org.eclipse.jetty.http3.internal.InstructionFlusher;
 import org.eclipse.jetty.http3.internal.InstructionHandler;
 import org.eclipse.jetty.http3.internal.StreamConnection;
-import org.eclipse.jetty.http3.internal.VarLenInt;
 import org.eclipse.jetty.http3.internal.generator.MessageGenerator;
-import org.eclipse.jetty.http3.internal.parser.ParserListener;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -43,7 +41,7 @@ import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ClientHTTP3Session extends ClientProtocolSession implements ParserListener
+public class ClientHTTP3Session extends ClientProtocolSession
 {
     private static final Logger LOG = LoggerFactory.getLogger(ClientHTTP3Session.class);
 
@@ -70,11 +68,12 @@ public class ClientHTTP3Session extends ClientProtocolSession implements ParserL
         this.decoderInstructionFlusher = new InstructionFlusher(session, decoderEndPoint);
         this.decoder = new QpackDecoder(new InstructionHandler(decoderInstructionFlusher), maxResponseHeadersSize);
 
-        long controlStreamId = getQuicSession().newStreamId(StreamType.CLIENT_BIDIRECTIONAL);
+        long controlStreamId = getQuicSession().newStreamId(StreamType.CLIENT_UNIDIRECTIONAL);
         QuicStreamEndPoint controlEndPoint = configureControlEndPoint(controlStreamId);
         this.controlFlusher = new ControlFlusher(session, controlEndPoint);
 
-        this.messageFlusher = new MessageFlusher(session.getByteBufferPool(), encoder);
+        // TODO: make parameters configurable.
+        this.messageFlusher = new MessageFlusher(session.getByteBufferPool(), encoder, 4096, true);
     }
 
     public QpackDecoder getQpackDecoder()
@@ -82,33 +81,14 @@ public class ClientHTTP3Session extends ClientProtocolSession implements ParserL
         return decoder;
     }
 
+    public HTTP3SessionClient getSessionClient()
+    {
+        return apiSession;
+    }
+
     @Override
     public void onOpen()
     {
-        initializeEncoderStream();
-        initializeDecoderStream();
-        initializeControlStream();
-        apiSession.onOpen();
-    }
-
-    private void initializeEncoderStream()
-    {
-        encoderInstructionFlusher.iterate();
-    }
-
-    private void initializeDecoderStream()
-    {
-        decoderInstructionFlusher.iterate();
-    }
-
-    private void initializeControlStream()
-    {
-        // Queue a synthetic frame to send the control stream type.
-        ByteBuffer buffer = ByteBuffer.allocate(VarLenInt.length(ControlConnection.STREAM_TYPE));
-        VarLenInt.generate(buffer, ControlConnection.STREAM_TYPE);
-        buffer.flip();
-        controlFlusher.offer(new Frame.Synthetic(buffer), Callback.NOOP);
-
         // Queue the mandatory SETTINGS frame.
         Map<Long, Long> settings = apiSession.onPreface();
         if (settings == null)
@@ -117,6 +97,8 @@ public class ClientHTTP3Session extends ClientProtocolSession implements ParserL
         SettingsFrame frame = new SettingsFrame(settings);
         controlFlusher.offer(frame, Callback.NOOP);
         controlFlusher.iterate();
+
+        apiSession.onOpen();
     }
 
     private QuicStreamEndPoint configureInstructionEndPoint(long streamId)
@@ -127,7 +109,8 @@ public class ClientHTTP3Session extends ClientProtocolSession implements ParserL
 
     private QuicStreamEndPoint configureControlEndPoint(long streamId)
     {
-        return getOrCreateStreamEndPoint(streamId, this::configureStreamEndPoint);
+        // This is a write-only stream, so no need to link a Connection.
+        return getOrCreateStreamEndPoint(streamId, QuicStreamEndPoint::onOpen);
     }
 
     @Override
@@ -149,7 +132,7 @@ public class ClientHTTP3Session extends ClientProtocolSession implements ParserL
 
     private void configureStreamEndPoint(QuicStreamEndPoint endPoint)
     {
-        StreamConnection connection = new StreamConnection(endPoint, getQuicSession().getExecutor(), getQuicSession().getByteBufferPool(), this);
+        StreamConnection connection = new StreamConnection(endPoint, getQuicSession().getExecutor(), getQuicSession().getByteBufferPool(), apiSession);
         endPoint.setConnection(connection);
         endPoint.onOpen();
         connection.onOpen();
@@ -175,10 +158,10 @@ public class ClientHTTP3Session extends ClientProtocolSession implements ParserL
         private final MessageGenerator generator;
         private Entry entry;
 
-        public MessageFlusher(ByteBufferPool byteBufferPool, QpackEncoder encoder)
+        public MessageFlusher(ByteBufferPool byteBufferPool, QpackEncoder encoder, int maxHeadersLength, boolean useDirectByteBuffers)
         {
             this.lease = new ByteBufferPool.Lease(byteBufferPool);
-            this.generator = new MessageGenerator(encoder);
+            this.generator = new MessageGenerator(encoder, maxHeadersLength, useDirectByteBuffers);
         }
 
         public void offer(QuicStreamEndPoint endPoint, Frame frame, Callback callback)
@@ -199,10 +182,16 @@ public class ClientHTTP3Session extends ClientProtocolSession implements ParserL
                     return Action.IDLE;
             }
 
-            generator.generate(lease, entry.frame);
+            if (LOG.isDebugEnabled())
+                LOG.debug("flushing {} on {}", entry, this);
+
+            generator.generate(lease, entry.endPoint.getStreamId(), entry.frame);
 
             QuicStreamEndPoint endPoint = entry.endPoint;
-            endPoint.write(this, lease.getByteBuffers().toArray(ByteBuffer[]::new));
+            List<ByteBuffer> buffers = lease.getByteBuffers();
+            if (LOG.isDebugEnabled())
+                LOG.debug("writing {} buffers ({} bytes) on {}", buffers.size(), lease.getTotalLength(), this);
+            endPoint.write(this, buffers.toArray(ByteBuffer[]::new));
             return Action.SCHEDULED;
         }
 
@@ -232,6 +221,12 @@ public class ClientHTTP3Session extends ClientProtocolSession implements ParserL
                 this.endPoint = endPoint;
                 this.frame = frame;
                 this.callback = callback;
+            }
+
+            @Override
+            public String toString()
+            {
+                return String.format("%s#%d", frame, endPoint.getStreamId());
             }
         }
     }

@@ -25,7 +25,7 @@ import org.eclipse.jetty.util.BufferUtil;
 public class SettingsGenerator extends FrameGenerator
 {
     @Override
-    public int generate(ByteBufferPool.Lease lease, Frame frame)
+    public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame)
     {
         SettingsFrame settingsFrame = (SettingsFrame)frame;
         return generateSettings(lease, settingsFrame);
@@ -33,8 +33,8 @@ public class SettingsGenerator extends FrameGenerator
 
     private int generateSettings(ByteBufferPool.Lease lease, SettingsFrame frame)
     {
-        Map<Long, Long> settings = frame.getSettings();
         int length = 0;
+        Map<Long, Long> settings = frame.getSettings();
         for (Map.Entry<Long, Long> e : settings.entrySet())
         {
             length += VarLenInt.length(e.getKey()) + VarLenInt.length(e.getValue());

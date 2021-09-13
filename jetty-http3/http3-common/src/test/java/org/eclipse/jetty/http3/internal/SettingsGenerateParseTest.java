@@ -48,7 +48,7 @@ public class SettingsGenerateParseTest
         SettingsFrame input = new SettingsFrame(settings);
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(new NullByteBufferPool());
-        new SettingsGenerator().generate(lease, input);
+        new SettingsGenerator().generate(lease, 0, input);
 
         List<SettingsFrame> frames = new ArrayList<>();
         MessageParser parser = new MessageParser(0, null, new ParserListener()

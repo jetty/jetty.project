@@ -18,5 +18,5 @@ import org.eclipse.jetty.io.ByteBufferPool;
 
 public abstract class FrameGenerator
 {
-    public abstract int generate(ByteBufferPool.Lease lease, Frame frame);
+    public abstract int generate(ByteBufferPool.Lease lease, long streamId, Frame frame);
 }
