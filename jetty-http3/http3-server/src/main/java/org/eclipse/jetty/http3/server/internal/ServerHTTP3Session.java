@@ -16,8 +16,10 @@ package org.eclipse.jetty.http3.server.internal;
 import java.util.Map;
 
 import org.eclipse.jetty.http3.api.Session;
+import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.internal.ControlFlusher;
+import org.eclipse.jetty.http3.internal.HTTP3Flusher;
 import org.eclipse.jetty.http3.internal.InstructionFlusher;
 import org.eclipse.jetty.http3.internal.InstructionHandler;
 import org.eclipse.jetty.http3.internal.StreamConnection;
@@ -43,6 +45,7 @@ public class ServerHTTP3Session extends ServerProtocolSession
     private final InstructionFlusher decoderFlusher;
     private final ControlFlusher controlFlusher;
     private final MessageGenerator generator;
+    private final HTTP3Flusher messageFlusher;
 
     public ServerHTTP3Session(ServerQuicSession session, Session.Server.Listener listener, int maxBlockedStreams, int maxRequestHeadersSize)
     {
@@ -64,6 +67,9 @@ public class ServerHTTP3Session extends ServerProtocolSession
         long controlStreamId = getQuicSession().newStreamId(StreamType.SERVER_UNIDIRECTIONAL);
         QuicStreamEndPoint controlEndPoint = configureControlEndPoint(controlStreamId);
         this.controlFlusher = new ControlFlusher(session, controlEndPoint);
+
+        // TODO: make parameters configurable.
+        this.messageFlusher = new HTTP3Flusher(session.getByteBufferPool(), encoder, 4096, true);
     }
 
     public QpackDecoder getQpackDecoder()
@@ -131,5 +137,12 @@ public class ServerHTTP3Session extends ServerProtocolSession
         endPoint.setConnection(connection);
         endPoint.onOpen();
         connection.onOpen();
+    }
+
+    void writeFrame(long streamId, Frame frame, Callback callback)
+    {
+        QuicStreamEndPoint endPoint = getOrCreateStreamEndPoint(streamId, this::configureProtocolEndPoint);
+        messageFlusher.offer(endPoint, frame, callback);
+        messageFlusher.iterate();
     }
 }

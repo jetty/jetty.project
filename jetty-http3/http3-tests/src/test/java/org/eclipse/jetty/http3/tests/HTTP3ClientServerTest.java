@@ -14,11 +14,13 @@
 package org.eclipse.jetty.http3.tests;
 
 import java.net.InetSocketAddress;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -50,20 +52,31 @@ public class HTTP3ClientServerTest
         serverThreads.setName("server");
         Server server = new Server(serverThreads);
 
-        CountDownLatch settingsLatch = new CountDownLatch(1);
-        CountDownLatch serverLatch = new CountDownLatch(1);
+        CountDownLatch serverPrefaceLatch = new CountDownLatch(1);
+        CountDownLatch serverSettingsLatch = new CountDownLatch(1);
+        CountDownLatch serverRequestLatch = new CountDownLatch(1);
         ServerQuicConnector connector = new ServerQuicConnector(server, sslContextFactory, new RawHTTP3ServerConnectionFactory(new Session.Server.Listener()
         {
             @Override
-            public void onSettings(Session session, SettingsFrame frame)
+            public Map<Long, Long> onPreface(Session session)
             {
-                settingsLatch.countDown();
+                serverPrefaceLatch.countDown();
+                return Map.of();
             }
 
             @Override
-            public Stream.Listener onHeaders(Stream stream, HeadersFrame frame)
+            public void onSettings(Session session, SettingsFrame frame)
             {
-                serverLatch.countDown();
+                serverSettingsLatch.countDown();
+            }
+
+            @Override
+            public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+            {
+                serverRequestLatch.countDown();
+                // Send the response.
+                stream.respond(new HeadersFrame(new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY)));
+                // Not interested in request data.
                 return null;
             }
         }));
@@ -73,17 +86,45 @@ public class HTTP3ClientServerTest
         HTTP3Client client = new HTTP3Client();
         client.start();
 
-        Session.Client session = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
+        CountDownLatch clientPrefaceLatch = new CountDownLatch(1);
+        CountDownLatch clientSettingsLatch = new CountDownLatch(1);
+        Session.Client session = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener()
+            {
+                @Override
+                public Map<Long, Long> onPreface(Session session)
+                {
+                    clientPrefaceLatch.countDown();
+                    return Map.of();
+                }
+
+                @Override
+                public void onSettings(Session session, SettingsFrame frame)
+                {
+                    clientSettingsLatch.countDown();
+                }
+            })
             .get(555, TimeUnit.SECONDS);
 
-        HttpURI uri = HttpURI.from("https://localhost:" + connector.getLocalPort());
+        CountDownLatch clientResponseLatch = new CountDownLatch(1);
+        HttpURI uri = HttpURI.from("https://localhost:" + connector.getLocalPort() + "/");
         MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData);
-        Stream stream = session.newStream(frame, new Stream.Listener() {})
+        Stream stream = session.newRequest(frame, new Stream.Listener()
+            {
+                @Override
+                public void onResponse(Stream stream, HeadersFrame frame)
+                {
+                    clientResponseLatch.countDown();
+                }
+            })
             .get(555, TimeUnit.SECONDS);
         assertNotNull(stream);
 
-        assertTrue(settingsLatch.await(555, TimeUnit.SECONDS));
-        assertTrue(serverLatch.await(555, TimeUnit.SECONDS));
+        assertTrue(clientPrefaceLatch.await(555, TimeUnit.SECONDS));
+        assertTrue(serverPrefaceLatch.await(555, TimeUnit.SECONDS));
+        assertTrue(serverSettingsLatch.await(555, TimeUnit.SECONDS));
+        assertTrue(clientSettingsLatch.await(555, TimeUnit.SECONDS));
+        assertTrue(serverRequestLatch.await(555, TimeUnit.SECONDS));
+        assertTrue(clientResponseLatch.await(555, TimeUnit.SECONDS));
     }
 }

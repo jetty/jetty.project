@@ -14,7 +14,9 @@
 package org.eclipse.jetty.http3.server.internal;
 
 import org.eclipse.jetty.http3.api.Session;
+import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.internal.HTTP3Session;
+import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,5 +27,17 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
     public HTTP3SessionServer(ServerHTTP3Session session, Session.Server.Listener listener)
     {
         super(session, listener);
+    }
+
+    @Override
+    public ServerHTTP3Session getProtocolSession()
+    {
+        return (ServerHTTP3Session)super.getProtocolSession();
+    }
+
+    @Override
+    protected void writeFrame(long streamId, Frame frame, Callback callback)
+    {
+        getProtocolSession().writeFrame(streamId, frame, callback);
     }
 }

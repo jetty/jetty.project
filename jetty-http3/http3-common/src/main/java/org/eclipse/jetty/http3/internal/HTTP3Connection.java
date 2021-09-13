@@ -66,6 +66,9 @@ public class HTTP3Connection extends AbstractConnection
             while (true)
             {
                 int filled = getEndPoint().fill(buffer);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("filled {} on {}", filled, this);
+
                 if (filled > 0)
                 {
                     parser.parse(buffer);
@@ -94,12 +97,4 @@ public class HTTP3Connection extends AbstractConnection
             getEndPoint().close(x);
         }
     }
-
-    // TODO
-    //  Output side.
-    //  When responses want to send a HEADERS frame,
-    //  they cannot generate the bytes and write them to the EP because otherwise they will be accessing the QpackEncoder concurrently.
-    //  Therefore we need to have a reference from here back to ProtocolSession and do
-    //  protocolSession.append(frames);
-    //  Then ProtocolSession will have a Flusher that will generate the bytes in a single threaded way.
 }

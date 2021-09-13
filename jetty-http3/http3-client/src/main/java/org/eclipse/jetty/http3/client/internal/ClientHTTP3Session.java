@@ -13,31 +13,24 @@
 
 package org.eclipse.jetty.http3.client.internal;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
-import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.internal.ControlFlusher;
+import org.eclipse.jetty.http3.internal.HTTP3Flusher;
 import org.eclipse.jetty.http3.internal.InstructionFlusher;
 import org.eclipse.jetty.http3.internal.InstructionHandler;
 import org.eclipse.jetty.http3.internal.StreamConnection;
-import org.eclipse.jetty.http3.internal.generator.MessageGenerator;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.quic.client.ClientProtocolSession;
 import org.eclipse.jetty.quic.client.ClientQuicSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.quic.common.StreamType;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +44,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
     private final InstructionFlusher encoderInstructionFlusher;
     private final InstructionFlusher decoderInstructionFlusher;
     private final ControlFlusher controlFlusher;
-    private final MessageFlusher messageFlusher;
+    private final HTTP3Flusher messageFlusher;
 
     public ClientHTTP3Session(ClientQuicSession session, Session.Client.Listener listener, Promise<Session.Client> promise, int maxBlockedStreams, int maxResponseHeadersSize)
     {
@@ -73,7 +66,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
         this.controlFlusher = new ControlFlusher(session, controlEndPoint);
 
         // TODO: make parameters configurable.
-        this.messageFlusher = new MessageFlusher(session.getByteBufferPool(), encoder, 4096, true);
+        this.messageFlusher = new HTTP3Flusher(session.getByteBufferPool(), encoder, 4096, true);
     }
 
     public QpackDecoder getQpackDecoder()
@@ -138,8 +131,9 @@ public class ClientHTTP3Session extends ClientProtocolSession
         connection.onOpen();
     }
 
-    void writeMessageFrame(QuicStreamEndPoint endPoint, Frame frame, Callback callback)
+    void writeFrame(long streamId, Frame frame, Callback callback)
     {
+        QuicStreamEndPoint endPoint = getOrCreateStreamEndPoint(streamId, this::configureProtocolEndPoint);
         messageFlusher.offer(endPoint, frame, callback);
         messageFlusher.iterate();
     }
@@ -148,86 +142,5 @@ public class ClientHTTP3Session extends ClientProtocolSession
     public String toString()
     {
         return String.format("%s@%x", getClass().getSimpleName(), hashCode());
-    }
-
-    private static class MessageFlusher extends IteratingCallback
-    {
-        private final AutoLock lock = new AutoLock();
-        private final Queue<Entry> queue = new ArrayDeque<>();
-        private final ByteBufferPool.Lease lease;
-        private final MessageGenerator generator;
-        private Entry entry;
-
-        public MessageFlusher(ByteBufferPool byteBufferPool, QpackEncoder encoder, int maxHeadersLength, boolean useDirectByteBuffers)
-        {
-            this.lease = new ByteBufferPool.Lease(byteBufferPool);
-            this.generator = new MessageGenerator(encoder, maxHeadersLength, useDirectByteBuffers);
-        }
-
-        public void offer(QuicStreamEndPoint endPoint, Frame frame, Callback callback)
-        {
-            try (AutoLock l = lock.lock())
-            {
-                queue.offer(new Entry(endPoint, frame, callback));
-            }
-        }
-
-        @Override
-        protected Action process()
-        {
-            try (AutoLock l = lock.lock())
-            {
-                entry = queue.poll();
-                if (entry == null)
-                    return Action.IDLE;
-            }
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("flushing {} on {}", entry, this);
-
-            generator.generate(lease, entry.endPoint.getStreamId(), entry.frame);
-
-            QuicStreamEndPoint endPoint = entry.endPoint;
-            List<ByteBuffer> buffers = lease.getByteBuffers();
-            if (LOG.isDebugEnabled())
-                LOG.debug("writing {} buffers ({} bytes) on {}", buffers.size(), lease.getTotalLength(), this);
-            endPoint.write(this, buffers.toArray(ByteBuffer[]::new));
-            return Action.SCHEDULED;
-        }
-
-        @Override
-        public void succeeded()
-        {
-            lease.recycle();
-            entry.callback.succeeded();
-            entry = null;
-            super.succeeded();
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return entry.callback.getInvocationType();
-        }
-
-        private static class Entry
-        {
-            private final QuicStreamEndPoint endPoint;
-            private final Frame frame;
-            private final Callback callback;
-
-            private Entry(QuicStreamEndPoint endPoint, Frame frame, Callback callback)
-            {
-                this.endPoint = endPoint;
-                this.frame = frame;
-                this.callback = callback;
-            }
-
-            @Override
-            public String toString()
-            {
-                return String.format("%s#%d", frame, endPoint.getStreamId());
-            }
-        }
     }
 }

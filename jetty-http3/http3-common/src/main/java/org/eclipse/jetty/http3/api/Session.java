@@ -23,7 +23,7 @@ public interface Session
 {
     public interface Client
     {
-        public CompletableFuture<Stream> newStream(HeadersFrame frame, Stream.Listener listener);
+        public CompletableFuture<Stream> newRequest(HeadersFrame frame, Stream.Listener listener);
 
         public interface Listener extends Session.Listener
         {
@@ -49,7 +49,7 @@ public interface Session
         {
         }
 
-        public default Stream.Listener onHeaders(Stream stream, HeadersFrame frame)
+        public default Stream.Listener onRequest(Stream stream, HeadersFrame frame)
         {
             return null;
         }
