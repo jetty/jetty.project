@@ -13,13 +13,41 @@
 
 package org.eclipse.jetty.http3.internal;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.eclipse.jetty.http3.api.Stream;
-import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
+import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.Invocable;
 
 public class HTTP3Stream implements Stream
 {
-    public HTTP3Stream(QuicStreamEndPoint endPoint, Listener listener)
-    {
+    private final HTTP3Session session;
+    private final long streamId;
+    private Listener listener;
 
+    public HTTP3Stream(HTTP3Session session, long streamId)
+    {
+        this.session = session;
+        this.streamId = streamId;
+    }
+
+    public Listener getListener()
+    {
+        return listener;
+    }
+
+    public void setListener(Listener listener)
+    {
+        this.listener = listener;
+    }
+
+    @Override
+    public CompletableFuture<Stream> respond(HeadersFrame frame)
+    {
+        Promise.Completable<Stream> completable = new Promise.Completable<>();
+        session.writeFrame(streamId, frame, Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> completable.succeeded(this), completable::failed));
+        return completable;
     }
 }

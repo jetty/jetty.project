@@ -17,10 +17,10 @@ import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
+import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3Session;
 import org.eclipse.jetty.http3.internal.HTTP3Stream;
-import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.quic.common.StreamType;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
@@ -46,23 +46,29 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
         return (ClientHTTP3Session)super.getProtocolSession();
     }
 
+    @Override
+    protected void writeFrame(long streamId, Frame frame, Callback callback)
+    {
+        getProtocolSession().writeFrame(streamId, frame, callback);
+    }
+
     public void onOpen()
     {
         promise.succeeded(this);
     }
 
     @Override
-    public CompletableFuture<Stream> newStream(HeadersFrame frame, Stream.Listener listener)
+    public CompletableFuture<Stream> newRequest(HeadersFrame frame, Stream.Listener listener)
     {
         ClientHTTP3Session session = getProtocolSession();
         long streamId = session.getQuicSession().newStreamId(StreamType.CLIENT_BIDIRECTIONAL);
-        QuicStreamEndPoint endPoint = session.getOrCreateStreamEndPoint(streamId, session::configureProtocolEndPoint);
 
         Promise.Completable<Stream> promise = new Promise.Completable<>();
-        HTTP3Stream stream = newStream(endPoint, listener);
+        HTTP3Stream stream = createStream(streamId);
+        stream.setListener(listener);
         Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> promise.succeeded(stream), promise::failed);
 
-        session.writeMessageFrame(endPoint, frame, callback);
+        session.writeFrame(streamId, frame, callback);
         return promise;
     }
 }

@@ -13,7 +13,22 @@
 
 package org.eclipse.jetty.http3.api;
 
+import java.util.concurrent.CompletableFuture;
+
+import org.eclipse.jetty.http3.frames.HeadersFrame;
+
 public interface Stream
 {
-    public interface Listener {}
+    public CompletableFuture<Stream> respond(HeadersFrame frame);
+
+    public interface Listener
+    {
+        public default void onResponse(Stream stream, HeadersFrame frame)
+        {
+        }
+
+        public default void onTrailer(Stream stream, HeadersFrame frame)
+        {
+        }
+    }
 }

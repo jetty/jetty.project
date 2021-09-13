@@ -16,17 +16,19 @@ package org.eclipse.jetty.http3.internal;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
+import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.internal.parser.ParserListener;
 import org.eclipse.jetty.quic.common.ProtocolSession;
-import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
+import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HTTP3Session implements Session, ParserListener
+public abstract class HTTP3Session implements Session, ParserListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP3Session.class);
 
@@ -45,10 +47,20 @@ public class HTTP3Session implements Session, ParserListener
         return session;
     }
 
-    protected HTTP3Stream newStream(QuicStreamEndPoint endPoint, Stream.Listener listener)
+    protected HTTP3Stream createStream(long streamId)
     {
-        return streams.computeIfAbsent(endPoint.getStreamId(), id -> new HTTP3Stream(endPoint, listener));
+        HTTP3Stream stream = new HTTP3Stream(this, streamId);
+        if (streams.put(streamId, stream) != null)
+            throw new IllegalStateException("duplicate stream id " + streamId);
+        return stream;
     }
+
+    protected HTTP3Stream getOrCreateStream(long streamId)
+    {
+        return streams.computeIfAbsent(streamId, id -> new HTTP3Stream(this, streamId));
+    }
+
+    protected abstract void writeFrame(long streamId, Frame frame, Callback callback);
 
     public Map<Long, Long> onPreface()
     {
@@ -95,6 +107,60 @@ public class HTTP3Session implements Session, ParserListener
     public void onHeaders(long streamId, HeadersFrame frame)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("received {} on {}", frame, this);
+            LOG.debug("received {}#{} on {}", frame, streamId, this);
+
+        HTTP3Stream stream = getOrCreateStream(streamId);
+
+        MetaData metaData = frame.getMetaData();
+        if (metaData.isRequest())
+        {
+            Stream.Listener streamListener = notifyRequest(stream, frame);
+            stream.setListener(streamListener);
+        }
+        else if (metaData.isResponse())
+        {
+            notifyResponse(stream, frame);
+        }
+        else
+        {
+            notifyTrailer(stream, frame);
+        }
+    }
+
+    private Stream.Listener notifyRequest(HTTP3Stream stream, HeadersFrame frame)
+    {
+        try
+        {
+            return listener.onRequest(stream, frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure notifying listener {}", listener, x);
+            return null;
+        }
+    }
+
+    private void notifyResponse(HTTP3Stream stream, HeadersFrame frame)
+    {
+        try
+        {
+            stream.getListener().onResponse(stream, frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure notifying listener {}", listener, x);
+        }
+    }
+
+    private void notifyTrailer(HTTP3Stream stream, HeadersFrame frame)
+    {
+        try
+        {
+            stream.getListener().onTrailer(stream, frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure notifying listener {}", listener, x);
+        }
     }
 }
