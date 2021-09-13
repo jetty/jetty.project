@@ -48,6 +48,12 @@
       <artifactId>jakarta.enterprise.cdi-api</artifactId>
       <version>3.0.0-M1</version>
       <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.el</groupId>
+          <artifactId>javax.el-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
   </dependencies>

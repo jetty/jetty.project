@@ -15,7 +15,6 @@
     <assembly-directory>target/distribution</assembly-directory>
     <pax.exam.version>4.13.1</pax.exam.version>
     <pax.url.version>2.6.2</pax.url.version>
-    <bnd.version>5.3.0</bnd.version>
     <swissbox.version>1.8.3</swissbox.version>
     <tinybundles.version>3.0.0</tinybundles.version>
     <injection.bundle.version>1.2</injection.bundle.version>
@@ -107,7 +106,6 @@
     <dependency>
       <groupId>biz.aQute.bnd</groupId>
       <artifactId>biz.aQute.bndlib</artifactId>
-      <version>${bnd.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.osgi</groupId>
@@ -145,13 +143,11 @@
     <dependency>
        <groupId>org.slf4j</groupId>
        <artifactId>slf4j-api</artifactId>
-       <version>1.7.30</version>
        <scope>test</scope>
      </dependency>
     <dependency>
        <groupId>org.slf4j</groupId>
        <artifactId>slf4j-simple</artifactId>
-       <version>1.7.30</version>
        <scope>test</scope>
      </dependency>
     <dependency>
@@ -275,7 +271,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
-      <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
@@ -392,7 +387,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-plus</artifactId>
-      <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
 
