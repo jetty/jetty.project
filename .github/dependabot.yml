@@ -39,6 +39,8 @@ updates:
         versions: [ ">=2.0.0" ]
       - dependency-name: "jakarta.websocket:*"
         versions: [ ">=2.0.0" ]
+      - dependency-name: "jakarta.servlet.jsp.jstl:*"
+        versions: [ ">=2.0.0" ]
 
   - package-ecosystem: "maven"
     directory: "/"
@@ -58,4 +60,6 @@ updates:
       - dependency-name: "jakarta.inject:*"
         versions: [ ">=3.0.0" ]
       - dependency-name: "jakarta.websocket:*"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "jakarta.servlet.jsp.jstl:*"
         versions: [ ">=3.0.0" ]
