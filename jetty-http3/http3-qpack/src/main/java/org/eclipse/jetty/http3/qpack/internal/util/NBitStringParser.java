@@ -15,8 +15,6 @@ package org.eclipse.jetty.http3.qpack.internal.util;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http3.qpack.QpackException;
-
 public class NBitStringParser
 {
     private final NBitIntegerParser _integerParser;
@@ -50,7 +48,7 @@ public class NBitStringParser
         _prefix = prefix;
     }
 
-    public String decode(ByteBuffer buffer) throws QpackException
+    public String decode(ByteBuffer buffer) throws EncodingException
     {
         while (true)
         {

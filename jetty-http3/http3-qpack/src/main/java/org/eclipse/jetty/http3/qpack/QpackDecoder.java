@@ -28,11 +28,15 @@ import org.eclipse.jetty.http3.qpack.internal.parser.EncodedFieldSection;
 import org.eclipse.jetty.http3.qpack.internal.table.DynamicTable;
 import org.eclipse.jetty.http3.qpack.internal.table.Entry;
 import org.eclipse.jetty.http3.qpack.internal.table.StaticTable;
+import org.eclipse.jetty.http3.qpack.internal.util.EncodingException;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerParser;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_DECODER_STREAM_ERROR;
+import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_DECOMPRESSION_FAILED;
 
 /**
  * Qpack Decoder
@@ -98,18 +102,18 @@ public class QpackDecoder implements Dumpable
 
         // If the buffer is big, don't even think about decoding it
         if (buffer.remaining() > _maxHeaderSize)
-            throw new QpackException.SessionException("431 Request Header Fields too large");
+            throw new QpackException.SessionException(QPACK_DECOMPRESSION_FAILED, "header_too_large");
 
         _integerDecoder.setPrefix(8);
         int encodedInsertCount = _integerDecoder.decodeInt(buffer);
         if (encodedInsertCount < 0)
-            throw new QpackException.CompressionException("Could not parse Required Insert Count");
+            throw new QpackException.SessionException(QPACK_DECOMPRESSION_FAILED, "invalid_required_insert_count");
 
         _integerDecoder.setPrefix(7);
         boolean signBit = (buffer.get(buffer.position()) & 0x80) != 0;
         int deltaBase = _integerDecoder.decodeInt(buffer);
         if (deltaBase < 0)
-            throw new QpackException.CompressionException("Could not parse Delta Base");
+            throw new QpackException.SessionException(QPACK_DECOMPRESSION_FAILED, "invalid_delta_base");
 
         // Decode the Required Insert Count using the DynamicTable state.
         DynamicTable dynamicTable = _context.getDynamicTable();
@@ -117,24 +121,33 @@ public class QpackDecoder implements Dumpable
         int maxDynamicTableSize = dynamicTable.getCapacity();
         int requiredInsertCount = decodeInsertCount(encodedInsertCount, insertCount, maxDynamicTableSize);
 
-        // Parse the buffer into an Encoded Field Section.
-        int base = signBit ? requiredInsertCount - deltaBase - 1 : requiredInsertCount + deltaBase;
-        EncodedFieldSection encodedFieldSection = new EncodedFieldSection(streamId, handler, requiredInsertCount, base, buffer);
+        try
+        {
+            // Parse the buffer into an Encoded Field Section.
+            int base = signBit ? requiredInsertCount - deltaBase - 1 : requiredInsertCount + deltaBase;
+            EncodedFieldSection encodedFieldSection = new EncodedFieldSection(streamId, handler, requiredInsertCount, base, buffer);
 
-        // Decode it straight away if we can, otherwise add it to the list of EncodedFieldSections.
-        if (requiredInsertCount <= insertCount)
-        {
-            MetaData metaData = encodedFieldSection.decode(_context, _maxHeaderSize);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Decoded: streamId={}, metadata={}", streamId, metaData);
-            _metaDataNotifications.add(new MetaDataNotification(streamId, metaData, handler));
-            _instructions.add(new SectionAcknowledgmentInstruction(streamId));
+            // Decode it straight away if we can, otherwise add it to the list of EncodedFieldSections.
+            if (requiredInsertCount <= insertCount)
+            {
+                MetaData metaData = encodedFieldSection.decode(_context, _maxHeaderSize);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Decoded: streamId={}, metadata={}", streamId, metaData);
+                _metaDataNotifications.add(new MetaDataNotification(streamId, metaData, handler));
+                _instructions.add(new SectionAcknowledgmentInstruction(streamId));
+            }
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Deferred Decoding: streamId={}, encodedFieldSection={}", streamId, encodedFieldSection);
+                _encodedFieldSections.add(encodedFieldSection);
+            }
         }
-        else
+        catch (Throwable t)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Deferred Decoding: streamId={}, encodedFieldSection={}", streamId, encodedFieldSection);
-            _encodedFieldSections.add(encodedFieldSection);
+            notifyInstructionHandler();
+            notifyMetaDataHandler();
+            throw t;
         }
 
         boolean hadMetaData = !_metaDataNotifications.isEmpty();
@@ -145,13 +158,23 @@ public class QpackDecoder implements Dumpable
 
     public void parseInstructionBuffer(ByteBuffer buffer) throws QpackException
     {
-        while (BufferUtil.hasContent(buffer))
+        try
         {
-            _parser.parse(buffer);
+            while (BufferUtil.hasContent(buffer))
+            {
+                _parser.parse(buffer);
+            }
         }
-
-        notifyInstructionHandler();
-        notifyMetaDataHandler();
+        catch (EncodingException e)
+        {
+            // There was an error decoding the instruction.
+            throw new QpackException.SessionException(QPACK_DECODER_STREAM_ERROR, e.getMessage(), e);
+        }
+        finally
+        {
+            notifyInstructionHandler();
+            notifyMetaDataHandler();
+        }
     }
 
     private void checkEncodedFieldSections() throws QpackException
@@ -230,7 +253,7 @@ public class QpackDecoder implements Dumpable
         int maxEntries = maxTableCapacity / 32;
         int fullRange = 2 * maxEntries;
         if (encInsertCount > fullRange)
-            throw new QpackException.CompressionException("encInsertCount > fullRange");
+            throw new QpackException.SessionException(QPACK_DECOMPRESSION_FAILED, "encInsertCount_greater_than_fullRange");
 
         // MaxWrapped is the largest possible value of ReqInsertCount that is 0 mod 2 * MaxEntries.
         int maxValue = totalNumInserts + maxEntries;
@@ -241,13 +264,13 @@ public class QpackDecoder implements Dumpable
         if (reqInsertCount > maxValue)
         {
             if (reqInsertCount <= fullRange)
-                throw new QpackException.CompressionException("reqInsertCount <= fullRange");
+                throw new QpackException.SessionException(QPACK_DECOMPRESSION_FAILED, "reqInsertCount_less_than_or_equal_to_fullRange");
             reqInsertCount -= fullRange;
         }
 
         // Value of 0 must be encoded as 0.
         if (reqInsertCount == 0)
-            throw new QpackException.CompressionException("reqInsertCount == 0");
+            throw new QpackException.SessionException(QPACK_DECOMPRESSION_FAILED, "reqInsertCount_is_zero");
 
         return reqInsertCount;
     }

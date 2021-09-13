@@ -23,11 +23,14 @@ import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.http3.qpack.internal.QpackContext;
 import org.eclipse.jetty.http3.qpack.internal.metadata.MetaDataBuilder;
+import org.eclipse.jetty.http3.qpack.internal.util.EncodingException;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerParser;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitStringParser;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_DECOMPRESSION_FAILED;
 
 public class EncodedFieldSection
 {
@@ -49,22 +52,29 @@ public class EncodedFieldSection
         _base = base;
         _handler = handler;
 
-        while (content.hasRemaining())
+        try
         {
-            EncodedField encodedField;
-            byte firstByte = content.get(content.position());
-            if ((firstByte & 0x80) != 0)
-                encodedField = parseIndexedField(content);
-            else if ((firstByte & 0x40) != 0)
-                encodedField = parseNameReference(content);
-            else if ((firstByte & 0x20) != 0)
-                encodedField = parseLiteralField(content);
-            else if ((firstByte & 0x10) != 0)
-                encodedField = parseIndexedFieldPostBase(content);
-            else
-                encodedField = parseNameReferencePostBase(content);
+            while (content.hasRemaining())
+            {
+                EncodedField encodedField;
+                byte firstByte = content.get(content.position());
+                if ((firstByte & 0x80) != 0)
+                    encodedField = parseIndexedField(content);
+                else if ((firstByte & 0x40) != 0)
+                    encodedField = parseNameReference(content);
+                else if ((firstByte & 0x20) != 0)
+                    encodedField = parseLiteralField(content);
+                else if ((firstByte & 0x10) != 0)
+                    encodedField = parseIndexedFieldPostBase(content);
+                else
+                    encodedField = parseNameReferencePostBase(content);
 
-            _encodedFields.add(encodedField);
+                _encodedFields.add(encodedField);
+            }
+        }
+        catch (EncodingException e)
+        {
+            throw new QpackException.SessionException(QPACK_DECOMPRESSION_FAILED, e.getMessage(), e);
         }
     }
 
@@ -97,28 +107,28 @@ public class EncodedFieldSection
         return metaDataBuilder.build();
     }
 
-    private EncodedField parseIndexedField(ByteBuffer buffer) throws QpackException
+    private EncodedField parseIndexedField(ByteBuffer buffer) throws EncodingException
     {
         byte firstByte = buffer.get(buffer.position());
         boolean dynamicTable = (firstByte & 0x40) == 0;
         _integerParser.setPrefix(6);
         int index = _integerParser.decodeInt(buffer);
         if (index < 0)
-            throw new QpackException.CompressionException("Invalid Index");
+            throw new EncodingException("invalid_index");
         return new IndexedField(dynamicTable, index);
     }
 
-    private EncodedField parseIndexedFieldPostBase(ByteBuffer buffer) throws QpackException
+    private EncodedField parseIndexedFieldPostBase(ByteBuffer buffer) throws EncodingException
     {
         _integerParser.setPrefix(4);
         int index = _integerParser.decodeInt(buffer);
         if (index < 0)
-            throw new QpackException.CompressionException("Invalid Index");
+            throw new EncodingException("Invalid Index");
 
         return new PostBaseIndexedField(index);
     }
 
-    private EncodedField parseNameReference(ByteBuffer buffer) throws QpackException
+    private EncodedField parseNameReference(ByteBuffer buffer) throws EncodingException
     {
         LOG.info("parseLiteralFieldLineWithNameReference: " + BufferUtil.toDetailString(buffer));
 
@@ -129,17 +139,17 @@ public class EncodedFieldSection
         _integerParser.setPrefix(4);
         int nameIndex = _integerParser.decodeInt(buffer);
         if (nameIndex < 0)
-            throw new QpackException.CompressionException("Invalid Name Index");
+            throw new EncodingException("invalid_name_index");
 
         _stringParser.setPrefix(8);
         String value = _stringParser.decode(buffer);
         if (value == null)
-            throw new QpackException.CompressionException("Incomplete Value");
+            throw new EncodingException("incomplete_value");
 
         return new IndexedNameField(allowEncoding, dynamicTable, nameIndex, value);
     }
 
-    private EncodedField parseNameReferencePostBase(ByteBuffer buffer) throws QpackException
+    private EncodedField parseNameReferencePostBase(ByteBuffer buffer) throws EncodingException
     {
         byte firstByte = buffer.get(buffer.position());
         boolean allowEncoding = (firstByte & 0x08) != 0;
@@ -147,17 +157,17 @@ public class EncodedFieldSection
         _integerParser.setPrefix(3);
         int nameIndex = _integerParser.decodeInt(buffer);
         if (nameIndex < 0)
-            throw new QpackException.CompressionException("Invalid Index");
+            throw new EncodingException("invalid_index");
 
         _stringParser.setPrefix(8);
         String value = _stringParser.decode(buffer);
         if (value == null)
-            throw new QpackException.CompressionException("Invalid Value");
+            throw new EncodingException("invalid_value");
 
         return new PostBaseIndexedNameField(allowEncoding, nameIndex, value);
     }
 
-    private EncodedField parseLiteralField(ByteBuffer buffer) throws QpackException
+    private EncodedField parseLiteralField(ByteBuffer buffer) throws EncodingException
     {
         byte firstByte = buffer.get(buffer.position());
         boolean allowEncoding = (firstByte & 0x10) != 0;
@@ -165,12 +175,12 @@ public class EncodedFieldSection
         _stringParser.setPrefix(4);
         String name = _stringParser.decode(buffer);
         if (name == null)
-            throw new QpackException.CompressionException("Invalid Name");
+            throw new EncodingException("invalid_name");
 
         _stringParser.setPrefix(8);
         String value = _stringParser.decode(buffer);
         if (value == null)
-            throw new QpackException.CompressionException("Invalid Value");
+            throw new EncodingException("invalid_value");
 
         return new LiteralField(allowEncoding, name, value);
     }

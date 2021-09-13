@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.util.component.Dumpable;
 
 public class DynamicTable implements Iterable<Entry>, Dumpable
@@ -134,10 +133,10 @@ public class DynamicTable implements Iterable<Entry>, Dumpable
      * @param absoluteIndex the absolute index of the entry in the table.
      * @return the entry with the absolute index.
      */
-    public Entry getAbsolute(int absoluteIndex) throws QpackException
+    public Entry getAbsolute(int absoluteIndex)
     {
         if (absoluteIndex < 0)
-            throw new QpackException.CompressionException("Invalid Index");
+            throw new IllegalArgumentException("Invalid Index");
 
         if (_entries.isEmpty())
             throw new IllegalArgumentException("Invalid Index");

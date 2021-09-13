@@ -16,6 +16,7 @@ package org.eclipse.jetty.http3.qpack.internal.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.qpack.QpackException;
+import org.eclipse.jetty.http3.qpack.internal.util.EncodingException;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerParser;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitStringParser;
 
@@ -69,7 +70,7 @@ public class DecoderInstructionParser
         _integerParser = new NBitIntegerParser();
     }
 
-    public void parse(ByteBuffer buffer) throws QpackException
+    public void parse(ByteBuffer buffer) throws QpackException, EncodingException
     {
         if (buffer == null || !buffer.hasRemaining())
             return;
@@ -123,7 +124,7 @@ public class DecoderInstructionParser
         }
     }
 
-    private void parseInsertNameWithReference(ByteBuffer buffer) throws QpackException
+    private void parseInsertNameWithReference(ByteBuffer buffer) throws QpackException, EncodingException
     {
         while (true)
         {
@@ -162,7 +163,7 @@ public class DecoderInstructionParser
         }
     }
 
-    private void parseInsertWithLiteralName(ByteBuffer buffer) throws QpackException
+    private void parseInsertWithLiteralName(ByteBuffer buffer) throws QpackException, EncodingException
     {
         while (true)
         {
