@@ -106,7 +106,7 @@
     <dependency>
       <groupId>org.apache.maven.shared</groupId>
       <artifactId>maven-artifact-transfer</artifactId>
-      <version>0.12.0</version>
+      <version>0.13.1</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
