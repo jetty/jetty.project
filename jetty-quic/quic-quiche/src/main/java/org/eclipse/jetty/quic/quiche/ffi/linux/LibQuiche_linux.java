@@ -28,10 +28,10 @@ public interface LibQuiche_linux extends LibQuiche
     LibQuiche INSTANCE = Native.load("quiche", LibQuiche_linux.class);
 
     // Creates a new client-side connection.
-    quiche_conn quiche_connect(String server_name, byte[] scid, size_t scid_len, netinet_linux.sockaddr_in to, size_t to_len, quiche_config config);
+    quiche_conn quiche_connect(String server_name, byte[] scid, size_t scid_len, netinet_linux.sockaddr to, size_t to_len, quiche_config config);
 
     // Creates a new server-side connection.
-    quiche_conn quiche_accept(byte[] scid, size_t scid_len, byte[] odcid, size_t odcid_len, netinet_linux.sockaddr_in from, size_t from_len, quiche_config config);
+    quiche_conn quiche_accept(byte[] scid, size_t scid_len, byte[] odcid, size_t odcid_len, netinet_linux.sockaddr from, size_t from_len, quiche_config config);
 
     @Structure.FieldOrder({"to", "to_len", "at"})
     class quiche_send_info extends Structure
@@ -47,7 +47,7 @@ public interface LibQuiche_linux extends LibQuiche
     @Structure.FieldOrder({"from", "from_len"})
     class quiche_recv_info extends Structure
     {
-        public netinet_linux.sockaddr_in.ByReference from;
+        public netinet_linux.sockaddr.ByReference from;
         public size_t from_len;
     }
 

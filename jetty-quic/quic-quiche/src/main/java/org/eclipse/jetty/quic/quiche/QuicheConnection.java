@@ -77,13 +77,13 @@ public class QuicheConnection
 
         if (isLinux())
         {
-            netinet_linux.sockaddr_in to = netinet_linux.to_sock_addr(peer);
+            netinet_linux.sockaddr to = netinet_linux.to_sock_addr(peer);
             LibQuiche.quiche_conn quicheConn = ((LibQuiche_linux)LibQuiche.Holder.instance()).quiche_connect(peer.getHostName(), scid, new size_t(scid.length), to, new size_t(to.size()), libQuicheConfig);
             return new QuicheConnection(quicheConn, libQuicheConfig);
         }
         else if (isMac())
         {
-            netinet_macos.sockaddr_in to = netinet_macos.to_sock_addr(peer);
+            netinet_macos.sockaddr to = netinet_macos.to_sock_addr(peer);
             LibQuiche.quiche_conn quicheConn = ((LibQuiche_macos)LibQuiche.Holder.instance()).quiche_connect(peer.getHostName(), scid, new size_t(scid.length), to, new size_t(to.size()), libQuicheConfig);
             return new QuicheConnection(quicheConn, libQuicheConfig);
         }
@@ -324,12 +324,12 @@ public class QuicheConnection
         LibQuiche.quiche_conn quicheConn;
         if (isLinux())
         {
-            netinet_linux.sockaddr_in from = netinet_linux.to_sock_addr(peer);
+            netinet_linux.sockaddr from = netinet_linux.to_sock_addr(peer);
             quicheConn = ((LibQuiche_linux)LibQuiche.Holder.instance()).quiche_accept(dcid, dcid_len.getPointee(), odcid, new size_t(odcid.length), from, new size_t(from.size()), libQuicheConfig);
         }
         else if (isMac())
         {
-            netinet_macos.sockaddr_in from = netinet_macos.to_sock_addr(peer);
+            netinet_macos.sockaddr from = netinet_macos.to_sock_addr(peer);
             quicheConn = ((LibQuiche_macos)LibQuiche.Holder.instance()).quiche_accept(dcid, dcid_len.getPointee(), odcid, new size_t(odcid.length), from, new size_t(from.size()), libQuicheConfig);
         }
         else
@@ -396,8 +396,8 @@ public class QuicheConnection
         if (isLinux())
         {
             LibQuiche_linux.quiche_recv_info info = new LibQuiche_linux.quiche_recv_info();
-            netinet_linux.sockaddr_in from = netinet_linux.to_sock_addr(peer);
-            info.from = netinet_linux.sockaddr_in.byReference(from);
+            netinet_linux.sockaddr from = netinet_linux.to_sock_addr(peer);
+            info.from = netinet_linux.sockaddr.byReference(from);
             info.from_len = new size_t(from.size());
 
             received = ((LibQuiche_linux)libQuiche()).quiche_conn_recv(quicheConn, buffer, new size_t(buffer.remaining()), info).intValue();
@@ -405,8 +405,8 @@ public class QuicheConnection
         else if (isMac())
         {
             LibQuiche_macos.quiche_recv_info info = new LibQuiche_macos.quiche_recv_info();
-            netinet_macos.sockaddr_in from = netinet_macos.to_sock_addr(peer);
-            info.from = netinet_macos.sockaddr_in.byReference(from);
+            netinet_macos.sockaddr from = netinet_macos.to_sock_addr(peer);
+            info.from = netinet_macos.sockaddr.byReference(from);
             info.from_len = new size_t(from.size());
 
             received = ((LibQuiche_macos)libQuiche()).quiche_conn_recv(quicheConn, buffer, new size_t(buffer.remaining()), info).intValue();
