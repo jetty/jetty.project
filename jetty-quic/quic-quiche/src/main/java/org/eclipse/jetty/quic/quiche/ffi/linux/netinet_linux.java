@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.quiche.ffi;
+package org.eclipse.jetty.quic.quiche.ffi.linux;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -22,10 +22,13 @@ import java.nio.ByteOrder;
 
 import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
+import org.eclipse.jetty.quic.quiche.ffi.uint16_t;
+import org.eclipse.jetty.quic.quiche.ffi.uint32_t;
 
-public interface netinet_h
+public interface netinet_linux
 {
     uint16_t AF_INET = new uint16_t(2);
+    uint16_t AF_INET6 = new uint16_t(10);
 
     static sockaddr_in to_sock_addr(SocketAddress socketAddress)
     {

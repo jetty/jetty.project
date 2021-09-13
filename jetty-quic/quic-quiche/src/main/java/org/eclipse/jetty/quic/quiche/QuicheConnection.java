@@ -25,7 +25,10 @@ import java.util.List;
 import org.eclipse.jetty.quic.quiche.ffi.LibQuiche;
 import org.eclipse.jetty.quic.quiche.ffi.bool_pointer;
 import org.eclipse.jetty.quic.quiche.ffi.char_pointer;
-import org.eclipse.jetty.quic.quiche.ffi.netinet_h;
+import org.eclipse.jetty.quic.quiche.ffi.linux.LibQuiche_linux;
+import org.eclipse.jetty.quic.quiche.ffi.linux.netinet_linux;
+import org.eclipse.jetty.quic.quiche.ffi.macos.LibQuiche_macos;
+import org.eclipse.jetty.quic.quiche.ffi.macos.netinet_macos;
 import org.eclipse.jetty.quic.quiche.ffi.size_t;
 import org.eclipse.jetty.quic.quiche.ffi.size_t_pointer;
 import org.eclipse.jetty.quic.quiche.ffi.ssize_t;
@@ -36,6 +39,9 @@ import org.eclipse.jetty.quic.quiche.ffi.uint64_t_pointer;
 import org.eclipse.jetty.quic.quiche.ffi.uint8_t_pointer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static com.sun.jna.Platform.isLinux;
+import static com.sun.jna.Platform.isMac;
 
 public class QuicheConnection
 {
@@ -69,28 +75,41 @@ public class QuicheConnection
         SECURE_RANDOM.nextBytes(scid);
         LibQuiche.quiche_config libQuicheConfig = buildConfig(quicheConfig);
 
-        netinet_h.sockaddr_in to = netinet_h.to_sock_addr(peer);
-        LibQuiche.quiche_conn quicheConn = LibQuiche.INSTANCE.quiche_connect(peer.getHostName(), scid, new size_t(scid.length), to, new size_t(to.size()), libQuicheConfig);
-        return new QuicheConnection(quicheConn, libQuicheConfig);
+        if (isLinux())
+        {
+            netinet_linux.sockaddr_in to = netinet_linux.to_sock_addr(peer);
+            LibQuiche.quiche_conn quicheConn = ((LibQuiche_linux)LibQuiche.Holder.instance()).quiche_connect(peer.getHostName(), scid, new size_t(scid.length), to, new size_t(to.size()), libQuicheConfig);
+            return new QuicheConnection(quicheConn, libQuicheConfig);
+        }
+        else if (isMac())
+        {
+            netinet_macos.sockaddr_in to = netinet_macos.to_sock_addr(peer);
+            LibQuiche.quiche_conn quicheConn = ((LibQuiche_macos)LibQuiche.Holder.instance()).quiche_connect(peer.getHostName(), scid, new size_t(scid.length), to, new size_t(to.size()), libQuicheConfig);
+            return new QuicheConnection(quicheConn, libQuicheConfig);
+        }
+        else
+        {
+            throw new UnsupportedOperationException("Unsupported OS: " + System.getProperty("os.name"));
+        }
     }
 
     private static LibQuiche.quiche_config buildConfig(QuicheConfig config) throws IOException
     {
-        LibQuiche.quiche_config quicheConfig = LibQuiche.INSTANCE.quiche_config_new(new uint32_t(config.getVersion()));
+        LibQuiche.quiche_config quicheConfig = LibQuiche.Holder.instance().quiche_config_new(new uint32_t(config.getVersion()));
         if (quicheConfig == null)
             throw new IOException("Failed to create quiche config");
 
         Boolean verifyPeer = config.getVerifyPeer();
         if (verifyPeer != null)
-            LibQuiche.INSTANCE.quiche_config_verify_peer(quicheConfig, verifyPeer);
+            LibQuiche.Holder.instance().quiche_config_verify_peer(quicheConfig, verifyPeer);
 
         String certChainPemPath = config.getCertChainPemPath();
         if (certChainPemPath != null)
-            LibQuiche.INSTANCE.quiche_config_load_cert_chain_from_pem_file(quicheConfig, certChainPemPath);
+            LibQuiche.Holder.instance().quiche_config_load_cert_chain_from_pem_file(quicheConfig, certChainPemPath);
 
         String privKeyPemPath = config.getPrivKeyPemPath();
         if (privKeyPemPath != null)
-            LibQuiche.INSTANCE.quiche_config_load_priv_key_from_pem_file(quicheConfig, privKeyPemPath);
+            LibQuiche.Holder.instance().quiche_config_load_priv_key_from_pem_file(quicheConfig, privKeyPemPath);
 
         String[] applicationProtos = config.getApplicationProtos();
         if (applicationProtos != null)
@@ -99,44 +118,44 @@ public class QuicheConnection
             for (String proto : applicationProtos)
                 sb.append((char)proto.length()).append(proto);
             String theProtos = sb.toString();
-            LibQuiche.INSTANCE.quiche_config_set_application_protos(quicheConfig, theProtos, new size_t(theProtos.length()));
+            LibQuiche.Holder.instance().quiche_config_set_application_protos(quicheConfig, theProtos, new size_t(theProtos.length()));
         }
 
         QuicheConfig.CongestionControl cc = config.getCongestionControl();
         if (cc != null)
-            LibQuiche.INSTANCE.quiche_config_set_cc_algorithm(quicheConfig, cc.getValue());
+            LibQuiche.Holder.instance().quiche_config_set_cc_algorithm(quicheConfig, cc.getValue());
 
         Long maxIdleTimeout = config.getMaxIdleTimeout();
         if (maxIdleTimeout != null)
-            LibQuiche.INSTANCE.quiche_config_set_max_idle_timeout(quicheConfig, new uint64_t(maxIdleTimeout));
+            LibQuiche.Holder.instance().quiche_config_set_max_idle_timeout(quicheConfig, new uint64_t(maxIdleTimeout));
 
         Long initialMaxData = config.getInitialMaxData();
         if (initialMaxData != null)
-            LibQuiche.INSTANCE.quiche_config_set_initial_max_data(quicheConfig, new uint64_t(initialMaxData));
+            LibQuiche.Holder.instance().quiche_config_set_initial_max_data(quicheConfig, new uint64_t(initialMaxData));
 
         Long initialMaxStreamDataBidiLocal = config.getInitialMaxStreamDataBidiLocal();
         if (initialMaxStreamDataBidiLocal != null)
-            LibQuiche.INSTANCE.quiche_config_set_initial_max_stream_data_bidi_local(quicheConfig, new uint64_t(initialMaxStreamDataBidiLocal));
+            LibQuiche.Holder.instance().quiche_config_set_initial_max_stream_data_bidi_local(quicheConfig, new uint64_t(initialMaxStreamDataBidiLocal));
 
         Long initialMaxStreamDataBidiRemote = config.getInitialMaxStreamDataBidiRemote();
         if (initialMaxStreamDataBidiRemote != null)
-            LibQuiche.INSTANCE.quiche_config_set_initial_max_stream_data_bidi_remote(quicheConfig, new uint64_t(initialMaxStreamDataBidiRemote));
+            LibQuiche.Holder.instance().quiche_config_set_initial_max_stream_data_bidi_remote(quicheConfig, new uint64_t(initialMaxStreamDataBidiRemote));
 
         Long initialMaxStreamDataUni = config.getInitialMaxStreamDataUni();
         if (initialMaxStreamDataUni != null)
-            LibQuiche.INSTANCE.quiche_config_set_initial_max_stream_data_uni(quicheConfig, new uint64_t(initialMaxStreamDataUni));
+            LibQuiche.Holder.instance().quiche_config_set_initial_max_stream_data_uni(quicheConfig, new uint64_t(initialMaxStreamDataUni));
 
         Long initialMaxStreamsBidi = config.getInitialMaxStreamsBidi();
         if (initialMaxStreamsBidi != null)
-            LibQuiche.INSTANCE.quiche_config_set_initial_max_streams_bidi(quicheConfig, new uint64_t(initialMaxStreamsBidi));
+            LibQuiche.Holder.instance().quiche_config_set_initial_max_streams_bidi(quicheConfig, new uint64_t(initialMaxStreamsBidi));
 
         Long initialMaxStreamsUni = config.getInitialMaxStreamsUni();
         if (initialMaxStreamsUni != null)
-            LibQuiche.INSTANCE.quiche_config_set_initial_max_streams_uni(quicheConfig, new uint64_t(initialMaxStreamsUni));
+            LibQuiche.Holder.instance().quiche_config_set_initial_max_streams_uni(quicheConfig, new uint64_t(initialMaxStreamsUni));
 
         Boolean disableActiveMigration = config.getDisableActiveMigration();
         if (disableActiveMigration != null)
-            LibQuiche.INSTANCE.quiche_config_set_disable_active_migration(quicheConfig, disableActiveMigration);
+            LibQuiche.Holder.instance().quiche_config_set_disable_active_migration(quicheConfig, disableActiveMigration);
 
         return quicheConfig;
     }
@@ -161,7 +180,7 @@ public class QuicheConnection
         byte[] token = new byte[32];
         size_t_pointer token_len = new size_t_pointer(token.length);
 
-        int rc = LibQuiche.INSTANCE.quiche_header_info(packet, new size_t(packet.remaining()), new size_t(LibQuiche.QUICHE_MAX_CONN_ID_LEN),
+        int rc = LibQuiche.Holder.instance().quiche_header_info(packet, new size_t(packet.remaining()), new size_t(LibQuiche.QUICHE_MAX_CONN_ID_LEN),
             version, type,
             scid, scid_len,
             dcid, dcid_len,
@@ -194,7 +213,7 @@ public class QuicheConnection
         size_t_pointer token_len = new size_t_pointer(token.length);
 
         LOG.debug("  getting header info...");
-        int rc = LibQuiche.INSTANCE.quiche_header_info(packetRead, new size_t(packetRead.remaining()), new size_t(LibQuiche.QUICHE_MAX_CONN_ID_LEN),
+        int rc = LibQuiche.Holder.instance().quiche_header_info(packetRead, new size_t(packetRead.remaining()), new size_t(LibQuiche.QUICHE_MAX_CONN_ID_LEN),
             version, type,
             scid, scid_len,
             dcid, dcid_len,
@@ -209,11 +228,11 @@ public class QuicheConnection
         LOG.debug("dcid len: {}", dcid_len);
         LOG.debug("token len: {}", token_len);
 
-        if (!LibQuiche.INSTANCE.quiche_version_is_supported(version.getPointee()))
+        if (!LibQuiche.Holder.instance().quiche_version_is_supported(version.getPointee()))
         {
             LOG.debug("  < version negotiation");
 
-            ssize_t generated = LibQuiche.INSTANCE.quiche_negotiate_version(scid, scid_len.getPointee(), dcid, dcid_len.getPointee(), packetToSend, new size_t(packetToSend.remaining()));
+            ssize_t generated = LibQuiche.Holder.instance().quiche_negotiate_version(scid, scid_len.getPointee(), dcid, dcid_len.getPointee(), packetToSend, new size_t(packetToSend.remaining()));
             packetToSend.position(packetToSend.position() + generated.intValue());
             if (generated.intValue() < 0)
                 throw new IOException("failed to create vneg packet : " + generated);
@@ -229,7 +248,7 @@ public class QuicheConnection
             byte[] newCid = new byte[LibQuiche.QUICHE_MAX_CONN_ID_LEN];
             SECURE_RANDOM.nextBytes(newCid);
 
-            ssize_t generated = LibQuiche.INSTANCE.quiche_retry(scid, scid_len.getPointee(),
+            ssize_t generated = LibQuiche.Holder.instance().quiche_retry(scid, scid_len.getPointee(),
                 dcid, dcid_len.getPointee(),
                 newCid, new size_t(newCid.length),
                 token, new size_t(token.length),
@@ -266,7 +285,7 @@ public class QuicheConnection
         size_t_pointer token_len = new size_t_pointer(token.length);
 
         LOG.debug("  getting header info...");
-        int rc = LibQuiche.INSTANCE.quiche_header_info(packetRead, new size_t(packetRead.remaining()), new size_t(LibQuiche.QUICHE_MAX_CONN_ID_LEN),
+        int rc = LibQuiche.Holder.instance().quiche_header_info(packetRead, new size_t(packetRead.remaining()), new size_t(LibQuiche.QUICHE_MAX_CONN_ID_LEN),
             version, type,
             scid, scid_len,
             dcid, dcid_len,
@@ -280,7 +299,7 @@ public class QuicheConnection
         LOG.debug("dcid len: {}", dcid_len);
         LOG.debug("token len: {}", token_len);
 
-        if (!LibQuiche.INSTANCE.quiche_version_is_supported(version.getPointee()))
+        if (!LibQuiche.Holder.instance().quiche_version_is_supported(version.getPointee()))
         {
             LOG.debug("  < need version negotiation");
             return null;
@@ -302,11 +321,24 @@ public class QuicheConnection
         LOG.debug("  connection creation...");
         LibQuiche.quiche_config libQuicheConfig = buildConfig(quicheConfig);
 
-        netinet_h.sockaddr_in from = netinet_h.to_sock_addr(peer);
-        LibQuiche.quiche_conn quicheConn = LibQuiche.INSTANCE.quiche_accept(dcid, dcid_len.getPointee(), odcid, new size_t(odcid.length), from, new size_t(from.size()), libQuicheConfig);
+        LibQuiche.quiche_conn quicheConn;
+        if (isLinux())
+        {
+            netinet_linux.sockaddr_in from = netinet_linux.to_sock_addr(peer);
+            quicheConn = ((LibQuiche_linux)LibQuiche.Holder.instance()).quiche_accept(dcid, dcid_len.getPointee(), odcid, new size_t(odcid.length), from, new size_t(from.size()), libQuicheConfig);
+        }
+        else if (isMac())
+        {
+            netinet_macos.sockaddr_in from = netinet_macos.to_sock_addr(peer);
+            quicheConn = ((LibQuiche_macos)LibQuiche.Holder.instance()).quiche_accept(dcid, dcid_len.getPointee(), odcid, new size_t(odcid.length), from, new size_t(from.size()), libQuicheConfig);
+        }
+        else
+        {
+            throw new UnsupportedOperationException("Unsupported OS: " + System.getProperty("os.name"));
+        }
         if (quicheConn == null)
         {
-            LibQuiche.INSTANCE.quiche_config_free(libQuicheConfig);
+            LibQuiche.Holder.instance().quiche_config_free(libQuicheConfig);
             throw new IOException("failed to create connection");
         }
 
@@ -360,12 +392,29 @@ public class QuicheConnection
         if (quicheConn == null)
             throw new IOException("Cannot receive when not connected");
 
-        LibQuiche.quiche_recv_info info = new LibQuiche.quiche_recv_info();
-        netinet_h.sockaddr_in from = netinet_h.to_sock_addr(peer);
-        info.from = netinet_h.sockaddr_in.byReference(from);
-        info.from_len = new size_t(from.size());
+        int received;
+        if (isLinux())
+        {
+            LibQuiche_linux.quiche_recv_info info = new LibQuiche_linux.quiche_recv_info();
+            netinet_linux.sockaddr_in from = netinet_linux.to_sock_addr(peer);
+            info.from = netinet_linux.sockaddr_in.byReference(from);
+            info.from_len = new size_t(from.size());
 
-        int received = libQuiche().quiche_conn_recv(quicheConn, buffer, new size_t(buffer.remaining()), info).intValue();
+            received = ((LibQuiche_linux)libQuiche()).quiche_conn_recv(quicheConn, buffer, new size_t(buffer.remaining()), info).intValue();
+        }
+        else if (isMac())
+        {
+            LibQuiche_macos.quiche_recv_info info = new LibQuiche_macos.quiche_recv_info();
+            netinet_macos.sockaddr_in from = netinet_macos.to_sock_addr(peer);
+            info.from = netinet_macos.sockaddr_in.byReference(from);
+            info.from_len = new size_t(from.size());
+
+            received = ((LibQuiche_macos)libQuiche()).quiche_conn_recv(quicheConn, buffer, new size_t(buffer.remaining()), info).intValue();
+        }
+        else
+        {
+            throw new UnsupportedOperationException("Unsupported OS: " + System.getProperty("os.name"));
+        }
         if (received < 0)
             throw new IOException("Quiche failed to receive packet; err=" + LibQuiche.quiche_error.errToString(received));
         buffer.position(buffer.position() + received);
@@ -383,11 +432,27 @@ public class QuicheConnection
         if (quicheConn == null)
             throw new IOException("Cannot send when not connected");
 
-        LibQuiche.quiche_send_info quiche_send_info = new LibQuiche.quiche_send_info();
-        quiche_send_info.to = new netinet_h.sockaddr_storage();
-        quiche_send_info.to_len = new size_t(quiche_send_info.to.size());
+        int written;
+        if (isLinux())
+        {
+            LibQuiche_linux.quiche_send_info quiche_send_info = new LibQuiche_linux.quiche_send_info();
+            quiche_send_info.to = new netinet_linux.sockaddr_storage();
+            quiche_send_info.to_len = new size_t(quiche_send_info.to.size());
 
-        int written = libQuiche().quiche_conn_send(quicheConn, buffer, new size_t(buffer.remaining()), quiche_send_info).intValue();
+            written = ((LibQuiche_linux)libQuiche()).quiche_conn_send(quicheConn, buffer, new size_t(buffer.remaining()), quiche_send_info).intValue();
+        }
+        else if (isMac())
+        {
+            LibQuiche_macos.quiche_send_info quiche_send_info = new LibQuiche_macos.quiche_send_info();
+            quiche_send_info.to = new netinet_macos.sockaddr_storage();
+            quiche_send_info.to_len = new size_t(quiche_send_info.to.size());
+
+            written = ((LibQuiche_macos)libQuiche()).quiche_conn_send(quicheConn, buffer, new size_t(buffer.remaining()), quiche_send_info).intValue();
+        }
+        else
+        {
+            throw new UnsupportedOperationException("Unsupported OS: " + System.getProperty("os.name"));
+        }
         if (written == LibQuiche.quiche_error.QUICHE_ERR_DONE)
             return 0;
         if (written < 0L)
@@ -526,7 +591,7 @@ public class QuicheConnection
     {
         if (quicheConn == null)
             throw new IllegalStateException("Quiche connection was released");
-        return LibQuiche.INSTANCE;
+        return LibQuiche.Holder.instance();
     }
 
     public interface TokenMinter
