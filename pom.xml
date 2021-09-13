@@ -43,6 +43,7 @@
     <maven.version>3.8.2</maven.version>
     <maven.resolver.version>1.7.2</maven.resolver.version>
     <weld.version>3.1.8.Final</weld.version>
+    <plexus-utils.version>3.4.1</plexus-utils.version>
     <jboss.logging.version>3.4.2.Final</jboss.logging.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
     <ant.version>1.10.11</ant.version>
@@ -1103,7 +1104,7 @@
       <dependency>
         <groupId>org.codehaus.plexus</groupId>
         <artifactId>plexus-utils</artifactId>
-        <version>3.4.1</version>
+        <version>${plexus-utils.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.maven</groupId>
