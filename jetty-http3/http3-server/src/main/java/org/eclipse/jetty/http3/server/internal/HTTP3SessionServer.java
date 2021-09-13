@@ -11,16 +11,19 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.internal.generator;
+package org.eclipse.jetty.http3.server.internal;
 
-import org.eclipse.jetty.http3.frames.Frame;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.http3.api.Session;
+import org.eclipse.jetty.http3.internal.HTTP3Session;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class PushPromiseGenerator extends FrameGenerator
+public class HTTP3SessionServer extends HTTP3Session implements Session.Server
 {
-    @Override
-    public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame)
+    private static final Logger LOG = LoggerFactory.getLogger(HTTP3SessionServer.class);
+
+    public HTTP3SessionServer(ServerHTTP3Session session, Session.Server.Listener listener)
     {
-        return 0;
+        super(session, listener);
     }
 }

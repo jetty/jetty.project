@@ -19,7 +19,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 public class GoAwayGenerator extends FrameGenerator
 {
     @Override
-    public int generate(ByteBufferPool.Lease lease, Frame frame)
+    public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame)
     {
         return 0;
     }

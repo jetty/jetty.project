@@ -21,20 +21,24 @@ import java.util.Queue;
 
 import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.quic.common.QuicSession;
+import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class InstructionFlusher extends IteratingCallback
 {
+    private static final Logger LOG = LoggerFactory.getLogger(InstructionFlusher.class);
+
     private final AutoLock lock = new AutoLock();
     private final Queue<Instruction> queue = new ArrayDeque<>();
     private final ByteBufferPool.Lease lease;
-    private final EndPoint endPoint;
+    private final QuicStreamEndPoint endPoint;
     private boolean initialized;
 
-    public InstructionFlusher(QuicSession session, EndPoint endPoint)
+    public InstructionFlusher(QuicSession session, QuicStreamEndPoint endPoint)
     {
         this.lease = new ByteBufferPool.Lease(session.getByteBufferPool());
         this.endPoint = endPoint;
@@ -51,28 +55,34 @@ public class InstructionFlusher extends IteratingCallback
     @Override
     protected Action process()
     {
-        if (initialized)
+        List<Instruction> instructions;
+        try (AutoLock l = lock.lock())
         {
-            List<Instruction> instructions;
-            try (AutoLock l = lock.lock())
-            {
-                if (queue.isEmpty())
-                    return Action.IDLE;
-                instructions = new ArrayList<>(queue);
-            }
-            instructions.forEach(i -> i.encode(lease));
-            endPoint.write(this, lease.getByteBuffers().toArray(ByteBuffer[]::new));
-            return Action.SCHEDULED;
+            if (queue.isEmpty())
+                return Action.IDLE;
+            instructions = new ArrayList<>(queue);
+            queue.clear();
         }
-        else
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("flushing {} on {}", instructions, this);
+
+        instructions.forEach(i -> i.encode(lease));
+
+        if (!initialized)
         {
             initialized = true;
             ByteBuffer buffer = ByteBuffer.allocate(VarLenInt.length(EncoderConnection.STREAM_TYPE));
             VarLenInt.generate(buffer, EncoderConnection.STREAM_TYPE);
             buffer.flip();
-            endPoint.write(NOOP, buffer);
-            return Action.SCHEDULED;
+            lease.insert(0, buffer, false);
         }
+
+        List<ByteBuffer> buffers = lease.getByteBuffers();
+        if (LOG.isDebugEnabled())
+            LOG.debug("writing {} buffers ({} bytes) on {}", buffers.size(), lease.getTotalLength(), this);
+        endPoint.write(this, buffers.toArray(ByteBuffer[]::new));
+        return Action.SCHEDULED;
     }
 
     @Override
@@ -86,5 +96,11 @@ public class InstructionFlusher extends IteratingCallback
     public InvocationType getInvocationType()
     {
         return InvocationType.NON_BLOCKING;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s#%s", super.toString(), endPoint.getStreamId());
     }
 }

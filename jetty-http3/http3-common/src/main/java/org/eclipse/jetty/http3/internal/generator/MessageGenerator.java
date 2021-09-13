@@ -22,15 +22,15 @@ public class MessageGenerator
 {
     private final FrameGenerator[] generators = new FrameGenerator[FrameType.maxType() + 1];
 
-    public MessageGenerator(QpackEncoder encoder)
+    public MessageGenerator(QpackEncoder encoder, int maxHeadersLength, boolean useDirectByteBuffers)
     {
         generators[FrameType.DATA.type()] = new DataGenerator();
-        generators[FrameType.HEADERS.type()] = new HeadersGenerator();
+        generators[FrameType.HEADERS.type()] = new HeadersGenerator(encoder, maxHeadersLength, useDirectByteBuffers);
         generators[FrameType.PUSH_PROMISE.type()] = new PushPromiseGenerator();
     }
 
-    public int generate(ByteBufferPool.Lease lease, Frame frame)
+    public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame)
     {
-        return generators[frame.getFrameType().type()].generate(lease, frame);
+        return generators[frame.getFrameType().type()].generate(lease, streamId, frame);
     }
 }

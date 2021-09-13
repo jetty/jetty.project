@@ -54,20 +54,23 @@ public class ControlConnection extends AbstractConnection implements Connection.
     }
 
     @Override
-    public void onOpen()
+    public void onUpgradeTo(ByteBuffer upgrade)
     {
-        super.onOpen();
-        fillInterested();
+        int capacity = Math.max(upgrade.remaining(), getInputBufferSize());
+        buffer = byteBufferPool.acquire(capacity, isUseInputDirectByteBuffers());
+        int position = BufferUtil.flipToFill(buffer);
+        buffer.put(upgrade);
+        BufferUtil.flipToFlush(buffer, position);
     }
 
     @Override
-    public void onUpgradeTo(ByteBuffer upgrade)
+    public void onOpen()
     {
-        if (BufferUtil.isEmpty(upgrade))
-            return;
-        int capacity = Math.max(upgrade.remaining(), getInputBufferSize());
-        buffer = byteBufferPool.acquire(capacity, isUseInputDirectByteBuffers());
-        buffer.put(upgrade);
+        super.onOpen();
+        if (BufferUtil.hasContent(buffer))
+            onFillable();
+        else
+            fillInterested();
     }
 
     @Override
@@ -79,18 +82,21 @@ public class ControlConnection extends AbstractConnection implements Connection.
                 buffer = byteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
             while (true)
             {
+                // Parse first in case of bytes from the upgrade.
+                parser.parse(buffer);
+
+                // Then read from the EndPoint.
                 int filled = getEndPoint().fill(buffer);
-                if (filled > 0)
-                {
-                    parser.parse(buffer);
-                }
-                else if (filled == 0)
+                if (LOG.isDebugEnabled())
+                    LOG.debug("filled {} on {}", filled, this);
+
+                if (filled == 0)
                 {
                     byteBufferPool.release(buffer);
                     fillInterested();
                     break;
                 }
-                else
+                else if (filled < 0)
                 {
                     byteBufferPool.release(buffer);
                     buffer = null;

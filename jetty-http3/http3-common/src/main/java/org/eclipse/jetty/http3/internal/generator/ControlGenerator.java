@@ -29,8 +29,8 @@ public class ControlGenerator
         generators[FrameType.MAX_PUSH_ID.type()] = new MaxPushIdGenerator();
     }
 
-    public int generate(ByteBufferPool.Lease lease, Frame frame)
+    public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame)
     {
-        return generators[frame.getFrameType().type()].generate(lease, frame);
+        return generators[frame.getFrameType().type()].generate(lease, streamId, frame);
     }
 }
