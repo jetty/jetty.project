@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-// The module must be open to allow JNA to find the native lib.
-open module org.eclipse.jetty.quic.quiche
-{
-    exports org.eclipse.jetty.quic.quiche.ffi;
-    exports org.eclipse.jetty.quic.quiche;
+package org.eclipse.jetty.quic.quiche.ffi;
 
-    requires org.slf4j;
-    requires com.sun.jna;
+import com.sun.jna.Structure;
+
+@Structure.FieldOrder({"opaque"})
+public class sockaddr_storage extends Structure
+{
+    public byte[] opaque = new byte[128]; // 128 opaque bytes
 }
