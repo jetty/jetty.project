@@ -18,15 +18,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.sun.jna.Callback;
 import com.sun.jna.Library;
+import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
-import org.eclipse.jetty.quic.quiche.ffi.linux.LibQuiche_linux;
-import org.eclipse.jetty.quic.quiche.ffi.macos.LibQuiche_macos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static com.sun.jna.Platform.isLinux;
-import static com.sun.jna.Platform.isMac;
 
 public interface LibQuiche extends Library
 {
@@ -34,18 +30,8 @@ public interface LibQuiche extends Library
     // It needs to be reviewed each time the native lib version changes.
     String EXPECTED_QUICHE_VERSION = "0.9.0";
 
-    class Holder
-    {
-        public static LibQuiche instance()
-        {
-            if (isLinux())
-                return LibQuiche_linux.INSTANCE;
-            else if (isMac())
-                return LibQuiche_macos.INSTANCE;
-            else
-                throw new UnsupportedOperationException("Unsupported OS: " + System.getProperty("os.name"));
-        }
-    }
+    // load the native lib
+    LibQuiche INSTANCE = Native.load("quiche", LibQuiche.class);
 
     class Logging
     {
@@ -55,13 +41,13 @@ public interface LibQuiche extends Library
 
         public static void enable()
         {
-            String quicheVersion = Holder.instance().quiche_version();
+            String quicheVersion = INSTANCE.quiche_version();
             if (!EXPECTED_QUICHE_VERSION.equals(quicheVersion))
                 throw new IllegalStateException("Native Quiche library version [" + quicheVersion + "] does not match expected version [" + EXPECTED_QUICHE_VERSION + "]");
 
             if (LIB_QUICHE_LOG.isDebugEnabled() && LOGGING_ENABLED.compareAndSet(false, true))
             {
-                Holder.instance().quiche_enable_debug_logging(LIB_QUICHE_LOGGING_CALLBACK, null);
+                INSTANCE.quiche_enable_debug_logging(LIB_QUICHE_LOGGING_CALLBACK, null);
                 LIB_QUICHE_LOG.debug("Quiche version {}", quicheVersion);
             }
         }
@@ -264,6 +250,9 @@ public interface LibQuiche extends Library
     // Enables logging. |cb| will be called with log messages
     int quiche_enable_debug_logging(LoggingCallback cb, Pointer argp);
 
+    // Creates a new client-side connection.
+    quiche_conn quiche_connect(String server_name, byte[] scid, size_t scid_len, sockaddr to, size_t to_len, quiche_config config);
+
     interface packet_type
     {
         byte INITIAL = 1,
@@ -314,6 +303,9 @@ public interface LibQuiche extends Library
                                                        byte[] token, size_t token_len,
                                                        uint32_t version, ByteBuffer out, size_t out_len);
 
+    // Creates a new server-side connection.
+    quiche_conn quiche_accept(byte[] scid, size_t scid_len, byte[] odcid, size_t odcid_len, sockaddr from, size_t from_len, quiche_config config);
+
     // Returns the amount of time until the next timeout event, in milliseconds.
     uint64_t quiche_conn_timeout_as_millis(quiche_conn conn);
 
@@ -322,6 +314,27 @@ public interface LibQuiche extends Library
 
     // Collects and returns statistics about the connection.
     void quiche_conn_stats(quiche_conn conn, quiche_stats out);
+
+    @Structure.FieldOrder({"to", "to_len", "at"})
+    class quiche_send_info extends Structure
+    {
+        public sockaddr_storage to;
+        public size_t to_len;
+        public timespec at;
+    }
+
+    // Writes a single QUIC packet to be sent to the peer.
+    ssize_t quiche_conn_send(quiche_conn conn, ByteBuffer out, size_t out_len, quiche_send_info out_info);
+
+    @Structure.FieldOrder({"from", "from_len"})
+    class quiche_recv_info extends Structure
+    {
+        public sockaddr.ByReference from;
+        public size_t from_len;
+    }
+
+    // Processes QUIC packets received from the peer.
+    ssize_t quiche_conn_recv(quiche_conn conn, ByteBuffer buf, size_t buf_len, quiche_recv_info info);
 
     // Returns the negotiated ALPN protocol.
     void quiche_conn_application_proto(quiche_conn conn, char_pointer out, size_t_pointer out_len);

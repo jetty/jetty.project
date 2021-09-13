@@ -20,8 +20,8 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 
-import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
+import org.eclipse.jetty.quic.quiche.ffi.sockaddr;
 import org.eclipse.jetty.quic.quiche.ffi.uint16_t;
 import org.eclipse.jetty.quic.quiche.ffi.uint32_t;
 import org.eclipse.jetty.quic.quiche.ffi.uint8_t;
@@ -63,33 +63,6 @@ public interface netinet_macos
         }
     }
 
-    @Structure.FieldOrder({"sa_len", "sa_family", "sa_data"})
-    class sockaddr extends Structure
-    {
-        public uint8_t sa_len;
-        public uint8_t sa_family;
-        public byte[] sa_data = new byte[14]; // 14 bytes of protocol address
-
-        private sockaddr(Pointer p)
-        {
-            super(p);
-            read();
-        }
-
-        public static sockaddr.ByReference byReference(sockaddr sa)
-        {
-            return new sockaddr.ByReference(sa.getPointer());
-        }
-
-        public static class ByReference extends sockaddr implements Structure.ByReference
-        {
-            private ByReference(Pointer p)
-            {
-                super(p);
-            }
-        }
-    }
-
     @Structure.FieldOrder({"sin_len", "sin_family", "sin_port", "sin_addr", "sin_zero"})
     class sockaddr_in extends Structure
     {
@@ -121,13 +94,5 @@ public interface netinet_macos
             write();
             return new sockaddr(getPointer());
         }
-    }
-
-    @Structure.FieldOrder({"ss_len", "ss_family", "ss_zero"})
-    class sockaddr_storage extends Structure
-    {
-        public uint8_t ss_len;
-        public uint8_t ss_family;
-        public byte[] ss_zero = new byte[126]; // padding
     }
 }
