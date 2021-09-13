@@ -38,6 +38,7 @@
     <infinispan.version>9.4.8.Final</infinispan.version>
     <infinispan.protostream.version>4.3.4.Final</infinispan.protostream.version>
     <gson.version>2.8.8</gson.version>
+    <grpc.version>1.40.1</grpc.version>
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <hazelcast.version>4.2.2</hazelcast.version>
     <conscrypt.version>2.5.2</conscrypt.version>
@@ -49,8 +50,9 @@
     <maven.version>3.8.2</maven.version>
     <maven.resolver.version>1.7.2</maven.resolver.version>
     <weld.version>4.0.2.Final</weld.version>
+    <plexus-utils.version>3.4.1</plexus-utils.version>
     <jboss.logging.version>3.4.2.Final</jboss.logging.version>
-    <jetty.perf-helper.version>1.0.6</jetty.perf-helper.version>
+    <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
     <ant.version>1.10.11</ant.version>
     <!-- OSGI import-package -->
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
@@ -62,11 +64,11 @@
     <!-- some maven plugins versions -->
     <maven.surefire.version>3.0.0-M5</maven.surefire.version>
     <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
-    <maven.dependency.plugin.version>3.1.2</maven.dependency.plugin.version>
+    <maven.dependency.plugin.version>3.2.0</maven.dependency.plugin.version>
     <maven.resources.plugin.version>3.2.0</maven.resources.plugin.version>
     <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
-    <maven.war.plugin.version>3.3.1</maven.war.plugin.version>
-    <maven.plugin-tools.version>3.6.0</maven.plugin-tools.version>
+    <maven.war.plugin.version>3.3.2</maven.war.plugin.version>
+    <maven.plugin-tools.version>3.6.1</maven.plugin-tools.version>
     <maven.install.plugin.version>3.0.0-M1</maven.install.plugin.version>
     <maven.deploy.plugin.version>3.0.0-M1</maven.deploy.plugin.version>
     <maven.exec.plugin.version>3.0.0</maven.exec.plugin.version>
@@ -86,7 +88,7 @@
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
     <testcontainers.version>1.16.0</testcontainers.version>
-    <jna.version>5.8.0</jna.version>
+    <jna.version>5.9.0</jna.version>
     <mariadb.version>2.7.0</mariadb.version>
   </properties>
 
@@ -439,7 +441,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>3.1.1</version>
+        <version>3.1.2</version>
         <configuration>
           <configLocation>jetty-checkstyle.xml</configLocation>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
@@ -606,7 +608,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.2.0</version>
+          <version>3.3.1</version>
           <configuration>
             <verbose>true</verbose>
             <debug>true</debug>
@@ -628,7 +630,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jxr-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>3.1.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -733,7 +735,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.6</version>
+          <version>0.8.7</version>
         </plugin>
         <plugin>
           <groupId>com.agilejava.docbkx</groupId>
@@ -1000,6 +1002,17 @@
           <artifactId>h2spec-maven-plugin</artifactId>
           <version>1.0.7</version>
         </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>versions-maven-plugin</artifactId>
+          <version>2.8.1</version>
+          <configuration>
+            <processDependencies>true</processDependencies>
+            <processDependencyManagement>true</processDependencyManagement>
+            <processPluginDependencies>true</processPluginDependencies>
+            <processPluginDependenciesInPluginManagement>true</processPluginDependenciesInPluginManagement>
+          </configuration>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>
@@ -1171,7 +1184,7 @@
       <dependency>
         <groupId>org.codehaus.plexus</groupId>
         <artifactId>plexus-utils</artifactId>
-        <version>3.3.0</version>
+        <version>${plexus-utils.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.maven</groupId>
@@ -1186,6 +1199,11 @@
       <dependency>
         <groupId>org.apache.maven</groupId>
         <artifactId>maven-core</artifactId>
+        <version>${maven.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven</groupId>
+        <artifactId>maven-settings</artifactId>
         <version>${maven.version}</version>
       </dependency>
       <dependency>
@@ -1350,7 +1368,7 @@
       <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-core</artifactId>
-        <version>1.33.1</version>
+        <version>${grpc.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.ant</groupId>
@@ -1535,7 +1553,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-gpg-plugin</artifactId>
-            <version>1.6</version>
+            <version>3.0.1</version>
             <executions>
               <execution>
                 <id>sign-artifacts</id>
