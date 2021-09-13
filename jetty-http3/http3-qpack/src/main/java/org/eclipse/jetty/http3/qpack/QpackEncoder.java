@@ -42,6 +42,9 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.eclipse.jetty.http3.qpack.QpackException.H3_GENERAL_PROTOCOL_ERROR;
+import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_ENCODER_STREAM_ERROR;
+
 public class QpackEncoder implements Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(QpackEncoder.class);
@@ -180,7 +183,7 @@ public class QpackEncoder implements Dumpable
                 String name = field.getName();
                 char firstChar = name.charAt(0);
                 if (firstChar <= ' ')
-                    throw new QpackException.StreamException("Invalid header name: '%s'", name);
+                    throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, String.format("Invalid header name: '%s'", name));
             }
         }
 
@@ -313,7 +316,7 @@ public class QpackEncoder implements Dumpable
 
         int insertCount = _context.getDynamicTable().getInsertCount();
         if (_knownInsertCount + increment > insertCount)
-            throw new QpackException.StreamException("KnownInsertCount incremented over InsertCount");
+            throw new QpackException.SessionException(QPACK_ENCODER_STREAM_ERROR, "KnownInsertCount incremented over InsertCount");
         _knownInsertCount += increment;
     }
 
@@ -324,7 +327,7 @@ public class QpackEncoder implements Dumpable
 
         StreamInfo streamInfo = _streamInfoMap.get(streamId);
         if (streamInfo == null)
-            throw new QpackException.StreamException("No StreamInfo for " + streamId);
+            throw new QpackException.SessionException(QPACK_ENCODER_STREAM_ERROR, "No StreamInfo for " + streamId);
 
         // The KnownInsertCount should be updated to the earliest sent RequiredInsertCount on that stream.
         StreamInfo.SectionInfo sectionInfo = streamInfo.acknowledge();
@@ -343,7 +346,7 @@ public class QpackEncoder implements Dumpable
 
         StreamInfo streamInfo = _streamInfoMap.remove(streamId);
         if (streamInfo == null)
-            throw new QpackException.StreamException("No StreamInfo for " + streamId);
+            throw new QpackException.SessionException(QPACK_ENCODER_STREAM_ERROR, "No StreamInfo for " + streamId);
 
         // Release all referenced entries outstanding on the stream that was cancelled.
         for (StreamInfo.SectionInfo sectionInfo : streamInfo)

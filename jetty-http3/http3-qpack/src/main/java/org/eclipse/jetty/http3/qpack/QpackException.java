@@ -16,9 +16,22 @@ package org.eclipse.jetty.http3.qpack;
 @SuppressWarnings("serial")
 public abstract class QpackException extends Exception
 {
-    QpackException(String messageFormat, Object... args)
+    public static final int QPACK_DECOMPRESSION_FAILED = 0x200;
+    public static final int QPACK_ENCODER_STREAM_ERROR = 0x201;
+    public static final int QPACK_DECODER_STREAM_ERROR = 0x202;
+    public static final int H3_GENERAL_PROTOCOL_ERROR = 0x0101;
+
+    private final int _errorCode;
+
+    QpackException(int errorCode, String messageFormat, Throwable cause)
     {
-        super(String.format(messageFormat, args));
+        super(messageFormat, cause);
+        _errorCode = errorCode;
+    }
+
+    public int getErrorCode()
+    {
+        return _errorCode;
     }
 
     /**
@@ -30,9 +43,14 @@ public abstract class QpackException extends Exception
      */
     public static class StreamException extends QpackException
     {
-        public StreamException(String messageFormat, Object... args)
+        public StreamException(int errorCode, String messageFormat)
         {
-            super(messageFormat, args);
+            this(errorCode, messageFormat, null);
+        }
+
+        public StreamException(int errorCode, String messageFormat, Throwable cause)
+        {
+            super(errorCode, messageFormat, cause);
         }
     }
 
@@ -43,17 +61,14 @@ public abstract class QpackException extends Exception
      */
     public static class SessionException extends QpackException
     {
-        public SessionException(String messageFormat, Object... args)
+        public SessionException(int errorCode, String message)
         {
-            super(messageFormat, args);
+            this(errorCode, message, null);
         }
-    }
 
-    public static class CompressionException extends SessionException
-    {
-        public CompressionException(String messageFormat, Object... args)
+        public SessionException(int errorCode, String message, Throwable cause)
         {
-            super(messageFormat, args);
+            super(errorCode, message, cause);
         }
     }
 }

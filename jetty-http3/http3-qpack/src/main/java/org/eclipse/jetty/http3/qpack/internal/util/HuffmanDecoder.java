@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.qpack.internal.util;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 
 public class HuffmanDecoder
@@ -39,7 +38,7 @@ public class HuffmanDecoder
         _length = length;
     }
 
-    public String decode(ByteBuffer buffer) throws QpackException.CompressionException
+    public String decode(ByteBuffer buffer) throws EncodingException
     {
         for (; _count < _length; _count++)
         {
@@ -58,7 +57,7 @@ public class HuffmanDecoder
                     if (rowsym[_node] == EOS)
                     {
                         reset();
-                        throw new QpackException.CompressionException("EOS in content");
+                        throw new EncodingException("eos_in_content");
                     }
 
                     // terminal node
@@ -89,7 +88,7 @@ public class HuffmanDecoder
                 }
 
                 if ((c >> (8 - _bits)) != requiredPadding)
-                    throw new QpackException.CompressionException("Incorrect padding");
+                    throw new EncodingException("incorrect_padding");
 
                 _node = lastNode;
                 break;
@@ -103,7 +102,7 @@ public class HuffmanDecoder
         if (_node != 0)
         {
             reset();
-            throw new QpackException.CompressionException("Bad termination");
+            throw new EncodingException("bad_termination");
         }
 
         String value = _utf8.toString();

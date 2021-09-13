@@ -23,6 +23,8 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.qpack.QpackException;
 
+import static org.eclipse.jetty.http3.qpack.QpackException.H3_GENERAL_PROTOCOL_ERROR;
+
 public class MetaDataBuilder
 {
     private final int _maxSize;
@@ -72,12 +74,12 @@ public class MetaDataBuilder
         HttpHeader header = field.getHeader();
         String name = field.getName();
         if (name == null || name.length() == 0)
-            throw new QpackException.SessionException("Header size 0");
+            throw new QpackException.SessionException(QpackException.QPACK_DECOMPRESSION_FAILED, "Header size 0");
         String value = field.getValue();
         int fieldSize = name.length() + (value == null ? 0 : value.length());
         _size += fieldSize + 32;
         if (_size > _maxSize)
-            throw new QpackException.SessionException("Header size %d > %d", _size, _maxSize);
+            throw new QpackException.SessionException(QpackException.QPACK_DECOMPRESSION_FAILED, String.format("Header size %d > %d", _size, _maxSize));
 
         if (field instanceof StaticTableHttpField)
         {
@@ -198,7 +200,7 @@ public class MetaDataBuilder
 
     protected void streamException(String messageFormat, Object... args)
     {
-        QpackException.StreamException stream = new QpackException.StreamException(messageFormat, args);
+        QpackException.StreamException stream = new QpackException.StreamException(QpackException.QPACK_DECOMPRESSION_FAILED, String.format(messageFormat, args));
         if (_streamException == null)
             _streamException = stream;
         else
@@ -227,7 +229,7 @@ public class MetaDataBuilder
         }
 
         if (_request && _response)
-            throw new QpackException.StreamException("Request and Response headers");
+            throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, "Request and Response headers");
 
         HttpFields.Mutable fields = _fields;
         try
@@ -235,14 +237,14 @@ public class MetaDataBuilder
             if (_request)
             {
                 if (_method == null)
-                    throw new QpackException.StreamException("No Method");
+                    throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, "No Method");
                 boolean isConnect = HttpMethod.CONNECT.is(_method);
                 if (!isConnect || _protocol != null)
                 {
                     if (_scheme == null)
-                        throw new QpackException.StreamException("No Scheme");
+                        throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, "No Scheme");
                     if (_path == null)
-                        throw new QpackException.StreamException("No Path");
+                        throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, "No Path");
                 }
                 if (isConnect)
                     return new MetaData.ConnectRequest(_scheme, _authority, _path, fields, _protocol);
@@ -259,7 +261,7 @@ public class MetaDataBuilder
             if (_response)
             {
                 if (_status == null)
-                    throw new QpackException.StreamException("No Status");
+                    throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, "No Status");
                 return new MetaData.Response(HttpVersion.HTTP_3, _status, fields, _contentLength);
             }
 
