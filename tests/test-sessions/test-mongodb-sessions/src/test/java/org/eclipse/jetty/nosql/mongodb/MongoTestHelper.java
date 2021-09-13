@@ -52,11 +52,14 @@ public class MongoTestHelper
     public static final String DB_NAME = "HttpSessions";
     public static final String COLLECTION_NAME = "testsessions";
 
+    private static final int MONGO_PORT = 27017;
+
     static GenericContainer mongo =
         new GenericContainer("mongo:" + System.getProperty("mongo.docker.version", "2.2.7"))
             .withLogConsumer(new Slf4jLogConsumer(MONGO_LOG))
             .waitingFor(new LogMessageWaitStrategy()
-                            .withRegEx(".*waiting for connections.*"));
+                .withRegEx(".*waiting for connections.*"))
+            .withExposedPorts(MONGO_PORT);
 
     static MongoClient mongoClient;
 
@@ -69,10 +72,10 @@ public class MongoTestHelper
         {
             long start = System.currentTimeMillis();
             mongo.start();
-            mongoHost =  mongo.getHost();
-            mongoPort = mongo.getMappedPort(27017);
+            mongoHost = mongo.getHost();
+            mongoPort = mongo.getMappedPort(MONGO_PORT);
             LOG.info("Mongo container started for {}:{} - {}ms", mongoHost, mongoPort,
-                     System.currentTimeMillis() - start);
+                System.currentTimeMillis() - start);
             mongoClient = new MongoClient(mongoHost, mongoPort);
         }
         catch (Exception e)
