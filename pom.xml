@@ -30,6 +30,7 @@
     <websocket.api.version>2.0.0</websocket.api.version>
     <jsp.version>10.0.10</jsp.version>
     <jstl.version>2.0.0</jstl.version>
+    <el.api.version>4.0.0</el.api.version>
     <jsp.api.version>3.0</jsp.api.version>
     <annotation-api.version>2.0.0</annotation-api.version>
     <transaction-api.version>2.0.0</transaction-api.version>
@@ -1100,6 +1101,11 @@
         <groupId>jakarta.authentication</groupId>
         <artifactId>jakarta.authentication-api</artifactId>
         <version>2.0.0</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.el</groupId>
+        <artifactId>jakarta.el-api</artifactId>
+        <version>${el.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.inject</groupId>
