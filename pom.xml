@@ -38,7 +38,7 @@
     <jmh.version>1.33</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <tycho-version>2.1.0</tycho-version>
-    <junit.version>5.7.2</junit.version>
+    <junit.version>5.8.0</junit.version>
     <maven.version>3.8.2</maven.version>
     <maven.resolver.version>1.7.2</maven.resolver.version>
     <weld.version>3.1.8.Final</weld.version>
