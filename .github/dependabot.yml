@@ -5,6 +5,8 @@ updates:
     target-branch: "jetty-9.4.x"
     schedule:
       interval: "daily"
+    # Associate with milestone 9.4.x
+    milestone: 3
     ignore:
       # Restrict updates in this branch to jetty in the 9.4.x space
       - dependency-name: "javax.servlet:*"
@@ -25,6 +27,8 @@ updates:
     target-branch: "jetty-10.0.x"
     schedule:
       interval: "daily"
+    # Associate with milestone 10.0.x
+    milestone: 6
     ignore:
       # Restrict updates in this branch to jetty in the 10.x.x space
       - dependency-name: "jakarta.servlet:*"
@@ -47,6 +51,8 @@ updates:
     target-branch: "jetty-11.0.x"
     schedule:
       interval: "weekly"
+    # Associate with milestone 11.0.x
+    milestone: 7
     ignore:
       # Restrict updates in this branch to jetty in the 11.x.x space
       - dependency-name: "jakarta.servlet:*"
