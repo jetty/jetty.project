@@ -70,7 +70,7 @@
     <settingsPath>src/it/settings.xml</settingsPath>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
     <testcontainers.version>1.16.0</testcontainers.version>
-    <maria.version>2.7.0</maria.version>
+    <maria.version>2.7.4</maria.version>
   </properties>
 
   <licenses>
