@@ -105,71 +105,21 @@ public class QpackEncoder implements Dumpable
      * Set the capacity of the DynamicTable and send a instruction to set the capacity on the remote Decoder.
      * @param capacity the new capacity.
      */
-    public void setCapacity(int capacity) throws QpackException
+    public void setCapacity(int capacity)
     {
         _context.getDynamicTable().setCapacity(capacity);
         _handler.onInstructions(List.of(new SetCapacityInstruction(capacity)));
-    }
-
-    protected boolean shouldIndex(HttpField httpField)
-    {
-        return !DO_NOT_INDEX.contains(httpField.getHeader());
-    }
-
-    protected boolean shouldHuffmanEncode(HttpField httpField)
-    {
-        return !DO_NOT_HUFFMAN.contains(httpField.getHeader());
-    }
-
-    public void parseInstructionBuffer(ByteBuffer buffer) throws QpackException
-    {
-        while (BufferUtil.hasContent(buffer))
-        {
-            _parser.parse(buffer);
-        }
         notifyInstructionHandler();
     }
 
-    public boolean insert(HttpField field) throws QpackException
-    {
-        DynamicTable dynamicTable = _context.getDynamicTable();
-
-        if (field.getValue() == null)
-            field = new HttpField(field.getHeader(), field.getName(), "");
-
-        boolean canCreateEntry = shouldIndex(field) && dynamicTable.canInsert(field);
-        if (!canCreateEntry)
-            return false;
-
-        // We can always reference on insertion as it will always arrive before any eviction.
-        Entry entry = _context.get(field);
-        if (entry != null)
-        {
-            int index = _context.indexOf(entry);
-            dynamicTable.add(new Entry(field));
-            _instructions.add(new DuplicateInstruction(index));
-            notifyInstructionHandler();
-            return true;
-        }
-
-        boolean huffman = shouldHuffmanEncode(field);
-        Entry nameEntry = _context.get(field.getName());
-        if (nameEntry != null)
-        {
-            int index = _context.indexOf(nameEntry);
-            dynamicTable.add(new Entry(field));
-            _instructions.add(new IndexedNameEntryInstruction(!nameEntry.isStatic(), index, huffman, field.getValue()));
-            notifyInstructionHandler();
-            return true;
-        }
-
-        dynamicTable.add(new Entry(field));
-        _instructions.add(new LiteralNameEntryInstruction(field, huffman));
-
-        notifyInstructionHandler();
-        return true;
-    }
-
+    /**
+     * <p>Encodes a {@link MetaData} object into the supplied {@link ByteBuffer} for a specific HTTP/s stream.</p>
+     * <p>This method may generate instructions to be sent back over the Encoder stream to the remote Decoder.</p>
+     * @param buffer the buffer to take the bytes of the encoded {@link MetaData}.
+     * @param streamId the stream ID corresponding to this headers frame.
+     * @param metadata the {@link MetaData} to encode into the buffer.
+     * @throws QpackException if there was an error with the QPACK compression.
+     */
     public void encode(ByteBuffer buffer, long streamId, MetaData metadata) throws QpackException
     {
         if (LOG.isDebugEnabled())
@@ -234,6 +184,78 @@ public class QpackEncoder implements Dumpable
         }
 
         notifyInstructionHandler();
+    }
+
+    /**
+     * Parse instructions from the Decoder stream. The Decoder stream carries an unframed sequence of instructions from
+     * the Decoder to the Encoder. This method will fully consume the supplied {@link ByteBuffer} and produce instructions
+     * to update the state of the Encoder and its Dynamic Table.
+     * @param buffer a buffer containing bytes from the Decoder stream.
+     * @throws QpackException if there was an error parsing or handling the instructions.
+     */
+    public void parseInstructionBuffer(ByteBuffer buffer) throws QpackException
+    {
+        while (BufferUtil.hasContent(buffer))
+        {
+            _parser.parse(buffer);
+        }
+        notifyInstructionHandler();
+    }
+
+    /**
+     * A speculative insert of a Header into the Encoders Dynamic Table. This will also generate
+     * an instruction to be sent over the Encoder stream to the remote Decoder.
+     * @param field the field to insert into the Dynamic Table.
+     * @return true if the field was successfully inserted into the Dynamic Table.
+     */
+    public boolean insert(HttpField field)
+    {
+        DynamicTable dynamicTable = _context.getDynamicTable();
+
+        if (field.getValue() == null)
+            field = new HttpField(field.getHeader(), field.getName(), "");
+
+        boolean canCreateEntry = shouldIndex(field) && dynamicTable.canInsert(field);
+        if (!canCreateEntry)
+            return false;
+
+        // We can always reference on insertion as it will always arrive before any eviction.
+        Entry entry = _context.get(field);
+        if (entry != null)
+        {
+            int index = _context.indexOf(entry);
+            dynamicTable.add(new Entry(field));
+            _instructions.add(new DuplicateInstruction(index));
+            notifyInstructionHandler();
+            return true;
+        }
+
+        boolean huffman = shouldHuffmanEncode(field);
+        Entry nameEntry = _context.get(field.getName());
+        if (nameEntry != null)
+        {
+            int index = _context.indexOf(nameEntry);
+            dynamicTable.add(new Entry(field));
+            _instructions.add(new IndexedNameEntryInstruction(!nameEntry.isStatic(), index, huffman, field.getValue()));
+            notifyInstructionHandler();
+            return true;
+        }
+
+        dynamicTable.add(new Entry(field));
+        _instructions.add(new LiteralNameEntryInstruction(field, huffman));
+
+        notifyInstructionHandler();
+        return true;
+    }
+
+    protected boolean shouldIndex(HttpField httpField)
+    {
+        return !DO_NOT_INDEX.contains(httpField.getHeader());
+    }
+
+    protected boolean shouldHuffmanEncode(HttpField httpField)
+    {
+        return !DO_NOT_HUFFMAN.contains(httpField.getHeader());
     }
 
     private EncodableEntry encode(StreamInfo streamInfo, HttpField field)
@@ -402,7 +424,7 @@ public class QpackEncoder implements Dumpable
         return (reqInsertCount % (2 * maxEntries)) + 1;
     }
 
-    private void notifyInstructionHandler() throws QpackException
+    private void notifyInstructionHandler()
     {
         if (!_instructions.isEmpty())
             _handler.onInstructions(_instructions);

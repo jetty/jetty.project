@@ -21,8 +21,8 @@ public interface Instruction
 {
     void encode(ByteBufferPool.Lease lease);
 
-    public interface Handler
+    interface Handler
     {
-        void onInstructions(List<Instruction> instructions) throws QpackException;
+        void onInstructions(List<Instruction> instructions);
     }
 }
