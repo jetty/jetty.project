@@ -21,6 +21,12 @@ public interface Instruction
 {
     void encode(ByteBufferPool.Lease lease);
 
+    /**
+     * <p>A handler for instructions issued by an {@link QpackEncoder} or {@link QpackDecoder}.</p>
+     * <p>Note: an encoder SHOULD NOT write an instruction unless sufficient stream and connection flow control
+     * credit is available for the entire instruction, otherwise a stream containing a large instruction can become
+     * deadlocked.</p>
+     */
     interface Handler
     {
         void onInstructions(List<Instruction> instructions);

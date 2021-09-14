@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http3.qpack;
 
 import java.io.IOException;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -43,6 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.http3.qpack.QpackException.H3_GENERAL_PROTOCOL_ERROR;
+import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_DECODER_STREAM_ERROR;
 import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_ENCODER_STREAM_ERROR;
 
 public class QpackEncoder implements Dumpable
@@ -98,7 +100,7 @@ public class QpackEncoder implements Dumpable
         _handler = handler;
         _context = new QpackContext();
         _maxBlockedStreams = maxBlockedStreams;
-        _parser = new EncoderInstructionParser(new EncoderAdapter());
+        _parser = new EncoderInstructionParser(new InstructionHandler());
     }
 
     /**
@@ -140,6 +142,10 @@ public class QpackEncoder implements Dumpable
         List<EncodableEntry> encodableEntries = new ArrayList<>();
         DynamicTable dynamicTable = _context.getDynamicTable();
 
+        // We need to remember what fields were referenced for each stream for multiple reasons:
+        //  1. We can only (potentially) block up to SETTINGS_QPACK_BLOCKED_STREAMS by referencing entries which may not have arrived.
+        //  2. We need to remember reference counts to each entry which are then acknowledged by the remote decoder, this
+        //     allows us to know when we can evict an entry (when it has no un-acknowledged references).
         StreamInfo streamInfo = _streamInfoMap.get(streamId);
         if (streamInfo == null)
         {
@@ -149,41 +155,57 @@ public class QpackEncoder implements Dumpable
         StreamInfo.SectionInfo sectionInfo = new StreamInfo.SectionInfo();
         streamInfo.add(sectionInfo);
 
-        int requiredInsertCount = 0;
-
-        // This will also extract pseudo headers from the metadata.
-        Http3Fields httpFields = new Http3Fields(metadata);
-        for (HttpField field : httpFields)
+        try
         {
-            EncodableEntry entry = encode(streamInfo, field);
-            encodableEntries.add(entry);
+            int requiredInsertCount = 0;
+            for (HttpField field : new Http3Fields(metadata))
+            {
+                EncodableEntry entry = encode(streamInfo, field);
+                encodableEntries.add(entry);
 
-            // Update the required InsertCount.
-            int entryRequiredInsertCount = entry.getRequiredInsertCount();
-            if (entryRequiredInsertCount > requiredInsertCount)
-                requiredInsertCount = entryRequiredInsertCount;
+                // Update the required InsertCount.
+                int entryRequiredInsertCount = entry.getRequiredInsertCount();
+                if (entryRequiredInsertCount > requiredInsertCount)
+                    requiredInsertCount = entryRequiredInsertCount;
+            }
+
+            sectionInfo.setRequiredInsertCount(requiredInsertCount);
+            int base = dynamicTable.getBase();
+            int encodedInsertCount = encodeInsertCount(requiredInsertCount, dynamicTable.getCapacity());
+            boolean signBit = base < requiredInsertCount;
+            int deltaBase = signBit ? requiredInsertCount - base - 1 : base - requiredInsertCount;
+
+            // Encode all the entries into the buffer.
+            int pos = BufferUtil.flipToFill(buffer);
+
+            // Encode the Field Section Prefix into the ByteBuffer.
+            NBitIntegerEncoder.encode(buffer, 8, encodedInsertCount);
+            buffer.put(signBit ? (byte)0x80 : (byte)0x00);
+            NBitIntegerEncoder.encode(buffer, 7, deltaBase);
+
+            // Encode the field lines into the ByteBuffer.
+            for (EncodableEntry entry : encodableEntries)
+            {
+                entry.encode(buffer, base);
+            }
+
+            BufferUtil.flipToFlush(buffer, pos);
+            notifyInstructionHandler();
         }
-
-        sectionInfo.setRequiredInsertCount(requiredInsertCount);
-        int base = dynamicTable.getBase();
-        int encodedInsertCount = encodeInsertCount(requiredInsertCount, dynamicTable.getCapacity());
-        boolean signBit = base < requiredInsertCount;
-        int deltaBase = signBit ? requiredInsertCount - base - 1 : base - requiredInsertCount;
-
-        // Encode all the entries into the buffer.
-
-        // Encode the Field Section Prefix into the ByteBuffer.
-        NBitIntegerEncoder.encode(buffer, 8, encodedInsertCount);
-        buffer.put(signBit ? (byte)0x80 : (byte)0x00);
-        NBitIntegerEncoder.encode(buffer, 7, deltaBase);
-
-        // Encode the field lines into the ByteBuffer.
-        for (EncodableEntry entry : encodableEntries)
+        catch (BufferOverflowException e)
         {
-            entry.encode(buffer, base);
+            // TODO: We have already added to the dynamic table so we need to send the instructions to maintain correct state.
+            //  Can we prevent adding to the table until we know the buffer has enough space?
+            notifyInstructionHandler();
+            streamInfo.remove(sectionInfo);
+            sectionInfo.release();
+            throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, "buffer_space_exceeded", e);
         }
-
-        notifyInstructionHandler();
+        catch (Throwable t)
+        {
+            // We are failing the whole Session so don't need to send instructions back.
+            throw new QpackException.SessionException(H3_GENERAL_PROTOCOL_ERROR, "compression_error", t);
+        }
     }
 
     /**
@@ -195,11 +217,22 @@ public class QpackEncoder implements Dumpable
      */
     public void parseInstructionBuffer(ByteBuffer buffer) throws QpackException
     {
-        while (BufferUtil.hasContent(buffer))
+        try
         {
-            _parser.parse(buffer);
+            while (BufferUtil.hasContent(buffer))
+            {
+                _parser.parse(buffer);
+            }
+            notifyInstructionHandler();
         }
-        notifyInstructionHandler();
+        catch (QpackException.SessionException e)
+        {
+            throw e;
+        }
+        catch (Throwable t)
+        {
+            throw new QpackException.SessionException(QPACK_DECODER_STREAM_ERROR, t.getMessage(), t);
+        }
     }
 
     /**
@@ -211,15 +244,15 @@ public class QpackEncoder implements Dumpable
     public boolean insert(HttpField field)
     {
         DynamicTable dynamicTable = _context.getDynamicTable();
-
         if (field.getValue() == null)
             field = new HttpField(field.getHeader(), field.getName(), "");
 
+        // If we should not index this entry or there is no room to insert it, then just return false.
         boolean canCreateEntry = shouldIndex(field) && dynamicTable.canInsert(field);
         if (!canCreateEntry)
             return false;
 
-        // We can always reference on insertion as it will always arrive before any eviction.
+        // Can we insert by duplicating an existing entry?
         Entry entry = _context.get(field);
         if (entry != null)
         {
@@ -230,6 +263,7 @@ public class QpackEncoder implements Dumpable
             return true;
         }
 
+        // Can we insert by referencing a name?
         boolean huffman = shouldHuffmanEncode(field);
         Entry nameEntry = _context.get(field.getName());
         if (nameEntry != null)
@@ -241,9 +275,9 @@ public class QpackEncoder implements Dumpable
             return true;
         }
 
+        // Add the entry without referencing an existing entry.
         dynamicTable.add(new Entry(field));
         _instructions.add(new LiteralNameEntryInstruction(field, huffman));
-
         notifyInstructionHandler();
         return true;
     }
@@ -264,8 +298,6 @@ public class QpackEncoder implements Dumpable
 
         if (field.getValue() == null)
             field = new HttpField(field.getHeader(), field.getName(), "");
-
-        // TODO: The field.getHeader() could be null.
 
         if (field instanceof PreEncodedHttpField)
             return EncodableEntry.getPreEncodedEntry((PreEncodedHttpField)field);
@@ -431,7 +463,7 @@ public class QpackEncoder implements Dumpable
         _instructions.clear();
     }
 
-    public class EncoderAdapter implements EncoderInstructionParser.Handler
+    class InstructionHandler implements EncoderInstructionParser.Handler
     {
         @Override
         public void onSectionAcknowledgement(long streamId) throws QpackException
