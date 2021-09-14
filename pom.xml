@@ -416,14 +416,6 @@
             </goals>
           </execution>
         </executions>
-        <!-- this has better support of gh token remove when with next release of jetty-version-maven-plugin -->
-        <dependencies>
-          <dependency>
-            <groupId>org.kohsuke</groupId>
-            <artifactId>github-api</artifactId>
-            <version>1.116</version>
-          </dependency>
-        </dependencies>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
