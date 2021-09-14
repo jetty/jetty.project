@@ -107,7 +107,6 @@
     <dependency>
       <groupId>biz.aQute.bnd</groupId>
       <artifactId>biz.aQute.bndlib</artifactId>
-      <version>${bnd.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.osgi</groupId>
