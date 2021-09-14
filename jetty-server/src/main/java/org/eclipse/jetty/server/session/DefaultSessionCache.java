@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server.session;
 
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
@@ -52,12 +53,12 @@ public class DefaultSessionCache extends AbstractSessionCache
 
     /**
      * @param manager The SessionHandler related to this SessionCache
-     * @param sessionMap The session map implementation to use
+     * @param sessions The session map implementation to use
      */
-    public DefaultSessionCache(SessionHandler manager, ConcurrentMap<String, Session> sessionMap)
+    public DefaultSessionCache(SessionHandler manager, ConcurrentMap<String, Session> sessions)
     {
         super(manager);
-        this._sessions = sessionMap;
+        _sessions = Objects.requireNonNull(sessions, "Session Map may not be null");
     }
 
     /**
@@ -193,5 +194,12 @@ public class DefaultSessionCache extends AbstractSessionCache
     public boolean doReplace(String id, Session oldValue, Session newValue)
     {
         return _sessions.replace(id, oldValue, newValue);
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        Objects.requireNonNull(_sessions, "Session Map may not be null");
+        super.doStart();
     }
 }
