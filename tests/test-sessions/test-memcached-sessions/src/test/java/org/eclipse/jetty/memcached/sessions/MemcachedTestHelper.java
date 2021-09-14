@@ -142,8 +142,10 @@ public class MemcachedTestHelper
 
     private static final Logger MEMCACHED_LOG = LoggerFactory.getLogger("org.eclipse.jetty.memcached.sessions.MemcachedLogs");
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     static GenericContainer memcached =
         new GenericContainer("memcached:" + System.getProperty("memcached.docker.version", "1.6.6"))
+            .withExposedPorts(11211)
             .withLogConsumer(new Slf4jLogConsumer(MEMCACHED_LOG));
 
     static

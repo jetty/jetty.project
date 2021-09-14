@@ -33,6 +33,7 @@
               <outputDirectory>${project.build.directory}/classes</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>
+              <includeScope>compile</includeScope>
             </configuration>
           </execution>
         </executions>
