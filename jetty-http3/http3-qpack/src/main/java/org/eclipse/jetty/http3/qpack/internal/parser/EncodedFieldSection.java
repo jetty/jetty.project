@@ -187,7 +187,7 @@ public class EncodedFieldSection
 
     public interface EncodedField
     {
-        HttpField decode(QpackContext context) throws QpackException;
+        HttpField decode(QpackContext context);
     }
 
     private static class LiteralField implements EncodedField
@@ -222,7 +222,7 @@ public class EncodedFieldSection
         }
 
         @Override
-        public HttpField decode(QpackContext context) throws QpackException
+        public HttpField decode(QpackContext context)
         {
             if (_dynamicTable)
                 return context.getDynamicTable().getAbsolute(_base - (_index + 1)).getHttpField();
@@ -241,7 +241,7 @@ public class EncodedFieldSection
         }
 
         @Override
-        public HttpField decode(QpackContext context) throws QpackException
+        public HttpField decode(QpackContext context)
         {
             return context.getDynamicTable().getAbsolute(_base + _index).getHttpField();
         }
@@ -264,7 +264,7 @@ public class EncodedFieldSection
         }
 
         @Override
-        public HttpField decode(QpackContext context) throws QpackException
+        public HttpField decode(QpackContext context)
         {
             HttpField field;
             if (_dynamicTable)
@@ -290,7 +290,7 @@ public class EncodedFieldSection
         }
 
         @Override
-        public HttpField decode(QpackContext context) throws QpackException
+        public HttpField decode(QpackContext context)
         {
             HttpField field = context.getDynamicTable().getAbsolute(_base + _nameIndex).getHttpField();
             return new HttpField(field.getHeader(), field.getName(), _value);

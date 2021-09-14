@@ -41,6 +41,11 @@ public class StreamInfo implements Iterable<StreamInfo.SectionInfo>
         _sectionInfos.add(sectionInfo);
     }
 
+    public void remove(SectionInfo sectionInfo)
+    {
+        _sectionInfos.remove(sectionInfo);
+    }
+
     public SectionInfo getCurrentSectionInfo()
     {
         return _sectionInfos.peek();

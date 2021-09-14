@@ -28,15 +28,14 @@ import org.eclipse.jetty.http3.qpack.internal.parser.EncodedFieldSection;
 import org.eclipse.jetty.http3.qpack.internal.table.DynamicTable;
 import org.eclipse.jetty.http3.qpack.internal.table.Entry;
 import org.eclipse.jetty.http3.qpack.internal.table.StaticTable;
-import org.eclipse.jetty.http3.qpack.internal.util.EncodingException;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerParser;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_DECODER_STREAM_ERROR;
 import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_DECOMPRESSION_FAILED;
+import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_ENCODER_STREAM_ERROR;
 
 public class QpackDecoder implements Dumpable
 {
@@ -77,7 +76,7 @@ public class QpackDecoder implements Dumpable
     {
         _context = new QpackContext();
         _handler = handler;
-        _parser = new DecoderInstructionParser(new DecoderAdapter());
+        _parser = new DecoderInstructionParser(new InstructionHandler());
         _maxHeaderSize = maxHeaderSize;
     }
 
@@ -150,18 +149,20 @@ public class QpackDecoder implements Dumpable
                     LOG.debug("Deferred Decoding: streamId={}, encodedFieldSection={}", streamId, encodedFieldSection);
                 _encodedFieldSections.add(encodedFieldSection);
             }
+
+            boolean hadMetaData = !_metaDataNotifications.isEmpty();
+            notifyInstructionHandler();
+            notifyMetaDataHandler();
+            return hadMetaData;
+        }
+        catch (QpackException.SessionException e)
+        {
+            throw e;
         }
         catch (Throwable t)
         {
-            notifyInstructionHandler();
-            notifyMetaDataHandler();
-            throw t;
+            throw new QpackException.SessionException(QPACK_ENCODER_STREAM_ERROR, t.getMessage(), t);
         }
-
-        boolean hadMetaData = !_metaDataNotifications.isEmpty();
-        notifyInstructionHandler();
-        notifyMetaDataHandler();
-        return hadMetaData;
     }
 
     /**
@@ -179,16 +180,16 @@ public class QpackDecoder implements Dumpable
             {
                 _parser.parse(buffer);
             }
-        }
-        catch (EncodingException e)
-        {
-            // There was an error decoding the instruction.
-            throw new QpackException.SessionException(QPACK_DECODER_STREAM_ERROR, e.getMessage(), e);
-        }
-        finally
-        {
             notifyInstructionHandler();
             notifyMetaDataHandler();
+        }
+        catch (QpackException.SessionException e)
+        {
+            throw e;
+        }
+        catch (Throwable t)
+        {
+            throw new QpackException.SessionException(QPACK_ENCODER_STREAM_ERROR, t.getMessage(), t);
         }
     }
 
@@ -302,7 +303,7 @@ public class QpackDecoder implements Dumpable
         return String.format("QpackDecoder@%x{%s}", hashCode(), _context);
     }
 
-    private void notifyInstructionHandler() throws QpackException
+    private void notifyInstructionHandler()
     {
         if (!_instructions.isEmpty())
             _handler.onInstructions(_instructions);
@@ -321,7 +322,7 @@ public class QpackDecoder implements Dumpable
     /**
      * This delivers notifications from the DecoderInstruction parser directly into the Decoder.
      */
-    class DecoderAdapter implements DecoderInstructionParser.Handler
+    class InstructionHandler implements DecoderInstructionParser.Handler
     {
         @Override
         public void onSetDynamicTableCapacity(int capacity)
