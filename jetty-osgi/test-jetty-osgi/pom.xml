@@ -15,7 +15,6 @@
     <assembly-directory>target/distribution</assembly-directory>
     <exam.version>4.13.1</exam.version>
     <url.version>2.6.2</url.version>
-    <bnd.version>5.2.0</bnd.version>
     <swissbox.version>1.8.3</swissbox.version>
     <tinybundles.version>3.0.0</tinybundles.version>
     <injection.bundle.version>1.2</injection.bundle.version>
@@ -107,7 +106,6 @@
     <dependency>
       <groupId>biz.aQute.bnd</groupId>
       <artifactId>biz.aQute.bndlib</artifactId>
-      <version>${bnd.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.osgi</groupId>
