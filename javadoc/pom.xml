@@ -426,7 +426,7 @@
     <dependency>
       <groupId>org.infinispan.protostream</groupId>
       <artifactId>protostream</artifactId>
-      <version>4.2.2.Final</version>
+      <version>4.4.1.Final</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
