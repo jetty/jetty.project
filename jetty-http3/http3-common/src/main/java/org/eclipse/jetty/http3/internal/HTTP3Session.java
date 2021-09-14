@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
+import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
@@ -58,6 +59,11 @@ public abstract class HTTP3Session implements Session, ParserListener
     protected HTTP3Stream getOrCreateStream(long streamId)
     {
         return streams.computeIfAbsent(streamId, id -> new HTTP3Stream(this, streamId));
+    }
+
+    protected HTTP3Stream getStream(long streamId)
+    {
+        return streams.get(streamId);
     }
 
     protected abstract void writeFrame(long streamId, Frame frame, Callback callback);
@@ -162,5 +168,28 @@ public abstract class HTTP3Session implements Session, ParserListener
         {
             LOG.info("failure notifying listener {}", listener, x);
         }
+    }
+
+    @Override
+    public void onData(long streamId, DataFrame frame)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("received {}#{} on {}", frame, streamId, this);
+
+        // The stream must already exist.
+        HTTP3Stream stream = getStream(streamId);
+        // TODO: handle null stream.
+
+        // TODO: implement demand mechanism like in HTTP2Stream
+        //  demand(n) should be on Stream, or on a LongConsumer parameter?
+
+        // TODO: the callback in HTTP2 was only to notify of data consumption for flow control.
+        //  Here, we don't have to do flow control, but what about retain()/release() for the network buffer?
+        notifyData(stream, frame, Callback.NOOP);
+    }
+
+    private void notifyData(HTTP3Stream stream, DataFrame frame, Callback callback)
+    {
+        stream.getListener().onData(stream, frame, callback);
     }
 }

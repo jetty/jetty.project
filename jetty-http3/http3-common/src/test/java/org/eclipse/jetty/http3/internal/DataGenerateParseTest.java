@@ -16,45 +16,51 @@ package org.eclipse.jetty.http3.internal;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Random;
 
-import org.eclipse.jetty.http3.frames.SettingsFrame;
-import org.eclipse.jetty.http3.internal.generator.ControlGenerator;
-import org.eclipse.jetty.http3.internal.parser.ControlParser;
+import org.eclipse.jetty.http3.frames.DataFrame;
+import org.eclipse.jetty.http3.internal.generator.MessageGenerator;
+import org.eclipse.jetty.http3.internal.parser.MessageParser;
 import org.eclipse.jetty.http3.internal.parser.ParserListener;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.NullByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class SettingsGenerateParseTest
+public class DataGenerateParseTest
 {
     @Test
     public void testGenerateParseEmpty()
     {
-        testGenerateParse(Map.of());
+        testGenerateParse(BufferUtil.EMPTY_BUFFER);
     }
 
     @Test
     public void testGenerateParse()
     {
-        testGenerateParse(Map.of(13L, 7L, 31L, 29L));
+        byte[] bytes = new byte[1024];
+        new Random().nextBytes(bytes);
+        testGenerateParse(ByteBuffer.wrap(bytes));
     }
 
-    private void testGenerateParse(Map<Long, Long> settings)
+    private void testGenerateParse(ByteBuffer byteBuffer)
     {
-        SettingsFrame input = new SettingsFrame(settings);
+        byte[] inputBytes = new byte[byteBuffer.remaining()];
+        byteBuffer.get(inputBytes);
+        DataFrame input = new DataFrame(ByteBuffer.wrap(inputBytes));
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(new NullByteBufferPool());
-        new ControlGenerator().generate(lease, 0, input);
+        new MessageGenerator(null, 8192, true).generate(lease, 0, input);
 
-        List<SettingsFrame> frames = new ArrayList<>();
-        ControlParser parser = new ControlParser(new ParserListener()
+        List<DataFrame> frames = new ArrayList<>();
+        MessageParser parser = new MessageParser(0, null, new ParserListener()
         {
             @Override
-            public void onSettings(SettingsFrame frame)
+            public void onData(long streamId, DataFrame frame)
             {
                 frames.add(frame);
             }
@@ -66,8 +72,9 @@ public class SettingsGenerateParseTest
         }
 
         assertEquals(1, frames.size());
-        SettingsFrame output = frames.get(0);
-
-        assertEquals(input.getSettings(), output.getSettings());
+        DataFrame output = frames.get(0);
+        byte[] outputBytes = new byte[output.getData().remaining()];
+        output.getData().get(outputBytes);
+        assertArrayEquals(inputBytes, outputBytes);
     }
 }
