@@ -684,7 +684,7 @@
         <plugin>
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>
-          <version>3.0</version>
+          <version>4.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.felix</groupId>
