@@ -69,7 +69,7 @@
 
     <!-- testing -->
     <it.debug>false</it.debug>
-    <jetty.test.version>5.5</jetty.test.version>
+    <jetty.test.version>5.8</jetty.test.version>
     <hamcrest.version>2.2</hamcrest.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
 
