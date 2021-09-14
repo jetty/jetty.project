@@ -38,10 +38,6 @@ import org.slf4j.LoggerFactory;
 import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_DECODER_STREAM_ERROR;
 import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_DECOMPRESSION_FAILED;
 
-/**
- * Qpack Decoder
- * <p>This is not thread safe and may only be called by 1 thread at a time.</p>
- */
 public class QpackDecoder implements Dumpable
 {
     public static final Logger LOG = LoggerFactory.getLogger(QpackDecoder.class);
@@ -95,6 +91,18 @@ public class QpackDecoder implements Dumpable
         void onMetaData(long streamId, MetaData metadata);
     }
 
+    /**
+     * <p>Decode a buffer into a {@link MetaData} object given a HTTP/3 stream ID. The buffer must be the complete content of a
+     * headers frame and will be fully consumed. It may be that the Dynamic Table does not yet contain the state required
+     * to decode this headers frame, in this case the encoded headers will be saved until the required state arrives on the
+     * instruction stream to update the dynamic table.</p>
+     * <p>This method may generate instructions to be sent back over the Decoder stream to the remote Encoder.</p>
+     * @param streamId the stream ID corresponding to this headers frame.
+     * @param buffer the content of the headers frame.
+     * @param handler a handler that is invoked when the MetaData is able to be decoded.
+     * @return true if the MetaData could be decoded immediately without requiring addition state in the DynamicTable.
+     * @throws QpackException if there was an error with the QPACK decompression.
+     */
     public boolean decode(long streamId, ByteBuffer buffer, Handler handler) throws QpackException
     {
         if (LOG.isDebugEnabled())
@@ -156,6 +164,13 @@ public class QpackDecoder implements Dumpable
         return hadMetaData;
     }
 
+    /**
+     * Parse instructions from the Encoder stream. The Encoder stream carries an unframed sequence of instructions from
+     * the Encoder to the Decoder. This method will fully consume the supplied {@link ByteBuffer} and produce instructions
+     * to update the state of the Decoder and its Dynamic Table.
+     * @param buffer a buffer containing bytes from the Encoder stream.
+     * @throws QpackException if there was an error parsing or handling the instructions.
+     */
     public void parseInstructionBuffer(ByteBuffer buffer) throws QpackException
     {
         try
