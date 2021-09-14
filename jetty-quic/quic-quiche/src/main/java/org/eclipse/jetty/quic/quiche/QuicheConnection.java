@@ -443,6 +443,13 @@ public class QuicheConnection
             "]";
     }
 
+    public synchronized long congestionWindowCapacity()
+    {
+        LibQuiche.quiche_stats stats = new LibQuiche.quiche_stats();
+        libQuiche().quiche_conn_stats(quicheConn, stats);
+        return stats.cwnd.longValue();
+    }
+
     public synchronized boolean close() throws IOException
     {
         int rc = libQuiche().quiche_conn_close(quicheConn, true, new uint64_t(0), null, new size_t(0));
