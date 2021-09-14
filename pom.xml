@@ -32,6 +32,7 @@
     <infinispan.protostream.version>4.3.4.Final</infinispan.protostream.version>
     <gson.version>2.8.8</gson.version>
     <grpc.version>1.40.1</grpc.version>
+    <google.errorprone.version>2.9.0</google.errorprone.version>
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <hazelcast.version>4.2.2</hazelcast.version>
     <conscrypt.version>2.5.2</conscrypt.version>
@@ -1311,6 +1312,11 @@
         <artifactId>jnr-unixsocket</artifactId>
         <version>0.38.10</version>
       </dependency>
+      <dependency>
+        <groupId>com.google.errorprone</groupId>
+        <artifactId>error_prone_annotations</artifactId>
+        <version>${google.errorprone.version}</version>
+      </dependency>
       <!-- avoid depending on a range dependency from a transitive dependency -->
       <dependency>
         <groupId>io.grpc</groupId>
@@ -1370,7 +1376,7 @@
                   <path>
                     <groupId>com.google.errorprone</groupId>
                     <artifactId>error_prone_core</artifactId>
-                    <version>2.5.1</version>
+                    <version>${google.errorprone.version}</version>
                   </path>
                 </annotationProcessorPaths>
               </configuration>
