@@ -32,8 +32,10 @@ import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.server.RawHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.quic.server.ServerQuicConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -41,21 +43,42 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HTTP3ClientServerTest
 {
-    @Test
-    public void testGETThenResponseWithoutContent() throws Exception
+    private Server server;
+    private ServerQuicConnector connector;
+    private HTTP3Client client;
+
+    private void startServer(Session.Server.Listener listener) throws Exception
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
         sslContextFactory.setKeyStorePassword("storepwd");
-
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
-        Server server = new Server(serverThreads);
+        server = new Server(serverThreads);
+        connector = new ServerQuicConnector(server, sslContextFactory, new RawHTTP3ServerConnectionFactory(listener));
+        server.addConnector(connector);
+        server.start();
+    }
 
+    private void startClient() throws Exception
+    {
+        client = new HTTP3Client();
+        client.start();
+    }
+
+    @AfterEach
+    public void dispose()
+    {
+        LifeCycle.stop(client);
+        LifeCycle.stop(server);
+    }
+
+    @Test
+    public void testConnectTriggersSettingsFrame() throws Exception
+    {
         CountDownLatch serverPrefaceLatch = new CountDownLatch(1);
         CountDownLatch serverSettingsLatch = new CountDownLatch(1);
-        CountDownLatch serverRequestLatch = new CountDownLatch(1);
-        ServerQuicConnector connector = new ServerQuicConnector(server, sslContextFactory, new RawHTTP3ServerConnectionFactory(new Session.Server.Listener()
+        startServer(new Session.Server.Listener()
         {
             @Override
             public Map<Long, Long> onPreface(Session session)
@@ -69,22 +92,8 @@ public class HTTP3ClientServerTest
             {
                 serverSettingsLatch.countDown();
             }
-
-            @Override
-            public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
-            {
-                serverRequestLatch.countDown();
-                // Send the response.
-                stream.respond(new HeadersFrame(new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY)));
-                // Not interested in request data.
-                return null;
-            }
-        }));
-        server.addConnector(connector);
-        server.start();
-
-        HTTP3Client client = new HTTP3Client();
-        client.start();
+        });
+        startClient();
 
         CountDownLatch clientPrefaceLatch = new CountDownLatch(1);
         CountDownLatch clientSettingsLatch = new CountDownLatch(1);
@@ -103,7 +112,30 @@ public class HTTP3ClientServerTest
                     clientSettingsLatch.countDown();
                 }
             })
-            .get(555, TimeUnit.SECONDS);
+            .get(5, TimeUnit.SECONDS);
+        assertNotNull(session);
+    }
+
+    @Test
+    public void testGETThenResponseWithoutContent() throws Exception
+    {
+        CountDownLatch serverRequestLatch = new CountDownLatch(1);
+        startServer(new Session.Server.Listener()
+        {
+            @Override
+            public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+            {
+                serverRequestLatch.countDown();
+                // Send the response.
+                stream.respond(new HeadersFrame(new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY)));
+                // Not interested in request data.
+                return null;
+            }
+        });
+        startClient();
+
+        Session.Client session = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
+            .get(5, TimeUnit.SECONDS);
 
         CountDownLatch clientResponseLatch = new CountDownLatch(1);
         HttpURI uri = HttpURI.from("https://localhost:" + connector.getLocalPort() + "/");
@@ -120,11 +152,7 @@ public class HTTP3ClientServerTest
             .get(555, TimeUnit.SECONDS);
         assertNotNull(stream);
 
-        assertTrue(clientPrefaceLatch.await(555, TimeUnit.SECONDS));
-        assertTrue(serverPrefaceLatch.await(555, TimeUnit.SECONDS));
-        assertTrue(serverSettingsLatch.await(555, TimeUnit.SECONDS));
-        assertTrue(clientSettingsLatch.await(555, TimeUnit.SECONDS));
-        assertTrue(serverRequestLatch.await(555, TimeUnit.SECONDS));
-        assertTrue(clientResponseLatch.await(555, TimeUnit.SECONDS));
+        assertTrue(serverRequestLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientResponseLatch.await(5, TimeUnit.SECONDS));
     }
 }

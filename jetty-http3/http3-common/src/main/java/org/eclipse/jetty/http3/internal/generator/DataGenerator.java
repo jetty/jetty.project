@@ -13,7 +13,12 @@
 
 package org.eclipse.jetty.http3.internal.generator;
 
+import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.Frame;
+import org.eclipse.jetty.http3.frames.FrameType;
+import org.eclipse.jetty.http3.internal.VarLenInt;
 import org.eclipse.jetty.io.ByteBufferPool;
 
 public class DataGenerator extends FrameGenerator
@@ -21,6 +26,21 @@ public class DataGenerator extends FrameGenerator
     @Override
     public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame)
     {
-        return 0;
+        DataFrame dataFrame = (DataFrame)frame;
+        return generateDataFrame(lease, dataFrame);
+    }
+
+    private int generateDataFrame(ByteBufferPool.Lease lease, DataFrame frame)
+    {
+        ByteBuffer data = frame.getData();
+        int dataLength = data.remaining();
+        int headerLength = VarLenInt.length(FrameType.DATA.type()) + VarLenInt.length(dataLength);
+        ByteBuffer header = ByteBuffer.allocate(headerLength);
+        VarLenInt.generate(header, FrameType.DATA.type());
+        VarLenInt.generate(header, dataLength);
+        header.flip();
+        lease.append(header, false);
+        lease.append(data, false);
+        return headerLength + dataLength;
     }
 }

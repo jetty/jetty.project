@@ -50,15 +50,15 @@ public class HeadersGenerator extends FrameGenerator
             ByteBuffer buffer = lease.acquire(maxLength, useDirectByteBuffers);
             encoder.encode(buffer, streamId, frame.getMetaData());
             buffer.flip();
-            int length = buffer.remaining();
-            int capacity = VarLenInt.length(FrameType.HEADERS.type()) + VarLenInt.length(length);
-            ByteBuffer header = ByteBuffer.allocate(capacity);
+            int dataLength = buffer.remaining();
+            int headerLength = VarLenInt.length(FrameType.HEADERS.type()) + VarLenInt.length(dataLength);
+            ByteBuffer header = ByteBuffer.allocate(headerLength);
             VarLenInt.generate(header, FrameType.HEADERS.type());
-            VarLenInt.generate(header, length);
+            VarLenInt.generate(header, dataLength);
             header.flip();
             lease.append(header, false);
             lease.append(buffer, true);
-            return buffer.remaining();
+            return headerLength + dataLength;
         }
         catch (QpackException e)
         {

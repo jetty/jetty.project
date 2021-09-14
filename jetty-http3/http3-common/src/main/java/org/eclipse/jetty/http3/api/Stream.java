@@ -15,7 +15,9 @@ package org.eclipse.jetty.http3.api;
 
 import java.util.concurrent.CompletableFuture;
 
+import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.util.Callback;
 
 public interface Stream
 {
@@ -24,6 +26,10 @@ public interface Stream
     public interface Listener
     {
         public default void onResponse(Stream stream, HeadersFrame frame)
+        {
+        }
+
+        public default void onData(Stream stream, DataFrame frame, Callback callback)
         {
         }
 
