@@ -46,7 +46,9 @@ updates:
       - dependency-name: "jakarta.servlet.jsp.jstl:*"
         versions: [ ">=2.0.0" ]
       - dependency-name: "org.jboss.weld.servlet:*"
-        versions: [ ">4.0.0" ]
+        versions: [ ">=4.0.0" ]
+      - dependency-name: "com.sun.xml.ws:jaxws*"
+        versions: [ ">=3.0.0" ]
 
 #  - package-ecosystem: "maven"
 #    directory: "/"
