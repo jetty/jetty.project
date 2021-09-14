@@ -69,8 +69,8 @@ public class TestSecurityAnnotationConversions
         {
             "tom", "dick", "harry"
         }), httpMethodConstraints = {
-        @HttpMethodConstraint(value = "GET", transportGuarantee = TransportGuarantee.CONFIDENTIAL)
-    })
+            @HttpMethodConstraint(value = "GET", transportGuarantee = TransportGuarantee.CONFIDENTIAL)
+        })
     public static class Method2Servlet extends HttpServlet
     {
     }
