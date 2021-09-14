@@ -7,7 +7,7 @@
   </formats>
   <fileSets>
     <fileSet>
-      <directory>src/main/config-template</directory>
+      <directory>target/jetty-config-files</directory>
       <outputDirectory></outputDirectory>
       <includes>
         <include>**</include>
