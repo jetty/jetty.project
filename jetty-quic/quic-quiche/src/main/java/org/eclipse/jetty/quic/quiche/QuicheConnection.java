@@ -443,13 +443,6 @@ public class QuicheConnection
             "]";
     }
 
-    public synchronized long congestionWindowCapacity()
-    {
-        LibQuiche.quiche_stats stats = new LibQuiche.quiche_stats();
-        libQuiche().quiche_conn_stats(quicheConn, stats);
-        return stats.cwnd.longValue();
-    }
-
     public synchronized boolean close() throws IOException
     {
         int rc = libQuiche().quiche_conn_close(quicheConn, true, new uint64_t(0), null, new size_t(0));
@@ -475,7 +468,14 @@ public class QuicheConnection
         return libQuiche().quiche_conn_is_draining(quicheConn);
     }
 
-    public synchronized long streamCapacity(long streamId) throws IOException
+    public synchronized long windowCapacity()
+    {
+        LibQuiche.quiche_stats stats = new LibQuiche.quiche_stats();
+        libQuiche().quiche_conn_stats(quicheConn, stats);
+        return stats.cwnd.longValue();
+    }
+
+    public synchronized long windowCapacity(long streamId) throws IOException
     {
         long value = libQuiche().quiche_conn_stream_capacity(quicheConn, new uint64_t(streamId)).longValue();
         if (value < 0)
