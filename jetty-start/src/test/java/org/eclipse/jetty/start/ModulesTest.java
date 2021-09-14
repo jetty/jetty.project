@@ -35,6 +35,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -92,7 +93,7 @@ public class ModulesTest
         expected.add("main");
         expected.add("optional");
 
-        ConfigurationAssert.assertContainsUnordered("All Modules", expected, moduleNames);
+        assertThat("All Modules", moduleNames, containsInAnyOrder(expected.toArray()));
     }
 
     /**
@@ -139,7 +140,7 @@ public class ModulesTest
         List<String> expected = new ArrayList<>();
         expected.add("base");
 
-        ConfigurationAssert.assertContainsUnordered("All Modules", expected, moduleNames);
+        assertThat("All Modules", moduleNames, containsInAnyOrder(expected.toArray()));
     }
 
     @Test

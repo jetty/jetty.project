@@ -1,2 +1,0 @@
-DOWNLOAD|basehome:modules/demo/demo-config.xml|etc/demo-config.xml
-EXISTS|etc/demo-config.xml
