@@ -18,7 +18,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build-support.version>1.5</build-support.version>
     <checkstyle.version>8.37</checkstyle.version>
-    <slf4j.version>1.7.30</slf4j.version>
+    <slf4j.version>1.7.32</slf4j.version>
     <log4j2.version>2.14.0</log4j2.version>
     <disruptor.version>3.4.2</disruptor.version>
     <logback.version>1.2.3</logback.version>
@@ -27,21 +27,22 @@
     <jsp.version>8.5.70</jsp.version>
     <infinispan.version>9.4.8.Final</infinispan.version>
     <infinispan.protostream.version>4.3.4.Final</infinispan.protostream.version>
-    <gson.version>2.8.6</gson.version>
+    <gson.version>2.8.8</gson.version>
+    <grpc.version>1.40.1</grpc.version>
     <alpn.agent.version>2.0.10</alpn.agent.version>
-    <conscrypt.version>2.5.1</conscrypt.version>
-    <asm.version>9.1</asm.version>
+    <conscrypt.version>2.5.2</conscrypt.version>
+    <asm.version>9.2</asm.version>
     <jmh.version>1.33</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <tycho-version>2.1.0</tycho-version>
-    <junit.version>5.7.0</junit.version>
-    <maven.version>3.6.3</maven.version>
-    <maven.resolver.version>1.7.1</maven.resolver.version>
+    <junit.version>5.8.0</junit.version>
+    <maven.version>3.8.2</maven.version>
+    <maven.resolver.version>1.7.2</maven.resolver.version>
     <javax.servlet.api.version>3.1.0</javax.servlet.api.version>
     <weld.version>3.1.5.Final</weld.version>
     <hazelcast.version>3.12.12</hazelcast.version>
-    <jboss.logging.version>3.4.1.Final</jboss.logging.version>
-    <jetty.perf-helper.version>1.0.6</jetty.perf-helper.version>
+    <jboss.logging.version>3.4.2.Final</jboss.logging.version>
+    <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
     <ant.version>1.10.11</ant.version>
     <unix.socket.tmp></unix.socket.tmp>
     <!-- enable or not TestTracker junit5 extension i.e log message when test method is starting -->
@@ -54,21 +55,21 @@
     <maven.dependency.plugin.version>3.1.2</maven.dependency.plugin.version>
     <maven.resources.plugin.version>3.2.0</maven.resources.plugin.version>
     <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
-    <maven.war.plugin.version>3.3.1</maven.war.plugin.version>
-    <maven.plugin-tools.version>3.6.0</maven.plugin-tools.version>
+    <maven.war.plugin.version>3.3.2</maven.war.plugin.version>
+    <maven.plugin-tools.version>3.6.1</maven.plugin-tools.version>
     <maven.install.plugin.version>3.0.0-M1</maven.install.plugin.version>
     <maven.deploy.plugin.version>3.0.0-M1</maven.deploy.plugin.version>
 
     <!-- testing -->
     <it.debug>false</it.debug>
-    <jetty.test.version>5.5</jetty.test.version>
+    <jetty.test.version>5.8</jetty.test.version>
     <spring-boot.version>2.1.1.RELEASE</spring-boot.version>
     <jsr250-api.version>1.0</jsr250-api.version>
     <javax.annotation-api>1.3.2</javax.annotation-api>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <settingsPath>src/it/settings.xml</settingsPath>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
-    <testcontainers.version>1.15.1</testcontainers.version>
+    <testcontainers.version>1.16.0</testcontainers.version>
     <maria.version>2.7.0</maria.version>
   </properties>
 
@@ -395,7 +396,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>3.1.1</version>
+        <version>3.1.2</version>
         <configuration>
           <configLocation>jetty-checkstyle.xml</configLocation>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
@@ -497,7 +498,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>3.0.0-M3</version>
+          <version>3.0.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -562,7 +563,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.2.0</version>
+          <version>3.3.1</version>
           <configuration>
             <source>8</source>
             <charset>UTF-8</charset>
@@ -579,7 +580,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jxr-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>3.3.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -673,7 +674,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.6</version>
+          <version>0.8.7</version>
         </plugin>
         <plugin>
           <groupId>com.agilejava.docbkx</groupId>
@@ -899,6 +900,17 @@
           <artifactId>h2spec-maven-plugin</artifactId>
           <version>1.0.7</version>
         </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>versions-maven-plugin</artifactId>
+          <version>2.8.1</version>
+          <configuration>
+            <processDependencies>true</processDependencies>
+            <processDependencyManagement>true</processDependencyManagement>
+            <processPluginDependencies>true</processPluginDependencies>
+            <processPluginDependenciesInPluginManagement>true</processPluginDependenciesInPluginManagement>
+          </configuration>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>
@@ -1012,7 +1024,7 @@
       <dependency>
         <groupId>org.codehaus.plexus</groupId>
         <artifactId>plexus-utils</artifactId>
-        <version>3.3.0</version>
+        <version>3.4.1</version>
       </dependency>
       <dependency>
         <groupId>org.apache.maven</groupId>
@@ -1030,6 +1042,11 @@
         <version>${maven.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.apache.maven</groupId>
+        <artifactId>maven-settings</artifactId>
+        <version>${maven.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.apache.maven.plugin-tools</groupId>
         <artifactId>maven-plugin-tools-api</artifactId>
         <version>${maven.plugin-tools.version}</version>
@@ -1044,6 +1061,13 @@
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter</artifactId>
         <version>${junit.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
+        <version>${junit.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>org.awaitility</groupId>
@@ -1065,7 +1089,7 @@
       <dependency>
         <groupId>net.java.dev.jna</groupId>
         <artifactId>jna</artifactId>
-        <version>5.6.0</version>
+        <version>5.9.0</version>
       </dependency>
       <!-- Old Deps -->
       <dependency>
@@ -1106,13 +1130,13 @@
       <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-unixsocket</artifactId>
-        <version>0.38.3</version>
+        <version>0.38.10</version>
       </dependency>
       <!-- avoid depending on a range dependency from a transitive dependency -->
       <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-core</artifactId>
-        <version>1.33.1</version>
+        <version>${grpc.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.ant</groupId>
